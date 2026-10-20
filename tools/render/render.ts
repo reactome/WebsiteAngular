@@ -34,9 +34,15 @@ import { FORMATS, render } from './render-core.ts';
 import { speciesProblem } from './params.ts';
 
 const args = process.argv.slice(2);
-const flag = (name, fallback) => {
+const flag = (name: string, fallback: string): string => {
   const i = args.indexOf(`--${name}`);
-  return i === -1 ? fallback : args[i + 1];
+  if (i === -1) return fallback;
+  const value = args[i + 1];
+  if (value === undefined) {
+    console.error(`--${name} needs a value`);
+    process.exit(2);
+  }
+  return value;
 };
 
 /**

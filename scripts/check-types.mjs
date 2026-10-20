@@ -26,6 +26,7 @@
  *     than saying it is not checked.
  */
 import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 // The site, and the server-side services (spec 013).
 const projects = ['tsconfig.app.json', 'tools/tsconfig.json'];
@@ -41,6 +42,75 @@ for (const project of projects) {
   console.log(`  ${project} FAILED (exit ${result.status})`);
   for (const line of output.split('\n')) console.log(`    ${line}`);
 }
-if (!failed) process.exit(0);
-console.log('\n  The build, or the services, would fail on these.');
-process.exit(1);
+if (failed) {
+  console.log('\n  The build, or the services, would fail on these.');
+  process.exit(1);
+}
+
+// The services with noImplicitAny on (spec 013, T021): a compiler option
+// cannot be set per file, so the whole of tools/ is compiled with it and the
+// errors -- every one of them the option's, the plain compile being clean --
+// counted per module. A count may only go down; a module at none stays so.
+// `--update` writes the counts as they are, to lock in a module typed.
+const BASELINE = 'tools/implicit-any-baseline.json';
+const strict = spawnSync(
+  'npx',
+  ['tsc', '--noEmit', '--noImplicitAny', '-p', 'tools/tsconfig.json'],
+  {
+    encoding: 'utf8',
+  }
+);
+// tsc exits 2 when it found errors and 0 when it found none; anything else
+// -- a crash, a signal, npx failing -- is no reading at all, and nor is an
+// exit 2 with no error lines to count. Either would read as "none left" and
+// invite --update to write an empty baseline, so it fails here instead.
+const strictOutput = `${strict.stdout ?? ''}`;
+const errorLines = strictOutput
+  .split('\n')
+  .filter((line) => /^\S.*\(\d+,\d+\): error TS\d+/.test(line));
+if (
+  strict.error ||
+  ![0, 2].includes(strict.status) ||
+  (strict.status === 2) !== errorLines.length > 0
+) {
+  console.log(`  tools/ with noImplicitAny: no reading (exit ${strict.status ?? strict.error})`);
+  for (const line of `${strictOutput}${strict.stderr ?? ''}`.trim().split('\n'))
+    console.log(`    ${line}`);
+  process.exit(1);
+}
+// An error outside tools/ (a site model the services import) is the site's
+// compile's to catch; one here means that did not, so say so.
+const elsewhere = errorLines.filter((line) => !line.startsWith('tools/'));
+if (elsewhere.length) {
+  console.log('  noImplicitAny errors outside tools/, which nothing counts:\n');
+  for (const line of elsewhere) console.log(`    ${line}`);
+  process.exit(1);
+}
+const counts = {};
+for (const line of errorLines) {
+  const file = line.slice(0, line.indexOf('('));
+  counts[file] = (counts[file] ?? 0) + 1;
+}
+const sorted = Object.fromEntries(Object.entries(counts).sort(([a], [b]) => (a < b ? -1 : 1)));
+if (process.argv.includes('--update')) {
+  writeFileSync(BASELINE, `${JSON.stringify(sorted, null, 2)}\n`);
+  const total = Object.values(sorted).reduce((sum, n) => sum + n, 0);
+  console.log(`  ${BASELINE}: ${total} in ${Object.keys(sorted).length} modules`);
+  process.exit(0);
+}
+const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'));
+const up = Object.entries(counts).filter(([file, n]) => n > (baseline[file] ?? 0));
+const down = Object.entries(baseline).filter(([file, n]) => (counts[file] ?? 0) < n);
+if (up.length) {
+  console.log('  Implicit any in the services went up (noImplicitAny, ' + BASELINE + '):\n');
+  for (const [file, n] of up) console.log(`    ${file}: ${baseline[file] ?? 0} -> ${n}`);
+  console.log(
+    '\n  Type them: `npx tsc --noEmit --noImplicitAny -p tools/tsconfig.json` lists them.'
+  );
+  process.exit(1);
+}
+const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
+console.log(`  tools/ with noImplicitAny: ${total} left, none new`);
+if (down.length)
+  console.log(`  ${down.length} module(s) went down; lock it in: npm run check:types -- --update`);
+process.exit(0);

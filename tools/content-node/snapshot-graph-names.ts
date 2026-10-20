@@ -25,7 +25,8 @@ import { close, read } from './graph.ts';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'graph-names.json');
 
-const strings = (rows) => rows.map((row) => row.name).filter((name) => typeof name === 'string');
+const strings = (rows: { name: unknown }[]) =>
+  rows.map((row) => row.name).filter((name): name is string => typeof name === 'string');
 const referenceDatabases = strings(
   await read('MATCH (rd:ReferenceDatabase) RETURN DISTINCT rd.displayName AS name ORDER BY name')
 );

@@ -4,12 +4,12 @@ import { render } from './render-core.ts';
 // What address the render page is opened at, read off a stand-in page that
 // stops at the first navigation. The address is the whole contract between
 // this and the page: a parameter that does not reach it changes nothing.
-async function addressFor(options) {
+async function addressFor(options: Partial<Parameters<typeof render>[1]> = {}) {
   let opened = '';
   const page = {
     on() {},
     off() {},
-    async goto(url) {
+    async goto(url: string) {
       opened = url;
       throw new Error('stop here');
     },
@@ -54,7 +54,7 @@ describe('a figure of another species', () => {
   it('is refused, not handed back as the one asked for', async () => {
     // What a site too old to know `species` does: it draws the default
     // species and reports none, with every sign of success.
-    const page = (drew) => ({
+    const page = (drew: string | undefined) => ({
       on() {},
       off() {},
       async goto() {},

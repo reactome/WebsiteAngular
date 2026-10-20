@@ -12,6 +12,7 @@
  * has not replaced anything.
  */
 import neo4j from 'neo4j-driver';
+import type { Driver } from 'neo4j-driver';
 import net from 'node:net';
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -77,7 +78,7 @@ const USER = setting('NEO4J_USER');
 const PASSWORD = setting('NEO4J_PASSWORD');
 const DATABASE = setting('NEO4J_DATABASE', 'graph.db');
 
-let driver;
+let driver: Driver | undefined;
 
 /** Whether credentials are present; the server says so rather than failing per request. */
 export function configured() {
@@ -85,7 +86,7 @@ export function configured() {
 }
 
 /** GRAPH_POOL_SIZE when it is a whole number from 1 to 100; otherwise 32. */
-export function poolSize(setting) {
+export function poolSize(setting: string | undefined) {
   const size = Number(setting);
   return Number.isInteger(size) && size >= 1 && size <= 100 ? size : 32;
 }

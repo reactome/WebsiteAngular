@@ -10,7 +10,7 @@ import { invalidInputs } from './invalid-inputs.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
 const { endpoints } = await import('./service.ts');
-const GETS = endpoints.filter((e) => !e.method || e.method === 'GET');
+const GETS = endpoints.filter((e: { method?: string }) => !e.method || e.method === 'GET');
 const corpus = invalidInputs(GETS);
 
 describe('invalidInputs', () => {
@@ -39,7 +39,7 @@ describe('invalidInputs', () => {
   it('carries every required parameter but the one being tried, so that one is reached', () => {
     for (const url of corpus) {
       const [path = '', query] = url.split('?');
-      const endpoint = GETS.find((e) =>
+      const endpoint = GETS.find((e: { path: string }) =>
         new RegExp(`^${e.path.replace(/\{[^}]+\}/g, '[^/]+')}$`).test(path)
       );
       const given = new Set([...new URLSearchParams(query)].map(([name]) => name));

@@ -35,7 +35,10 @@ is how a formatting failure reached CI.
 
 - **Prove a test fails** before trusting it passes: undo the fix and watch it
   fail, or mutate the code and watch the test catch it (constitution III).
-- **Lint and dead-code counts** are ratcheted: they may go down, never up.
+- **Lint and dead-code counts** are ratcheted: they may go down, never up. So
+  are the services' loose values (`tools/loose-baseline.json`) and their
+  implicit `any`s under `noImplicitAny` (`tools/implicit-any-baseline.json`,
+  checked by `check:types`): new service code is typed.
 
 ## The node content service (`tools/content-node`)
 

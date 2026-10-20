@@ -11,10 +11,10 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { registryServices, psicquicResources } from './psicquic.ts';
 import { resourcesJson } from './service.ts';
 
-const service = (name, active, rest = `http://${name}/rest/`, extra = '') =>
+const service = (name: string, active: string, rest = `http://${name}/rest/`, extra = '') =>
   `<service><name>${name}</name><soapUrl>http://${name}/soap</soapUrl><restUrl>${rest}</restUrl>` +
   `<restExample>x</restExample><active>${active}</active><count>1</count>${extra}<tag>MI:1</tag></service>`;
-const registry = (...services) =>
+const registry = (...services: string[]) =>
   `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><registry xmlns="http://hupo.psi.org/psicquic/registry">${services.join('')}</registry>`;
 
 describe('the registry', () => {

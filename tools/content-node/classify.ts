@@ -10,10 +10,10 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { RECORD, standardForm } from './parameters.ts';
 
-const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-let patterns;
+const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+let patterns: [endpoint: string, pattern: RegExp][] | undefined;
 const PATTERNS = () =>
-  (patterns ??= Object.keys(RECORD).map((endpoint) => [
+  (patterns ??= Object.keys(RECORD).map((endpoint): [string, RegExp] => [
     endpoint,
     new RegExp(
       `^${endpoint
@@ -32,12 +32,12 @@ const PATTERNS = () =>
  * @param {string} url
  * @returns {{ endpoint: string, ok: boolean, rule: string } | undefined}
  */
-export function classify(method, url) {
+export function classify(method: string, url: string) {
   if (method !== 'GET' && method !== 'HEAD') return undefined;
   const at = url.indexOf('/ContentService/');
   if (at === -1) return undefined;
   const sent = url.slice(at);
-  const path = sent.split('?')[0];
+  const [path = ''] = sent.split('?');
   const found = PATTERNS().find(([, pattern]) => pattern.test(path));
   if (!found) return undefined;
   // Java's own, which nginx keeps from node's /query/{id}/{attribute},
