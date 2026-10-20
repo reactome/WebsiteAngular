@@ -30,6 +30,7 @@
  * makes PowerPoint offer to repair a file.
  */
 import { zipSync, strToU8 } from 'fflate';
+import type { RenderShapes } from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
 
 /** English Metric Units per pixel at 96dpi, the unit all OOXML geometry uses. */
 const EMU_PER_PX = 9525;
@@ -71,7 +72,8 @@ function escapeXml(text) {
   return String(text).replace(
     /[<>&'"]/g,
     (character) =>
-      ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[character]
+      ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' })[character] ??
+      character
   );
 }
 
@@ -161,7 +163,7 @@ function srgb(colour) {
   const bare = /^([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(text);
   if (bare) {
     return {
-      hex: bare[1].toUpperCase(),
+      hex: (bare[1] ?? '').toUpperCase(),
       alpha: bare[2] === undefined ? 1 : parseInt(bare[2], 16) / 255,
     };
   }
@@ -184,7 +186,7 @@ function srgb(colour) {
   const long = /^#([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(text);
   if (long) {
     return {
-      hex: long[1].toUpperCase(),
+      hex: (long[1] ?? '').toUpperCase(),
       alpha: long[2] === undefined ? 1 : parseInt(long[2], 16) / 255,
     };
   }
@@ -571,29 +573,50 @@ const CONTENT_TYPES =
   `</Types>`;
 
 /**
+ * What a slide is made from: the diagram as shapes, or as a picture of a
+ * natural size. A picture needs its width and height for the aspect ratio;
+ * shapes carry their own.
+ */
+export type Figure = {
+  /** The diagram as SVG, what PowerPoint draws. */
+  svg?: string;
+  /** The same diagram as PNG, the fallback. */
+  png?: Buffer | null;
+  /** Shown above the diagram; omitted if empty. */
+  title?: string;
+} & (
+  | { shapes: RenderShapes; width?: number; height?: number }
+  | { shapes?: null; width: number; height: number }
+);
+
+/**
  * Build the .pptx.
  *
  * Shapes win when the page could describe the diagram as shapes; the picture is
  * what a view that is not made of shapes falls back to. The two paths differ in
  * one part and two relationships, so the package is assembled once.
  *
- * @param {object} figure
- * @param {string} [figure.svg]  the diagram as SVG, what PowerPoint draws
- * @param {Buffer} [figure.png]  the same diagram as PNG, the fallback
- * @param {number} figure.width  natural width in pixels, for the aspect ratio
- * @param {number} figure.height natural height in pixels
- * @param {string} [figure.title] shown above the diagram; omitted if empty
- * @param {import('../../projects/pathway-browser/src/app/render/render-shapes.model')
- *   .RenderShapes | null} [figure.shapes] the diagram as shapes, when it has them
- * @returns {Buffer} the zipped package
+ * Returns the zipped package.
  */
-export function pptx({ svg = '', png = null, width, height, title = '', shapes = null }) {
+export function pptx({
+  svg = '',
+  png = null,
+  width,
+  height,
+  title = '',
+  shapes = null,
+}: Figure): Buffer {
   // An empty shape list is not a diagram; treat it as no shapes at all so the
   // slide holds the picture rather than nothing.
-  const drawShapes = Boolean(shapes?.shapes?.length);
+  const drawn = shapes?.shapes.length ? shapes : null;
+  const drawShapes = drawn !== null;
 
   // The slide is sized for whatever it is going to hold, so this comes first.
-  const figure = drawShapes ? { width: shapes.width, height: shapes.height } : { width, height };
+  // A picture always has its size (Figure says so); `?? 0` only for an empty
+  // list of shapes given with no size, which has nothing to draw anyway.
+  const figure = drawn
+    ? { width: drawn.width, height: drawn.height }
+    : { width: width ?? 0, height: height ?? 0 };
   const { slide, at, emuPerPx } = layout({ ...figure, hasTitle: Boolean(title) });
 
   const parts = {
@@ -624,7 +647,7 @@ export function pptx({ svg = '', png = null, width, height, title = '', shapes =
     ),
     'ppt/slides/slide1.xml': strToU8(
       drawShapes
-        ? shapesSlideXml({ title, shapes, at, emuPerPx, slide })
+        ? shapesSlideXml({ title, shapes: drawn, at, emuPerPx, slide })
         : slideXml({ title, at, slide, hasRaster: Boolean(png) })
     ),
     'ppt/slides/_rels/slide1.xml.rels': strToU8(

@@ -69,7 +69,7 @@ export async function gifFromPage(
       const api = window.__renderExport;
       const { GIFEncoder, quantize, applyPalette } = window.gifenc;
 
-      const samples = api.samples() ?? [];
+      const samples = api.samples();
       const frames = samples.length ? samples.slice(0, maxFrames) : [null];
 
       /** One frame's pixels, at the size the first frame established. */
@@ -83,6 +83,7 @@ export async function gifFromPage(
           );
         }
         const context = canvas.getContext('2d');
+        if (!context) throw new Error('the frame canvas has no 2D context');
         return {
           width: canvas.width,
           height: canvas.height,
@@ -102,7 +103,11 @@ export async function gifFromPage(
       // What the diagram exports at, before deciding what to animate at. The
       // scale that fits it into maxSize cannot be known without this, and
       // guessing from a small probe puts a rounding error into every frame.
-      let probe = await capture(frames[0], null, scale);
+      let probe: Awaited<ReturnType<typeof capture>> | null = await capture(
+        frames[0] ?? null,
+        null,
+        scale
+      );
       const natural = [probe.width, probe.height];
       const longest = Math.max(probe.width, probe.height);
       const fit = maxSize && longest > maxSize ? (scale * maxSize) / longest : scale;
@@ -118,13 +123,13 @@ export async function gifFromPage(
       // of diagram colours, not from photographic noise.
       const budget = 150_000;
       const step = Math.max(1, Math.floor((size.width * size.height * frames.length) / budget));
-      const sampled = [];
+      const sampled: number[] = [];
 
       for (const [index, sample] of frames.entries()) {
         const frame = index === 0 ? size : await capture(sample, size, fit);
         for (let pixel = 0; pixel < frame.width * frame.height; pixel += step) {
           const at = pixel * 4;
-          sampled.push(frame.data[at], frame.data[at + 1], frame.data[at + 2], 255);
+          sampled.push(frame.data[at] ?? 0, frame.data[at + 1] ?? 0, frame.data[at + 2] ?? 0, 255);
         }
       }
 
@@ -135,8 +140,8 @@ export async function gifFromPage(
       const palette = [...colours, [0, 0, 0]];
 
       const gif = GIFEncoder();
-      const checksums = [];
-      let previous = null;
+      const checksums: number[] = [];
+      let previous: Uint8Array | null = null;
       let changedPixels = 0;
 
       for (const [index, sample] of frames.entries()) {
@@ -147,7 +152,8 @@ export async function gifFromPage(
         // an animation whose frames are all the same picture -- a
         // plausible-looking file that shows nothing.
         let checksum = 0;
-        for (let at = 0; at < indexed.length; at += 101) checksum = (checksum + indexed[at]) | 0;
+        for (let at = 0; at < indexed.length; at += 101)
+          checksum = (checksum + (indexed[at] ?? 0)) | 0;
         checksums.push(checksum);
 
         let written = indexed;
@@ -184,7 +190,7 @@ export async function gifFromPage(
       let binary = '';
       const chunk = 0x8000;
       for (let at = 0; at < bytes.length; at += chunk) {
-        binary += String.fromCharCode.apply(null, bytes.subarray(at, at + chunk));
+        binary += String.fromCharCode(...bytes.subarray(at, at + chunk));
       }
 
       return {

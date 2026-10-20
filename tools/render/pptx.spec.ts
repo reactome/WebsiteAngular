@@ -17,7 +17,12 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 import { JSDOM } from 'jsdom';
-import { pptx } from './pptx.mjs';
+import { pptx } from './pptx.ts';
+import type {
+  RenderEdgeShape,
+  RenderNodeShape,
+  RenderShapes,
+} from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
 
 /**
  * Whether the XML parses. jsdom is brought in by hand rather than by the
@@ -32,10 +37,20 @@ function parses(xml) {
 }
 
 /** Resolve a relationship target the way the package format does. */
-function resolveTarget(part, target) {
+type Shape = RenderShapes['shapes'][number];
+const isNode = (shape: Shape): shape is RenderNodeShape => shape.kind === 'node';
+const isEdge = (shape: Shape): shape is RenderEdgeShape => shape.kind === 'edge';
+
+/** A value the test needs to be there: fails, naming it, when it is not. */
+function must<T>(value: T | null | undefined, what: string): T {
+  if (value === null || value === undefined) throw new Error(`${what} is missing`);
+  return value;
+}
+
+function resolveTarget(part: string, target: string) {
   const base = part.split('/').slice(0, -2); // drop "_rels/<name>.rels"
   const segments = [...base, ...target.split('/')];
-  const out = [];
+  const out: string[] = [];
   for (const segment of segments) {
     if (segment === '..') out.pop();
     else if (segment !== '.' && segment !== '') out.push(segment);
@@ -43,12 +58,12 @@ function resolveTarget(part, target) {
   return out.join('/');
 }
 
-function open(buffer) {
+function open(buffer: Buffer) {
   const files = unzipSync(new Uint8Array(buffer));
-  const slide = () => strFromU8(files['ppt/slides/slide1.xml']);
+  const slide = () => strFromU8(must(files['ppt/slides/slide1.xml'], 'the slide'));
   return {
     files,
-    text: (name) => strFromU8(files[name]),
+    text: (name: string) => strFromU8(must(files[name], name)),
     slide,
     /**
      * The slide without the shape tree's own group properties, which carry an
@@ -66,7 +81,7 @@ function drawnOf(buffer) {
   return open(buffer).drawn();
 }
 
-const NODE = {
+const NODE: RenderNodeShape = {
   kind: 'node',
   id: 'n1',
   name: 'ATP',
@@ -85,7 +100,7 @@ const NODE = {
   dashed: false,
 };
 
-const EDGE = {
+const EDGE: RenderEdgeShape = {
   kind: 'edge',
   id: 'e1',
   name: 'connector',
@@ -102,7 +117,7 @@ const EDGE = {
 };
 
 /** An arrowhead, which the page hands over as a closed, filled polygon. */
-const ARROW = {
+const ARROW: RenderEdgeShape = {
   kind: 'edge',
   id: 'e1-arrow',
   name: 'production triangle',
@@ -118,7 +133,7 @@ const ARROW = {
   dashed: false,
 };
 
-const SHAPES = { x: 0, y: 0, width: 400, height: 200, shapes: [NODE, EDGE] };
+const SHAPES: RenderShapes = { x: 0, y: 0, width: 400, height: 200, shapes: [NODE, EDGE] };
 
 /** A one-pixel PNG: enough to stand in for the fallback raster. */
 const PNG = Buffer.from(
@@ -145,7 +160,7 @@ const PICTURE = {
  */
 const REAL = JSON.parse(
   readFileSync(new URL('./fixtures/shapes-apoptosis.json', import.meta.url), 'utf8')
-);
+) as RenderShapes;
 
 describe.each([
   ['shapes', () => pptx({ title: 'Glycolysis', shapes: SHAPES })],
@@ -157,7 +172,9 @@ describe.each([
     const { files, text } = open(build());
     const types = text('[Content_Types].xml');
     const defaults = new Set(
-      [...types.matchAll(/<Default Extension="([^"]+)"/g)].map((match) => match[1].toLowerCase())
+      [...types.matchAll(/<Default Extension="([^"]+)"/g)].map((match) =>
+        must(match[1], 'an extension').toLowerCase()
+      )
     );
     const overrides = new Set(
       [...types.matchAll(/<Override PartName="([^"]+)"/g)].map((match) => match[1])
@@ -165,7 +182,7 @@ describe.each([
 
     for (const part of Object.keys(files)) {
       if (part === '[Content_Types].xml') continue;
-      const extension = part.split('.').pop().toLowerCase();
+      const extension = (part.split('.').pop() ?? '').toLowerCase();
       expect(
         overrides.has(`/${part}`) || defaults.has(extension),
         `${part} has no content type`
@@ -180,7 +197,7 @@ describe.each([
 
     for (const part of relParts) {
       for (const match of text(part).matchAll(/Target="([^"]+)"/g)) {
-        const resolved = resolveTarget(part, match[1]);
+        const resolved = resolveTarget(part, must(match[1], 'a target'));
         expect(files[resolved], `${part} -> ${match[1]} (${resolved})`).toBeDefined();
       }
     }
@@ -273,7 +290,7 @@ describe('a slide built from shapes', () => {
         },
       })
     );
-    const [, cx, cy] = /<a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(slide);
+    const [, cx, cy] = must(/<a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(slide), 'the picture size');
     expect(Number(cx)).toBe(Number(cy));
   });
 
@@ -284,8 +301,10 @@ describe('a slide built from shapes', () => {
       const slide = drawnOf(
         pptx({ shapes: { x: 100, y: 100, width: 400, height: 200, shapes: [shape] } })
       );
-      const [, x, y, cx, cy] =
-        /<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(slide);
+      const [, x, y, cx, cy] = must(
+        /<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/.exec(slide),
+        'the shape position'
+      );
       return { x: Number(x), y: Number(y), cx: Number(cx), cy: Number(cy) };
     };
     const first = at({ ...NODE, x: 100, y: 100, w: 40, h: 20 });
@@ -357,7 +376,7 @@ describe('a slide built from shapes', () => {
       ['#ffff99', 'FFFF99'],
       ['#ff9', 'FFFF99'],
     ];
-    for (const [fill, hex] of cases) {
+    for (const [fill = '', hex] of cases) {
       const slide = open(pptx({ shapes: { ...SHAPES, shapes: [{ ...NODE, fill }] } })).slide();
       expect(slide, fill).toContain(`<a:srgbClr val="${hex}">`);
     }
@@ -408,17 +427,18 @@ describe('a slide built from a payload the page produced', () => {
 
   it('fills every shape the page gave a colour', () => {
     const slide = open(pptx({ shapes: REAL })).slide();
-    const coloured = REAL.shapes.filter((shape) => shape.kind === 'node' && shape.fill);
+    const coloured = REAL.shapes.filter(isNode).filter((shape) => shape.fill);
     expect(coloured.length).toBeGreaterThan(100);
     // Every distinct colour in the payload has to appear in the slide, with its
     // alpha where it has one. This is the assertion the invented-input tests
     // could not make.
     for (const fill of new Set(coloured.map((shape) => shape.fill))) {
-      const [, hex, alpha] = /^([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(fill);
-      expect(slide, fill).toContain(`<a:srgbClr val="${hex.toUpperCase()}">`);
+      const colour = must(fill, 'a fill');
+      const [, hex, alpha] = must(/^([0-9a-f]{6})([0-9a-f]{2})?$/i.exec(colour), colour);
+      expect(slide, colour).toContain(`<a:srgbClr val="${must(hex, colour).toUpperCase()}">`);
       if (alpha !== undefined) {
         const permille = Math.round((parseInt(alpha, 16) / 255) * 100000);
-        expect(slide, fill).toContain(`<a:alpha val="${permille}"/>`);
+        expect(slide, colour).toContain(`<a:alpha val="${permille}"/>`);
       }
     }
     // And nothing the page coloured may come out unfilled. An outline can be
@@ -474,9 +494,10 @@ describe('a picture slide with no raster', () => {
 });
 
 describe('the slide itself', () => {
-  const slideSize = (buffer) => {
-    const [, cx, cy] = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(
-      open(buffer).text('ppt/presentation.xml')
+  const slideSize = (buffer: Buffer) => {
+    const [, cx, cy] = must(
+      /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(open(buffer).text('ppt/presentation.xml')),
+      'the slide size'
     );
     return { cx: Number(cx), cy: Number(cy) };
   };
@@ -586,8 +607,11 @@ describe('a payload framed on one event', () => {
 
   it('puts no shape past the edge of the slide it is drawn on', () => {
     const { files, drawn } = open(pptx({ title: 'Framed', shapes: FRAMED }));
-    const [, cx, cy] = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(
-      strFromU8(files['ppt/presentation.xml'])
+    const [, cx, cy] = must(
+      /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(
+        strFromU8(must(files['ppt/presentation.xml'], 'the presentation'))
+      ),
+      'the slide size'
     );
     const placed = [
       ...drawn().matchAll(/<a:off x="(-?\d+)" y="(-?\d+)"\/><a:ext cx="(\d+)" cy="(\d+)"\/>/g),
@@ -613,7 +637,8 @@ describe('the tints the diagram paints behind its glyphs', () => {
     expect(colours.size).toBeGreaterThan(3);
     const slide = open(pptx({ shapes: REAL })).slide();
     for (const colour of colours) {
-      expect(slide, colour).toContain(`<a:srgbClr val="${colour.slice(0, 6).toUpperCase()}">`);
+      const spelled = must(colour, 'an underlay colour');
+      expect(slide, spelled).toContain(`<a:srgbClr val="${spelled.slice(0, 6).toUpperCase()}">`);
     }
   });
 
@@ -625,8 +650,8 @@ describe('the tints the diagram paints behind its glyphs', () => {
       (last, name, at) => (name.endsWith('highlight') ? at : last),
       -1
     );
-    const entities = REAL.shapes.filter((shape) => shape.kind === 'node' && shape.label);
-    const firstLabelled = REAL.shapes.indexOf(entities.at(-1));
+    const entities = REAL.shapes.filter(isNode).filter((shape) => shape.label);
+    const firstLabelled = REAL.shapes.indexOf(must(entities.at(-1), 'a labelled entity'));
     expect(lastUnderlay).toBeLessThan(firstLabelled);
   });
 
@@ -653,11 +678,11 @@ describe('the tints the diagram paints behind its glyphs', () => {
 });
 
 describe('the glyph bodies the diagram draws with an image', () => {
-  const glyphs = REAL.shapes.filter((shape) => shape.id.includes('-glyph-'));
-  const boxes = REAL.shapes.filter(
-    (shape) =>
-      shape.kind === 'node' && !shape.id.includes('-arrow') && !shape.id.includes('-underlay')
-  );
+  // Every glyph is an edge, a closed polygon (as the fixtures hold).
+  const glyphs = REAL.shapes.filter(isEdge).filter((shape) => shape.id.includes('-glyph-'));
+  const boxes = REAL.shapes
+    .filter(isNode)
+    .filter((shape) => !shape.id.includes('-arrow') && !shape.id.includes('-underlay'));
 
   it('draws a body for the glyphs whose fill is an image', () => {
     // Complexes, sets and genes carry their whole body in a background-image
@@ -686,9 +711,10 @@ describe('the glyph bodies the diagram draws with an image', () => {
   it('draws a body under the label it belongs to', () => {
     const order = new Map(REAL.shapes.map((shape, at) => [shape.id, at]));
     for (const glyph of glyphs.slice(0, 40)) {
-      const owner = glyph.id.split('-glyph-')[0];
-      if (!order.has(owner)) continue;
-      expect(order.get(glyph.id), glyph.name).toBeLessThan(order.get(owner));
+      const owner = glyph.id.split('-glyph-')[0] ?? '';
+      const body = order.get(owner);
+      if (body === undefined) continue;
+      expect(order.get(glyph.id), glyph.name).toBeLessThan(body);
     }
   });
 
@@ -704,7 +730,7 @@ describe('the glyph bodies the diagram draws with an image', () => {
   it('emits them as closed, painted shapes', () => {
     const slide = open(pptx({ shapes: REAL })).slide();
     // One close per closed shape: the glyph bodies plus the arrowheads.
-    const closed = REAL.shapes.filter((shape) => shape.closed).length;
+    const closed = REAL.shapes.filter(isEdge).filter((shape) => shape.closed).length;
     expect(closed).toBeGreaterThan(glyphs.length);
     expect((slide.match(/<a:close\/>/g) ?? []).length).toBe(closed);
     for (const glyph of glyphs) {
@@ -714,8 +740,10 @@ describe('the glyph bodies the diagram draws with an image', () => {
 });
 
 describe("how a glyph's own images are placed", () => {
-  const layersOf = (name) =>
-    REAL.shapes.filter((shape) => shape.id.includes('-glyph-') && shape.name.startsWith(name));
+  const layersOf = (name: string) =>
+    REAL.shapes
+      .filter(isEdge)
+      .filter((shape) => shape.id.includes('-glyph-') && shape.name.startsWith(name));
   const extent = (shape) => {
     const xs = shape.points.map((point) => point.x);
     const ys = shape.points.map((point) => point.y);
@@ -758,7 +786,8 @@ describe("how a glyph's own images are placed", () => {
     // These hold definitions, not content. Reading every element in the
     // document drew a mask's white and black rectangles as two shapes and the
     // bare <use> inside a clipPath as a shape with no paint at all.
-    const glyphs = REAL.shapes.filter((shape) => shape.id.includes('-glyph-'));
+    // Every glyph is an edge, a closed polygon (as the fixtures hold).
+    const glyphs = REAL.shapes.filter(isEdge).filter((shape) => shape.id.includes('-glyph-'));
     expect(glyphs.filter((shape) => !shape.fill && !shape.stroke)).toEqual([]);
     // A mask rectangle would arrive as a four-cornered box painted flat white
     // or black across a whole glyph; nothing like that survives.
@@ -805,7 +834,8 @@ describe('a glyph the frame cuts through', () => {
   it('keeps its fill when cut, rather than falling open', () => {
     // Clipping a filled polygon as a polygon keeps it closed and painted. Doing
     // it as a polyline would leave a complex outlined and hollow.
-    const glyphs = FRAMED_CUT.shapes.filter((shape) => shape.id.includes('-glyph-'));
+    // Every glyph is an edge, a closed polygon (as the fixtures hold).
+    const glyphs = FRAMED_CUT.shapes.filter(isEdge).filter((shape) => shape.id.includes('-glyph-'));
     const filled = glyphs.filter((shape) => shape.fill);
     expect(filled.length).toBeGreaterThan(0);
     for (const shape of filled) expect(shape.closed, shape.name).toBe(true);
@@ -831,8 +861,9 @@ describe('a slide built from shapes, grouped', () => {
     const slide = open(pptx({ shapes: GROUPED })).slide();
     const groups = slide.match(/<p:grpSp>[\s\S]*?<\/p:grpSp>/g) ?? [];
     expect(groups).toHaveLength(1);
-    expect((groups[0].match(/<p:sp>/g) ?? []).length).toBe(3);
-    expect(groups[0]).toContain('name="Reaction"');
+    const group = must(groups[0], 'the group');
+    expect((group.match(/<p:sp>/g) ?? []).length).toBe(3);
+    expect(group).toContain('name="Reaction"');
   });
 
   it('leaves a shape that belongs to nothing on its own', () => {
@@ -854,7 +885,7 @@ describe('a slide built from shapes, grouped', () => {
         slide
       );
     expect(xfrm, 'the group has a transform').not.toBeNull();
-    const [, x, y, cx, cy, chx, chy, chcx, chcy] = xfrm;
+    const [, x, y, cx, cy, chx, chy, chcx, chcy] = must(xfrm, "the group's transform");
     expect([chx, chy, chcx, chcy]).toEqual([x, y, cx, cy]);
     expect(Number(cx)).toBeGreaterThan(0);
   });

@@ -1,1 +1,11 @@
-{}
+{
+  "tools/render/gif.ts": 35,
+  "tools/render/params.ts": 15,
+  "tools/render/pptx.spec.ts": 109,
+  "tools/render/pptx.ts": 192,
+  "tools/render/render-core.spec.ts": 3,
+  "tools/render/render-core.ts": 84,
+  "tools/render/render.ts": 35,
+  "tools/render/service.spec.ts": 15,
+  "tools/render/service.ts": 37
+}

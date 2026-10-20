@@ -2017,7 +2017,13 @@ describe('fingerprintFiles, what /health hashes', () => {
 
   it('takes a module renamed to .ts, and leaves its spec out (spec 013)', () => {
     expect(
-      fingerprintFiles(['graph.ts', 'graph.spec.ts', 'service.mjs', 'domain-snapshot.json'])
+      fingerprintFiles([
+        'graph.ts',
+        'graph.spec.ts',
+        'graph.d.ts',
+        'service.mjs',
+        'domain-snapshot.json',
+      ])
     ).toEqual(['domain-snapshot.json', 'graph.ts', 'service.mjs']);
   });
 });

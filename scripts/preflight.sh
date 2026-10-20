@@ -196,7 +196,7 @@ if [ "$mode" != "fast" ]; then
     CONTENT_NODE_PORT=4313 node tools/content-node/service.mjs >"$render_cache/content-node.log" 2>&1 &
     content_pid=$!
     RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
-      node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
+      node tools/render/service.ts >"$render_cache/service.log" 2>&1 &
     render_pid=$!
     render_up=""
     for _ in $(seq 1 60); do

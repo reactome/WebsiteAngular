@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render } from './render-core.mjs';
+import { render } from './render-core.ts';
 
 // What address the render page is opened at, read off a stand-in page that
 // stops at the first navigation. The address is the whole contract between

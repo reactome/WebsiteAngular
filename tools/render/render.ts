@@ -2,12 +2,12 @@
 /**
  * Render one pathway from the command line.
  *
- * A thin wrapper over render-core.mjs, which is shared with the service so
+ * A thin wrapper over render-core.ts, which is shared with the service so
  * there is one implementation of the render itself.
  *
- *   node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
- *   node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
- *   node tools/render/render.mjs --format svg --out genome-wide.svg
+ *   node tools/render/render.ts --pathway R-HSA-73857 --format svg --out out.svg
+ *   node tools/render/render.ts --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+ *   node tools/render/render.ts --format svg --out genome-wide.svg
  *
  *   --pathway   stable id; omit for the genome-wide view
  *   --format    svg | png | pdf | gif | pptx   (default svg)
@@ -30,8 +30,8 @@
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { FORMATS, render } from './render-core.mjs';
-import { speciesProblem } from './params.mjs';
+import { FORMATS, render } from './render-core.ts';
+import { speciesProblem } from './params.ts';
 
 const args = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -140,7 +140,7 @@ try {
     for (const p of problems.slice(0, 5)) console.log(`    ${p}`);
   }
 } catch (error) {
-  console.error(`failed: ${error.message}`);
+  console.error(`failed: ${error instanceof Error ? error.message : String(error)}`);
   process.exitCode = 1;
 } finally {
   await browser.close();

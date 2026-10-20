@@ -4,11 +4,11 @@ Renders a pathway to SVG, PNG, PDF, animated GIF or PowerPoint from outside the
 browser, by driving the site's own render page.
 
 ```bash
-node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
-node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
-node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
+node tools/render/render.ts --pathway R-HSA-73857 --format svg --out out.svg
+node tools/render/render.ts --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-73857 --format pptx --out slide.pptx
+node tools/render/render.ts --format svg --out genome-wide.svg     # no pathway
 ```
 
 | flag               | meaning                                                  |
@@ -223,10 +223,10 @@ proxy for it.
 
 ## The service
 
-`tools/render/service.mjs` serves the same renders over HTTP.
+`tools/render/service.ts` serves the same renders over HTTP.
 
 ```bash
-node tools/render/service.mjs
+node tools/render/service.ts
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
 curl -o out.pdf "http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=$ANALYSIS_TOKEN"
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'

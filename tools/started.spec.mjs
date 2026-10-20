@@ -97,7 +97,7 @@ it('starts the content service under another file name', async () => {
 }, 30_000);
 
 it('starts the render service under another file name', async () => {
-  const said = await start('tools/render/service.mjs', {
+  const said = await start('tools/render/service.ts', {
     RENDER_HOST: '127.0.0.1',
     RENDER_PORT: await freePort(),
     RENDER_CACHE: path.join(dir, 'cache'),

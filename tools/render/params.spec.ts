@@ -20,17 +20,20 @@ import {
   canonicalUrl,
   inBounds,
   repeated,
-} from './params.mjs';
+} from './params.ts';
 
 describe('what the render endpoint accepts', () => {
   it('names every parameter the handler reads, checked against the handler', () => {
     // Asserting a literal list only catches someone editing the list. This
-    // reads what `service.mjs` actually pulls out of the query string, so a
+    // reads what `service.ts` actually pulls out of the query string, so a
     // parameter added to the handler and not to ACCEPTED fails here -- which is
     // the real failure: it would work in development and be refused in
     // production, since nothing in the handler rejects on its own.
-    const handler = readFileSync(new URL('./service.mjs', import.meta.url), 'utf8');
-    const read = [...handler.matchAll(/req\.query\.([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+    const handler = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
+    // `req.query.x` or, typed, `req.query['x']`.
+    const read = [
+      ...handler.matchAll(/req\.query(?:\.([A-Za-z_$][\w$]*)|\['([A-Za-z_$][\w$]*)'\])/g),
+    ].map((m) => m[1] ?? m[2]);
     expect(read.length, 'the handler reads the query string at all').toBeGreaterThan(0);
     for (const name of new Set(read)) expect(ACCEPTED).toContain(name);
   });
