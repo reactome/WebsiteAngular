@@ -285,18 +285,24 @@ describe('StaticCitation', () => {
 
 vi.mock('./graph.ts', async () => ({
   read: async (cypher, params) => {
-    if (cypher.includes('DBInfo')) return [{ version: 97 }];
-    globalThis.graphAsked = params;
-    return globalThis.graphRows ?? [];
+    // The release as the service reads it: releaseNumber, not another property.
+    if (cypher === 'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1')
+      return [{ version: 97 }];
+    const shared = globalThis as { graphAsked?: unknown; graphRows?: unknown[] };
+    shared.graphAsked = params;
+    return shared.graphRows ?? [];
   },
   configured: () => true,
   close: async () => {},
   envSetting: (key, fallback = '') => process.env[key] || fallback,
 }));
 
+/** What the stand-in graph answers, and what it was last asked. */
+const graph = globalThis as { graphAsked?: unknown; graphRows?: unknown[] };
+
 describe('the citation endpoints', () => {
-  let base;
-  let server;
+  let base: string;
+  let server: Server;
   let pmc: Server;
   let pmcAsked: (string | undefined)[] = [];
 
@@ -343,11 +349,11 @@ describe('the citation endpoints', () => {
   });
 
   it('/pathway/{id} is {} for an id that is no event, and export an empty 200', async () => {
-    globalThis.graphRows = [];
+    graph.graphRows = [];
     const pathway = await fetch(`${base}/ContentService/citation/pathway/R-HSA-9?dateAccessed=d`);
     expect([pathway.status, await pathway.text()]).toEqual([200, '{}']);
     // The id from the path, not the path's own words.
-    expect(globalThis.graphAsked).toEqual({ id: 'R-HSA-9' });
+    expect(graph.graphAsked).toEqual({ id: 'R-HSA-9' });
     const exported = await fetch(
       `${base}/ContentService/citation/export?isPathway=true&id=xyz&ext=bib&dateAccessed=d`
     );
@@ -356,6 +362,74 @@ describe('the citation endpoints', () => {
       '',
       null,
     ]);
+  });
+
+  // An event as graph-core's enhanced query loads it, with nothing related.
+  const eventRow = (schemaClass: string, labels: string[]) => ({
+    root: {
+      id: 1,
+      labels: ['DatabaseObject', 'Event', ...labels],
+      props: {
+        dbId: 9,
+        stId: 'R-HSA-9',
+        displayName: 'An event',
+        releaseDate: '2020-06-15',
+        doi: '10.3180/R-HSA-9.1',
+        schemaClass,
+      },
+    },
+    order: [],
+    nodes: [],
+    relationships: [],
+  });
+
+  it("/pathway/{id} cites the event by the id as given; only a pathway's by its DOI", async () => {
+    try {
+      graph.graphRows = [eventRow('Pathway', ['Pathway'])];
+      const pathway = await (
+        await fetch(`${base}/ContentService/citation/pathway/9?dateAccessed=d`)
+      ).json();
+      // Asked by a versioned stable id, neither its stId nor its dbId: the
+      // link names the id as given.
+      graph.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
+      const reaction = await (
+        await fetch(`${base}/ContentService/citation/pathway/R-HSA-9.1?dateAccessed=d`)
+      ).json();
+      expect([pathway, reaction]).toEqual([
+        {
+          imageCitation:
+            'Image Citation for An event. Reactome, 97, https://doi.org/10.3180/R-HSA-9.1 (d)',
+          pathwayCitation:
+            'The Reactome Consortium (2020). An event. Reactome, 97, https://doi.org/10.3180/R-HSA-9.1 (d)',
+        },
+        {
+          imageCitation:
+            'Image Citation for An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9.1 (d)',
+          pathwayCitation:
+            'The Reactome Consortium (2020). An event. Reactome, 97, https://reactome.org/content/detail/R-HSA-9.1 (d)',
+        },
+      ]);
+    } finally {
+      graph.graphRows = [];
+    }
+  });
+
+  it('export writes each format as its own type and extension', async () => {
+    for (const [ext, type, extension] of [
+      ['bib', 'application/x-bibtex; charset=utf-8', 'bib'],
+      ['ris', 'application/x-research-info-systems; charset=utf-8', 'ris'],
+      ['txt', 'text/plain; charset=utf-8', 'txt'],
+    ]) {
+      const response = await fetch(
+        `${base}/ContentService/citation/export?isPathway=false&id=12345&ext=${ext}&dateAccessed=d`
+      );
+      expect([
+        ext,
+        response.status,
+        response.headers.get('content-type'),
+        response.headers.get('content-disposition'),
+      ]).toEqual([ext, 200, type, `attachment; filename="reactome_citation_12345.${extension}"`]);
+    }
   });
 
   it('/static/{id} is "unable to fetch" for an answer Java cannot read', async () => {
@@ -474,7 +548,7 @@ describe('the citation endpoints', () => {
 
   it("/pathway/{id} is Java's 500 for an event it cannot cite", async () => {
     // A reaction with no release date: Java's getReleaseDate().substring NPEs.
-    globalThis.graphRows = [
+    graph.graphRows = [
       {
         root: {
           id: 1,
@@ -494,7 +568,7 @@ describe('the citation endpoints', () => {
         ['Something unexpected happened and the error has been reported.'],
       ]);
     } finally {
-      globalThis.graphRows = [];
+      graph.graphRows = [];
     }
   });
 

@@ -209,7 +209,9 @@ const graph =
     if (/AS related/.test(cypher))
       return [{ labels: (load[0] ?? LOADED).root.labels, related: load.length > 0 }];
     if (/MATCH \(n\)-\[r\]-\(m\)/.test(cypher)) return load;
-    if (/DBInfo/.test(cypher)) return [{ version: 97 }];
+    // The release as the service reads it: releaseNumber, not another property.
+    if (cypher === 'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1')
+      return [{ version: 97 }];
     // The edit's author, with no stoichiometry on the relationship: once.
     if (/<-\[r:author\]-/.test(cypher) && Number(params.dbId) === 8)
       return [{ m: { dbId: 20, surname: 'Roe' }, n: null }];
@@ -285,5 +287,12 @@ describe("/data/discover/{identifier}: Java's errors", () => {
     const load = asked.find((cypher) => /MATCH \(n\)-\[r\]-\(m\)/.test(cypher));
     expect(load).toBeDefined();
     expect(load).not.toMatch(/ORDER BY|OPTIONAL/);
+    // The object by the id asked, and the three columns mapResult reads.
+    expect(load?.replace(/\s+/g, ' ')).toBe(
+      'MATCH (n:DatabaseObject) WHERE n.stId = $id WITH n LIMIT 1 MATCH (n)-[r]-(m) ' +
+        'RETURN {id: id(n), labels: labels(n), props: properties(n)} AS root, ' +
+        'COLLECT({id: id(r), type: type(r), start: id(startNode(r)), end: id(endNode(r)), props: properties(r)}) AS relationships, ' +
+        'COLLECT({id: id(m), labels: labels(m), props: properties(m)}) AS nodes'
+    );
   });
 });

@@ -1,11 +1,11 @@
 {
-  "tools/content-node/citation.spec.ts": 28,
+  "tools/content-node/citation.spec.ts": 10,
   "tools/content-node/citation.ts": 44,
   "tools/content-node/domain.spec.ts": 16,
   "tools/content-node/domain.ts": 131,
   "tools/content-node/java-hashmap.ts": 26,
   "tools/content-node/parameters.ts": 25,
-  "tools/content-node/service.ts": 429,
+  "tools/content-node/service.ts": 424,
   "tools/render/pptx.ts": 72,
   "tools/render/render-core.ts": 18,
   "tools/render/service.ts": 23

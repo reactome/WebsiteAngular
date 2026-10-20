@@ -44,8 +44,14 @@ vi.mock('./graph.ts', () => ({
     asked.push([cypher, params]);
     if (cypher.includes('[r:hasEvent*1..100]'))
       return params.stId === 'R-HSA-100' || params.dbId ? (records ?? RECORDS) : [];
-    for (const [type, rows] of Object.entries(lazy))
-      if (cypher.includes(`[r:${type}]`)) return rows;
+    // A lazy load by what it asks: `${type} ${direction} ${dbId}`, so one in
+    // the wrong direction, or of another event, finds nothing.
+    const load = /\{dbId:\$dbId\}\)(<-|-)\[r:(\w+)\](->|-)/.exec(cypher);
+    if (load)
+      return (
+        lazy[`${load[2]} ${load[1] === '<-' ? 'INCOMING' : 'OUTGOING'} ${Number(params.dbId)}`] ??
+        []
+      );
     return [];
   },
   configured: () => true,
@@ -113,22 +119,24 @@ describe('/data/pathway/{id}/containedEvents/{attributeName}', () => {
     expect(await response.text()).toBe('[R-HSA-200, R-HSA-300]');
   });
 
-  it('loads what findAll did not bring, outgoing relationships too', async () => {
-    lazy = {
-      compartment: [
-        {
-          m: {
-            id: 9,
-            labels: ['DatabaseObject', 'Compartment'],
-            props: { dbId: 70101, displayName: 'cytosol', schemaClass: 'Compartment' },
-          },
-          n: null,
+  it("loads what findAll did not bring, outgoing relationships too, each event's own", async () => {
+    const compartment = (id, dbId, displayName) => [
+      {
+        m: {
+          id,
+          labels: ['DatabaseObject', 'Compartment'],
+          props: { dbId, displayName, schemaClass: 'Compartment' },
         },
-      ],
+        n: null,
+      },
+    ];
+    lazy = {
+      'compartment OUTGOING 200': compartment(9, 70101, 'cytosol'),
+      'compartment OUTGOING 300': compartment(10, 7660, 'nucleoplasm'),
     };
     const response = await get('R-HSA-100/containedEvents/compartment');
     expect(await response.text()).toBe(
-      '[70101\tcytosol\tCompartment\n, 70101\tcytosol\tCompartment\n]'
+      '[70101\tcytosol\tCompartment\n, 7660\tnucleoplasm\tCompartment\n]'
     );
     lazy = {};
   });

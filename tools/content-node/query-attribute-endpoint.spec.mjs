@@ -9,14 +9,29 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 let root;
 let lazy = {};
 const asked = [];
+// The lazy loads by what they ask: `${type} ${direction} ${dbId}`, read from
+// the query and its parameter -- a load in the wrong direction, or of
+// another object, finds nothing. Directions are Java's model's
+// (domain-snapshot.json): an edit's `modified` comes in to the object, and
+// so does the `hasComponent` behind a complex's componentOf.
 vi.mock('./graph.ts', () => ({
-  read: async (cypher) => {
+  read: async (cypher, params) => {
     asked.push(cypher);
+    // /query/{id}/stId's and /query/{id}/normalPathway's own queries.
+    if (/n\.stId AS stId, n\.schemaClass AS schemaClass/.test(cypher))
+      return root ? [{ stId: root.props.stId ?? null, schemaClass: root.props.schemaClass }] : [];
+    if (/\[:normalPathway\]/.test(cypher))
+      return root
+        ? [{ labels: root.labels, dbId: null, stId: null, displayName: null, targetLabels: null }]
+        : [];
     if (/RETURN labels\(n\) AS labels/.test(cypher)) return root ? [{ labels: root.labels }] : [];
     if (/AS root/.test(cypher))
       return root ? [{ root, order: [], nodes: [], relationships: [] }] : [];
-    for (const [type, rows] of Object.entries(lazy))
-      if (cypher.includes(`[r:${type}]`)) return rows;
+    const load = /\{dbId:\$dbId\}\)(<-|-)\[r:(\w+)\](->|-)/.exec(cypher);
+    if (load) {
+      const direction = load[1] === '<-' ? 'INCOMING' : 'OUTGOING';
+      return lazy[`${load[2]} ${direction} ${Number(params.dbId)}`] ?? [];
+    }
     return [];
   },
   configured: () => true,
@@ -55,7 +70,7 @@ const loaded = (id, schemaClass, labels, n = null) => ({
 describe('a single object loaded lazily', () => {
   it("is the one there is, asked for by the getter's class", async () => {
     root = pathway;
-    lazy = { modified: [loaded(20, 'InstanceEdit', ['InstanceEdit'])] };
+    lazy = { 'modified INCOMING 9': [loaded(20, 'InstanceEdit', ['InstanceEdit'])] };
     asked.length = 0;
     const response = await get('query/R-HSA-9/modified');
     expect([response.status, await response.text()]).toEqual([200, 'R-HSA-20\to20\tInstanceEdit']);
@@ -65,7 +80,7 @@ describe('a single object loaded lazily', () => {
   it("is nothing when there are two, as findByRelationship gives: Java's 404", async () => {
     root = pathway;
     lazy = {
-      modified: [
+      'modified INCOMING 9': [
         loaded(20, 'InstanceEdit', ['InstanceEdit']),
         loaded(21, 'InstanceEdit', ['InstanceEdit']),
       ],
@@ -84,9 +99,38 @@ describe('a collection loaded lazily', () => {
       labels: ['DatabaseObject', 'PhysicalEntity', 'Complex'],
       props: { dbId: 5, stId: 'R-HSA-5', displayName: 'C', schemaClass: 'Complex' },
     };
-    lazy = { hasComponent: [loaded(30, 'Complex', ['PhysicalEntity', 'Complex'], 2)] };
+    // The complexes it is a component of: hasComponent, coming in.
+    lazy = {
+      'hasComponent INCOMING 5': [loaded(30, 'Complex', ['PhysicalEntity', 'Complex'], 2)],
+    };
     const response = await get('query/R-HSA-5/componentOf');
     expect(await response.text()).toBe('R-HSA-30\to30\tComplex\nR-HSA-30\to30\tComplex\n');
+  });
+});
+
+describe('the attribute as it was sent', () => {
+  // Routing matches stId and normalPathway in any case; Java's 404 names
+  // the attribute as the request spelled it.
+  it("is named in /query/{id}/stId's 404 for an object without a stable id", async () => {
+    root = {
+      id: 6,
+      labels: ['DatabaseObject', 'Taxon', 'Species'],
+      props: { dbId: 48887, displayName: 'Homo sapiens', schemaClass: 'Species' },
+    };
+    for (const spelled of ['stId', 'STID', 'StId'])
+      expect(await messages(await get(`query/48887/${spelled}`))).toEqual([
+        404,
+        [`Attribute: '${spelled}' has not been found for object: Species`],
+      ]);
+  });
+
+  it("is named in /query/{id}/normalPathway's 404 for an object without one", async () => {
+    root = pathway;
+    for (const spelled of ['normalPathway', 'NormalPathway', 'NORMALPATHWAY'])
+      expect(await messages(await get(`query/R-HSA-9/${spelled}`))).toEqual([
+        404,
+        [`Attribute: '${spelled}' has not been found for object: Pathway`],
+      ]);
   });
 });
 

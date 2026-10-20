@@ -15,7 +15,13 @@ const objects = {
 };
 
 vi.mock('./graph.ts', () => ({
-  read: async (_cypher, params) => (objects[params.id] ? [objects[params.id]] : []),
+  // Only the object check as the service writes it: a wrong property (a
+  // diagram flag read from hasEHLD, say) finds nothing.
+  read: async (cypher, params) =>
+    cypher.includes('RETURN labels(n) AS labels, n.hasDiagram AS hasDiagram LIMIT 1') &&
+    objects[params.id]
+      ? [objects[params.id]]
+      : [],
   configured: () => true,
   close: async () => {},
   envSetting: (key, fallback = '') => process.env[key] || fallback,
@@ -254,9 +260,23 @@ describe('/diagram/{diagram}/occurrences/{instance}', () => {
     });
     const none = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
     expect(await none.text()).toBe('{"diagramEntity":"R-HSA-68886","inDiagram":false}');
-    answer = () => ({ response: { numFound: 1, docs: [{ occurrences: ['R-HSA-68886:true:x'] }] } });
-    const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
-    expect(short.status).toBe(500);
+    // Java's ArrayIndexOutOfBoundsException, with its own message
+    // (GlobalExceptionHandler.handleUnclassified): extractRawOccurrence reads
+    // [0], [2], [3], then [1], so three parts fail at 3, two at 2 -- and
+    // one at 2, not 1: the order is Java's, not the parts'.
+    for (const [occurrence, message] of [
+      ['R-HSA-68886:true:x', 'Index 3 out of bounds for length 3'],
+      ['R-HSA-68886:true', 'Index 2 out of bounds for length 2'],
+      ['R-HSA-68886', 'Index 2 out of bounds for length 1'],
+    ]) {
+      answer = () => ({ response: { numFound: 1, docs: [{ occurrences: [occurrence] }] } });
+      const short = await get('diagram/R-HSA-68886/occurrences/R-HSA-141433');
+      expect([occurrence, short.status, (await short.json()).messages]).toEqual([
+        occurrence,
+        500,
+        [message],
+      ]);
+    }
   });
 
   it('asks again in every scope, then is the 404', async () => {

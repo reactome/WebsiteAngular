@@ -257,7 +257,11 @@ describe('/fireworks, the species-wide search', () => {
       500,
       ['Something unexpected happened and the error has been reported.'],
     ]);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    // Reports go in order: once a later search's report has come, one from
+    // this search would have come before it.
+    answer = () => ({ response: { numFound: 0, docs: [] } });
+    await get('?query=marker&scope=BOTH');
+    await until(() => reports.some((report) => report.body.includes('"term":"marker"')));
     expect(reports.filter((report) => report.body.includes('"term":"x"'))).toHaveLength(0);
   });
 
@@ -313,6 +317,9 @@ describe('/fireworks, the species-wide search', () => {
         : { response: { numFound: 0, docs: [] } };
     const response = await get('?query=x&scope=BOTH');
     expect(response.status).toBe(500);
+    expect((await response.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
   });
 
   it('reports the targets in the fresh HashSet Collectors.toSet() makes', async () => {
@@ -343,6 +350,9 @@ describe('/fireworks, the species-wide search', () => {
     expect(missing.status).toBe(400);
     const blank = await get('?query=x&includeInteractors=%20');
     expect(blank.status).toBe(500);
+    expect((await blank.json()).messages).toEqual([
+      'Something unexpected happened and the error has been reported.',
+    ]);
     expect(asked).toHaveLength(0);
   });
 

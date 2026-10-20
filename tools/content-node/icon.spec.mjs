@@ -83,7 +83,10 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
   });
 
   it('fails, as Java does, on an entity with fewer than four parts', () => {
-    expect(() => searchEntry({ ...icon, iconPhysicalEntities: ['a#b#c#'] }, {})).toThrow();
+    // Its ArrayIndexOutOfBoundsException: read [0] to [3], three parts fail at 3.
+    expect(() => searchEntry({ ...icon, iconPhysicalEntities: ['a#b#c#'] }, {})).toThrow(
+      expect.objectContaining({ javaMessage: 'Index 3 out of bounds for length 3' })
+    );
   });
 
   it('id is the stId when there is one, else the dbId', () => {
