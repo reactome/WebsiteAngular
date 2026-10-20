@@ -1261,7 +1261,7 @@ function relationText(relation) {
  */
 export function attributeText(
   value,
-  jsoupText: (html: unknown) => string,
+  jsoupText: (html: string) => string,
   getter?: { returns: string }
 ) {
   // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.
@@ -1270,7 +1270,8 @@ export function attributeText(
   if (value instanceof Entity) {
     const { stId, dbId, displayName } = value.properties;
     const textGetter = attributeGetter(value.schemaClass, 'text');
-    const text = textGetter ? jsoupText(getterResult(value, textGetter)) : displayName;
+    // A `text` getter returns the object's text (a Summation's), a string.
+    const text = textGetter ? jsoupText(getterResult(value, textGetter) as string) : displayName;
     const id = stId !== null && stId !== undefined && stId !== '' ? stId : String(dbId);
     return `${String(id)}\t${String(text ?? null)}\t${value.schemaClass}`;
   }
