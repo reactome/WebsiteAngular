@@ -59,8 +59,8 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 
 **Search is split in two**, because its endpoints and own helpers come to 1,641 lines, over SC-001's 1,500:
 
-- `search.ts`: query, paginated query, facets, suggest and spellcheck, icons, pathways-of.
-- `search-diagram.ts`: diagram summary, diagram search, flag, occurrences, species overview, and the overview's flag.
+- `search-endpoints.ts`: query, paginated query, facets, suggest and spellcheck, icons, pathways-of.
+- `search-diagram-endpoints.ts`: diagram summary, diagram search, flag, occurrences, species overview, and the overview's flag.
 
 **Line counts after the cut, estimated** (endpoints plus own helpers): every family module is 175 to 875 lines. `search.ts` and `search-diagram.ts` are about 800 each. The shared modules are 100 to 300 each, and `server.ts` about 600. None is over 1,500.
 

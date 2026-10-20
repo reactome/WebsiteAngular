@@ -81,9 +81,10 @@ tools/content-node/
 ├── release.ts           # the release, answered once (R2)
 ├── java-text.ts  body.ts  spring.ts  answers.ts  objects.ts      # shared, layered (R1)
 ├── reference-entities.ts  search-params.ts                        # shared by two families
-├── data-query.ts  pathways-events.ts  content.ts  person.ts  entities.ts
-├── mapping-species.ts  schema-endpoints.ts  interactors.ts  exporters.ts
-├── citation.ts  search.ts  search-diagram.ts                      # the families
+├── data-query-endpoints.ts  pathways-events-endpoints.ts  content-endpoints.ts
+├── person-endpoints.ts  entities-endpoints.ts  mapping-species-endpoints.ts
+├── schema-endpoints.ts  interactors-endpoints.ts  exporters-endpoints.ts
+├── citation-endpoints.ts  search-endpoints.ts  search-diagram-endpoints.ts  # the families
 └── (existing leaves unchanged: graph, domain, solr, parameters, schema, …)
 scripts/
 ├── check-move.mjs             # R6
@@ -94,7 +95,7 @@ deploy/content-node/Dockerfile # CMD → server.ts, once service.ts is gone
 **Structure Decision**:
 
 - Families sit beside the existing modules in `tools/content-node/`. A subdirectory would change every import of the existing leaves and the image's copy for no gain.
-- `/data/schema/*`'s family is `schema-endpoints.ts`, because `schema.ts` is already the model's class table.
+- Every family module is named `<family>-endpoints.ts`: `schema.ts` (the model's class table) and `citation.ts` (the citation formatter) already exist, and one rule for every family is clearer than renaming two.
 
 ## Order of work
 

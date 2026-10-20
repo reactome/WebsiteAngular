@@ -99,18 +99,18 @@ It must not mix in logic edits.
 
 ### Families, least coupled first (each its own PR: its endpoints in today's order, and the helpers only it uses)
 
-- [ ] T014 [P] [US1] `tools/content-node/citation.ts`: `/citation/*`.
-- [ ] T015 [P] [US1] `tools/content-node/content.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`).
-- [ ] T016 [P] [US1] `tools/content-node/person.ts`: `/data/person/*`, the role lists' generator kept as a generator.
+- [ ] T014 [P] [US1] `tools/content-node/citation-endpoints.ts`: `/citation/*`.
+- [ ] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`).
+- [ ] T016 [P] [US1] `tools/content-node/person-endpoints.ts`: `/data/person/*`, the role lists' generator kept as a generator.
 - [ ] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries.
-- [ ] T018 [P] [US1] `tools/content-node/interactors.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
-- [ ] T019 [P] [US1] `tools/content-node/exporters.ts`: `/exporter/*`, with the render-service requests.
-- [ ] T020 [P] [US1] `tools/content-node/entities.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
-- [ ] T021 [P] [US1] `tools/content-node/mapping-species.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`.
-- [ ] T022 [P] [US1] `tools/content-node/data-query.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`.
-- [ ] T023 [P] [US1] `tools/content-node/pathways-events.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator.
-- [ ] T024 [US1] `tools/content-node/search.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers.
-- [ ] T025 [US1] `tools/content-node/search-diagram.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
+- [ ] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
+- [ ] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests.
+- [ ] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
+- [ ] T021 [P] [US1] `tools/content-node/mapping-species-endpoints.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`.
+- [ ] T022 [P] [US1] `tools/content-node/data-query-endpoints.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`.
+- [ ] T023 [P] [US1] `tools/content-node/pathways-events-endpoints.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator.
+- [ ] T024 [US1] `tools/content-node/search-endpoints.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers.
+- [ ] T025 [US1] `tools/content-node/search-diagram-endpoints.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
   - Also show SC-003 here: two pull requests changing two different families at once, neither conflicting.
 
 ### The server

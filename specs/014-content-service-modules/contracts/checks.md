@@ -13,8 +13,8 @@ moved <d> declarations and <e> endpoints, 0 changed; 0 missing
 It fails with a line for each difference:
 
 ```text
-changed: searchEntry (search.ts:120) differs from service.ts at base: line 14 of the body
-missing: facetMapping (in service.ts at base, nowhere now)
+changed: searchEntry (now in search-endpoints.ts) differs from service.ts at <base>
+missing: facetMapping (in service.ts at <base>, nowhere now)
 ```
 
 ## Baseline totals (`node scripts/check-baseline-totals.mjs [base]`)
