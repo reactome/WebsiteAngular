@@ -23,7 +23,8 @@ import { setInterval } from 'node:timers';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
-import { read, configured, close, envSetting } from './graph.ts';
+import { read, configured, close } from './graph.ts';
+import { settings } from './settings.ts';
 import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
 import type { MappedRow } from './domain.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
@@ -160,8 +161,8 @@ declare global {
   }
 }
 
-const PORT = Number(process.env['CONTENT_NODE_PORT']) || 4400;
-const HOST = process.env['CONTENT_NODE_HOST'] || '127.0.0.1';
+const PORT = settings.port();
+const HOST = settings.host();
 
 /**
  * The endpoints implemented so far, in the order they were ported.
@@ -3489,7 +3490,7 @@ async function hasIllustration(stId) {
 }
 
 /** Where the render service listens: loopback only, never public. */
-const RENDER_SERVICE = process.env['RENDER_SERVICE_URL'] || 'http://127.0.0.1:4310';
+const RENDER_SERVICE = settings.renderService();
 
 /**
  * Spring's `{identifier}.{ext:.*}`: both variables are `(.*)`, the first
@@ -7645,10 +7646,7 @@ async function staticCitationFor(id) {
   query.set('query', `src:med ext_id:${id}`);
   query.set('format', 'json');
   query.set('resultType', 'core');
-  const base = envSetting(
-    'EUROPE_PMC_URL',
-    'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
-  );
+  const base = settings.europePmcUrl();
   // Java's try covers the request and every read of the answer, so anything
   // Europe PMC sends that Java cannot read is "unable to fetch". Only a name
   // we got wrong is a mistake of ours.
@@ -8496,10 +8494,7 @@ export function resourcesJson(resources) {
  * imports it).
  */
 export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
-  let registry = envSetting(
-    'PSICQUIC_REGISTRY_URL',
-    'http://www.ebi.ac.uk/Tools/webservices/psicquic/registry/'
-  );
+  let registry = settings.psicquicRegistryUrl();
   // The registry client adds the slash a base URL lacks.
   if (!registry.endsWith('/')) registry += '/';
   try {
@@ -8801,7 +8796,7 @@ export function deepLimit(setting) {
   return Number.isInteger(limit) && limit >= 1 && limit <= 32 ? limit : 4;
 }
 
-const DEEP = deepShare(deepLimit(process.env['DEEP_QUERY_LIMIT']));
+const DEEP = deepShare(deepLimit(settings.deepQueryLimit()));
 
 /**
  * One endpoint's answer to one request: its handler's result, or what a
