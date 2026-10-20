@@ -19,6 +19,9 @@
  *   ANALYSIS_LIMIT      analyses at once, default 4 (below analysis-core's pool of 5)
  *   REPORT_LIMIT        PDF reports at once, default 1
  *   QUEUE_LENGTH        waiting per lane before refusing, default 40
+ *   PER_CLIENT          one client's computations running or waiting at once, in
+ *                       all lanes, default 8: beyond it, one that would have to
+ *                       wait is refused (with places free, it still runs)
  *   MAX_WAIT_MS         longest wait, default 60000 (wait + run inside the edge's 100 s)
  *   RETRY_AFTER         seconds a refused reader is told to wait, default 10
  *   WAITING_BYTES       bodies held while waiting, in all, default 268435456 (256 MB)
@@ -49,6 +52,8 @@ interface Waiting {
   req: IncomingMessage;
   res: ServerResponse;
   body: HeldBody;
+  /** Gives its client's place back; called once, when it is done here. */
+  out: () => void;
   /** Stops reading into `body` and gives its bytes back to the budget. */
   settle: () => void;
   timer: NodeJS.Timeout;
@@ -67,6 +72,9 @@ export interface Health {
   lanes: Record<LaneName, { limit: number; active: number; waiting: number }>;
   queueLength: number;
   maxWaitMs: number;
+  perClient: number;
+  /** Clients with a computation running or waiting. */
+  clients: number;
   heldBytes: number;
   passed: number;
   admitted: number;
@@ -81,6 +89,7 @@ export interface GatewaySettings {
   limits?: Record<LaneName, number>;
   queueLength?: number;
   maxWaitMs?: number;
+  perClient?: number;
   retryAfter?: number;
   waitingBytes?: number;
   upstreamTimeoutMs?: number;
@@ -144,6 +153,28 @@ const without = (raw: string[]): string[] => {
   return kept;
 };
 
+/**
+ * Who a request is from, for the per-client share: the address nginx saw
+ * (X-Real-IP, which it sets from the connection; the gateway listens on
+ * loopback, so only nginx can send it), else the connection's own. An IPv6
+ * client holds a /64 and can choose any address in it, so it is that /64.
+ */
+export function clientOf(req: IncomingMessage): string {
+  const header = req.headers['x-real-ip'];
+  const address = (typeof header === 'string' && header.trim()) || req.socket.remoteAddress || '';
+  if (!address.includes(':') || address.startsWith('::ffff:')) return address;
+  const [head = '', tail = ''] = address.split('::');
+  const left = head ? head.split(':') : [];
+  const right = tail ? tail.split(':') : [];
+  const groups = address.includes('::')
+    ? [...left, ...Array<string>(Math.max(0, 8 - left.length - right.length)).fill('0'), ...right]
+    : left;
+  return `${groups
+    .slice(0, 4)
+    .map((group) => group.toLowerCase().replace(/^0+(?=.)/, ''))
+    .join(':')}::/64`;
+}
+
 /** The service's own error envelope, as it writes a 404 or a 410. */
 function busy(res: ServerResponse, retryAfter: number): void {
   if (res.headersSent || res.destroyed) return;
@@ -165,6 +196,7 @@ export function gateway({
   limits = { analysis: 4, report: 1 },
   queueLength = 40,
   maxWaitMs = 60_000,
+  perClient = 8,
   retryAfter = 10,
   waitingBytes = 256 * 1024 * 1024,
   upstreamTimeoutMs = 300_000,
@@ -176,6 +208,20 @@ export function gateway({
   };
   const counts = { passed: 0, admitted: 0, waited: 0, refused: 0, left: 0, failed: 0 };
   let held = 0;
+  /** Each client's computations running or waiting, in all lanes. */
+  const inside = new Map<string, number>();
+  /** A place for `client`, and the call that gives it back (once). */
+  function enter(client: string): () => void {
+    inside.set(client, (inside.get(client) ?? 0) + 1);
+    let given = false;
+    return () => {
+      if (given) return;
+      given = true;
+      const left = (inside.get(client) ?? 1) - 1;
+      if (left > 0) inside.set(client, left);
+      else inside.delete(client);
+    };
+  }
 
   /**
    * Send the request on, and its answer back as it came; `done` once the
@@ -258,12 +304,19 @@ export function gateway({
     } else req.pipe(call);
   }
 
-  function admit(lane: Lane, req: IncomingMessage, res: ServerResponse, body?: HeldBody): void {
+  function admit(
+    lane: Lane,
+    req: IncomingMessage,
+    res: ServerResponse,
+    out: () => void,
+    body?: HeldBody
+  ): void {
     lane.active++;
     counts.admitted++;
     pass(req, res, {
       ...(body && { body }),
       done: () => {
+        out();
         lane.active--;
         next(lane);
       },
@@ -275,11 +328,11 @@ export function gateway({
       const entry = lane.waiting.shift();
       if (!entry) return;
       entry.settle();
-      admit(lane, entry.req, entry.res, entry.body);
+      admit(lane, entry.req, entry.res, entry.out, entry.body);
     }
   }
 
-  function wait(lane: Lane, req: IncomingMessage, res: ServerResponse): void {
+  function wait(lane: Lane, req: IncomingMessage, res: ServerResponse, out: () => void): void {
     counts.waited++;
     // Read while waiting, so a reader who leaves is seen leaving: with the
     // body unread, a closed connection goes unnoticed and the analysis runs
@@ -309,6 +362,7 @@ export function gateway({
       req,
       res,
       body,
+      out,
       settle: release,
       timer: setTimeout(() => {
         if (leave()) {
@@ -322,6 +376,7 @@ export function gateway({
       if (at === -1) return false;
       lane.waiting.splice(at, 1);
       release();
+      out();
       return true;
     };
     // A reader who gives up while waiting loses their place; nothing is run.
@@ -347,6 +402,8 @@ export function gateway({
         lanes: { analysis: state(lanes.analysis), report: state(lanes.report) },
         queueLength,
         maxWaitMs,
+        perClient,
+        clients: inside.size,
         heldBytes: held,
         ...counts,
       };
@@ -360,16 +417,21 @@ export function gateway({
       pass(req, res);
       return;
     }
+    const client = clientOf(req);
     if (lane.active < lane.limit) {
-      admit(lane, req, res);
+      admit(lane, req, res, enter(client));
       return;
     }
-    if (lane.waiting.length >= queueLength) {
+    // No one client takes every place: without a share, one address keeping
+    // the lane and its waiting list full had everyone else refused. Only
+    // when places are scarce -- a class behind one address, with the service
+    // otherwise idle, still runs.
+    if ((inside.get(client) ?? 0) >= perClient || lane.waiting.length >= queueLength) {
       counts.refused++;
       busy(res, retryAfter);
       return;
     }
-    wait(lane, req, res);
+    wait(lane, req, res, enter(client));
   });
   return server;
 }
@@ -399,6 +461,7 @@ if (startedDirectly()) {
     limits: { analysis: number('ANALYSIS_LIMIT', 4), report: number('REPORT_LIMIT', 1) },
     queueLength: number('QUEUE_LENGTH', 40),
     maxWaitMs: number('MAX_WAIT_MS', 60_000),
+    perClient: number('PER_CLIENT', 8),
     retryAfter: number('RETRY_AFTER', 10),
     waitingBytes: number('WAITING_BYTES', 256 * 1024 * 1024),
     upstreamTimeoutMs: number('UPSTREAM_TIMEOUT_MS', 300_000),
