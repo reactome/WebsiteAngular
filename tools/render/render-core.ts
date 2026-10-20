@@ -5,8 +5,8 @@
  * "wait for the page, ask it for the artefact" -- the whole point of this work
  * is not having two renderers, and that argument applies to its callers too.
  */
-import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.mjs';
-import { pptx } from './pptx.mjs';
+import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
+import { pptx } from './pptx.ts';
 
 /** Formats the render page can produce. */
 export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'];
@@ -107,8 +107,8 @@ export async function render(
     throw new Error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
   }
 
-  const problems = [];
-  const onPageError = (e) => problems.push(String(e).slice(0, 200));
+  const problems: string[] = [];
+  const onPageError = (e: Error) => problems.push(String(e).slice(0, 200));
   const onConsole = (m) => {
     if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`);
   };
@@ -147,7 +147,7 @@ export async function render(
     }
 
     let bytes;
-    const detail = {};
+    const detail: { shapes?: number; [key: string]: unknown } = {};
     if (format === 'svg') {
       bytes = Buffer.from(
         await page.evaluate(async () => await window.__renderExport.svg()),
@@ -221,8 +221,8 @@ async function pptxFromPage(page, { scale, title }) {
   // Shapes first: a slide of shapes needs no picture, and the diagram is around
   // 6000px wide, so rendering one to throw it away is the expensive half of the
   // export.
-  const shapes = await page.evaluate(async () => (await window.__renderExport.shapes?.()) ?? null);
-  if (shapes?.shapes?.length) {
+  const shapes = await page.evaluate(() => window.__renderExport.shapes());
+  if (shapes?.shapes.length) {
     return {
       bytes: pptx({ title, shapes, width: shapes.width, height: shapes.height }),
       detail: { shapes: shapes.shapes.length },
@@ -240,7 +240,7 @@ async function pptxFromPage(page, { scale, title }) {
   // The genome-wide view draws to a canvas and declines to export a PNG at all.
   // It has an SVG, so it gets a slide; losing the fallback raster costs viewers
   // older than PowerPoint 2016, and is better than losing the export.
-  let png = null;
+  let png: Buffer | null = null;
   try {
     png = await rasterBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
   } catch (error) {

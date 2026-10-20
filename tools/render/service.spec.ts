@@ -12,16 +12,18 @@
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, cacheKey, isModule } from './service.mjs';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { app, cacheKey, httpError, isModule, statusOf } from './service.ts';
 
-let base;
-let server;
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app.listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app.listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
 afterAll(() => new Promise((resolve) => server.close(resolve)));
@@ -135,9 +137,32 @@ describe('the request handler runs at all', () => {
 describe('isModule, what /health hashes', () => {
   it('takes modules, .mjs or .ts, and no specs or notes (spec 013)', () => {
     expect(
-      ['service.mjs', 'params.ts', 'service.spec.mjs', 'params.spec.ts', 'README.md'].filter(
-        isModule
-      )
+      [
+        'service.mjs',
+        'params.ts',
+        'service.spec.mjs',
+        'params.spec.ts',
+        'page.d.ts',
+        'README.md',
+      ].filter(isModule)
     ).toEqual(['service.mjs', 'params.ts']);
+  });
+});
+
+// What replaced `error.status || 500` (spec 013): the status a failed render
+// answers with (review of #552).
+describe('statusOf, what a failed render answers with', () => {
+  it('answers with the status the failure was given, and 500 for any other', () => {
+    expect(
+      [
+        httpError(404, 'no such pathway'),
+        httpError(400, 'bad layout'),
+        httpError(503, 'saturated'),
+        new Error('the browser crashed'),
+        Object.assign(new Error('odd'), { status: '404' }),
+        null,
+        'a string thrown',
+      ].map(statusOf)
+    ).toEqual([404, 400, 503, 500, 500, 500, 500]);
   });
 });

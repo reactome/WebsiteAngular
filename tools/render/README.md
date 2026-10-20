@@ -4,11 +4,11 @@ Renders a pathway to SVG, PNG, PDF, animated GIF or PowerPoint from outside the
 browser, by driving the site's own render page.
 
 ```bash
-node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
-node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
-node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
+node tools/render/render.ts --pathway R-HSA-73857 --format svg --out out.svg
+node tools/render/render.ts --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-73857 --format pptx --out slide.pptx
+node tools/render/render.ts --format svg --out genome-wide.svg     # no pathway
 ```
 
 | flag               | meaning                                                  |
@@ -100,7 +100,7 @@ sub-pathway tint, editable the moment the file opens. Curators reported that
 holding one picture is, however good the picture.
 
 The page decides every position, colour, opacity, dash and font from the live
-style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+style and hands them over as `RenderShapes`; `pptx.ts` is the OOXML spelling of
 a rectangle and nothing more, so it is not a second opinion about what the
 diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
 976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
@@ -142,7 +142,7 @@ Two things are easy to miss, and both leave the site serving the old artefact
 while the code and its tests say otherwise:
 
 - **The service holds the code in memory.** It is a long-running node process,
-  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  so editing `pptx.ts` changes nothing until it is restarted. A download taken
   from the site is the only check that says whether the running service has your
   change — the CLI reads the files from disk and will happily agree with you.
 - **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
@@ -223,10 +223,10 @@ proxy for it.
 
 ## The service
 
-`tools/render/service.mjs` serves the same renders over HTTP.
+`tools/render/service.ts` serves the same renders over HTTP.
 
 ```bash
-node tools/render/service.mjs
+node tools/render/service.ts
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
 curl -o out.pdf "http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=$ANALYSIS_TOKEN"
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'

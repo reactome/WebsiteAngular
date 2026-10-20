@@ -195,7 +195,7 @@ module.exports = {
     apiPage('/AnalysisService'),
     localService('/ExperimentDigester'),
   ]),
-  // The headless render service (tools/render/service.mjs), which produces the
+  // The headless render service (tools/render/service.ts), which produces the
   // formats the Java exporters used to: GIF, PPTX and anything else a document
   // needs. It binds to loopback and is reached only through this proxy, so
   // whatever fronts the site decides who may commission a render -- a render

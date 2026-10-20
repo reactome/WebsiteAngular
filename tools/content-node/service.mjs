@@ -8006,7 +8006,7 @@ async function speciesTaxId(filter) {
  */
 export function fingerprintFiles(names) {
   return names
-    .filter((name) => /\.(mjs|ts|json)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name))
+    .filter((name) => /\.(mjs|ts|json)$/.test(name) && !/\.(spec\.(mjs|ts)|d\.ts)$/.test(name))
     .sort();
 }
 

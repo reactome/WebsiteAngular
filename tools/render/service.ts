@@ -21,7 +21,7 @@
  * It refuses work rather than queueing without limit. A saturated renderer that
  * answers 503 recovers; one holding a thousand pending jobs does not.
  *
- *   node tools/render/service.mjs
+ *   node tools/render/service.ts
  *   curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
  *
  * Environment:
@@ -40,7 +40,7 @@
  * and delay and
  * maxSize for GIF.
  */
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import {
   speciesProblem,
   ACCEPTED,
@@ -50,8 +50,8 @@ import {
   canonicalUrl,
   inBounds,
   repeated,
-} from './params.mjs';
-import { chromium } from '@playwright/test';
+} from './params.ts';
+import { chromium, type Browser } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -66,12 +66,12 @@ import {
   utimes,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { FORMATS, render } from './render-core.mjs';
+import { FORMATS, render } from './render-core.ts';
 
-const PORT = Number(process.env.RENDER_PORT || 4310);
-const HOST = process.env.RENDER_HOST || '127.0.0.1';
-const BASE = process.env.RENDER_BASE || 'http://localhost:4200';
-const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
+const PORT = Number(process.env['RENDER_PORT'] || 4310);
+const HOST = process.env['RENDER_HOST'] || '127.0.0.1';
+const BASE = process.env['RENDER_BASE'] || 'http://localhost:4200';
+const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // Bump this whenever the renderer's output changes, not only when the data
 // does: it keys the disk cache AND is the ETag, so it is the only thing that
 // tells a browser its copy is stale. v2 = full-size differenced GIFs; v3 =
@@ -96,12 +96,12 @@ const CACHE = process.env.RENDER_CACHE || path.resolve('.render-cache');
 // v10: a PowerPoint groups each entity's and each reaction's shapes (#299, in
 // #442), so every .pptx cached under v9 is the ungrouped slide curators could
 // not drag apart.
-const CACHE_KEY = process.env.RENDER_CACHE_KEY || 'v10';
-const CONCURRENCY = Number(process.env.RENDER_CONCURRENCY || 2);
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v10';
+const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
-const RENDER_TIMEOUT = Number(process.env.RENDER_TIMEOUT || 45_000);
-const MAX_QUEUE = Number(process.env.RENDER_QUEUE || 8);
+const RENDER_TIMEOUT = Number(process.env['RENDER_TIMEOUT'] || 45_000);
+const MAX_QUEUE = Number(process.env['RENDER_QUEUE'] || 8);
 /**
  * How much cache to keep, in bytes.
  *
@@ -112,7 +112,7 @@ const MAX_QUEUE = Number(process.env.RENDER_QUEUE || 8);
  * again, and this cache is pure derived data: everything in it can be rebuilt
  * from the pathway id.
  */
-const MAX_CACHE = Number(process.env.RENDER_CACHE_MAX ?? 2 * 1024 ** 3);
+const MAX_CACHE = Number(process.env['RENDER_CACHE_MAX'] ?? 2 * 1024 ** 3);
 
 const CONTENT_TYPE = {
   svg: 'image/svg+xml; charset=utf-8',
@@ -146,32 +146,50 @@ function clamp(value, low, high, fallback) {
 // One browser for the process, a fresh page per render. Reusing a page leaks
 // state between renders -- a stale analysis token being the obvious one -- and a
 // page is cheap next to a browser.
-let browser;
+let browser: Browser | undefined;
 async function getBrowser() {
-  if (!browser || !browser.isConnected()) browser = await chromium.launch();
+  if (!browser?.isConnected()) browser = await chromium.launch();
   return browser;
 }
 
+/** An error with the HTTP status it answers with. */
+export function httpError(status: number, message: string): Error & { status: number } {
+  return Object.assign(new Error(message), { status });
+}
+
+/** The status an error answers with: its own, or 500. */
+export const statusOf = (error: unknown): number =>
+  error instanceof Error && 'status' in error && typeof error.status === 'number'
+    ? error.status
+    : 500;
+
+const messageOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 // ---- queue ---------------------------------------------------------------
 let active = 0;
-const waiting = [];
+const waiting: {
+  job: () => Promise<unknown>;
+  resolve: (value: unknown) => void;
+  reject: (reason: unknown) => void;
+}[] = [];
 
-function schedule(job) {
+function schedule<T>(job: () => Promise<T>): Promise<T> {
   if (active >= CONCURRENCY && waiting.length >= MAX_QUEUE) {
     stats.rejected++;
-    const error = new Error('renderer saturated');
-    error.status = 503;
-    return Promise.reject(error);
+    return Promise.reject(httpError(503, 'renderer saturated'));
   }
-  return new Promise((resolve, reject) => {
-    waiting.push({ job, resolve, reject });
+  return new Promise<T>((resolve, reject) => {
+    waiting.push({ job, resolve: resolve as (value: unknown) => void, reject });
     pump();
   });
 }
 
 function pump() {
-  while (active < CONCURRENCY && waiting.length) {
-    const { job, resolve, reject } = waiting.shift();
+  while (active < CONCURRENCY) {
+    const next = waiting.shift();
+    if (!next) return;
+    const { job, resolve, reject } = next;
     active++;
     job()
       .then(resolve, reject)
@@ -266,7 +284,7 @@ async function evict() {
   if (!MAX_CACHE) return;
   try {
     const names = await readdir(CACHE);
-    const entries = [];
+    const entries: { file: string; size: number; used: number }[] = [];
     let total = 0;
     for (const name of names) {
       if (name.endsWith('.tmp')) continue;
@@ -305,7 +323,7 @@ async function evict() {
     );
   } catch (error) {
     // A cache that cannot be tidied is not a reason to fail a render.
-    console.error(`could not evict from the cache: ${error.message}`);
+    console.error(`could not evict from the cache: ${messageOf(error)}`);
   }
 }
 
@@ -359,20 +377,17 @@ async function renderCached(params) {
 
   const { known, schemaClass } = await describe(params.pathway);
   if (!known) {
-    const error = new Error(`no such pathway: ${params.pathway}`);
-    error.status = 404;
-    throw error;
+    throw httpError(404, `no such pathway: ${params.pathway}`);
   }
   // Checked here rather than at the edge of the handler because it is the same
   // request that establishes the id exists, and paying for it twice to refuse
   // slightly earlier would be a poor trade.
   if (params.layout === 'reaction' && schemaClass && !REACTION_CLASSES.has(schemaClass)) {
-    const error = new Error(
+    throw httpError(
+      400,
       `layout=reaction needs a reaction; ${params.pathway} is a ${schemaClass}. ` +
         'Ask for it without layout=reaction to draw the diagram it contains.'
     );
-    error.status = 400;
-    throw error;
   }
 
   const work = schedule(async () => {
@@ -427,7 +442,7 @@ async function renderCached(params) {
  * cannot be forgotten: it is computed from the files themselves. Compare it
  * against a checkout with
  *
- *   cat <dir>/*.mjs | grep -v spec | sha256sum
+ *   cat <dir>/*.ts | grep -v spec | sha256sum
  *
  * taking the files in the same order -- sorted by name, which is what readdir
  * is sorted into below.
@@ -470,7 +485,7 @@ app.get('/health', (_req, res) => {
 });
 
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
-app.get('/render/:name.:ext', async (req, res) => {
+const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Response) => {
   const { name, ext } = req.params;
   // `jpg` is the same picture under the name Java's enum also accepts, so a
   // caller moved from that endpoint keeps whichever spelling they already use.
@@ -528,7 +543,7 @@ app.get('/render/:name.:ext', async (req, res) => {
   // select frames the figure on one event; highlight marks events on the whole
   // diagram. Together they would draw a crop with some of it marked, which
   // neither caller asked for.
-  if (req.query.select && req.query.highlight) {
+  if (req.query['select'] && req.query['highlight']) {
     return res.status(400).json({
       error: '"select" and "highlight" cannot be used together',
       canonical: canonicalUrl(
@@ -559,31 +574,31 @@ app.get('/render/:name.:ext', async (req, res) => {
   const params = {
     pathway: name === 'genome-wide' ? '' : name,
     format,
-    token: typeof req.query.token === 'string' ? req.query.token : '',
+    token: typeof req.query['token'] === 'string' ? req.query['token'] : '',
     // 2 is both the default and the ceiling. A diagram's own coordinate space
     // is around 6000px, so scale 4 asks for a 320-megapixel canvas -- it does
     // render, which is worse than failing: one query string costs the box a
     // gigabyte and nobody has needed more detail than the default.
-    scale: clamp(req.query.scale ?? 2, 0.25, 2, 2),
-    subpathways: req.query.subpathways !== 'false',
-    dark: req.query.dark === 'true',
+    scale: clamp(req.query['scale'] ?? 2, 0.25, 2, 2),
+    subpathways: req.query['subpathways'] !== 'false',
+    dark: req.query['dark'] === 'true',
     // Frames the figure on one event: a reaction page asks for its own reaction,
     // not the diagram around it.
-    select: typeof req.query.select === 'string' ? req.query.select : '',
+    select: typeof req.query['select'] === 'string' ? req.query['select'] : '',
     // Events marked as selected on the whole diagram, nothing framed: how Java's
     // exporter draws a subpathway (its reactions) or a reaction on the diagram
     // that holds it. Comma-separated stable ids, handed to the page as given.
-    highlight: typeof req.query.highlight === 'string' ? req.query.highlight : '',
+    highlight: typeof req.query['highlight'] === 'string' ? req.query['highlight'] : '',
     // The only layout worth naming: everything else the page decides for itself
     // from the id it is given. `layout` all the way through: renamed from
     // `view` on one side only (#277), it never reached the page, and every
     // reaction figure came out as the whole pathway diagram around it.
-    layout: req.query.layout === 'reaction' ? 'reaction' : '',
+    layout: req.query['layout'] === 'reaction' ? 'reaction' : '',
     // Whose overview the genome-wide view draws (speciesProblem has checked it).
-    species: typeof req.query.species === 'string' ? req.query.species : '',
-    delay: clamp(req.query.delay ?? 1000, 50, 10_000, 1000),
+    species: typeof req.query['species'] === 'string' ? req.query['species'] : '',
+    delay: clamp(req.query['delay'] ?? 1000, 50, 10_000, 1000),
     // 0 means "the diagram's own size", which is where its labels are legible.
-    maxSize: clamp(req.query.maxSize ?? 0, 0, 8000, 0),
+    maxSize: clamp(req.query['maxSize'] ?? 0, 0, 8000, 0),
   };
 
   // Everything that determines the bytes is in the key, so it is also the
@@ -633,15 +648,19 @@ app.get('/render/:name.:ext', async (req, res) => {
     );
     return res.end(bytes);
   } catch (error) {
-    const status = error.status || 500;
+    const status = statusOf(error);
     // A rejection is not a failure: it is the queue doing its job, and counting
     // it as a failure hides real ones in the noise of a busy period.
     if (status === 503) res.setHeader('Retry-After', '5');
     else stats.failed++;
-    console.error(`failed ${name}.${format}: ${error.message}`);
-    return res.status(status).json({ error: error.message });
+    console.error(`failed ${name}.${format}: ${messageOf(error)}`);
+    return res.status(status).json({ error: messageOf(error) });
   }
-});
+};
+
+// Express 4 does not wait on a handler's promise; the handler answers every
+// failure itself (its catch above), so the promise is left on purpose.
+app.get('/render/:name.:ext', (req, res) => void renderRoute(req, res));
 
 /**
  * Only listen when run as a program, so the handlers can be imported and
@@ -658,7 +677,8 @@ app.get('/render/:name.:ext', async (req, res) => {
  * A declaration, so it is there however early the fingerprint is taken.
  */
 export function isModule(name) {
-  return /\.(mjs|ts)$/.test(name) && !/\.spec\.(mjs|ts)$/.test(name);
+  // A declaration (`.d.ts`) describes types for the checker; nothing runs it.
+  return /\.(mjs|ts)$/.test(name) && !/\.(spec\.(mjs|ts)|d\.ts)$/.test(name);
 }
 
 export { app, cacheKey };
@@ -675,7 +695,7 @@ function startedDirectly() {
   try {
     return (
       Boolean(process.argv[1]) &&
-      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+      realpathSync(process.argv[1] as string) === realpathSync(fileURLToPath(import.meta.url))
     );
   } catch {
     return false;

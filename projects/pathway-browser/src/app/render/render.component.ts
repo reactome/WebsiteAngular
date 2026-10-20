@@ -32,6 +32,7 @@ import type {
   ShapeGeometry,
 } from './render-shapes.model';
 import { gatherGroups } from './render-shapes.model';
+import type { Drawn, Published, RenderExport, RenderState } from './render-api.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is
@@ -170,7 +171,7 @@ export class RenderComponent {
   readonly error = signal<string | null>(null);
 
   /** What was drawn and how much of it, for the caller to sanity-check. */
-  private readonly stateForCaller = signal<Record<string, unknown>>({});
+  private readonly stateForCaller = signal<Published | Record<string, never>>({});
 
   constructor() {
     this.dark.isDark.set(this.wantsDark);
@@ -305,7 +306,7 @@ export class RenderComponent {
    * differently: a diagram has a cytoscape instance with elements, an
    * illustration is an inlined svg, and Reacfoam draws to a canvas.
    */
-  private drawn(): Record<string, unknown> | null {
+  private drawn(): Drawn | null {
     const host = document.querySelector('cr-render');
     if (!host) return null;
 
@@ -382,15 +383,16 @@ export class RenderComponent {
 
   private publish() {
     const api = window as unknown as Record<string, unknown>;
-    api['__renderState'] = {
+    const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
       ...this.stateForCaller(),
     };
+    api['__renderState'] = state;
     // The caller asks the page for the artefact rather than reaching into
     // cytoscape itself: how a view exports is the view's business, and a
     // caller poking at renderer internals would break the first time they move.
-    api['__renderExport'] = {
+    const exports: RenderExport = {
       svg: () => this.exportSvg(),
       // The diagram as shapes rather than as a picture, for exporters that draw
       // shapes -- PowerPoint. Null where the view is not made of shapes (an
@@ -411,6 +413,7 @@ export class RenderComponent {
       showSample: (name: string) => this.showSample(name),
       frameCanvas: (scale = 1) => this.frameCanvas(scale),
     };
+    api['__renderExport'] = exports;
   }
 
   /**
