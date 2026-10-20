@@ -1,4 +1,4 @@
-// A small type for the compile helper's own tests (compile.spec.mjs).
+// A small type for the compile helper's own tests (compile.spec.ts).
 export interface Thing {
   id: number;
   name: string;

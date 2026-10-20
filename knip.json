@@ -16,11 +16,18 @@
     "projects/website-angular/tina/config.ts",
     "tools/render/{render,service}.mjs",
     "tools/content-node/snapshot-*.mjs",
-    "tools/analysis-types/record.mjs",
+    "tools/analysis-types/record.ts",
     "tools/svg-export-harness/*.mjs"
   ],
-  "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs", "tools/**/*.mjs"],
+  "project": [
+    "src/**/*.ts",
+    "projects/**/*.ts",
+    "scripts/**/*.mjs",
+    "tools/**/*.mjs",
+    "tools/**/*.ts"
+  ],
   "ignore": [
+    "tools/**/fixtures/**",
     "**/*.d.ts",
     "**/__generated__/**",
     "web-component-demo/**",

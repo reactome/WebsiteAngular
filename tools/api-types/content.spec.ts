@@ -7,30 +7,28 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CALLS } from './calls.mjs';
-import { describe as line } from './compile.mjs';
-import { checkAnswers, groupOf, matchAnswers, ratchet } from './content.mjs';
+import { CALLS, where, type Call } from './calls.ts';
+import { describe as line, type Problem } from './compile.ts';
+import { checkAnswers, groupOf, matchAnswers, ratchet } from './content.ts';
 
 const KNOWN = JSON.parse(
   readFileSync(path.join(import.meta.dirname, 'known-problems.json'), 'utf8')
-);
+) as Record<string, number>;
 
 /** Paths the recordings hold answers for that no call of the site reads. */
 const NOT_READ = ['/v3/api-docs'];
 
-const where = (c) => `${c.file} › ${c.method}${(c.n ?? 1) > 1 ? ` #${c.n}` : ''}`;
-
 describe('recorded content API answers', () => {
   const matched = matchAnswers();
   const groups = [...new Set(matched.checks.map((c) => groupOf(c.route.split(' ')[1])))].sort();
-  const problems = [];
+  const problems: Problem[] = [];
 
   it('reads every recorded answer, apart from the routes listed as not read', () => {
     expect([...matched.notRead.keys()].sort()).toEqual(NOT_READ);
   });
 
   it('has answers for every call except those the table names as gaps, and none for those', () => {
-    const covered = (c) => matched.coverage.get(c) > 0;
+    const covered = (c: Call) => (matched.coverage.get(c) ?? 0) > 0;
     const json = CALLS.filter((c) => !c.indirect && !['text', 'blob'].includes(c.type));
     expect(json.filter((c) => !c.gap && !covered(c)).map(where)).toEqual([]);
     expect(json.filter((c) => c.gap && covered(c)).map(where)).toEqual([]);
@@ -52,7 +50,7 @@ describe('recorded content API answers', () => {
 });
 
 describe('the ratchet', () => {
-  const found = (route, n) => Array.from({ length: n }, () => ({ route }));
+  const found = (route: string, n: number) => Array.from({ length: n }, () => ({ route }));
 
   it('fails when a route has more problems than before', () => {
     expect(ratchet(found('GET /a', 3), { 'GET /a': 2 })).toEqual([

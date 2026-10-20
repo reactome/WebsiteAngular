@@ -2,7 +2,7 @@
 
 The checks are vitest specs under `tools/api-types/`. Their failure messages are the contract: a developer reading one must be able to find the type and the answer without running anything else.
 
-## The call table check (`calls.spec.mjs`)
+## The call table check (`calls.spec.ts`)
 
 Fails with one line per difference:
 
@@ -12,7 +12,7 @@ no longer in the source: projects/pathway-browser/src/app/services/baz.service.t
 read as anything: projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › molecules (any)
 ```
 
-## The compile check (`content.spec.mjs`)
+## The compile check (`content.spec.ts`)
 
 Per route group, fails with one line per problem, sorted:
 

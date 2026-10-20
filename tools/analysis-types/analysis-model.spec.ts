@@ -9,7 +9,14 @@ import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compileAnswers, describe as describeProblem, ROOT } from '../api-types/compile.mjs';
+import type { Analysis } from '../../projects/pathway-browser/src/app/model/analysis.model.ts';
+import type { HarEntry } from '../api-types/answers.ts';
+import {
+  compileAnswers,
+  describe as describeProblem,
+  ROOT,
+  type Answer,
+} from '../api-types/compile.ts';
 
 const HARS = path.join(ROOT, 'e2e', 'har');
 const RECORDED = path.join(import.meta.dirname, 'recorded');
@@ -19,7 +26,7 @@ const MODEL = path.join(ROOT, 'projects/pathway-browser/src/app/model/analysis.m
  * What the site reads each answer as, by method and path: the type each call
  * in projects/pathway-browser's analysis.service.ts names.
  */
-const READ_AS = [
+const READ_AS: [method: string, pattern: RegExp, type: string][] = [
   ['POST', /^\/AnalysisService\/identifiers\/(projection|url(\/projection)?)?$/, 'Analysis.Result'],
   ['GET', /^\/AnalysisService\/species\/homoSapiens\/\d+$/, 'Analysis.Result'],
   ['GET', /^\/AnalysisService\/token\/[^/]+$/, 'Analysis.Result'],
@@ -30,11 +37,13 @@ const READ_AS = [
 ];
 
 /** Each distinct recorded answer with the type it is read as. */
-function recordedAnswers(dir = HARS) {
-  const answers = new Map();
+function recordedAnswers(dir = HARS): Answer[] {
+  const answers = new Map<string, Answer>();
   for (const name of readdirSync(dir).filter((f) => f.endsWith('.har'))) {
-    for (const { request, response } of JSON.parse(readFileSync(path.join(dir, name), 'utf8')).log
-      .entries) {
+    const har = JSON.parse(readFileSync(path.join(dir, name), 'utf8')) as {
+      log: { entries: HarEntry[] };
+    };
+    for (const { request, response } of har.log.entries) {
       const file = response.content?._file;
       if (response.status !== 200 || !file) continue;
       const route = new URL(request.url, 'http://x').pathname;
@@ -53,10 +62,15 @@ function recordedAnswers(dir = HARS) {
       });
     }
   }
-  // The kinds of analysis the recordings never run, recorded by record.mjs.
+  // The kinds of analysis the recordings never run, recorded by record.ts.
   for (const name of readdirSync(RECORDED).filter((f) => f.endsWith('.json'))) {
-    for (const { route, answer } of JSON.parse(readFileSync(path.join(RECORDED, name), 'utf8'))) {
+    const recorded = JSON.parse(readFileSync(path.join(RECORDED, name), 'utf8')) as {
+      route: string;
+      answer: unknown;
+    }[];
+    for (const { route, answer } of recorded) {
       const [method, url] = route.split(' ');
+      if (!method || !url) throw new Error(`${name}: "${route}" is not "<method> <url>"`);
       const pathname = new URL(url, 'http://x').pathname;
       const kind = READ_AS.find(([m, pattern]) => m === method && pattern.test(pathname));
       if (!kind) throw new Error(`${name}: nothing reads ${route}`);
@@ -69,10 +83,20 @@ function recordedAnswers(dir = HARS) {
 }
 
 /** The problems found compiling `answers`, one line each, with where. */
-const typeProblems = (answers) =>
+const typeProblems = (answers: Answer[]) =>
   compileAnswers(answers, `import type { Analysis } from ${JSON.stringify(MODEL)};`).map(
     describeProblem
   );
+
+/** The analysis type an answer read as a result says it is. */
+const summaryType = (a: Answer) => (JSON.parse(a.body) as Analysis.Result).summary.type;
+
+/** The first answer read as `type`, which every test here needs one of. */
+function firstOf(answers: Answer[], type: string): Answer {
+  const found = answers.find((a) => a.type === type);
+  if (!found) throw new Error(`no recorded answer is read as ${type}`);
+  return found;
+}
 
 describe('the analysis model against recorded answers', () => {
   const answers = recordedAnswers();
@@ -80,11 +104,7 @@ describe('the analysis model against recorded answers', () => {
   it('has an answer for every way the site reads one, and every kind of analysis', () => {
     const covered = new Set(answers.map((a) => a.type));
     expect(READ_AS.map(([, , type]) => type).filter((type) => !covered.has(type))).toEqual([]);
-    const kinds = new Set(
-      answers
-        .filter((a) => a.type === 'Analysis.Result')
-        .map((a) => JSON.parse(a.body).summary.type)
-    );
+    const kinds = new Set(answers.filter((a) => a.type === 'Analysis.Result').map(summaryType));
     expect([...kinds].sort()).toEqual(['EXPRESSION', 'OVERREPRESENTATION', 'SPECIES_COMPARISON']);
   });
 
@@ -93,11 +113,11 @@ describe('the analysis model against recorded answers', () => {
     // degrades rather than breaks; the compile check cannot see it, so this does.
     const { Analysis } =
       await import('../../projects/pathway-browser/src/app/model/analysis.model.ts');
-    const TYPES = Analysis.TYPES;
+    const known: readonly string[] = Analysis.TYPES;
     const unknown = answers
       .filter((a) => a.type === 'Analysis.Result')
-      .map((a) => JSON.parse(a.body).summary.type)
-      .filter((type) => !TYPES.includes(type));
+      .map(summaryType)
+      .filter((type) => !known.includes(type));
     expect(unknown).toEqual([]);
   });
 
@@ -106,16 +126,16 @@ describe('the analysis model against recorded answers', () => {
   }, 60_000);
 
   it('notices an answer without a field the site reads', () => {
-    const result = answers.find((a) => a.type === 'Analysis.Result');
-    const body = JSON.parse(result.body);
+    const result = firstOf(answers, 'Analysis.Result');
+    const body = JSON.parse(result.body) as { summary: Partial<Analysis.Result['summary']> };
     delete body.summary.token;
     const problems = typeProblems([{ ...result, key: 'mutated', body: JSON.stringify(body) }]);
     expect(problems.join('\n')).toMatch(/'token' is missing/);
   }, 60_000);
 
   it('notices a field the type does not declare', () => {
-    const found = answers.find((a) => a.type === 'Analysis.FoundEntities');
-    const body = { ...JSON.parse(found.body), undeclared: 1 };
+    const found = firstOf(answers, 'Analysis.FoundEntities');
+    const body = { ...(JSON.parse(found.body) as object), undeclared: 1 };
     const problems = typeProblems([{ ...found, key: 'mutated', body: JSON.stringify(body) }]);
     expect(problems.join('\n')).toMatch(/undeclared\W{0,3} does not exist/);
   }, 60_000);

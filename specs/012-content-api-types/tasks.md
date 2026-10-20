@@ -92,7 +92,7 @@
 
 ## Phase 8: User Story 6 — what the recordings miss (P3)
 
-- [ ] T030 [US6] Write `tools/api-types/record.mjs` (research R8): at most 40 URLs, our own service only, one at a time with a pause; both in-depth routes (a known event, a known entity, an unknown identifier), the Reacfoam flag, the GET interactor details, `citation/pathway`. Record into `tools/api-types/recorded/`; the call table's `gap` entries become `corpus`.
+- [ ] T030 [US6] Write `tools/api-types/record.ts` (research R8): at most 40 URLs, our own service only, one at a time with a pause; both in-depth routes (a known event, a known entity, an unknown identifier), the Reacfoam flag, the GET interactor details, `citation/pathway`. Record into `tools/api-types/recorded/`; the call table's `gap` entries become `corpus`.
 - [ ] T031 [US6] Type what the corpus shows: the in-depth routes' empty answer (the readers' guards kept, FR-010), and any route T030 covers for the first time, to zero problems.
 
 ---
@@ -100,7 +100,7 @@
 ## Phase 9: Polish
 
 - [ ] T032 Run the full e2e suite (`E2E_PORT=4330`) and both applications' builds; record the lint and dead-code counts against the start.
-- [ ] T033 Update `CLAUDE.md`'s guidance only if a rule for future work emerges (e.g. "a new content API call needs an entry in `tools/api-types/calls.mjs`"), and the quickstart if a command changed.
+- [ ] T033 Update `CLAUDE.md`'s guidance only if a rule for future work emerges (e.g. "a new content API call needs an entry in `tools/api-types/calls.ts`"), and the quickstart if a command changed.
 
 ---
 

@@ -40,4 +40,4 @@ Run from the repository root. Host-specific settings (database addresses, creden
 
 ## Story 5: analysis result types
 
-Run `npx vitest run tools/analysis-types` (every recorded answer against the site's types; `node tools/analysis-types/record.mjs` records the extra kinds again, three analyses, one at a time). Expected: it passes. Remove a field the site reads from one result: the check fails.
+Run `npx vitest run tools/analysis-types` (every recorded answer against the site's types; `node tools/analysis-types/record.ts` records the extra kinds again, three analyses, one at a time). Expected: it passes. Remove a field the site reads from one result: the check fails.

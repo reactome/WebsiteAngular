@@ -1,24 +1,29 @@
 // @vitest-environment node
 //
-// The table of the site's content API calls (calls.mjs) and the source agree:
+// The table of the site's content API calls (calls.ts) and the source agree:
 // a call the source makes that the table does not name is a call whose answer
 // nothing checks.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CALLS, TYPES } from './calls.mjs';
-import { ROOT } from './compile.mjs';
-import { scanCalls } from './scan.mjs';
+import { CALLS, TYPES, where, type Call } from './calls.ts';
+import { ROOT } from './compile.ts';
+import { scanCalls, type ScannedCall } from './scan.ts';
 
-const where = (c) => `${c.file} › ${c.method}${(c.n ?? 1) > 1 ? ` #${c.n}` : ''}`;
+/** The first of a list the test needs to have one. */
+function first<T>(list: T[]): T {
+  const [item] = list;
+  if (item === undefined) throw new Error('the list is empty');
+  return item;
+}
 
 /** The scanned calls, numbered within their method as the table numbers them. */
-function numbered(scanned) {
-  const seen = new Map();
+function numbered(scanned: ScannedCall[]): (ScannedCall & { n: number })[] {
+  const seen = new Map<string, number>();
   return scanned.map((c) => {
     const key = `${c.file} ${c.method}`;
     seen.set(key, (seen.get(key) ?? 0) + 1);
-    return { ...c, n: seen.get(key) };
+    return { ...c, n: seen.get(key) ?? 1 };
   });
 }
 
@@ -33,17 +38,17 @@ const READ_AS_ANYTHING = [
   'projects/website-angular/src/services/content-data.service.ts › getInstance',
 ];
 
-const flat = (type) => type.replace(/\s+/g, ' ').replace(/;\s*}/g, ' }');
+const flat = (type: string) => type.replace(/\s+/g, ' ').replace(/;\s*}/g, ' }');
 
 /**
  * Where the table and the source disagree: a call only one of them has, or
  * one whose method or answer type differs. Matching by place alone let a call
  * change its type, or two calls in one method swap, unseen (review of #542).
  */
-function differences(calls, scanned) {
+function differences(calls: Call[], scanned: ScannedCall[]): string[] {
   const table = new Map(calls.filter((c) => !c.indirect).map((c) => [where(c), c]));
   const source = new Map(numbered(scanned).map((c) => [where(c), c]));
-  const found = [];
+  const found: string[] = [];
   for (const [w, c] of source) {
     const entry = table.get(w);
     if (!entry) found.push(`not in the table: ${w}`);
@@ -64,23 +69,28 @@ describe('the call table', () => {
   });
 
   it('notices a call added to the source, or one gone from it', () => {
-    const added = [...scanned, { file: 'projects/x/new.service.ts', method: 'fetch', http: 'GET' }];
+    const added = [
+      ...scanned,
+      { file: 'projects/x/new.service.ts', method: 'fetch', http: 'GET', readAs: 'X', line: 1 },
+    ];
     expect(differences(CALLS, added)).toEqual([
       'not in the table: projects/x/new.service.ts › fetch',
     ]);
-    expect(differences(CALLS.slice(1), scanned)).toEqual([`not in the table: ${where(CALLS[0])}`]);
+    expect(differences(CALLS.slice(1), scanned)).toEqual([
+      `not in the table: ${where(first(CALLS))}`,
+    ]);
     expect(differences(CALLS, scanned.slice(1))).toEqual([
-      `no longer in the source: ${where(numbered(scanned)[0])}`,
+      `no longer in the source: ${where(first(numbered(scanned)))}`,
     ]);
   });
 
   it('notices a call whose answer type or method changed, or two calls that swapped', () => {
-    const first = numbered(scanned)[0];
+    const call = first(numbered(scanned));
     const retyped = scanned.map((c, i) => (i === 0 ? { ...c, readAs: 'Other[]' } : c));
     expect(differences(CALLS, retyped)).toEqual([
       expect.stringMatching(
         new RegExp(
-          `^differs from the source: .*${first.method}.*the source ${first.http} Other\\[\\]$`
+          `^differs from the source: .*${call.method}.*the source ${call.http} Other\\[\\]$`
         )
       ),
     ]);
@@ -89,7 +99,9 @@ describe('the call table', () => {
     // breadcrumb's two calls read different types: in the other order, both differ.
     const i = scanned.findIndex((c) => c.file.endsWith('breadcrumb.component.ts'));
     const swapped = [...scanned];
-    [swapped[i], swapped[i + 1]] = [swapped[i + 1], swapped[i]];
+    const [a, b] = [scanned[i], scanned[i + 1]];
+    if (!a || !b) throw new Error('the breadcrumb’s two calls are not in the scan');
+    [swapped[i], swapped[i + 1]] = [b, a];
     expect(differences(CALLS, swapped)).toHaveLength(2);
   });
 

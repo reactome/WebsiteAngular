@@ -5,7 +5,7 @@
  * is run once with an example file from the site's assets, projected to human
  * as the site always asks, and then read the ways the site reads a result.
  *
- *     node tools/analysis-types/record.mjs [origin]    default http://127.0.0.1:8080
+ *     node tools/analysis-types/record.ts [origin]    default http://127.0.0.1:8080
  *
  * One request at a time, a pause between analyses: it runs against a shared
  * service. Only the first page of pathways is kept, as the site's table asks
@@ -13,6 +13,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import type { Analysis } from '../../projects/pathway-browser/src/app/model/analysis.model.ts';
 
 const HERE = import.meta.dirname;
 const EXAMPLES = path.join(
@@ -35,7 +36,7 @@ const RUNS = [
   },
 ];
 
-async function call(origin, method, route, body) {
+async function call(origin: string, method: string, route: string, body?: string): Promise<string> {
   const answer = await fetch(`${origin}/AnalysisService/${route}`, {
     method,
     ...(body !== undefined && { body, headers: { 'Content-Type': 'text/plain' } }),
@@ -47,20 +48,21 @@ async function call(origin, method, route, body) {
   return text;
 }
 
-async function main([origin = 'http://127.0.0.1:8080'] = []) {
+async function main([origin = 'http://127.0.0.1:8080']: string[] = []): Promise<void> {
   mkdirSync(OUT, { recursive: true });
   for (const run of RUNS) {
     const data = readFileSync(path.join(EXAMPLES, run.file), 'utf8');
     const result = await call(origin, 'POST', run.path, data);
-    const { summary, pathways } = JSON.parse(result);
+    const { summary, pathways } = JSON.parse(result) as Analysis.Result;
     // Sent as the service gives it, already escaped, as the site sends it.
     const token = summary.token;
     // One with interactors found, where there is one, so their shape is seen too.
-    const pathway = (
-      pathways.find((p) => p.entities.interactorsFound > 0) ??
+    const chosen =
+      pathways.find((p) => (p.entities.interactorsFound ?? 0) > 0) ??
       pathways.find((p) => p.llp) ??
-      pathways[0]
-    ).stId;
+      pathways[0];
+    if (!chosen) throw new Error(`${run.name}: the analysis found no pathways to read`);
+    const pathway = chosen.stId;
     const answers = [
       { route: `POST /AnalysisService/${run.path}`, body: result },
       {
@@ -87,7 +89,7 @@ async function main([origin = 'http://127.0.0.1:8080'] = []) {
     writeFileSync(
       path.join(OUT, `${run.name}.json`),
       JSON.stringify(
-        answers.map((a) => ({ route: a.route, answer: JSON.parse(a.body) })),
+        answers.map((a) => ({ route: a.route, answer: JSON.parse(a.body) as unknown })),
         null,
         1
       ) + '\n'

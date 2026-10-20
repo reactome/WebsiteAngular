@@ -4,7 +4,7 @@ All findings below were measured on 19 Oct 2026, from the code, the end-to-end r
 
 ## R1. The site's calls (inventory)
 
-**Decision**: the list of calls is a checked-in table (`tools/api-types/calls.mjs`): file, method, HTTP method, route pattern, the type the answer is read as, and its coverage. A source scan (the TypeScript compiler API, over `projects/**/src` without specs) finds every `HttpClient` call and `fetch()` whose URL is built from `CONTENT_SERVICE` or a literal `/ContentService`, and fails on one the table does not name, or one the table names that no longer exists.
+**Decision**: the list of calls is a checked-in table (`tools/api-types/calls.ts`): file, method, HTTP method, route pattern, the type the answer is read as, and its coverage. A source scan (the TypeScript compiler API, over `projects/**/src` without specs) finds every `HttpClient` call and `fetch()` whose URL is built from `CONTENT_SERVICE` or a literal `/ContentService`, and fails on one the table does not name, or one the table names that no longer exists.
 
 **Measured**: 75 call sites (pathway-browser 41, website-angular 34). The other projects make none: `reactome-diagram-element` reuses pathway-browser's services; the table and GSA libraries call other services.
 
@@ -136,7 +136,7 @@ A passing check costs about 1–2 s per MB; a failing one about 7 s per MB, beca
 
 ## R8. Recording what the recordings miss
 
-**Decision**: `tools/api-types/record.mjs`, like #540's recorder: reads our own content service (the node service on this host, never production), one request at a time with a pause, a fixed list of at most 40 requests, into `tools/api-types/recorded/`. It covers the gaps in R2 that can be read without side effects: both in-depth routes (a known event and entity, and an unknown identifier for the empty answer), the Reacfoam flag, the GET interactor details, `citation/pathway`. Uploads and tokens are not recorded (uploads are stored for good). Bodies are trimmed to one page where the site asks for one.
+**Decision**: `tools/api-types/record.ts`, like #540's recorder: reads our own content service (the node service on this host, never production), one request at a time with a pause, a fixed list of at most 40 requests, into `tools/api-types/recorded/`. It covers the gaps in R2 that can be read without side effects: both in-depth routes (a known event and entity, and an unknown identifier for the empty answer), the Reacfoam flag, the GET interactor details, `citation/pathway`. Uploads and tokens are not recorded (uploads are stored for good). Bodies are trimmed to one page where the site asks for one.
 
 **Rationale**: the shared graph database was overloaded by test traffic before; a bounded, sequential list keeps this negligible.
 

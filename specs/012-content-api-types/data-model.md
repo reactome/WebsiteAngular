@@ -2,7 +2,7 @@
 
 These are the records the checks work with. Field lists are what each record must carry; the files are named in [plan.md](plan.md).
 
-## Call (`tools/api-types/calls.mjs`)
+## Call (`tools/api-types/calls.ts`)
 
 One place the site asks the content API for something.
 
@@ -18,7 +18,7 @@ One place the site asks the content API for something.
 
 **Rules**: every call in the source has exactly one entry (by `file`, `method` and its place in the method); every entry has a call in the source; the entry's method and type (`reads`, where the source reads a type parameter its caller chooses) equal the source's.
 
-## Recorded answer (`tools/api-types/answers.mjs`)
+## Recorded answer (`tools/api-types/answers.ts`)
 
 | Field    | Meaning                                                                                                     |
 | -------- | ----------------------------------------------------------------------------------------------------------- |
