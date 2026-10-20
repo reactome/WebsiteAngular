@@ -28,7 +28,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: (key, fallback = '') => process.env[key] || fallback,
 }));
 
-const { app, JavaHashMap } = await import('./service.mjs');
+const { app, JavaHashMap } = await import('./service.ts');
 
 let base;
 let server;

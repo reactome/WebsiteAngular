@@ -7,7 +7,7 @@
 // gate. content-node is the one answering beta's traffic, so it had the same
 // hole with more at stake.
 //
-// Most endpoints need Neo4j and belong to `diff.mjs`, which compares them
+// Most endpoints need Neo4j and belong to `diff.ts`, which compares them
 // against Java. What is checkable here is everything that is *not* a query: the
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
@@ -60,7 +60,7 @@ import {
   springInteger,
   deepShare,
   deepLimit,
-} from './service.mjs';
+} from './service.ts';
 
 let base;
 let server;
@@ -163,7 +163,7 @@ describe('the species lists', () => {
     // The two differ in order as well as contents -- `main` pins Homo sapiens
     // first, `all` is plain alphabetical including human in its place -- and a
     // single handler with a boolean is how one of those silently acquires the
-    // other's sort. Both orders are proven against Java by `diff.mjs`, which
+    // other's sort. Both orders are proven against Java by `diff.ts`, which
     // needs a database and so cannot run here; what this can hold is that they
     // stayed separate.
     const species = endpoints.filter((e) => e.path.includes('/data/species/'));

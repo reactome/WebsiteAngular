@@ -17,7 +17,7 @@
  */
 interface HashNode {
   hash: number;
-  key: string;
+  key: unknown;
   value: unknown;
   next: HashNode | null;
   tree?: boolean;
@@ -28,16 +28,16 @@ interface HashNode {
   red?: boolean;
 }
 
-export class JavaHashMap {
+export class JavaHashMap<V = unknown, K = string> {
   #table: (HashNode | null)[] = new Array<HashNode | null>(16).fill(null);
-  #keyHash: ((key: string) => number) | undefined;
+  #keyHash: ((key: K) => number) | undefined;
   size = 0;
 
   /**
    * `hash` is the key's hashCode, String.hashCode unless given -- a
    * TargetResult's is Objects.hash(term), 31 more than its term's.
    */
-  constructor({ hash }: { hash?: (key: string) => number } = {}) {
+  constructor({ hash }: { hash?: (key: K) => number } = {}) {
     this.#keyHash = hash;
   }
 
@@ -60,7 +60,7 @@ export class JavaHashMap {
     return h ^ (h >>> 16);
   }
 
-  set(key, value) {
+  set(key: K, value: V) {
     const hash = this.#hashOf(key);
     const table = this.#table;
     const index = (table.length - 1) & hash;
@@ -117,8 +117,10 @@ export class JavaHashMap {
     return false;
   }
 
-  *entries() {
-    for (let node of this.#table) for (; node; node = node.next) yield [node.key, node.value];
+  *entries(): Generator<[K, V]> {
+    // Every key and value went in through set, as a K and a V.
+    for (let node of this.#table)
+      for (; node; node = node.next) yield [node.key as K, node.value as V];
   }
 
   *keys() {

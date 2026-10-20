@@ -22,7 +22,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app, reactionLikeEventJson } = await import('./service.mjs');
+const { app, reactionLikeEventJson } = await import('./service.ts');
 
 let base;
 let server;

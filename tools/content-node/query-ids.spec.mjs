@@ -15,7 +15,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app, databaseObjectSet, idKeyedMap } = await import('./service.mjs');
+const { app, databaseObjectSet, idKeyedMap } = await import('./service.ts');
 
 const object = (dbId, stId, displayName) => ({ properties: { dbId, stId, displayName } });
 

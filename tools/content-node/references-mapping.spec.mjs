@@ -21,7 +21,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app, crossReferenceQuery, pageJson, pageText } = await import('./service.mjs');
+const { app, crossReferenceQuery, pageJson, pageText } = await import('./service.ts');
 
 let base;
 let server;

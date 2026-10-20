@@ -3,7 +3,7 @@
  *
  * A gradual replacement for the Java ContentService's read surface. It exposes
  * the same paths under the same shapes, one endpoint at a time, and every one is
- * proven against the Java implementation by `diff.mjs` before it is switched on
+ * proven against the Java implementation by `diff.ts` before it is switched on
  * in `proxy.conf.js`.
  *
  * Deliberately not a rewrite in one go, and deliberately not the exporters:
@@ -70,8 +70,15 @@ import {
   schemaModelTree,
 } from './schema.ts';
 
-const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
-const HOST = process.env.CONTENT_NODE_HOST || '127.0.0.1';
+// Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
+declare global {
+  interface JSON {
+    rawJSON(text: string): unknown;
+  }
+}
+
+const PORT = Number(process.env['CONTENT_NODE_PORT']) || 4400;
+const HOST = process.env['CONTENT_NODE_HOST'] || '127.0.0.1';
 
 /**
  * The endpoints implemented so far, in the order they were ported.
@@ -158,7 +165,7 @@ export const endpoints = [
       try {
         decoded = javaUrlDecode(taxId);
       } catch (failure) {
-        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.message);
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', (failure as Error).message);
       }
       const { where, params } = topSpeciesMatch(decoded);
       const rows = await read(
@@ -570,7 +577,7 @@ export const endpoints = [
         // reactions legitimately gets. Returning the same shape for "none" and
         // "none, and your id was nonsense" cannot break a caller that works.
         const seen = new Set();
-        const body = [];
+        const body: unknown[] = [];
         for (const row of rows) {
           if (seen.has(row.dbId)) continue;
           seen.add(row.dbId);
@@ -732,14 +739,18 @@ export const endpoints = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 6));
-      const flags = {};
+      const flags: {
+        fetchIncomingRelationships?: boolean;
+        summariseReferenceEntity?: boolean;
+        includeDisease?: boolean;
+      } = {};
       for (const [name, fallback] of [
         ['fetchIncomingRelationships', true],
         ['summariseReferenceEntity', false],
         ['includeDisease', true],
-      ]) {
+      ] as const) {
         const parsed = springPrimitiveBoolean(queryValues(request, name), fallback);
-        if (parsed.error) return javaError(request, 400, 'BAD_REQUEST', parsed.error);
+        if (parsed.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', parsed.error);
         flags[name] = parsed.value;
       }
       const id = inDepthId(raw);
@@ -928,7 +939,7 @@ export const endpoints = [
       const ids = orthologyIds(plainText(request.body, contentType));
       const refused = findByIdFailure(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
-      const found = [];
+      const found: [string, unknown][] = [];
       for (const id of ids) {
         const object = await findObject(id);
         if (object) found.push([id, object]);
@@ -1022,9 +1033,9 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const depth = springIntWithDefault(queryValues(request, 'maxDepth'), 1);
-      if (depth.error) return javaError(request, 400, 'BAD_REQUEST', depth.error);
+      if (depth.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', depth.error);
       const attributes = inDepthAttributes(queryValues(request, 'attributes'));
-      if (attributes.error)
+      if (attributes.error !== undefined)
         return javaError(request, 500, 'INTERNAL_SERVER_ERROR', attributes.error);
       const id = inDepthId(raw);
       const none =
@@ -1533,9 +1544,10 @@ export const endpoints = [
       const problem = plainTextProblem(contentType);
       if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
       const page = springIntWithDefault(queryValues(request, 'page'), 0);
-      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      if (page.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', page.error);
       const pageSize = springIntWithDefault(queryValues(request, 'pageSize'), 100);
-      if (pageSize.error) return javaError(request, 400, 'BAD_REQUEST', pageSize.error);
+      if (pageSize.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', pageSize.error);
       if (request.tooLarge)
         return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
       if (!Buffer.isBuffer(request.body) || request.body.length === 0)
@@ -1691,12 +1703,12 @@ export const endpoints = [
       const events = await containedEvents(raw);
       if (!events.length)
         return notFound(request, `No contained events found in the given event: ${raw}`);
-      const texts = [];
+      const texts: string[] = [];
       for (const event of events) {
         // findAll's events carry only their hasEvent relationships: any
         // other is loaded when asked, outgoing ones too.
         const answer = await attributeOf(request, event, attribute, { outgoingLoaded: false });
-        if (answer.status) return answer;
+        if ('status' in answer) return answer;
         texts.push(answer.text);
       }
       return { status: 200, body: `[${texts.join(', ')}]`, type: 'text/plain;charset=UTF-8' };
@@ -1725,7 +1737,7 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const exclude = springPrimitiveBoolean(queryValues(request, 'excludeStructures'), false);
-      if (exclude.error) return javaError(request, 400, 'BAD_REQUEST', exclude.error);
+      if (exclude.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', exclude.error);
       const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
       const id = await graphCoreId(raw);
       if (!id) return missing();
@@ -1779,12 +1791,13 @@ export const endpoints = [
           'MATCH (rd:ReferenceDatabase)<-[:referenceDatabase]-(n{identifier:$identifier}) WHERE rd.displayName =~ $resource WITH DISTINCT n MATCH (n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity) WITH DISTINCT pe MATCH (c:Complex)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe) RETURN DISTINCT c',
           { identifier, resource }
         );
-      } catch (failure) {
+      } catch (caught) {
+        const failure = caught as Failure | undefined;
         const message = /^Invalid Regex/.test(failure?.message ?? '')
           ? neo4jFailureMessage(failure, ['Neo.ClientError.Statement.SemanticError'])
           : undefined;
         if (message) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
-        throw failure;
+        throw caught;
       }
       if (rows.length === 0)
         return notFound(request, `No complexes found for (${identifier}, ${resource})`);
@@ -1834,9 +1847,9 @@ export const endpoints = [
       // In the controller's parameter order: the first that cannot be read is
       // the one Java names.
       const direct = springBoolean(queryValues(request, 'directParticipants'));
-      if (direct.error) return javaError(request, 400, 'BAD_REQUEST', direct.error);
+      if (direct.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', direct.error);
       const omit = springBoolean(queryValues(request, 'omitNonDisplayableItems'));
-      if (omit.error) return javaError(request, 400, 'BAD_REQUEST', omit.error);
+      if (omit.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', omit.error);
 
       const missing = () =>
         javaError(request, 404, 'NOT_FOUND', `Reverse sub graph found for id: ${raw}`);
@@ -2098,7 +2111,7 @@ export const endpoints = [
      */
     handler: async (request) => {
       const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
-      if (species.error)
+      if (species.error !== undefined)
         return javaError(request, species.status, REASON[species.status], species.error);
       const raw = pathId(rawSegment(request, 4));
       const refused = longPastRange([raw]);
@@ -2140,7 +2153,7 @@ export const endpoints = [
       const problem = plainTextProblem(contentType);
       if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
       const species = springPathLong(pathId(rawSegment(request, 6)), 'speciesId');
-      if (species.error)
+      if (species.error !== undefined)
         return javaError(request, species.status, REASON[species.status], species.error);
       if (request.tooLarge)
         return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'More than 10MB of ids');
@@ -2160,7 +2173,10 @@ export const endpoints = [
       for (const id of ids) if (!found.has(id)) found.set(id, await orthologyOf(id, species.value));
       const kept = orthologyMap(ids, found);
       if (kept.size === 0) return notFound(request, 'No orthologies found');
-      const entries = [...kept.entries()].map(([id, object]) => [id, mapNodes([object])[0]]);
+      const entries = [...kept.entries()].map(([id, object]): [string, unknown] => [
+        id,
+        mapNodes([object])[0],
+      ]);
       return {
         status: 200,
         serialised: writeDomain(new JsonMap(entries), ...writerFor(request)),
@@ -2256,7 +2272,8 @@ export const endpoints = [
       const given = queryValues(request, 'species');
       const speciesName = given.length ? given.join(',') : null;
       const diagrammed = springBoolean(queryValues(request, 'onlyDiagrammed'));
-      if (diagrammed.error) return javaError(request, 400, 'BAD_REQUEST', diagrammed.error);
+      if (diagrammed.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', diagrammed.error);
       const rows = await read(
         diagrammed.value
           ? `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
@@ -2315,7 +2332,7 @@ export const endpoints = [
       const proteins = plainText(request.body, contentType);
       const accs = new JavaHashMap();
       for (const acc of plainIds(proteins)) accs.set(acc, true);
-      const entities = [];
+      const entities: [string, unknown[]][] = [];
       for (const acc of accs.keys()) {
         const rows = await interactionsOf(request, acc, window);
         if (rows.answer) return rows.answer;
@@ -2395,7 +2412,7 @@ export const endpoints = [
       const name = splitExportName(pathId(rawSegment(request, 4)));
       if (!name) return springNotFound(request);
       const asked = exporterParameters(request);
-      if (asked.answer) return asked.answer;
+      if ('answer' in asked) return asked.answer;
       const unsupported = notDrawnYet(asked.values);
       if (unsupported.length)
         return javaError(
@@ -2450,7 +2467,7 @@ export const endpoints = [
       const name = splitExportName(pathId(rawSegment(request, 4)));
       if (!name) return springNotFound(request);
       const asked = exporterParameters(request, OVERVIEW_EXPORT);
-      if (asked.answer) return asked.answer;
+      if ('answer' in asked) return asked.answer;
       const unsupported = overviewNotDrawnYet(asked.values);
       if (unsupported.length)
         return javaError(
@@ -2532,10 +2549,10 @@ export const endpoints = [
           "Required request parameter 'query' for method parameter type String is not present"
         );
       const scope = springScope(queryValues(request, 'scope'));
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const forced = queryValues(request, 'Force filters');
       const force = springBoolean(forced);
-      if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
+      if (force.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', force.error);
       const unexpected = () => unexpectedFailure(request);
       // Only one empty value takes the default; any other blank converts to
       // null, which SearchService's primitive forceFilters cannot take.
@@ -2579,9 +2596,10 @@ export const endpoints = [
       if (diagram.length === 0)
         return javaError(request, 400, 'BAD_REQUEST', requiredString('diagram'));
       const scope = springScope(queryValues(request, 'scope'), 'REFERENCE_ENTITY');
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const interactors = springBoolean(queryValues(request, 'includeInteractors'));
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
       if (blankBoolean(queryValues(request, 'includeInteractors'), interactors))
         return unexpectedFailure(request);
       const query = {
@@ -2595,7 +2613,7 @@ export const endpoints = [
       };
       if (query.scope === null) return unexpectedFailure(request);
       return fromSolr(request, '/ContentService/search/diagram/summary', async (signal) => {
-        const ask = async () => [
+        const ask = async (): Promise<[EntriesResult, EntriesResult]> => [
           entriesResult(await solr('/diagrams', diagramParams(query), { signal })),
           entriesResult(await solr('/fireworks', speciesWideParams(query), { signal }), {
             speciesWide: true,
@@ -2620,8 +2638,9 @@ export const endpoints = [
       if (given.length === 0)
         return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
       const interactors = springBoolean(queryValues(request, 'includeInteractors'));
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
-      const problems = await identifierProblems(pathway).catch((failure) => failure);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(pathway).catch((failure: Failure) => failure);
       if (problems instanceof Error) {
         if (problems.unexpected) return unexpectedFailure(request);
         if (problems.javaMessage)
@@ -2667,8 +2686,11 @@ export const endpoints = [
       const instance = pathId(rawSegment(request, 6));
       // types is bound, but getDiagramOccurrences never reads it.
       const interactors = springBoolean(queryValues(request, 'includeInteractors'));
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
-      const problems = await identifierProblems(diagram, instance).catch((failure) => failure);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(diagram, instance).catch(
+        (failure: Failure) => failure
+      );
       if (problems instanceof Error) {
         if (problems.unexpected) return unexpectedFailure(request);
         if (problems.javaMessage)
@@ -2687,7 +2709,7 @@ export const endpoints = [
             const answer = await solr(
               '/diagrams/occurrences',
               [
-                ...(SCOPE_FILTER[scope] ? [['fq', SCOPE_FILTER[scope]]] : []),
+                ...(SCOPE_FILTER[scope] ? [pair('fq', SCOPE_FILTER[scope])] : []),
                 ['q', instance],
                 ['fl', field],
               ],
@@ -2719,14 +2741,15 @@ export const endpoints = [
         return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
       const types = springList(queryValues(request, 'types'));
       const start = springIntegerWithDefault(queryValues(request, 'start'), null);
-      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      if (start.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', start.error);
       const rows = springIntegerWithDefault(queryValues(request, 'rows'), null);
-      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      if (rows.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', rows.error);
       const scope = springScope(queryValues(request, 'scope'));
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const interactors = springBoolean(queryValues(request, 'includeInteractors'));
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
-      const problems = await identifierProblems(diagram).catch((failure) => failure);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      const problems = await identifierProblems(diagram).catch((failure: Failure) => failure);
       if (problems instanceof Error) {
         if (problems.unexpected) return unexpectedFailure(request);
         if (problems.javaMessage)
@@ -2811,7 +2834,7 @@ export const endpoints = [
     // stable id, with only the fields asked for.
     handler: async (request) => {
       const dbId = springPathLong(pathId(rawSegment(request, 5)), 'dbId');
-      if (dbId.error)
+      if (dbId.error !== undefined)
         return javaError(
           request,
           dbId.status,
@@ -2820,14 +2843,15 @@ export const endpoints = [
         );
       const interactorValues = queryValues(request, 'includeInteractors');
       const interactors = springBoolean(interactorValues);
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
       const directValues = queryValues(request, 'directlyInDiagram');
       const direct = springBoolean(directValues);
-      if (direct.error) return javaError(request, 400, 'BAD_REQUEST', direct.error);
+      if (direct.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', direct.error);
       const speciesValues = queryValues(request, 'species');
       const species = speciesValues.length ? speciesValues.join(',') : null;
       const fields = springFields(queryValues(request, 'fields'));
-      if (fields.error) return javaError(request, 400, 'BAD_REQUEST', fields.error);
+      if (fields.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', fields.error);
       // includeInteractors is unboxed first, then the fields are named: a null
       // in either is Java's NullPointerException.
       if (blankBoolean(interactorValues, interactors)) return unexpectedFailure(request);
@@ -2855,8 +2879,8 @@ export const endpoints = [
           [
             ['q', `{!terms f=stId}${stIds.join(',').toLowerCase()}`],
             ['rows', String(stIds.length)],
-            ...(species === null ? [] : [['fq', `species:${species}`]]),
-            ...(fields.value?.length ? [['fl', fields.value.join(',')]] : []),
+            ...(species === null ? [] : [pair('fq', `species:${species}`)]),
+            ...(fields.value?.length ? [pair('fl', fields.value.join(','))] : []),
           ],
           { signal }
         );
@@ -2879,14 +2903,15 @@ export const endpoints = [
       const species = singleString(queryValues(request, 'species'), 'Homo sapiens');
       const types = springList(queryValues(request, 'types'));
       const start = springIntegerWithDefault(queryValues(request, 'start'), null);
-      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      if (start.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', start.error);
       const scope = springScope(queryValues(request, 'scope'));
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const interactorValues = queryValues(request, 'includeInteractors');
       const interactors = springBoolean(interactorValues);
-      if (interactors.error) return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+      if (interactors.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', interactors.error);
       const rows = springIntegerWithDefault(queryValues(request, 'rows'), null);
-      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      if (rows.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', rows.error);
       // The Builder unboxes includeInteractors: Java's NullPointerException.
       if (blankBoolean(interactorValues, interactors)) return unexpectedFailure(request);
       const query = {
@@ -2930,9 +2955,10 @@ export const endpoints = [
       if (given.length === 0)
         return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
       const page = springInteger(queryValues(request, 'page'), 'page');
-      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      if (page.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', page.error);
       const rowCount = springInteger(queryValues(request, 'rowCount'), 'rowCount');
-      if (rowCount.error) return javaError(request, 400, 'BAD_REQUEST', rowCount.error);
+      if (rowCount.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', rowCount.error);
       const lists = {
         species: springList(queryValues(request, 'species')),
         types: springList(queryValues(request, 'types')),
@@ -2941,16 +2967,16 @@ export const endpoints = [
       };
       const clusterValues = queryValues(request, 'cluster');
       const cluster = springBoolean(clusterValues);
-      if (cluster.error) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
+      if (cluster.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
       const scope = springScope(queryValues(request, 'scope'));
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const parser = springEnum(
         queryValues(request, 'parserType'),
         'STD',
         'org.reactome.server.search.domain.ParserType',
         Object.keys(PARSER_TYPES)
       );
-      if (parser.error) return javaError(request, 400, 'BAD_REQUEST', parser.error);
+      if (parser.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', parser.error);
       if (page.value <= 0)
         return javaError(request, 400, 'BAD_REQUEST', 'page should be greater than 0');
       if (rowCount.value <= 0)
@@ -3001,23 +3027,23 @@ export const endpoints = [
       };
       const clusterValues = queryValues(request, 'cluster');
       const cluster = springBoolean(clusterValues);
-      if (cluster.error) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
+      if (cluster.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', cluster.error);
       const parser = springEnum(
         queryValues(request, 'parserType'),
         'STD',
         'org.reactome.server.search.domain.ParserType',
         Object.keys(PARSER_TYPES)
       );
-      if (parser.error) return javaError(request, 400, 'BAD_REQUEST', parser.error);
+      if (parser.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', parser.error);
       const start = springIntegerWithDefault(queryValues(request, 'Start row'), 0);
-      if (start.error) return javaError(request, 400, 'BAD_REQUEST', start.error);
+      if (start.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', start.error);
       const rows = springIntegerWithDefault(queryValues(request, 'rows'), 10);
-      if (rows.error) return javaError(request, 400, 'BAD_REQUEST', rows.error);
+      if (rows.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', rows.error);
       const scope = springScope(queryValues(request, 'scope'));
-      if (scope.error) return javaError(request, 400, 'BAD_REQUEST', scope.error);
+      if (scope.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', scope.error);
       const forceValues = queryValues(request, 'Force filters');
       const force = springBoolean(forceValues);
-      if (force.error) return javaError(request, 400, 'BAD_REQUEST', force.error);
+      if (force.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', force.error);
       // cluster and forceFilters are unboxed when the search is called.
       if (blankBoolean(clusterValues, cluster) || blankBoolean(forceValues, force))
         return unexpectedFailure(request);
@@ -3104,7 +3130,8 @@ export const endpoints = [
           "Required request parameter 'isPathway' for method parameter type Boolean is not present"
         );
       const isPathway = springBoolean(flag);
-      if (isPathway.error) return javaError(request, 400, 'BAD_REQUEST', isPathway.error);
+      if (isPathway.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', isPathway.error);
       if (isPathway.value === undefined)
         return javaError(
           request,
@@ -3112,8 +3139,8 @@ export const endpoints = [
           'BAD_REQUEST',
           "Required request parameter 'isPathway' for method parameter type Boolean is present but converted to null"
         );
-      const values = {};
-      for (const name of ['id', 'ext', 'dateAccessed']) {
+      const values: { id?: string; ext?: string; dateAccessed?: string } = {};
+      for (const name of ['id', 'ext', 'dateAccessed'] as const) {
         const given = queryValues(request, name);
         if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
         values[name] = given.join(',');
@@ -3188,7 +3215,7 @@ export const endpoints = [
           // SimpleDatabaseObject.build(Value): on a collected node, its
           // schemaClass property, not its labels as from a Record.
           objects: row.objects.map((ref) => {
-            const out = { dbId: ref.dbId };
+            const out: SimpleObject = { dbId: ref.dbId };
             if (ref.stId !== null && ref.stId !== undefined && ref.stId !== '') out.stId = ref.stId;
             const displayName = ref.displayName ?? 'null';
             if (displayName !== '') out.displayName = displayName;
@@ -3219,9 +3246,9 @@ export const endpoints = [
       const text = queryValues(request, 'query');
       const category = queryValues(request, 'category');
       const page = springIntegerWithDefault(queryValues(request, 'page'), 1);
-      if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      if (page.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', page.error);
       const size = springIntegerWithDefault(queryValues(request, 'pageSize'), 28);
-      if (size.error) return javaError(request, 400, 'BAD_REQUEST', size.error);
+      if (size.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', size.error);
       // rows * (page - 1) unboxes both: a null is Java's NullPointerException.
       if (page.value === null || size.value === null) return unexpectedFailure(request);
       let q = '';
@@ -3318,7 +3345,7 @@ async function hasIllustration(stId) {
 }
 
 /** Where the render service listens: loopback only, never public. */
-const RENDER_SERVICE = process.env.RENDER_SERVICE_URL || 'http://127.0.0.1:4310';
+const RENDER_SERVICE = process.env['RENDER_SERVICE_URL'] || 'http://127.0.0.1:4310';
 
 /**
  * Spring's `{identifier}.{ext:.*}`: both variables are `(.*)`, the first
@@ -3331,17 +3358,29 @@ export function splitExportName(segment) {
   return { identifier: segment.slice(0, dot), ext: segment.slice(dot + 1) };
 }
 
+/** A parameter of the exporters, its kind and default (DIAGRAM_EXPORT). */
+type ExportField =
+  | [kind: 'integer', name: string, fallback: number | null]
+  | [kind: 'boolean', name: string, fallback: boolean]
+  | [kind: 'text', name: string, fallback: string | null]
+  | [kind: 'list', name: string];
+/** The exporters' parameters, converted, by name. */
+type ExportValues = { sel?: string[]; token?: string | null; [name: string]: unknown };
+
 /**
  * diagramImage's parameters, converted in its order as Spring converts them,
  * with their defaults: Integers and Booleans as springIntegerWithDefault and
  * springBoolean read them, `sel` a List<String> -- one value split on commas
  * and trimmed, several taken as they are.
  */
-function exporterParameters(request, fields = DIAGRAM_EXPORT) {
-  const values = {};
+function exporterParameters(
+  request,
+  fields: ExportField[] = DIAGRAM_EXPORT
+): { answer: ReturnType<typeof javaError> } | { values: ExportValues } {
+  const values: ExportValues = {};
   const integer = (name, fallback) => {
     const read = springIntegerWithDefault(queryValues(request, name), fallback);
-    if (read.error) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
     values[name] = read.value;
     return undefined;
   };
@@ -3354,7 +3393,7 @@ function exporterParameters(request, fields = DIAGRAM_EXPORT) {
       return undefined;
     }
     const read = springBoolean(given);
-    if (read.error) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
     values[name] = read.value ?? null;
     return undefined;
   };
@@ -3372,7 +3411,9 @@ function exporterParameters(request, fields = DIAGRAM_EXPORT) {
     const given = queryValues(request, name);
     values[name] = (
       given.length === 1
-        ? given[0].split(',').map((part) => part.trim())
+        ? present(given[0])
+            .split(',')
+            .map((part) => part.trim())
         : given.filter((value) => value !== '')
     ).filter((value) => value !== '');
     return undefined;
@@ -3384,14 +3425,18 @@ function exporterParameters(request, fields = DIAGRAM_EXPORT) {
     list,
   };
   for (const [kind, name, fallback] of fields) {
-    const answer = read[kind](name, fallback);
+    // Each kind's fallback is its reader's (ExportField); TypeScript cannot
+    // follow that through the index.
+    const answer = (
+      read[kind] as (name: string, fallback: unknown) => ReturnType<typeof javaError> | undefined
+    )(name, fallback);
     if (answer) return { answer };
   }
   return { values };
 }
 
 /** diagramImage's parameters, in its order, with their defaults. */
-const DIAGRAM_EXPORT = [
+const DIAGRAM_EXPORT: ExportField[] = [
   ['integer', 'quality', 5],
   ['text', 'flg', null],
   ['boolean', 'flgInteractors', true],
@@ -3410,7 +3455,7 @@ const DIAGRAM_EXPORT = [
  * fireworksImage's parameters, in its order, with their defaults. Its
  * profile has no default in Java's description: any one given is refused.
  */
-const OVERVIEW_EXPORT = [
+const OVERVIEW_EXPORT: ExportField[] = [
   ['integer', 'quality', 5],
   ['text', 'flg', null],
   ['boolean', 'flgInteractors', true],
@@ -3460,7 +3505,10 @@ function overviewNotDrawnYet(values) {
  * The render service's request for a species' overview: its genome-wide
  * view, the species by taxId, with an analysis when one is asked for.
  */
-export function overviewExportRequest(taxId, { ext, token }) {
+export function overviewExportRequest(
+  taxId,
+  { ext, token }: { ext: string; token?: string | null | undefined }
+) {
   const format = ext === 'jpg' ? 'jpeg' : ext;
   const url = new URL(`${RENDER_SERVICE}/render/genome-wide.${format}`);
   url.searchParams.set('species', String(taxId));
@@ -3538,7 +3586,14 @@ const DIAGRAM_RESULT_BY_DBID =
  * `highlight`, which marks them on the whole diagram and frames nothing, as
  * Java draws a selection. jpg is jpeg to the render service.
  */
-export function diagramExportRequest(result, { ext, sel, token }) {
+export function diagramExportRequest(
+  result,
+  {
+    ext,
+    sel,
+    token,
+  }: { ext: string; sel?: string[] | undefined; token?: string | null | undefined }
+) {
   const format = ext === 'jpg' ? 'jpeg' : ext;
   const url = new URL(`${RENDER_SERVICE}/render/${result.diagramStId}.${format}`);
   const highlight = [...(result.events ?? []), ...(sel ?? [])];
@@ -3565,7 +3620,8 @@ async function renderFigure(request, url, ext) {
   let response;
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure | undefined;
     const late = failure?.name === 'TimeoutError';
     return javaError(
       request,
@@ -3605,9 +3661,11 @@ async function renderFigure(request, url, ext) {
  */
 function interactorPaging(request) {
   const page = springIntegerWithDefault(queryValues(request, 'page'), -1);
-  if (page.error) return { answer: javaError(request, 400, 'BAD_REQUEST', page.error) };
+  if (page.error !== undefined)
+    return { answer: javaError(request, 400, 'BAD_REQUEST', page.error) };
   const pageSize = springIntegerWithDefault(queryValues(request, 'pageSize'), -1);
-  if (pageSize.error) return { answer: javaError(request, 400, 'BAD_REQUEST', pageSize.error) };
+  if (pageSize.error !== undefined)
+    return { answer: javaError(request, 400, 'BAD_REQUEST', pageSize.error) };
   return { page: page.value, pageSize: pageSize.value };
 }
 
@@ -3665,7 +3723,7 @@ async function interactionsOf(request, acc, { page, pageSize }) {
  * member is written as Java writes a Double (1.0, not 1).
  */
 function nonEmptyJson(members) {
-  const out = [];
+  const out: string[] = [];
   for (const [name, value, double] of members) {
     if (value === null || value === undefined || value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
@@ -3678,7 +3736,8 @@ function nonEmptyJson(members) {
 
 /** Text already written as JSON, for nonEmptyJson. */
 class RawJson {
-  constructor(text) {
+  declare text: string;
+  constructor(text: string) {
     this.text = text;
   }
 }
@@ -3931,7 +3990,7 @@ export function plainTextProblem(header) {
   const subtype = full.slice(slash + 1).toLowerCase();
   if (type === '*' && subtype !== '*')
     return invalid("wildcard type is legal only in '*/*' (all mime types)");
-  const parameters = [];
+  const parameters: string[] = [];
   for (const parameter of rest) {
     const at = parameter.indexOf('=');
     if (at === -1) continue;
@@ -3955,16 +4014,19 @@ function knownCharset(value) {
  * not the class's own ISO-8859-1 (measured: Java reads C3 A9 as "é") -- a
  * malformed sequence read as U+FFFD.
  */
-export function plainText(body, header) {
+export function plainText(body: Buffer, header?: string) {
   const charset = /;\s*charset\s*=\s*"?([^";]+)"?/i
     .exec(header ?? '')?.[1]
     ?.trim()
     .toLowerCase();
-  return (decoderFor(charset ?? 'utf-8') ?? decoderFor('utf-8'))(body);
+  return (decoderFor(charset ?? 'utf-8') ?? UTF_8)(body);
 }
 
+type Decoder = (body: Buffer) => string;
+const UTF_8: Decoder = (body) => body.toString('utf8');
+
 /** Java's names for the charsets decoded here as Java decodes them. */
-const JAVA_CHARSETS = [
+const JAVA_CHARSET_NAMES: [names: string, decode: Decoder][] = [
   [
     'iso-8859-1 iso8859_1 iso_8859_1 iso_8859-1 iso8859-1 8859_1 latin1 l1 ibm819 ibm-819 cp819 819 csisolatin1 iso-ir-100 iso_8859-1:1987',
     (body) => body.toString('latin1'),
@@ -3974,15 +4036,19 @@ const JAVA_CHARSETS = [
     (body) =>
       Array.from(body, (byte) => (byte < 0x80 ? String.fromCharCode(byte) : '\ufffd')).join(''),
   ],
-  ['utf-8 utf8 unicode-1-1-utf-8', (body) => body.toString('utf8')],
+  ['utf-8 utf8 unicode-1-1-utf-8', UTF_8],
   ['utf-16 utf_16 utf16 unicode', (body) => utf16(body, undefined)],
   ['utf-16be utf_16be x-utf-16be iso-10646-ucs-2 unicodebigunmarked', (body) => utf16(body, 'be')],
   ['utf-16le utf_16le x-utf-16le unicodelittleunmarked', (body) => utf16(body, 'le')],
   ['utf-32 utf_32 utf32', (body) => utf32(body, undefined)],
   ['utf-32be utf_32be x-utf-32be', (body) => utf32(body, 'be')],
   ['utf-32le utf_32le x-utf-32le', (body) => utf32(body, 'le')],
-].flatMap(([names, decode]) => names.split(' ').map((name) => [name, decode]));
-const JAVA_DECODERS = new Map(JAVA_CHARSETS);
+];
+const JAVA_DECODERS = new Map(
+  JAVA_CHARSET_NAMES.flatMap(([names, decode]) =>
+    names.split(' ').map((name): [string, Decoder] => [name, decode])
+  )
+);
 
 /**
  * How to read a body in a charset named in a Content-Type, lower-cased, or
@@ -3992,7 +4058,7 @@ const JAVA_DECODERS = new Map(JAVA_CHARSETS);
  * which for a body of stable ids reads the same. A charset only Java knows
  * (an EBCDIC code page) is refused here and read by Java.
  */
-function decoderFor(charset) {
+function decoderFor(charset: string): Decoder | undefined {
   if (JAVA_DECODERS.has(charset)) return JAVA_DECODERS.get(charset);
   try {
     const decoder = new TextDecoder(charset);
@@ -4018,14 +4084,21 @@ function utf16(body, order) {
       little = true;
     }
   }
-  const units = [];
+  const units: number[] = [];
   for (; at + 1 < body.length; at += 2)
     units.push(little ? body[at] | (body[at + 1] << 8) : (body[at] << 8) | body[at + 1]);
   let text = '';
   for (let i = 0; i < units.length; i += 1) {
-    const unit = units[i];
-    if (unit >= 0xd800 && unit <= 0xdbff && units[i + 1] >= 0xdc00 && units[i + 1] <= 0xdfff) {
-      text += String.fromCharCode(unit, units[i + 1]);
+    const unit = present(units[i]);
+    const next = units[i + 1];
+    if (
+      unit >= 0xd800 &&
+      unit <= 0xdbff &&
+      next !== undefined &&
+      next >= 0xdc00 &&
+      next <= 0xdfff
+    ) {
+      text += String.fromCharCode(unit, next);
       i += 1;
     } else
       text +=
@@ -4035,7 +4108,7 @@ function utf16(body, order) {
   }
   // A high surrogate waiting at the end takes the odd byte with it: one U+FFFD.
   const last = units.at(-1);
-  const waiting = last >= 0xd800 && last <= 0xdbff;
+  const waiting = last !== undefined && last >= 0xd800 && last <= 0xdbff;
   return at < body.length && !waiting ? `${text}\ufffd` : text;
 }
 
@@ -4180,16 +4253,22 @@ export const schemaModelQuery =
  * passed to Neo4j, whose refusal is Java's 500. A class Java does not have is
  * its 500; a species for a class without one, or no rows, its 404.
  */
-function schemaPage({ cap, query, answer, species: speciesFilter = true, accepts = () => true }) {
+function schemaPage({
+  cap,
+  query,
+  answer,
+  species: speciesFilter = true,
+  accepts = (_className: string): boolean => true,
+}) {
   return async (request) => {
     const className = pathId(rawSegment(request, 4));
     // In the controller's parameter order: species is a String and cannot
     // fail. /reference has no species parameter: one given is not read.
     const given = speciesFilter ? queryValues(request, 'species') : [];
     const page = springInteger(queryValues(request, 'page'), 'page');
-    if (page.error) return javaError(request, 400, 'BAD_REQUEST', page.error);
+    if (page.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', page.error);
     const offset = springInteger(queryValues(request, 'offset'), 'offset');
-    if (offset.error) return javaError(request, 400, 'BAD_REQUEST', offset.error);
+    if (offset.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', offset.error);
 
     if (!isSchemaClass(className)) return classNotFound(request);
     const none = () =>
@@ -4276,7 +4355,7 @@ export function schemaMinQuery(className, by) {
  * without, the label count Spring Data's `count(Class)` makes, which reads
  * Neo4j's count store. Quoted, because a woven `X$AjcClosure3` is a class too.
  */
-export function schemaCountQuery(className, by) {
+export function schemaCountQuery(className, by?) {
   if (by === undefined) return `MATCH (n:\`${className}\`) RETURN count(n) AS n`;
   return `${schemaMatch(className, by)} RETURN COUNT(n) AS n`;
 }
@@ -4306,7 +4385,7 @@ export function schemaWindow(page, offset, cap = 20000) {
  * labels name (schemaClassOf), not the schemaClass property.
  */
 export function simpleObjectJson(row) {
-  const out = { dbId: row.dbId };
+  const out: SimpleObject = { dbId: row.dbId };
   if (row.stId !== null && row.stId !== undefined && row.stId !== '') out.stId = row.stId;
   const displayName = row.displayName ?? 'null';
   if (displayName !== '') out.displayName = displayName;
@@ -4614,7 +4693,7 @@ export function pathId(segment) {
  */
 function javaPathDecode(text) {
   if (!text.includes('%')) return text;
-  const bytes = [];
+  const bytes: number[] = [];
   for (let at = 0; at < text.length; at += 1) {
     if (text[at] === '%' && /^[0-9A-Fa-f]{2}$/.test(text.slice(at + 1, at + 3))) {
       bytes.push(parseInt(text.slice(at + 1, at + 3), 16));
@@ -4746,9 +4825,14 @@ export function notFound(request, message) {
   return javaError(request, 404, 'NOT_FOUND', message);
 }
 
+/** An object written as JSON, built a property at a time. */
+type Written = { [property: string]: unknown };
+/** SimpleDatabaseObject: a dbId, and what of the rest is not empty. */
+type SimpleObject = { dbId: unknown; stId?: unknown; displayName?: string; schemaClass?: string };
+
 /** The named properties that are actually present. Absent means omitted, not null. */
-function only(source, keys) {
-  const out = {};
+function only(source, keys: string[]): Written {
+  const out: Written = {};
   for (const key of keys) {
     if (source[key] !== undefined && source[key] !== null) out[key] = source[key];
   }
@@ -4807,7 +4891,7 @@ export function javaUrlDecode(text) {
       out += ' ';
       i += 1;
     } else if (c === '%') {
-      const bytes = [];
+      const bytes: number[] = [];
       while (i + 2 < text.length && text[i] === '%') {
         bytes.push(javaHexByte(text.slice(i + 1, i + 3)));
         i += 3;
@@ -4928,7 +5012,7 @@ export function pathwayJson(node) {
     'lastUpdatedDate',
     'schemaClass',
   ]);
-  if (node.schemaClass) out.className = node.schemaClass;
+  if (node.schemaClass) out['className'] = node.schemaClass;
   return out;
 }
 
@@ -5178,16 +5262,17 @@ function javaCompare(a, b) {
  * from two parents is one object, written out in full under each.
  */
 export class PathwayBrowserNode {
-  stId = undefined;
-  name = undefined;
-  species = undefined;
-  url = undefined;
-  type = undefined;
-  diagram = undefined;
-  unique = undefined;
-  order = undefined;
-  children = null;
-  parent = null;
+  // Initialised, not declared: Jackson's order is these fields' (pathwayBrowserJson).
+  stId: string | undefined = undefined;
+  name: string | undefined = undefined;
+  species: string | undefined = undefined;
+  url: string | undefined = undefined;
+  type: string | undefined = undefined;
+  diagram: boolean | undefined = undefined;
+  unique: boolean | undefined = undefined;
+  order: number | undefined = undefined;
+  children: PathwayBrowserNode[] | null = null;
+  parent: PathwayBrowserNode[] | null = null;
 
   addChild(node) {
     this.children = sortedAdd(this.children, node);
@@ -5213,7 +5298,7 @@ export class PathwayBrowserNode {
   /** getLeaves: a TreeSet, so leaves that compare equal are one. */
   getLeaves() {
     if (this.children === null) return [this];
-    let leaves = null;
+    let leaves: PathwayBrowserNode[] | null = null;
     for (const child of this.children) {
       for (const leaf of child.getLeaves()) leaves = sortedAdd(leaves, leaf);
     }
@@ -5339,7 +5424,7 @@ const PATHWAY_TYPES = new Set(['Pathway', 'CellLineagePath', 'TopLevelPathway'])
  */
 export function locationsInPathwayBrowser(root) {
   const leaves = root.getLeaves().filter((leaf) => leaf.type === 'TopLevelPathway');
-  let trees = null;
+  let trees: PathwayBrowserNode[] | null = null;
   for (const leaf of leaves) trees = sortedAdd(trees, treeFromLeaf(leaf, '', '', '', ''));
   return trees ?? [];
 }
@@ -5410,8 +5495,15 @@ function treeFromLeaf(leaf, sel, path, shortPath, lastNodeWithDiagram) {
  * flags) never, and -- under the service's non_empty -- nothing that is null,
  * and no empty children.
  */
-export function pathwayBrowserJson(node) {
-  const out = only(node, ['stId', 'name', 'species', 'url', 'type', 'diagram']);
+export function pathwayBrowserJson(node: PathwayBrowserNode) {
+  const out: Written & { children?: Written[] } = only(node, [
+    'stId',
+    'name',
+    'species',
+    'url',
+    'type',
+    'diagram',
+  ]);
   if (node.children?.length) out.children = node.children.map(pathwayBrowserJson);
   return out;
 }
@@ -5431,6 +5523,13 @@ function booleanEditor(values) {
 }
 
 /**
+ * A request parameter as Spring binds it: the value, or the message of the
+ * 400 Spring answers when it cannot convert it.
+ */
+type Bound<T, Failed = unknown> =
+  { value: T; error?: undefined } | ({ error: string; value?: undefined } & Failed);
+
+/**
  * A `Boolean` request parameter as Spring converts it (StringToBooleanConverter):
  * the first value decides, trimmed as String.trim trims; empty is absent; true,
  * on, yes and 1 or false, off, no and 0 in any case; anything else gets
@@ -5441,7 +5540,7 @@ function booleanEditor(values) {
  * (untrimmed) even though only the first was read. A refused later value
  * changes nothing -- `true&foo` is true. All measured against Java.
  */
-export function springBoolean(values) {
+export function springBoolean(values: string[]): Bound<boolean | undefined> {
   const [raw] = values;
   if (raw === undefined) return { value: undefined };
   const value = javaTrim(raw).toLowerCase();
@@ -5474,11 +5573,11 @@ export function springBoolean(values) {
  *   otherwise parses the same way. The NumberFormatException of that second
  *   attempt is the 400's message, naming String or String[].
  */
-export function springInteger(values, name) {
+export function springInteger(values: string[], name: string): Bound<number> {
   const required = `Required request parameter '${name}' for method parameter type Integer`;
   if (values.length === 0) return { error: `${required} is not present` };
   const empty = { error: `${required} is present but converted to null` };
-  const attempt = (text) => {
+  const attempt = (text: string): { value: number } | { failure: string } => {
     try {
       return { value: javaParseInteger(text) };
     } catch (failure) {
@@ -5487,7 +5586,7 @@ export function springInteger(values, name) {
     }
   };
 
-  const [first] = values;
+  const first = present(values[0]);
   if (first === '') return empty;
   const converted = attempt(first);
   if ('value' in converted) return converted;
@@ -5513,20 +5612,31 @@ class JavaNumberFormat extends Error {}
  * \t-\r and \u001C-\u001F.
  */
 const JAVA_WHITESPACE = new RegExp(
-  `[${[
-    [0x09, 0x0d],
-    [0x1c, 0x20],
-    [0x1680, 0x1680],
-    [0x2000, 0x2006],
-    [0x2008, 0x200a],
-    [0x2028, 0x2029],
-    [0x205f, 0x205f],
-    [0x3000, 0x3000],
-  ]
+  `[${(
+    [
+      [0x09, 0x0d],
+      [0x1c, 0x20],
+      [0x1680, 0x1680],
+      [0x2000, 0x2006],
+      [0x2008, 0x200a],
+      [0x2028, 0x2029],
+      [0x205f, 0x205f],
+      [0x3000, 0x3000],
+    ] satisfies [number, number][]
+  )
     .map(([from, to]) => `${String.fromCharCode(from)}-${String.fromCharCode(to)}`)
     .join('')}]`,
   'g'
 );
+
+/**
+ * An element a loop's bound says is there, which noUncheckedIndexedAccess
+ * cannot see. Absent, this service has a bug: thrown, not read as undefined.
+ */
+function present<T>(value: T | undefined): T {
+  if (value === undefined) throw new Error('read past the end of a list');
+  return value;
+}
 
 /** Spring's StringUtils.trimAllWhitespace. */
 function javaTrimAll(text) {
@@ -5537,7 +5647,9 @@ function javaTrimAll(text) {
  * NumberUtils.parseNumber(text, Integer.class), or Long.class for 64 bits:
  * Integer's as a number, Long's as a bigint.
  */
-function javaParseInteger(text, bits = 32) {
+function javaParseInteger(text: string, bits?: 32): number;
+function javaParseInteger(text: string, bits: 64): bigint;
+function javaParseInteger(text: string, bits = 32): number | bigint {
   const trimmed = javaTrimAll(text);
   const at = trimmed.startsWith('-') ? 1 : 0;
   const hex =
@@ -5638,7 +5750,7 @@ function javaDigit(char, radix) {
  * -- which URLSearchParams does not do: it keeps the text as it is.
  */
 export function servletParameter(query, name) {
-  const values = [];
+  const values: string[] = [];
   for (const pair of String(query).split('&')) {
     if (pair === '') continue;
     const at = pair.indexOf('=');
@@ -5652,7 +5764,7 @@ export function servletParameter(query, name) {
 
 /** Percent-decoding as Tomcat's query parser does it, or null when malformed. */
 function servletDecode(text) {
-  const bytes = [];
+  const bytes: number[] = [];
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i];
     if (char === '+') {
@@ -5743,7 +5855,10 @@ export async function needsIncoming(raw) {
  * the relationship pattern -- and refused unless that is relationship type
  * names, because Java writes it into the query text unchecked.
  */
-export function inDepthAttributes(values, fallback = 'species,compartment') {
+export function inDepthAttributes(
+  values: string[],
+  fallback = 'species,compartment'
+): Bound<string> {
   const text = values.length && values.join(',') !== '' ? values.join(',') : fallback;
   const parts = text.split(',');
   while (parts.length && parts[parts.length - 1] === '') parts.pop();
@@ -5761,7 +5876,7 @@ export function inDepthAttributes(values, fallback = 'species,compartment') {
  * also refused it. Measured against Java's
  * /query/enhanced/v2.
  */
-export function springPrimitiveBoolean(values, fallback) {
+export function springPrimitiveBoolean(values: string[], fallback: boolean): Bound<boolean> {
   // Only one empty value is Spring's "absent": repeated, the array is converted.
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   const value = javaTrim(values[0]).toLowerCase();
@@ -5783,10 +5898,10 @@ export function springPrimitiveBoolean(values, fallback) {
  * NumberUtils.parseNumber does (see springInteger), then all of them joined;
  * failing both, the 400 names `int` and the second attempt's message.
  */
-export function springIntWithDefault(values, fallback) {
+export function springIntWithDefault(values: string[], fallback: number): Bound<number> {
   // Only one empty value is Spring's "absent": repeated, the array is converted.
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
-  const attempt = (text) => {
+  const attempt = (text: string): { value: number } | { failure: string } => {
     try {
       return { value: javaParseInteger(text) };
     } catch (failure) {
@@ -5794,7 +5909,7 @@ export function springIntWithDefault(values, fallback) {
       throw failure;
     }
   };
-  const converted = attempt(values[0]);
+  const converted = attempt(present(values[0]));
   if ('value' in converted) return converted;
   const retried = attempt(values.join(','));
   if ('value' in retried) return retried;
@@ -5820,7 +5935,7 @@ let safeExtensions;
  * much as `.exe`.
  */
 export function downloadGuard(request) {
-  const uri = String(request.originalUrl ?? '').split('?')[0];
+  const uri = present(String(request.originalUrl ?? '').split('?')[0]);
   const last = uri.slice(uri.lastIndexOf('/') + 1);
   safeExtensions ??= new Set(
     JSON.parse(readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')).safe
@@ -5846,10 +5961,13 @@ export function downloadGuard(request) {
  * empty one to null -- and failing that, all of them joined, which with no
  * text is null too. A null is the caller's to answer.
  */
-export function springIntegerWithDefault(values, fallback) {
+export function springIntegerWithDefault(
+  values: string[],
+  fallback: number | null
+): Bound<number | null> {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   if (values[0] === '') return { value: null };
-  const attempt = (text) => {
+  const attempt = (text: string): { value: number } | { failure: string } => {
     try {
       return { value: javaParseInteger(text) };
     } catch (failure) {
@@ -5857,7 +5975,7 @@ export function springIntegerWithDefault(values, fallback) {
       throw failure;
     }
   };
-  const converted = attempt(values[0]);
+  const converted = attempt(present(values[0]));
   if ('value' in converted) return converted;
   const text = values.join(',');
   if (javaTrimAll(text) === '') return { value: null };
@@ -5877,7 +5995,7 @@ export function springIntegerWithDefault(values, fallback) {
  * the same text, which reads one with no text as null -- for a path variable,
  * Java's 500. Otherwise the 400 names the second attempt's failure.
  */
-export function springPathLong(text, name) {
+export function springPathLong(text: string, name: string): Bound<bigint, { status: 400 | 500 }> {
   try {
     return { value: javaParseInteger(text, 64) };
   } catch (failure) {
@@ -5933,7 +6051,7 @@ export function timedOut(request, failure) {
  * domain objects with, from `?view=` and `?includeRef=`, as writeDomain's
  * arguments. getParameter is the first value; Boolean.parseBoolean ignores case.
  */
-export function writerFor(request) {
+export function writerFor(request): [view: number, options: { jsog: boolean }] {
   const [view] = queryValues(request, 'view');
   const [includeRef] = queryValues(request, 'includeRef');
   return [
@@ -6011,7 +6129,7 @@ export function failureAnswer(request, path, failure) {
  */
 export function collations(answer) {
   const flat = answer?.spellcheck?.collations ?? [];
-  const found = [];
+  const found: string[] = [];
   for (let at = 0; at + 1 < flat.length; at += 2) {
     if (flat[at] !== 'collation') continue;
     const value = flat[at + 1];
@@ -6019,6 +6137,17 @@ export function collations(answer) {
   }
   return found.filter((value) => typeof value === 'string');
 }
+
+/**
+ * What this service throws and catches: an Error, tagged with how it is to
+ * be answered -- Solr busy, Java's own failure, Java's message, a Neo4j code.
+ */
+type Failure = Error & {
+  busy?: boolean;
+  unexpected?: boolean;
+  javaMessage?: string;
+  code?: string;
+};
 
 /**
  * The answer `work` makes from Solr, or the one Java makes when Solr cannot
@@ -6035,7 +6164,8 @@ async function fromSolr(request, path, work) {
   });
   try {
     return await work(gone.signal);
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure;
     if (gone.signal.aborted) return { status: 500 };
     if (failure.busy)
       return {
@@ -6078,19 +6208,16 @@ const FACET_FIELDS = new Map([
  * solrconfig.xml could reach it.
  */
 export function facetMapping(answer) {
-  const fields = answer?.facet_counts?.facet_fields ?? {};
+  const fields: Record<string, unknown[] | null> = answer?.facet_counts?.facet_fields ?? {};
   if (Object.keys(fields).length === 0) return undefined;
-  const lists = {};
+  const lists: Written = {};
   for (const [field, flat] of Object.entries(fields)) {
     const key = FACET_FIELDS.get(field);
     if (!key) throw new Error(`a facet field search-core does not map: ${field}`);
-    const available = [];
-    for (let at = 0; at + 1 < (flat ?? []).length; at += 2)
-      available.push(
-        flat[at] === null || flat[at] === ''
-          ? { count: flat[at + 1] }
-          : { name: flat[at], count: flat[at + 1] }
-      );
+    const available: FacetContainer[] = [];
+    const counts = flat ?? [];
+    for (let at = 0; at + 1 < counts.length; at += 2)
+      available.push(facetContainer(counts[at], counts[at + 1]));
     lists[key] = available.length ? { available } : {};
   }
   const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
@@ -6124,7 +6251,7 @@ const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
  * constant's exact name. The 400 quotes the value as sent and names the
  * constant it looked for, trimmed.
  */
-export function springScope(values, fallback = 'PHYSICAL_ENTITY') {
+export function springScope(values: string[], fallback = 'PHYSICAL_ENTITY'): Bound<string | null> {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) {
     return { value: fallback };
   }
@@ -6144,13 +6271,24 @@ export function springScope(values, fallback = 'PHYSICAL_ENTITY') {
 }
 
 /** SolrCore.configureScope's filter for each scope; BOTH has none. */
+/** Solr's parameters, in order, as solr() sends them. */
+type SolrParams = [string, string][];
+/**
+ * One parameter, typed as solr() takes it: an array literal spread from a
+ * conditional is not typed by where it lands, so a bare pair there reads as
+ * string[].
+ */
+function pair(name: string, value: string): [string, string] {
+  return [name, value];
+}
+
 const SCOPE_FILTER = {
   REFERENCE_ENTITY: 'hasReferenceEntity:false',
   PHYSICAL_ENTITY: '-isReferenceSummary:true',
 };
 
 /** The filters a query takes, in the order SolrCore adds them, with its tag and field. */
-const QUERY_FILTERS = [
+const QUERY_FILTERS: [list: string, tag: string, field: string, key: string][] = [
   ['species', '{!tag=sf}', 'species_facet', 'speciesFacet'],
   ['types', '{!tag=tf}', 'type_facet', 'typeFacet'],
   ['keywords', '{!tag=kf}', 'keywords_facet', 'keywordFacet'],
@@ -6165,7 +6303,7 @@ const QUERY_FILTERS = [
  * and a list with nothing left is a bare tag, as Java sends it.
  */
 export function facetQueryParams(query) {
-  const params = [];
+  const params: [string, string][] = [];
   if (SCOPE_FILTER[query.scope]) params.push(['fq', SCOPE_FILTER[query.scope]]);
   for (const [list, tag, field] of QUERY_FILTERS) {
     const given = query[list];
@@ -6184,9 +6322,19 @@ export function facetQueryParams(query) {
 const PARSER_TYPES = { DISMAX: 'dismax', EDISMAX: 'edismax', STD: '' };
 
 /** One FacetContainer, NON_EMPTY: a null or empty name is left out. */
-function facetContainer(name, count) {
+/** search-core's FacetContainer: a facet's name, absent for an unnamed one, and its count. */
+type FacetContainer = { name?: string; count: number };
+
+function facetContainer(name, count): FacetContainer {
   return name === null || name === '' ? { count } : { name, count };
 }
+
+/** search-core's FacetMapping: the count, and a FacetList for each facet Solr counted. */
+type FacetMapping = {
+  totalNumFount: number;
+  [key: string]: unknown;
+  typeFacet?: { selected?: FacetContainer[]; available?: FacetContainer[] };
+};
 
 /**
  * SolrConverter.getFacetMap(response, query): each of the four facets split
@@ -6195,13 +6343,15 @@ function facetContainer(name, count) {
  */
 function facetMappingFor(answer, query) {
   const fields = answer?.facet_counts?.facet_fields ?? {};
-  const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
-  const selected = {};
+  const mapping: FacetMapping = {
+    totalNumFount: answer?.response?.numFound ?? 0,
+  };
+  const selected: Record<string, (string | null)[]> = {};
   for (const [list, , field, key] of QUERY_FILTERS) {
     if (!(field in fields)) continue;
     const flat = fields[field] ?? [];
-    const chosen = [];
-    const available = [];
+    const chosen: FacetContainer[] = [];
+    const available: FacetContainer[] = [];
     for (let at = 0; at + 1 < flat.length; at += 2) {
       const container = facetContainer(flat[at], flat[at + 1]);
       (query[list]?.includes(flat[at]) ? chosen : available).push(container);
@@ -6230,13 +6380,14 @@ async function facetsOf(query, forceFilters, signal) {
   let correct = true;
   for (const [list] of QUERY_FILTERS) {
     if (!query[list]) continue;
-    if (!(list in first.selected))
+    const found = first.selected[list];
+    if (found === undefined)
       throw Object.assign(new Error(`no ${list} facet to check the filter against`), {
         unexpected: true,
       });
-    if (first.selected[list].length !== query[list].length) {
+    if (found.length !== query[list].length) {
       correct = false;
-      query[list] = first.selected[list];
+      query[list] = found;
     }
   }
   return correct ? first.mapping : (await ask()).mapping;
@@ -6278,10 +6429,10 @@ function javaIsBlank(text) {
  * parts is Java's ArrayIndexOutOfBoundsException, a failure here too.
  */
 function iconPhysicalEntities(doc) {
-  const set = [];
+  const set: Record<string, string>[] = [];
   // Each entity's display name, kept apart: NON_EMPTY may leave it out of
   // what is written, but the TreeSet still orders by it.
-  const names = [];
+  const names: string[] = [];
   for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
     const [stId, type, name, compartments] = javaSplit(packed, '#');
     if (compartments === undefined)
@@ -6356,6 +6507,31 @@ const ENTRY_FIELDS = [
   'replacementStIds',
 ];
 
+/** An Entry being built: the fields set after the document's own. */
+type DraftEntry = {
+  [field: string]: unknown;
+  dbId: string;
+  isDisease: unknown;
+  referenceIdentifier?: unknown;
+  name?: unknown;
+  summation?: unknown;
+  referenceName?: unknown;
+  regulator?: unknown;
+  regulatedEntity?: unknown;
+  fireworksSpecies?: unknown;
+  iconName?: unknown;
+  iconCategories?: unknown;
+  iconReferences?: unknown;
+  iconEhlds?: unknown;
+  iconPhysicalEntities?: unknown;
+  deleted?: unknown;
+  reason?: unknown;
+  explanation?: unknown;
+  date?: unknown;
+  replacementDbIds?: unknown;
+  replacementStIds?: unknown;
+};
+
 /**
  * SolrConverter.buildEntry: a Solr document as search-core's Entry, written
  * as ContentService's mapper writes it -- the fields in declaration order,
@@ -6367,7 +6543,7 @@ const ENTRY_FIELDS = [
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
  */
 export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
-  const entry = {
+  const entry: DraftEntry = {
     dbId: solrValue(doc, 'dbId'),
     stId: solrValue(doc, 'stId'),
     id: 'stId' in doc ? solrValue(doc, 'stId') : solrValue(doc, 'dbId'),
@@ -6463,7 +6639,7 @@ export function searchEntry(doc, highlighting, { speciesWide = false } = {}) {
     value === null ||
     value === '' ||
     (Array.isArray(value) && !value.length);
-  const out = {};
+  const out: Written & { icon?: true; disease?: unknown } = {};
   for (const field of ENTRY_FIELDS) if (!empty(entry[field])) out[field] = entry[field];
   // isIcon() is iconName != null: an empty name, left out, is still an icon.
   if (entry.iconName !== undefined && entry.iconName !== null) out.icon = true;
@@ -6505,8 +6681,8 @@ function unexpectedFailure(request) {
  * undefined when nothing is. Every id the graph does not have "cannot be
  * found", a blank one too, named as it was sent.
  */
-async function identifierProblems(diagram, object) {
-  const report = [];
+async function identifierProblems(diagram, object?) {
+  const report: string[] = [];
   const found = async (id) => {
     // graph-core's trimId splits an id without ':' at '.', and Java's split
     // of dots alone is empty: indexing it is the 500 below. Then findById's
@@ -6552,7 +6728,7 @@ function compareJavaStrings(a, b) {
 /** The FacetContainers of Solr's type facet, as search-core's diagram and species-wide results keep them. */
 function typeFacets(answer) {
   const flat = answer?.facet_counts?.facet_fields?.type_facet ?? [];
-  const facets = [];
+  const facets: FacetContainer[] = [];
   for (let at = 0; at + 1 < flat.length; at += 2)
     facets.push(facetContainer(flat[at], flat[at + 1]));
   return facets;
@@ -6563,6 +6739,8 @@ function typeFacets(answer) {
  * highlighted), the type facets, and Solr's count -- NON_EMPTY leaving out
  * no entries or no facets.
  */
+type EntriesResult = ReturnType<typeof entriesResult>;
+
 function entriesResult(answer, options = {}) {
   const entries = (answer?.response?.docs ?? []).map((doc) => searchEntry(doc, null, options));
   const facets = typeFacets(answer);
@@ -6575,7 +6753,7 @@ function entriesResult(answer, options = {}) {
 
 /** The filters SolrCore adds for a query's species (fireworksSpecies) and types. */
 function speciesAndTypes(query) {
-  const params = [];
+  const params: [string, string][] = [];
   const filter = (list, field) => {
     const kept = list.filter((name) => name !== '' && name !== null);
     list.splice(0, list.length, ...kept);
@@ -6587,17 +6765,19 @@ function speciesAndTypes(query) {
 }
 
 /** start and rows, as SolrQuery sets them: a null one is left out. */
-function paging(query) {
+function paging(query): SolrParams {
   return [
-    ...(query.start === null || query.start === undefined ? [] : [['start', String(query.start)]]),
-    ...(query.rows === null || query.rows === undefined ? [] : [['rows', String(query.rows)]]),
+    ...(query.start === null || query.start === undefined
+      ? []
+      : [pair('start', String(query.start))]),
+    ...(query.rows === null || query.rows === undefined ? [] : [pair('rows', String(query.rows))]),
   ];
 }
 
 /** SolrCore.getDiagrams: the documents in a diagram matching the query. */
-function diagramParams(query) {
+function diagramParams(query): SolrParams {
   return [
-    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
+    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
     ...speciesAndTypes(query),
     ['fq', `${query.includeInteractors ? 'diagramsWithInteractor' : 'diagrams'}:${query.diagram}`],
     ...paging(query),
@@ -6613,12 +6793,12 @@ function diagramParams(query) {
  * keys and the public /search/fireworks URLs -- and is kept there so answers
  * stay byte-identical and old links work.
  */
-function speciesWideParams(query) {
+function speciesWideParams(query): SolrParams {
   const species = query.species ?? [];
   const kept = species.filter((name) => name !== '' && name !== null);
   const types = query.types?.length ? speciesAndTypes({ types: query.types }) : [];
   return [
-    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
+    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
     ['fq', kept.length ? `fireworksSpecies:("${kept.join('" OR "')}")` : ''],
     ...types,
     ...paging(query),
@@ -6640,12 +6820,17 @@ function rawOccurrence(raw) {
     });
   const set = (text) => {
     if (text === '#') return undefined;
-    const map = new JavaHashMap();
+    const map = new JavaHashMap<boolean>();
     for (const item of javaSplit(text, ',')) map.set(item, true);
     const keys = [...map.keys()];
     return keys.length ? keys : undefined;
   };
-  const result = { diagramEntity: line[0], inDiagram: line[1].toLowerCase() === 'true' };
+  const result: {
+    diagramEntity?: string;
+    inDiagram: boolean;
+    occurrences?: string[];
+    interactsWith?: string[];
+  } = { diagramEntity: line[0], inDiagram: line[1].toLowerCase() === 'true' };
   if (result.diagramEntity === '') delete result.diagramEntity;
   const occurrences = set(line[2]);
   if (occurrences) result.occurrences = occurrences;
@@ -6827,11 +7012,11 @@ const SOLR_FIELDS = {
  * it later, once the entity's document is found). A name that is no constant is
  * the 400, quoting the element as sent and naming the constant trimmed.
  */
-function springFields(values) {
+function springFields(values: string[]): Bound<(string | null)[] | null> {
   if (values.length === 0) return { value: null };
   if (values.length === 1 && values[0] === '') return { value: [] };
-  const elements = values.length === 1 ? values[0].split(',') : values;
-  const fields = [];
+  const elements = values.length === 1 ? present(values[0]).split(',') : values;
+  const fields: (string | null)[] = [];
   for (const element of elements) {
     const name = javaTrim(element);
     // Empty once trimmed converts to null, which Java fails on later.
@@ -6865,7 +7050,7 @@ async function reportInformation(request) {
   const address = String(request.socket?.remoteAddress ?? '').replace(/^::ffff:/, '');
   // The release from the cached version, which a report can do without:
   // asked only when a search found nothing, and never its failure.
-  let release = null;
+  let release: string | null = null;
   try {
     const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
     const answer = await version?.handler({ params: {}, query: {} });
@@ -6891,6 +7076,13 @@ function javaWords(text) {
   return parts;
 }
 
+/** search-core's TargetResult: a term, where it was looked for, and whether it is a target. */
+interface TargetResult {
+  term: string;
+  resource: string | null;
+  target: boolean;
+}
+
 /**
  * SolrConverter.getTargets: each term of the query, and whether Solr's
  * target core -- proteins in Reactome's scope of annotation -- knows it by
@@ -6906,17 +7098,18 @@ async function targetsOf(query, scope, signal) {
   try {
     answer = await solr(
       '/search',
-      [...(SCOPE_FILTER[scope] ? [['fq', SCOPE_FILTER[scope]]] : []), ['q', query]],
+      [...(SCOPE_FILTER[scope] ? [pair('fq', SCOPE_FILTER[scope])] : []), ['q', query]],
       { signal, core: 'target', method: 'GET' }
     );
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure;
     if (failure.busy || signal?.aborted) throw failure;
     return [];
   }
   const docs = answer?.response?.docs ?? [];
   if (docs.length === 0) return [];
   const same = (a, b) => caseInsensitive(a, b) === 0 && a.length === b.length;
-  const targets = new JavaHashMap({ hash: targetHash });
+  const targets = new JavaHashMap<TargetResult>({ hash: targetHash });
   for (const term of javaWords(query)) {
     let target = false;
     let resource = null;
@@ -6959,7 +7152,7 @@ function reportNotFound(info, originalQuery, targets) {
     return;
   }
   // Collectors.toSet(): the targets again, in a new HashSet of their own.
-  const again = new JavaHashMap({ hash: targetHash });
+  const again = new JavaHashMap<TargetResult>({ hash: targetHash });
   for (const result of targets) if (result.target) again.set(result.term, result);
   const hits = [...again.entries()].map(([, result]) => result);
   sendReport(
@@ -6979,7 +7172,12 @@ function reportNotFound(info, originalQuery, targets) {
  * code then fails on it), several take the first, and a name that is no
  * constant is the 400 naming it.
  */
-function springEnum(values, fallback, javaType, constants) {
+function springEnum(
+  values: string[],
+  fallback: string,
+  javaType: string,
+  constants: string[]
+): Bound<string | null> {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
   const [sent] = values;
   const name = javaTrim(sent);
@@ -7009,16 +7207,34 @@ function plainFilter(list, field) {
  * (empty when there is none -- Java sends those too), deleted or not, the
  * scope, the parser.
  */
-function searchParams(query) {
+function searchParams(query): SolrParams {
   return [
     ['fq', plainFilter(query.species, 'species_facet')],
     ['fq', plainFilter(query.types, 'type_facet')],
     ['fq', plainFilter(query.compartments, 'compartment_facet')],
     ['fq', plainFilter(query.keywords, 'keywords_facet')],
     ['fq', query.deleted ? 'deleted:true' : '-deleted'],
-    ...(SCOPE_FILTER[query.scope] ? [['fq', SCOPE_FILTER[query.scope]]] : []),
-    ...(PARSER_TYPES[query.parserType] ? [['defType', PARSER_TYPES[query.parserType]]] : []),
+    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
+    ...(PARSER_TYPES[query.parserType] ? [pair('defType', PARSER_TYPES[query.parserType])] : []),
   ];
+}
+
+/** One grouping of a grouped Solr answer, as read here. */
+interface SolrGrouping {
+  ngroups?: number | null;
+  matches?: number;
+  groups?: {
+    groupValue?: string | null;
+    doclist?: { docs?: unknown[]; numFound?: number };
+  }[];
+}
+/** search-core's GroupedResult: the results, rows written, groups, matches; targets for none. */
+interface SearchResult {
+  results: unknown[];
+  rowCount: number;
+  numberOfGroups: unknown;
+  numberOfMatches: unknown;
+  targetResults?: TargetResult[];
 }
 
 /**
@@ -7026,13 +7242,14 @@ function searchParams(query) {
  * with entries a Result named by its group, the rows written, the groups and
  * matches -- a missing group count is Java's unboxing failure.
  */
-function groupedEntries(answer) {
-  const grouping = Object.values(answer?.grouped ?? {})[0];
+function groupedEntries(answer): SearchResult | null {
+  const grouped: Record<string, SolrGrouping> = answer?.grouped ?? {};
+  const grouping = Object.values(grouped)[0];
   if (!grouping) return null;
   if (grouping.ngroups === undefined || grouping.ngroups === null)
     throw Object.assign(new Error('a grouping without ngroups'), { unexpected: true });
   const highlighting = answer?.highlighting ?? {};
-  const results = [];
+  const results: unknown[] = [];
   let rows = 0;
   for (const group of grouping.groups ?? []) {
     const entries = (group.doclist?.docs ?? []).map((doc) => searchEntry(doc, highlighting));
@@ -7056,7 +7273,7 @@ function groupedEntries(answer) {
 }
 
 /** SolrConverter.parseResponse with highlighting: one Result of everything. */
-function plainEntries(answer) {
+function plainEntries(answer): SearchResult {
   const result = searchResult(answer, true);
   return {
     results: [result],
@@ -7129,8 +7346,8 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
               ...searchParams(query),
               ...(paging
                 ? [
-                    ['group.offset', String(query.start)],
-                    ['group.limit', String(query.rows)],
+                    pair('group.offset', String(query.start)),
+                    pair('group.limit', String(query.rows)),
                   ]
                 : []),
               ['q', query.query],
@@ -7144,17 +7361,14 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
             [
               ...searchParams(query),
               ...(paging
-                ? [
-                    ['start', String(query.start)],
-                    ['rows', String(query.rows)],
-                  ]
+                ? [pair('start', String(query.start)), pair('rows', String(query.rows))]
                 : []),
               ['q', query.query],
             ],
             { signal }
           )
         );
-    if (result && result.rowCount === 0) {
+    if (result?.rowCount === 0) {
       const targets = await targetsOf(query.query, query.scope, signal);
       if (targets.length) result.targetResults = targets;
       reportNotFound(await reportInformation(request), query.originalQuery, targets);
@@ -7173,7 +7387,7 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
 
 /** The controller's answer to a search: the GroupedResult, or the 404 with any targets. */
 function searchAnswer(request, query, result) {
-  if (result && result.results?.length) {
+  if (result?.results?.length) {
     const { targetResults, ...written } = result;
     // NON_EMPTY, in a 200: a target's null or empty term or resource is
     // left out (a query with a leading space has an empty first term).
@@ -7278,7 +7492,9 @@ async function staticCitationFor(id) {
   // Europe PMC sends that Java cannot read is "unable to fetch". Only a name
   // we got wrong is a mistake of ours.
   try {
-    const response = await fetch(`${base}?${query}`, { signal: AbortSignal.timeout(30_000) });
+    const response = await fetch(`${base}?${query.toString()}`, {
+      signal: AbortSignal.timeout(30_000),
+    });
     if (response.status !== 200) {
       await response.body?.cancel();
       return undefined;
@@ -7305,7 +7521,7 @@ function facetAnswer(answer) {
  */
 export async function suggestionsFrom(handler, query, ask = solr, signal = undefined) {
   const offered = collations(await ask(handler, [['spellcheck.q', query]], { signal }));
-  const kept = [];
+  const kept: string[] = [];
   for (const collation of offered) {
     const exists = await ask('/exists', [['q', collation]], { signal });
     if ((exists?.response?.numFound ?? 0) > 0) kept.push(collation);
@@ -7392,7 +7608,7 @@ async function lazyCollection(dbId, field) {
 }
 
 /** graph-core's SchemaDataDownloadType, in declaration order: format, address. */
-const SCHEMA_DOWNLOADS = [
+const SCHEMA_DOWNLOADS: [fileFormat: string, address: string][] = [
   ['SBML', 'https://reactome.org/ContentService/exporter/sbml/__ID__.xml'],
   ['SBGN', 'https://reactome.org/ReactomeRESTfulAPI/RESTfulWS/sbgnExporter/__ID__'],
   ['BIOPAX2', 'https://reactome.org/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level2/__ID__'],
@@ -7433,7 +7649,7 @@ export async function schemaDataSet(event, version, lazy) {
       ? {}
       : { [name]: value };
   const expand = (pairs) => pairs.flatMap(([object, n]) => Array(n).fill(object));
-  const creator = [];
+  const creator: unknown[] = [];
   for (const edit of event.authored ?? []) {
     for (const person of expand(await lazy(edit, 'author'))) {
       const affiliation = expand(await lazy(person.dbId, 'affiliation')).map((org) => ({
@@ -7449,7 +7665,7 @@ export async function schemaDataSet(event, version, lazy) {
       });
     }
   }
-  const citation = [];
+  const citation: unknown[] = [];
   for (const reference of event.references ?? []) {
     const cited =
       reference.schemaClass === 'LiteratureReference'
@@ -7633,7 +7849,8 @@ async function crossReferenceResults(request, identifier, dbFilter) {
         ),
       })
     );
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure | null | undefined;
     if (failure instanceof Uncoercible)
       return javaError(
         request,
@@ -7641,11 +7858,12 @@ async function crossReferenceResults(request, identifier, dbFilter) {
         'INTERNAL_SERVER_ERROR',
         `${failure.message}; Error code 'N/A'; nested exception is org.neo4j.driver.exceptions.value.Uncoercible: ${failure.message}`
       );
-    const message = String(failure?.code ?? '').startsWith('Neo.ClientError.')
-      ? neo4jFailureMessage(failure, [failure.code])
+    const code = String(failure?.code ?? '');
+    const message = code.startsWith('Neo.ClientError.')
+      ? neo4jFailureMessage(failure, [code])
       : undefined;
     if (message) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
-    throw failure;
+    throw caught;
   }
 }
 
@@ -7725,7 +7943,7 @@ async function staticSummary(accs) {
      RETURN DISTINCT t.identifier AS s, COUNT(DISTINCT in) as t`,
     { accs }
   );
-  const counts = new JavaHashMap();
+  const counts = new JavaHashMap<number>();
   for (const row of rows) counts.set(row.s, Number(row.t));
   const entities = [...counts.entries()]
     .filter(([, count]) => count > 0)
@@ -7741,7 +7959,7 @@ async function staticSummary(accs) {
  */
 async function attributeAnswer(request, object, attribute) {
   const answer = await attributeOf(request, object, attribute);
-  if (answer.status) return answer;
+  if ('status' in answer) return answer;
   return { status: 200, body: answer.text, type: 'text/plain;charset=UTF-8' };
 }
 
@@ -8057,7 +8275,7 @@ function latin1Disposition(response) {
   response[LATIN1_DISPOSITION] = true;
   const end = response.end.bind(response);
   response.end = (chunk, ...rest) => {
-    const encoding = typeof rest[0] === 'string' ? rest[0] : 'utf8';
+    const encoding = (typeof rest[0] === 'string' ? rest[0] : 'utf8') as BufferEncoding;
     const bytes =
       typeof chunk === 'string'
         ? Buffer.byteLength(chunk, encoding)
@@ -8072,7 +8290,7 @@ function latin1Disposition(response) {
 }
 
 /** The PSICQUIC resources as last read, written; null before a reading, or after one failed. */
-let psicquicCache = null;
+let psicquicCache: string | null = null;
 
 /** A PsicquicResource as content-service's NON_EMPTY mapper writes it. */
 export function resourcesJson(resources) {
@@ -8112,7 +8330,8 @@ export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
       throw new Error(`registry answered ${response.status}`);
     }
     psicquicCache = resourcesJson(psicquicResources(registryServices(await response.text())));
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure;
     if (failure instanceof ReferenceError) throw failure;
     // Java's reading has no timeout: a registry that does not answer leaves
     // it waiting, and the list it had in place. So does this, until the next.
@@ -8157,7 +8376,7 @@ export function writeResult(response, result) {
  * answers 413, where Java would read on; no client sends that many ids.
  */
 function readBody(request, _response, next) {
-  const chunks = [];
+  const chunks: Buffer[] = [];
   let size = 0;
   request.on('data', (chunk) => {
     size += chunk.length;
@@ -8193,7 +8412,7 @@ export function app() {
     // Not stored at the edge unless an endpoint's answer says otherwise
     // (answer()): an error, a preflight or a path no endpoint answers is
     // never kept (spec 011).
-    setLabel(response, defaultLabel(String(request.originalUrl ?? '')));
+    setLabel(response, defaultLabel(String(request.originalUrl)));
     if (request.method !== 'OPTIONS') return next();
     response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
     response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8206,7 +8425,7 @@ export function app() {
   // names the server and its version, which this does not copy -- and a
   // doubled slash matches no mapping, which is Spring's own 404.
   server.use('/ContentService', (request, response, next) => {
-    const path = String(request.originalUrl ?? '').split('?')[0];
+    const path = present(String(request.originalUrl).split('?')[0]);
     if (/%2f|%5c|\\/i.test(path))
       return response
         .status(400)
@@ -8221,7 +8440,8 @@ export function app() {
     // mapping matches (decided 18 Oct 2026, spec 006 T008). An encoded ';'
     // (%3B) is part of an id, as it is to Java.
     if (path.includes(';')) return writeResult(response, springNotFound(request));
-    const [relative, query] = String(request.url).split(/\?(.*)/s);
+    const [head, query] = String(request.url).split(/\?(.*)/s);
+    const relative = present(head);
     // Tomcat decodes the path before Spring matches it, so /icon/qu%65ry is
     // /icon/query to Java. Routing here sees letters, digits, '-', '_' and
     // '~' decoded too -- all a literal segment holds -- and handlers still
@@ -8258,7 +8478,8 @@ export function app() {
       const endpoint = getEndpointFor(`/ContentService${routed.slice(0, -1)}`);
       if (endpoint) {
         const [sent, sentQuery] = sentUrl.split(/\?(.*)/s);
-        const location = sent.slice(0, -1) + (sentQuery === undefined ? '' : `?${sentQuery}`);
+        const location =
+          present(sent).slice(0, -1) + (sentQuery === undefined ? '' : `?${sentQuery}`);
         setLabel(response, redirectLabel(location));
         return response.status(301).location(location).end();
       }
@@ -8267,35 +8488,38 @@ export function app() {
     next();
   });
 
-  server.get('/health', async (_request, response) => {
-    // The release this process is holding, which is the one thing here that can
-    // be wrong without anything looking wrong. Caches live for the life of the
-    // process by agreement -- updating the database includes restarting this --
-    // and a missed restart shows up as diagram, figure and icon URLs pointing at
-    // the previous release's bucket prefix, silently. Reporting it makes that
-    // one curl away from obvious.
-    //
-    // Read through the same cache the endpoint uses, so this reports what is
-    // being *served* rather than what the graph currently says. A health check
-    // that went straight to the database would answer correctly while every
-    // other response was stale, which is the opposite of useful.
-    let release = null;
-    try {
-      const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
-      const answer = await version?.handler({ params: {}, query: {} });
-      release = answer?.body ?? null;
-    } catch {
-      // A health check that fails because the graph is down is reporting the
-      // wrong thing: the process is up, and that is what this answers.
-    }
-    response.json({
-      ok: true,
-      ...buildId(),
-      graph: configured(),
-      solr: solrConfigured(),
-      release,
-      endpoints: endpoints.map((e) => e.path),
-    });
+  // Express 4 does not wait on a handler's promise; this one answers itself.
+  server.get('/health', (_request, response) => {
+    void (async () => {
+      // The release this process is holding, which is the one thing here that can
+      // be wrong without anything looking wrong. Caches live for the life of the
+      // process by agreement -- updating the database includes restarting this --
+      // and a missed restart shows up as diagram, figure and icon URLs pointing at
+      // the previous release's bucket prefix, silently. Reporting it makes that
+      // one curl away from obvious.
+      //
+      // Read through the same cache the endpoint uses, so this reports what is
+      // being *served* rather than what the graph currently says. A health check
+      // that went straight to the database would answer correctly while every
+      // other response was stale, which is the opposite of useful.
+      let release: string | null = null;
+      try {
+        const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));
+        const answer = await version?.handler({ params: {}, query: {} });
+        release = answer?.body ?? null;
+      } catch {
+        // A health check that fails because the graph is down is reporting the
+        // wrong thing: the process is up, and that is what this answers.
+      }
+      response.json({
+        ok: true,
+        ...buildId(),
+        graph: configured(),
+        solr: solrConfigured(),
+        release,
+        endpoints: endpoints.map((e) => e.path),
+      });
+    })();
   });
 
   for (const endpoint of endpoints) {
@@ -8342,9 +8566,7 @@ export function app() {
     if (!(failure instanceof URIError) || response.headersSent) return next(failure);
     // The path as routing saw it, less a trailing slash, which Express
     // ignores too.
-    const path = String(request.url)
-      .split('?')[0]
-      .replace(/(.)\/$/, '$1');
+    const path = present(String(request.url).split('?')[0]).replace(/(.)\/$/, '$1');
     const endpoint = endpointFor(path);
     if (!endpoint) return next(failure);
     // HEAD is answered as GET, as Express answers it; any other method the
@@ -8397,7 +8619,7 @@ export function deepLimit(setting) {
   return Number.isInteger(limit) && limit >= 1 && limit <= 32 ? limit : 4;
 }
 
-const DEEP = deepShare(deepLimit(process.env.DEEP_QUERY_LIMIT));
+const DEEP = deepShare(deepLimit(process.env['DEEP_QUERY_LIMIT']));
 
 /**
  * One endpoint's answer to one request: its handler's result, or what a
@@ -8436,7 +8658,8 @@ export async function answer(endpoint, request, response) {
   };
   try {
     write(await endpoint.handler(request));
-  } catch (failure) {
+  } catch (caught) {
+    const failure = caught as Failure;
     const answer = failureAnswer(request, endpoint.path, failure);
     if (answer) return write(answer);
     // The message, not a stack: this stands in for a service whose errors
@@ -8455,11 +8678,9 @@ export async function answer(endpoint, request, response) {
  * ship only this directory.
  */
 function startedDirectly() {
+  const started = process.argv[1];
   try {
-    return (
-      Boolean(process.argv[1]) &&
-      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
-    );
+    return !!started && realpathSync(started) === realpathSync(fileURLToPath(import.meta.url));
   } catch {
     return false;
   }
@@ -8477,7 +8698,7 @@ if (startedDirectly()) {
     // scheduler does.
     // A mistake of ours is logged, not left to end the process.
     const refresh = () =>
-      refreshPsicquicResources().catch((error) =>
+      void refreshPsicquicResources().catch((error) =>
         console.error(`PSICQUIC resources: ${error.stack}`)
       );
     refresh();
@@ -8501,6 +8722,6 @@ if (startedDirectly()) {
     await close();
     process.exit(0);
   };
-  process.on('SIGINT', stop);
-  process.on('SIGTERM', stop);
+  process.on('SIGINT', () => void stop());
+  process.on('SIGTERM', () => void stop());
 }

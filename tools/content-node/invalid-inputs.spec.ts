@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { invalidInputs } from './invalid-inputs.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
-const { endpoints } = await import('./service.mjs');
+const { endpoints } = await import('./service.ts');
 const GETS = endpoints.filter((e) => !e.method || e.method === 'GET');
 const corpus = invalidInputs(GETS);
 

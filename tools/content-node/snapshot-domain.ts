@@ -189,7 +189,7 @@ try {
   // case of its name: what it reads (a field), a getter domain.ts computes,
   // a constant it returns, Object.getClass, or -- for one that takes
   // arguments -- what invoking it with none does. Any other is left as
-  // `unported`, named below; service.mjs answers no attribute that reaches one.
+  // `unported`, named below; service.ts answers no attribute that reaches one.
   const getters: Record<string, SnapshotGetter[]> = {};
   const unported = new Set<string>();
   // Only a model class can be the object a request names; a relationship

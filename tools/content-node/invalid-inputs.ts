@@ -85,7 +85,7 @@ export function invalidInputs(endpoints) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { endpoints } = await import('./service.mjs');
+  const { endpoints } = await import('./service.ts');
   for (const path of invalidInputs(
     endpoints.filter((e) => !('method' in e) || !e.method || e.method === 'GET')
   ))

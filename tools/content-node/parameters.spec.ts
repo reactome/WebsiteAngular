@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.ts';
 
-const { endpoints } = await import('./service.mjs');
+const { endpoints } = await import('./service.ts');
 const GETS = endpoints.filter((e) => !e.method || e.method === 'GET').map((e) => e.path);
 const OPENAPI = JSON.parse(
   readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')

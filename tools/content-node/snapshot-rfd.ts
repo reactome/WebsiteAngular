@@ -1,7 +1,7 @@
 /**
  * Write rfd-snapshot.json: the path extensions Spring trusts, so the answers
  * that Java would mark `Content-Disposition: inline;filename=f.txt` are marked
- * here too (service.mjs, downloadGuard).
+ * here too (service.ts, downloadGuard).
  *
  *   CONTENT_SERVICE_LIB=<the ContentService webapp's WEB-INF/lib> \
  *   TOMCAT_LIB=<the Tomcat lib directory holding catalina.jar> \

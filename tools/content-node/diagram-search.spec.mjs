@@ -21,7 +21,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: (key, fallback = '') => process.env[key] || fallback,
 }));
 
-const { app } = await import('./service.mjs');
+const { app } = await import('./service.ts');
 
 let base;
 let server;
@@ -366,7 +366,7 @@ describe('/diagram/summary', () => {
 
 describe('searchEntry for fireworks', () => {
   it("carries the document's species-overview species, where Entry declares them", async () => {
-    const { searchEntry } = await import('./service.mjs');
+    const { searchEntry } = await import('./service.ts');
     const entry = searchEntry(
       { dbId: '1', fireworksSpecies: ['Homo sapiens'], iconName: 'x' },
       null,

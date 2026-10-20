@@ -15,10 +15,10 @@
  * shows otherwise -- which has to be argued in a commit message, not assumed at
  * a terminal.
  */
-import { endpointFor, endpoints } from './service.mjs';
+import { endpointFor, endpoints } from './service.ts';
 
-const JAVA = process.env.JAVA_CONTENT_SERVICE || 'http://localhost:8080';
-const NODE = process.env.NODE_CONTENT_SERVICE || 'http://127.0.0.1:4400';
+const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
+const NODE = process.env['NODE_CONTENT_SERVICE'] || 'http://127.0.0.1:4400';
 
 function flag(name, fallback = '') {
   const at = process.argv.indexOf(`--${name}`);
@@ -42,7 +42,7 @@ async function fetchBoth(path) {
     const response = await fetch(base + path, { redirect: 'follow', ...init });
     return {
       status: response.status,
-      type: (response.headers.get('content-type') || '').split(';')[0].trim(),
+      type: ((response.headers.get('content-type') || '').split(';')[0] ?? '').trim(),
       body: await response.text(),
     };
   };
@@ -72,7 +72,7 @@ async function fetchBoth(path) {
  * keeps all 999 entries compared field by field.
  */
 function differences(path, java, node, endpoint) {
-  const problems = [];
+  const problems: string[] = [];
   if (java.status !== node.status) {
     problems.push(`status ${node.status}, java says ${java.status}`);
   }
@@ -162,7 +162,7 @@ function differences(path, java, node, endpoint) {
  * not be able to crowd out undeclared ones.
  */
 const CEILING = 2000;
-function compare(expected, actual, at, found = []) {
+function compare(expected, actual, at, found: string[] = []) {
   if (found.length > CEILING) return found;
   const where = at || '(root)';
 
@@ -205,7 +205,7 @@ function paths() {
     .filter(Boolean);
   const chosen = only ? endpoints.filter((e) => e.path === only) : endpoints;
 
-  const skipped = [];
+  const skipped: string[] = [];
   const expanded = chosen.flatMap((endpoint) => {
     // Path variables other than {id} take the endpoint's own sample values.
     let template = endpoint.path;
@@ -242,7 +242,7 @@ async function main() {
   console.log(`    java: ${JAVA}`);
   console.log(`    node: ${NODE}\n`);
 
-  const problems = [];
+  const problems: string[] = [];
   // One at a time. Both services read the same database, and this must not be
   // what makes the site slow while curators are testing.
   for (const path of list) {
@@ -264,7 +264,8 @@ async function main() {
         // appearing is news too -- it means the improvement was lost.
         console.log(`      (${expected.length} declared difference(s), as intended)`);
       }
-    } catch (failure) {
+    } catch (caught) {
+      const failure = caught as Error;
       problems.push(`${path}: ${failure.message}`);
       console.log(`  ✗ ${path}\n      ${failure.message}`);
     }
