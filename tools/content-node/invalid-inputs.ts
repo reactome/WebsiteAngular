@@ -41,7 +41,6 @@ const SHARED_ON = new Set([
   '/ContentService/data/diseases',
 ]);
 
-/** A sample URL for an endpoint, as routes.spec.ts builds one. */
 /** An endpoint as service.ts lists it: its path and, where it has one, a sample id. */
 interface Endpoint {
   path: string;
@@ -49,6 +48,7 @@ interface Endpoint {
   method?: string;
 }
 
+/** A sample URL for an endpoint, as routes.spec.ts builds one. */
 function sampleOf(endpoint: Endpoint) {
   const [id, query] = (endpoint.sample ?? '').split('?');
   const path = (id ? endpoint.path.replace(/\{[^}]+\}/, id) : endpoint.path)

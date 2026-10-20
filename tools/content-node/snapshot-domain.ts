@@ -342,7 +342,6 @@ function keepVerifiedOrder(json: Record<string, SnapshotProperty[]>): string[] {
   return unsettled;
 }
 
-/** Each method's instructions, by `Class.method`, from javap -c -p over many classes. */
 /** One bytecode instruction as javap lists it: its op, and the field or string it names. */
 interface Instruction {
   op: string;
@@ -351,6 +350,7 @@ interface Instruction {
 }
 type Bodies = Map<string, Instruction[]>;
 
+/** Each method's instructions, by `Class.method`, from javap -c -p over many classes. */
 function methodBodies(text: string): Bodies {
   const bodies: Bodies = new Map();
   for (const section of text.split(/^Compiled from .*$/m).slice(1)) {
@@ -383,7 +383,10 @@ function constantRead(bodies: Bodies, declaredBy: string, member: string) {
     .filter((key) => key.startsWith(`${declaredBy}.${member}_aroundBody`) && key.endsWith('#woven'))
     .map((key) => bodies.get(key))
     // Every key is one of bodies', so each body is there.
-    .filter((code): code is Instruction[] => !code?.some(({ op }) => op === 'invokestatic'));
+    .filter(
+      (code): code is Instruction[] =>
+        code !== undefined && !code.some(({ op }) => op === 'invokestatic')
+    );
   const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
   if (code?.length !== 2) return undefined;
   const [load, give] = code as [Instruction, Instruction];
@@ -402,7 +405,10 @@ function fieldRead(bodies: Bodies, declaredBy: string, member: string) {
     .filter((key) => key.startsWith(`${declaredBy}.${member}_aroundBody`) && key.endsWith('#woven'))
     .map((key) => bodies.get(key))
     // Every key is one of bodies', so each body is there.
-    .filter((code): code is Instruction[] => !code?.some(({ op }) => op === 'invokestatic'));
+    .filter(
+      (code): code is Instruction[] =>
+        code !== undefined && !code.some(({ op }) => op === 'invokestatic')
+    );
   const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
   if (!code) return undefined;
   const ops = code.map(({ op }) => op).join(' ');
