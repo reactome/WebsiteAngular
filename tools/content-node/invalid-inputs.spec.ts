@@ -17,17 +17,23 @@ const corpus = invalidInputs(GETS);
 
 describe('invalidInputs', () => {
   it('tries every endpoint that declares a parameter of its own, unless it is never stored', () => {
-    const tried = new Set(corpus.map((url) => url.split('?')[0] ?? ''));
+    // Each URL is the endpoint's that answers it: the first in the list whose
+    // template it fits, as routing takes it. Not any template it fits --
+    // /search/diagram/summary fits /search/diagram/{diagram} too, and would
+    // have counted that endpoint tried when it never was.
+    const pattern = (path: string) => new RegExp(`^${path.replace(/\{[^}]+\}/g, '[^/]+')}$`);
+    const tried = new Set(
+      corpus.map((url) => {
+        const path = url.split('?')[0] ?? '';
+        return GETS.find((endpoint) => pattern(endpoint.path).test(path))?.path;
+      })
+    );
     for (const endpoint of GETS) {
       const own = declaredQuery(endpoint.path).filter(
         (p) => !['view', 'includeRef'].includes(p.name)
       );
       if (!own.length || RECORD[endpoint.path]?.cache) continue;
-      const pattern = new RegExp(`^${endpoint.path.replace(/\{[^}]+\}/g, '[^/]+')}$`);
-      expect([endpoint.path, [...tried].some((path) => pattern.test(path))]).toEqual([
-        endpoint.path,
-        true,
-      ]);
+      expect([endpoint.path, tried.has(endpoint.path)]).toEqual([endpoint.path, true]);
     }
   });
 

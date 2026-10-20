@@ -8,8 +8,10 @@
  * reaches goes up, and the per-module checks read the baseline in the tree.
  * So a move could carry a rise inside it unseen. This compares each
  * baseline's total with the base branch's: a move keeps the totals, typing
- * lowers them, nothing may raise them. lint-baseline.json's total and the
- * dead-code total are compared too.
+ * lowers them, nothing may raise them. A module the base already counts may
+ * not rise either (moves create their modules), so a rise cannot hide behind
+ * a fall elsewhere. lint-baseline.json's total and the dead-code total are
+ * compared too.
  *
  *   node scripts/check-baseline-totals.mjs [base]    # base defaults to origin/main
  */
@@ -61,6 +63,19 @@ for (const [name, file, total] of BASELINES) {
     throw new Error(`${file}: no total to read`);
   read.push(`${name} ${now} (base ${before ?? 'none'})`);
   if (before !== undefined && now > before) rose.push(`${name} rose: ${now}, base ${before}`);
+}
+
+// A module the base already counts may not rise. Code moved between modules
+// goes to new ones (spec 014: each move creates its module), so a move never
+// raises one that exists; a rise in one is new code, whatever fell elsewhere
+// to keep the total. Only a module the base does not list may take counts,
+// within the total.
+for (const [name, file] of BASELINES.slice(0, 2)) {
+  const now = JSON.parse(readFileSync(file, 'utf8'));
+  const was = atBase(file) ?? {};
+  for (const [module, count] of Object.entries(now))
+    if (module in was && count > was[module])
+      rose.push(`${name} in ${module} rose: ${count}, base ${was[module]}`);
 }
 
 // Lint's counts are per rule and global, so no move changes them; a rise in

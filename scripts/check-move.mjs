@@ -16,7 +16,10 @@
  *    none of the base branch's modules -- a new `javaTrim` beside a moved
  *    caller would quietly replace the one it called;
  *  - rebound: a name a moved declaration imports from a module whose
- *    declaration of it is not the one the base branch's module had.
+ *    declaration of it is not the one the base branch's module had; or any
+ *    name a moved declaration uses that is bound to something else where it
+ *    is now -- a receiving module's own declaration of that name, or a
+ *    global where the original had a declaration or an import.
  *
  *   node scripts/check-move.mjs [base]        # base defaults to origin/main
  *
@@ -128,10 +131,14 @@ function pieces(file, text) {
   const effects = []; // specifiers imported for their side effects
   const reexports = new Map(); // exported name -> [specifier, name there]
   const stars = []; // specifiers of `export * from`
+  const uses = new Map(); // declaration or endpoint key -> the names it uses
   const add = (map, key, node) => {
     const list = map.get(key) ?? [];
     list.push(canonical(sf, node));
     map.set(key, list);
+    const used = uses.get(key) ?? new Set();
+    for (const name of namesUsed(node)) used.add(name);
+    uses.set(key, used);
   };
   const endpointsIn = (list) => {
     for (const element of list.elements) {
@@ -206,7 +213,74 @@ function pieces(file, text) {
       );
     }
   }
-  return { declarations, endpoints, imports, effects, reexports, stars };
+  return { declarations, endpoints, imports, effects, reexports, stars, uses };
+}
+
+/**
+ * The names a node refers to from outside itself: every identifier but a
+ * property's name after a dot, a key in an object or class, and any name
+ * the node declares within it (a local, a parameter: those bind the same
+ * wherever the node is). The node's own name is left to the caller.
+ */
+function namesUsed(node) {
+  const names = new Set();
+  const declared = new Set();
+  const visit = (n) => {
+    if (ts.isIdentifier(n)) {
+      const p = n.parent;
+      const isNameOf =
+        (ts.isPropertyAccessExpression(p) && p.name === n) ||
+        (ts.isQualifiedName(p) && p.right === n) ||
+        ((ts.isPropertyAssignment(p) ||
+          ts.isMethodDeclaration(p) ||
+          ts.isPropertyDeclaration(p) ||
+          ts.isPropertySignature(p) ||
+          ts.isMethodSignature(p) ||
+          ts.isGetAccessorDeclaration(p) ||
+          ts.isSetAccessorDeclaration(p) ||
+          ts.isEnumMember(p)) &&
+          p.name === n) ||
+        (ts.isBindingElement(p) && p.propertyName === n) ||
+        ((ts.isVariableDeclaration(p) ||
+          ts.isParameter(p) ||
+          ts.isFunctionDeclaration(p) ||
+          ts.isClassDeclaration(p) ||
+          ts.isInterfaceDeclaration(p) ||
+          ts.isTypeAliasDeclaration(p) ||
+          ts.isBindingElement(p)) &&
+          p.name === n);
+      if (!isNameOf) names.add(n.text);
+      else if (
+        n !== node.name &&
+        (ts.isVariableDeclaration(p) ||
+          ts.isParameter(p) ||
+          ts.isFunctionDeclaration(p) ||
+          ts.isClassDeclaration(p) ||
+          ts.isBindingElement(p))
+      )
+        declared.add(n.text);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(node);
+  // A top-level `const x = …` declares its own name, which is no local.
+  if (ts.isVariableStatement(node))
+    for (const d of node.declarationList.declarations)
+      if (ts.isIdentifier(d.name)) declared.delete(d.name.text);
+  return [...names].filter((name) => !declared.has(name));
+}
+
+/**
+ * What a name is bound to at the top of a module: its declaration there,
+ * what it imports (followed to a declaration), or a global.
+ */
+function bindingOf(modules, file, name) {
+  const module = modules.get(file);
+  if (module?.declarations.has(name))
+    return `declared: ${module.declarations.get(name).join('\n')}`;
+  if (module?.imports.has(name))
+    return `imported: ${identity(modules, ...module.imports.get(name))}`;
+  return 'global';
 }
 
 /**
@@ -337,6 +411,29 @@ for (const file of receivers) {
       problems.push(
         `added: import '${spec}' in ${file} (no original module imported it for its effects)`
       );
+}
+
+// Every name a moved declaration or endpoint uses must be bound now as it
+// was in the module it came from: a receiving module's own `javaTrim` would
+// quietly replace the one a moved caller called, and a helper left behind
+// unimported would fall through to a global of the same name (`close`).
+for (const [where, from] of origins) {
+  const at = where.indexOf('#');
+  const to = where.slice(0, at);
+  const key = where.slice(at + 1);
+  const kind = before.get(from).declarations.has(key) ? 'declarations' : 'endpoints';
+  for (const name of after.get(to).uses.get(key) ?? []) {
+    const was = bindingOf(before, from, name);
+    const is = bindingOf(after, to, name);
+    if (was === is) continue;
+    // What it imported may have moved too: the same declaration, now here.
+    if (was.startsWith('imported: ') && is === `declared: ${was.slice(10)}`) continue;
+    if (was.startsWith('declared: ') && is === `imported: ${was.slice(10)}`) continue;
+    if (kind === 'declarations' && name === key) continue; // its own name
+    problems.push(
+      `rebound: ${name}, used by ${key} in ${to}, is ${is.split(':')[0]} there; in ${from} at ${base} it was ${was.split(':')[0]}${was.split(':')[0] === is.split(':')[0] ? ' as something else' : ''}`
+    );
+  }
 }
 
 const count = (prefix) => problems.filter((p) => p.startsWith(prefix)).length;
