@@ -62,7 +62,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 - `search-endpoints.ts`: query, paginated query, facets, suggest and spellcheck, icons, pathways-of.
 - `search-diagram-endpoints.ts`: diagram summary, diagram search, flag, occurrences, species overview, and the overview's flag.
 
-**Line counts after the cut, estimated** (endpoints plus own helpers): every family module is 175 to 875 lines. `search.ts` and `search-diagram.ts` are about 800 each. The shared modules are 100 to 300 each, and `server.ts` about 600. None is over 1,500.
+**Line counts after the cut, estimated** (endpoints plus own helpers): every family module is 175 to 875 lines. `search-endpoints.ts` and `search-diagram-endpoints.ts` are about 800 each. The shared modules are 100 to 300 each, and `server.ts` about 600. None is over 1,500.
 
 **Alternatives.**
 
@@ -88,9 +88,9 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
 **Measured.**
 
 - Express routes are registered in array order (`server.all(...)`) and the first match wins. `endpointFor` and `getEndpointFor` also take the first match in array order.
-- 13 pairs of endpoints can match one URL, so their order decides the answer. All 13 are within one family:
+- 15 pairs of endpoints can match one URL, so their order decides the answer. All 15 are within one family:
   - person: 5 named lists before `/{attribute}`;
-  - query: `enhanced`, `stId`, `ids/map` and `normalPathway` before `/{id}/{attribute}`;
+  - query: `enhanced`, `stId`, `ids/map` and `normalPathway` before `/{id}/{attribute}`, and `enhanced` before `/{id}/stId` and `/{id}/normalPathway` (`/data/query/enhanced/stId` matches both);
   - schema: `model` before `/{id}`;
   - search: diagram `summary` before `/{diagram}`, and icon `facet` and `query` before `/{identifier}`.
 
@@ -100,7 +100,7 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
 
 - Each family exports its endpoints in today's order.
 - The registry concatenates the families. Their order between each other does not matter for matching, but it is kept as today's anyway so that `/health`'s list, the parity harness and the route tables read the same.
-- A new test pins it: the registry's list equals a recorded list of today's paths, in order, and every one of the 13 pairs is in its recorded order.
+- A new test pins it: the registry's list equals a recorded list of today's paths, in order, and every one of the 15 pairs is in its recorded order.
 - `deploy/nginx/routes.spec.ts` reads the registry instead of `service.ts`.
 - Specs that import a helper from `service.ts` import it from its new module. `service.ts` keeps no re-exports once its last family has gone; until then it re-exports only what has not moved yet.
 
@@ -142,7 +142,7 @@ Eight handlers carry `warms`. The parameter record (`parameters.ts` `RECORD`) is
 
 ## R6. A move is a move
 
-**Decision.** A new script, `scripts/check-move.mjs`, takes the base branch's `service.ts` and today's modules and, for every top-level declaration and every endpoint (by path), compares the text with `export` and surrounding whitespace normalised. It fails on any difference and lists them, so a move PR shows "N declarations, M endpoints moved, 0 changed".
+**Decision.** A new script, `scripts/check-move.mjs`, takes the base branch's modules and today's and, for every top-level statement and every endpoint (by method and path) that left its module, compares it token for token: strings, templates, regular expressions and comments exactly, only the whitespace between tokens and a leading `export` set aside, so Prettier rewrapping a moved declaration is not a change. Two things fail besides a changed or missing piece, because a moved declaration's meaning can change without its text changing: a declaration added to a module that received moved code (`added:`), and an imported name that now resolves to a different declaration (`rebound:`). It is not a CI gate: a pull request that deletes code would fail it; a move pull request runs it and shows its output. It fails on any difference and lists them, so a move PR shows "N declarations, M endpoints moved, 0 changed".
 
 Imports are not compared. Neither is anything the PR lists as needing a change because of the boundary (a module-local name that had to be exported). It is shown failing first, with one character changed in a moved function.
 

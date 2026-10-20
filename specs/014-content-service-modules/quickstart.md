@@ -45,7 +45,7 @@ Expected:
 1. **The move check.** Change one character in a moved function. It reports `changed:` with that function's name.
 2. **The baseline totals.** Raise one module's count in `tools/loose-baseline.json`. It reports `loose rose`.
 3. **The boundary test.** Import one family from another. It names both modules.
-4. **The order test.** Swap two endpoints of one of the 13 order-dependent pairs. It names the pair.
+4. **The order test.** Swap two endpoints of one of the 15 order-dependent pairs. It names the pair.
 5. **The endpoint type.** Misspell `sample` as `sampel` in one endpoint. `check:types` fails on it.
 
 Each is undone after it has been seen to fail.

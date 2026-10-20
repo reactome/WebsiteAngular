@@ -13,7 +13,7 @@
 - a registry that keeps today's order;
 - a server module.
 
-The order matters for 13 pairs of routes, all within a family (research R3).
+The order matters for 15 pairs of routes, all within a family (research R3).
 
 One preparatory change breaks the only cycle the cut would create. That cycle is the release, which three helpers look up through the endpoint list (R2).
 
@@ -43,14 +43,14 @@ Each move is deployed to beta and its answers compared. After the split, both Ex
 
 ## Constitution Check
 
-| Principle                                     | How this plan meets it                                                                                                                                                                                          |
-| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| I. Verify the instrument                      | The move check and the totals check are themselves shown failing on a planted change before they are trusted. The order test is built from the measured 13 pairs, not from a belief about which routes collide. |
-| II. Measure in the thing                      | The cut, the pairs, the fields and Express 5's reach were measured on the file and the loaded list (research). Each move is measured on beta, before and after.                                                 |
-| III. Prove a test fails first                 | Five new checks, each shown failing (quickstart).                                                                                                                                                               |
-| IV. No unstable identifier left to the reader | Not touched: no answer changes.                                                                                                                                                                                 |
-| V. Comments carry the failure                 | Comments move with their code, unchanged (the move check compares them too). New modules get a header saying what they hold and what they may import.                                                           |
-| Quality gates                                 | Unchanged, plus the totals check in CI and preflight. The per-module ratchets follow moved code through `--update` in the same pull request, and the totals check holds the line.                               |
+| Principle                                     | How this plan meets it                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| I. Verify the instrument                      | The move check and the totals check are themselves shown failing on a planted change before they are trusted. The order test is built from the measured 15 pairs (a first measurement that filled every variable alike found 13; segment by segment there are 15), not from a belief about which routes collide. |
+| II. Measure in the thing                      | The cut, the pairs, the fields and Express 5's reach were measured on the file and the loaded list (research). Each move is measured on beta, before and after.                                                                                                                                                  |
+| III. Prove a test fails first                 | Five new checks, each shown failing (quickstart).                                                                                                                                                                                                                                                                |
+| IV. No unstable identifier left to the reader | Not touched: no answer changes.                                                                                                                                                                                                                                                                                  |
+| V. Comments carry the failure                 | Comments move with their code, unchanged (the move check compares them too). New modules get a header saying what they hold and what they may import.                                                                                                                                                            |
+| Quality gates                                 | Unchanged, plus the totals check in CI and preflight. The per-module ratchets follow moved code through `--update` in the same pull request, and the totals check holds the line.                                                                                                                                |
 
 No violations to justify.
 
@@ -114,7 +114,7 @@ deploy/content-node/Dockerfile # CMD → server.ts, once service.ts is gone
    1. citation
    2. content
    3. person
-   4. schema-endpoints
+   4. schema
    5. interactors
    6. exporters
    7. entities

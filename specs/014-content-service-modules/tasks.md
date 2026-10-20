@@ -41,7 +41,7 @@ It must not mix in logic edits.
   - Show it failing on one module's count raised by hand. — #569
 - [x] T003 [P] Write the route-order test in `tools/content-node/registry.spec.ts` (R3).
   - Record today's 88 paths with their methods, in order. Assert that the endpoint list equals the recording.
-  - Assert that each of the 13 order-dependent pairs is in its recorded order: the 5 person lists before `/{attribute}`; `enhanced`, `stId`, `ids/map` and `normalPathway` before `/query/{id}/{attribute}`; `schema/model` before `/{id}`; `diagram/summary` before `/{diagram}`; icon `facet` and `query` before `/{identifier}`.
+  - Assert that the 15 order-dependent pairs, named in the test, are in their measured order: the 5 person lists before `/{attribute}`; `enhanced`, `stId`, `ids/map` and `normalPathway` before `/query/{id}/{attribute}`, and `enhanced` before `/{id}/stId` and `/{id}/normalPathway`; `schema/model` before `/{id}`; `diagram/summary` before `/{diagram}`; icon `facet` and `query` before `/{identifier}`.
   - It reads the list from `service.ts` until T006 moves it. Show it failing on two swapped endpoints. — #569
 - [x] T004 [P] Write the boundary test in `tools/content-node/boundaries.spec.ts` (contracts/boundaries.md). It reads each module's import specifiers and fails on any the table does not allow, naming both modules.
   - It passes trivially today, because only `service.ts` imports the leaves.

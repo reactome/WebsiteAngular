@@ -18,11 +18,22 @@ import { readFileSync } from 'node:fs';
 
 const base = process.argv[2] ?? 'origin/main';
 
+// A base that is not there is no comparison at all, and must not read as one
+// with nothing to rise from.
+try {
+  execFileSync('git', ['rev-parse', '--verify', '--quiet', `${base}^{commit}`], { stdio: 'pipe' });
+} catch {
+  console.log(`  ${base} is not a commit here: fetch it, or name the base to compare with`);
+  process.exit(1);
+}
+
 /** The baselines, and how each one's total is read. */
 const BASELINES = [
   ['loose', 'tools/loose-baseline.json', (json) => sum(Object.values(json))],
   ['implicit any', 'tools/implicit-any-baseline.json', (json) => sum(Object.values(json))],
-  ['lint', 'lint-baseline.json', (json) => json.warnings],
+  // The per-rule counts are what check-lint.mjs holds the code to; `warnings`
+  // is only written alongside them.
+  ['lint', 'lint-baseline.json', (json) => sum(Object.values(json.rules))],
   ['dead code', 'dead-code-baseline.json', (json) => json.total],
 ];
 
@@ -31,12 +42,13 @@ function sum(values) {
 }
 
 function atBase(file) {
-  try {
-    return JSON.parse(execFileSync('git', ['show', `${base}:${file}`], { encoding: 'utf8' }));
-  } catch {
-    // A baseline the base branch does not have yet is new: nothing to rise from.
-    return undefined;
-  }
+  // A baseline the base branch does not have yet is new: nothing to rise from.
+  // Any other failure to read it is a failure.
+  const listed = execFileSync('git', ['ls-tree', '--name-only', base, '--', file], {
+    encoding: 'utf8',
+  });
+  if (!listed.trim()) return undefined;
+  return JSON.parse(execFileSync('git', ['show', `${base}:${file}`], { encoding: 'utf8' }));
 }
 
 const read = [];

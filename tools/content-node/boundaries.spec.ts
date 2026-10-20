@@ -6,6 +6,7 @@
 // a change to one family's endpoints is a change to one family's module. The
 // shared modules are layered, each importing only those beneath it.
 import { readFileSync, readdirSync } from 'node:fs';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /** The shared modules, by layer: a module imports only from earlier layers. */
@@ -20,12 +21,15 @@ const LAYERS = [
 const layerOf = (name: string) => LAYERS.findIndex((layer) => layer.includes(name));
 const isFamily = (name: string) => name.endsWith('-endpoints');
 
-/** The local modules a source imports, by name without `./` or `.ts`. */
+/**
+ * The local modules a source imports -- static, type-only, side-effect,
+ * re-exported or dynamic -- by name without `./` or an extension, as
+ * TypeScript itself reads them.
+ */
 function importsOf(source: string): string[] {
-  return [
-    ...source.matchAll(/^\s*(?:import|export)[^'"`;]*?from\s+['"]\.\/([\w-]+)\.(?:ts|mjs)['"]/gm),
-  ]
-    .map((match) => match[1] ?? '')
+  return ts
+    .preProcessFile(source, true, true)
+    .importedFiles.map((file) => /^\.\/([\w-]+)(?:\.(?:ts|mjs))?$/.exec(file.fileName)?.[1] ?? '')
     .filter(Boolean);
 }
 
@@ -74,6 +78,22 @@ describe('the content service boundaries', () => {
     ).toEqual([
       'search-endpoints imports citation-endpoints: a family imports no other family',
       'citation-endpoints imports registry: a family imports only shared modules',
+    ]);
+  });
+
+  it('read every form of import: dynamic, side-effect, with a comment in its list', () => {
+    expect(
+      violations({
+        'search-endpoints': [
+          "import {\n  // Java's name for it\n  x,\n} from './citation-endpoints.ts';",
+          "import './server.ts';",
+          "const { endpoints } = await import('./registry.ts');",
+        ].join('\n'),
+      })
+    ).toEqual([
+      'search-endpoints imports citation-endpoints: a family imports no other family',
+      'search-endpoints imports server: a family imports only shared modules',
+      'search-endpoints imports registry: a family imports only shared modules',
     ]);
   });
 

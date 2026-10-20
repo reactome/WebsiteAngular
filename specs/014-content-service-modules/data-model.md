@@ -49,7 +49,7 @@ The ordered list of every endpoint: the families' lists, concatenated in today's
 
 Everything that needs the list reads it here: routing, `endpointFor`, the parity harness, the invalid-input corpus, the route-table test and the specs.
 
-A test pins the list to today's paths in order, and checks that the 13 order-dependent pairs stay in their recorded order (research R3).
+A test pins the list to today's paths in order, and checks that the 15 order-dependent pairs stay in their recorded order (research R3).
 
 ## Server
 
