@@ -221,6 +221,7 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
 - [x] T062 [US6] Measure on this host, with the site's example data and nothing sent outside: the burst of research R12 through the gateway, and a stored result read during it. Record the timings in R12. — #539
 - [x] T063 [US6] Have the site say "the service is busy, trying again" on a 503 with Retry-After, and retry once after the time it names. Test it in the site's analysis service, failing first. — #539
 - [x] T064 [US6] Review, CI, merge, deploy to beta. Check with `curl --resolve` that an analysis, a stored result and a download pass through unchanged, and that `/health` shows the queue. — #539, deployed 19 Oct 2026 after two reviews: an analysis took a lane place; a stored result, its not-found list and both downloads (CSV and JSON) were byte-identical through the gateway and direct, and `/health` showed the lanes and the counts (1 admitted, 4 passed). Ticked in #540, after the merge.
+- [x] T065 [US6] A share per client (review of 20 Oct): with places scarce, one address keeping a lane and its waiting list full had everyone else refused. A client -- nginx's X-Real-IP, an IPv6 one by its /64 -- has at most `PER_CLIENT` (8) computations running or waiting; beyond that, one that would have to wait is refused, while one that finds a place free still runs, so a class behind one address is not refused by an idle service. Each rule shown failing by mutation. — #574
 
 ---
 
