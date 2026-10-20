@@ -53,11 +53,11 @@ It must not mix in logic edits.
 
 ## Phase 2: Foundational
 
-- [ ] T005 Break the release cycle (R2). The version endpoint's cached handler, `databaseVersion`, is declared on its own ahead of the list. Then:
+- [x] T005 Break the release cycle (R2). The version endpoint's cached handler, `databaseVersion`, is declared on its own ahead of the list. Then:
   - the version endpoint uses it as its handler;
   - search's `reportInformation`, the citation lookup and `/health` call it, instead of `endpoints.find(… '/data/database/version')`.
 
-  This is the one logic edit of Part 1. It lives in `service.ts` until T013 moves it into `tools/content-node/release.ts`, because it is built on `cached` (T011) and the graph. Verify on beta: `/data/database/version`, `/health`'s release and a citation. The no-result report path is not exercised there, because it posts a real report; it makes the same call as the citation lookup. Show with a spec (`registry.spec.ts`) that no helper looks an endpoint up by its path any more.
+  This is the one logic edit of Part 1. It lives in `service.ts` until T013 moves it into `tools/content-node/release.ts`, because it is built on `cached` (T011) and the graph. Verify on beta: `/data/database/version`, `/health`'s release and a citation. The no-result report path is not exercised there, because it posts a real report; it makes the same call as the citation lookup. Show with a spec (`registry.spec.ts`) that no helper looks an endpoint up by its path any more. — #570
 
 ---
 
@@ -67,9 +67,9 @@ It must not mix in logic edits.
 
 **Independent Test**: a misspelled or mistyped endpoint field fails `check:types`, and `git grep` finds no cast on the endpoint list in the tools or specs.
 
-- [ ] T006 [US2] Add `tools/content-node/registry.ts` with the `Endpoint`, `Handler`, `Answer` and `Request` types (data-model.md, the 11 fields plus `warms` on the handler). `service.ts` types its list `Endpoint[]` in place, and `cached` returns a `Handler`. Show `sampel: '…'` on one endpoint failing the type check.
+- [x] T006 [US2] Add `tools/content-node/registry.ts` with the `Endpoint`, `Handler`, `Answer` and `Request` types (data-model.md, the 11 fields plus `warms` on the handler). `service.ts` types its list `Endpoint[]` in place, and `cached` returns a `Handler`. Show `sampel: '…'` on one endpoint failing the type check.
 
-  Done with T005 in one PR: naming the version handler changed what TypeScript inferred for the untyped list, so the list had to be typed at the same time. The registry does not re-export the list yet, because nothing would read it there. `endpointFor` and `getEndpointFor` stay in `service.ts`, beside the server code that calls them; they move to the registry in T026, when it assembles the families and `service.ts` goes. `deploy/nginx/routes.spec.ts` and the route-order test move to the registry then too.
+  Done with T005 in one PR: naming the version handler changed what TypeScript inferred for the untyped list, so the list had to be typed at the same time. The registry does not re-export the list yet, because nothing would read it there. `endpointFor` and `getEndpointFor` stay in `service.ts`, beside the server code that calls them; they move to the registry in T026, when it assembles the families and `service.ts` goes. `deploy/nginx/routes.spec.ts` and the route-order test move to the registry then too. — #570
 
 - [ ] T007 [US2] Remove the casts on the endpoint list: `tools/content-node/diff.ts` (`DiffEndpoint`, `as DiffEndpoint[]`), `tools/content-node/invalid-inputs.ts`/`.spec.ts` (`Endpoint`, the `as … []`), `tools/content-node/parameters.spec.ts`, and any other spec `git grep` finds. All of them use `Endpoint` from the registry.
 
