@@ -205,6 +205,9 @@ const LOADED = {
 const graph =
   ({ load = [LOADED] } = {}) =>
   (cypher, params) => {
+    // The object's class, and whether it has any relationship, asked first.
+    if (/AS related/.test(cypher))
+      return [{ labels: (load[0] ?? LOADED).root.labels, related: load.length > 0 }];
     if (/MATCH \(n\)-\[r\]-\(m\)/.test(cypher)) return load;
     if (/DBInfo/.test(cypher)) return [{ version: 97 }];
     // The edit's author, with no stoichiometry on the relationship: once.
@@ -256,6 +259,23 @@ describe("/data/discover/{identifier}: Java's errors", () => {
     });
     const response = await fetch(`${base}/ContentService/data/discover/R-HSA-199420`);
     expect([response.status, (await response.json()).messages]).toEqual([422, [null]]);
+  });
+
+  it('never loads what is not found, or not an event: only an event is worth its relationships', async () => {
+    const loads = () => asked.filter((cypher) => /MATCH \(n\)-\[r\]-\(m\)/.test(cypher));
+    for (const [load, status] of [
+      [[], 404],
+      [[{ ...LOADED, root: { ...ROOT, labels: ['DatabaseObject', 'Species'] } }], 422],
+    ]) {
+      answer = graph({ load });
+      asked.length = 0;
+      expect((await fetch(`${base}/ContentService/data/discover/48887`)).status).toBe(status);
+      expect(loads()).toEqual([]);
+    }
+    answer = graph();
+    asked.length = 0;
+    expect((await fetch(`${base}/ContentService/data/discover/R-HSA-5`)).status).toBe(200);
+    expect(loads()).toHaveLength(1);
   });
 
   it("loads an event with graph-core's findByStId: every relationship, both ways, unsorted", async () => {

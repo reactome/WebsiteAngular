@@ -112,9 +112,12 @@ function send(mapping: string, info: ReportInfo, body: ReportTerm | ReportTerm[]
     ),
     signal: AbortSignal.timeout(REPORT_TIMEOUT_MS),
   })
-    .then((response) => {
+    .then(async (response) => {
       if (response.status !== 200)
         console.error(`[REP001] The report service answered ${response.status}; no report made`);
+      // Nothing in the answer is read; unread, it would hold the connection.
+      // A body already broken has nothing to let go.
+      await response.body?.cancel().catch(() => {});
     })
     .catch(() => console.error('[REP002] Report service is unavailable'));
 }
