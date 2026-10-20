@@ -7,7 +7,7 @@
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async () => [{ version: 97 }],
   configured: () => true,
   close: async () => {},

@@ -5,8 +5,10 @@
 // HUPO-PSI registry client's reading of the XML, interactor-core's sort, and
 // content-service's 500 when the list could not be had. Services and URLs
 // here are invented.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { registryServices, psicquicResources } from './psicquic.mjs';
+import { registryServices, psicquicResources } from './psicquic.ts';
 import { resourcesJson } from './service.mjs';
 
 const service = (name, active, rest = `http://${name}/rest/`, extra = '') =>
@@ -91,14 +93,14 @@ describe('the resources', () => {
 });
 
 describe('/interactors/psicquic/resources', () => {
-  let base;
-  let server;
-  let registryServer;
-  let answer = registry(service('Zed', 'true'), service('alpha', 'false'));
+  let base: string;
+  let server: Server;
+  let registryServer: Server;
+  let answer: string | null = registry(service('Zed', 'true'), service('alpha', 'false'));
   let status = 200;
   let hang = false;
   let asked = 0;
-  let askedFor;
+  let askedFor: string | undefined;
 
   beforeAll(async () => {
     const { createServer } = await import('node:http');
@@ -108,24 +110,26 @@ describe('/interactors/psicquic/resources', () => {
       if (hang) return;
       if (answer === null) {
         response.statusCode = 503;
-        return response.end('down');
+        response.end('down');
+        return;
       }
       response.statusCode = status;
       response.setHeader('Content-Type', 'application/xml');
       response.end(answer);
     });
-    await new Promise((resolve) => registryServer.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) => registryServer.listen(0, '127.0.0.1', resolve));
     // Without its slash, which the registry client adds.
-    process.env.PSICQUIC_REGISTRY_URL = `http://127.0.0.1:${registryServer.address().port}/registry`;
+    process.env['PSICQUIC_REGISTRY_URL'] =
+      `http://127.0.0.1:${(registryServer.address() as AddressInfo).port}/registry`;
     const { app } = await import('./service.mjs');
-    await new Promise((resolve) => {
-      server = app().listen(0, '127.0.0.1', resolve);
+    await new Promise<void>((resolve) => {
+      server = app().listen(0, '127.0.0.1', () => resolve());
     });
-    base = `http://127.0.0.1:${server.address().port}`;
+    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
   afterAll(async () => {
-    delete process.env.PSICQUIC_REGISTRY_URL;
+    delete process.env['PSICQUIC_REGISTRY_URL'];
     await new Promise((resolve) => server.close(resolve));
     await new Promise((resolve) => registryServer.close(resolve));
   });

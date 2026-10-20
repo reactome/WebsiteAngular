@@ -8,7 +8,7 @@
 # services connecting to it need no change.
 #
 # The credentials file is read literally -- KEY=VALUE split at the first '=',
-# trimmed, never evaluated -- exactly as tools/content-node/graph.mjs reads it.
+# trimmed, never evaluated -- exactly as tools/content-node/graph.ts reads it.
 # A generated password holds characters a shell or compose's env_file parser
 # would change, and both have produced an empty password here before.
 set -euo pipefail

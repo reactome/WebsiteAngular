@@ -6,7 +6,7 @@
 // unreachable would never exercise that path there. vitest.config.ts points
 // the file at nothing; this holds it.
 import { describe, expect, it } from 'vitest';
-import { configured } from './graph.mjs';
+import { configured } from './graph.ts';
 
 describe('the unit specs', () => {
   it('have no graph credentials, wherever they run', () => {

@@ -12,8 +12,8 @@
  * rather than return a field (COMPUTED, below).
  */
 import { readFileSync } from 'node:fs';
-import { schemaClassOf, supertypes } from './schema.mjs';
-import { JavaHashMap } from './java-hashmap.mjs';
+import { schemaClassOf, supertypes } from './schema.ts';
+import { JavaHashMap } from './java-hashmap.ts';
 
 let snapshot;
 /** domain-snapshot.json, read on first use: snapshot-domain.mjs imports this file to write it. */
@@ -607,7 +607,7 @@ function scalar(value, floating) {
   throw new Error(`domain: cannot write ${typeof value}`);
 }
 
-/** A whole number as Java writes a Long; graph.mjs hands an unsafe one over as text. */
+/** A whole number as Java writes a Long; graph.ts hands an unsafe one over as text. */
 function number(value) {
   return String(value);
 }
@@ -1095,7 +1095,7 @@ function relationText(relation) {
  * its text -- a getText's, through Jsoup, else its displayName -- and its
  * class, tab-separated; a collection as each of its items so written, one a
  * line; anything else as Java's toString writes it. `jsoupText` is passed in
- * (jsoup-text.mjs).
+ * (jsoup-text.ts).
  */
 export function attributeText(value, jsoupText, getter) {
   // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.

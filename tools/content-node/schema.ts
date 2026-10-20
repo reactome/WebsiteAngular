@@ -324,7 +324,7 @@ const byCodeUnits = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
 export function attributeTable(name, data = schemaSnapshot()) {
   if (CLOSURES.has(name)) return data.closure.attributes;
   if (!CLASSES.has(name)) return undefined;
-  const rows = [];
+  const rows: { name: string; origin: string }[] = [];
   for (let at = name; at !== undefined; at = superclassOf(at)) rows.push(...data.declared[at]);
   return rows.sort((a, b) => byCodeUnits(a.name, b.name) || byCodeUnits(a.origin, b.origin));
 }

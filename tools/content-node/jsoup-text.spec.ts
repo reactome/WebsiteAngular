@@ -5,7 +5,7 @@
 // content service ships (17 Oct 2026). Beyond these, the module matched Jsoup
 // on every summation in the graph, 21,634 texts.
 import { describe, expect, it } from 'vitest';
-import { jsoupText } from './jsoup-text.mjs';
+import { jsoupText } from './jsoup-text.ts';
 
 const MEASURED = [
   ['a<b>b</b>c', 'abc'],

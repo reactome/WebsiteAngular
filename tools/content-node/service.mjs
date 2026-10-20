@@ -23,15 +23,15 @@ import { setInterval } from 'node:timers';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
-import { read, configured, close, envSetting } from './graph.mjs';
+import { read, configured, close, envSetting } from './graph.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.mjs';
 import { solr, solrConfigured } from './solr.mjs';
-import { jsoupText } from './jsoup-text.mjs';
-import { JavaHashMap } from './java-hashmap.mjs';
+import { jsoupText } from './jsoup-text.ts';
+import { JavaHashMap } from './java-hashmap.ts';
 
 export { JavaHashMap };
 import { sendReport } from './report.mjs';
-import { registryServices, psicquicResources } from './psicquic.mjs';
+import { registryServices, psicquicResources } from './psicquic.ts';
 import {
   citationOfEvent,
   eventText,
@@ -39,7 +39,7 @@ import {
   formatStaticCitation,
   imageText,
   staticCitationFrom,
-} from './citation.mjs';
+} from './citation.ts';
 import {
   AttributeFailure,
   attributeGetter,
@@ -68,7 +68,7 @@ import {
   referralsTable,
   schemaClassOf,
   schemaModelTree,
-} from './schema.mjs';
+} from './schema.ts';
 
 const PORT = Number(process.env.CONTENT_NODE_PORT) || 4400;
 const HOST = process.env.CONTENT_NODE_HOST || '127.0.0.1';
@@ -103,7 +103,7 @@ export const endpoints = [
      * `MATCH (n:DBInfo)` plans as `AllNodesScan + Filter` and reads all
      * 2,958,129 nodes to find one. ~700ms, and the same for any label-only
      * match -- which is why Java's `/data/species/main` takes 682ms too. See
-     * the note on `read` in graph.mjs.
+     * the note on `read` in graph.ts.
      *
      * Caching is the fix available from this side. The service warms every
      * `cached` handler at startup, so the scan is paid once, off the request
@@ -1907,7 +1907,7 @@ export const endpoints = [
      *
      * Two of Java's answers come from reflection over graph-core's classes --
      * whether the name is a class at all, and whether it has a species -- and
-     * are answered here from schema.mjs, which says how it was derived and how
+     * are answered here from schema.ts, which says how it was derived and how
      * to keep it current. A name that is not a class is Java's 500, case
      * included: `pathway` is not `Pathway`.
      *
@@ -1978,8 +1978,8 @@ export const endpoints = [
      * DatabaseObjectUtils.getGraphModelTree over SchemaRepository's label
      * counts. The counts are the graph's and are read here; what Java gets by
      * reflection -- which class a set of labels names, and each class's
-     * superclass -- comes from schema.mjs (schemaModelTree, which says how the
-     * tree is built). schema.spec.mjs rebuilds the tree Java answered when the
+     * superclass -- comes from schema.ts (schemaModelTree, which says how the
+     * tree is built). schema.spec.ts rebuilds the tree Java answered when the
      * snapshot was taken, from its own counts, byte for byte.
      *
      * Cached for the life of the process, as Java caches it (`cacheSchema`,
@@ -2053,8 +2053,8 @@ export const endpoints = [
      *
      * DatabaseObjectUtils.getAttributeTable is reflection over graph-core's
      * classes and reads no database, so this is Java's answer captured once
-     * (schema-snapshot.json, by snapshot-schema.mjs) and composed as Java
-     * composes it (schema.mjs, attributeTable). A name Class.forName does not
+     * (schema-snapshot.json, by snapshot-schema.ts) and composed as Java
+     * composes it (schema.ts, attributeTable). A name Class.forName does not
      * find is Java's 500, as for /count.
      */
     handler: async (request) => {
@@ -2070,7 +2070,7 @@ export const endpoints = [
     /**
      * The attributes of other classes that can point at this one: the schema
      * browser's "referrals". DatabaseObjectUtils.getReferrals, reflection
-     * again, so captured like /attributes (schema.mjs, referralsTable).
+     * again, so captured like /attributes (schema.ts, referralsTable).
      */
     handler: async (request) => {
       const table = referralsTable(pathId(rawSegment(request, 4)));
@@ -5897,7 +5897,7 @@ export function springPathLong(text, name) {
 }
 
 /**
- * A query the database ended -- at graph.mjs's time limit, by terminating
+ * A query the database ended -- at graph.ts's time limit, by terminating
  * it, or at its memory limit: 503 in Java's envelope -- the request is not
  * malformed, the service will not answer it -- or undefined for any other
  * failure.
@@ -7234,7 +7234,7 @@ async function eventCitationOrFailure(request, raw) {
   }
 }
 
-/** GlobalExceptionHandler's 500 for what citation.mjs throws as Java does; anything else is ours. */
+/** GlobalExceptionHandler's 500 for what citation.ts throws as Java does; anything else is ours. */
 function citationFailure(request, failure) {
   if (failure.unexpected) return unexpectedFailure(request);
   if (failure.javaMessage)

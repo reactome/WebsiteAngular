@@ -8,15 +8,15 @@
  * what is matched, ranked and cut is Solr's, as it is for Java.
  *
  * SOLR_URL (the core, e.g. http://localhost:8983/solr/reactome), SOLR_USER and
- * SOLR_PASSWORD come from the environment or the credentials file graph.mjs
+ * SOLR_PASSWORD come from the environment or the credentials file graph.ts
  * reads, and nowhere else.
  */
 import { URLSearchParams } from 'node:url';
-import { envSetting } from './graph.mjs';
+import { envSetting } from './graph.ts';
 
 /**
  * A call that has not been answered this long after it was made -- waiting
- * its turn included -- is abandoned, as a graph read is at graph.mjs's.
+ * its turn included -- is abandoned, as a graph read is at graph.ts's.
  */
 const SOLR_TIMEOUT_MS = 30_000;
 

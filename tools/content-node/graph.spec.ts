@@ -3,7 +3,7 @@
 // The graph connection's socket, without a database.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import net from 'node:net';
-import { READ_TIMEOUT_MS, poolSize } from './graph.mjs';
+import { READ_TIMEOUT_MS, poolSize } from './graph.ts';
 
 describe('the connections graph.mjs opens', () => {
   let server;

@@ -21,7 +21,7 @@
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { close, read } from './graph.mjs';
+import { close, read } from './graph.ts';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'graph-names.json');
 

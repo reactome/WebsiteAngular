@@ -4,13 +4,15 @@
 // Pathway Browser's "cite this" -- with stand-ins for the graph and Europe
 // PMC: content-service's EventCitation and StaticCitation, as Java writes
 // them. Java's answers measured 17 Oct 2026. Names here are invented.
+import type { IncomingMessage, Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 import {
   citationOfEvent,
   formatEventCitation,
   formatStaticCitation,
   staticCitationFrom,
-} from './citation.mjs';
+} from './citation.ts';
 
 const event = (overrides = {}) => ({
   id: 'R-HSA-1',
@@ -95,12 +97,30 @@ const europePmc = {
   authorList: { author: [{ fullName: 'Doe J', lastName: 'Doe', initials: 'J' }] },
 };
 
+/** An edit (InstanceEdit) as mapResult gives it: its authors by initial. */
+interface Edit {
+  fields: { author: { properties: { surname: string; initial: unknown; firstname: string } }[] };
+}
+
+/** What a test changes of an event: its date, its DOI, its edits. */
+interface EventParts {
+  releaseDate?: string | null;
+  doi?: string;
+  authored?: Edit[];
+  created?: Edit;
+  reviewed?: Edit[];
+}
+
 /** An event as mapResult gives it, with people by initial. */
-const mapped = ({ releaseDate = '2019-06-14', doi, ...fields } = {}) => ({
-  properties: { displayName: 'A pathway', releaseDate, ...(doi === undefined ? {} : { doi }) },
+const mapped = ({ releaseDate = '2019-06-14', doi, ...fields }: EventParts = {}) => ({
+  properties: {
+    displayName: 'A pathway' as string | null,
+    releaseDate,
+    ...(doi === undefined ? {} : { doi }),
+  },
   fields,
 });
-const edit = (...initials) => ({
+const edit = (...initials: unknown[]): Edit => ({
   fields: {
     author: initials.map((initial, i) => ({
       properties: { surname: `S${i}`, initial, firstname: `F${i}` },
@@ -143,7 +163,7 @@ describe('citationOfEvent', () => {
   });
 
   it('names the authors, else the creator, else the reviewers; initials dotted', () => {
-    const names = (fields) =>
+    const names = (fields: EventParts) =>
       citationOfEvent(mapped(fields), 'x', '97', false).authors?.map((a) => a.initials);
     const all = { authored: [edit('JA')], created: edit('C'), reviewed: [edit('R')] };
     expect(names(all)).toEqual(['J.A.']);
@@ -163,12 +183,17 @@ describe('citationOfEvent', () => {
   });
 
   it("throws Java's own message for a short or non-numeric date, or no name", () => {
-    const failure = (event) => {
+    const failure = (event: ReturnType<typeof mapped>) => {
       try {
         citationOfEvent(event, 'x', '97', false);
       } catch (thrown) {
-        return [thrown.unexpected, thrown.javaMessage];
+        const { unexpected, javaMessage } = thrown as {
+          unexpected?: boolean;
+          javaMessage?: string;
+        };
+        return [unexpected, javaMessage];
       }
+      return undefined;
     };
     expect(failure(mapped({ releaseDate: '2019-0' }))).toEqual([
       undefined,
@@ -223,12 +248,17 @@ describe('StaticCitation', () => {
   });
 
   it("casts the authors as Java's formatters do, outside its try", () => {
-    const failure = (authors, ext) => {
+    const failure = (authors: unknown, ext: string) => {
       try {
         formatStaticCitation({ ...event(), authors }, ext, 'd');
       } catch (thrown) {
-        return thrown.unexpected ? 'NPE' : thrown.javaMessage;
+        const { unexpected, javaMessage } = thrown as {
+          unexpected?: boolean;
+          javaMessage?: string;
+        };
+        return unexpected ? 'NPE' : javaMessage;
       }
+      return undefined;
     };
     const cce = (from, to) =>
       `class ${from} cannot be cast to class ${to} (${from} and ${to} are in module java.base of loader 'bootstrap')`;
@@ -253,7 +283,7 @@ describe('StaticCitation', () => {
   });
 });
 
-vi.mock('./graph.mjs', async () => ({
+vi.mock('./graph.ts', async () => ({
   read: async (cypher, params) => {
     if (cypher.includes('DBInfo')) return [{ version: 97 }];
     globalThis.graphAsked = params;
@@ -267,27 +297,34 @@ vi.mock('./graph.mjs', async () => ({
 describe('the citation endpoints', () => {
   let base;
   let server;
-  let pmc;
-  let pmcAsked = [];
+  let pmc: Server;
+  let pmcAsked: (string | undefined)[] = [];
 
   beforeAll(async () => {
     const { createServer } = await import('node:http');
     pmc = createServer((request, response) => {
       pmcAsked.push(request.url);
       response.setHeader('Content-Type', 'application/json');
-      response.end(JSON.stringify(globalThis.pmcAnswer ?? { resultList: { result: [europePmc] } }));
+      response.end(
+        JSON.stringify(
+          (globalThis as { pmcAnswer?: unknown }).pmcAnswer ?? {
+            resultList: { result: [europePmc] },
+          }
+        )
+      );
     });
-    await new Promise((resolve) => pmc.listen(0, '127.0.0.1', resolve));
-    process.env.EUROPE_PMC_URL = `http://127.0.0.1:${pmc.address().port}/search`;
+    await new Promise<void>((resolve) => pmc.listen(0, '127.0.0.1', resolve));
+    process.env['EUROPE_PMC_URL'] =
+      `http://127.0.0.1:${(pmc.address() as AddressInfo).port}/search`;
     const { app } = await import('./service.mjs');
-    await new Promise((resolve) => {
-      server = app().listen(0, '127.0.0.1', resolve);
+    await new Promise<void>((resolve) => {
+      server = app().listen(0, '127.0.0.1', () => resolve());
     });
-    base = `http://127.0.0.1:${server.address().port}`;
+    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
   afterAll(async () => {
-    delete process.env.EUROPE_PMC_URL;
+    delete process.env['EUROPE_PMC_URL'];
     await new Promise((resolve) => server.close(resolve));
     await new Promise((resolve) => pmc.close(resolve));
   });
@@ -349,8 +386,8 @@ describe('the citation endpoints', () => {
     // no-cache to a conditional request, which Express then never answers 304.
     const etag = (await fetch(url)).headers.get('etag');
     const { get } = await import('node:http');
-    const notModified = await new Promise((resolve, reject) =>
-      get(url, { headers: { 'If-None-Match': etag } }, (response) => {
+    const notModified = await new Promise<IncomingMessage>((resolve, reject) =>
+      get(url, { headers: { 'If-None-Match': etag ?? '' } }, (response) => {
         response.resume();
         resolve(response);
       }).on('error', reject)
@@ -383,7 +420,7 @@ describe('the citation endpoints', () => {
         writeResult(response, { status: 500, body: 'failed' });
       }
     });
-    const listening = await new Promise((resolve) => {
+    const listening = await new Promise<Server>((resolve) => {
       const started = site.listen(0, '127.0.0.1', () => resolve(started));
     });
     try {
@@ -392,10 +429,13 @@ describe('the citation endpoints', () => {
         ['GET', 'bytes'],
         ['GET', 'empty'],
         ['GET', 'twice'],
-      ]) {
-        const response = await fetch(`http://127.0.0.1:${listening.address().port}/${kind}`, {
-          method,
-        });
+      ] as [string, string][]) {
+        const response = await fetch(
+          `http://127.0.0.1:${(listening.address() as AddressInfo).port}/${kind}`,
+          {
+            method,
+          }
+        );
         expect([method, kind, response.headers.get('content-disposition')]).toEqual([
           method,
           kind,

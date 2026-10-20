@@ -7,7 +7,7 @@
 // answers nothing, for the endpoints that would ask it.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async () => [],
   configured: () => true,
   close: async () => {},

@@ -10,16 +10,34 @@
  * eleven ids sharing a hash come out in Java's order, not arrival's. Checked
  * against the JDK's own HashMap (orthology.spec.mjs).
  */
+/**
+ * One key in a bucket. A bucket that becomes a tree gives its nodes the tree
+ * fields, all set together (#treeifyBin), and a split back to a list clears
+ * them.
+ */
+interface HashNode {
+  hash: number;
+  key: string;
+  value: unknown;
+  next: HashNode | null;
+  tree?: boolean;
+  prev?: HashNode | null;
+  parent?: HashNode | null;
+  left?: HashNode | null;
+  right?: HashNode | null;
+  red?: boolean;
+}
+
 export class JavaHashMap {
-  #table = new Array(16).fill(null);
-  #keyHash;
+  #table: (HashNode | null)[] = new Array<HashNode | null>(16).fill(null);
+  #keyHash: ((key: string) => number) | undefined;
   size = 0;
 
   /**
    * `hash` is the key's hashCode, String.hashCode unless given -- a
    * TargetResult's is Objects.hash(term), 31 more than its term's.
    */
-  constructor({ hash } = {}) {
+  constructor({ hash }: { hash?: (key: string) => number } = {}) {
     this.#keyHash = hash;
   }
 
@@ -46,16 +64,17 @@ export class JavaHashMap {
     const hash = this.#hashOf(key);
     const table = this.#table;
     const index = (table.length - 1) & hash;
-    let p = table[index];
-    let existing = null;
+    const p: HashNode | null = table[index] ?? null;
+    let existing: HashNode | null = null;
     if (p === null) table[index] = { hash, key, value, next: null };
     else if (p.hash === hash && p.key === key) existing = p;
     else if (p.tree) existing = this.#putTreeValue(table, hash, key, value);
     else {
+      let last: HashNode = p;
       for (let count = 0; ; count += 1) {
-        const e = p.next;
+        const e = last.next;
         if (e === null) {
-          p.next = { hash, key, value, next: null };
+          last.next = { hash, key, value, next: null };
           if (count >= 7) this.#treeifyBin(hash);
           break;
         }
@@ -63,7 +82,7 @@ export class JavaHashMap {
           existing = e;
           break;
         }
-        p = e;
+        last = e;
       }
     }
     if (existing) {
@@ -87,8 +106,8 @@ export class JavaHashMap {
     const index = (this.#table.length - 1) & hash;
     if (this.#table[index]?.tree)
       throw new Error('JavaHashMap.delete from a tree bin is not ported');
-    let previous = null;
-    for (let node = this.#table[index]; node; previous = node, node = node.next) {
+    let previous: HashNode | null = null;
+    for (let node = this.#table[index] ?? null; node; previous = node, node = node.next) {
       if (node.hash !== hash || node.key !== key) continue;
       if (previous) previous.next = node.next;
       else this.#table[index] = node.next;
@@ -108,7 +127,7 @@ export class JavaHashMap {
 
   #resize() {
     const old = this.#table;
-    const table = new Array(old.length * 2).fill(null);
+    const table = new Array<HashNode | null>(old.length * 2).fill(null);
     this.#table = table;
     for (let index = 0; index < old.length; index += 1) {
       const head = old[index];
@@ -116,16 +135,17 @@ export class JavaHashMap {
       if (head.next === null) table[head.hash & (table.length - 1)] = head;
       else if (head.tree) this.#split(table, head, index, old.length);
       else {
-        const [lo, hi] = [[], []];
-        for (let node = head; node; node = node.next)
+        const [lo, hi]: [HashNode[], HashNode[]] = [[], []];
+        for (let node: HashNode | null = head; node; node = node.next)
           ((node.hash & old.length) === 0 ? lo : hi).push(node);
-        for (const [list, at] of [
+        const halves: [HashNode[], number][] = [
           [lo, index],
           [hi, index + old.length],
-        ]) {
+        ];
+        for (const [list, at] of halves) {
           if (!list.length) continue;
           list.forEach((node, i) => (node.next = list[i + 1] ?? null));
-          table[at] = list[0];
+          table[at] = list[0] ?? null;
         }
       }
     }
@@ -135,8 +155,8 @@ export class JavaHashMap {
     const table = this.#table;
     if (table.length < 64) return this.#resize();
     const index = (table.length - 1) & hash;
-    let previous = null;
-    for (let node = table[index]; node; node = node.next) {
+    let previous: HashNode | null = null;
+    for (let node = table[index] ?? null; node; node = node.next) {
       Object.assign(node, {
         tree: true,
         prev: previous,
@@ -152,12 +172,14 @@ export class JavaHashMap {
 
   /** TreeNode.split: the bucket's nodes, in order, to the two halves of a doubled table. */
   #split(table, head, index, bit) {
-    const [lo, hi] = [[], []];
-    for (let node = head; node; node = node.next) ((node.hash & bit) === 0 ? lo : hi).push(node);
-    for (const [list, at, other] of [
+    const [lo, hi]: [HashNode[], HashNode[]] = [[], []];
+    for (let node: HashNode | null = head; node; node = node.next)
+      ((node.hash & bit) === 0 ? lo : hi).push(node);
+    const halves: [HashNode[], number, HashNode[]][] = [
       [lo, index, hi],
       [hi, index + bit, lo],
-    ]) {
+    ];
+    for (const [list, at, other] of halves) {
       if (!list.length) continue;
       list.forEach((node, i) => {
         node.next = list[i + 1] ?? null;
@@ -183,8 +205,8 @@ export class JavaHashMap {
   }
 
   #treeify(table, head) {
-    let root = null;
-    for (let x = head, next; x; x = next) {
+    let root: HashNode | null = null;
+    for (let x: HashNode | null = head, next: HashNode | null; x; x = next) {
       next = x.next;
       x.left = x.right = null;
       if (root === null) {
@@ -193,17 +215,19 @@ export class JavaHashMap {
         root = x;
         continue;
       }
-      for (let p = root; ;) {
+      for (let p: HashNode = root; ;) {
         const dir = JavaHashMap.#direction(x.hash, x.key, p);
         const xp = p;
-        p = dir <= 0 ? p.left : p.right;
-        if (p === null) {
+        // A tree node's children are set, to null at least, when it joins.
+        const child = (dir <= 0 ? p.left : p.right) ?? null;
+        if (child === null) {
           x.parent = xp;
           if (dir <= 0) xp.left = x;
           else xp.right = x;
           root = JavaHashMap.#balanceInsertion(root, x);
           break;
         }
+        p = child;
       }
     }
     JavaHashMap.#moveRootToFront(table, root);
@@ -294,7 +318,7 @@ export class JavaHashMap {
       const xppl = xpp.left;
       const xppr = xpp.right;
       const uncle = xp === xppl ? xppr : xppl;
-      if (uncle && uncle.red) {
+      if (uncle?.red) {
         uncle.red = false;
         xp.red = false;
         xpp.red = true;

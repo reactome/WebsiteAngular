@@ -18,7 +18,7 @@ const species = {
   'Mus musculus': { dbId: 48892, displayName: 'Mus musculus', abbreviation: 'MMU' },
 };
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     if (cypher.includes(':Species')) return [species[params.name] ?? []].flat();
     return objects[params.id] ? [objects[params.id]] : [];

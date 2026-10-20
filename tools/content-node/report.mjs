@@ -11,7 +11,7 @@
  * which carries the address -- and nothing more. Without REPORT_URL nothing
  * is sent.
  */
-import { envSetting } from './graph.mjs';
+import { envSetting } from './graph.ts';
 
 const REPORT_TIMEOUT_MS = 30_000;
 

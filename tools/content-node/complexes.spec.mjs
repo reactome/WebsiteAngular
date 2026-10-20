@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 const asked = [];
 let rows = [];
 let failure;
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
     if (failure) throw failure;

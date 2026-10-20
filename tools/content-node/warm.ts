@@ -3,7 +3,7 @@
  * start from, once each, so the first readers find them cached (spec 011).
  * Run against the public site, so the edge -- not node -- is what fills:
  *
- *   node tools/content-node/warm.mjs https://<site> <release>
+ *   node tools/content-node/warm.ts https://<site> <release>
  *
  * `<release>` is the release just published. Node holds a few answers in
  * memory until it restarts -- the release number, the contents and DOIs,
@@ -67,9 +67,13 @@ export async function warmList(getJson) {
  * ending the run. Resolves to `{ missed, edge }`: the URLs not answered 200
  * and cacheable, and how many of each cf-cache-status the edge gave.
  */
-export async function warm(origin, paths, { fetch = globalThis.fetch, pause = 250 } = {}) {
-  const missed = [];
-  const edge = {};
+export async function warm(
+  origin: string,
+  paths: string[],
+  { fetch = globalThis.fetch, pause = 250 }: { fetch?: WarmFetch; pause?: number } = {}
+) {
+  const missed: string[] = [];
+  const edge: Record<string, number> = {};
   for (const path of paths) {
     try {
       const response = await fetch(origin + path, {
@@ -83,7 +87,7 @@ export async function warm(origin, paths, { fetch = globalThis.fetch, pause = 25
       if (response.status !== 200 || rule !== 'standard')
         missed.push(`${response.status} ${rule ?? '-'} ${path}`);
     } catch (failure) {
-      missed.push(`failed (${failure.name}) ${path}`);
+      missed.push(`failed (${failure instanceof Error ? failure.name : String(failure)}) ${path}`);
     }
     if (pause) await new Promise((resolve) => setTimeout(resolve, pause));
   }
@@ -91,7 +95,7 @@ export async function warm(origin, paths, { fetch = globalThis.fetch, pause = 25
 }
 
 /** A content API answer's body, or an error that says which and why. */
-function jsonFrom(origin, fetch = globalThis.fetch) {
+function jsonFrom(origin: string, fetch: WarmFetch = globalThis.fetch) {
   return async (path) => {
     const response = await fetch(origin + path, { signal: AbortSignal.timeout(LIMIT_MS) });
     const text = await response.text();
@@ -104,12 +108,30 @@ function jsonFrom(origin, fetch = globalThis.fetch) {
   };
 }
 
+/** As much of fetch as the warm-up uses: a status, two headers, the body. */
+export type WarmFetch = (
+  url: string,
+  options?: { redirect?: RequestRedirect; signal?: AbortSignal }
+) => Promise<{
+  status: number;
+  headers: { get(name: string): string | null };
+  arrayBuffer(): Promise<ArrayBuffer>;
+  text(): Promise<string>;
+}>;
+
 /** The command: exit 0 when all are cacheable, 1 when not, 2 when refused. */
-export async function main(argv, { fetch = globalThis.fetch, log = console.log, pause } = {}) {
+export async function main(
+  argv: string[],
+  {
+    fetch = globalThis.fetch,
+    log = console.log,
+    pause,
+  }: { fetch?: WarmFetch; log?: (line: string) => void; pause?: number } = {}
+) {
   const origin = (argv[0] ?? '').replace(/\/$/, '');
   const release = argv[1] ?? '';
   if (!/^https?:\/\//.test(origin) || !/^\d+$/.test(release)) {
-    log('usage: node tools/content-node/warm.mjs https://<site> <release>');
+    log('usage: node tools/content-node/warm.ts https://<site> <release>');
     return 2;
   }
   const getJson = jsonFrom(origin, fetch);
