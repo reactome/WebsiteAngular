@@ -2053,7 +2053,7 @@ export const endpoints = [
      *
      * DatabaseObjectUtils.getAttributeTable is reflection over graph-core's
      * classes and reads no database, so this is Java's answer captured once
-     * (schema-snapshot.json, by snapshot-schema.ts) and composed as Java
+     * (schema-snapshot.json, by snapshot-schema.mjs) and composed as Java
      * composes it (schema.ts, attributeTable). A name Class.forName does not
      * find is Java's 500, as for /count.
      */

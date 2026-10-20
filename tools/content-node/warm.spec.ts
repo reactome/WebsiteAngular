@@ -1,6 +1,6 @@
 // @vitest-environment node
 //
-// warm.mjs fills the edge cache after a release's purge. A list spelled
+// warm.ts fills the edge cache after a release's purge. A list spelled
 // unlike the site's requests would warm entries no reader asks for; a run
 // against a node still holding the last release would keep that release's
 // answers at the edge until the next purge; and a warm-up that did not say

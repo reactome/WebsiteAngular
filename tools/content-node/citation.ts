@@ -108,8 +108,9 @@ interface Author {
 }
 
 /**
- * Java's Citation, as the export endpoints read it. Fields are added in the
- * order Java writes them; a type does not change that order.
+ * Java's Citation, as the export endpoints read it. Each builder adds the
+ * fields in its own order, the order that reaches the answer; a type lists
+ * them and does not change it.
  */
 export interface Citation {
   id: string;

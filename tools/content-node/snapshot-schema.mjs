@@ -2,8 +2,8 @@
  * Write schema-snapshot.json: Java's answers for the parts of /data/schema that
  * are reflection over graph-core's classes, captured once and served by node.
  *
- *   node tools/content-node/snapshot-schema.ts            # Java on :8080
- *   JAVA_CONTENT_SERVICE=http://host:port node tools/content-node/snapshot-schema.ts
+ *   node tools/content-node/snapshot-schema.mjs            # Java on :8080
+ *   JAVA_CONTENT_SERVICE=http://host:port node tools/content-node/snapshot-schema.mjs
  *
  * What it captures, from the running Java ContentService:
  *

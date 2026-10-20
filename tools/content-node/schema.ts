@@ -44,7 +44,7 @@
  *     They are AspectJ's, not graph-core's source: woven in at build time,
  *     renumbered whenever the woven code changes. Class.forName finds them,
  *     so Java counts them (0) rather than refusing them.
- *  4. The tests in schema.spec.mjs pin the 113, the 27 and the hierarchy;
+ *  4. The tests in schema.spec.ts pin the 113, the 27 and the hierarchy;
  *     update them from the new jar, then run the diff harness over every label.
  *  5. Regenerate schema-snapshot.json from the Java service running the new
  *     jar: `node tools/content-node/snapshot-schema.mjs` (see its header). It
@@ -306,7 +306,7 @@ let snapshot;
  *  - referralRows and referrals: every distinct row of a referrals answer,
  *    once, and per class the indexes of its rows in Java's order.
  *  - closure: the one answer of both for every woven $AjcClosure class.
- *  - model: Java's /schema/model when captured, for schema.spec.mjs only.
+ *  - model: Java's /schema/model when captured, for schema.spec.ts only.
  */
 export function schemaSnapshot() {
   snapshot ??= JSON.parse(readFileSync(new URL('./schema-snapshot.json', import.meta.url), 'utf8'));
@@ -350,7 +350,7 @@ export function referralsTable(name, data = schemaSnapshot()) {
  *
  * A label that is not a model class is where Java's Class.forName throws; the
  * controller swallows it and answers an empty 200, uncached. Here it throws:
- * the graph has a class this table does not, so schema.mjs is out of date,
+ * the graph has a class this table does not, so schema.ts is out of date,
  * and an empty answer would hide that.
  */
 export function schemaModelTree(rows) {
@@ -374,7 +374,7 @@ export function schemaModelTree(rows) {
   for (const row of rows) {
     const unknown = row.labels.find((label) => !isSchemaClass(label));
     if (unknown !== undefined) {
-      throw new Error(`schema model: label ${unknown} is not a class in schema.mjs`);
+      throw new Error(`schema model: label ${unknown} is not a class in schema.ts`);
     }
     const lowest = schemaClassOf(row.labels);
     link(lowest === 'Object' ? undefined : lowest, undefined, row.count);

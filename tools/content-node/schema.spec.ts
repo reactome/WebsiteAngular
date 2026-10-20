@@ -348,7 +348,7 @@ describe("schema-snapshot.json, Java's reflection answers captured once", () => 
   const snapshot = schemaSnapshot();
   const classes = Object.keys(SCHEMA_CLASSES).sort();
 
-  it('has an entry for every class in schema.mjs, and none it does not have', () => {
+  it('has an entry for every class in schema.ts, and none it does not have', () => {
     expect(Object.keys(snapshot.declared).sort()).toEqual(classes);
     expect(Object.keys(snapshot.referrals).sort()).toEqual(classes);
   });

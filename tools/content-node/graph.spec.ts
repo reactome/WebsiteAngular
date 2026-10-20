@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import net from 'node:net';
 import { READ_TIMEOUT_MS, poolSize } from './graph.ts';
 
-describe('the connections graph.mjs opens', () => {
+describe('the connections graph.ts opens', () => {
   let server;
   let port;
   beforeAll(async () => {

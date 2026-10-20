@@ -23,7 +23,7 @@
  * from its jar into jsoup-tables.json by snapshot-jsoup/JsoupTables.java.
  *
  * Checked against Jsoup itself over every summation in the graph (21,634
- * texts) and the inputs in jsoup-text.spec.mjs, not against a reading of the
+ * texts) and the inputs in jsoup-text.spec.ts, not against a reading of the
  * HTML specification: where this simplifies the tree builder, it is because no
  * summation reaches the rest. Known to differ from Jsoup, and in no summation:
  * a formatting element left open across a table's boundary
