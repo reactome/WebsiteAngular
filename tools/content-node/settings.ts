@@ -4,7 +4,8 @@
  * uses them): one name each, its default, and where it may come from.
  *
  * Each is read when asked, as it was where it is used: the service reads its
- * address, the render service and the deep-query share once at start, and
+ * address, the render service and the deep-query share once at start, Solr's
+ * concurrency at the first Solr call (kept for the life of the process), and
  * the rest per request -- the specs change the environment between cases.
  * The ones read through envSetting may also come from the credentials file
  * (graph.ts); the rest are the environment's alone.
