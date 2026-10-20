@@ -252,8 +252,10 @@ describe('writeDomain on a deep graph', () => {
     const events = Array.from({ length: count }, (_, at) =>
       node(100 + at, EVENT, { displayName: `e${at}` })
     );
+    const [first] = events;
+    if (!first) throw new Error('no events');
     const row = {
-      root: events[0],
+      root: first,
       nodes: events.slice(1),
       relationships: events.slice(1).map((event, at) => rel('precedingEvent', 100 + at, event.id)),
     };

@@ -24,6 +24,8 @@ import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.ts';
+import type { GraphNode, GraphRelationship, Properties, Row } from './graph.ts';
+import type { MappedRow } from './domain.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solr, solrConfigured } from './solr.ts';
 import { jsoupText } from './jsoup-text.ts';
@@ -69,6 +71,82 @@ import {
   schemaClassOf,
   schemaModelTree,
 } from './schema.ts';
+
+/** A node's or map's properties, as read gives them. */
+type Props = Properties;
+/** A pathway in the contents lists: /content/toc and the DOI list. */
+type PathwayListRow = {
+  stId: string;
+  displayName: string;
+  doi: string | null;
+  species: string | null;
+  releaseDate: string | null;
+  releaseStatus: string | null;
+  reviseDate: string | null;
+};
+/** One step of locationsQuery: an event's fields, its labels, the edge's order. */
+type LocationStep = [
+  stId: string | null,
+  displayName: string | null,
+  hasDiagram: boolean | null,
+  speciesName: string | null,
+  schemaClass: string | null,
+  labels: string[] | null,
+  order: number | null,
+];
+// steps is null for the row with no path (its OPTIONAL MATCH found none).
+type LocationsRow = { db: LocationStep; steps: LocationStep[] | null };
+/** DIAGRAM_RESULT_*: the diagram an event is drawn in, and where. */
+type DiagramResult = {
+  diagramStId: string;
+  events: string[];
+  width: number | null;
+  height: number | null;
+  level: number;
+};
+/** An interaction and its partners (interactionsOf). */
+type InteractionRow = {
+  id: number;
+  score: number;
+  accession: string[] | null;
+  url: string | null;
+  partners: {
+    labels: string[];
+    identifier: string;
+    variantIdentifier: string | null;
+    url: string | null;
+    geneName: string[] | null;
+  }[];
+};
+/** /interactors/static/molecule/{id}/details: one interaction as a row. */
+type CustomInteractionRow = {
+  dbId: number;
+  score: number;
+  evidenceCount: number;
+  identifier: string | null;
+  databaseName: string | null;
+  displayName: string | null;
+  variantIdentifier: string | null;
+  geneName: string[] | null;
+  url: string | null;
+  evidenceURL: string | null;
+  speciesName: string | null;
+  entitiesCount: number;
+};
+/** /interactors/static/molecule/{id}/withEntities: one interaction as a row. */
+type InteractionWithEntitiesRow = {
+  score: number;
+  accession: string;
+  accessionURL: string | null;
+  physicalEntity: {
+    dbId: number | null;
+    stId: string | null;
+    displayName: string | null;
+    schemaClass: string | null;
+  }[];
+  evidences: number;
+  url: string | null;
+};
 
 // Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
 declare global {
@@ -117,7 +195,9 @@ export const endpoints = [
      * path, and never by a reader.
      */
     handler: cached('database/version', async () => {
-      const [row] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
+      const [row] = await read<{ version: number | null }>(
+        'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1'
+      );
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.version), type: 'text/plain;charset=UTF-8' };
     }),
@@ -125,7 +205,9 @@ export const endpoints = [
   {
     path: '/ContentService/data/database/name',
     handler: cached('database/name', async () => {
-      const [row] = await read('MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1');
+      const [row] = await read<{ name: string | null }>(
+        'MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1'
+      );
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
     }),
@@ -168,7 +250,7 @@ export const endpoints = [
         return javaError(request, 500, 'INTERNAL_SERVER_ERROR', (failure as Error).message);
       }
       const { where, params } = topSpeciesMatch(decoded);
-      const rows = await read(
+      const rows = await read<{ pathway: Props; species: Props }>(
         `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
          WHERE ${where}
          RETURN properties(p) AS pathway, properties(s) AS species
@@ -251,7 +333,7 @@ export const endpoints = [
      * announce rather than to smuggle in with a port.
      */
     handler: cached('content/toc', async () => {
-      const pathways = await read(
+      const pathways = await read<PathwayListRow & { children: Props[] }>(
         `MATCH (p:TopLevelPathway {isInferred: false})
          OPTIONAL MATCH (p)-[:hasEvent]->(child:Pathway)
          // By internal id, because that is the order Java emits: its planner
@@ -284,7 +366,7 @@ export const endpoints = [
           authors: simplePeople(people.authors.get(row.stId)),
           reviewers: simplePeople(people.reviewers.get(row.stId)),
           editors: simplePeople(people.editors.get(row.stId)),
-          subpathways: (row.children ?? []).map((child) =>
+          subpathways: row.children.map((child) =>
             compact({
               stId: child.stId,
               displayName: child.displayName,
@@ -319,7 +401,7 @@ export const endpoints = [
      * ever seen it. An empty list is what this returns.
      */
     handler: cached('content/doi', async () => {
-      const pathways = await read(
+      const pathways = await read<PathwayListRow>(
         `MATCH (p:Pathway) WHERE p.doi IS NOT NULL
          OPTIONAL MATCH (p)<-[:revised]-(re:InstanceEdit)
          RETURN p.stId AS stId, p.displayName AS displayName, p.doi AS doi,
@@ -376,7 +458,13 @@ export const endpoints = [
      * contributors page would be an unpleasant thing to ship.
      */
     handler: cached('content/contributors', async () => {
-      const rows = await read(
+      const rows = await read<{
+        person: Props;
+        authoredPathways: number;
+        authoredReactions: number;
+        reviewedPathways: number;
+        reviewedReactions: number;
+      }>(
         `MATCH (person:Person)-[:author]->(:InstanceEdit)-[:authored|reviewed]->(:Event)
          WITH DISTINCT person
          OPTIONAL MATCH (person)-[:author]->(:InstanceEdit)-[:authored]->(ap:Pathway)
@@ -476,7 +564,7 @@ export const endpoints = [
       const id = pathId(rawSegment(request, 4));
       const person = personWhere(id, { email: true });
       if (!person) return { status: 200, serialised: '[]', type: 'application/json' };
-      const rows = await read(
+      const rows = await read<{ pub: GraphNode }>(
         `MATCH (${person.anchor}) WHERE ${person.where}
          MATCH (n)-[:author]-(pub:Publication)
          RETURN {id: id(pub), labels: labels(pub), props: properties(pub)} AS pub`,
@@ -541,7 +629,17 @@ export const endpoints = [
         const match = numeric
           ? 'person.dbId = toInteger($id) AND person:Person'
           : 'person.orcidId = $id';
-        const rows = await read(
+        const rows = await read<{
+          dbId: number;
+          stId: string | null;
+          displayName: string | null;
+          speciesName: string | null;
+          schemaClass: string;
+          dateTime: string | null;
+          authorDbId: number;
+          doi: string | null;
+          labels: string[];
+        }>(
           `MATCH (${anchor})-[:author]->(edit:InstanceEdit)-[:${role}]->(event:${label})
            WHERE ${match}
            RETURN event.dbId AS dbId, event.stId AS stId, event.displayName AS displayName,
@@ -700,7 +798,7 @@ export const endpoints = [
      * asking every reader to hunt for the common case.
      */
     handler: cached(`species/${suffix}`, async () => {
-      const rows = await read(
+      const rows = await read<{ species: Props }>(
         `MATCH ${match}
          WITH DISTINCT s
          RETURN properties(s) AS species
@@ -714,7 +812,9 @@ export const endpoints = [
       // `all` is alphabetical throughout, so the pin the query applies for
       // `main` is undone here rather than by a second query. One ORDER BY that
       // both share, and one line saying which of them does not want it.
-      if (suffix === 'all') body.sort((a, b) => (a.displayName < b.displayName ? -1 : 1));
+      // Every species has a displayName (a string): only() copies what is there.
+      const nameOf = (entry: Written) => entry['displayName'] as string;
+      if (suffix === 'all') body.sort((a, b) => (nameOf(a) < nameOf(b) ? -1 : 1));
       return { status: 200, body, type: 'application/json' };
     }),
   })),
@@ -762,9 +862,11 @@ export const endpoints = [
         includeDisease: flags.includeDisease,
         outgoingOnly: !(flags.fetchIncomingRelationships && (await needsIncoming(raw))),
       };
-      let [row] = await read(enhancedQuery(options), { id: id.id });
+      let [row] = await read<MappedRow>(enhancedQuery(options), { id: id.id });
       if (!row && !options.includeDisease)
-        [row] = await read(enhancedQuery({ ...options, includeDisease: true }), { id: id.id });
+        [row] = await read<MappedRow>(enhancedQuery({ ...options, includeDisease: true }), {
+          id: id.id,
+        });
       if (!row) return missing();
       const found = mapResult(row);
       const object =
@@ -800,7 +902,7 @@ export const endpoints = [
       const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
       if (!id) return missing();
       const outgoingOnly = !(await needsIncoming(raw));
-      const [row] = await read(oldEnhancedQuery({ idType: id.idType, outgoingOnly }), {
+      const [row] = await read<MappedRow>(oldEnhancedQuery({ idType: id.idType, outgoingOnly }), {
         id: id.id,
       });
       if (!row) return missing();
@@ -834,14 +936,14 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const { where, params } = resolveId(raw);
-      const rows = await read(
+      const rows = await read<{ stId: string | null; schemaClass: string | null }>(
         `MATCH (n:DatabaseObject) WHERE ${where}
          RETURN n.stId AS stId, n.schemaClass AS schemaClass LIMIT 1`,
         params
       );
       const [row] = rows;
       if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
-      if (row.stId === null || row.stId === undefined)
+      if (row.stId === null)
         return notFound(
           request,
           // The attribute as it was sent: routing matched it ignoring case.
@@ -1044,7 +1146,7 @@ export const endpoints = [
           : notFound(request, `No event found for given identifier: ${raw}`);
       if (!id) return none;
       const maxDepth = depth.value === 0 ? 1 : depth.value < 0 ? 2147483647 : depth.value;
-      const [row] = await read(
+      const [row] = await read<MappedRow>(
         inDepthQuery({ label, follow, idType: id.idType, maxDepth, attributes: attributes.value }),
         { id: id.id }
       );
@@ -1076,7 +1178,13 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const { where, params } = resolveId(raw);
-      const rows = await read(
+      const rows = await read<{
+        labels: string[];
+        dbId: number | null;
+        stId: string | null;
+        displayName: string | null;
+        targetLabels: string[] | null;
+      }>(
         `MATCH (n:DatabaseObject) WHERE ${where}
          OPTIONAL MATCH (n:Pathway)-[:normalPathway]->(m:DatabaseObject)
          RETURN labels(n) AS labels, m.dbId AS dbId, m.stId AS stId,
@@ -1085,7 +1193,7 @@ export const endpoints = [
       );
       const [row] = rows;
       if (!row) return notFound(request, `Id: ${raw} has not been found in the System`);
-      if (row.dbId === null || row.dbId === undefined)
+      if (row.dbId === null)
         return notFound(
           request,
           `Attribute: '${pathId(rawSegment(request, 5))}' has not been found for object: ${schemaClassOf(row.labels)}`
@@ -1159,7 +1267,7 @@ export const endpoints = [
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const { where, params } = resolveId(raw);
-      const rows = await read(
+      const rows = await read<{ nodes: Props[] }>(
         `MATCH (n:DatabaseObject) WHERE ${where}
          WITH n LIMIT 1
          MATCH (n:TopLevelPathway)
@@ -1261,7 +1369,7 @@ export const endpoints = [
       const id = await graphCoreId(raw);
       if (!id) return { status: 200, body: undefined };
       const { object, params } = id;
-      const rows = await read(
+      const rows = await read<{ m: Props; labels: string[] }>(
         `MATCH (n:DatabaseObject${object})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|referenceEntity|proteinMarker|RNAMarker*]->(m:ReferenceEntity)
          RETURN DISTINCT m, labels(m) AS labels`,
         params
@@ -1290,7 +1398,7 @@ export const endpoints = [
     handler: async (request) => {
       const id = await graphCoreId(pathId(rawSegment(request, 4)));
       if (!id) return { status: 200, body: undefined };
-      const rows = await read(
+      const rows = await read<{ m: Props }>(
         `MATCH (n:DatabaseObject${id.object})-[:hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(m:PhysicalEntity) RETURN Distinct(m)`,
         id.params
       );
@@ -1325,7 +1433,12 @@ export const endpoints = [
       const { params, byDbId } = id;
       const object = byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}';
       const from = participantsFrom(byDbId);
-      const rows = await read(
+      const rows = await read<{
+        peDbId: number;
+        displayName: string | null;
+        schemaClass: string;
+        refEntities: Props[];
+      }>(
         `MATCH (n:DatabaseObject${object})-[:${from}*]->(m:PhysicalEntity)
          OPTIONAL MATCH (m)-[:referenceEntity]->(re1:ReferenceEntity)
          OPTIONAL MATCH (m)-[:hasMember|hasComponent|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity)-[:referenceEntity]->(re2:ReferenceEntity)
@@ -1372,7 +1485,7 @@ export const endpoints = [
       const id = await graphCoreId(raw);
       if (!id) return missing();
       const { object, params } = id;
-      const rows = await read(
+      const rows = await read<{ k: Props }>(
         `MATCH (n:PhysicalEntity${object})-[:referenceEntity]->(m:ReferenceEntity)<-[:referenceEntity]-(k)
          WHERE NOT n=k RETURN k`,
         params
@@ -1407,7 +1520,13 @@ export const endpoints = [
       const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
       const id = await graphCoreId(raw);
       if (!id) return missing();
-      const rows = await read(
+      const rows = await read<{
+        type: string;
+        schemaClasses: string[];
+        names: string[];
+        stIds: string[];
+        species: string[];
+      }>(
         `MATCH (n:DatabaseObject${id.object})<-[r:hasEvent|input|output|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker]-(m)
          RETURN DISTINCT(TYPE(r)) AS type,
                 COLLECT(COALESCE(m.schemaClass, '')) AS schemaClasses,
@@ -1463,7 +1582,7 @@ export const endpoints = [
       if (where === 'false') return missing();
       // graph-core's findByStId / findByDbId, as written but for the id's
       // test: every relationship, both ways, in the order the store gives.
-      const [row] = await read(
+      const [row] = await read<MappedRow>(
         `MATCH (n:DatabaseObject) WHERE ${where}
          WITH n LIMIT 1
          MATCH (n)-[r]-(m)
@@ -1479,7 +1598,9 @@ export const endpoints = [
       if (!isA(schemaClassOf(row.root.labels), 'Event'))
         return javaError(request, 422, 'UNPROCESSABLE_ENTITY', null);
       const event = mapResult(row);
-      const [info] = await read('MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1');
+      const [info] = await read<{ version: number | null }>(
+        'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1'
+      );
       return {
         status: 200,
         body: await schemaDataSet(
@@ -1619,7 +1740,7 @@ export const endpoints = [
         identifier,
         given.length ? given.join(',') : undefined
       );
-      if (results.status) return results;
+      if ('status' in results) return results;
       if (results.every((result) => result === NO_CROSS_REFERENCES))
         return notFound(
           request,
@@ -1640,7 +1761,7 @@ export const endpoints = [
      */
     handler: async (request) => {
       const identifier = pathId(rawSegment(request, 4));
-      const rows = await read(
+      const rows = await read<{ n: Props; labels: string[] }>(
         `MATCH (rd:ReferenceDatabase)<--(n{identifier:$identifier})<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity)
          WITH DISTINCT pe
          MATCH (pe)-[:referenceEntity]->(n:ReferenceEntity)
@@ -1754,7 +1875,7 @@ export const endpoints = [
         );
       }
       const noStructures = exclude.value ? ' WHERE NOT (pe:Complex) AND NOT(pe:EntitySet)' : '';
-      const rows = await read(
+      const rows = await read<{ pe: Props }>(
         `MATCH (:PhysicalEntity${id.object})-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity)${noStructures} RETURN DISTINCT pe`,
         id.params
       );
@@ -1787,7 +1908,7 @@ export const endpoints = [
       const identifier = pathId(rawSegment(request, 5));
       let rows;
       try {
-        rows = await read(
+        rows = await read<{ c: Props }>(
           'MATCH (rd:ReferenceDatabase)<-[:referenceDatabase]-(n{identifier:$identifier}) WHERE rd.displayName =~ $resource WITH DISTINCT n MATCH (n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity) WITH DISTINCT pe MATCH (c:Complex)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe) RETURN DISTINCT c',
           { identifier, resource }
         );
@@ -1862,7 +1983,7 @@ export const endpoints = [
         const digits = javaTrim(raw).split('.')[0];
         return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
       }
-      const rows = await read(
+      const rows = await read<LocationsRow>(
         locationsQuery(byDbId, direct.value ?? false),
         byDbId ? { dbId: neo4j.int(params.id) } : { stId: params.id }
       );
@@ -1937,7 +2058,7 @@ export const endpoints = [
       const given = queryValues(request, 'species');
       if (!isSchemaClass(className)) return classNotFound(request);
       if (given.length === 0) {
-        const [row] = await read(schemaCountQuery(className));
+        const [row] = await read<{ n: number }>(schemaCountQuery(className));
         return { status: 200, body: String(row?.n ?? 0), type: 'application/json' };
       }
       // A String parameter given more than once is Spring's comma-joined value.
@@ -1946,7 +2067,7 @@ export const endpoints = [
         javaError(request, 404, 'NOT_FOUND', `No entries have been found for species: ${species}`);
       if (!isSpeciesClass(className)) return none();
       const by = javaNumeric(species) ? 'taxId' : 'speciesName';
-      const [row] = await read(schemaCountQuery(className, by), { [by]: species });
+      const [row] = await read<{ n: number }>(schemaCountQuery(className, by), { [by]: species });
       if (!row?.n) return none();
       return { status: 200, body: String(row.n), type: 'application/json' };
     },
@@ -2001,7 +2122,7 @@ export const endpoints = [
      * DatabaseObject, a few seconds, so it is paid at startup, not by a reader.
      */
     handler: cached('schema model', async () => {
-      const rows = await read(schemaModelQuery);
+      const rows = await read<{ labels: string[]; count: number }>(schemaModelQuery);
       const tree = schemaModelTree(rows);
       // Java's answer to an empty graph is an empty 200 that it does not cache;
       // a graph without a DatabaseObject is not one this serves.
@@ -2169,7 +2290,7 @@ export const endpoints = [
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       // One at a time, as Java asks, so twenty ids are not twenty queries at
       // once on the database the site shares.
-      const found = new Map();
+      const found = new Map<string, GraphNode | null | undefined>();
       for (const id of ids) if (!found.has(id)) found.set(id, await orthologyOf(id, species.value));
       const kept = orthologyMap(ids, found);
       if (kept.size === 0) return notFound(request, 'No orthologies found');
@@ -2199,7 +2320,7 @@ export const endpoints = [
       const window = interactorPaging(request);
       if (window.answer) return window.answer;
       const rows = await interactionsOf(request, acc, window);
-      if (rows.answer) return rows.answer;
+      if ('answer' in rows) return rows.answer;
       // getAccession().size() on an interaction with none.
       if (rows.some((row) => row.accession === null)) return unexpected(request);
       if (rows.length === 0) return notFound(request, `No interactors found for accession: ${acc}`);
@@ -2274,7 +2395,7 @@ export const endpoints = [
       const diagrammed = springBoolean(queryValues(request, 'onlyDiagrammed'));
       if (diagrammed.error !== undefined)
         return javaError(request, 400, 'BAD_REQUEST', diagrammed.error);
-      const rows = await read(
+      const rows = await read<{ p: Props }>(
         diagrammed.value
           ? `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
              WHERE a.identifier = $acc OR a.variantIdentifier = $acc
@@ -2335,7 +2456,7 @@ export const endpoints = [
       const entities: [string, unknown[]][] = [];
       for (const acc of accs.keys()) {
         const rows = await interactionsOf(request, acc, window);
-        if (rows.answer) return rows.answer;
+        if ('answer' in rows) return rows.answer;
         if (rows.some((row) => row.accession === null)) return unexpected(request);
         entities.push([acc, rows]);
       }
@@ -2355,7 +2476,7 @@ export const endpoints = [
      */
     handler: async (request) => {
       const acc = pathId(rawSegment(request, 6));
-      const rows = await read(
+      const rows = await read<CustomInteractionRow>(
         `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)-[ir:interactor]->(re:ReferenceEntity) WHERE t.variantIdentifier = $identifier OR (t.variantIdentifier IS NULL AND t.identifier = $identifier) OPTIONAL MATCH (pe:PhysicalEntity)-[r:referenceEntity]->(re) OPTIONAL MATCH (se:Species)<-[s:species]-(re) WITH in, re, se, pe, t ORDER BY in.score DESC RETURN DISTINCT in.dbId AS dbId, in.score AS score, SIZE(in.accession) AS evidenceCount, re.identifier AS identifier, re.databaseName AS databaseName, re.displayName AS displayName, re.variantIdentifier as variantIdentifier, re.geneName AS geneName, re.url as url, in.url AS evidenceURL,  se.displayName AS speciesName, COUNT(pe) AS entitiesCount`,
         { identifier: acc }
       );
@@ -2375,7 +2496,7 @@ export const endpoints = [
      */
     handler: async (request) => {
       const acc = pathId(rawSegment(request, 5));
-      const rows = await read(
+      const rows = await read<InteractionWithEntitiesRow>(
         'MATCH (s:ReferenceEntity)<-[:interactor]-(it:Interaction),       (it)-[ir:interactor]->(in:ReferenceEntity)<-[re:referenceEntity]-(pe:PhysicalEntity),       (:ReactionLikeEvent)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(pe) WHERE s.variantIdentifier = $accession OR (s.variantIdentifier IS NULL AND s.identifier = $accession) RETURN DISTINCT it.score AS score, in.identifier AS accession, in.url AS accessionURL,                 COLLECT(DISTINCT{                          dbId: pe.dbId,                          stId: pe.stId,                          displayName: pe.displayName,                          schemaClass: pe.schemaClass                 }) AS physicalEntity,                 SIZE(it.accession) AS evidences,                 it.url AS url ORDER BY score DESC, accession',
         { accession: acc }
       );
@@ -2793,7 +2914,11 @@ export const endpoints = [
         return javaError(request, 400, 'BAD_REQUEST', requiredString('query'));
       const name = singleString(queryValues(request, 'species'), 'Homo sapiens');
       // SpeciesService.getSpeciesByName: a Species with exactly that name.
-      const named = await read(
+      const named = await read<{
+        dbId: number;
+        displayName: string | null;
+        abbreviation: string | null;
+      }>(
         'MATCH (n:Species) WHERE $name IN n.name RETURN n.dbId AS dbId, n.displayName AS displayName, n.abbreviation AS abbreviation LIMIT 2',
         { name }
       );
@@ -3198,7 +3323,15 @@ export const endpoints = [
         return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
       }
       const object = byDbId ? '{dbId:toInteger($id)}' : '{stId:$id}';
-      const rows = await read(
+      const rows = await read<{
+        referral: string;
+        objects: {
+          dbId: number;
+          stId: string | null;
+          displayName: string | null;
+          schemaClass: string | null;
+        }[];
+      }>(
         `MATCH (d:DatabaseObject${object})<-[rel]-(ref)
          WHERE NOT ref:InstanceEdit
            AND NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)
@@ -3216,7 +3349,7 @@ export const endpoints = [
           // schemaClass property, not its labels as from a Record.
           objects: row.objects.map((ref) => {
             const out: SimpleObject = { dbId: ref.dbId };
-            if (ref.stId !== null && ref.stId !== undefined && ref.stId !== '') out.stId = ref.stId;
+            if (ref.stId !== null && ref.stId !== '') out.stId = ref.stId;
             const displayName = ref.displayName ?? 'null';
             if (displayName !== '') out.displayName = displayName;
             const schemaClass = ref.schemaClass ?? 'null';
@@ -3340,7 +3473,10 @@ export function figureProblem(values, ext) {
 
 /** Whether a pathway is drawn as its illustration (hasEHLD), as the render page draws it. */
 async function hasIllustration(stId) {
-  const [row] = await read('MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld', { stId });
+  const [row] = await read<{ ehld: boolean | null }>(
+    'MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld',
+    { stId }
+  );
   return row?.ehld === true;
 }
 
@@ -3560,14 +3696,14 @@ async function diagramResult(raw) {
   if (!id) return undefined;
   let { idType, id: value } = id;
   if (idType === 'oldStId') {
-    const [old] = await read(
+    const [old] = await read<{ stId: string | null }>(
       'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
       { id: value }
     );
     value = old?.stId ?? value;
     idType = 'stId';
   }
-  const rows = await read(
+  const rows = await read<DiagramResult>(
     idType === 'dbId' ? DIAGRAM_RESULT_BY_DBID : DIAGRAM_RESULT_BY_STID,
     idType === 'dbId' ? { dbId: neo4j.int(value) } : { stId: value }
   );
@@ -3700,7 +3836,7 @@ async function interactionsOf(request, acc, { page, pageSize }) {
   if (pagingUnboxFails({ page, pageSize })) return { answer: unexpected(request) };
   const paged = page !== -1 && pageSize !== -1;
   try {
-    return await read(
+    return await read<InteractionRow>(
       `CALL {
          MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)-[ir:interactor]->(re:ReferenceEntity) WHERE t.variantIdentifier = $acc OR (t.variantIdentifier IS NULL AND t.identifier = $acc) OPTIONAL MATCH (pe:PhysicalEntity)-[r:referenceEntity]->(re) RETURN DISTINCT in, COLLECT(DISTINCT ir) AS irs, COLLECT(DISTINCT re) AS res, COLLECT(DISTINCT r) AS rs, COLLECT(DISTINCT pe)[..20] AS pe ORDER BY in.score DESC${paged ? ' SKIP ($page - 1) * $pageSize LIMIT $pageSize' : ''}
        }
@@ -3871,10 +4007,10 @@ function caseInsensitive(a, b) {
  * keeps those found, iterating the first. How far the first grows decides
  * the second's order, so an id that is no id must not be put in it.
  */
-export function orthologyMap(ids, found) {
-  const byId = new JavaHashMap();
+export function orthologyMap(ids: string[], found: Map<string, GraphNode | null | undefined>) {
+  const byId = new JavaHashMap<string, GraphNode | null | undefined>();
   for (const id of ids) if (found.get(id) !== null) byId.set(id, found.get(id));
-  const kept = new JavaHashMap();
+  const kept = new JavaHashMap<string, GraphNode>();
   for (const [id, object] of byId.entries()) if (object) kept.set(id, object);
   return kept;
 }
@@ -3898,7 +4034,7 @@ async function orthologyOf(raw, species) {
   if (!id) return null;
   let { idType, id: value } = id;
   if (idType === 'oldStId') {
-    const [old] = await read(
+    const [old] = await read<{ stId: string | null }>(
       'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
       { id: value }
     );
@@ -3906,7 +4042,7 @@ async function orthologyOf(raw, species) {
     idType = 'stId';
   }
   const anchor = idType === 'dbId' ? '{dbId:$id}' : '{stId:$id}';
-  const rows = await read(
+  const rows = await read<{ o: GraphNode }>(
     `CALL {
        MATCH (:DatabaseObject${anchor})<-[:inferredTo]-()-[:inferredTo]->(o:DatabaseObject)-[:species]->(:Species{dbId:$speciesId}) RETURN DISTINCT o
        UNION
@@ -4144,7 +4280,7 @@ function utf32(body, order) {
 
 /** graph-core's SchemaRepository.getByClass(Disease): the nodes alone, by displayName. */
 async function diseases() {
-  const rows = await read(
+  const rows = await read<{ n: GraphNode }>(
     'MATCH (n:Disease) WITH n ORDER BY n.displayName RETURN {id: id(n), labels: labels(n), props: properties(n)} AS n'
   );
   return rows.map((row) => row.n);
@@ -4157,9 +4293,9 @@ async function diseases() {
 async function findObject(raw) {
   const { where, params } = resolveId(raw);
   if (where === 'false') return undefined;
-  const [found] = await read(rootLabelsQuery(where), params);
+  const [found] = await read<{ labels: string[] }>(rootLabelsQuery(where), params);
   if (!found) return undefined;
-  const [row] = await read(findByIdQuery(where), {
+  const [row] = await read<MappedRow>(findByIdQuery(where), {
     ...params,
     ...findByIdParameters(found.labels),
   });
@@ -4283,7 +4419,7 @@ function schemaPage({
     const { skip, limit } = schemaWindow(page.value, offset.value, cap);
     let rows;
     try {
-      rows = await read(query(className, by), {
+      rows = await read<Row>(query(className, by), {
         ...(by && { [by]: species }),
         skip: neo4j.int(skip),
         limit: neo4j.int(limit),
@@ -4536,7 +4672,7 @@ async function peopleByPathway(pattern, overrides = {}) {
   const out = { authors: new Map(), reviewers: new Map(), editors: new Map() };
 
   for (const [role, relationship] of Object.entries(roles)) {
-    const rows = await read(
+    const rows = await read<{ stId: string; own: Props[]; sub: Props[] }>(
       `MATCH ${pattern}
        OPTIONAL MATCH (p)<-[${relationship.own}]-(:InstanceEdit)<-[:author]-(own:Person)
        WITH p, COLLECT(DISTINCT own) AS own
@@ -4545,8 +4681,9 @@ async function peopleByPathway(pattern, overrides = {}) {
     );
     for (const row of rows) {
       const seen = new Map();
-      for (const person of [...(row.own ?? []), ...(row.sub ?? [])]) {
-        if (person && !seen.has(person.dbId)) seen.set(person.dbId, person);
+      // COLLECT leaves out nulls and gives [] for none.
+      for (const person of [...row.own, ...row.sub]) {
+        if (!seen.has(person.dbId)) seen.set(person.dbId, person);
       }
       out[role].set(row.stId, [...seen.values()]);
     }
@@ -5840,7 +5977,7 @@ export async function needsIncoming(raw) {
   if (!javaNumeric(digits)) return false;
   const value = BigInt(`${sign === '-' ? '-' : ''}${asciiDigits(digits)}`);
   if (value > 9223372036854775807n || value < -9223372036854775808n) return false;
-  const [row] = await read(
+  const [row] = await read<{ needs: boolean }>(
     `MATCH (n:DatabaseObject) WHERE n.dbId = $id
      RETURN NOT (n:Species OR n:Summation OR n:Person OR n:Compartment OR n:SimpleEntity) AS needs`,
     { id: neo4j.int(value.toString()) }
@@ -6696,7 +6833,7 @@ async function identifierProblems(diagram, object?) {
     if (pastLong) throw Object.assign(new Error(pastLong), { javaMessage: pastLong });
     const { where, params } = resolveId(id);
     if (where === 'false') return undefined;
-    const [row] = await read(
+    const [row] = await read<{ labels: string[]; hasDiagram: boolean | null }>(
       `MATCH (n:DatabaseObject) WHERE ${where}
        RETURN labels(n) AS labels, n.hasDiagram AS hasDiagram LIMIT 1`,
       params
@@ -6706,7 +6843,7 @@ async function identifierProblems(diagram, object?) {
   const d = await found(diagram);
   if (!d) report.push(`'${diagram}' cannot be found`);
   else if (!d.labels.includes('Pathway')) report.push(`'${diagram}' does not belong to a pathway`);
-  else if (d.hasDiagram === null || d.hasDiagram === undefined)
+  else if (d.hasDiagram === null)
     // getHasDiagram() unboxed: Java's NullPointerException.
     throw Object.assign(new Error(`${diagram} has no hasDiagram`), { unexpected: true });
   else if (!d.hasDiagram) report.push(`'${diagram}' the pathway does not have diagram`);
@@ -7418,7 +7555,7 @@ function searchAnswer(request, query, result) {
 async function eventCitationFor(raw) {
   const id = inDepthId(raw);
   if (!id) return undefined;
-  const [row] = await read(
+  const [row] = await read<MappedRow>(
     enhancedQuery({
       idType: id.idType,
       summarise: false,
@@ -7567,7 +7704,7 @@ async function graphCoreId(raw) {
   let { where, params } = resolveId(raw);
   if (where === 'false') return undefined;
   if (where.startsWith('n.oldStId')) {
-    const [found] = await read(
+    const [found] = await read<{ stId: string | null }>(
       'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',
       params
     );
@@ -7601,9 +7738,12 @@ const LAZY_FIELDS = {
  */
 async function lazyCollection(dbId, field) {
   const [direction, schemaClass] = LAZY_FIELDS[field];
-  const rows = await read(lazyCollectionQuery(field, direction, schemaClass), {
-    dbId: neo4j.int(dbId),
-  });
+  const rows = await read<{ m: Props; n: number | null }>(
+    lazyCollectionQuery(field, direction, schemaClass),
+    {
+      dbId: neo4j.int(dbId),
+    }
+  );
   return rows.map((row) => [row.m, row.n ?? 1]);
 }
 
@@ -7779,7 +7919,10 @@ async function mappingAnswer(request, kind) {
            RETURN DISTINCT p ORDER BY p.stId`;
     params = { databaseName: resource, identifier: asked };
   }
-  const rows = await read(cypher, { ...params, ...(taxId === undefined ? {} : { taxId }) });
+  const rows = await read<{ rle?: Props; p?: Props }>(cypher, {
+    ...params,
+    ...(taxId === undefined ? {} : { taxId }),
+  });
   if (rows.length === 0) return missing();
   return {
     status: 200,
@@ -7834,7 +7977,15 @@ function javaAsString(value) {
  */
 async function crossReferenceResults(request, identifier, dbFilter) {
   try {
-    const rows = await read(crossReferenceQuery(identifier, dbFilter));
+    const rows = await read<{
+      reference: string | null;
+      physicalEntities: (string | null)[];
+      crossReferences: {
+        identifier: string | null;
+        databaseName: string | null;
+        url: string | null;
+      }[];
+    }>(crossReferenceQuery(identifier, dbFilter));
     if (rows.length === 0) return [NO_CROSS_REFERENCES];
     return rows.map((row) =>
       compact({
@@ -7937,7 +8088,7 @@ async function inOrderPool(items, width, work) {
  * count), each with a count above nothing.
  */
 async function staticSummary(accs) {
-  const rows = await read(
+  const rows = await read<{ s: string; t: number }>(
     `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)
      WHERE t.variantIdentifier IN $accs OR (t.variantIdentifier IS NULL AND t.identifier IN $accs)
      RETURN DISTINCT t.identifier AS s, COUNT(DISTINCT in) as t`,
@@ -7998,9 +8149,12 @@ async function findPerson(id) {
   const person = personWhere(id);
   if (!person) return undefined;
   const options = { anchor: person.anchor, ordered: false, without: 'InstanceEdit' };
-  const [found] = await read(rootLabelsQuery(person.where, options), person.params);
+  const [found] = await read<{ labels: string[] }>(
+    rootLabelsQuery(person.where, options),
+    person.params
+  );
   if (!found) return undefined;
-  const [row] = await read(findByIdQuery(person.where, options), {
+  const [row] = await read<MappedRow>(findByIdQuery(person.where, options), {
     ...person.params,
     ...findByIdParameters(found.labels),
   });
@@ -8029,7 +8183,11 @@ function containedEventsFailure(request, raw) {
 async function containedEvents(raw) {
   const id = await graphCoreId(raw);
   if (!id) return [];
-  const rows = await read(
+  const rows = await read<{
+    e: GraphNode;
+    'COLLECT(r)': GraphRelationship[][];
+    'COLLECT(p)': GraphNode[];
+  }>(
     id.byDbId
       ? 'MATCH (p:Pathway)-[r:hasEvent*1..100]->(e:Event) WHERE p.dbId = $dbId RETURN e, COLLECT(r), COLLECT(p)'
       : 'MATCH (p:Pathway)-[r:hasEvent*1..100]->(e:Event) WHERE p.stId = $stId RETURN e, COLLECT(r), COLLECT(p)',
@@ -8057,7 +8215,7 @@ async function containedEvents(raw) {
  */
 async function lazyRelationship(dbId, type, direction, getter, collection) {
   const label = collection === '' ? getter.returns : getter.element;
-  const rows = await read(
+  const rows = await read<{ m: GraphNode; n: number | null }>(
     lazyCollectionQuery(type, direction, label).replace(
       'RETURN m,',
       'RETURN {id: id(m), labels: labels(m), props: properties(m)} AS m,'
@@ -8066,7 +8224,7 @@ async function lazyRelationship(dbId, type, direction, getter, collection) {
   );
   // findByRelationship gives its object only when there is exactly one: two
   // `modified` edits make a pathway's getModified null, and Java's 404.
-  if (collection === '') return rows.length === 1 ? mapNodes([rows[0].m]) : [];
+  if (collection === '') return rows.length === 1 ? mapNodes([present(rows[0]).m]) : [];
   // A getter returning java.util.Set: findCollectionByRelationship collects
   // the objects with Collectors.toSet -- one each, no stoichiometry, in a
   // HashSet's order (DatabaseObject.hashCode). Event.getInferredFrom is one.
@@ -8164,7 +8322,7 @@ async function lowerLevelPathways(request, segment, { column, query }) {
 
   const taxId = await speciesTaxId(speciesFilter(species));
   const inSpecies = (pattern) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
-  const rows = await read(query(object, inSpecies), {
+  const rows = await read<{ [column: string]: Props }>(query(object, inSpecies), {
     ...params,
     ...(taxId === undefined ? {} : { taxId }),
   });
@@ -8193,18 +8351,18 @@ export function speciesFilter(raw) {
 async function speciesTaxId(filter) {
   if (filter.kind === 'none') return undefined;
   if (filter.kind === 'number') {
-    const [byTaxId] = await read(
+    const [byTaxId] = await read<{ taxId: string | null }>(
       'MATCH (s:Species {taxId: $value}) RETURN s.taxId AS taxId LIMIT 1',
       filter
     );
     if (byTaxId) return byTaxId.taxId;
-    const [byDbId] = await read(
+    const [byDbId] = await read<{ taxId: string | null }>(
       'MATCH (s:Species {dbId: toInteger($value)}) RETURN s.taxId AS taxId LIMIT 1',
       { value: asciiDigits(filter.value) }
     );
     return byDbId?.taxId ?? undefined;
   }
-  const [byName] = await read(
+  const [byName] = await read<{ taxId: string | null }>(
     'MATCH (s:Species) WHERE $value IN s.name RETURN s.taxId AS taxId LIMIT 1',
     filter
   );

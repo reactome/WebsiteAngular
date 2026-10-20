@@ -167,12 +167,55 @@ function connection() {
 export const READ_TIMEOUT_MS = 30_000;
 
 /**
- * Run a read; each record as a plain object. With `graph`, nodes and
+ * A value as read returns it: Neo4j's integers as numbers (as strings past
+ * 2^53), dates as ISO strings, maps and lists of the same; with `graph`,
+ * nodes and relationships as GraphNode and GraphRelationship.
+ */
+type GraphValue = null | boolean | number | string | GraphValue[] | { [key: string]: GraphValue };
+/**
+ * A node's properties (properties(n), or GraphNode.props): absent ones are
+ * not there, not null. The ones every DatabaseObject may have are named.
+ */
+export type Properties = {
+  [key: string]: GraphValue | undefined;
+  dbId?: number;
+  stId?: string;
+  displayName?: string;
+  schemaClass?: string;
+  speciesName?: string;
+  doi?: string;
+  databaseName?: string;
+  identifier?: string;
+};
+/** One record, by column. A caller names the columns its query returns. */
+export type Row = { [column: string]: GraphValue };
+/** A node, read with `graph`. */
+export interface GraphNode {
+  id: number | string;
+  labels: string[];
+  props: Properties;
+}
+/** A relationship, read with `graph`. */
+export interface GraphRelationship {
+  id: number | string;
+  type: string;
+  start: number | string;
+  end: number | string;
+  props: { [key: string]: GraphValue };
+}
+
+/**
+ * Run a read; each record as a plain object, typed as the caller says its
+ * query returns (R) -- the driver checks nothing of that. With `graph`, nodes and
  * relationships keep what an object mapper needs -- {id, labels, props} and
  * {id, type, start, end, props} -- so a Java query can be sent as written
  * and its result mapped as Spring Data maps it (domain.ts, mapResults).
  */
-export async function read(cypher, parameters = {}, { graph = false } = {}) {
+export async function read<R = Row>(
+  cypher: string,
+  parameters: Record<string, unknown> = {},
+  { graph = false } = {}
+): Promise<R[]> {
   const session = connection().session({
     database: DATABASE,
     defaultAccessMode: neo4j.session.READ,
@@ -181,14 +224,14 @@ export async function read(cypher, parameters = {}, { graph = false } = {}) {
     const result = await session.run(cypher, parameters, { timeout: READ_TIMEOUT_MS });
     return result.records.map((record) =>
       graph ? withGraph(record.toObject()) : plain(record.toObject())
-    );
+    ) as R[];
   } finally {
     await session.close();
   }
 }
 
 /** As plain, but nodes and relationships with their ids, labels and ends. */
-function withGraph(value) {
+function withGraph(value: unknown): GraphValue {
   if (value instanceof neo4j.types.Node)
     return { id: plain(value.identity), labels: value.labels, props: plain(value.properties) };
   if (value instanceof neo4j.types.Relationship)
@@ -201,7 +244,7 @@ function withGraph(value) {
     };
   if (Array.isArray(value)) return value.map(withGraph);
   if (value && typeof value === 'object' && !neo4j.isInt(value)) {
-    const out = {};
+    const out: { [key: string]: GraphValue } = {};
     for (const [key, entry] of Object.entries(value)) out[key] = withGraph(entry);
     return out;
   }
@@ -209,7 +252,7 @@ function withGraph(value) {
 }
 
 /** Neo4j's own types, flattened to what JSON would carry. */
-function plain(value) {
+function plain(value: unknown): GraphValue {
   if (neo4j.isInt(value)) {
     return value.inSafeRange() ? value.toNumber() : value.toString();
   }
@@ -218,11 +261,12 @@ function plain(value) {
     // Nodes and relationships carry their properties under .properties.
     const source = 'properties' in value && value.properties ? value.properties : value;
     if (source instanceof Date) return source.toISOString();
-    const out = {};
+    const out: { [key: string]: GraphValue } = {};
     for (const [key, entry] of Object.entries(source)) out[key] = plain(entry);
     return out;
   }
-  return value;
+  // What is left is a boolean, number, string or null.
+  return value as GraphValue;
 }
 
 export async function close() {
