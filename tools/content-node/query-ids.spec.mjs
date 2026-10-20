@@ -8,7 +8,7 @@
 // then displayName, 31 apart. Java's answers measured 17 Oct 2026.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async () => [],
   configured: () => true,
   close: async () => {},

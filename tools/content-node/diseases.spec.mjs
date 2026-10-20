@@ -7,7 +7,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const asked = [];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher) => {
     asked.push(cypher);
     const node = (id, props) => ({ n: { id, labels: ['DatabaseObject', 'Disease'], props } });

@@ -9,7 +9,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 let root;
 let lazy = {};
 const asked = [];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher) => {
     asked.push(cypher);
     if (/RETURN labels\(n\) AS labels/.test(cypher)) return root ? [{ labels: root.labels }] : [];

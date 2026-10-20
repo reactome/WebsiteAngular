@@ -18,7 +18,7 @@ import {
   schemaSnapshot,
   superclassOf,
   supertypes,
-} from './schema.mjs';
+} from './schema.ts';
 
 /** `CALL db.labels()` on the Release 97 graph: every label a node carries. */
 const GRAPH_LABELS = [
@@ -348,16 +348,18 @@ describe("schema-snapshot.json, Java's reflection answers captured once", () => 
   const snapshot = schemaSnapshot();
   const classes = Object.keys(SCHEMA_CLASSES).sort();
 
-  it('has an entry for every class in schema.mjs, and none it does not have', () => {
+  it('has an entry for every class in schema.ts, and none it does not have', () => {
     expect(Object.keys(snapshot.declared).sort()).toEqual(classes);
     expect(Object.keys(snapshot.referrals).sort()).toEqual(classes);
   });
 
   it("holds only each class's own methods, and referrals that exist", () => {
-    for (const [name, rows] of Object.entries(snapshot.declared)) {
+    for (const [name, rows] of Object.entries(
+      snapshot.declared as Record<string, { origin: string }[]>
+    )) {
       for (const row of rows) expect(row.origin, name).toBe(name);
     }
-    for (const [name, indexes] of Object.entries(snapshot.referrals)) {
+    for (const [name, indexes] of Object.entries(snapshot.referrals as Record<string, number[]>)) {
       for (const index of indexes) expect(snapshot.referralRows[index], name).toBeDefined();
     }
   });
@@ -387,9 +389,9 @@ describe('schemaModelTree, DatabaseObjectUtils.getGraphModelTree', () => {
 
   /** Java's answer back into the rows it was built from: each class's own count. */
   const rowsOf = (tree) => {
-    const rows = [];
-    const chain = (name) => {
-      const out = [];
+    const rows: { labels: string[]; count: number }[] = [];
+    const chain = (name: string) => {
+      const out: string[] = [];
       for (let at = name; at; at = superclassOf(at)) out.unshift(at);
       return out;
     };

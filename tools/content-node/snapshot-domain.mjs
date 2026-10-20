@@ -20,7 +20,7 @@
  *    so a getter graph-core adds cannot be written as a field it is not.
  *
  * WHEN TO RUN IT: when graph-core changes in the deployed content service --
- * the same trigger as schema.mjs and snapshot-schema.mjs. JDK 21 compiles
+ * the same trigger as schema.ts and snapshot-schema.mjs. JDK 21 compiles
  * and runs it (--release is left at the JDK's own).
  *
  * THEN: run the diff harness over /data/query/{id} before committing. Jackson

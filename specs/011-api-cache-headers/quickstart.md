@@ -52,7 +52,7 @@ Request a standard-form URL twice through the public site, and expect `cf-cache-
 Purge `/ContentService/` in Cloudflare, then run:
 
 ```sh
-node tools/content-node/warm.mjs <site origin>
+node tools/content-node/warm.ts <site origin>
 ```
 
 Expected: every URL on the list answers with `x-cache-rule: standard`, and a second pass gets `cf-cache-status: HIT`.

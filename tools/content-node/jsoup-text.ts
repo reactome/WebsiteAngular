@@ -23,7 +23,7 @@
  * from its jar into jsoup-tables.json by snapshot-jsoup/JsoupTables.java.
  *
  * Checked against Jsoup itself over every summation in the graph (21,634
- * texts) and the inputs in jsoup-text.spec.mjs, not against a reading of the
+ * texts) and the inputs in jsoup-text.spec.ts, not against a reading of the
  * HTML specification: where this simplifies the tree builder, it is because no
  * summation reaches the rest. Known to differ from Jsoup, and in no summation:
  * a formatting element left open across a table's boundary
@@ -78,7 +78,7 @@ function characterReference(text, at) {
     if (text[next] === ';') next += 1;
     if (value === -1 || (value >= 0xd800 && value <= 0xdfff) || value > 0x10ffff)
       return ['�', next];
-    if (value >= 0x80 && value < 0x80 + WIN1252.length) value = WIN1252[value - 0x80];
+    if (value >= 0x80 && value < 0x80 + WIN1252.length) value = WIN1252[value - 0x80] ?? value;
     return [String.fromCodePoint(value), next];
   }
   // consumeLetterThenDigitSequence: letters, then digits; never a prefix of it.
@@ -95,8 +95,8 @@ function characterReference(text, at) {
 }
 
 /** The tokens of an HTML text: {text}, {cdata}, {start, name} and {end, name}. */
-function tokens(html) {
-  const out = [];
+function tokens(html: string): Token[] {
+  const out: Token[] = [];
   let text = '';
   const flush = () => {
     if (text) out.push({ text });
@@ -264,13 +264,36 @@ function readTag(html, at) {
   return undefined;
 }
 
+/** A run of text in the tree: CDATA kept as written, the rest normalised by text(). */
+interface TextNode {
+  text: string;
+  cdata?: boolean;
+  parent: Node;
+  name?: undefined;
+}
+
+/**
+ * An element of the parsed tree. (Not the DOM's Node: this module builds its
+ * own tree, as jsoup does.) Fields in the order the constructor sets them.
+ */
 class Node {
-  constructor(name, parent) {
+  name: string;
+  parent: Node | undefined;
+  children: (Node | TextNode)[];
+  text?: undefined;
+  constructor(name: string, parent?: Node) {
     this.name = name;
     this.parent = parent;
     this.children = [];
   }
 }
+
+/** What the tokenizer reads: text, CDATA, and start and end tags. */
+type Token =
+  | { text: string }
+  | { cdata: string }
+  | { start: true; name: string }
+  | { end: true; name: string };
 
 const CLOSES_P = new Set([
   'address',
@@ -444,12 +467,19 @@ function build(html) {
   const body = new Node('body', htmlNode);
   documentNode.children.push(htmlNode);
   htmlNode.children.push(head, body);
-  const stack = [htmlNode, body];
-  const current = () => stack[stack.length - 1];
+  const stack: Node[] = [htmlNode, body];
+  // html and body never leave it (popUntil stops at two), so it is never empty.
+  const current = (): Node => {
+    const top = stack[stack.length - 1];
+    if (!top) throw new Error('the open elements are empty');
+    return top;
+  };
+  /** The name of the open element at `at`; within the stack's bounds, always one. */
+  const nameAt = (at: number): string => stack[at]?.name ?? '';
   const has = (name, limits = SCOPE_LIMITS) => {
     for (let at = stack.length - 1; at >= 0; at -= 1) {
-      if (stack[at].name === name) return true;
-      if (limits.has(stack[at].name)) return false;
+      if (nameAt(at) === name) return true;
+      if (limits.has(nameAt(at))) return false;
     }
     return false;
   };
@@ -459,7 +489,7 @@ function build(html) {
   const popUntil = (name) => {
     while (stack.length > 2) {
       const popped = stack.pop();
-      if (popped.name === name) return;
+      if (popped?.name === name) return;
     }
   };
   const closeP = () => {
@@ -467,23 +497,28 @@ function build(html) {
   };
   const inTable = () => {
     for (let at = stack.length - 1; at >= 0; at -= 1) {
-      const name = stack[at].name;
+      const name = nameAt(at);
       if (name === 'td' || name === 'th' || name === 'caption') return false;
       if (name === 'table') return true;
     }
     return false;
   };
-  const tableNode = () => {
-    for (let at = stack.length - 1; at >= 0; at -= 1)
-      if (stack[at].name === 'table') return stack[at];
+  /** The open table, if there is one. */
+  const tableNode = (): Node | undefined => {
+    for (let at = stack.length - 1; at >= 0; at -= 1) if (nameAt(at) === 'table') return stack[at];
     return undefined;
   };
+  /** The open table and what holds it, where inTable() has found one to foster before. */
+  const fosterHost = (): { table: Node; host: Node } => {
+    const table = tableNode();
+    if (!table?.parent) throw new Error('no open table to foster-parent before');
+    return { table, host: table.parent };
+  };
   // Foster parenting: what may not sit in a table goes before it.
-  const append = (node) => {
+  const append = (node: Node) => {
     const parent = current();
     if (inTable() && ['table', 'tbody', 'thead', 'tfoot', 'tr'].includes(parent.name)) {
-      const table = tableNode();
-      const host = table.parent;
+      const { table, host } = fosterHost();
       host.children.splice(host.children.indexOf(table), 0, node);
       node.parent = host;
       return;
@@ -491,23 +526,23 @@ function build(html) {
     node.parent = parent;
     parent.children.push(node);
   };
-  const appendText = (text) => {
+  const appendText = (text: string) => {
     const parent = current();
-    let host = parent;
-    let before;
+    let host: Node = parent;
+    let before: Node | undefined;
     if (inTable() && ['table', 'tbody', 'thead', 'tfoot', 'tr'].includes(parent.name)) {
       if (/^[\t\n\f\r ]*$/.test(text)) {
         host = parent;
       } else {
-        const table = tableNode();
-        host = table.parent;
-        before = table;
+        const fostered = fosterHost();
+        host = fostered.host;
+        before = fostered.table;
       }
     }
     const siblings = host.children;
     const at = before ? siblings.indexOf(before) : siblings.length;
     const previous = siblings[at - 1];
-    if (previous && previous.text !== undefined && !previous.cdata) previous.text += text;
+    if (previous?.text !== undefined && !previous.cdata) previous.text += text;
     else siblings.splice(at, 0, { text, parent: host });
   };
   const insert = (name, push = true) => {
@@ -519,19 +554,24 @@ function build(html) {
   // The list of active formatting elements: a formatting element a block's
   // end closed is opened again before the next text or inline element --
   // <p><i>a</p>b</i> is "ab", the b inside a new <i>. MARKER scopes a cell.
-  const MARKER = {};
-  const active = [];
+  // Compared by identity; its name is no tag's, so a search by name never stops on it.
+  const MARKER: { name: string; node: Node } = { name: '#marker', node: documentNode };
+  const active: { name: string; node: Node }[] = [];
   const reconstruct = () => {
     if (!active.length) return;
     let at = active.length - 1;
-    const open = (entry) => entry === MARKER || stack.includes(entry.node);
+    const open = (entry: { name: string; node: Node } | undefined) =>
+      entry === MARKER || (entry !== undefined && stack.includes(entry.node));
     if (open(active[at])) return;
     while (at > 0 && !open(active[at - 1])) at -= 1;
-    for (; at < active.length; at += 1) active[at].node = insert(active[at].name);
+    for (; at < active.length; at += 1) {
+      const entry = active[at];
+      if (entry) entry.node = insert(entry.name);
+    }
   };
   const lastActive = (name) => {
     for (let at = active.length - 1; at >= 0 && active[at] !== MARKER; at -= 1)
-      if (active[at].name === name) return at;
+      if (active[at]?.name === name) return at;
     return -1;
   };
   const clearToMarker = () => {
@@ -541,8 +581,9 @@ function build(html) {
   // closed with everything open inside it, and taken off the list.
   const closeFormatting = (name) => {
     const at = lastActive(name);
-    if (at === -1) return false;
-    const { node } = active[at];
+    const entry = active[at];
+    if (at === -1 || !entry) return false;
+    const { node } = entry;
     active.splice(at, 1);
     const position = stack.indexOf(node);
     if (position !== -1) stack.length = position;
@@ -552,18 +593,18 @@ function build(html) {
     inTable() && ['table', 'tbody', 'thead', 'tfoot', 'tr'].includes(current().name);
 
   for (const token of tokens(html)) {
-    if (token.text !== undefined) {
+    if ('text' in token) {
       if (!inFosterContext()) reconstruct();
       appendText(token.text);
       continue;
     }
-    if (token.cdata !== undefined) {
-      const node = { text: token.cdata, cdata: true, parent: current() };
+    if ('cdata' in token) {
+      const node: TextNode = { text: token.cdata, cdata: true, parent: current() };
       current().children.push(node);
       continue;
     }
     const { name } = token;
-    if (token.start) {
+    if ('start' in token) {
       if (['html', 'body'].includes(name)) continue;
       if (
         inTable() &&
@@ -647,7 +688,7 @@ function build(html) {
       if (name === 'li' || name === 'dd' || name === 'dt') {
         const kin = name === 'li' ? ['li'] : ['dd', 'dt'];
         for (let at = stack.length - 1; at >= 0; at -= 1) {
-          const open = stack[at].name;
+          const open = nameAt(at);
           if (kin.includes(open)) {
             popUntil(open);
             break;
@@ -721,7 +762,7 @@ function build(html) {
     }
     if (HEADINGS.has(name)) {
       for (let at = stack.length - 1; at >= 2; at -= 1)
-        if (HEADINGS.has(stack[at].name)) {
+        if (HEADINGS.has(nameAt(at))) {
           stack.length = at;
           break;
         }
@@ -731,7 +772,7 @@ function build(html) {
     // Any other end tag: the nearest open element of that name, unless a
     // special element stands in the way.
     for (let at = stack.length - 1; at >= 2; at -= 1) {
-      const open = stack[at].name;
+      const open = nameAt(at);
       if (open === name) {
         stack.length = at;
         break;
@@ -793,7 +834,7 @@ function text(root) {
     if (node.name !== '#document' && isBlock(node.name)) {
       const siblings = node.parent?.children ?? [];
       const next = siblings[siblings.indexOf(node) + 1];
-      if (next && next.text !== undefined && !lastIsSpace()) accum += ' ';
+      if (next?.text !== undefined && !lastIsSpace()) accum += ' ';
     }
   };
   visit(root);

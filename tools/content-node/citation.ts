@@ -99,6 +99,38 @@ function checkStaticAuthors(authors, ext) {
   }
 }
 
+/** An author as a citation lists one: an event's by initials, Europe PMC's by full name. */
+interface Author {
+  lastName?: string | null;
+  firstName?: string | null;
+  initials?: string;
+  fullName?: string | null;
+}
+
+/**
+ * Java's Citation, as the export endpoints read it. Each builder adds the
+ * fields in its own order, the order that reaches the answer; a type lists
+ * them and does not change it.
+ */
+export interface Citation {
+  id: string;
+  title: string;
+  year?: string | null;
+  /** Undefined where citationMonth reads no month: left out, as Java leaves it. */
+  month?: string | null | undefined;
+  doi?: string | null;
+  urls?: string[];
+  authors?: Author[] | null;
+  release?: unknown;
+  pages?: string | null;
+  pmid?: string | null;
+  pmcid?: string | null;
+  journal?: string | null;
+  number?: string | null;
+  volume?: string | null;
+  issn?: string | null;
+}
+
 /**
  * CitationController.getEventCitationObject, given the event: its name, the
  * release year and -- from the wrong character of the date, as Java takes
@@ -114,7 +146,7 @@ export function citationOfEvent(event, raw, release, isPathway) {
   if (props.displayName == null) throw javaFailure('Title or id can not be null');
   if (props.releaseDate == null) throw unexpected('an event with no release date');
   const date = String(props.releaseDate);
-  const citation = {
+  const citation: Citation & { urls: string[] } = {
     id: raw,
     title: props.displayName,
     year: substring(date, 0, 4),
@@ -158,7 +190,7 @@ const java = (value) => (value === null || value === undefined ? 'null' : value)
 const byName = (author) =>
   `${java(author.lastName)}, ${java('firstName' in author ? author.firstName : author.initials)}`;
 
-function ris(citation, type, date, extra = []) {
+function ris(citation: Citation, type: string, date, extra: [string, unknown][] = []) {
   let text = `${NOTE(date)}\n\nTY  - ${type}\nTI  - ${citation.title}\n`;
   for (const author of citation.authors ?? []) text += `AU  - ${byName(author)}\n`;
   text += `AN  - ${citation.id}\n`;
@@ -168,13 +200,14 @@ function ris(citation, type, date, extra = []) {
     text += `PY  - ${citation.year}\n`;
     if (citation.month != null) text += `DA  - ${citation.year}/${citation.month}//\n`;
   }
-  for (const [tag, value] of extra) if (value != null) text += `${tag}  - ${value}\n`;
+  for (const [tag, value] of extra) if (value != null) text += `${tag}  - ${String(value)}\n`;
   return `${text}ER  - \n`;
 }
 
-function bibtex(citation, kind, date, middle) {
+function bibtex(citation: Citation, kind: string, date, middle: [string, unknown][]) {
   let text = `@${kind}{${citation.id},\nTitle = {${citation.title}},\n`;
-  for (const [name, value] of middle) if (value !== undefined) text += `${name} = {${value}},\n`;
+  for (const [name, value] of middle)
+    if (value !== undefined) text += `${name} = {${String(value)}},\n`;
   return `${text}Note = {${NOTE(date)}},\n}`;
 }
 
@@ -299,11 +332,10 @@ function asMap(value) {
  */
 export function staticCitationFrom(answer) {
   const map = answer?.resultList?.result?.[0];
-  if (!map || map.id == null || map.title == null)
-    throw new Error('no citation in Europe PMC answer');
+  if (map?.id == null || map.title == null) throw new Error('no citation in Europe PMC answer');
   const journalInfo = 'journalInfo' in map ? asMap(map.journalInfo) : null;
   const journal = journalInfo && 'journal' in journalInfo ? asMap(journalInfo.journal) : null;
-  const citation = { id: javaString(map.id), title: javaString(map.title) };
+  const citation: Citation = { id: javaString(map.id), title: javaString(map.title) };
   if ('pageInfo' in map) citation.pages = javaString(map.pageInfo);
   if ('pmid' in map) citation.pmid = javaString(map.pmid);
   if ('pmcid' in map) citation.pmcid = javaString(map.pmcid);

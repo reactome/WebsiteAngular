@@ -8,13 +8,13 @@ import java.util.TreeMap;
 /**
  * Prints jsoup-tables.json: the Jsoup the Java content service ships, its
  * named entities ([isBase, ...code points]) and its known tags ([isBlock,
- * preserveWhitespace, isEmpty, formatAsBlock]), which jsoup-text.mjs reads.
+ * preserveWhitespace, isEmpty, formatAsBlock]), which jsoup-text.ts reads.
  * Run with that Jsoup on the classpath, from the repository root:
  *
  *   java -cp <WEB-INF/lib>/jsoup-<version>.jar \
  *     tools/content-node/snapshot-jsoup/JsoupTables.java > tools/content-node/jsoup-tables.json
  *
- * WHEN: when the content service's Jsoup changes. THEN: run jsoup-text.spec.mjs,
+ * WHEN: when the content service's Jsoup changes. THEN: run jsoup-text.spec.ts,
  * and compare jsoupText with Jsoup over the graph's summations.
  */
 public class JsoupTables {

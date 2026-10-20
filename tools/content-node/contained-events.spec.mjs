@@ -39,7 +39,7 @@ const RECORDS = [
   { e: A, 'COLLECT(r)': [[hasEvent(10, 1, 2, 1)]], 'COLLECT(p)': [P] },
   { e: B, 'COLLECT(r)': [[hasEvent(11, 1, 3, 0)]], 'COLLECT(p)': [P] },
 ];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
     if (cypher.includes('[r:hasEvent*1..100]'))

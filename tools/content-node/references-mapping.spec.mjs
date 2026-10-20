@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 let answer = () => [];
 const asked = [];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
     return answer(cypher, params);

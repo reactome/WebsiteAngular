@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 // The stand-in graph answers each query by what it asks for.
 let answer = () => [];
 const asked = [];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     asked.push(cypher);
     return answer(cypher, params);

@@ -46,7 +46,7 @@ describe('the graph database wrapper', () => {
     expect(run.stdout.split('\n')[0]).toBe(`neo4j/${password}`);
   });
 
-  it('reads the file as graph.mjs does: comments skipped, keys and values trimmed', () => {
+  it('reads the file as graph.ts does: comments skipped, keys and values trimmed', () => {
     const run = start(
       '# NEO4J_PASSWORD=commented\n  NEO4J_USER = neo4j  \nNEO4J_PASSWORD=  spaced  \n'
     );

@@ -8,31 +8,31 @@
  * What it captures, from the running Java ContentService:
  *
  *  - /data/schema/{className}/attributes and /referrals for every class in
- *    schema.mjs. Both are DatabaseObjectUtils.getAttributeTable/getReferrals:
+ *    schema.ts. Both are DatabaseObjectUtils.getAttributeTable/getReferrals:
  *    reflection, no database, so the answer only changes when graph-core does.
  *  - The same two for every woven `$AjcClosure` class. Java answers those too
  *    (they extend AspectJ's AroundClosure); they must all be one answer, which
  *    is stored once as `closure` -- the script stops if any differs.
  *  - /data/schema/model, whole. Node does not serve it: the tree's counts are
  *    the graph's and are computed live (service.mjs, schemaModelTree). It is
- *    kept so that schema.spec.mjs can rebuild Java's tree from its own counts
- *    with schema.mjs's hierarchy and compare bytes -- the check that the
+ *    kept so that schema.spec.ts can rebuild Java's tree from its own counts
+ *    with schema.ts's hierarchy and compare bytes -- the check that the
  *    hierarchy and the tree building are Java's, without a database.
  *
  * WHEN TO RUN IT: whenever graph-core's model changes -- the same trigger as
- * updating schema.mjs (see its header), and in the same commit. The owner's
+ * updating schema.ts (see its header), and in the same commit. The owner's
  * view (Oct 2026) is that the model "will not be changing any time soon". The
- * script refuses to write a snapshot whose classes differ from schema.mjs's,
- * so the two cannot drift apart silently: update schema.mjs first.
+ * script refuses to write a snapshot whose classes differ from schema.ts's,
+ * so the two cannot drift apart silently: update schema.ts first.
  *
- * Stored compactly (schema.mjs's schemaSnapshot says the shape): each class's
+ * Stored compactly (schema.ts's schemaSnapshot says the shape): each class's
  * own attribute rows once, rather than again in every subclass's table, and
  * each distinct referral row once. Captured whole the file was 376KB; most of
  * it was DatabaseObject's rows repeated 113 times.
  *
  * Checked before anything is written: every answer round-trips -- JSON.parse
  * then javaJson gives back Java's exact bytes -- and every class's two
- * answers, rebuilt from the compact form by schema.mjs exactly as node serves
+ * answers, rebuilt from the compact form by schema.ts exactly as node serves
  * them, are Java's bytes.
  *
  * Sequential and gentle on purpose: /referrals scans the classpath on every
@@ -41,7 +41,7 @@
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } from './schema.mjs';
+import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } from './schema.ts';
 
 const JAVA = process.env.JAVA_CONTENT_SERVICE || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');

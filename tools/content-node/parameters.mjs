@@ -17,7 +17,7 @@
  * error status, and errors are never stored, so no range is checked here.
  */
 import { readFileSync } from 'node:fs';
-import { SCHEMA_CLASSES } from './schema.mjs';
+import { SCHEMA_CLASSES } from './schema.ts';
 
 let openapi;
 const OPENAPI = () =>

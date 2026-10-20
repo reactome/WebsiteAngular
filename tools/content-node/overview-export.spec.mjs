@@ -9,7 +9,7 @@ import { createServer } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 const SPECIES = { 9606: '9606', 'Homo sapiens': '9606', 48887: '9606', 'Mus musculus': '10090' };
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     const taxId = SPECIES[params?.value];
     if (cypher.includes('{taxId: $value}'))

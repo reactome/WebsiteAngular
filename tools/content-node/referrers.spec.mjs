@@ -8,7 +8,7 @@
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
 const asked = [];
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (cypher, params) => {
     asked.push([cypher, params]);
     // findNewStId: REACT_1 became R-HSA-9; REACT_2 became nothing.

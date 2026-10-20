@@ -1,6 +1,6 @@
 // @vitest-environment node
 //
-// warm.mjs fills the edge cache after a release's purge. A list spelled
+// warm.ts fills the edge cache after a release's purge. A list spelled
 // unlike the site's requests would warm entries no reader asks for; a run
 // against a node still holding the last release would keep that release's
 // answers at the edge until the next purge; and a warm-up that did not say
@@ -8,19 +8,22 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { classify } from './classify.mjs';
-import { ANCESTORS, ENHANCED, FIXED, main, warm, warmList } from './warm.mjs';
+import { ANCESTORS, ENHANCED, FIXED, main, warm, warmList } from './warm.ts';
 
 const answers = {
   '/ContentService/data/database/version': 98,
   '/ContentService/data/species/main': [{ taxId: '10090' }, { taxId: '9606' }],
   '/ContentService/data/pathways/top/9606': [{ stId: 'R-HSA-1640170' }, { stId: 'R-HSA-162582' }],
 };
-const getJson = async (path) => answers[path];
+const getJson = async (path: string) => (answers as Record<string, unknown>)[path];
 
 /** A stand-in for fetch: the answers above, every other URL a cacheable 200. */
-function site({ bad = () => undefined } = {}) {
-  const asked = [];
-  const fetch = async (url, options = {}) => {
+/** How a path fails: redirects, throws, answers unlabelled, or is missing. */
+type Failure = 'redirect' | 'throw' | 'unlabelled' | 'missing' | undefined;
+
+function site({ bad = (_path: string): Failure => undefined } = {}) {
+  const asked: string[] = [];
+  const fetch = async (url: string, options: { redirect?: RequestRedirect } = {}) => {
     asked.push(url);
     const path = new URL(url).pathname + new URL(url).search;
     // As fetch does: a redirect is followed, and its target answered,
@@ -29,10 +32,10 @@ function site({ bad = () => undefined } = {}) {
       bad(path) === 'redirect' && options.redirect !== 'manual' ? undefined : bad(path);
     if (failure === 'throw') throw Object.assign(new Error('reset'), { name: 'TypeError' });
     const headers = new Map(failure === 'unlabelled' ? [] : [['x-cache-rule', 'standard']]);
-    const body = JSON.stringify(answers[path] ?? {});
+    const body = JSON.stringify((answers as Record<string, unknown>)[path] ?? {});
     return {
       status: failure === 'redirect' ? 301 : failure === 'missing' ? 404 : 200,
-      headers: { get: (name) => headers.get(name) ?? null },
+      headers: { get: (name: string) => headers.get(name) ?? null },
       arrayBuffer: async () => new ArrayBuffer(0),
       text: async () => body,
     };
@@ -75,7 +78,10 @@ describe('warmList', () => {
 describe('warm', () => {
   it('asks for each once, and names each answer that is not a cacheable 200, a redirect included', async () => {
     const { asked, fetch } = site({
-      bad: (path) => ({ '/b': 'unlabelled', '/c': 'missing', '/d': 'redirect' })[path],
+      bad: (path) =>
+        (({ '/b': 'unlabelled', '/c': 'missing', '/d': 'redirect' }) as Record<string, Failure>)[
+          path
+        ],
     });
     const { missed } = await warm('https://site', ['/a', '/b', '/c', '/d'], { fetch, pause: 0 });
     expect(asked).toEqual(['https://site/a', 'https://site/b', 'https://site/c', 'https://site/d']);
@@ -91,8 +97,8 @@ describe('warm', () => {
 });
 
 describe('main', () => {
-  const run = async (argv, options = {}) => {
-    const lines = [];
+  const run = async (argv: string[], options: Parameters<typeof main>[1] = {}) => {
+    const lines: string[] = [];
     const code = await main(argv, { pause: 0, log: (line) => lines.push(line), ...options });
     return [code, lines.join('\n')];
   };

@@ -27,7 +27,7 @@ import path from 'node:path';
  * a deployment can inject credentials without a file at all.
  */
 function fromFile() {
-  const file = process.env.CONTENT_NODE_ENV_FILE || path.join(homedir(), '.content-node.env');
+  const file = process.env['CONTENT_NODE_ENV_FILE'] || path.join(homedir(), '.content-node.env');
   try {
     const found = {};
     for (const line of readFileSync(file, 'utf8').split('\n')) {
@@ -53,15 +53,17 @@ function fromFile() {
  * off; the driver gives no option to, so the socket's connect does. The
  * process's other outgoing connections (fetch, through undici) set it already.
  */
-const connect = net.Socket.prototype.connect;
+/** Socket#connect, marked once replaced so it is replaced once. */
+type Connect = typeof net.Socket.prototype.connect & { noDelay?: true };
+const connect = net.Socket.prototype.connect as Connect;
 if (!connect.noDelay) {
   net.Socket.prototype.connect = Object.assign(
-    function connectWithoutDelay(...args) {
+    function connectWithoutDelay(this: net.Socket, ...args: unknown[]) {
       this.setNoDelay(true);
-      return connect.apply(this, args);
+      return (connect as (...args: unknown[]) => net.Socket).apply(this, args);
     },
-    { noDelay: true }
-  );
+    { noDelay: true as const }
+  ) as Connect;
 }
 
 const file = fromFile();
@@ -102,7 +104,7 @@ function connection() {
     // for the diff harness -- eight parallel deep queries from one client
     // stalled every other graph route for the acquisition timeout. Java's pool
     // holds 100. A request that still finds none free is a 503 (timedOut).
-    maxConnectionPoolSize: poolSize(process.env.GRAPH_POOL_SIZE),
+    maxConnectionPoolSize: poolSize(process.env['GRAPH_POOL_SIZE']),
     connectionAcquisitionTimeout: 10_000,
   });
   return driver;

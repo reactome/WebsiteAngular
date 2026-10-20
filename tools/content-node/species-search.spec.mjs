@@ -7,7 +7,7 @@
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   // The release, for the report -- or the graph down, when a test says so.
   read: async () => {
     globalThis.graphReads = (globalThis.graphReads ?? 0) + 1;

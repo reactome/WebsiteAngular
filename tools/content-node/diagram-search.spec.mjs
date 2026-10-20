@@ -14,7 +14,7 @@ const objects = {
   'R-HSA-2': { labels: ['Pathway', 'Event', 'DatabaseObject'], hasDiagram: null },
 };
 
-vi.mock('./graph.mjs', () => ({
+vi.mock('./graph.ts', () => ({
   read: async (_cypher, params) => (objects[params.id] ? [objects[params.id]] : []),
   configured: () => true,
   close: async () => {},
