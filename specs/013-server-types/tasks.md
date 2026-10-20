@@ -36,7 +36,7 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 - [x] T009 [P] [US1] `tools/api-types/*` and `tools/analysis-types/*` (compile, answers, scan, calls, content, record). — #551
 - [x] T010 [US1] The render service: params, gif, then pptx, render-core, service, render (CLI); the image's `COPY tools/render/*.mjs` and `CMD`. — #552
 - [x] T011 [US1] Content service leaves: graph, java-hashmap, schema, citation, psicquic, jsoup-text, warm. — #553
-- [ ] T012 [US1] Content service dependants: solr, report, parameters, cache-label, classify, domain, invalid-inputs.
+- [x] T012 [US1] Content service dependants: solr, report, parameters, cache-label, classify, domain, invalid-inputs. — #554
 - [ ] T013 [P] [US1] The snapshot scripts (domain, schema, openapi, graph-names, case, rfd).
 - [ ] T014 [US1] `service.ts` and `diff.ts`: the image's `CMD`, `package.json` scripts, `scripts/preflight.sh`, `deploy/nginx/routes.spec.ts`, the specs that import it, and the documented commands (36).
 
