@@ -12,7 +12,7 @@
  * reads, and nowhere else.
  */
 import { URLSearchParams } from 'node:url';
-import { envSetting } from './graph.ts';
+import { settings } from './settings.ts';
 
 /**
  * A call that has not been answered this long after it was made -- waiting
@@ -29,7 +29,7 @@ const SOLR_TIMEOUT_MS = 30_000;
 let limit;
 function solrConcurrency() {
   if (limit === undefined) {
-    const given = Number(envSetting('SOLR_CONCURRENCY', '2'));
+    const given = Number(settings.solrConcurrency());
     limit = Number.isInteger(given) && given >= 1 && given <= 16 ? given : 2;
   }
   return limit;
@@ -97,7 +97,7 @@ export function solrConfigured() {
   } catch {
     return false;
   }
-  return !envSetting('SOLR_USER') === !envSetting('SOLR_PASSWORD');
+  return !settings.solrUser() === !settings.solrPassword();
 }
 
 /**
@@ -105,7 +105,7 @@ export function solrConfigured() {
  * them, and its error repeats the URL, password and all, into the log.
  */
 function coreUrl() {
-  const given = envSetting('SOLR_URL');
+  const given = settings.solrUrl();
   if (!given) throw new Error('SOLR_URL is not set');
   let url;
   try {
@@ -168,14 +168,14 @@ export async function solr(
   const base = core ? coreUrl().replace(/[^/]+$/, core) : coreUrl();
   const url = `${base}${handler}`;
   const form = new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]);
-  if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
+  if (!settings.solrUser() !== !settings.solrPassword())
     throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
   const headers: Record<string, string> = {
     'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
   };
-  if (envSetting('SOLR_USER'))
+  if (settings.solrUser())
     headers['Authorization'] = `Basic ${Buffer.from(
-      `${envSetting('SOLR_USER')}:${envSetting('SOLR_PASSWORD')}`
+      `${settings.solrUser()}:${settings.solrPassword()}`
     ).toString('base64')}`;
   const deadline = AbortSignal.timeout(SOLR_TIMEOUT_MS);
   const until = signal ? AbortSignal.any([deadline, signal]) : deadline;

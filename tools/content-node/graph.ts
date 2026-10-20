@@ -26,10 +26,10 @@ import path from 'node:path';
  * file here parses KEY=VALUE as exactly that, and the environment still wins so
  * a deployment can inject credentials without a file at all.
  */
-function fromFile() {
+function fromFile(): Record<string, string> {
   const file = process.env['CONTENT_NODE_ENV_FILE'] || path.join(homedir(), '.content-node.env');
   try {
-    const found = {};
+    const found: Record<string, string> = {};
     for (const line of readFileSync(file, 'utf8').split('\n')) {
       const at = line.indexOf('=');
       if (at < 1 || line.trimStart().startsWith('#')) continue;
@@ -67,9 +67,9 @@ if (!connect.noDelay) {
 }
 
 const file = fromFile();
-const setting = (key, fallback = '') => process.env[key] || file[key] || fallback;
+const setting = (key: string, fallback = ''): string => process.env[key] || file[key] || fallback;
 
-/** A setting from the environment or, failing that, the credentials file -- for solr.ts too. */
+/** A setting from the environment or, failing that, the credentials file (settings.ts). */
 export const envSetting = setting;
 
 const URI = setting('NEO4J_URI', 'bolt://127.0.0.1:7687');

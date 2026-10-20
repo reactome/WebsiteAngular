@@ -11,7 +11,7 @@
  * which carries the address -- and nothing more. Without REPORT_URL nothing
  * is sent.
  */
-import { envSetting } from './graph.ts';
+import { settings } from './settings.ts';
 
 const REPORT_TIMEOUT_MS = 30_000;
 
@@ -63,7 +63,7 @@ export function sendReport(mapping, info, body) {
 }
 
 function send(mapping, info, body) {
-  const base = envSetting('REPORT_URL');
+  const base = settings.reportUrl();
   if (!base) return;
   // A null value is a name alone, as BasicNameValuePair writes it.
   const query = [
@@ -77,8 +77,8 @@ function send(mapping, info, body) {
     .join('&');
   // Java's report.user and report.password default to "default". Java sends
   // them only when the service challenges; it does, so they go at once here.
-  const user = envSetting('REPORT_USER', 'default');
-  const password = envSetting('REPORT_PASSWORD', 'default');
+  const user = settings.reportUser();
+  const password = settings.reportPassword();
   fetch(`${base.replace(/\/$/, '')}/report/search/${mapping}?${query}`, {
     method: 'POST',
     headers: {
