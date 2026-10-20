@@ -51,10 +51,14 @@ export interface CustomInteraction {
   formattedIdentifier?: string;
 }
 
+/**
+ * A PSICQUIC service as /interactors/psicquic/resources writes it: a URL the
+ * registry does not give is left out (non_empty), so either may be absent.
+ */
 export interface PsicquicResource {
   name: string;
-  soapURL: string;
-  restURL: string;
+  soapURL?: string;
+  restURL?: string;
   active: boolean;
 }
 
