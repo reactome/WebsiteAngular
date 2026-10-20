@@ -46,7 +46,7 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 
 ## Phase 3: The data the services read (US2)
 
-- [ ] T015 [US2] `graph.ts`: `read<Row>()` returning `Promise<Row[]>`, and the driver's value kinds; each of the 65 call sites names its row type.
+- [x] T015 [US2] `graph.ts`: `read<Row>()` returning `Promise<Row[]>`, and the driver's value kinds; each of the 65 call sites names its row type. (#557)
 - [ ] T016 [P] [US2] `solr.ts`: the handlers' answer types and the document fields read (`searchEntry` and the five other readers).
 - [ ] T017 [P] [US2] Snapshot types (domain, OpenAPI, graph names, jsoup tables, schema, case, RFD), each checked against its file in a spec by a JSON import assigned to it; show one failing on a renamed field.
 - [ ] T018 [P] [US2] Each service's environment read once into a typed configuration.

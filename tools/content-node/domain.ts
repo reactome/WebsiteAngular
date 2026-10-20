@@ -12,6 +12,7 @@
  * rather than return a field (COMPUTED, below).
  */
 import { readFileSync } from 'node:fs';
+import type { GraphNode, GraphRelationship } from './graph.ts';
 import { schemaClassOf, supertypes } from './schema.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
@@ -180,6 +181,20 @@ function composedOf(entity) {
 export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
 
 /**
+ * A query result as the mapping reads it: the root, the nodes and
+ * relationships returned beside it, and -- for findByIdQuery -- every related
+ * node's id in the order SDN fills fields in.
+ */
+export interface MappedRow {
+  root: GraphNode;
+  nodes: GraphNode[];
+  // A query that does not return a relationship's id gets one per record
+  // (readRecord).
+  relationships: (Omit<GraphRelationship, 'id'> & { id?: number | string })[];
+  order?: (number | string)[];
+}
+
+/**
  * What SDN's mapping makes of one query result: the root and every node
  * returned beside it, each with its fields filled from the relationships
  * returned. A related node gets the fields that point back along those
@@ -189,17 +204,7 @@ export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * `order` -- every related node's id, kept or not (findByIdQuery) -- is the
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
-export function mapResult({
-  root,
-  nodes,
-  relationships: returned,
-  order,
-}: {
-  root: unknown;
-  nodes: unknown[];
-  relationships: unknown[];
-  order?: unknown;
-}) {
+export function mapResult({ root, nodes, relationships: returned, order }: MappedRow) {
   const state = newState();
   readRecord(state, { root, nodes, relationships: returned, order });
   return map(state, root, undefined);
@@ -1091,7 +1096,7 @@ export function summaryEntity(reference) {
  * comes back twice is the same object -- and written the second time as its
  * dbId.
  */
-export function mapNodes(nodes) {
+export function mapNodes(nodes: GraphNode[]) {
   const mapped = new Map();
   return nodes.map((node) => {
     if (!mapped.has(node.id))
