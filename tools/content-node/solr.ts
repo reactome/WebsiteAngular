@@ -118,6 +118,35 @@ function coreUrl() {
   return given.replace(/\/$/, '');
 }
 
+/** One stored value; a multi-valued field holds a list of them. */
+export type SolrValue = string | number | boolean | null;
+/** A document as Solr returns it: the stored fields it has. */
+export type SolrDoc = { [field: string]: SolrValue | SolrValue[] | undefined };
+/** A facet field with json.nl=flat: name, count, name, count, ... */
+type SolrFlat = (string | number | null)[];
+/** One grouping of a grouped answer. */
+export interface SolrGrouping {
+  ngroups?: number | null;
+  matches?: number;
+  groups?: {
+    groupValue?: string | null;
+    doclist?: { docs?: SolrDoc[]; numFound?: number };
+  }[];
+}
+/**
+ * The parts of a handler's JSON answer this service reads. Which are there
+ * depends on the handler; each reader checks for its own.
+ */
+export interface SolrAnswer {
+  response?: { numFound?: number; start?: number; docs?: SolrDoc[] };
+  facet_counts?: { facet_fields?: { [field: string]: SolrFlat | null } };
+  grouped?: { [field: string]: SolrGrouping };
+  /** Per document id, per field, the highlighted snippets. */
+  highlighting?: { [id: string]: { [field: string]: string[] | undefined } | undefined };
+  /** With json.nl=flat: 'collation', then a query or {collationQuery, ...}, repeated. */
+  spellcheck?: { collations?: (string | { collationQuery?: string } | null)[] };
+}
+
 /**
  * Ask one of the core's request handlers, as SolrJ's POST does: the
  * parameters form-encoded, the answer as JSON with named lists flat -- the
@@ -133,7 +162,7 @@ export async function solr(
     core,
     method = 'POST',
   }: { signal?: AbortSignal | undefined; core?: string; method?: string } = {}
-) {
+): Promise<SolrAnswer | null> {
   // Another core on the same Solr: search-core asks "target" for terms
   // Reactome could annotate.
   const base = core ? coreUrl().replace(/[^/]+$/, core) : coreUrl();
@@ -161,7 +190,8 @@ export async function solr(
     });
     if (!response.ok)
       throw Object.assign(new Error(`Solr answered ${response.status}`), { solr: true });
-    return await response.json();
+    // What the handler sent (JSON's null too); the readers check each part they use.
+    return (await response.json()) as SolrAnswer | null;
   } catch (failure) {
     throw Object.assign(failure as Error, { solr: true });
   } finally {
