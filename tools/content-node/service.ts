@@ -545,7 +545,7 @@ export const endpoints: Endpoint[] = [
      * pattern matching element-level differences, would have hidden a wrong
      * count just as happily as a shuffled list.
      */
-    unordered: (entry: { person: { dbId: number } }) => entry.person.dbId,
+    unordered: (entry) => (entry as { person: { dbId: number } }).person.dbId,
     differs: [/^\/ContentService\/data\/content\/contributors: order differs from java's$/],
   },
   {
@@ -592,8 +592,10 @@ export const endpoints: Endpoint[] = [
      * An id that is none of the three is Java's bare empty 200; this answers
      * `[]`, as the person's four event lists do (see them, below).
      */
-    unordered: (entry: number | { dbId: number }) =>
-      typeof entry === 'number' ? entry : entry.dbId,
+    unordered: (entry) => {
+      const item = entry as number | { dbId: number };
+      return typeof item === 'number' ? item : item.dbId;
+    },
     differs: [
       /^\/ContentService\/data\/person\/[^/]+\/publications: order differs from java's$/,
       // An unreadable id: `[]` here, Java's empty 200 (see above).
@@ -745,10 +747,14 @@ export const endpoints: Endpoint[] = [
        * genuinely wrong row just as well. The harness applies this to Java's
        * answer and then compares exactly.
        */
-      normalise: (javaBody: { dbId?: number; dateTime?: string | null }[]) => {
+      normalise: (javaBody) => {
+        // An answer that is not the list (an error object, say) is compared as
+        // it is, and the comparison reports it.
+        if (!Array.isArray(javaBody)) return javaBody;
+        const rows = javaBody as { dbId?: number; dateTime?: string | null }[];
         const seen = new Set();
         return (
-          javaBody
+          rows
             .filter((row) => !seen.has(row.dbId) && seen.add(row.dbId))
             // Ties broken the same way on both sides. Thousands of events share
             // a dateTime -- a batch edit gives them all one timestamp -- and
@@ -8975,7 +8981,7 @@ if (startedDirectly()) {
     for (const endpoint of endpoints) {
       if (!endpoint.handler.warms) continue;
       // A warmed handler is a cached one, which reads nothing of its request.
-      Promise.resolve(endpoint.handler({ params: {} } as unknown as Request)).catch((error) =>
+      Promise.resolve(endpoint.handler({ params: {} })).catch((error) =>
         console.error(`warming ${endpoint.path}: ${error.message}`)
       );
     }

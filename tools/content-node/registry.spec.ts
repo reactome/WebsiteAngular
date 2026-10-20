@@ -98,12 +98,13 @@ const PAIRS_ANY_METHOD = [
  * Reads of the endpoint list that pick one endpoint out by its path: a helper
  * reaching into the list for another endpoint's answer, as the release lookup
  * once did (research R2). A family module doing that would import the
- * registry, which assembles the families: a cycle.
+ * registry, which assembles the families: a cycle. A backstop for service.ts
+ * while it holds the list; boundaries.spec.ts holds the rule itself.
  */
 function lookupsByPath(source: string): string[] {
   return [
     ...source.matchAll(
-      /endpoints\s*\.\s*(?:find|filter|some|findIndex)\(\s*\(?\s*(\w+)[^)\n]*\)\s*=>[^\n]*\1\.path\s*(?:\.\s*(?:endsWith|startsWith|includes)\(|===|!==|==)/g
+      /endpoints\s*\.\s*(?:find|filter|some|findIndex)\(\s*\(?\s*(\w+)[^)\n]*\)\s*=>\s*[^;\n]*\1\.path\s*(?:\.\s*(?:endsWith|startsWith|includes)\(|===|!==|==)/g
     ),
   ].map((match) => match[0]);
 }

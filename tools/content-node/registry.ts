@@ -45,12 +45,14 @@ export interface Endpoint {
   samplesOnly?: boolean;
   /** Differences from Java this endpoint declares; the harness reports them as intended. */
   differs?: RegExp[];
-  // Methods, not function properties, so each endpoint's can name the shape
-  // of Java's JSON it reads rather than take it as unknown.
+  // Function properties, not methods: a method's parameter is checked
+  // bivariantly, so `(java: SomeShape[]) => …` would pass for `unknown` and
+  // claim a shape nothing checks. Java's JSON comes in unknown; an endpoint
+  // that assumes its shape says so with a cast where it reads it.
   /** A transformation of Java's answer this endpoint's answer is meant to equal. */
-  normalise?(java: unknown): unknown;
+  normalise?: (java: unknown) => unknown;
   /** The key a list's items are compared by when their order is not part of the answer. */
-  unordered?(item: unknown): unknown;
+  unordered?: (item: unknown) => unknown;
   /** A deep query: it takes a share of the pool (the deep-query limit). */
   deep?: boolean;
 }

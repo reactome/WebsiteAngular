@@ -107,8 +107,8 @@ deploy/content-node/Dockerfile # CMD → server.ts, once service.ts is gone
 
    Each is seen to fail.
 
-2. **`release.ts`**: the one logic edit. Verified on beta like a move.
-3. **The `Endpoint` type and `registry.ts`**, with `service.ts`'s list typed as `Endpoint[]` in place. The casts in the tools go.
+2. **The release without the list**: the one logic edit; `release.ts` itself comes with layer 6. Verified on beta like a move.
+3. **The `Endpoint` type and `registry.ts`**, in the same pull request as step 2, with `service.ts`'s list typed as `Endpoint[]` in place. The casts in the tools go.
 4. **Shared modules**, bottom layer first: `java-text`, `body`, `spring`, `answers`, `objects`, then the pair-shared two. Each is a move pull request.
 5. **Families**, least coupled first, one pull request each:
    1. citation
