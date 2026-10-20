@@ -18,14 +18,14 @@ const NOT_STORED = 'no-store';
 const PRIVATE = 'private, no-store';
 
 /** Whether the query, as sent, has a parameter named exactly `token`. */
-function carriesToken(originalUrl) {
+function carriesToken(originalUrl: string) {
   const at = originalUrl.indexOf('?');
   if (at === -1) return false;
   return originalUrl
     .slice(at + 1)
     .split('&')
-    .some((pair) => {
-      const name = pair.split('=')[0];
+    .some((pair: string) => {
+      const [name = ''] = pair.split('=');
       try {
         return decodeURIComponent(name.replace(/\+/g, ' ')) === 'token';
       } catch {
@@ -35,7 +35,7 @@ function carriesToken(originalUrl) {
 }
 
 /** The label of an answer that never reached an endpoint. */
-export function defaultLabel(originalUrl) {
+export function defaultLabel(originalUrl: string) {
   return carriesToken(originalUrl)
     ? { cacheControl: PRIVATE, rule: 'token' }
     : { cacheControl: NOT_STORED, rule: 'default' };
@@ -45,7 +45,17 @@ export function defaultLabel(originalUrl) {
  * The label of an endpoint's answer: `endpoint` is its path in the record,
  * `originalUrl` the request exactly as sent, `status` the answer's.
  */
-export function label({ method, endpoint, originalUrl, status }) {
+export function label({
+  method,
+  endpoint,
+  originalUrl,
+  status,
+}: {
+  method: string;
+  endpoint: string;
+  originalUrl: string;
+  status: number;
+}) {
   if (carriesToken(originalUrl)) return { cacheControl: PRIVATE, rule: 'token' };
   const cache = RECORD[endpoint]?.cache;
   if (cache === 'private') return { cacheControl: PRIVATE, rule: 'endpoint' };
@@ -65,14 +75,17 @@ export function label({ method, endpoint, originalUrl, status }) {
  * so a stored redirect would be one entry per id anyone asks for. It costs
  * the origin no query to answer again.
  */
-export function redirectLabel(location) {
+export function redirectLabel(location: string) {
   return carriesToken(location)
     ? { cacheControl: PRIVATE, rule: 'token' }
     : { cacheControl: NOT_STORED, rule: 'redirect' };
 }
 
 /** Puts a label on a response. */
-export function setLabel(response, { cacheControl, rule }) {
+export function setLabel(
+  response: { setHeader(name: string, value: string): unknown },
+  { cacheControl, rule }: { cacheControl: string; rule: string }
+) {
   response.setHeader('Cache-Control', cacheControl);
   response.setHeader('X-Cache-Rule', rule);
 }

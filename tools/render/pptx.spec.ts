@@ -30,7 +30,7 @@ import type {
  * document rather than by throwing.
  */
 const { DOMParser } = new JSDOM().window;
-function parses(xml) {
+function parses(xml: string) {
   const parsed = new DOMParser().parseFromString(xml, 'application/xml');
   const error = parsed.querySelector('parsererror');
   return error ? error.textContent.trim() : true;
@@ -77,7 +77,7 @@ function open(buffer: Buffer) {
 }
 
 /** The drawn shapes of a package, group properties removed. */
-function drawnOf(buffer) {
+function drawnOf(buffer: Buffer) {
   return open(buffer).drawn();
 }
 
@@ -297,7 +297,7 @@ describe('a slide built from shapes', () => {
   it('places a shape where the diagram puts it, relative to the extent', () => {
     // A shape at the extent's own origin belongs at the picture's top-left, and
     // one at the far corner at its bottom-right.
-    const at = (shape) => {
+    const at = (shape: Shape) => {
       const slide = drawnOf(
         pptx({ shapes: { x: 100, y: 100, width: 400, height: 200, shapes: [shape] } })
       );
@@ -744,7 +744,7 @@ describe("how a glyph's own images are placed", () => {
     REAL.shapes
       .filter(isEdge)
       .filter((shape) => shape.id.includes('-glyph-') && shape.name.startsWith(name));
-  const extent = (shape) => {
+  const extent = (shape: RenderEdgeShape) => {
     const xs = shape.points.map((point) => point.x);
     const ys = shape.points.map((point) => point.y);
     return { w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
@@ -774,6 +774,7 @@ describe("how a glyph's own images are placed", () => {
     }
     // And the pieces stay at the ends rather than spanning the glyph.
     const body = layers.find((shape) => shape.closed && extent(shape).w > 200);
+    if (!body) throw new Error('no closed layer spans the glyph');
     const bodyExtent = extent(body);
     for (const piece of open) {
       expect(extent(piece).w, 'a brace is not the width of the glyph').toBeLessThan(
@@ -804,7 +805,7 @@ describe("how a glyph's own images are placed", () => {
 describe('a glyph the frame cuts through', () => {
   const FRAMED_CUT = JSON.parse(
     readFileSync(new URL('./fixtures/shapes-framed-reaction.json', import.meta.url), 'utf8')
-  );
+  ) as RenderShapes;
 
   it('is clipped at the frame, not squashed into what is left of its box', () => {
     // The tell. A clipped polygon has points *on* the frame edge, because that
@@ -815,19 +816,22 @@ describe('a glyph the frame cuts through', () => {
     // touching the edge.
     const right = FRAMED_CUT.x + FRAMED_CUT.width;
     const bottom = FRAMED_CUT.y + FRAMED_CUT.height;
-    const near = (value, edge) => Math.abs(value - edge) < 0.6;
+    const near = (value: number, edge: number) => Math.abs(value - edge) < 0.6;
 
-    const cut = FRAMED_CUT.shapes.filter(
-      (shape) =>
-        shape.id.includes('-glyph-') &&
-        shape.points.some(
-          (point) =>
-            near(point.x, FRAMED_CUT.x) ||
-            near(point.x, right) ||
-            near(point.y, FRAMED_CUT.y) ||
-            near(point.y, bottom)
-        )
-    );
+    // Every glyph is an edge (as the fixtures hold), so only edges are looked at.
+    const cut = FRAMED_CUT.shapes
+      .filter(isEdge)
+      .filter(
+        (shape) =>
+          shape.id.includes('-glyph-') &&
+          shape.points.some(
+            (point) =>
+              near(point.x, FRAMED_CUT.x) ||
+              near(point.x, right) ||
+              near(point.y, FRAMED_CUT.y) ||
+              near(point.y, bottom)
+          )
+      );
     expect(cut.length, 'a frame through a glyph leaves it touching the edge').toBeGreaterThan(0);
   });
 
@@ -846,7 +850,7 @@ describe('a slide built from shapes, grouped', () => {
   // Curators moving an entity had to select its border and its centre, and
   // moving a reaction meant selecting every line (#299). Shapes the page marks
   // as one thing come out as one PowerPoint group, which drags as a piece.
-  const group = (name) => ({ group: 'reaction-7', groupName: name });
+  const group = (name: string) => ({ group: 'reaction-7', groupName: name });
   const GROUPED = {
     ...SHAPES,
     shapes: [

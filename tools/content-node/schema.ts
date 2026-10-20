@@ -61,7 +61,7 @@ import type {
  * Every class in graph-core's domain.model package, and the model classes it
  * directly extends or implements.
  */
-export const SCHEMA_CLASSES = {
+export const SCHEMA_CLASSES: Record<string, string[]> = {
   AbstractModifiedResidue: ['DatabaseObject'],
   Affiliation: ['DatabaseObject'],
   Anatomy: ['ExternalOntology'],
@@ -248,7 +248,7 @@ const CLOSURES = new Set(AJC_CLOSURE_NAMES);
 const INTERFACES = new Set(['Deletable', 'Trackable']);
 
 /** Whether Java's Class.forName finds `name` in the model package. */
-export function isSchemaClass(name) {
+export function isSchemaClass(name: string) {
   return CLASSES.has(name) || CLOSURES.has(name);
 }
 
@@ -257,19 +257,19 @@ export function isSchemaClass(name) {
  * `Class.isAssignableFrom` says between two model classes. A closure extends
  * AspectJ's AroundClosure, so it is assignable to no model class but itself.
  */
-export function supertypes(name) {
+export function supertypes(name: string) {
   const found = new Set();
-  const visit = (current) => {
+  const visit = (current: string) => {
     if (found.has(current)) return;
     found.add(current);
-    for (const parent of CLASSES.has(current) ? SCHEMA_CLASSES[current] : []) visit(parent);
+    for (const parent of CLASSES.has(current) ? (SCHEMA_CLASSES[current] ?? []) : []) visit(parent);
   };
   if (isSchemaClass(name)) visit(name);
   return found;
 }
 
 /** SchemaService.isValidSpeciesClass: getSpecies() declared or inherited. */
-export function isSpeciesClass(name) {
+export function isSpeciesClass(name: string) {
   return CLASSES.has(name) && DECLARES_SPECIES.some((owner) => supertypes(name).has(owner));
 }
 
@@ -280,7 +280,7 @@ export function isSpeciesClass(name) {
  * the rule is kept rather than that summary, because the two part when an
  * interface label comes first.
  */
-export function schemaClassOf(labels) {
+export function schemaClassOf(labels: string[] | null | undefined) {
   let lowest = 'Object';
   for (const label of labels ?? []) {
     if (!isSchemaClass(label)) continue;
@@ -294,9 +294,9 @@ export function schemaClassOf(labels) {
  * first in its entry. Undefined above DatabaseObject (Object), for an
  * interface, and for anything that is not a model class.
  */
-export function superclassOf(name) {
+export function superclassOf(name: string): string | undefined {
   if (!CLASSES.has(name) || INTERFACES.has(name)) return undefined;
-  return SCHEMA_CLASSES[name][0];
+  return SCHEMA_CLASSES[name]?.[0];
 }
 
 // A row of an attribute or referrals table is the site's SchemaAttribute,
@@ -334,7 +334,7 @@ export function schemaSnapshot() {
 }
 
 /** Java's String.compareTo: UTF-16 code units, which is what `<` compares. */
-const byCodeUnits = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+const byCodeUnits = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /**
  * DatabaseObjectUtils.getAttributeTable, as the controller writes it: the

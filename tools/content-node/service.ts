@@ -49,6 +49,7 @@ import { JavaHashMap } from './java-hashmap.ts';
 
 export { JavaHashMap };
 import { sendReport } from './report.ts';
+import type { ReportInfo } from './report.ts';
 import { registryServices, psicquicResources } from './psicquic.ts';
 import {
   citationOfEvent,
@@ -7388,7 +7389,7 @@ async function targetsOf(query, scope, signal) {
  * still the original query, as Java's is; with none, the query to
  * "notfound". Never awaited.
  */
-function reportNotFound(info, originalQuery, targets) {
+function reportNotFound(info: ReportInfo, originalQuery: string, targets: TargetResult[]) {
   if (targets.length === 0) {
     sendReport('notfound', info, { term: originalQuery, resource: '' });
     return;
@@ -8473,7 +8474,7 @@ async function speciesTaxId(filter) {
  * endpoint: adding service.spec.mjs moved the hash without changing a line the
  * service runs.
  */
-export function fingerprintFiles(names) {
+export function fingerprintFiles(names: string[]) {
   return names
     .filter((name) => /\.(mjs|ts|json)$/.test(name) && !/\.(spec\.(mjs|ts)|d\.ts)$/.test(name))
     .sort();
@@ -8698,7 +8699,7 @@ export function app() {
     // '~' decoded too -- all a literal segment holds -- and handlers still
     // read ids from the path as it came.
     const routed = relative
-      .replace(/%([0-9A-Fa-f]{2})/g, (escape, hex) => {
+      .replace(/%([0-9A-Fa-f]{2})/g, (escape: string, hex: string) => {
         const char = String.fromCharCode(parseInt(hex, 16));
         return /[A-Za-z0-9_~-]/.test(char) ? char : escape;
       })
@@ -8707,12 +8708,15 @@ export function app() {
       // routes, so the attribute is put in their case, a trailing slash
       // kept. Not under Java's more specific /query/enhanced/{id} and
       // /query/abridged/{id}, where that segment is an id.
-      .replace(/^(\/data\/query\/([^/]+)\/)([^/]+)(\/?)$/, (path, head, id, attribute, slash) => {
-        const lower = attribute.toLowerCase();
-        if (['enhanced', 'abridged'].includes(id) || !Object.hasOwn(QUERY_ATTRIBUTES, lower))
-          return path;
-        return head + QUERY_ATTRIBUTES[lower] + slash;
-      });
+      .replace(
+        /^(\/data\/query\/([^/]+)\/)([^/]+)(\/?)$/,
+        (path: string, head: string, id: string, attribute: string, slash: string) => {
+          const lower = attribute.toLowerCase();
+          if (['enhanced', 'abridged'].includes(id) || !Object.hasOwn(QUERY_ATTRIBUTES, lower))
+            return path;
+          return head + QUERY_ATTRIBUTES[lower] + slash;
+        }
+      );
     // One URL per answer (spec 011): Java answers /x/ as /x, and the edge
     // would keep both. A GET or HEAD for an endpoint, slashed, is sent to
     // the URL without the slash -- the path and query as they came. Not

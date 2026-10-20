@@ -538,7 +538,10 @@ function decode(text) {
  * RECORD. `{ ok: true }`, or `{ ok: false, rule }` naming what failed:
  * `form`, `path:<variable>` or `parameter:<name>`.
  */
-export function standardForm(endpoint, originalUrl) {
+export function standardForm(
+  endpoint: string,
+  originalUrl: string
+): { ok: true } | { ok: false; rule: string } {
   const entry = RECORD[endpoint];
   if (!entry) return { ok: false, rule: 'form' };
   const at = originalUrl.indexOf('?');
@@ -561,9 +564,10 @@ export function standardForm(endpoint, originalUrl) {
   }
   if (entry.check) {
     const values = Object.fromEntries(
-      template.flatMap((part, index) => {
+      template.flatMap((part, index): [string, string][] => {
         const variable = /^\{([^}]+)\}$/.exec(part)?.[1];
-        return variable === undefined ? [] : [[variable, segments[index]]];
+        // There: the lengths matched above.
+        return variable === undefined ? [] : [[variable, segments[index] ?? '']];
       })
     );
     const rule = entry.check(values);

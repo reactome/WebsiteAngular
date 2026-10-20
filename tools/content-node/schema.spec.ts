@@ -6,6 +6,7 @@
 // Java's answers, and by reflection over the graph-core jar the deployed
 // ContentService runs -- on 14 Oct 2026, Release 97.
 import { describe, expect, it } from 'vitest';
+import type { SchemaNode } from '../../projects/website-angular/src/model/content.model.ts';
 import {
   AJC_CLOSURE_NAMES,
   attributeTable,
@@ -390,15 +391,18 @@ describe('schemaModelTree, DatabaseObjectUtils.getGraphModelTree', () => {
   const { model } = schemaSnapshot();
 
   /** Java's answer back into the rows it was built from: each class's own count. */
-  const rowsOf = (tree) => {
+  const rowsOf = (tree: SchemaNode) => {
     const rows: { labels: string[]; count: number }[] = [];
     const chain = (name: string) => {
       const out: string[] = [];
-      for (let at = name; at; at = superclassOf(at)) out.unshift(at);
+      for (let at: string | undefined = name; at; at = superclassOf(at)) out.unshift(at);
       return out;
     };
-    const visit = (node) => {
-      const below = (node.children ?? []).reduce((sum, child) => sum + child.count, 0);
+    const visit = (node: SchemaNode) => {
+      const below = (node.children ?? []).reduce(
+        (sum: number, child: SchemaNode) => sum + child.count,
+        0
+      );
       if (node.count > below) {
         const labels = chain(node.className);
         // As the graph gives them: an interface label among the classes.

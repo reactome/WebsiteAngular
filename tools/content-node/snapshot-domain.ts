@@ -202,11 +202,12 @@ try {
     getters[schemaClass] = methods
       .map(([name, declaredBy, parameters, returns, element, projected, fresh]): SnapshotGetter => {
         const key = `${declaredBy}.${name}`;
+        const field = fieldRead(bodies, declaredBy, name);
         let source: GetterSource;
         if (parameters > 0) source = { arguments: parameters };
         else if (key === 'Object.getClass') source = key;
         else if (computed.has(key)) source = key;
-        else if (fieldRead(bodies, declaredBy, name)) source = fieldRead(bodies, declaredBy, name);
+        else if (field) source = field;
         // The constant as Java returns it (DomainSnapshot calls the getter):
         // javap's listing of it escapes quotes and trims trailing spaces.
         else if (constantRead(bodies, declaredBy, name) !== undefined && fresh !== null)
@@ -342,17 +343,27 @@ function keepVerifiedOrder(json: Record<string, SnapshotProperty[]>): string[] {
 }
 
 /** Each method's instructions, by `Class.method`, from javap -c -p over many classes. */
-function methodBodies(text) {
-  const bodies = new Map();
+/** One bytecode instruction as javap lists it: its op, and the field or string it names. */
+interface Instruction {
+  op: string;
+  field: string | undefined;
+  text: string | undefined;
+}
+type Bodies = Map<string, Instruction[]>;
+
+function methodBodies(text: string): Bodies {
+  const bodies: Bodies = new Map();
   for (const section of text.split(/^Compiled from .*$/m).slice(1)) {
     const declaration = section.match(/^[^\n{]*\b(?:class|interface) ([\w.$]+)/m);
     if (!declaration) continue;
-    const owner = declaration[1].split('.').pop().split('$').pop();
+    // The class's simple name: its name less the package, less any outer class.
+    const owner = (declaration[1] ?? '').split('.').pop()?.split('$').pop() ?? '';
     const method = /^ {2}[^\n(]*?([\w$]+)\(([^)]*)\)[^\n]*;\n {4}Code:\n((?: {6}[^\n]*\n)*)/gm;
-    for (const [, name, parameters, code] of section.matchAll(method)) {
+    // Each group always matches: the defaults are for the type, never used.
+    for (const [, name = '', parameters = '', code = ''] of section.matchAll(method)) {
       const instructions = [
         ...code.matchAll(/^\s+\d+: (\w+)(?:[^\n]*\/\/ (?:Field ([\w$]+):|String ([^\n]*)))?/gm),
-      ].map(([, op, field, text]) => ({ op, field, text }));
+      ].map(([, op = '', field, text]): Instruction => ({ op, field, text }));
       const key = `${owner}.${name}`;
       // Overloads: keep the one without parameters (a getter), or the first.
       if (!bodies.has(key) || parameters === '') bodies.set(key, instructions);
@@ -367,14 +378,15 @@ function methodBodies(text) {
  * its text as javap lists it, or undefined. Only the shape is used; the text
  * itself is taken from Java (see `fresh`).
  */
-function constantRead(bodies, declaredBy, member) {
+function constantRead(bodies: Bodies, declaredBy: string, member: string) {
   const originals = [...bodies.keys()]
     .filter((key) => key.startsWith(`${declaredBy}.${member}_aroundBody`) && key.endsWith('#woven'))
     .map((key) => bodies.get(key))
-    .filter((code) => !code.some(({ op }) => op === 'invokestatic'));
+    // Every key is one of bodies', so each body is there.
+    .filter((code): code is Instruction[] => !code?.some(({ op }) => op === 'invokestatic'));
   const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
   if (code?.length !== 2) return undefined;
-  const [load, give] = code;
+  const [load, give] = code as [Instruction, Instruction];
   return /^ldc(_w)?$/.test(load.op) && give.op === 'areturn' && load.text !== undefined
     ? load.text
     : undefined;
@@ -385,15 +397,16 @@ function constantRead(bodies, declaredBy, member) {
  * A woven getter's own body calls the aspects; what it did before weaving is
  * the `_aroundBody` method that calls neither the aspects nor another body.
  */
-function fieldRead(bodies, declaredBy, member) {
+function fieldRead(bodies: Bodies, declaredBy: string, member: string) {
   const originals = [...bodies.keys()]
     .filter((key) => key.startsWith(`${declaredBy}.${member}_aroundBody`) && key.endsWith('#woven'))
     .map((key) => bodies.get(key))
-    .filter((code) => !code.some(({ op }) => op === 'invokestatic'));
+    // Every key is one of bodies', so each body is there.
+    .filter((code): code is Instruction[] => !code?.some(({ op }) => op === 'invokestatic'));
   const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
   if (!code) return undefined;
   const ops = code.map(({ op }) => op).join(' ');
   return /^aload_0 getfield [ailfd]?return$/.test(ops) || ops === 'aload_0 getfield areturn'
-    ? code[1].field
+    ? code[1]?.field
     : undefined;
 }

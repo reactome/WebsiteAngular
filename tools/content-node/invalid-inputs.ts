@@ -14,7 +14,7 @@
 import { URLSearchParams, fileURLToPath } from 'node:url';
 import { RECORD, declaredQuery } from './parameters.ts';
 
-const VALUES = {
+const VALUES: Record<string, string[]> = {
   integer: ['abc', '-1', '0', '01', '+1', '2147483648', '99999999999', ''],
   boolean: ['on', 'TRUE', 'abc', ''],
   enum: ['xyz', ''],
@@ -22,13 +22,18 @@ const VALUES = {
   array: [''],
 };
 // A species no lookup finds, where one is read.
-const UNKNOWN = { species: 'nosuchspecies' };
+const UNKNOWN: Record<string, string> = { species: 'nosuchspecies' };
 /**
  * A required parameter the sample does not carry, given a value Java takes,
  * so the request reaches the parameter being tried rather than failing on
  * the missing one first.
  */
-const REQUIRED = { query: 'apoptosis', page: '1', offset: '25', rowCount: '10' };
+const REQUIRED: Record<string, string> = {
+  query: 'apoptosis',
+  page: '1',
+  offset: '25',
+  rowCount: '10',
+};
 const SHARED = new Set(['view', 'includeRef']);
 const SHARED_ON = new Set([
   '/ContentService/data/query/{id}',
@@ -37,7 +42,14 @@ const SHARED_ON = new Set([
 ]);
 
 /** A sample URL for an endpoint, as routes.spec.ts builds one. */
-function sampleOf(endpoint) {
+/** An endpoint as service.ts lists it: its path and, where it has one, a sample id. */
+interface Endpoint {
+  path: string;
+  sample?: string;
+  method?: string;
+}
+
+function sampleOf(endpoint: Endpoint) {
   const [id, query] = (endpoint.sample ?? '').split('?');
   const path = (id ? endpoint.path.replace(/\{[^}]+\}/, id) : endpoint.path)
     .replace(/\/schema\/\{id\}/, '/schema/Pathway')
@@ -50,7 +62,7 @@ function sampleOf(endpoint) {
   return [path, query];
 }
 
-export function invalidInputs(endpoints) {
+export function invalidInputs(endpoints: Endpoint[]) {
   const paths: string[] = [];
   for (const endpoint of endpoints) {
     const entry = RECORD[endpoint.path];
@@ -76,7 +88,7 @@ export function invalidInputs(endpoints) {
         .join('');
       for (const value of [
         ...(VALUES[type ?? ''] ?? ['']),
-        ...(parameter.name in UNKNOWN ? [UNKNOWN[parameter.name]] : []),
+        ...(parameter.name in UNKNOWN ? [UNKNOWN[parameter.name] ?? ''] : []),
       ])
         paths.push(`${path}?${kept}${name}=${encodeURIComponent(value)}`);
     }
@@ -87,7 +99,7 @@ export function invalidInputs(endpoints) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { endpoints } = await import('./service.ts');
   for (const path of invalidInputs(
-    endpoints.filter((e) => !('method' in e) || !e.method || e.method === 'GET')
+    endpoints.filter((e: Endpoint) => !('method' in e) || !e.method || e.method === 'GET')
   ))
     console.log(path);
   process.exit(0);

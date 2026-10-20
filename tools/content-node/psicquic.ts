@@ -9,16 +9,16 @@
  * from the last reading, or with a 500 when that reading failed.
  */
 
-const XML_ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+const XML_ENTITIES: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
 
 /** An element's text as JAXB gives it: CDATA kept as it is, entities decoded. */
-function xmlText(raw) {
+function xmlText(raw: string) {
   return raw
     .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)
-    .map((part) =>
+    .map((part: string) =>
       part.startsWith('<![CDATA[')
         ? part.slice(9, -3)
-        : part.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-z]+);/g, (whole, entity) => {
+        : part.replace(/&(#x[0-9a-fA-F]+|#[0-9]+|[a-z]+);/g, (whole: string, entity: string) => {
             if (entity[0] !== '#') return XML_ENTITIES[entity] ?? whole;
             const code =
               entity[1] === 'x' ? parseInt(entity.slice(2), 16) : parseInt(entity.slice(1), 10);
@@ -44,7 +44,7 @@ function child(service: string, name: string): string | null {
  * everywhere (before parsing, CDATA included), and comments gone outside
  * CDATA sections.
  */
-function xmlDocument(xml) {
+function xmlDocument(xml: string) {
   return xml
     .replace(/\r\n?/g, '\n')
     .split(/(<!\[CDATA\[[\s\S]*?\]\]>)/)

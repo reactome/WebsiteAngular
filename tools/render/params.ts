@@ -40,7 +40,7 @@ export const ACCEPTED = [
 ];
 
 /** Bounds for the parameters that take a number, so a value can be refused too. */
-export const BOUNDS = {
+export const BOUNDS: Record<string, [low: number, high: number]> = {
   scale: [0.25, 2],
   delay: [50, 10_000],
   maxSize: [0, 8000],
@@ -52,7 +52,10 @@ export const BOUNDS = {
  * Only the parameters that were understood, in ACCEPTED's order, so following
  * it lands on one cache entry rather than on a permutation of one.
  */
-export function canonicalUrl(name, format, query) {
+/** A request's query, as express parses it. */
+type Query = Record<string, unknown>;
+
+export function canonicalUrl(name: string, format: string, query: Query) {
   const kept = ACCEPTED.filter(
     (key) =>
       key in query &&
@@ -65,9 +68,12 @@ export function canonicalUrl(name, format, query) {
   return `/render/${name}.${format}${kept.length ? `?${kept.join('&')}` : ''}`;
 }
 
-export function inBounds(key, value) {
+export function inBounds(key: string, value: unknown) {
   const number = Number(value);
-  const [low, high] = BOUNDS[key];
+  const bounds = BOUNDS[key];
+  // Every caller has checked `key in BOUNDS`.
+  if (!bounds) throw new Error(`no bounds for ${key}`);
+  const [low, high] = bounds;
   return Number.isFinite(number) && number >= low && number <= high;
 }
 
@@ -79,7 +85,7 @@ export function inBounds(key, value) {
  * `layout` fell back to the default for anything but the one word. Each is a
  * caller asking for something and being given the opposite, with a 200.
  */
-export const ENUMS = {
+export const ENUMS: Record<string, string[]> = {
   layout: ['reaction'],
   subpathways: ['true', 'false'],
   dark: ['true', 'false'],
@@ -110,10 +116,10 @@ export const REACTION_CLASSES = new Set([
  * refuse callers over a rule we made up — the guessing this whole change exists
  * to stop, pointed the other way.
  */
-export function badEnums(query) {
-  return Object.keys(ENUMS)
-    .filter((key) => key in query && !ENUMS[key].includes(String(query[key])))
-    .map((key) => `"${key}" must be ${ENUMS[key].map((v) => `"${v}"`).join(' or ')}`);
+export function badEnums(query: Query) {
+  return Object.entries(ENUMS)
+    .filter(([key, values]) => key in query && !values.includes(String(query[key])))
+    .map(([key, values]) => `"${key}" must be ${values.map((v) => `"${v}"`).join(' or ')}`);
 }
 
 /**
@@ -121,11 +127,11 @@ export function badEnums(query) {
  * 006 T093: the old fireworks exporter's URL names one). A pathway decides
  * its own species, so naming one there is a question with two answers.
  */
-export function speciesProblem(name, query) {
+export function speciesProblem(name: string, query: Query) {
   if (!('species' in query)) return undefined;
   if (name !== 'genome-wide')
     return '"species" applies only to genome-wide; a pathway is its own species';
-  return /^[1-9]\d*$/.test(String(query.species))
+  return /^[1-9]\d*$/.test(String(query['species']))
     ? undefined
     : '"species" must be a taxId, e.g. 9606';
 }
@@ -141,6 +147,6 @@ export function speciesProblem(name, query) {
  * as a side effect of their value checks failing on `"a,b"`; this makes it the
  * rule rather than an accident.
  */
-export function repeated(query) {
+export function repeated(query: Query) {
   return Object.keys(query).filter((key) => Array.isArray(query[key]));
 }

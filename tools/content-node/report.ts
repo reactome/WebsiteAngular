@@ -20,13 +20,13 @@ const REPORT_TIMEOUT_MS = 30_000;
  * form set): letters, digits and _ - . * as they are, space as '+', every
  * other byte of its UTF-8 escaped.
  */
-const form = (text) =>
+const form = (text: string) =>
   encodeURIComponent(text)
     .replace(/%20/g, '+')
     .replace(/[!'()~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`);
 
 /** JSON as Jackson writes it: a control character's escape in upper case (\u001F). */
-const jacksonJson = (value) =>
+const jacksonJson = (value: unknown) =>
   JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
     slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
@@ -35,10 +35,11 @@ const jacksonJson = (value) =>
  * The body as Java's `new StringEntity(json)` sends it: ISO-8859-1, every
  * character beyond it a '?' -- whatever the Content-type header says.
  */
-function latin1(text) {
+function latin1(text: string) {
   const bytes: number[] = [];
   for (const char of text) {
-    const code = char.codePointAt(0);
+    // A character of a string has a code point.
+    const code = char.codePointAt(0) as number;
     bytes.push(code < 256 ? code : 0x3f);
   }
   return Buffer.from(bytes);
@@ -48,12 +49,25 @@ function latin1(text) {
  * A lone surrogate as Java's ends up: URIBuilder writes it %3F, and the body,
  * where Jackson writes it raw, '?' once StringEntity encodes it.
  */
-const wellFormed = (text) =>
-  typeof text === 'string'
+const wellFormed = <T>(text: T): T =>
+  (typeof text === 'string'
     ? text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '?')
-    : text;
+    : text) as T;
 
-export function sendReport(mapping, info, body) {
+/** Who asked, as SearchService's report has it (service.ts, reportInformation). */
+export interface ReportInfo {
+  release: string | null;
+  ip: string;
+  agent: string | null;
+}
+
+/** What a report names: a term, and where it was looked for. */
+export interface ReportTerm {
+  term: string;
+  resource: unknown;
+}
+
+export function sendReport(mapping: string, info: ReportInfo, body: ReportTerm | ReportTerm[]) {
   // Never the search's failure, whatever goes wrong here.
   try {
     send(mapping, info, body);
@@ -62,7 +76,7 @@ export function sendReport(mapping, info, body) {
   }
 }
 
-function send(mapping, info, body) {
+function send(mapping: string, info: ReportInfo, body: ReportTerm | ReportTerm[]) {
   const base = settings.reportUrl();
   if (!base) return;
   // A null value is a name alone, as BasicNameValuePair writes it.

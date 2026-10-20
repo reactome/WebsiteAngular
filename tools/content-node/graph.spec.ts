@@ -6,12 +6,12 @@ import net from 'node:net';
 import { READ_TIMEOUT_MS, poolSize } from './graph.ts';
 
 describe('the connections graph.ts opens', () => {
-  let server;
-  let port;
+  let server: net.Server;
+  let port: number;
   beforeAll(async () => {
     server = net.createServer((socket) => socket.end());
-    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-    port = server.address().port;
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', () => resolve()));
+    port = (server.address() as net.AddressInfo).port;
   });
   afterAll(() => server.close());
 
