@@ -32,7 +32,7 @@
 
 Each task: rename to `.ts`, update imports, file names that name it (R3 list), fix the type errors with `noImplicitAny` off without changing behaviour, seed its loose count, deploy, show answers unchanged.
 
-- [ ] T008 [US1] The analysis gateway (`tools/analysis-gateway/gateway.ts`; its Dockerfile `COPY`/`CMD`).
+- [x] T008 [US1] The analysis gateway (`tools/analysis-gateway/gateway.ts`; its Dockerfile `COPY`/`CMD`). — #549
 - [ ] T009 [P] [US1] `tools/api-types/*` and `tools/analysis-types/*` (compile, answers, scan, calls, content, record).
 - [ ] T010 [US1] The render service: params, gif, then pptx, render-core, service, render (CLI); the image's `COPY tools/render/*.mjs` and `CMD`.
 - [ ] T011 [US1] Content service leaves: graph, java-hashmap, schema, citation, psicquic, jsoup-text, warm.

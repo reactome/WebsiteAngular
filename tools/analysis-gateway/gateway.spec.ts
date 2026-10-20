@@ -4,34 +4,36 @@
 // front of the AnalysisService, and everything passes through unchanged.
 // A stand-in AnalysisService holds each computation open until the test lets
 // it finish, so what waits, what runs and what is refused can be watched.
-import { createServer, request as httpRequest } from 'node:http';
+import { createServer, request as httpRequest, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { classify, gateway } from './gateway.mjs';
+import { classify, gateway, type GatewaySettings, type Health } from './gateway.ts';
 
-const seen = [];
+const seen: string[] = [];
 /** Every request the service was sent, recorded as it arrives, body or not. */
-const arrived = [];
-const headersSeen = [];
-const held = [];
-let upstream;
-let upstreamUrl;
+const arrived: string[] = [];
+const headersSeen: string[][] = [];
+const held: (() => void)[] = [];
+let upstream: Server;
+let upstreamUrl: string;
 
 beforeAll(async () => {
   upstream = createServer((req, res) => {
-    arrived.push(req.url);
+    const url = req.url ?? '';
+    arrived.push(url);
     headersSeen.push(req.rawHeaders);
     // A service that answers slowly: headers now, the rest when let go.
-    if (req.url.includes('trickle')) {
+    if (url.includes('trickle')) {
       res.writeHead(200, { 'Content-Type': 'application/pdf' });
       res.write('%PDF-');
       held.push(() => res.end('rest'));
       return;
     }
     // A service that fails mid-answer: half a body, then the connection gone.
-    if (req.url.includes('broken')) {
+    if (url.includes('broken')) {
       res.writeHead(200, { 'Content-Length': '1000' });
       res.write('x'.repeat(100));
-      setTimeout(() => res.socket.destroy(), 20);
+      setTimeout(() => res.socket?.destroy(), 20);
       return;
     }
     let body = '';
@@ -55,13 +57,12 @@ beforeAll(async () => {
         ]);
         res.end(JSON.stringify({ path: req.url, length: body.length }));
       };
-      if (/\/(identifiers|species|report)\//.test(req.url) && !req.url.includes('quick'))
-        held.push(finish);
+      if (/\/(identifiers|species|report)\//.test(url) && !url.includes('quick')) held.push(finish);
       else finish();
     });
   });
-  await new Promise((resolve) => upstream.listen(0, '127.0.0.1', resolve));
-  upstreamUrl = `http://127.0.0.1:${upstream.address().port}`;
+  await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
+  upstreamUrl = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}`;
 });
 afterAll(() => new Promise((resolve) => upstream.close(resolve)));
 beforeEach(() => {
@@ -72,7 +73,7 @@ beforeEach(() => {
 });
 
 /** A gateway on its own port, with small limits, for one test. */
-async function start(settings) {
+async function start(settings: GatewaySettings = {}) {
   const server = gateway({
     upstream: upstreamUrl,
     limits: { analysis: 2, report: 1 },
@@ -81,14 +82,25 @@ async function start(settings) {
     retryAfter: 7,
     ...settings,
   });
-  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-  const base = `http://127.0.0.1:${server.address().port}`;
-  return { server, base, close: () => new Promise((resolve) => server.close(resolve)) };
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  return {
+    server,
+    base,
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
 }
 
-const post = (base, path, body = 'P04637') =>
+/** Let the oldest computation the stand-in service holds finish. */
+const letGo = () => {
+  const finish = held.shift();
+  if (!finish) throw new Error('the service holds nothing to let go');
+  finish();
+};
+
+const post = (base: string, path: string, body = 'P04637') =>
   fetch(base + path, { method: 'POST', body, headers: { 'Content-Type': 'text/plain' } });
-const until = async (check) => {
+const until = async (check: () => boolean) => {
   for (let i = 0; i < 200 && !check(); i++) await new Promise((r) => setTimeout(r, 10));
   expect(check()).toBe(true);
 };
@@ -126,7 +138,7 @@ describe('the queue', () => {
         '/AnalysisService/identifiers/?n=1',
         '/AnalysisService/identifiers/?n=2',
       ]);
-      held.shift()();
+      letGo();
       await until(() => held.length === 2);
       expect(seen.at(-1)).toContain('n=3');
       held.splice(0).forEach((finish) => finish());
@@ -224,21 +236,21 @@ describe('the queue', () => {
         signal: gone.signal,
       }).catch(() => 'left');
       await new Promise((r) => setTimeout(r, 50));
-      expect((await (await fetch(`${base}/health`)).json()).lanes.analysis.waiting).toBe(2);
+      expect((await health(base)).lanes.analysis.waiting).toBe(2);
       gone.abort();
       expect(await leaver).toBe('left');
       // Its place is given up at once, not when its turn comes.
       await new Promise((r) => setTimeout(r, 50));
-      expect((await (await fetch(`${base}/health`)).json()).lanes.analysis.waiting).toBe(1);
-      held.shift()();
+      expect((await health(base)).lanes.analysis.waiting).toBe(1);
+      letGo();
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       await leaving;
       // The lane is free for the next reader: nothing holds a place for one
       // who has gone.
       const after = post(base, '/AnalysisService/identifiers/?n=4');
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       expect((await after).status).toBe(200);
       // Not even sent: a request whose reader has gone never reaches the service.
       expect(arrived.some((url) => url.includes('n=3'))).toBe(false);
@@ -253,25 +265,28 @@ describe('passing through', () => {
   it('hands back the status, headers and body exactly as the service sent them', async () => {
     const { base, close } = await start();
     try {
-      const answer = await new Promise((resolve, reject) => {
-        const url = new URL(`${base}/AnalysisService/token/T?page=1`);
-        const call = httpRequest(
-          { host: url.hostname, port: url.port, path: url.pathname + url.search },
-          (res) => {
-            let body = '';
-            res.on('data', (chunk) => (body += chunk));
-            res.on('end', () => resolve({ status: res.statusCode, raw: res.rawHeaders, body }));
-          }
-        );
-        call.on('error', reject);
-        call.end();
-      });
+      const answer = await new Promise<{ status: number | undefined; raw: string[]; body: string }>(
+        (resolve, reject) => {
+          const url = new URL(`${base}/AnalysisService/token/T?page=1`);
+          const call = httpRequest(
+            { host: url.hostname, port: url.port, path: url.pathname + url.search },
+            (res) => {
+              let body = '';
+              res.on('data', (chunk) => (body += chunk));
+              res.on('end', () => resolve({ status: res.statusCode, raw: res.rawHeaders, body }));
+            }
+          );
+          call.on('error', reject);
+          call.end();
+        }
+      );
       expect(answer.status).toBe(200);
       expect(answer.body).toBe(
         JSON.stringify({ path: '/AnalysisService/token/T?page=1', length: 0 })
       );
-      const pairs = [];
-      for (let i = 0; i < answer.raw.length; i += 2) pairs.push([answer.raw[i], answer.raw[i + 1]]);
+      const pairs: [string, string][] = [];
+      for (let i = 0; i < answer.raw.length; i += 2)
+        pairs.push([answer.raw[i] ?? '', answer.raw[i + 1] ?? '']);
       expect(
         pairs.filter(
           ([name]) => !/^(date|connection|keep-alive|transfer-encoding|content-length)$/i.test(name)
@@ -304,8 +319,7 @@ describe('passing through', () => {
   it('reports the queue on its health check', async () => {
     const { base, close } = await start();
     try {
-      const health = await (await fetch(`${base}/health`)).json();
-      expect(health).toMatchObject({
+      expect(await health(base)).toMatchObject({
         ok: true,
         lanes: {
           analysis: { limit: 2, active: 0, waiting: 0 },
@@ -328,7 +342,7 @@ describe('the review of #539', () => {
       for (let turn = 1; turn <= 4; turn++) {
         await until(() => held.length === 1);
         expect(seen.at(-1)).toContain(`n=${turn}`);
-        held.shift()();
+        letGo();
       }
       await Promise.all(answers);
     } finally {
@@ -368,9 +382,9 @@ describe('the review of #539', () => {
       await new Promise((r) => setTimeout(r, 100));
       // Still computing for the reader who left: the next waits.
       expect(arrived.some((url) => url.includes('n=2'))).toBe(false);
-      held.shift()();
+      letGo();
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       expect((await next).status).toBe(200);
     } finally {
       await close();
@@ -392,9 +406,9 @@ describe('the review of #539', () => {
       gone.abort();
       await leaver;
       await new Promise((r) => setTimeout(r, 100));
-      const health = await (await fetch(`${base}/health`)).json();
-      expect([health.lanes.analysis.waiting, health.left, health.heldBytes]).toEqual([0, 1, 0]);
-      held.shift()();
+      const state = await health(base);
+      expect([state.lanes.analysis.waiting, state.left, state.heldBytes]).toEqual([0, 1, 0]);
+      letGo();
       await running;
       expect(arrived.some((url) => url.includes('n=2'))).toBe(false);
     } finally {
@@ -410,9 +424,9 @@ describe('the review of #539', () => {
       const big = 'P04637\n'.repeat(500_000);
       const waited = post(base, '/AnalysisService/identifiers/?n=2', big);
       await new Promise((r) => setTimeout(r, 200));
-      held.shift()();
+      letGo();
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       expect(await (await waited).json()).toEqual({
         path: '/AnalysisService/identifiers/?n=2',
         length: big.length,
@@ -443,7 +457,7 @@ describe('the review of #539', () => {
       expect([
         answer.status,
         answer.headers.get('cache-control'),
-        (await answer.json()).reason,
+        ((await answer.json()) as { reason: string }).reason,
       ]).toEqual([502, 'no-store', 'Bad Gateway']);
     } finally {
       await close();
@@ -467,8 +481,7 @@ describe('the review of #539', () => {
         call.on('error', reject);
         call.end();
       });
-      const names = headersSeen
-        .at(-1)
+      const names = (headersSeen.at(-1) ?? [])
         .filter((_, i) => i % 2 === 0)
         .map((n) => n.toLowerCase());
       expect([names.includes('keep-alive'), names.includes('x-kept')]).toEqual([false, true]);
@@ -476,7 +489,7 @@ describe('the review of #539', () => {
       await until(() => held.length === 1);
       const refused = await post(base, '/AnalysisService/identifiers/?n=2');
       expect(refused.headers.get('cache-control')).toBe('no-store');
-      held.shift()();
+      letGo();
       await running;
     } finally {
       await close();
@@ -497,9 +510,9 @@ describe('a reader who leaves mid-answer', () => {
       const second = fetch(`${base}/AnalysisService/report/T/x/second.pdf`);
       await new Promise((r) => setTimeout(r, 100));
       expect(arrived.some((url) => url.includes('second'))).toBe(false);
-      held.shift()();
+      letGo();
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       expect((await second).status).toBe(200);
     } finally {
       await close();
@@ -508,10 +521,10 @@ describe('a reader who leaves mid-answer', () => {
 });
 
 /** A request whose body is written by hand, a part at a time. */
-function upload(base, path, headers) {
+function upload(base: string, path: string, headers: Record<string, string>) {
   const url = new URL(base + path);
   const call = httpRequest({ host: url.hostname, port: url.port, path, method: 'POST', headers });
-  const answered = new Promise((resolve) => {
+  const answered = new Promise<{ status: number | undefined | 'cut'; text?: string }>((resolve) => {
     call.on('response', (res) => {
       let text = '';
       res.on('data', (chunk) => (text += chunk));
@@ -521,7 +534,7 @@ function upload(base, path, headers) {
   });
   return { call, answered };
 }
-const health = async (base) => (await fetch(`${base}/health`)).json();
+const health = async (base: string) => (await fetch(`${base}/health`)).json() as Promise<Health>;
 
 describe('the second review of #539', () => {
   it('gives the place back at once when a reader leaves mid-upload', async () => {
@@ -536,7 +549,7 @@ describe('the second review of #539', () => {
       const next = post(base, '/AnalysisService/identifiers/?n=2');
       await until(() => held.length === 1);
       expect(seen.map((s) => s.split(' ')[1])).toEqual(['/AnalysisService/identifiers/?n=2']);
-      held.shift()();
+      letGo();
       expect((await next).status).toBe(200);
     } finally {
       await close();
@@ -553,12 +566,12 @@ describe('the second review of #539', () => {
       });
       call.write('one,');
       await new Promise((r) => setTimeout(r, 100));
-      held.shift()();
+      letGo();
       await until(() => arrived.length === 2);
       call.end('two');
       await until(() => held.length === 1);
       expect(seen.at(-1)).toBe('POST /AnalysisService/identifiers/?n=2 7');
-      held.shift()();
+      letGo();
       expect((await answered).status).toBe(200);
       await running;
     } finally {
@@ -576,13 +589,13 @@ describe('the second review of #539', () => {
       await new Promise((r) => setTimeout(r, 200));
       // Paused near the budget: at most a chunk or so past it, not the body.
       expect((await health(base)).heldBytes).toBeLessThan(big.length / 2);
-      held.shift()();
+      letGo();
       await until(() => held.length === 1);
       expect([seen.at(-1), (await health(base)).heldBytes]).toEqual([
         `POST /AnalysisService/identifiers/?n=2 ${big.length}`,
         0,
       ]);
-      held.shift()();
+      letGo();
       await waited;
       await running;
     } finally {
@@ -635,7 +648,7 @@ describe('the second review of #539', () => {
       held.length = 0;
       const next = fetch(`${base}/AnalysisService/report/T/x/next.pdf`);
       await until(() => held.length === 1);
-      held.shift()();
+      letGo();
       expect((await next).status).toBe(200);
     } finally {
       await close();
