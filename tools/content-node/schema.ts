@@ -295,7 +295,32 @@ export function superclassOf(name) {
   return SCHEMA_CLASSES[name][0];
 }
 
-let snapshot;
+/** One row of an attribute or referrals table, as Java's answer writes it. */
+export interface AttributeRow {
+  name: string;
+  cardinality: string;
+  valueTypes: { name: string; databaseObject: boolean }[];
+  origin: string;
+}
+/** Java's /schema/model: a class, its count, its subclasses. */
+interface SchemaModelNode {
+  className: string;
+  count: number;
+  children?: SchemaModelNode[];
+}
+/** What the tables are composed from (snapshot-schema.ts checks them before writing). */
+export interface SchemaTables {
+  declared: Record<string, AttributeRow[]>;
+  referralRows: AttributeRow[];
+  referrals: Record<string, number[]>;
+  closure: { attributes: AttributeRow[]; referrals: AttributeRow[] };
+}
+export interface SchemaSnapshot extends SchemaTables {
+  release: number;
+  model?: SchemaModelNode;
+}
+
+let snapshot: SchemaSnapshot | undefined;
 /**
  * schema-snapshot.json, read once: Java's /schema/{className}/attributes and
  * /referrals, captured by snapshot-schema.ts, in the shape below.
@@ -309,7 +334,9 @@ let snapshot;
  *  - model: Java's /schema/model when captured, for schema.spec.ts only.
  */
 export function schemaSnapshot() {
-  snapshot ??= JSON.parse(readFileSync(new URL('./schema-snapshot.json', import.meta.url), 'utf8'));
+  snapshot ??= JSON.parse(
+    readFileSync(new URL('./schema-snapshot.json', import.meta.url), 'utf8')
+  ) as SchemaSnapshot;
   return snapshot;
 }
 
@@ -321,11 +348,15 @@ const byCodeUnits = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
  * getters `name` and each superclass declare, in a TreeSet ordered by name
  * then by the declaring class's name. Undefined where Class.forName fails.
  */
-export function attributeTable(name, data = schemaSnapshot()) {
+export function attributeTable(name: string, data: SchemaTables = schemaSnapshot()) {
   if (CLOSURES.has(name)) return data.closure.attributes;
   if (!CLASSES.has(name)) return undefined;
   const rows: { name: string; origin: string }[] = [];
-  for (let at = name; at !== undefined; at = superclassOf(at)) rows.push(...data.declared[at]);
+  for (let at: string | undefined = name; at !== undefined; at = superclassOf(at)) {
+    const own = data.declared[at];
+    if (!own) throw new Error(`schema-snapshot.json has no attributes for ${at}`);
+    rows.push(...own);
+  }
   return rows.sort((a, b) => byCodeUnits(a.name, b.name) || byCodeUnits(a.origin, b.origin));
 }
 
@@ -334,10 +365,12 @@ export function attributeTable(name, data = schemaSnapshot()) {
  * of other classes whose type is `name` or one of its superclasses. Undefined
  * where Class.forName fails.
  */
-export function referralsTable(name, data = schemaSnapshot()) {
+export function referralsTable(name: string, data: SchemaTables = schemaSnapshot()) {
   if (CLOSURES.has(name)) return data.closure.referrals;
   if (!CLASSES.has(name)) return undefined;
-  return data.referrals[name].map((index) => data.referralRows[index]);
+  const indexes = data.referrals[name];
+  if (!indexes) throw new Error(`schema-snapshot.json has no referrals for ${name}`);
+  return indexes.map((index) => data.referralRows[index]);
 }
 
 /**
