@@ -35,17 +35,17 @@ It must not mix in logic edits.
 - [x] T001 [P] Write `scripts/check-move.mjs` (research R6, contracts/checks.md). It parses the base branch's `tools/content-node/service.ts` (`git show <base>:…`) and today's `tools/content-node/*.ts` with TypeScript's parser.
   - It matches every top-level declaration by name, and every endpoint by `path` plus method.
   - It compares their text with `export` and whitespace normalised, and reports `changed:` and `missing:` lines.
-  - Show it failing on one character changed in a moved function.
+  - Show it failing on one character changed in a moved function. — #569
 - [x] T002 [P] Write `scripts/check-baseline-totals.mjs` (R5). It compares the totals of `tools/loose-baseline.json`, `tools/implicit-any-baseline.json` and `lint-baseline.json` with the base branch's, and fails if any rose.
   - Run it in `scripts/preflight.sh` and `.github/workflows/tests.yml`, where the base is the pull request's base.
-  - Show it failing on one module's count raised by hand.
+  - Show it failing on one module's count raised by hand. — #569
 - [x] T003 [P] Write the route-order test in `tools/content-node/registry.spec.ts` (R3).
   - Record today's 88 paths with their methods, in order. Assert that the endpoint list equals the recording.
   - Assert that each of the 13 order-dependent pairs is in its recorded order: the 5 person lists before `/{attribute}`; `enhanced`, `stId`, `ids/map` and `normalPathway` before `/query/{id}/{attribute}`; `schema/model` before `/{id}`; `diagram/summary` before `/{diagram}`; icon `facet` and `query` before `/{identifier}`.
-  - It reads the list from `service.ts` until T006 moves it. Show it failing on two swapped endpoints.
+  - It reads the list from `service.ts` until T006 moves it. Show it failing on two swapped endpoints. — #569
 - [x] T004 [P] Write the boundary test in `tools/content-node/boundaries.spec.ts` (contracts/boundaries.md). It reads each module's import specifiers and fails on any the table does not allow, naming both modules.
   - It passes trivially today, because only `service.ts` imports the leaves.
-  - Show it failing on a family-to-family import, using a fixture module written in the test.
+  - Show it failing on a family-to-family import, using a fixture module written in the test. — #569
 
 **Checkpoint**: four checks live in CI, and nothing has moved.
 
