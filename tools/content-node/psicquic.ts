@@ -32,7 +32,7 @@ function xmlText(raw) {
  * A child element's text, or null when the service has none: an empty
  * element is "", as JAXB reads it.
  */
-function child(service, name) {
+function child(service: string, name: string): string | null {
   const found = service.match(
     new RegExp(`<${name}(?:\\s[^>]*?)?(?:/>|>([\\s\\S]*?)</${name}\\s*>)`)
   );
@@ -57,7 +57,7 @@ function xmlDocument(xml) {
  * whether it is up (xs:boolean -- "true" or "1"; anything else, or none, is
  * the primitive's false). Throws on anything that is not a registry.
  */
-export function registryServices(text) {
+export function registryServices(text: string): RegistryService[] {
   const xml = xmlDocument(text);
   // All of one: a reading cut short is JAXB's failure to unmarshal.
   if (!/<registry[\s>][\s\S]*<\/registry\s*>\s*$/.test(xml))
@@ -76,17 +76,26 @@ export function registryServices(text) {
   );
 }
 
+/** A registry service, as registryServices reads it. */
+export interface RegistryService {
+  name: string | null;
+  soapUrl: string | null;
+  restUrl: string | null;
+  active: boolean;
+}
+
 /**
  * interactor-core's PsicquicResource list: sorted by
  * name.toLowerCase().compareTo(other.name.toLowerCase()) -- UTF-16 units, as
  * JavaScript's `<` compares -- and stable, as Collections.sort is. A service
  * with no name is Java's NullPointerException in that sort: a failed reading.
  */
-export function psicquicResources(services) {
+
+export function psicquicResources(services: RegistryService[]) {
   const keyed = services.map((service) => {
-    if (service.name === null || service.name === undefined)
-      throw new Error('a PSICQUIC service with no name');
-    return { service, key: service.name.toLowerCase() };
+    const { name } = service;
+    if (name === null) throw new Error('a PSICQUIC service with no name');
+    return { service: { ...service, name }, key: name.toLowerCase() };
   });
   keyed.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
   return keyed.map(({ service }) => service);

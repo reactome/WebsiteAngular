@@ -36,6 +36,11 @@ import type {
   TocPathway,
   TocSubpathway,
 } from '../../projects/website-angular/src/model/content.model.ts';
+import type {
+  DiagramFlagResult,
+  SpeciesOverviewFlagResult,
+} from '../../projects/pathway-browser/src/app/model/flag.model.ts';
+import type { PsicquicResource } from '../../projects/pathway-browser/src/app/interactors/model/interactor.model.ts';
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solr, solrConfigured } from './solr.ts';
 import type { SolrAnswer, SolrDoc, SolrGrouping, SolrValue } from './solr.ts';
@@ -4758,7 +4763,9 @@ type OptionalKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? K : never
  * T as built to be written as JSON: every field named, and one that T may
  * leave out allowed to be undefined, which JSON leaves out. A field T
  * requires must have its value -- the cast to T after is then only the
- * undefined-to-absent step JSON takes.
+ * undefined-to-absent step JSON takes. Where a writer then applies Java's
+ * non_empty (nonEmptyJson, compact), a required string that is empty is left
+ * out too, which no type here can see.
  */
 type JsonWritten<T> = { [K in OptionalKeys<T>]-?: T[K] | undefined } & {
   [K in Exclude<keyof T, OptionalKeys<T>>]-?: T[K];
@@ -7126,10 +7133,15 @@ function diagramFlags(answer, pathway, field) {
         for (const id of hashSetOf(javaSplit(line[3], ',')).keys()) interactsWith.set(id, true);
     }
   }
-  return {
-    ...(occurrences.size ? { occurrences: [...occurrences.keys()] } : {}),
-    ...(interactsWith.size ? { interactsWith: [...interactsWith.keys()] } : {}),
+  // The site's DiagramFlagResult; this answer never has the entity fields,
+  // and javaJson leaves an undefined one out.
+  const result: JsonWritten<DiagramFlagResult> = {
+    diagramEntity: undefined,
+    inDiagram: undefined,
+    occurrences: occurrences.size ? [...occurrences.keys()] : undefined,
+    interactsWith: interactsWith.size ? [...interactsWith.keys()] : undefined,
   };
+  return result;
 }
 
 /**
@@ -7157,10 +7169,12 @@ function speciesWideFlags(answer, abbreviation) {
   const kept = (map) => hashSetOf([...map.keys()].filter((id) => id.startsWith(prefix)));
   const species = kept(llps);
   const interacting = kept(interactsWith);
-  return {
-    ...(species.size ? { llps: [...species.keys()] } : {}),
-    ...(interacting.size ? { interactsWith: [...interacting.keys()] } : {}),
+  // The site's SpeciesOverviewFlagResult; javaJson leaves an undefined one out.
+  const result: JsonWritten<SpeciesOverviewFlagResult> = {
+    llps: species.size ? [...species.keys()] : undefined,
+    interactsWith: interacting.size ? [...interacting.keys()] : undefined,
   };
+  return result;
 }
 
 /** A DatabaseObject's toString in graph-core, as Java's messages write a Species. */
@@ -8530,16 +8544,19 @@ function latin1Disposition(response) {
 let psicquicCache: string | null = null;
 
 /** A PsicquicResource as content-service's NON_EMPTY mapper writes it. */
-export function resourcesJson(resources) {
+export function resourcesJson(resources: ReturnType<typeof psicquicResources>) {
   return `[${resources
-    .map((r) =>
-      nonEmptyJson([
-        ['name', r.name],
-        ['soapURL', r.soapUrl],
-        ['restURL', r.restUrl],
-        ['active', r.active],
-      ])
-    )
+    .map((r) => {
+      // The site's PsicquicResource, field for field; nonEmptyJson leaves out
+      // an absent URL, as non_empty does.
+      const resource: JsonWritten<PsicquicResource> = {
+        name: r.name,
+        soapURL: r.soapUrl ?? undefined,
+        restURL: r.restUrl ?? undefined,
+        active: r.active,
+      };
+      return nonEmptyJson(Object.entries(resource));
+    })
     .join(',')}]`;
 }
 

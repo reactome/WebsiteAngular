@@ -66,12 +66,18 @@ describe('the registry', () => {
 
 describe('the resources', () => {
   it("sort by lower-cased name, ties kept in the registry's order, as interactor-core does", () => {
+    const service = (name: string, active: boolean) => ({
+      name,
+      soapUrl: null,
+      restUrl: null,
+      active,
+    });
     const sorted = psicquicResources([
-      { name: 'bhf-ucl', active: true },
-      { name: 'BIND', active: false },
-      { name: 'BAR', active: false },
-      { name: 'Bar', active: true },
-      { name: 'APID', active: false },
+      service('bhf-ucl', true),
+      service('BIND', false),
+      service('BAR', false),
+      service('Bar', true),
+      service('APID', false),
     ]);
     expect(sorted.map((r) => `${r.name}:${r.active}`)).toEqual([
       'APID:false',
