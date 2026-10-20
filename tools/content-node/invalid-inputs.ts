@@ -5,14 +5,14 @@
  * FR-008). Built from the parameter record and each endpoint's own sample,
  * so a new endpoint or parameter is covered without being listed here.
  *
- *   node tools/content-node/invalid-inputs.mjs        # prints one path per line
+ *   node tools/content-node/invalid-inputs.ts        # prints one path per line
  *
  * `view` and `includeRef`, declared on every endpoint, are tried on a few
  * only: they are read by one shared writer, and the graph this runs against
  * is shared, so each run is kept to a few hundred requests.
  */
 import { URLSearchParams, fileURLToPath } from 'node:url';
-import { RECORD, declaredQuery } from './parameters.mjs';
+import { RECORD, declaredQuery } from './parameters.ts';
 
 const VALUES = {
   integer: ['abc', '-1', '0', '01', '+1', '2147483648', '99999999999', ''],
@@ -51,7 +51,7 @@ function sampleOf(endpoint) {
 }
 
 export function invalidInputs(endpoints) {
-  const paths = [];
+  const paths: string[] = [];
   for (const endpoint of endpoints) {
     const entry = RECORD[endpoint.path];
     if (!entry || entry.cache) continue;
@@ -75,7 +75,7 @@ export function invalidInputs(endpoints) {
         .map(([n, v]) => `${encodeURIComponent(n)}=${encodeURIComponent(v)}&`)
         .join('');
       for (const value of [
-        ...(VALUES[type] ?? ['']),
+        ...(VALUES[type ?? ''] ?? ['']),
         ...(parameter.name in UNKNOWN ? [UNKNOWN[parameter.name]] : []),
       ])
         paths.push(`${path}?${kept}${name}=${encodeURIComponent(value)}`);
@@ -86,7 +86,9 @@ export function invalidInputs(endpoints) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { endpoints } = await import('./service.mjs');
-  for (const path of invalidInputs(endpoints.filter((e) => !e.method || e.method === 'GET')))
+  for (const path of invalidInputs(
+    endpoints.filter((e) => !('method' in e) || !e.method || e.method === 'GET')
+  ))
     console.log(path);
   process.exit(0);
 }

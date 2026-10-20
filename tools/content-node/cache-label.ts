@@ -10,7 +10,7 @@
  * The rule that decided goes out beside it as X-Cache-Rule, so a label that
  * looks wrong can be read off the answer.
  */
-import { RECORD, standardForm } from './parameters.mjs';
+import { RECORD, standardForm } from './parameters.ts';
 
 /** Kept by the edge until purged at the next release; an hour in a browser. */
 export const CACHEABLE = 'public, max-age=3600, s-maxage=31536000';

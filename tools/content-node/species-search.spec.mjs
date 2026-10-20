@@ -347,7 +347,7 @@ describe('/fireworks, the species-wide search', () => {
   });
 
   it('writes a lone surrogate as Java ends up with it, a ?, and never throws', async () => {
-    const { sendReport } = await import('./report.mjs');
+    const { sendReport } = await import('./report.ts');
     reports = [];
     expect(() =>
       sendReport(

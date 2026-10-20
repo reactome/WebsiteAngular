@@ -1,13 +1,13 @@
 // @vitest-environment node
 //
-// The parameter record (parameters.mjs) and its standard form. A URL in
+// The parameter record (parameters.ts) and its standard form. A URL in
 // standard form is labelled cacheable at the edge; anything else is answered
 // but never stored, so a record that missed an endpoint, invented a
 // parameter or let an alias through would let the cache fill with copies of
 // one answer (spec 011).
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.mjs';
+import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.ts';
 
 const { endpoints } = await import('./service.mjs');
 const GETS = endpoints.filter((e) => !e.method || e.method === 'GET').map((e) => e.path);
@@ -19,7 +19,7 @@ const shape = (path) => path.replace(/\{[^}]+\}/g, '{}');
 
 describe('the record', () => {
   it('has one entry for each GET endpoint node answers, and no other, in the order Express routes them', () => {
-    // The order is what classify.mjs relies on to find the endpoint a URL
+    // The order is what classify.ts relies on to find the endpoint a URL
     // reaches, a literal route before the template that would also match it.
     expect(Object.keys(RECORD)).toEqual(GETS);
   });
@@ -240,7 +240,7 @@ describe('standardForm: query parameters', () => {
 // survived the tests above.
 describe('standardForm: one spelling, where Java answers many', () => {
   const no = (rule) => ({ ok: false, rule });
-  const cases = [
+  const cases: [string, string, unknown][] = [
     // species read leniently, or ignored when unknown on /pathways/low
     [
       '/ContentService/data/pathways/low/entity/{id}',

@@ -39,22 +39,28 @@ function solrConcurrency() {
 const MOST_WAITING = 64;
 
 let open = 0;
-const waiting = [];
+const waiting: (() => void)[] = [];
 
 /**
  * A slot, now or when one is free. A waiter whose `signal` aborts -- its
  * deadline passed, or its client went away -- leaves the queue, so Solr is
  * never asked on behalf of nobody.
  */
-function turn(signal) {
-  if (signal.aborted) return Promise.reject(signal.reason);
+/**
+ * The abort's own reason, passed on as it is (a TimeoutError's name is what
+ * callers read); an AbortSignal's reason is an Error unless given otherwise.
+ */
+const reasonOf = (signal: AbortSignal) => signal.reason as Error;
+
+function turn(signal: AbortSignal) {
+  if (signal.aborted) return Promise.reject(reasonOf(signal));
   if (open < solrConcurrency()) {
     open += 1;
     return Promise.resolve();
   }
   if (waiting.length >= MOST_WAITING)
     return Promise.reject(Object.assign(new Error('Solr is busy'), { busy: true }));
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     // Handed a slot by done(), which has already taken it off the queue.
     const enter = () => {
       signal.removeEventListener('abort', leave);
@@ -65,7 +71,7 @@ function turn(signal) {
       // dequeues it -- but a splice at -1 would drop someone else.
       const at = waiting.indexOf(enter);
       if (at > -1) waiting.splice(at, 1);
-      reject(signal.reason);
+      reject(reasonOf(signal));
     };
     signal.addEventListener('abort', leave, { once: true });
     waiting.push(enter);
@@ -119,7 +125,11 @@ function coreUrl() {
  * `params` is a list of [name, value] pairs, since a name may repeat. Basic
  * authentication when a user is set, as Java sends it only then.
  */
-export async function solr(handler, params, { signal, core, method = 'POST' } = {}) {
+export async function solr(
+  handler: string,
+  params: [string, string][],
+  { signal, core, method = 'POST' }: { signal?: AbortSignal; core?: string; method?: string } = {}
+) {
   // Another core on the same Solr: search-core asks "target" for terms
   // Reactome could annotate.
   const base = core ? coreUrl().replace(/[^/]+$/, core) : coreUrl();
@@ -127,9 +137,11 @@ export async function solr(handler, params, { signal, core, method = 'POST' } = 
   const form = new URLSearchParams([['wt', 'json'], ['json.nl', 'flat'], ...params]);
   if (!envSetting('SOLR_USER') !== !envSetting('SOLR_PASSWORD'))
     throw new Error('SOLR_USER and SOLR_PASSWORD are set together or not at all');
-  const headers = { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+  };
   if (envSetting('SOLR_USER'))
-    headers.Authorization = `Basic ${Buffer.from(
+    headers['Authorization'] = `Basic ${Buffer.from(
       `${envSetting('SOLR_USER')}:${envSetting('SOLR_PASSWORD')}`
     ).toString('base64')}`;
   const deadline = AbortSignal.timeout(SOLR_TIMEOUT_MS);
@@ -137,7 +149,7 @@ export async function solr(handler, params, { signal, core, method = 'POST' } = 
   await turn(until);
   try {
     // SolrJ's query() is a GET where search-core does not ask for a POST.
-    const response = await fetch(method === 'GET' ? `${url}?${form}` : url, {
+    const response = await fetch(method === 'GET' ? `${url}?${form.toString()}` : url, {
       method,
       headers,
       ...(method === 'GET' ? {} : { body: form }),
@@ -147,7 +159,7 @@ export async function solr(handler, params, { signal, core, method = 'POST' } = 
       throw Object.assign(new Error(`Solr answered ${response.status}`), { solr: true });
     return await response.json();
   } catch (failure) {
-    throw Object.assign(failure, { solr: true });
+    throw Object.assign(failure as Error, { solr: true });
   } finally {
     done();
   }

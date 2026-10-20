@@ -34,7 +34,7 @@
 import { readFileSync } from 'node:fs';
 
 let tables;
-/** jsoup-tables.json, read on first use, as domain.mjs reads its snapshot. */
+/** jsoup-tables.json, read on first use, as domain.ts reads its snapshot. */
 function TABLES() {
   tables ??= JSON.parse(readFileSync(new URL('./jsoup-tables.json', import.meta.url), 'utf8'));
   return tables;
@@ -277,10 +277,12 @@ interface TextNode {
  * own tree, as jsoup does.) Fields in the order the constructor sets them.
  */
 class Node {
-  name: string;
-  parent: Node | undefined;
-  children: (Node | TextNode)[];
-  text?: undefined;
+  // `declare`: a plain field would put every one on each instance, `text`
+  // as undefined among them, before the constructor runs.
+  declare name: string;
+  declare parent: Node | undefined;
+  declare children: (Node | TextNode)[];
+  declare text?: undefined;
   constructor(name: string, parent?: Node) {
     this.name = name;
     this.parent = parent;

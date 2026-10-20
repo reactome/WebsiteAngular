@@ -1,6 +1,6 @@
 /**
  * Write graph-names.json: names from the graph that standard form takes in
- * one spelling only (parameters.mjs), because Java finds them leniently.
+ * one spelling only (parameters.ts), because Java finds them leniently.
  *
  *  - The reference databases' names, for /data/mapping/{resource}/...:
  *    Java finds the resource ignoring case, so `UniProt` and `uNiPrOt` are

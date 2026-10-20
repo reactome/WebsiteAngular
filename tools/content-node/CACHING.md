@@ -183,11 +183,11 @@ one more URL to cache or to bust it with. Decided by awright, 18 Oct 2026
 
 ## Work queue
 
-1. ~~**Parameter schema** per endpoint~~ — `parameters.mjs`, held to Java's
+1. ~~**Parameter schema** per endpoint~~ — `parameters.ts`, held to Java's
    published description (#530).
-2. ~~**Invalid inputs against Java**~~ — `invalid-inputs.mjs`; 309 of 328
+2. ~~**Invalid inputs against Java**~~ — `invalid-inputs.ts`; 309 of 328
    identical, the rest declared (#530).
-3. ~~**`Cache-Control` headers**~~ — `cache-label.mjs` (#531); one URL per answer
+3. ~~**`Cache-Control` headers**~~ — `cache-label.ts` (#531); one URL per answer
    (#532); the site's own requests in standard form (#533; on beta at its next
    site rebuild); release day: purge, then `warm.ts` (#534).
 4. **Cloudflare**: the rate-limiting rule first (no origin change needed), then

@@ -1,9 +1,9 @@
 // @vitest-environment node
 //
-// classify.mjs, which the e2e suite uses to find the site's requests that
+// classify.ts, which the e2e suite uses to find the site's requests that
 // are not in standard form and so never reach the edge cache.
 import { describe, expect, it } from 'vitest';
-import { classify } from './classify.mjs';
+import { classify } from './classify.ts';
 
 describe('classify', () => {
   it('finds the endpoint a request reaches, a literal route before the template', () => {
@@ -74,7 +74,7 @@ describe('classify', () => {
       );
       const out = execFileSync(
         process.execPath,
-        [new URL('./classify.mjs', import.meta.url).pathname, file],
+        [new URL('./classify.ts', import.meta.url).pathname, file],
         {
           encoding: 'utf8',
         }

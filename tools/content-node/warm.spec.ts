@@ -7,7 +7,7 @@
 // which answers were not cacheable would report success over nothing.
 import { readFileSync, readdirSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { classify } from './classify.mjs';
+import { classify } from './classify.ts';
 import { ANCESTORS, ENHANCED, FIXED, main, warm, warmList } from './warm.ts';
 
 const answers = {
