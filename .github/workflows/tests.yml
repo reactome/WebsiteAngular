@@ -103,9 +103,10 @@ jobs:
       # per-module baselines, so a rise could hide inside the move (spec 014):
       # each baseline's total is held to the base branch's.
       - name: Check the ratchets' totals have not risen
-        if: github.event_name == 'pull_request'
+        # A dispatched run (the library-update branch's) is held to main.
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
         env:
-          BASE_REF: ${{ github.base_ref }}
+          BASE_REF: ${{ github.base_ref || 'main' }}
         run: |
           git fetch --no-tags --depth=1 origin "$BASE_REF"
           node scripts/check-baseline-totals.mjs "origin/$BASE_REF"

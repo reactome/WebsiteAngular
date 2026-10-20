@@ -63,6 +63,15 @@ for (const [name, file, total] of BASELINES) {
   if (before !== undefined && now > before) rose.push(`${name} rose: ${now}, base ${before}`);
 }
 
+// Lint's counts are per rule and global, so no move changes them; a rise in
+// one rule must not hide behind a fall in another (check-lint.mjs's own
+// reason for counting per rule).
+const lintNow = JSON.parse(readFileSync('lint-baseline.json', 'utf8')).rules;
+const lintWas = atBase('lint-baseline.json')?.rules ?? {};
+for (const [rule, count] of Object.entries(lintNow))
+  if (count > (lintWas[rule] ?? 0))
+    rose.push(`lint rule ${rule} rose: ${count}, base ${lintWas[rule] ?? 0}`);
+
 console.log(`  ${read.join(' · ')}`);
 if (rose.length) {
   for (const line of rose) console.log(`  ${line} -- a move keeps totals; typing lowers them`);

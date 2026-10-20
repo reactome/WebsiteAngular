@@ -94,7 +94,7 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
   - schema: `model` before `/{id}`;
   - search: diagram `summary` before `/{diagram}`, and icon `facet` and `query` before `/{identifier}`.
 
-  No pair crosses families.
+  No pair crosses families. Four more pairs overlap across methods (`GET /data/query/{id}` and `POST /data/query/ids`, say): Express routes by method, but `endpointFor` does not, so the test names those too.
 
 **Decision.**
 
@@ -142,7 +142,7 @@ Eight handlers carry `warms`. The parameter record (`parameters.ts` `RECORD`) is
 
 ## R6. A move is a move
 
-**Decision.** A new script, `scripts/check-move.mjs`, takes the base branch's modules and today's and, for every top-level statement and every endpoint (by method and path) that left its module, compares it token for token: strings, templates, regular expressions and comments exactly, only the whitespace between tokens and a leading `export` set aside, so Prettier rewrapping a moved declaration is not a change. Two things fail besides a changed or missing piece, because a moved declaration's meaning can change without its text changing: a declaration added to a module that received moved code (`added:`), and an imported name that now resolves to a different declaration (`rebound:`). It is not a CI gate: a pull request that deletes code would fail it; a move pull request runs it and shows its output. It fails on any difference and lists them, so a move PR shows "N declarations, M endpoints moved, 0 changed".
+**Decision.** A new script, `scripts/check-move.mjs`, takes the base branch's modules and today's and, for every top-level statement and every endpoint (by method and path) that left its module, compares it token for token: strings, templates, regular expressions and comments exactly, only the whitespace between tokens and a leading `export` set aside, so Prettier rewrapping a moved declaration is not a change. Two things fail besides a changed or missing piece, because a moved declaration's meaning can change without its text changing: a declaration added to a module that received moved code (`added:`), and an imported name that now resolves to a different declaration (`rebound:`). Every import in a module that received moved code -- named, default, namespace, side-effect, or through a re-export -- must be one the original module had and resolve to the same declaration or package export; a name the original did not have (a global such as `fetch`) fails. Comments on a code line are compared as well as comments on their own. It is not a CI gate: a pull request that deletes code would fail it; a move pull request runs it and shows its output. It fails on any difference and lists them, so a move PR shows "N declarations, M endpoints moved, 0 changed".
 
 Imports are not compared. Neither is anything the PR lists as needing a change because of the boundary (a module-local name that had to be exported). It is shown failing first, with one character changed in a moved function.
 

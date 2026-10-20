@@ -6,6 +6,7 @@
 // a change to one family's endpoints is a change to one family's module. The
 // shared modules are layered, each importing only those beneath it.
 import { readFileSync, readdirSync } from 'node:fs';
+import path from 'node:path';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
@@ -27,10 +28,17 @@ const isFamily = (name: string) => name.endsWith('-endpoints');
  * TypeScript itself reads them.
  */
 function importsOf(source: string): string[] {
+  // Resolved against this directory, so `../content-node/registry.ts` and
+  // `./registry.js` are the registry as much as `./registry.ts` is; a module
+  // elsewhere is not one of this service's.
+  const here = path.posix.join('tools', 'content-node');
   return ts
     .preProcessFile(source, true, true)
-    .importedFiles.map((file) => /^\.\/([\w-]+)(?:\.(?:ts|mjs))?$/.exec(file.fileName)?.[1] ?? '')
-    .filter(Boolean);
+    .importedFiles.map((file) => file.fileName)
+    .filter((name) => name.startsWith('.'))
+    .map((name) => path.posix.normalize(path.posix.join(here, name)))
+    .filter((resolved) => path.posix.dirname(resolved) === here)
+    .map((resolved) => path.posix.basename(resolved).replace(/\.[cm]?[jt]s$/, ''));
 }
 
 /** Every import the boundaries forbid, as "module imports other: why". */
@@ -88,12 +96,15 @@ describe('the content service boundaries', () => {
           "import {\n  // Java's name for it\n  x,\n} from './citation-endpoints.ts';",
           "import './server.ts';",
           "const { endpoints } = await import('./registry.ts');",
+          "import { x as y } from '../content-node/pathways-events-endpoints.ts';",
+          "import { z } from './release.js';",
         ].join('\n'),
       })
     ).toEqual([
       'search-endpoints imports citation-endpoints: a family imports no other family',
       'search-endpoints imports server: a family imports only shared modules',
       'search-endpoints imports registry: a family imports only shared modules',
+      'search-endpoints imports pathways-events-endpoints: a family imports no other family',
     ]);
   });
 

@@ -70,6 +70,30 @@ const PAIRS = [
   '/search/icon/query before /search/icon/{identifier}',
 ];
 
+/** Pairs, any method, some path matches both of: endpointFor (the parity harness, the URIError handler) does not look at the method. */
+function overlappingAnyMethod(list: string[]): string[] {
+  const pairs: string[] = [];
+  list.forEach((a, i) =>
+    list.forEach((b, j) => {
+      const [methodA = '', pathA = ''] = a.split(' ');
+      const [methodB = '', pathB = ''] = b.split(' ');
+      if (j > i && methodA !== methodB && overlap(pathA, pathB))
+        pairs.push(
+          `${a.replace('/ContentService', '')} before ${b.replace('/ContentService', '')}`
+        );
+    })
+  );
+  return pairs;
+}
+
+/** The 4 pairs across methods, measured, as endpointFor meets them. */
+const PAIRS_ANY_METHOD = [
+  'GET /data/query/{id} before POST /data/query/ids',
+  'POST /data/query/ids/map before GET /data/query/ids/map',
+  'POST /data/query/ids/map before GET /data/query/{id}/{attribute}',
+  'POST /references/mapping/xrefs before GET /references/mapping/{identifier}',
+];
+
 describe('the endpoint list', () => {
   it('is matched in the recorded order', () => {
     expect(routes).toEqual(RECORDED);
@@ -80,5 +104,9 @@ describe('the endpoint list', () => {
     // recording is still named here, and a new pair (an endpoint added that
     // overlaps another) is shown, to be placed knowingly.
     expect(overlapping(routes)).toEqual(PAIRS);
+  });
+
+  it('keeps the pairs that overlap across methods in the order measured, as endpointFor reads them', () => {
+    expect(overlappingAnyMethod(routes)).toEqual(PAIRS_ANY_METHOD);
   });
 });

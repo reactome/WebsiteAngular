@@ -97,6 +97,9 @@ function canonical(sf, node) {
           comment(range);
       first = false;
       out.push(child.getText(sf));
+      // A comment after a token on its own line is TypeScript's "trailing"
+      // comment, which the next token's leading comments leave out.
+      for (const range of ts.getTrailingCommentRanges(text, child.getEnd()) ?? []) comment(range);
       return;
     }
     for (const grandchild of child.getChildren(sf)) walk(grandchild);
@@ -121,7 +124,10 @@ function pieces(file, text) {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
   const declarations = new Map();
   const endpoints = new Map();
-  const imports = new Map(); // local name -> [module, imported name]
+  const imports = new Map(); // local name -> [specifier, imported name: a name, 'default' or '*']
+  const effects = []; // specifiers imported for their side effects
+  const reexports = new Map(); // exported name -> [specifier, name there]
+  const stars = []; // specifiers of `export * from`
   const add = (map, key, node) => {
     const list = map.get(key) ?? [];
     list.push(canonical(sf, node));
@@ -158,14 +164,28 @@ function pieces(file, text) {
   let unnamed = 0;
   for (const statement of sf.statements) {
     if (ts.isImportDeclaration(statement)) {
-      const from = statement.moduleSpecifier.text.replace(/^\.\//, '').replace(/\.(ts|mjs)$/, '');
-      const bindings = statement.importClause?.namedBindings;
+      const from = specifier(statement.moduleSpecifier.text);
+      const clause = statement.importClause;
+      if (!clause) effects.push(from);
+      if (clause?.name) imports.set(clause.name.text, [from, 'default']);
+      const bindings = clause?.namedBindings;
+      if (bindings && ts.isNamespaceImport(bindings)) imports.set(bindings.name.text, [from, '*']);
       if (bindings && ts.isNamedImports(bindings))
         for (const element of bindings.elements)
           imports.set(element.name.text, [from, (element.propertyName ?? element.name).text]);
       continue;
     }
-    if (ts.isExportDeclaration(statement)) continue;
+    if (ts.isExportDeclaration(statement)) {
+      if (statement.moduleSpecifier) {
+        const from = specifier(statement.moduleSpecifier.text);
+        const clause = statement.exportClause;
+        if (!clause) stars.push(from);
+        else if (ts.isNamedExports(clause))
+          for (const element of clause.elements)
+            reexports.set(element.name.text, [from, (element.propertyName ?? element.name).text]);
+      }
+      continue;
+    }
     if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations) {
         const list = arrayOf(declaration.initializer);
@@ -186,7 +206,40 @@ function pieces(file, text) {
       );
     }
   }
-  return { declarations, endpoints, imports };
+  return { declarations, endpoints, imports, effects, reexports, stars };
+}
+
+/**
+ * An import specifier as one string: a module of this service by its name
+ * (`local:answers`), anything else as written (`neo4j-driver`, `node:fs`,
+ * `../render/params.ts`).
+ */
+function specifier(text) {
+  const local = /^\.\/([\w-]+)(?:\.(?:ts|mjs|js))?$/.exec(text);
+  return local ? `local:${local[1]}` : text;
+}
+
+/**
+ * What `name` exported by a module is: the canonical text of its
+ * declaration, following re-exports through this service's modules, or a
+ * package's name and specifier. Undefined when it cannot be followed.
+ */
+function identity(modules, spec, name, seen = new Set()) {
+  if (!spec.startsWith('local:')) return `${spec}#${name}`;
+  const key = `${spec}#${name}`;
+  if (seen.has(key)) return undefined;
+  seen.add(key);
+  const module = modules.get(`${spec.slice(6)}.ts`);
+  if (!module) return undefined;
+  const declared = module.declarations.get(name);
+  if (declared) return declared.join('\n');
+  const again = module.reexports.get(name) ?? module.imports.get(name);
+  if (again) return identity(modules, again[0], again[1], seen);
+  for (const star of module.stars) {
+    const found = identity(modules, star, name, seen);
+    if (found) return found;
+  }
+  return undefined;
 }
 
 const read = (file, fromBase) =>
@@ -233,40 +286,57 @@ for (const kind of ['declarations', 'endpoints']) {
 // Declarations that appeared in a module that received moved code: neither
 // there at the base nor moved in.
 for (const file of receivers) {
-  const there = before.get(file)?.declarations;
-  for (const key of after.get(file).declarations.keys())
-    if (!there?.has(key) && !origins.has(`${file}#${key}`))
-      problems.push(`added: ${key} (in ${file}: not there at ${base}, nor moved in)`);
+  for (const kind of ['declarations', 'endpoints']) {
+    const there = before.get(file)?.[kind];
+    for (const key of after.get(file)[kind].keys())
+      if (!there?.has(key) && !origins.has(`${file}#${key}`))
+        problems.push(`added: ${key} (in ${file}: not there at ${base}, nor moved in)`);
+  }
 }
 
-// A name a receiving module imports must resolve to the declaration the
-// moved code's original module used: its own (it was a local there), or the
-// same import.
+// Every name a receiving module imports must be one the moved code's
+// original module had -- declared there, or imported -- and resolve to the
+// same thing: the same declaration (wherever it now lives, followed through
+// re-exports) or the same package's export. A name the original did not have
+// would shadow a global (`fetch`) or bring in something new. Side-effect
+// imports likewise. Imports the receiving module already had at the base are
+// its own.
 for (const file of receivers) {
-  const { imports } = after.get(file);
+  const now = after.get(file);
+  const had = before.get(file);
   const fromFiles = new Set(
     [...origins].filter(([k]) => k.startsWith(`${file}#`)).map(([, f]) => f)
   );
-  for (const [local, [module, name]] of imports) {
-    const target = after.get(`${module}.ts`)?.declarations.get(name);
-    for (const origin of fromFiles) {
-      const was = before.get(origin);
-      const theirs = was.declarations.get(local);
-      const importedThere = was.imports.get(local);
-      if (theirs && target && !theirs.some((text) => target.includes(text)))
-        problems.push(
-          `rebound: ${local} in ${file} is ${module}.ts's, not the one ${origin} had at ${base}`
-        );
-      else if (!theirs && importedThere && importedThere.join('/') !== [module, name].join('/')) {
-        // Imported in both: from the same module, or from where that module's moved to.
-        const original = before.get(`${importedThere[0]}.ts`)?.declarations.get(importedThere[1]);
-        if (!original || !target || !original.some((text) => target.includes(text)))
-          problems.push(
-            `rebound: ${local} in ${file} now from ${module}.ts, at ${base} from ${importedThere[0]}.ts`
-          );
-      }
+  const originsOf = [...fromFiles].map((f) => [f, before.get(f)]);
+  for (const [local, [spec, name]] of now.imports) {
+    const actual = identity(after, spec, name);
+    if (had?.imports.has(local) && identity(before, ...had.imports.get(local)) === actual) continue;
+    const expected = originsOf
+      .map(([f, was]) => {
+        if (was.declarations.has(local)) return [f, was.declarations.get(local).join('\n')];
+        if (was.imports.has(local)) return [f, identity(before, ...was.imports.get(local))];
+        return undefined;
+      })
+      .filter(Boolean);
+    if (!expected.length) {
+      problems.push(
+        `rebound: ${local} in ${file} is imported, but ${[...fromFiles].join(', ')} had no ${local} at ${base} (a global, or something new)`
+      );
+      continue;
     }
+    if (actual === undefined) {
+      problems.push(`rebound: ${local} in ${file} cannot be followed to a declaration (${spec})`);
+      continue;
+    }
+    for (const [f, was] of expected)
+      if (was !== actual)
+        problems.push(`rebound: ${local} in ${file} is not the ${local} ${f} had at ${base}`);
   }
+  for (const spec of now.effects)
+    if (!had?.effects.includes(spec) && !originsOf.some(([, was]) => was.effects.includes(spec)))
+      problems.push(
+        `added: import '${spec}' in ${file} (no original module imported it for its effects)`
+      );
 }
 
 const count = (prefix) => problems.filter((p) => p.startsWith(prefix)).length;
