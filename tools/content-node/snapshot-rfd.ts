@@ -5,7 +5,7 @@
  *
  *   CONTENT_SERVICE_LIB=<the ContentService webapp's WEB-INF/lib> \
  *   TOMCAT_LIB=<the Tomcat lib directory holding catalina.jar> \
- *     node tools/content-node/snapshot-rfd.mjs
+ *     node tools/content-node/snapshot-rfd.ts
  *
  * Spring 5.3's AbstractMessageConverterMethodProcessor.safeExtension trusts an
  * extension on its own list (SAFE_EXTENSIONS, below), or one whose media type
@@ -26,8 +26,8 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, 'rfd-snapshot.json');
-const LIB = process.env.CONTENT_SERVICE_LIB;
-const TOMCAT = process.env.TOMCAT_LIB;
+const LIB = process.env['CONTENT_SERVICE_LIB'];
+const TOMCAT = process.env['TOMCAT_LIB'];
 if (!LIB || !TOMCAT) {
   console.error(
     "CONTENT_SERVICE_LIB: the ContentService webapp's WEB-INF/lib; TOMCAT_LIB: Tomcat's lib directory"

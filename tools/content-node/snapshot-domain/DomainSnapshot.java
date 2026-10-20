@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Prints, as JSON, what the content service's Jackson and Spring Data Neo4j
  * make of each graph-core class -- read from the libraries themselves, never
- * restated. Run by snapshot-domain.mjs against the deployed webapp's jars.
+ * restated. Run by snapshot-domain.ts against the deployed webapp's jars.
  *
  * For each concrete class, `json`: the properties Jackson writes, in its order,
  * as [name, getter, declaring class, views], where views is a bit mask of the

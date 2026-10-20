@@ -2053,7 +2053,7 @@ export const endpoints = [
      *
      * DatabaseObjectUtils.getAttributeTable is reflection over graph-core's
      * classes and reads no database, so this is Java's answer captured once
-     * (schema-snapshot.json, by snapshot-schema.mjs) and composed as Java
+     * (schema-snapshot.json, by snapshot-schema.ts) and composed as Java
      * composes it (schema.ts, attributeTable). A name Class.forName does not
      * find is Java's 500, as for /count.
      */
@@ -3781,7 +3781,7 @@ let javaCase;
  * String.CASE_INSENSITIVE_ORDER: per UTF-16 unit, equal if their upper cases
  * are, else ordered by the lower cases of those upper cases (so the long s, ſ,
  * sorts as s) -- each the JVM's Character mapping
- * (case-snapshot.json; snapshot-case.mjs says why not JavaScript's).
+ * (case-snapshot.json; snapshot-case.ts says why not JavaScript's).
  */
 function caseInsensitive(a, b) {
   if (!javaCase) {
@@ -5815,7 +5815,7 @@ let safeExtensions;
  * (AbstractMessageConverterMethodProcessor.addContentDispositionHeader), on
  * every body it writes but a redirect's. The request path's last segment is
  * percent-decoded and its extension -- after the last '.' -- checked. An
- * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.mjs says
+ * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.ts says
  * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
  * much as `.exe`.
  */

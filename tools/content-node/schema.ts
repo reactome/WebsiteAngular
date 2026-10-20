@@ -17,7 +17,7 @@
  * The hierarchy here builds the model's tree (schemaModelTree; the counts are
  * the graph's). A class's attributes and referrals -- its getters and their
  * types, and other classes' getters that return it -- are Java's own answers,
- * captured into schema-snapshot.json by snapshot-schema.mjs, which checks that
+ * captured into schema-snapshot.json by snapshot-schema.ts, which checks that
  * they cover exactly the classes listed here.
  *
  * Derived from graph-core's source (src/main/java/org/reactome/server/graph/
@@ -47,7 +47,7 @@
  *  4. The tests in schema.spec.ts pin the 113, the 27 and the hierarchy;
  *     update them from the new jar, then run the diff harness over every label.
  *  5. Regenerate schema-snapshot.json from the Java service running the new
- *     jar: `node tools/content-node/snapshot-schema.mjs` (see its header). It
+ *     jar: `node tools/content-node/snapshot-schema.ts` (see its header). It
  *     holds /schema/{className}/attributes and /referrals, which are
  *     reflection too, and refuses to write if its classes are not these.
  */
@@ -298,7 +298,7 @@ export function superclassOf(name) {
 let snapshot;
 /**
  * schema-snapshot.json, read once: Java's /schema/{className}/attributes and
- * /referrals, captured by snapshot-schema.mjs, in the shape below.
+ * /referrals, captured by snapshot-schema.ts, in the shape below.
  *
  *  - declared: per class, the rows of its attribute table whose origin is the
  *    class itself -- the getters it declares. A class's table is its own rows

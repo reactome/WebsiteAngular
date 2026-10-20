@@ -4,7 +4,7 @@
  * what String.CASE_INSENSITIVE_ORDER compares by (service.mjs,
  * caseInsensitive).
  *
- *   JAVA=<the java the content service runs on> node tools/content-node/snapshot-case.mjs
+ *   JAVA=<the java the content service runs on> node tools/content-node/snapshot-case.ts
  *
  * JavaScript's own case mapping is not used: it is the full mapping (ß is SS,
  * İ is i plus a dot) and the Unicode version of Node's ICU, which maps
@@ -19,7 +19,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'case-snapshot.json');
-const JAVA = process.env.JAVA;
+const JAVA = process.env['JAVA'];
 if (!JAVA) {
   console.error('JAVA: the java executable the content service runs on');
   process.exit(2);
@@ -41,10 +41,12 @@ try {
   const lines = execFileSync(JAVA, [source], { encoding: 'utf8', maxBuffer: 1 << 24 })
     .trim()
     .split('\n');
-  const upper = [];
-  const lower = [];
+  const upper: number[] = [];
+  const lower: number[] = [];
   lines.forEach((line, unit) => {
     const [up, low] = line.split(' ').map((hex) => parseInt(hex, 16));
+    if (up === undefined || low === undefined || Number.isNaN(up) || Number.isNaN(low))
+      throw new Error(`line ${unit}: expected two hex code units, got ${JSON.stringify(line)}`);
     if (up !== unit) upper.push(unit, up);
     if (low !== unit) lower.push(unit, low);
   });
