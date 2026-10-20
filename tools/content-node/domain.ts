@@ -373,7 +373,7 @@ function map(state, node, target) {
   const root = reach(node, target);
   while (frames.length) {
     const frame = frames[frames.length - 1];
-    if (!frame) break;
+    if (!frame) throw new Error('map: an empty frame stack while frames remain');
     if (!frame.matching) {
       if (frame.at === frame.fields.length) {
         frames.pop();
@@ -381,7 +381,7 @@ function map(state, node, target) {
       }
       const current = frame.fields[frame.at];
       // In range: the field count was checked just above.
-      if (!current) break;
+      if (!current) throw new Error(`map: no field ${frame.at} on ${frame.entity.schemaClass}`);
       const [name, , , , collection] = current;
       const existing = frame.entity.fields[name];
       // A refilled object keeps a scalar it has; a collection it has is
@@ -402,7 +402,7 @@ function map(state, node, target) {
     const field = frame.fields[frame.at];
     const matching = frame.matching;
     // Both set just above, or on an earlier pass for this field.
-    if (!field || !matching) break;
+    if (!field || !matching) throw new Error('map: a field being filled has no matches');
     const [name, , direction, target, collection, relationClass] = field;
     if (frame.next === matching.length) {
       frame.entity.fields[name] = frame.merging
@@ -413,7 +413,7 @@ function map(state, node, target) {
       continue;
     }
     const relationship = matching[frame.next];
-    if (!relationship) break;
+    if (!relationship) throw new Error('map: a match past the end of the matches');
     frame.next += 1;
     const key = `${direction} ${relationship.id}`;
     const used = state.processed.get(key) ?? 0;
@@ -669,7 +669,7 @@ export function writeDomain(value: unknown, view = VIEW.flatten, { jsog = false 
   const work: WorkItem[] = [{ value, floating: false }];
   while (work.length) {
     const item = work.pop();
-    if (item === undefined) break;
+    if (item === undefined) throw new Error('writeDomain: an empty work stack while work remains');
     if (typeof item === 'string') {
       out.push(item);
       continue;
@@ -689,7 +689,7 @@ export function writeDomain(value: unknown, view = VIEW.flatten, { jsog = false 
       work.push('}');
       for (let at = current.entries.length - 1; at >= 0; at -= 1) {
         const pair = current.entries[at];
-        if (!pair) continue;
+        if (!pair) throw new Error(`writeDomain: a JsonMap with a hole at ${at}`);
         const [key, entry] = pair;
         work.push({ value: entry, floating });
         work.push(`${javaString(key)}:`);
@@ -729,7 +729,7 @@ function open(
   work.push('}');
   for (let at = members.length - 1; at >= 0; at -= 1) {
     const member = members[at];
-    if (!member) continue;
+    if (!member) throw new Error(`open: a member hole at ${at}`);
     const [name, value, floating] = member;
     work.push({ value, floating });
     work.push(`${javaString(name)}:`);

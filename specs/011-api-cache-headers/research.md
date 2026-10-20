@@ -291,7 +291,7 @@ Standard form narrows these past their declared type, because each would otherwi
 
 ## R14. The site's own requests, audited (run 19 Oct 2026)
 
-**The audit:** the whole e2e suite was run with `E2E_CACHE_AUDIT` set. Each content API request the site made was recorded, then classified with `node tools/content-node/classify.mjs <file>`. The fixture only records: Playwright compiles test code to CommonJS, where the record's modules cannot load.
+**The audit:** the whole e2e suite was run with `E2E_CACHE_AUDIT` set. Each content API request the site made was recorded, then classified with `node tools/content-node/classify.ts <file>`. The fixture only records: Playwright compiles test code to CommonJS, where the record's modules cannot load.
 
 **First run:** 401 of 433 distinct requests answered by node were in standard form. The 32 others were the site sending parameters an endpoint does not take. Java ignores those, so removing them changes no answer:
 
