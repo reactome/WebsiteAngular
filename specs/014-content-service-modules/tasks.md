@@ -71,7 +71,7 @@ It must not mix in logic edits.
 
   Done with T005 in one PR: naming the version handler changed what TypeScript inferred for the untyped list, so the list had to be typed at the same time. The registry does not re-export the list yet, because nothing would read it there. `endpointFor` and `getEndpointFor` stay in `service.ts`, beside the server code that calls them; they move to the registry in T026, when it assembles the families and `service.ts` goes. `deploy/nginx/routes.spec.ts` and the route-order test move to the registry then too. — #570
 
-- [x] T007 [US2] Remove the casts on the endpoint list: `tools/content-node/diff.ts` (`DiffEndpoint`, `as DiffEndpoint[]`), `tools/content-node/invalid-inputs.ts`/`.spec.ts` (`Endpoint`, the `as … []`), `tools/content-node/parameters.spec.ts`, and any other spec `git grep` finds. All of them use `Endpoint` from the registry. — #577
+- [x] T007 [US2] Remove the casts on the endpoint list: `tools/content-node/diff.ts` (`DiffEndpoint`, `as DiffEndpoint[]`), `tools/content-node/invalid-inputs.ts`/`.spec.ts` (`Endpoint`, the `as … []`), `tools/content-node/parameters.spec.ts`, and any other spec `git grep` finds. All of them use `Endpoint` from `endpoint.ts` and read the list from `service.ts` until T026 moves it to the registry. `deploy/nginx/routes.spec.ts` lost its cast too, though no gate type-checks `deploy/` yet (it has strict-mode errors of its own). — #577
 
 **Checkpoint**: the endpoint list is typed and read through the registry. Families can now move out from under it.
 
