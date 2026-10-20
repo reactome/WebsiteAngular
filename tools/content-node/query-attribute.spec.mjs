@@ -1,11 +1,11 @@
 // @vitest-environment node
 //
-// /data/query/{id}/{attributeName}'s pieces in domain.mjs: the getter found by
+// /data/query/{id}/{attributeName}'s pieces in domain.ts: the getter found by
 // name, its value as graph-core's LazyFetchAspect leaves it, and the text
 // ControllerUtils.toTSV writes. The objects here are invented; the formats
 // were measured against Java on 18 Oct 2026.
 import { describe, expect, it } from 'vitest';
-import { attributeGetter, attributeText, attributeValue, mapNodes } from './domain.mjs';
+import { attributeGetter, attributeText, attributeValue, mapNodes } from './domain.ts';
 
 const node = (id, labels, props) => ({ id, labels: ['DatabaseObject', ...labels], props });
 const [pathway] = mapNodes([

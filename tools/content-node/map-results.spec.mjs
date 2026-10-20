@@ -5,7 +5,7 @@
 // invented: a pathway P with two events below it, A and B, each its own
 // record, as graph-core's getContainedEvents query returns them.
 import { describe, expect, it } from 'vitest';
-import { mapResults, writeDomain } from './domain.mjs';
+import { mapResults, writeDomain } from './domain.ts';
 
 const node = (id, labels, props) => ({ id, labels: ['DatabaseObject', 'Event', ...labels], props });
 const P = node(1, ['Pathway'], {

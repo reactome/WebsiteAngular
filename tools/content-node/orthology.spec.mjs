@@ -15,7 +15,7 @@ import {
   plainTextProblem,
   springPathLong,
 } from './service.mjs';
-import { JsonMap, mapNodes, VIEW, writeDomain } from './domain.mjs';
+import { JsonMap, mapNodes, VIEW, writeDomain } from './domain.ts';
 
 let base;
 let server;

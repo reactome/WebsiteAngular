@@ -1,12 +1,12 @@
 // @vitest-environment node
 //
-// The caching label each answer carries (cache-label.mjs), row by row from
+// The caching label each answer carries (cache-label.ts), row by row from
 // specs/011-api-cache-headers/contracts/cache-labels.md. A label that let
 // an error, a POST or someone's token through as `public` would have
 // Cloudflare keep it until the next release's purge, and hand it to
 // everyone who asked.
 import { describe, expect, it } from 'vitest';
-import { CACHEABLE, defaultLabel, label } from './cache-label.mjs';
+import { CACHEABLE, defaultLabel, label } from './cache-label.ts';
 
 const attributes = '/ContentService/data/schema/{id}/attributes';
 const of = (overrides) =>

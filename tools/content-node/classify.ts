@@ -8,7 +8,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { RECORD, standardForm } from './parameters.mjs';
+import { RECORD, standardForm } from './parameters.ts';
 
 const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 let patterns;
@@ -54,10 +54,12 @@ export function classify(method, url) {
  * Run on the file E2E_CACHE_AUDIT wrote: the site's requests node answers,
  * how many are in standard form, and each one that is not, by its rule.
  *
- *   node tools/content-node/classify.mjs <audit file>
+ *   node tools/content-node/classify.ts <audit file>
  */
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const lines = readFileSync(process.argv[2], 'utf8').split('\n').filter(Boolean);
+  const lines = readFileSync(process.argv[2] ?? '', 'utf8')
+    .split('\n')
+    .filter(Boolean);
   const seen = new Map();
   for (const line of lines) {
     const { method, url, test } = JSON.parse(line);

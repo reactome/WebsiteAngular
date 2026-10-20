@@ -24,13 +24,13 @@ import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import neo4j from 'neo4j-driver';
 import { read, configured, close, envSetting } from './graph.ts';
-import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.mjs';
-import { solr, solrConfigured } from './solr.mjs';
+import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
+import { solr, solrConfigured } from './solr.ts';
 import { jsoupText } from './jsoup-text.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
 export { JavaHashMap };
-import { sendReport } from './report.mjs';
+import { sendReport } from './report.ts';
 import { registryServices, psicquicResources } from './psicquic.ts';
 import {
   citationOfEvent,
@@ -60,7 +60,7 @@ import {
   summaryEntity,
   VIEW,
   writeDomain,
-} from './domain.mjs';
+} from './domain.ts';
 import {
   attributeTable,
   isSchemaClass,
@@ -424,7 +424,7 @@ export const endpoints = [
     /**
      * A person, by dbId or ORCID, with their affiliations, cross-references and
      * publications: graph-core's findPersonByDbId / findPersonByOrcidId,
-     * written by the domain serialiser (domain.mjs) in Java's views.
+     * written by the domain serialiser (domain.ts) in Java's views.
      *
      * Java matches `(n:Person{dbId:$dbId})`, which no index serves: 1.1s on
      * every request. The same person by its indexed DatabaseObject dbId is the
@@ -848,13 +848,13 @@ export const endpoints = [
       /^\/ContentService\/data\/query\/[^/]+: \.url: /,
       // JSOG numbers objects in the order it meets them, and in the nested
       // views Java meets some properties in an order it does not keep from one
-      // start to the next (domain.mjs, writeDomain): R-HSA-5672965's inputs
+      // start to the next (domain.ts, writeDomain): R-HSA-5672965's inputs
       // and outputs swap. The references still agree within each answer.
       /^[^:]*(?=[^:]*includeRef=true)(?=[^:]*view=nested)[^:]*: \S*\.@(id|ref): /,
     ],
     /**
      * One object with everything it points to: graph-core's
-     * findById(id, OUTGOING), written as Java's Jackson writes it (domain.mjs
+     * findById(id, OUTGOING), written as Java's Jackson writes it (domain.ts
      * does both). The Pathway Browser's details panel and the website's detail
      * pages read it for every object they show.
      *
@@ -1101,7 +1101,7 @@ export const endpoints = [
      * One attribute of an object, as text: QueryObjectController.findById
      * (id, attributeName) -- the object as findById(id, OUTGOING) loads it
      * (findObject), its getter called by name ignoring case, and the value
-     * written by ControllerUtils.toTSV (domain.mjs: attributeGetter,
+     * written by ControllerUtils.toTSV (domain.ts: attributeGetter,
      * attributeValue, attributeText). A getter may load what the object did
      * not bring, as graph-core's LazyFetchAspect does (lazyRelationship).
      *
@@ -7735,7 +7735,7 @@ async function staticSummary(accs) {
 
 /**
  * ControllerUtils.getProperty on a loaded object, as an answer: the getter
- * found by name, its value, and toTSV's text of it (domain.mjs); Java's 404
+ * found by name, its value, and toTSV's text of it (domain.ts); Java's 404
  * naming the attribute and the object's class when there is no getter or it
  * returns nothing.
  */

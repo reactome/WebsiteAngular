@@ -1,7 +1,7 @@
 /**
  * Write domain-snapshot.json: what the Java content service's Jackson and
  * Spring Data Neo4j make of each graph-core class, read from the deployed
- * libraries rather than restated (see domain.mjs for how it is used).
+ * libraries rather than restated (see domain.ts for how it is used).
  *
  *   JAVA_HOME=<a JDK 21> CONTENT_SERVICE_LIB=<the ContentService webapp's WEB-INF/lib> \
  *     node tools/content-node/snapshot-domain.mjs
@@ -16,7 +16,7 @@
  *    for one AspectJ wove, its original `_aroundBody` -- is `return this.f`
  *    is recorded as reading field `f`, whatever its name (getISBN reads ISBN,
  *    RegulationReference.getRegulatedBy reads `regulation`). Any other getter
- *    must be one domain.mjs implements; the script stops on one that is not,
+ *    must be one domain.ts implements; the script stops on one that is not,
  *    so a getter graph-core adds cannot be written as a field it is not.
  *
  * WHEN TO RUN IT: when graph-core changes in the deployed content service --
@@ -26,7 +26,7 @@
  * THEN: run the diff harness over /data/query/{id} before committing. Jackson
  * puts the getter-only properties (className, schemaClass, inputs...) in the
  * order the JVM lists methods, which differs from one run to the next
- * (domain.mjs, writeDomain). So the order is kept from the committed snapshot
+ * (domain.ts, writeDomain). So the order is kept from the committed snapshot
  * for every class whose properties are unchanged (keepVerifiedOrder), and the
  * script names the classes it could not keep: their order is this run's, and
  * only the harness can say whether it is the running Java's. The snapshot
@@ -36,21 +36,21 @@
  * Shape: `json` maps each concrete class to the properties Jackson writes, as
  * positions in `properties`, each [name, source, views] (+ "D" for a
  * floating-point value). `source` is a field name, or `Class.getter` for a
- * computed getter. `views` is a bit mask of domain.mjs's VIEW. `graph` maps
+ * computed getter. `views` is a bit mask of domain.ts's VIEW. `graph` maps
  * each class SDN knows to its `fields`, as positions in `fields`, each
  * [field, graph property] or [field, type, direction, target, collection,
  * relationship class] -- plus `defaults` and, for a relationship class, the
  * `type` its getType() returns. `interfaces` names the interfaces SDN maps,
  * and `store` lists the concrete classes as
  * [class, static labels] in the order SDN searches them when a relationship's
- * target is an interface (domain.mjs, classFor).
+ * target is an interface (domain.ts, classFor).
  */
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COMPUTED_GETTERS } from './domain.mjs';
+import { COMPUTED_GETTERS } from './domain.ts';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, 'domain-snapshot.json');
@@ -84,7 +84,7 @@ try {
   // Has.Util.wrapUniqueElements wraps a plain relationship as this, for composedOf.
   const wrapper = `${DOMAIN}relationship/Has$Default`.replaceAll('/', '.');
   // The content service's own: what /query/enhanced/v2 writes a reference
-  // entity as (domain.mjs, summaryEntity). In the webapp's classes, not a jar.
+  // entity as (domain.ts, summaryEntity). In the webapp's classes, not a jar.
   const CLASSES = path.join(LIB, '..', 'classes');
   const summary = 'org.reactome.server.service.model.graph.SummaryEntity';
 
@@ -132,7 +132,7 @@ try {
       else if (field) source = field;
       else
         throw new Error(
-          `${schemaClass}.${name}: ${key} computes its value; implement it in domain.mjs`
+          `${schemaClass}.${name}: ${key} computes its value; implement it in domain.ts`
         );
       // Has.Default and SummaryEntity are built in code, not mapped from the graph.
       if (source === field && schemaClass !== 'Default' && schemaClass !== 'SummaryEntity') {
@@ -147,11 +147,11 @@ try {
   for (const key of computed) {
     const [declaredBy, member] = key.split('.');
     if (!bodies.has(`${declaredBy}.${member}`))
-      throw new Error(`domain.mjs implements ${key}, which graph-core does not have`);
+      throw new Error(`domain.ts implements ${key}, which graph-core does not have`);
   }
 
   // Every getter /data/query/{id}/{attributeName} can reach, by the lower
-  // case of its name: what it reads (a field), a getter domain.mjs computes,
+  // case of its name: what it reads (a field), a getter domain.ts computes,
   // a constant it returns, Object.getClass, or -- for one that takes
   // arguments -- what invoking it with none does. Any other is left as
   // `unported`, named below; service.mjs answers no attribute that reaches one.

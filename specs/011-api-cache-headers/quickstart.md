@@ -5,7 +5,7 @@ Commands use Node 24 (`export PATH=$(ls -d $HOME/.nvm/versions/node/v24*/bin | t
 ## Unit tests
 
 ```sh
-npx vitest run tools/content-node/parameters.spec.mjs tools/content-node/cache-label.spec.mjs
+npx vitest run tools/content-node/parameters.spec.ts tools/content-node/cache-label.spec.ts
 ```
 
 Expected:

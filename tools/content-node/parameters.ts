@@ -112,12 +112,43 @@ const bool = (name, extra = {}) => ({
   ...extra,
 });
 
+/** A query parameter an endpoint declares: its name, where it goes, and its kind. */
+export interface Parameter {
+  name: string;
+  in?: string;
+  type?: string;
+  required?: boolean;
+  enum?: string[];
+  [property: string]: unknown;
+}
+
+/** One endpoint's record (see RECORD). */
+export interface RecordEntry {
+  /** The operation in Java's description it answers for, or null with `why`. */
+  java: string | null;
+  why?: string;
+  /** Each path variable's kind (PATH_KINDS). */
+  path?: Record<string, string>;
+  /** The query parameters, where Java's description declares none (`java: null`). */
+  query?: Parameter[];
+  /** Each query parameter's value kind (VALUE_KINDS). */
+  values?: Record<string, string>;
+  /** Parameters Java declares and ignores. */
+  ignored?: string[];
+  /** What is never stored, or only privately. */
+  cache?: 'never' | 'private';
+  /** /data/query/{id}/{attributeName} and its kin: the attribute names are open. */
+  attributeOf?: boolean;
+  /** A rule across the path variables: the rule broken, or undefined. */
+  check?: (path: Record<string, string>) => string | undefined;
+}
+
 /**
  * One entry per GET endpoint, keyed by node's path. `java` is the operation
  * in Java's description it answers for; `null` says why there is none and
  * declares the query parameters itself. `cache` marks what is never stored.
  */
-export const RECORD = {
+export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/database/version': { java: '/data/database/version' },
   '/ContentService/data/database/name': { java: '/data/database/name' },
   '/ContentService/data/pathways/top/{id}': {
@@ -253,7 +284,7 @@ export const RECORD = {
     path: { resource: 'database', identifier: 'identifier' },
     values: TAX_ID,
     check: ({ resource, identifier }) =>
-      resource === 'GO' && !/^GO:\d{7}$/.test(identifier) ? 'path:identifier' : undefined,
+      resource === 'GO' && !/^GO:\d{7}$/.test(identifier ?? '') ? 'path:identifier' : undefined,
   },
   '/ContentService/references/mapping/{identifier}/xrefs': {
     java: '/references/mapping/{identifier}/xrefs',
@@ -438,10 +469,10 @@ export const RECORD = {
 };
 
 /** The query parameters an endpoint declares: Java's, or the record's own. */
-export function declaredQuery(endpoint) {
+export function declaredQuery(endpoint: string): Parameter[] {
   const entry = RECORD[endpoint];
   if (!entry) return [];
-  if (entry.java === null) return entry.query;
+  if (entry.java === null) return entry.query ?? [];
   return (OPENAPI().paths[entry.java]?.get ?? []).filter(
     (parameter) => parameter.in === 'query' && !entry.ignored?.includes(parameter.name)
   );
@@ -510,7 +541,10 @@ export function standardForm(endpoint, originalUrl) {
     const variable = /^\{([^}]+)\}$/.exec(part)?.[1];
     if (variable === undefined) {
       if (segments[index] !== part) return { ok: false, rule: 'form' };
-    } else if (!PATH_KINDS[entry.path?.[variable]]?.(segments[index])) {
+    } else if (
+      // Both are there: the lengths matched above.
+      !PATH_KINDS[entry.path?.[variable] ?? '']?.(segments[index] ?? '')
+    ) {
       return { ok: false, rule: `path:${variable}` };
     }
   }

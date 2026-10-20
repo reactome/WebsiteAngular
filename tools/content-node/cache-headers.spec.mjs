@@ -15,7 +15,7 @@ vi.mock('./graph.ts', () => ({
 }));
 
 const { app } = await import('./service.mjs');
-const { CACHEABLE } = await import('./cache-label.mjs');
+const { CACHEABLE } = await import('./cache-label.ts');
 
 let base;
 let server;

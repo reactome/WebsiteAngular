@@ -36,7 +36,7 @@ const jacksonJson = (value) =>
  * character beyond it a '?' -- whatever the Content-type header says.
  */
 function latin1(text) {
-  const bytes = [];
+  const bytes: number[] = [];
   for (const char of text) {
     const code = char.codePointAt(0);
     bytes.push(code < 256 ? code : 0x3f);

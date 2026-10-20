@@ -6,7 +6,7 @@
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app, collations, facetMapping, suggestionsFrom } from './service.mjs';
-import { solr, queued } from './solr.mjs';
+import { solr, queued } from './solr.ts';
 
 let base;
 let server;

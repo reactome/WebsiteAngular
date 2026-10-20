@@ -650,7 +650,7 @@ export const test = base.extend({
 
     // Spec 011: with E2E_CACHE_AUDIT naming a file, each content API request
     // the site makes is written there, to be classified afterwards
-    // (`node tools/content-node/classify.mjs <file>`): one not in standard
+    // (`node tools/content-node/classify.ts <file>`): one not in standard
     // form is never kept at the edge, so the site would take the slow path
     // without anyone seeing it. Recorded only: it fails nothing.
     const audit = process.env['E2E_CACHE_AUDIT'];

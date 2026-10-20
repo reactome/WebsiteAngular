@@ -69,7 +69,7 @@ if (!connect.noDelay) {
 const file = fromFile();
 const setting = (key, fallback = '') => process.env[key] || file[key] || fallback;
 
-/** A setting from the environment or, failing that, the credentials file -- for solr.mjs too. */
+/** A setting from the environment or, failing that, the credentials file -- for solr.ts too. */
 export const envSetting = setting;
 
 const URI = setting('NEO4J_URI', 'bolt://127.0.0.1:7687');
@@ -170,7 +170,7 @@ export const READ_TIMEOUT_MS = 30_000;
  * Run a read; each record as a plain object. With `graph`, nodes and
  * relationships keep what an object mapper needs -- {id, labels, props} and
  * {id, type, start, end, props} -- so a Java query can be sent as written
- * and its result mapped as Spring Data maps it (domain.mjs, mapResults).
+ * and its result mapped as Spring Data maps it (domain.ts, mapResults).
  */
 export async function read(cypher, parameters = {}, { graph = false } = {}) {
   const session = connection().session({

@@ -1,7 +1,7 @@
 /**
  * Write openapi-snapshot.json: the parameters of every operation in Java's
- * published API description, which parameters.mjs is checked against
- * (parameters.spec.mjs). The record says which query parameters an endpoint
+ * published API description, which parameters.ts is checked against
+ * (parameters.spec.ts). The record says which query parameters an endpoint
  * declares; a URL carrying any other is answered but never stored at the
  * edge (spec 011). A parameter the record invented, or one it missed, would
  * label a URL wrongly, so the record is held to Java's own list.

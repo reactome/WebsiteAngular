@@ -3,7 +3,7 @@
 // The domain serialiser, without a database: query results built by hand,
 // mapped and written with the real snapshot. Each case is a behaviour of SDN or
 // Jackson that Java showed under the diff harness (15 Oct 2026), pinned here so
-// a change to domain.mjs that loses it fails without a graph to compare with.
+// a change to domain.ts that loses it fails without a graph to compare with.
 import { describe, expect, it } from 'vitest';
 import {
   findByIdParameters,
@@ -13,7 +13,7 @@ import {
   summaryEntity,
   VIEW,
   writeDomain,
-} from './domain.mjs';
+} from './domain.ts';
 
 const EVENT = [
   'DatabaseObject',
@@ -366,17 +366,17 @@ describe('findByIdParameters, which related nodes the query returns whole', () =
 
   it("keeps the targets of the class's outgoing fields: a person's publications", () => {
     const { keep } = findByIdParameters(person);
-    expect(keep.author).toEqual(['Publication']);
-    expect(keep.affiliation).toEqual(['Affiliation']);
+    expect(keep['author']).toEqual(['Publication']);
+    expect(keep['affiliation']).toEqual(['Affiliation']);
   });
 
   it('leaves out what no field can hold: the InstanceEdits a curator authored', () => {
-    expect(findByIdParameters(person).keep.author).not.toContain('InstanceEdit');
+    expect(findByIdParameters(person).keep['author']).not.toContain('InstanceEdit');
   });
 
   it("names an interface target by its label, as an UpdateTracker's", () => {
     const { keep } = findByIdParameters(['DatabaseObject', 'MetaDatabaseObject', 'UpdateTracker']);
-    expect(keep.updatedInstance).toEqual(['Trackable']);
+    expect(keep['updatedInstance']).toEqual(['Trackable']);
   });
 });
 

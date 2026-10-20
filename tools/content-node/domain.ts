@@ -15,23 +15,63 @@ import { readFileSync } from 'node:fs';
 import { schemaClassOf, supertypes } from './schema.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
-let snapshot;
+/** A JSON property Jackson writes: its name, what it reads, its views, 'D' for a double. */
+type SnapshotProperty = [name: string, source: string, views: number, double?: 'D'];
+/** An SDN field: a property, or a relationship (RelationshipField). */
+type SnapshotField = [name: string, graphProperty: string] | RelationshipField;
+/** A getter /data/query/{id}/{attribute} can reach. */
+type SnapshotGetter = [
+  lowercaseName: string,
+  getterName: string,
+  source: string,
+  returns: string,
+  element: string,
+  projected: string,
+];
+
+/** domain-snapshot.json as stored: every entry once, classes listing positions. */
+interface StoredSnapshot {
+  properties: SnapshotProperty[];
+  json: Record<string, number[]>;
+  fields: SnapshotField[];
+  graph: Record<string, { fields: number[]; defaults?: Record<string, unknown>; type?: string }>;
+  getterEntries: SnapshotGetter[];
+  getters?: Record<string, number[]>;
+  interfaces: string[];
+  store: [schemaClass: string, labels: string[]][];
+}
+
+/** The snapshot expanded: each class with its own entries. */
+interface DomainSnapshot {
+  json: Record<string, SnapshotProperty[]>;
+  graph: Record<
+    string,
+    { fields: SnapshotField[]; defaults?: Record<string, unknown>; type?: string }
+  >;
+  getters: Record<string, SnapshotGetter[]>;
+  interfaces: Set<string>;
+  store: StoredSnapshot['store'];
+}
+
+let snapshot: DomainSnapshot | undefined;
 /** domain-snapshot.json, read on first use: snapshot-domain.mjs imports this file to write it. */
-function SNAPSHOT() {
+function SNAPSHOT(): DomainSnapshot {
   if (snapshot) return snapshot;
   const stored = JSON.parse(
     readFileSync(new URL('./domain-snapshot.json', import.meta.url), 'utf8')
-  );
+  ) as StoredSnapshot;
   // Stored interned (see snapshot-domain.mjs); expanded once here.
-  const json = {};
+  // Every position names an entry: the snapshot is written so.
+  const at = <T>(list: T[], position: number): T => list[position] as T;
+  const json: DomainSnapshot['json'] = {};
   for (const [name, positions] of Object.entries(stored.json))
-    json[name] = positions.map((position) => stored.properties[position]);
-  const graph = {};
+    json[name] = positions.map((position) => at(stored.properties, position));
+  const graph: DomainSnapshot['graph'] = {};
   for (const [name, entry] of Object.entries(stored.graph))
-    graph[name] = { ...entry, fields: entry.fields.map((position) => stored.fields[position]) };
-  const getters = {};
+    graph[name] = { ...entry, fields: entry.fields.map((position) => at(stored.fields, position)) };
+  const getters: DomainSnapshot['getters'] = {};
   for (const [name, positions] of Object.entries(stored.getters ?? {}))
-    getters[name] = positions.map((position) => stored.getterEntries[position]);
+    getters[name] = positions.map((position) => at(stored.getterEntries, position));
   snapshot = { json, graph, getters, interfaces: new Set(stored.interfaces), store: stored.store };
   return snapshot;
 }
@@ -43,7 +83,13 @@ const PUBMED_URL = 'http://www.ncbi.nlm.nih.gov/pubmed/';
 
 /** A node as SDN maps it: one instance per node, whatever reaches it. */
 class Entity {
-  constructor(id, schemaClass, properties) {
+  // `declare` throughout: plain fields would define each one on every
+  // instance before the constructor runs, a key where it sets none.
+  declare id: number | string;
+  declare schemaClass: string;
+  declare properties: Record<string, unknown>;
+  declare fields: Record<string, unknown>;
+  constructor(id: number | string, schemaClass: string, properties: Record<string, unknown>) {
     this.id = id;
     this.schemaClass = schemaClass;
     this.properties = properties;
@@ -53,7 +99,20 @@ class Entity {
 
 /** A relationship with properties (graph-core's Has subclasses): Input, HasComponent... */
 class Relation {
-  constructor(relationClass, element, properties, type, relationshipId) {
+  declare schemaClass: string;
+  declare relationshipId: number | string | undefined;
+  declare element: unknown;
+  declare stoichiometry: number;
+  declare order: number;
+  /** Has.Default's only: set where given, absent otherwise. */
+  declare type?: string;
+  constructor(
+    relationClass: string,
+    element: unknown,
+    properties: { stoichiometry?: number; order?: number },
+    type?: string,
+    relationshipId?: number | string
+  ) {
     this.schemaClass = relationClass;
     this.relationshipId = relationshipId;
     this.element = element;
@@ -71,7 +130,8 @@ class Relation {
  * `@id` numbering runs on across them as Jackson's does.
  */
 export class JsonMap {
-  constructor(entries) {
+  declare entries: [string, unknown][];
+  constructor(entries: [string, unknown][]) {
     this.entries = entries;
   }
 }
@@ -120,7 +180,17 @@ export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
  * `order` -- every related node's id, kept or not (findByIdQuery) -- is the
  * one SDN fills fields in (see fill); without it, the nodes' own order.
  */
-export function mapResult({ root, nodes, relationships: returned, order }) {
+export function mapResult({
+  root,
+  nodes,
+  relationships: returned,
+  order,
+}: {
+  root: unknown;
+  nodes: unknown[];
+  relationships: unknown[];
+  order?: unknown;
+}) {
   const state = newState();
   readRecord(state, { root, nodes, relationships: returned, order });
   return map(state, root, undefined);
@@ -218,8 +288,41 @@ function readRecord(state, { root, nodes, relationships: returned, order }) {
  * its output (order 1) is the first output, because it was met among the
  * inputs; Java writes R-CEL-156804's reaction that way.
  */
+/**
+ * One object being filled, on map()'s stack: the relationship fields left
+ * to fill, and while one is being filled, the rows that match it.
+ */
+interface Frame {
+  entity: Entity;
+  /** The snapshot's relationship fields: name, type, direction, target, collection, class. */
+  fields: RelationshipField[];
+  at: number;
+  refill?: boolean;
+  merging: boolean;
+  matching:
+    | {
+        id: number | string;
+        start: number | string;
+        end: number | string;
+        props: Record<string, unknown>;
+      }[]
+    | undefined;
+  next: number;
+  found: unknown[];
+}
+
+/** A relationship field as the snapshot holds it (snapshot-domain.mjs). */
+type RelationshipField = [
+  name: string,
+  type: string,
+  direction: string,
+  target: string,
+  collection: string,
+  relationClass: string | null,
+];
+
 function map(state, node, target) {
-  const frames = [];
+  const frames: Frame[] = [];
   const make = (from, to) => {
     const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
     const entity = new Entity(from.id, schemaClass, from.props);
@@ -231,7 +334,15 @@ function map(state, node, target) {
       for (const field of graph.fields)
         if (field.length === 2)
           entity.fields[field[0]] = entity.properties[field[1]] ?? graph.defaults?.[field[0]];
-      frames.push({ entity, fields: graph.fields.filter((field) => field.length > 2), at: 0 });
+      frames.push({
+        entity,
+        fields: graph.fields.filter((field) => field.length > 2) as RelationshipField[],
+        at: 0,
+        merging: false,
+        matching: undefined,
+        next: 0,
+        found: [],
+      });
     }
     return entity;
   };
@@ -242,9 +353,13 @@ function map(state, node, target) {
     if (graph)
       frames.push({
         entity,
-        fields: graph.fields.filter((field) => field.length > 2),
+        fields: graph.fields.filter((field) => field.length > 2) as RelationshipField[],
         at: 0,
         refill: true,
+        merging: false,
+        matching: undefined,
+        next: 0,
+        found: [],
       });
     return entity;
   };
@@ -258,12 +373,16 @@ function map(state, node, target) {
   const root = reach(node, target);
   while (frames.length) {
     const frame = frames[frames.length - 1];
+    if (!frame) throw new Error('map: an empty frame stack while frames remain');
     if (!frame.matching) {
       if (frame.at === frame.fields.length) {
         frames.pop();
         continue;
       }
-      const [name, , , , collection] = frame.fields[frame.at];
+      const current = frame.fields[frame.at];
+      // In range: the field count was checked just above.
+      if (!current) throw new Error(`map: no field ${frame.at} on ${frame.entity.schemaClass}`);
+      const [name, , , , collection] = current;
       const existing = frame.entity.fields[name];
       // A refilled object keeps a scalar it has; a collection it has is
       // merged with this record's (createInstanceOfRelationships without
@@ -276,12 +395,16 @@ function map(state, node, target) {
         }
         if (existing.length) frame.merging = true;
       }
-      frame.matching = matchingFor(state, frame.entity, frame.fields[frame.at]);
+      frame.matching = matchingFor(state, frame.entity, current);
       frame.next = 0;
       frame.found = [];
     }
-    const [name, , direction, target, collection, relationClass] = frame.fields[frame.at];
-    if (frame.next === frame.matching.length) {
+    const field = frame.fields[frame.at];
+    const matching = frame.matching;
+    // Both set just above, or on an earlier pass for this field.
+    if (!field || !matching) throw new Error('map: a field being filled has no matches');
+    const [name, , direction, target, collection, relationClass] = field;
+    if (frame.next === matching.length) {
       frame.entity.fields[name] = frame.merging
         ? merged(frame.entity.fields[name], frame.found, collection, relationClass)
         : collect(frame.found, collection, relationClass);
@@ -289,7 +412,8 @@ function map(state, node, target) {
       frame.at += 1;
       continue;
     }
-    const relationship = frame.matching[frame.next];
+    const relationship = matching[frame.next];
+    if (!relationship) throw new Error('map: a match past the end of the matches');
     frame.next += 1;
     const key = `${direction} ${relationship.id}`;
     const used = state.processed.get(key) ?? 0;
@@ -344,7 +468,7 @@ function merged(existing, provided, collection, relationClass) {
 }
 
 /** One field's relationships, in candidate order (see map). */
-function matchingFor(state, entity, [, type, direction, target]) {
+function matchingFor(state, entity: Entity, [, type, direction, target]: RelationshipField) {
   const outgoing = direction === 'OUTGOING';
   const otherEnd = (relationship) => (outgoing ? relationship.end : relationship.start);
   return (
@@ -393,8 +517,8 @@ function collect(found, collection, relationClass) {
     return found.filter((item) => !seen.has(key(item)) && seen.add(key(item)));
   }
   // A TreeSet: Has compares by order, DatabaseObject by dbId; equal ones are dropped.
-  const rank = relationClass ? (item) => item.order : (item) => Number(item.properties.dbId);
-  const sorted = [];
+  const rank = relationClass ? (item) => item.order : (item) => Number(item.properties['dbId']);
+  const sorted: unknown[] = [];
   for (const item of found) {
     if (sorted.some((kept) => rank(kept) === rank(item))) continue;
     sorted.push(item);
@@ -497,7 +621,7 @@ function valueOf(target, source) {
     return target instanceof Relation ? target[source] : target.fields[source];
   const computed = COMPUTED[source];
   if (computed) return computed(target);
-  return SNAPSHOT().graph[target.schemaClass].type;
+  return SNAPSHOT().graph[target.schemaClass]?.type;
 }
 
 /** JsonInclude.NON_EMPTY: no null, no empty string, no empty collection. */
@@ -529,7 +653,10 @@ const empty = (value) =>
  * the default (flatten) view, which matched Java byte for byte over 20,279
  * objects of every class, did so before that restart and after it.
  */
-export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
+/** What writeDomain has still to write: text as it is, or a value to write. */
+type WorkItem = string | { value: unknown; floating: boolean };
+
+export function writeDomain(value: unknown, view = VIEW.flatten, { jsog = false } = {}): string {
   // Iterative, not recursive: an in-depth answer nests thousands of objects
   // deep, which overflowed the stack, and building each level's text to hand
   // to the level above copied the same bytes once per level. Pieces go into
@@ -537,11 +664,12 @@ export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
   // in reverse; an object is opened -- and, being an entity, marked written
   // -- when it is taken off, so references fall exactly where they did when
   // this recursed.
-  const out = [];
-  const seen = new Map();
-  const work = [{ value, floating: false }];
+  const out: string[] = [];
+  const seen = new Map<Entity, number>();
+  const work: WorkItem[] = [{ value, floating: false }];
   while (work.length) {
     const item = work.pop();
+    if (item === undefined) throw new Error('writeDomain: an empty work stack while work remains');
     if (typeof item === 'string') {
       out.push(item);
       continue;
@@ -549,7 +677,7 @@ export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
     const { value: current, floating } = item;
     if (current instanceof Entity) {
       if (seen.has(current)) {
-        out.push(jsog ? `{"@ref":"${seen.get(current)}"}` : number(current.fields.dbId));
+        out.push(jsog ? `{"@ref":"${seen.get(current)}"}` : number(current.fields['dbId']));
         continue;
       }
       seen.set(current, seen.size + 1);
@@ -560,7 +688,9 @@ export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
       out.push('{');
       work.push('}');
       for (let at = current.entries.length - 1; at >= 0; at -= 1) {
-        const [key, entry] = current.entries[at];
+        const pair = current.entries[at];
+        if (!pair) throw new Error(`writeDomain: a JsonMap with a hole at ${at}`);
+        const [key, entry] = pair;
         work.push({ value: entry, floating });
         work.push(`${javaString(key)}:`);
         if (at > 0) work.push(',');
@@ -580,8 +710,14 @@ export function writeDomain(value, view = VIEW.flatten, { jsog = false } = {}) {
 }
 
 /** An object's opening, and its members queued in order (reversed onto the stack). */
-function open(out, work, target, view, first) {
-  const members = [];
+function open(
+  out: string[],
+  work: WorkItem[],
+  target: Entity | Relation,
+  view: number,
+  first?: string
+): void {
+  const members: [string, unknown, boolean][] = [];
   for (const [name, source, views, floating] of SNAPSHOT().json[target.schemaClass] ?? []) {
     if (!(views & view)) continue;
     const value = valueOf(target, source);
@@ -592,7 +728,9 @@ function open(out, work, target, view, first) {
   if (first) out.push(first, members.length ? ',' : '');
   work.push('}');
   for (let at = members.length - 1; at >= 0; at -= 1) {
-    const [name, value, floating] = members[at];
+    const member = members[at];
+    if (!member) throw new Error(`open: a member hole at ${at}`);
+    const [name, value, floating] = member;
     work.push({ value, floating });
     work.push(`${javaString(name)}:`);
     if (at > 0) work.push(',');
@@ -654,7 +792,11 @@ export function javaDouble(value) {
  */
 export function findByIdQuery(
   where,
-  { anchor = 'n:DatabaseObject', ordered = true, without } = {}
+  {
+    anchor = 'n:DatabaseObject',
+    ordered = true,
+    without,
+  }: { anchor?: string; ordered?: boolean; without?: string } = {}
 ) {
   return `MATCH (${anchor}) WHERE ${where}
      OPTIONAL MATCH (n)-[r]->(m) ${without ? `WHERE NOT m:${without}` : ''}
@@ -815,7 +957,7 @@ export function summaryEntity(reference) {
     for (const name of names) to[name] = from[name];
   };
   copy('dbId', 'stId', 'displayName', 'name');
-  to.referenceEntity = reference;
+  to['referenceEntity'] = reference;
   copy(
     'moleculeType',
     'databaseName',
@@ -849,7 +991,7 @@ export function summaryEntity(reference) {
   entities.sort(
     (a, b) => residues(a) - residues(b) || Number(a.fields.dbId) - Number(b.fields.dbId)
   );
-  to.summarisedEntities = entities;
+  to['summarisedEntities'] = entities;
 
   const union = (existing, added) => [...new Set([...(existing ?? []), ...added])];
   const unionRelations = (existing, added) => {
@@ -920,14 +1062,14 @@ export function summaryEntity(reference) {
     }
     if (isA(entity.schemaClass, 'GenomeEncodedEntity') || isA(entity.schemaClass, 'SimpleEntity')) {
       if (entity.fields.species !== undefined && entity.fields.species !== null)
-        to.species = entity.fields.species;
+        to['species'] = entity.fields.species;
     }
     if (
       isA(entity.schemaClass, 'SimpleEntity') ||
       isA(entity.schemaClass, 'EntityWithAccessionedSequence')
     ) {
       if (entity.fields.referenceType !== undefined && entity.fields.referenceType !== null)
-        to.referenceType = entity.fields.referenceType;
+        to['referenceType'] = entity.fields.referenceType;
     }
   }
   return summary;
@@ -956,11 +1098,14 @@ export function mapNodes(nodes) {
  * ones included.
  */
 export function findByIdParameters(labels) {
-  const keep = {};
-  for (const [, type, direction, target] of SNAPSHOT().graph[schemaClassOf(labels)]?.fields ?? []) {
+  const keep: Record<string, string[]> = {};
+  for (const field of SNAPSHOT().graph[schemaClassOf(labels)]?.fields ?? []) {
+    // A property field has no direction; only relationships go on.
+    if (field.length !== 6) continue;
+    const [, type, direction, target] = field;
     if (direction !== 'OUTGOING') continue;
-    keep[type] ??= [];
-    if (!keep[type].includes(target)) keep[type].push(target);
+    const targets = (keep[type] ??= []);
+    if (!targets.includes(target)) targets.push(target);
   }
   return { keep };
 }
@@ -989,7 +1134,9 @@ export function attributeGetter(schemaClass, attribute) {
 
 /** A getter that cannot be answered: one taking arguments, or one not ported. */
 export class AttributeFailure extends Error {
-  constructor(kind, detail) {
+  declare kind: string;
+  declare detail: string;
+  constructor(kind: string, detail: string) {
     super(`${kind}: ${detail}`);
     this.kind = kind;
     this.detail = detail;
@@ -1097,7 +1244,7 @@ function relationText(relation) {
  * line; anything else as Java's toString writes it. `jsoupText` is passed in
  * (jsoup-text.ts).
  */
-export function attributeText(value, jsoupText, getter) {
+export function attributeText(value, jsoupText: (html: unknown) => string, getter?) {
   // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.
   if (typeof value === 'number' && getter && /^(Double|Float|double|float)$/.test(getter.returns))
     return javaDouble(value);
@@ -1106,7 +1253,7 @@ export function attributeText(value, jsoupText, getter) {
     const textGetter = attributeGetter(value.schemaClass, 'text');
     const text = textGetter ? jsoupText(getterResult(value, textGetter)) : displayName;
     const id = stId !== null && stId !== undefined && stId !== '' ? stId : String(dbId);
-    return `${id}\t${text ?? null}\t${value.schemaClass}`;
+    return `${String(id)}\t${String(text ?? null)}\t${value.schemaClass}`;
   }
   if (Array.isArray(value))
     return value.map((item) => `${attributeText(item, jsoupText)}\n`).join('');
