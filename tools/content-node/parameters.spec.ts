@@ -10,12 +10,14 @@ import { describe, expect, it } from 'vitest';
 import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.ts';
 
 const { endpoints } = await import('./service.ts');
-const GETS = endpoints.filter((e) => !e.method || e.method === 'GET').map((e) => e.path);
+const GETS = endpoints
+  .filter((e: { method?: string }) => !e.method || e.method === 'GET')
+  .map((e: { path: string }) => e.path);
 const OPENAPI = JSON.parse(
   readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
 );
-const variables = (path) => [...path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
-const shape = (path) => path.replace(/\{[^}]+\}/g, '{}');
+const variables = (path: string) => [...path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
+const shape = (path: string) => path.replace(/\{[^}]+\}/g, '{}');
 
 describe('the record', () => {
   it('has one entry for each GET endpoint node answers, and no other, in the order Express routes them', () => {
@@ -74,7 +76,7 @@ describe('the record', () => {
 });
 
 const ok = { ok: true };
-const at = (endpoint, url) => standardForm(endpoint, url);
+const at = (endpoint: string, url: string) => standardForm(endpoint, url);
 
 describe('standardForm: paths', () => {
   const query = '/ContentService/data/query/{id}';
@@ -116,7 +118,7 @@ describe('standardForm: paths', () => {
   });
 
   it('knows each kind: species, class, attribute, resource, accession, icon, person', () => {
-    const cases = [
+    const cases: [endpoint: string, url: string, standard: boolean][] = [
       ['/ContentService/data/pathways/top/{id}', '/ContentService/data/pathways/top/9606', true],
       [
         '/ContentService/data/pathways/top/{id}',
@@ -174,7 +176,7 @@ describe('standardForm: paths', () => {
 
 describe('standardForm: query parameters', () => {
   const inDepth = '/ContentService/data/event/{id}/in-depth';
-  const url = (query) => `/ContentService/data/event/R-HSA-1/in-depth?${query}`;
+  const url = (query: string) => `/ContentService/data/event/R-HSA-1/in-depth?${query}`;
 
   it('takes declared parameters with valid values, in any order, view and includeRef included', () => {
     for (const query of [
@@ -186,7 +188,7 @@ describe('standardForm: query parameters', () => {
   });
 
   it('refuses an undeclared parameter, a repeated one, and every spelling of a value but one', () => {
-    const cases = [
+    const cases: [query: string, rule: string][] = [
       ['utm_source=x', 'parameter:utm_source'],
       ['view=nested&view=nested', 'parameter:view'],
       ['view=DETAIL', 'parameter:view'],
@@ -239,7 +241,7 @@ describe('standardForm: query parameters', () => {
 // Review of #530: aliases each found accepted, and the mutations that
 // survived the tests above.
 describe('standardForm: one spelling, where Java answers many', () => {
-  const no = (rule) => ({ ok: false, rule });
+  const no = (rule: string) => ({ ok: false, rule });
   const cases: [string, string, unknown][] = [
     // species read leniently, or ignored when unknown on /pathways/low
     [
@@ -401,10 +403,10 @@ describe('standardForm: one spelling, where Java answers many', () => {
     ],
   ];
   // Second review of #530.
-  const lowSpecies = (value) =>
+  const lowSpecies = (value: string) =>
     `/ContentService/data/pathways/low/entity/R-HSA-199420?species=${value}`;
   const low = '/ContentService/data/pathways/low/entity/{id}';
-  const depth = (value) => `/ContentService/data/event/R-HSA-1/in-depth?${value}`;
+  const depth = (value: string) => `/ContentService/data/event/R-HSA-1/in-depth?${value}`;
   const event = '/ContentService/data/event/{id}/in-depth';
   cases.push(
     // a taxId no species has filters nothing; a Species dbId is a taxId's alias

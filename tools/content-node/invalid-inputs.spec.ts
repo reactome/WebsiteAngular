@@ -10,14 +10,16 @@ import { invalidInputs } from './invalid-inputs.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
 const { endpoints } = await import('./service.ts');
-const GETS = endpoints.filter((e: { method?: string }) => !e.method || e.method === 'GET');
+const GETS = (endpoints as { path: string; sample?: string; method?: string }[]).filter(
+  (e) => !e.method || e.method === 'GET'
+);
 const corpus = invalidInputs(GETS);
 
 describe('invalidInputs', () => {
   it('tries every endpoint that declares a parameter of its own, unless it is never stored', () => {
     const tried = new Set(corpus.map((url) => url.split('?')[0] ?? ''));
     for (const endpoint of GETS) {
-      const own = declaredQuery(endpoint.path ?? '').filter(
+      const own = declaredQuery(endpoint.path).filter(
         (p) => !['view', 'includeRef'].includes(p.name)
       );
       if (!own.length || RECORD[endpoint.path]?.cache) continue;
@@ -39,13 +41,12 @@ describe('invalidInputs', () => {
   it('carries every required parameter but the one being tried, so that one is reached', () => {
     for (const url of corpus) {
       const [path = '', query] = url.split('?');
-      const endpoint = GETS.find((e: { path: string }) =>
+      const endpoint = GETS.find((e) =>
         new RegExp(`^${e.path.replace(/\{[^}]+\}/g, '[^/]+')}$`).test(path)
       );
       const given = new Set([...new URLSearchParams(query)].map(([name]) => name));
-      const missing = declaredQuery(endpoint.path ?? '').filter(
-        (p) => p.required && !given.has(p.name)
-      );
+      if (!endpoint) throw new Error(`no endpoint answers ${path}`);
+      const missing = declaredQuery(endpoint.path).filter((p) => p.required && !given.has(p.name));
       expect([url, missing.map((p) => p.name)]).toEqual([url, []]);
     }
   });

@@ -560,7 +560,9 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   if (outOfRange.length) {
     return res.status(400).json({
       error: outOfRange
-        .map((key) => `"${key}" must be a number between ${BOUNDS[key][0]} and ${BOUNDS[key][1]}`)
+        .map(
+          (key) => `"${key}" must be a number between ${BOUNDS[key]?.[0]} and ${BOUNDS[key]?.[1]}`
+        )
         .join('; '),
       // These used to be clamped silently, so `scale=4` returned a smaller image
       // than asked for with a 200. The ceiling is real -- a diagram's coordinate

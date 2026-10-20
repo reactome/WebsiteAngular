@@ -49,12 +49,12 @@ const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');
 
 /** As service.ts's javaJson; repeated so this script needs no graph. */
-const javaJson = (value) =>
+const javaJson = (value: unknown) =>
   JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
     slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
 
-async function get(pathname) {
+async function get(pathname: string) {
   const response = await fetch(`${JAVA}/ContentService/data${pathname}`);
   const text = await response.text();
   if (response.status !== 200) throw new Error(`${pathname}: ${response.status} ${text}`);
@@ -124,8 +124,8 @@ for (const name of classes) {
 }
 
 // One line per class or row, so that a regeneration's diff names what changed.
-const lines = (entries) => entries.map((entry) => `    ${entry}`).join(',\n');
-const byName = (map) =>
+const lines = (entries: string[]) => entries.map((entry) => `    ${entry}`).join(',\n');
+const byName = (map: Record<string, unknown>) =>
   lines(Object.keys(map).map((name) => `${JSON.stringify(name)}: ${javaJson(map[name])}`));
 const text =
   '{\n' +

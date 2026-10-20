@@ -14,6 +14,7 @@
  */
 import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
+import type { Page } from '@playwright/test';
 
 /** Frames past this are dropped rather than rendered; reported, never silent. */
 const MAX_FRAMES = 50;
@@ -59,7 +60,7 @@ function gifencScript() {
  * single frame -- which is what a request for a .gif of a plain diagram means.
  */
 export async function gifFromPage(
-  page,
+  page: Page,
   { scale = 1, delay = DEFAULT_DELAY, maxSize = MAX_SIZE } = {}
 ) {
   await page.addScriptTag({ content: gifencScript() });
@@ -73,7 +74,11 @@ export async function gifFromPage(
       const frames = samples.length ? samples.slice(0, maxFrames) : [null];
 
       /** One frame's pixels, at the size the first frame established. */
-      const capture = async (sample, expected, at) => {
+      const capture = async (
+        sample: string | null,
+        expected: { width: number; height: number } | null,
+        at: number
+      ) => {
         if (sample !== null) await api.showSample(sample);
         const canvas = await api.frameCanvas(at);
         if (expected && (canvas.width !== expected.width || canvas.height !== expected.height)) {
@@ -111,7 +116,7 @@ export async function gifFromPage(
       const natural = [probe.width, probe.height];
       const longest = Math.max(probe.width, probe.height);
       const fit = maxSize && longest > maxSize ? (scale * maxSize) / longest : scale;
-      const size = fit === scale ? probe : await capture(frames[0], null, fit);
+      const size = fit === scale ? probe : await capture(frames[0] ?? null, null, fit);
       // A full-size frame is tens of megabytes; do not hold one that is not
       // going into the animation. The value is deliberately never read again --
       // dropping the reference *is* the point, which is the one thing

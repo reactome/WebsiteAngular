@@ -337,7 +337,7 @@ type RelationshipField = [
 
 function map(state, node, target) {
   const frames: Frame[] = [];
-  const make = (from, to) => {
+  const make = (from: GraphNode, to) => {
     const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
     const entity = new Entity(from.id, schemaClass, from.props);
     // Known before its fields are filled, so a field leading back finds it.
@@ -508,7 +508,7 @@ function matchingFor(state, entity: Entity, [, type, direction, target]: Relatio
  * TopLevelPathway inside its UpdateTracker and as a Pathway on its own.
  * Failing a full match, the class missing the fewest of its labels.
  */
-function classFor(target, labels) {
+function classFor(target, labels: string[]) {
   if (!SNAPSHOT().interfaces.has(target)) return schemaClassOf(labels);
   let best;
   let fewest = Infinity;
@@ -1112,7 +1112,7 @@ export function mapNodes(nodes: GraphNode[]) {
  * classes and the interfaces SDN maps are labels on the nodes, inherited
  * ones included.
  */
-export function findByIdParameters(labels) {
+export function findByIdParameters(labels: string[]) {
   const keep: Record<string, string[]> = {};
   for (const field of SNAPSHOT().graph[schemaClassOf(labels)]?.fields ?? []) {
     // A property field has no direction; only relationships go on.
@@ -1259,7 +1259,11 @@ function relationText(relation) {
  * line; anything else as Java's toString writes it. `jsoupText` is passed in
  * (jsoup-text.ts).
  */
-export function attributeText(value, jsoupText: (html: unknown) => string, getter?) {
+export function attributeText(
+  value,
+  jsoupText: (html: unknown) => string,
+  getter?: { returns: string }
+) {
   // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.
   if (typeof value === 'number' && getter && /^(Double|Float|double|float)$/.test(getter.returns))
     return javaDouble(value);
