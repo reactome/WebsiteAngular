@@ -288,17 +288,21 @@ vi.mock('./graph.ts', async () => ({
     // The release as the service reads it: releaseNumber, not another property.
     if (cypher === 'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1')
       return [{ version: 97 }];
-    globalThis.graphAsked = params;
-    return globalThis.graphRows ?? [];
+    const shared = globalThis as { graphAsked?: unknown; graphRows?: unknown[] };
+    shared.graphAsked = params;
+    return shared.graphRows ?? [];
   },
   configured: () => true,
   close: async () => {},
   envSetting: (key, fallback = '') => process.env[key] || fallback,
 }));
 
+/** What the stand-in graph answers, and what it was last asked. */
+const graph = globalThis as { graphAsked?: unknown; graphRows?: unknown[] };
+
 describe('the citation endpoints', () => {
-  let base;
-  let server;
+  let base: string;
+  let server: Server;
   let pmc: Server;
   let pmcAsked: (string | undefined)[] = [];
 
@@ -345,11 +349,11 @@ describe('the citation endpoints', () => {
   });
 
   it('/pathway/{id} is {} for an id that is no event, and export an empty 200', async () => {
-    globalThis.graphRows = [];
+    graph.graphRows = [];
     const pathway = await fetch(`${base}/ContentService/citation/pathway/R-HSA-9?dateAccessed=d`);
     expect([pathway.status, await pathway.text()]).toEqual([200, '{}']);
     // The id from the path, not the path's own words.
-    expect(globalThis.graphAsked).toEqual({ id: 'R-HSA-9' });
+    expect(graph.graphAsked).toEqual({ id: 'R-HSA-9' });
     const exported = await fetch(
       `${base}/ContentService/citation/export?isPathway=true&id=xyz&ext=bib&dateAccessed=d`
     );
@@ -381,13 +385,13 @@ describe('the citation endpoints', () => {
 
   it("/pathway/{id} cites the event by the id as given; only a pathway's by its DOI", async () => {
     try {
-      globalThis.graphRows = [eventRow('Pathway', ['Pathway'])];
+      graph.graphRows = [eventRow('Pathway', ['Pathway'])];
       const pathway = await (
         await fetch(`${base}/ContentService/citation/pathway/9?dateAccessed=d`)
       ).json();
       // Asked by a versioned stable id, neither its stId nor its dbId: the
       // link names the id as given.
-      globalThis.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
+      graph.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
       const reaction = await (
         await fetch(`${base}/ContentService/citation/pathway/R-HSA-9.1?dateAccessed=d`)
       ).json();
@@ -406,7 +410,7 @@ describe('the citation endpoints', () => {
         },
       ]);
     } finally {
-      globalThis.graphRows = [];
+      graph.graphRows = [];
     }
   });
 
@@ -544,7 +548,7 @@ describe('the citation endpoints', () => {
 
   it("/pathway/{id} is Java's 500 for an event it cannot cite", async () => {
     // A reaction with no release date: Java's getReleaseDate().substring NPEs.
-    globalThis.graphRows = [
+    graph.graphRows = [
       {
         root: {
           id: 1,
@@ -564,7 +568,7 @@ describe('the citation endpoints', () => {
         ['Something unexpected happened and the error has been reported.'],
       ]);
     } finally {
-      globalThis.graphRows = [];
+      graph.graphRows = [];
     }
   });
 
