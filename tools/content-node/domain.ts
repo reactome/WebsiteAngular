@@ -22,7 +22,8 @@ export type SnapshotField = [name: string, graphProperty: string] | Relationship
 /**
  * How a getter is answered: the field it reads, a computed getter by name,
  * the constant it returns, one taking arguments (refused), or one not ported.
- * 24 of the 286 entries are not a field (measured on the snapshot).
+ * 24 of the 286 entries are objects; 37 of the strings are a computed getter
+ * or Object.getClass, so 61 are not a field (measured on the snapshot).
  */
 export type GetterSource =
   string | { constant: string } | { arguments: number } | { unported: string };

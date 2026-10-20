@@ -63,7 +63,7 @@ import {
 interface Dump {
   json: Record<
     string,
-    [name: string, member: string, declaredBy: string, views: number, floating: boolean][]
+    [name: string, member: string, declaredBy: string, views: number, floating?: 'D'][]
   >;
   getters: Record<
     string,
