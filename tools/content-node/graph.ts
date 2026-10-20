@@ -186,6 +186,10 @@ export type Properties = {
   doi?: string;
   databaseName?: string;
   identifier?: string;
+  // A Person's.
+  surname?: string;
+  firstname?: string;
+  orcidId?: string;
 };
 /** One record, by column. A caller names the columns its query returns. */
 export type Row = { [column: string]: GraphValue };

@@ -341,10 +341,13 @@ const byCodeUnits = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
  * getters `name` and each superclass declare, in a TreeSet ordered by name
  * then by the declaring class's name. Undefined where Class.forName fails.
  */
-export function attributeTable(name: string, data: SchemaTables = schemaSnapshot()) {
+export function attributeTable(
+  name: string,
+  data: SchemaTables = schemaSnapshot()
+): SchemaAttribute[] | undefined {
   if (CLOSURES.has(name)) return data.closure.attributes;
   if (!CLASSES.has(name)) return undefined;
-  const rows: { name: string; origin: string }[] = [];
+  const rows: SchemaAttribute[] = [];
   for (let at: string | undefined = name; at !== undefined; at = superclassOf(at)) {
     const own = data.declared[at];
     if (!own) throw new Error(`schema-snapshot.json has no attributes for ${at}`);

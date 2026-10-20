@@ -693,7 +693,7 @@ export const endpoints = [
           if (seen.has(row.dbId)) continue;
           seen.add(row.dbId);
           body.push(
-            compact({
+            compact<Written>({
               dbId: row.dbId,
               stId: row.stId,
               displayName: row.displayName,
@@ -4729,16 +4729,25 @@ export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
 }
 
 /** The five fields Java's SimplePerson carries, in its order. */
-// A field the person lacks is undefined here and left out when written, as
-// Java's non_empty leaves it out: written, this is the site's SimplePerson.
-function simplePeople(persons): SimplePerson[] {
-  return (persons ?? []).map((person) => ({
-    dbId: person.dbId,
-    displayName: person.displayName,
-    surname: person.surname,
-    firstname: person.firstname,
-    orcidId: person.orcidId,
-  }));
+/** As JSON writes T: every field named, and one that is undefined left out. */
+type JsonWritten<T> = { [K in keyof T]-?: T[K] | undefined };
+
+/**
+ * SimplePerson, from each person's properties. A field the person lacks is
+ * undefined and JSON leaves it out, as Java's non_empty does: written, it is
+ * the site's SimplePerson, which is what the cast says.
+ */
+function simplePeople(persons: Props[] | undefined): SimplePerson[] {
+  return (persons ?? []).map((person) => {
+    const written: JsonWritten<SimplePerson> = {
+      dbId: person.dbId,
+      displayName: person.displayName,
+      surname: person.surname,
+      firstname: person.firstname,
+      orcidId: person.orcidId,
+    };
+    return written as SimplePerson;
+  });
 }
 
 /**
@@ -4755,7 +4764,9 @@ function simplePeople(persons): SimplePerson[] {
  */
 /**
  * An answer object before Java's non_empty: every field of T named, any of
- * them null or empty -- compact leaves those out.
+ * them null or empty -- compact leaves those out. A required field of T may
+ * be null here too, and is then left out, as Java leaves it out: the type
+ * checks each field's name and kind, not that a required one has a value.
  */
 type BeforeNonEmpty<T> = { [K in keyof T]-?: T[K] | null | undefined };
 
@@ -8026,11 +8037,11 @@ async function crossReferenceResults(request, identifier, dbFilter) {
     }>(crossReferenceQuery(identifier, dbFilter));
     if (rows.length === 0) return [NO_CROSS_REFERENCES];
     return rows.map((row) =>
-      compact({
+      compact<Written>({
         reference: javaAsString(row.reference),
         physicalEntities: row.physicalEntities.map(javaAsString),
         crossReferences: row.crossReferences.map((reference) =>
-          compact({
+          compact<Written>({
             identifier: javaAsString(reference.identifier),
             databaseName: javaAsString(reference.databaseName),
             url: javaAsString(reference.url),
