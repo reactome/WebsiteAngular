@@ -6820,7 +6820,7 @@ function rawOccurrence(raw) {
     });
   const set = (text) => {
     if (text === '#') return undefined;
-    const map = new JavaHashMap<boolean>();
+    const map = new JavaHashMap<string, boolean>();
     for (const item of javaSplit(text, ',')) map.set(item, true);
     const keys = [...map.keys()];
     return keys.length ? keys : undefined;
@@ -7109,7 +7109,7 @@ async function targetsOf(query, scope, signal) {
   const docs = answer?.response?.docs ?? [];
   if (docs.length === 0) return [];
   const same = (a, b) => caseInsensitive(a, b) === 0 && a.length === b.length;
-  const targets = new JavaHashMap<TargetResult>({ hash: targetHash });
+  const targets = new JavaHashMap<string, TargetResult>({ hash: targetHash });
   for (const term of javaWords(query)) {
     let target = false;
     let resource = null;
@@ -7152,7 +7152,7 @@ function reportNotFound(info, originalQuery, targets) {
     return;
   }
   // Collectors.toSet(): the targets again, in a new HashSet of their own.
-  const again = new JavaHashMap<TargetResult>({ hash: targetHash });
+  const again = new JavaHashMap<string, TargetResult>({ hash: targetHash });
   for (const result of targets) if (result.target) again.set(result.term, result);
   const hits = [...again.entries()].map(([, result]) => result);
   sendReport(
@@ -7943,7 +7943,7 @@ async function staticSummary(accs) {
      RETURN DISTINCT t.identifier AS s, COUNT(DISTINCT in) as t`,
     { accs }
   );
-  const counts = new JavaHashMap<number>();
+  const counts = new JavaHashMap<string, number>();
   for (const row of rows) counts.set(row.s, Number(row.t));
   const entities = [...counts.entries()]
     .filter(([, count]) => count > 0)

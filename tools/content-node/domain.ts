@@ -463,7 +463,7 @@ function merged(existing, provided, collection, relationClass) {
     return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
   };
   // Keyed by relationship id or dbId, hashed as a Long.
-  const map = new JavaHashMap<boolean, unknown>({ hash: longHash });
+  const map = new JavaHashMap<unknown, boolean>({ hash: longHash });
   const values = new Map();
   for (const item of [...existing, ...provided]) {
     const id = relationClass ? item.relationshipId : Number(item.properties.dbId);

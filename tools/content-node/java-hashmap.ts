@@ -28,7 +28,7 @@ interface HashNode {
   red?: boolean;
 }
 
-export class JavaHashMap<V = unknown, K = string> {
+export class JavaHashMap<K = string, V = unknown> {
   #table: (HashNode | null)[] = new Array<HashNode | null>(16).fill(null);
   #keyHash: ((key: K) => number) | undefined;
   size = 0;
