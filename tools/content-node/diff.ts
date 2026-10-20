@@ -15,6 +15,7 @@
  * shows otherwise -- which has to be argued in a commit message, not assumed at
  * a terminal.
  */
+import type { Endpoint } from './endpoint.ts';
 import { endpointFor, endpoints } from './service.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
@@ -26,19 +27,6 @@ interface Side {
   type: string;
   body: string;
 }
-/** What the harness reads of an endpoint (service.ts lists them). */
-interface DiffEndpoint {
-  path: string;
-  method?: string;
-  sampleBody?: string;
-  samplePath?: Record<string, string>;
-  unordered?: (item: unknown) => unknown;
-  normalise?: (json: unknown) => unknown;
-  differs?: RegExp[];
-  sample?: string;
-  samplesOnly?: boolean;
-}
-
 function flag(name: string, fallback = '') {
   const at = process.argv.indexOf(`--${name}`);
   return at > -1 ? (process.argv[at + 1] ?? fallback) : fallback;
@@ -47,7 +35,7 @@ function flag(name: string, fallback = '') {
 /** Fetch one path from both, as text plus content type. */
 async function fetchBoth(path: string) {
   // A POST endpoint is sent its sample body, or the --ids given, as text.
-  const endpoint = endpointFor(path) as DiffEndpoint | undefined;
+  const endpoint = endpointFor(path);
   const post = endpoint?.method === 'post';
   const ids = flag('ids');
   const init = post
@@ -91,7 +79,7 @@ async function fetchBoth(path: string) {
  * shuffled one, and turn the safety net into a green light. Sorting instead
  * keeps all 999 entries compared field by field.
  */
-function differences(path: string, java: Side, node: Side, endpoint: DiffEndpoint | undefined) {
+function differences(path: string, java: Side, node: Side, endpoint: Endpoint | undefined) {
   const problems: string[] = [];
   if (java.status !== node.status) {
     problems.push(`status ${node.status}, java says ${java.status}`);
@@ -231,7 +219,7 @@ function paths() {
     .split(',')
     .map((id) => id.trim())
     .filter(Boolean);
-  const all = endpoints as DiffEndpoint[];
+  const all = endpoints;
   const chosen = only ? all.filter((e) => e.path === only) : all;
 
   const skipped: string[] = [];
@@ -277,7 +265,7 @@ async function main() {
   for (const path of list) {
     try {
       const { java, node } = await fetchBoth(path);
-      const endpoint = endpointFor(path) as DiffEndpoint | undefined;
+      const endpoint = endpointFor(path);
       const found = differences(path, java, node, endpoint);
       const declared = endpoint?.differs ?? [];
       const expected = found.filter((problem) => declared.some((rule) => rule.test(problem)));

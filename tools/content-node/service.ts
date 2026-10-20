@@ -4455,7 +4455,7 @@ export function idKeyedMap(entries) {
  * of them, /count, so /min was judged by /count's declared differences and
  * failed on a difference it declares itself.
  */
-export function endpointFor(path) {
+export function endpointFor(path: string): Endpoint | undefined {
   return endpoints.find((e) => endpointPattern(e.path, '(\\?|$)').test(path));
 }
 

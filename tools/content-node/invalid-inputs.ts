@@ -12,6 +12,7 @@
  * is shared, so each run is kept to a few hundred requests.
  */
 import { URLSearchParams, fileURLToPath } from 'node:url';
+import type { Endpoint } from './endpoint.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
 const VALUES: Record<string, string[]> = {
@@ -40,13 +41,6 @@ const SHARED_ON = new Set([
   '/ContentService/data/event/{id}/in-depth',
   '/ContentService/data/diseases',
 ]);
-
-/** An endpoint as service.ts lists it: its path and, where it has one, a sample id. */
-interface Endpoint {
-  path: string;
-  sample?: string;
-  method?: string;
-}
 
 /** A sample URL for an endpoint, as routes.spec.ts builds one. */
 function sampleOf(endpoint: Endpoint) {
@@ -99,7 +93,8 @@ export function invalidInputs(endpoints: Endpoint[]) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const { endpoints } = await import('./service.ts');
   for (const path of invalidInputs(
-    endpoints.filter((e: Endpoint) => !('method' in e) || !e.method || e.method === 'GET')
+    // The GETs: an endpoint with no method is one (Endpoint's only method is 'post').
+    endpoints.filter((e) => !e.method)
   ))
     console.log(path);
   process.exit(0);

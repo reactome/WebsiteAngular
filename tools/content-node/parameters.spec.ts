@@ -10,9 +10,8 @@ import { describe, expect, it } from 'vitest';
 import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.ts';
 
 const { endpoints } = await import('./service.ts');
-const GETS = endpoints
-  .filter((e: { method?: string }) => !e.method || e.method === 'GET')
-  .map((e: { path: string }) => e.path);
+// The GETs: an endpoint with no method (Endpoint's only method is 'post').
+const GETS = endpoints.filter((e) => !e.method).map((e) => e.path);
 const OPENAPI = JSON.parse(
   readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
 );
