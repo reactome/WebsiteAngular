@@ -34,7 +34,7 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 
 - [x] T008 [US1] The analysis gateway (`tools/analysis-gateway/gateway.ts`; its Dockerfile `COPY`/`CMD`). — #549
 - [x] T009 [P] [US1] `tools/api-types/*` and `tools/analysis-types/*` (compile, answers, scan, calls, content, record). — #551
-- [ ] T010 [US1] The render service: params, gif, then pptx, render-core, service, render (CLI); the image's `COPY tools/render/*.mjs` and `CMD`.
+- [x] T010 [US1] The render service: params, gif, then pptx, render-core, service, render (CLI); the image's `COPY tools/render/*.mjs` and `CMD`. — #552
 - [ ] T011 [US1] Content service leaves: graph, java-hashmap, schema, citation, psicquic, jsoup-text, warm.
 - [ ] T012 [US1] Content service dependants: solr, report, parameters, cache-label, classify, domain, invalid-inputs.
 - [ ] T013 [P] [US1] The snapshot scripts (domain, schema, openapi, graph-names, case, rfd).
