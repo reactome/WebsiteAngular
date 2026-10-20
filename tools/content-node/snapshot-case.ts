@@ -1,7 +1,7 @@
 /**
  * Write case-snapshot.json: Character.toUpperCase and toLowerCase for every
  * UTF-16 unit that either changes, as the content service's JVM has them --
- * what String.CASE_INSENSITIVE_ORDER compares by (service.mjs,
+ * what String.CASE_INSENSITIVE_ORDER compares by (service.ts,
  * caseInsensitive).
  *
  *   JAVA=<the java the content service runs on> node tools/content-node/snapshot-case.ts

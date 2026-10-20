@@ -13,7 +13,7 @@ import {
   interactorsJson,
   pagingUnboxFails,
   springIntegerWithDefault,
-} from './service.mjs';
+} from './service.ts';
 
 let base;
 let server;

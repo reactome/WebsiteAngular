@@ -9,7 +9,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { registryServices, psicquicResources } from './psicquic.ts';
-import { resourcesJson } from './service.mjs';
+import { resourcesJson } from './service.ts';
 
 const service = (name, active, rest = `http://${name}/rest/`, extra = '') =>
   `<service><name>${name}</name><soapUrl>http://${name}/soap</soapUrl><restUrl>${rest}</restUrl>` +
@@ -121,7 +121,7 @@ describe('/interactors/psicquic/resources', () => {
     // Without its slash, which the registry client adds.
     process.env['PSICQUIC_REGISTRY_URL'] =
       `http://127.0.0.1:${(registryServer.address() as AddressInfo).port}/registry`;
-    const { app } = await import('./service.mjs');
+    const { app } = await import('./service.ts');
     await new Promise<void>((resolve) => {
       server = app().listen(0, '127.0.0.1', () => resolve());
     });
@@ -146,7 +146,7 @@ describe('/interactors/psicquic/resources', () => {
   });
 
   it('answers from the last reading of the registry, and the 500 once a reading fails', async () => {
-    const { refreshPsicquicResources } = await import('./service.mjs');
+    const { refreshPsicquicResources } = await import('./service.ts');
     await refreshPsicquicResources();
     const response = await get();
     expect([response.status, await response.text()]).toEqual([

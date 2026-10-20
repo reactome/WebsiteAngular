@@ -146,7 +146,7 @@ while the code and its tests say otherwise:
   from the site is the only check that says whether the running service has your
   change — the CLI reads the files from disk and will happily agree with you.
 - **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
-  `service.mjs` when the output of a format changes, or every diagram rendered
+  `service.ts` when the output of a format changes, or every diagram rendered
   before your change keeps its old file.
 
 ## Why this exists
@@ -162,7 +162,7 @@ curator sees is what the file contains.
 
 The CLI came first deliberately, with no queue, cache or HTTP API, so that the
 cost of a render and the fidelity of an analysis overlay were measured before
-anything was designed around them. `service.mjs`, below, is what those numbers
+anything was designed around them. `service.ts`, below, is what those numbers
 argued for.
 
 ## Measured on this host

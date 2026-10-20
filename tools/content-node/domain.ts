@@ -135,7 +135,7 @@ class Relation {
 /**
  * A Java Map written as a JSON object, its entries in the order given -- the
  * Map's own iteration order, which the caller decides (see JavaHashMap in
- * service.mjs). Its values are written in one pass with everything else, so
+ * service.ts). Its values are written in one pass with everything else, so
  * `@id` numbering runs on across them as Jackson's does.
  */
 export class JsonMap {
@@ -462,7 +462,8 @@ function merged(existing, provided, collection, relationClass) {
     const big = BigInt.asUintN(64, BigInt(id));
     return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
   };
-  const map = new JavaHashMap({ hash: longHash });
+  // Keyed by relationship id or dbId, hashed as a Long.
+  const map = new JavaHashMap<unknown, boolean>({ hash: longHash });
   const values = new Map();
   for (const item of [...existing, ...provided]) {
     const id = relationClass ? item.relationshipId : Number(item.properties.dbId);

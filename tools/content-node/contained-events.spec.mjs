@@ -53,7 +53,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app } = await import('./service.mjs');
+const { app } = await import('./service.ts');
 
 let base;
 let server;

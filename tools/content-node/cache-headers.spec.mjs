@@ -14,7 +14,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app } = await import('./service.mjs');
+const { app } = await import('./service.ts');
 const { CACHEABLE } = await import('./cache-label.ts');
 
 let base;
@@ -119,7 +119,7 @@ describe('an answer that fails as it is written', () => {
     // A body JSON cannot write (a BigInt), after the label is on: the 500
     // that follows must not go out as the 200's public answer would have.
     const express = (await import('express')).default;
-    const { answer } = await import('./service.mjs');
+    const { answer } = await import('./service.ts');
     const endpoint = {
       path: '/ContentService/data/schema/{id}/attributes',
       handler: async () => ({ status: 200, body: { size: 1n } }),

@@ -14,7 +14,7 @@
  *    (they extend AspectJ's AroundClosure); they must all be one answer, which
  *    is stored once as `closure` -- the script stops if any differs.
  *  - /data/schema/model, whole. Node does not serve it: the tree's counts are
- *    the graph's and are computed live (service.mjs, schemaModelTree). It is
+ *    the graph's and are computed live (service.ts, schemaModelTree). It is
  *    kept so that schema.spec.ts can rebuild Java's tree from its own counts
  *    with schema.ts's hierarchy and compare bytes -- the check that the
  *    hierarchy and the tree building are Java's, without a database.
@@ -46,7 +46,7 @@ import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } fro
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');
 
-/** As service.mjs's javaJson; repeated so this script needs no graph. */
+/** As service.ts's javaJson; repeated so this script needs no graph. */
 const javaJson = (value) =>
   JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
     slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match

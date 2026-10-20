@@ -161,7 +161,7 @@ function connection() {
  * maxDepth=-1 and a long `attributes` -- ran it out of memory, and Tomcat,
  * which cannot start without it, was down until it was restarted. The
  * slowest query this service needs is ~10s (the content tables, at startup);
- * past 30s the request is answered 503 (service.mjs, timedOut) and the
+ * past 30s the request is answered 503 (service.ts, timedOut) and the
  * database is let go.
  */
 export const READ_TIMEOUT_MS = 30_000;

@@ -38,7 +38,7 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 - [x] T011 [US1] Content service leaves: graph, java-hashmap, schema, citation, psicquic, jsoup-text, warm. — #553
 - [x] T012 [US1] Content service dependants: solr, report, parameters, cache-label, classify, domain, invalid-inputs. — #554
 - [x] T013 [P] [US1] The snapshot scripts (domain, schema, openapi, graph-names, case, rfd). (#555)
-- [ ] T014 [US1] `service.ts` and `diff.ts`: the image's `CMD`, `package.json` scripts, `scripts/preflight.sh`, `deploy/nginx/routes.spec.ts`, the specs that import it, and the documented commands (36).
+- [x] T014 [US1] `service.ts` and `diff.ts`: the image's `CMD`, `package.json` scripts, `scripts/preflight.sh`, `deploy/nginx/routes.spec.ts`, the specs that import it, and the documented commands (36). (#556)
 
 **Checkpoint**: every module is `.ts` and checked; no `.mjs` left in the services.
 

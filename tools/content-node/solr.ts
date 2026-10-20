@@ -128,7 +128,11 @@ function coreUrl() {
 export async function solr(
   handler: string,
   params: [string, string][],
-  { signal, core, method = 'POST' }: { signal?: AbortSignal; core?: string; method?: string } = {}
+  {
+    signal,
+    core,
+    method = 'POST',
+  }: { signal?: AbortSignal | undefined; core?: string; method?: string } = {}
 ) {
   // Another core on the same Solr: search-core asks "target" for terms
   // Reactome could annotate.
