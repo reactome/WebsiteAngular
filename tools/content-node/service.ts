@@ -6730,7 +6730,7 @@ function iconPhysicalEntities(doc) {
   for (const packed of solrStrings(doc, 'iconPhysicalEntities')) {
     const split = javaSplit(packed, '#');
     const [stId, type, name, compartments] = split;
-    if (compartments === undefined) throw outOfBounds(split.length, [0, 1, 2, 3]);
+    if (compartments === undefined) throw outOfBounds(split.length, [0, 1, 2, 3], packed);
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
     const at = names.findIndex((other) => caseInsensitive(displayName, other) <= 0);
     if (at > -1 && caseInsensitive(displayName, names[at]) === 0) continue;
@@ -7109,9 +7109,9 @@ function speciesWideParams(query): SolrParams {
  * index past the end is the one named. GlobalExceptionHandler answers it
  * with that message (handleUnclassified), not the NullPointerException's.
  */
-function outOfBounds(length: number, reads: number[]): Error {
+function outOfBounds(length: number, reads: number[], raw: string): Error {
   const index = reads.find((at) => at >= length) ?? length;
-  return Object.assign(new Error(`a split with ${length} parts, read at ${index}`), {
+  return Object.assign(new Error(`${length} parts, read at ${index}: ${raw}`), {
     javaMessage: `Index ${index} out of bounds for length ${length}`,
   });
 }
@@ -7127,7 +7127,7 @@ const OCCURRENCE_READS = [0, 2, 3, 1];
  */
 function rawOccurrence(raw) {
   const line = javaSplit(raw, ':');
-  if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS);
+  if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS, raw);
   const set = (text) => {
     if (text === '#') return undefined;
     const map = new JavaHashMap<string, boolean>();
@@ -7192,7 +7192,7 @@ function diagramFlags(answer, pathway, field) {
     for (const raw of solrStrings(doc, field)) {
       if (!raw.startsWith(pathway)) continue;
       const line = javaSplit(raw, ':');
-      if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS);
+      if (line.length < 4) throw outOfBounds(line.length, OCCURRENCE_READS, raw);
       // extractRawOccurrence with the document: the entity is its stId
       // when it is in the diagram, and in the diagram if that is non-empty.
       const entity = line[1].toLowerCase() === 'true' ? solrValue(doc, 'stId') : null;
@@ -7232,7 +7232,7 @@ function speciesWideFlags(answer, abbreviation) {
     for (const raw of solrStrings(doc, 'occurrences')) {
       const line = javaSplit(raw, ':');
       // fireworksFlagging reads [0], then [3].
-      if (line.length < 4) throw outOfBounds(line.length, [0, 3]);
+      if (line.length < 4) throw outOfBounds(line.length, [0, 3], raw);
       if (line[3] !== '#') interactsWith.set(line[0], true);
     }
   }
