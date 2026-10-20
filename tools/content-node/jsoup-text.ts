@@ -33,10 +33,23 @@
  */
 import { readFileSync } from 'node:fs';
 
-let tables;
+/** jsoup-tables.json: Jsoup's named entities and known tags (JsoupTables.java). */
+export interface JsoupTables {
+  /** [isBase, ...code points]: one code point, or two. */
+  entities: Record<string, [isBase: 0 | 1, ...codePoints: number[]]>;
+  /** Each flag 0 or 1. */
+  tags: Record<
+    string,
+    [isBlock: 0 | 1, preserveWhitespace: 0 | 1, isEmpty: 0 | 1, formatAsBlock: 0 | 1]
+  >;
+}
+
+let tables: JsoupTables | undefined;
 /** jsoup-tables.json, read on first use, as domain.ts reads its snapshot. */
-function TABLES() {
-  tables ??= JSON.parse(readFileSync(new URL('./jsoup-tables.json', import.meta.url), 'utf8'));
+function TABLES(): JsoupTables {
+  tables ??= JSON.parse(
+    readFileSync(new URL('./jsoup-tables.json', import.meta.url), 'utf8')
+  ) as JsoupTables;
   return tables;
 }
 

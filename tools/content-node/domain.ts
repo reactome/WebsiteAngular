@@ -46,7 +46,7 @@ export interface StoredSnapshot {
   fields: SnapshotField[];
   graph: Record<string, { fields: number[]; defaults?: Record<string, unknown>; type?: string }>;
   getterEntries: SnapshotGetter[];
-  getters?: Record<string, number[]>;
+  getters: Record<string, number[]>;
   interfaces: string[];
   store: [schemaClass: string, labels: string[]][];
 }
@@ -80,7 +80,7 @@ function SNAPSHOT(): DomainSnapshot {
   for (const [name, entry] of Object.entries(stored.graph))
     graph[name] = { ...entry, fields: entry.fields.map((position) => at(stored.fields, position)) };
   const getters: DomainSnapshot['getters'] = {};
-  for (const [name, positions] of Object.entries(stored.getters ?? {}))
+  for (const [name, positions] of Object.entries(stored.getters))
     getters[name] = positions.map((position) => at(stored.getterEntries, position));
   snapshot = { json, graph, getters, interfaces: new Set(stored.interfaces), store: stored.store };
   return snapshot;

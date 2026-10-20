@@ -42,6 +42,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } from './schema.ts';
+import type { AttributeRow, SchemaTables } from './schema.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');
@@ -62,14 +63,20 @@ async function get(pathname) {
 }
 
 const classes = Object.keys(SCHEMA_CLASSES).sort();
-const attributes = {};
-const referrals = {};
+const attributes: Record<string, AttributeRow[]> = {};
+const referrals: Record<string, AttributeRow[]> = {};
+/** A class's answer, fetched above for every class. */
+const answered = (map: Record<string, AttributeRow[]>, name: string) => {
+  const rows = map[name];
+  if (!rows) throw new Error(`${name}: not fetched`);
+  return rows;
+};
 for (const name of classes) {
   attributes[name] = await get(`/schema/${encodeURIComponent(name)}/attributes`);
   referrals[name] = await get(`/schema/${encodeURIComponent(name)}/referrals`);
 }
 
-let closure;
+let closure: SchemaTables['closure'] | undefined;
 for (const name of AJC_CLOSURE_NAMES) {
   const answer = {
     attributes: await get(`/schema/${encodeURIComponent(name)}/attributes`),
@@ -84,25 +91,28 @@ for (const name of AJC_CLOSURE_NAMES) {
 const model = await get('/schema/model');
 const release = await get('/database/version');
 
-const declared = {};
+const declared: Record<string, AttributeRow[]> = {};
 for (const name of classes) {
-  declared[name] = attributes[name].filter((row) => row.origin === name);
+  declared[name] = answered(attributes, name).filter((row) => row.origin === name);
 }
-const referralRows: unknown[] = [];
-const rowIndex = new Map();
-const referralIndexes = {};
+const referralRows: AttributeRow[] = [];
+const rowIndex = new Map<string, number>();
+const referralIndexes: Record<string, number[]> = {};
 for (const name of classes) {
-  referralIndexes[name] = referrals[name].map((row) => {
+  referralIndexes[name] = answered(referrals, name).map((row) => {
     const key = javaJson(row);
-    if (!rowIndex.has(key)) {
-      rowIndex.set(key, referralRows.length);
+    let at = rowIndex.get(key);
+    if (at === undefined) {
+      at = referralRows.length;
+      rowIndex.set(key, at);
       referralRows.push(row);
     }
-    return rowIndex.get(key);
+    return at;
   });
 }
 
-const data = { declared, referralRows, referrals: referralIndexes, closure };
+if (!closure) throw new Error('no closure class answered');
+const data: SchemaTables = { declared, referralRows, referrals: referralIndexes, closure };
 for (const name of classes) {
   if (javaJson(attributeTable(name, data)) !== javaJson(attributes[name])) {
     throw new Error(`${name}/attributes: not rebuilt as Java answers it from its superclasses`);

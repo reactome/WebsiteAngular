@@ -18,26 +18,37 @@
  */
 import { readFileSync } from 'node:fs';
 import { SCHEMA_CLASSES } from './schema.ts';
+import type { StoredSnapshot } from './domain.ts';
+import type { OpenApiSnapshot } from './snapshot-openapi.ts';
 
-let openapi;
+let openapi: OpenApiSnapshot | undefined;
 const OPENAPI = () =>
   (openapi ??= JSON.parse(
     readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
-  ));
+  ) as OpenApiSnapshot);
 
-let names;
-/** Names from the graph, as written (snapshot-graph-names.ts). */
+/** graph-names.json: names from the graph, as written (snapshot-graph-names.ts). */
+export interface GraphNames {
+  referenceDatabases: string[];
+  speciesTaxIds: string[];
+}
+
+let names: GraphNames | undefined;
 const GRAPH_NAMES = () =>
-  (names ??= JSON.parse(readFileSync(new URL('./graph-names.json', import.meta.url), 'utf8')));
+  (names ??= JSON.parse(
+    readFileSync(new URL('./graph-names.json', import.meta.url), 'utf8')
+  ) as GraphNames);
 const DATABASES = () => GRAPH_NAMES().referenceDatabases;
 
 let attributes;
 /** Every getter's attribute name, as Java's getProperty is meant to be asked. */
 const ATTRIBUTES = () =>
   (attributes ??= new Set(
-    JSON.parse(
-      readFileSync(new URL('./domain-snapshot.json', import.meta.url), 'utf8')
-    ).getterEntries.map(([, getter]) => getter[3].toLowerCase() + getter.slice(4))
+    (
+      JSON.parse(
+        readFileSync(new URL('./domain-snapshot.json', import.meta.url), 'utf8')
+      ) as StoredSnapshot
+    ).getterEntries.map(([, getter]) => getter.charAt(3).toLowerCase() + getter.slice(4))
   ));
 
 const STABLE_ID = /^R-[A-Z]{3}-[1-9]\d*$/;
@@ -473,7 +484,7 @@ export function declaredQuery(endpoint: string): Parameter[] {
   const entry = RECORD[endpoint];
   if (!entry) return [];
   if (entry.java === null) return entry.query ?? [];
-  return (OPENAPI().paths[entry.java]?.get ?? []).filter(
+  return (OPENAPI().paths[entry.java]?.['get'] ?? []).filter(
     (parameter) => parameter.in === 'query' && !entry.ignored?.includes(parameter.name)
   );
 }

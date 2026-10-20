@@ -376,9 +376,11 @@ describe("schema-snapshot.json, Java's reflection answers captured once", () => 
   });
 
   it("composes a class's table as getAttributeTable does: up the superclasses, by name then origin", () => {
-    const names = attributeTable('Pathway').map((row) => `${row.name}/${row.origin}`);
+    const table = attributeTable('Pathway') ?? [];
+    expect(table.length).toBeGreaterThan(0);
+    const names = table.map((row) => `${row.name}/${row.origin}`);
     expect(names).toEqual([...names].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)));
-    expect(new Set(attributeTable('Pathway').map((row) => row.origin))).toEqual(
+    expect(new Set(table.map((row) => row.origin))).toEqual(
       new Set(['Pathway', 'Event', 'DatabaseObject'])
     );
   });

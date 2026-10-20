@@ -3977,6 +3977,15 @@ export function interactionWithEntitiesJson(row) {
   ]);
 }
 
+/**
+ * case-snapshot.json: each UTF-16 unit whose upper (or lower) case differs,
+ * then that case -- unit, case, unit, case, ... (snapshot-case.ts).
+ */
+export interface CaseSnapshot {
+  upper: number[];
+  lower: number[];
+}
+
 /** case-snapshot.json, as two maps from a UTF-16 unit to its case, read on first use. */
 let javaCase;
 
@@ -3990,7 +3999,7 @@ function caseInsensitive(a, b) {
   if (!javaCase) {
     const { upper, lower } = JSON.parse(
       readFileSync(new URL('./case-snapshot.json', import.meta.url), 'utf8')
-    );
+    ) as CaseSnapshot;
     const pairs = (flat) =>
       new Map(flat.flatMap((unit, at) => (at % 2 ? [] : [[unit, flat[at + 1]]])));
     javaCase = { upper: pairs(upper), lower: pairs(lower) };
@@ -6066,6 +6075,11 @@ export function springIntWithDefault(values: string[], fallback: number): Bound<
   };
 }
 
+/** rfd-snapshot.json: the extensions Spring trusts (snapshot-rfd.ts). */
+export interface RfdSnapshot {
+  safe: string[];
+}
+
 /** rfd-snapshot.json's extensions, read on first use. */
 let safeExtensions;
 
@@ -6083,7 +6097,11 @@ export function downloadGuard(request) {
   const uri = present(String(request.originalUrl ?? '').split('?')[0]);
   const last = uri.slice(uri.lastIndexOf('/') + 1);
   safeExtensions ??= new Set(
-    JSON.parse(readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')).safe
+    (
+      JSON.parse(
+        readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')
+      ) as RfdSnapshot
+    ).safe
   );
   const trusted = (text) => {
     let decoded = text;
