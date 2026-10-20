@@ -102,7 +102,8 @@ type DiagramResult = {
   events: string[];
   width: number | null;
   height: number | null;
-  level: number;
+  // null when the diagram is a top-level pathway (the depth's OPTIONAL MATCH).
+  level: number | null;
 };
 /** An interaction and its partners (interactionsOf). */
 type InteractionRow = {
@@ -120,9 +121,11 @@ type InteractionRow = {
 };
 /** /interactors/static/molecule/{id}/details: one interaction as a row. */
 type CustomInteractionRow = {
-  dbId: number;
-  score: number;
-  evidenceCount: number;
+  // null for an interaction without them: customInteractionJson fails as
+  // Java's asLong()/asDouble() do.
+  dbId: number | null;
+  score: number | null;
+  evidenceCount: number | null;
   identifier: string | null;
   databaseName: string | null;
   displayName: string | null;
@@ -135,7 +138,8 @@ type CustomInteractionRow = {
 };
 /** /interactors/static/molecule/{id}/withEntities: one interaction as a row. */
 type InteractionWithEntitiesRow = {
-  score: number;
+  // null without an accession; written as 0, as Java's build() does.
+  score: number | null;
   accession: string;
   accessionURL: string | null;
   physicalEntity: {
@@ -144,7 +148,7 @@ type InteractionWithEntitiesRow = {
     displayName: string | null;
     schemaClass: string | null;
   }[];
-  evidences: number;
+  evidences: number | null;
   url: string | null;
 };
 
