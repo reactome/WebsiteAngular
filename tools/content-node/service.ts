@@ -4763,7 +4763,9 @@ type OptionalKeys<T> = { [K in keyof T]-?: object extends Pick<T, K> ? K : never
  * T as built to be written as JSON: every field named, and one that T may
  * leave out allowed to be undefined, which JSON leaves out. A field T
  * requires must have its value -- the cast to T after is then only the
- * undefined-to-absent step JSON takes.
+ * undefined-to-absent step JSON takes. Where a writer then applies Java's
+ * non_empty (nonEmptyJson, compact), a required string that is empty is left
+ * out too, which no type here can see.
  */
 type JsonWritten<T> = { [K in OptionalKeys<T>]-?: T[K] | undefined } & {
   [K in Exclude<keyof T, OptionalKeys<T>>]-?: T[K];

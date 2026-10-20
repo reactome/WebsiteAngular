@@ -76,12 +76,6 @@ export function registryServices(text: string): RegistryService[] {
   );
 }
 
-/**
- * interactor-core's PsicquicResource list: sorted by
- * name.toLowerCase().compareTo(other.name.toLowerCase()) -- UTF-16 units, as
- * JavaScript's `<` compares -- and stable, as Collections.sort is. A service
- * with no name is Java's NullPointerException in that sort: a failed reading.
- */
 /** A registry service, as registryServices reads it. */
 export interface RegistryService {
   name: string | null;
@@ -89,6 +83,13 @@ export interface RegistryService {
   restUrl: string | null;
   active: boolean;
 }
+
+/**
+ * interactor-core's PsicquicResource list: sorted by
+ * name.toLowerCase().compareTo(other.name.toLowerCase()) -- UTF-16 units, as
+ * JavaScript's `<` compares -- and stable, as Collections.sort is. A service
+ * with no name is Java's NullPointerException in that sort: a failed reading.
+ */
 
 export function psicquicResources(services: RegistryService[]) {
   const keyed = services.map((service) => {
