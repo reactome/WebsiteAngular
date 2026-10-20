@@ -77,7 +77,8 @@ specs/014-content-service-modules/
 tools/content-node/
 ├── service.ts           # shrinks to nothing as families move; then removed (the image's CMD runs server.ts)
 ├── server.ts            # start-up, routing, path rules, download guard, failure answers, /health
-├── registry.ts          # Endpoint type; the families' lists, in today's order
+├── endpoint.ts          # the Endpoint, Handler, Answer and Request types (a leaf)
+├── registry.ts          # the families' lists, in today's order
 ├── release.ts           # the release, answered once (R2)
 ├── java-text.ts  body.ts  spring.ts  answers.ts  objects.ts      # shared, layered (R1)
 ├── reference-entities.ts  search-params.ts                        # shared by two families
@@ -108,7 +109,7 @@ deploy/content-node/Dockerfile # CMD → server.ts, once service.ts is gone
    Each is seen to fail.
 
 2. **The release without the list**: the one logic edit; `release.ts` itself comes with layer 6. Verified on beta like a move.
-3. **The `Endpoint` type and `registry.ts`**, in the same pull request as step 2, with `service.ts`'s list typed as `Endpoint[]` in place. The casts in the tools go.
+3. **The `Endpoint` type** (`endpoint.ts`, a leaf, so families and `answers` can use it without importing the registry), in the same pull request as step 2, with `service.ts`'s list typed as `Endpoint[]` in place. The casts in the tools go.
 4. **Shared modules**, bottom layer first: `java-text`, `body`, `spring`, `answers`, `objects`, then the pair-shared two. Each is a move pull request.
 5. **Families**, least coupled first, one pull request each:
    1. citation

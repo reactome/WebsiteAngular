@@ -108,8 +108,18 @@ const PAIRS_ANY_METHOD = [
 function lookupsByPath(source: string): string[] {
   const sf = ts.createSourceFile('m.ts', source, ts.ScriptTarget.Latest, true);
   const found: string[] = [];
+  // A path: any text with a '/' in it, a template's parts included, or a
+  // constant named for one (VERSION_PATH).
   const isPath = (n: ts.Node) =>
-    (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && n.text.startsWith('/');
+    ((ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) && n.text.includes('/')) ||
+    ((ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n)) &&
+      n.text.includes('/')) ||
+    (ts.isIdentifier(n) && /_?PATH$/.test(n.text));
+  // The list: `endpoints`, a family's own (`dataQueryEndpoints`), or either
+  // reached through a module (`registry.endpoints`).
+  const isList = (n: ts.Node): boolean =>
+    (ts.isIdentifier(n) && /endpoints$/i.test(n.text)) ||
+    (ts.isPropertyAccessExpression(n) && /endpoints$/i.test(n.name.text));
   const has = (n: ts.Node, test: (m: ts.Node) => boolean): boolean =>
     test(n) || (ts.forEachChild(n, (child) => (has(child, test) ? true : undefined)) ?? false);
   const readsPath = (n: ts.Node) => ts.isIdentifier(n) && n.text === 'path';
@@ -118,8 +128,7 @@ function lookupsByPath(source: string): string[] {
       const callee = n.expression;
       if (
         ts.isPropertyAccessExpression(callee) &&
-        ts.isIdentifier(callee.expression) &&
-        callee.expression.text === 'endpoints' &&
+        isList(callee.expression) &&
         n.arguments.some((argument) => has(argument, readsPath) && has(argument, isPath))
       )
         found.push(n.getText(sf));
@@ -133,8 +142,7 @@ function lookupsByPath(source: string): string[] {
     }
     if (
       ts.isForOfStatement(n) &&
-      ts.isIdentifier(n.expression) &&
-      n.expression.text === 'endpoints' &&
+      isList(n.expression) &&
       has(n.statement, readsPath) &&
       has(n.statement, isPath)
     )
@@ -168,6 +176,11 @@ describe('the endpoint list', () => {
       "const v = endpoints.findLast(function (e) { return /version$/.test(e.path) || e.path === '/x'; });",
       "const v = endpointFor('/ContentService/data/database/version');",
       "for (const e of endpoints) if (e.path === '/ContentService/data/database/version') v = e;",
+      "const v = endpoints.find((e) => e.path.includes('database/version'));",
+      'const v = endpoints.find((e) => e.path === VERSION_PATH);',
+      'const v = endpoints.find((e) => e.path.endsWith(`${BASE}/data/database/version`));',
+      "const v = registry.endpoints.find((e) => e.path.endsWith('/version'));",
+      "const v = dataQueryEndpoints.find((e) => e.path.endsWith('/version'));",
     ])
       expect([lookup, lookupsByPath(lookup)]).toEqual([lookup, [expect.any(String)]]);
     // Reading the list for every endpoint is not a lookup.

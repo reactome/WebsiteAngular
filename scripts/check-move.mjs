@@ -413,11 +413,18 @@ for (const file of receivers) {
       );
 }
 
-// Every name a moved declaration or endpoint uses must be bound now as it
-// was in the module it came from: a receiving module's own `javaTrim` would
-// quietly replace the one a moved caller called, and a helper left behind
-// unimported would fall through to a global of the same name (`close`).
-for (const [where, from] of origins) {
+// Every name a declaration or endpoint uses must be bound now as it was:
+// a moved one's, as in the module it came from -- a receiving module's own
+// `javaTrim` would quietly replace the one a moved caller called, and a
+// helper left behind unimported would fall through to a global of the same
+// name (`close`) -- and one that stayed, as where it is, so its caller is
+// not pointed at another module's `javaTrim` in the same change.
+const stayed = [];
+for (const [file, was] of before)
+  for (const kind of ['declarations', 'endpoints'])
+    for (const key of was[kind].keys())
+      if (after.get(file)?.[kind].has(key)) stayed.push([`${file}#${key}`, file]);
+for (const [where, from] of [...origins, ...stayed]) {
   const at = where.indexOf('#');
   const to = where.slice(0, at);
   const key = where.slice(at + 1);

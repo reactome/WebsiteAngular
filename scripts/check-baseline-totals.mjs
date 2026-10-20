@@ -65,16 +65,19 @@ for (const [name, file, total] of BASELINES) {
   if (before !== undefined && now > before) rose.push(`${name} rose: ${now}, base ${before}`);
 }
 
-// A module the base already counts may not rise. Code moved between modules
-// goes to new ones (spec 014: each move creates its module), so a move never
-// raises one that exists; a rise in one is new code, whatever fell elsewhere
-// to keep the total. Only a module the base does not list may take counts,
-// within the total.
+// A module the base already counts may not rise, unless it is one the split
+// creates to receive moved code (spec 014: the shared modules, the families,
+// the registry and the server), which a later move may add to. Code is moved
+// out of service.ts into those, never into the services' other modules, so
+// a rise in any other is new code, whatever fell elsewhere to keep the
+// total. The split's modules are held by the total.
+const RECEIVES_MOVES =
+  /^tools\/content-node\/(java-text|body|spring|answers|objects|reference-entities|search-params|release|registry|server|[\w-]+-endpoints)\.ts$/;
 for (const [name, file] of BASELINES.slice(0, 2)) {
   const now = JSON.parse(readFileSync(file, 'utf8'));
   const was = atBase(file) ?? {};
   for (const [module, count] of Object.entries(now))
-    if (module in was && count > was[module])
+    if (module in was && count > was[module] && !RECEIVES_MOVES.test(module))
       rose.push(`${name} in ${module} rose: ${count}, base ${was[module]}`);
 }
 

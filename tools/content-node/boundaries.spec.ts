@@ -181,6 +181,15 @@ describe('the content service boundaries', () => {
     ]);
   });
 
+  it('let families and shared modules take the Endpoint types from their leaf', () => {
+    expect(
+      violations({
+        'citation-endpoints': "import type { Endpoint } from './endpoint.ts';",
+        answers: "import type { Answer, Handler, Request } from './endpoint.ts';",
+      })
+    ).toEqual([]);
+  });
+
   it('let the tools read anything, the endpoint list included', () => {
     expect(
       violations({

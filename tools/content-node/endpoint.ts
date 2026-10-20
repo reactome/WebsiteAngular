@@ -1,9 +1,10 @@
 /**
- * The endpoints the content service answers, and the shape each is declared
- * in (spec 014, data-model.md). Until the families move out of service.ts
- * the list is service.ts's, typed there as `Endpoint[]`; once they do, the
- * registry assembles it here, and routing, endpointFor, the parity harness,
- * the invalid-input corpus and the specs read it from here.
+ * The shape the content service's endpoints are declared in (spec 014,
+ * data-model.md): types only, a leaf every module may import. Families
+ * declare their lists as `Endpoint[]`, and `cached` (answers) returns a
+ * `Handler`, without importing the registry that assembles the families --
+ * which would be a cycle. Until the families move out of service.ts the
+ * list is service.ts's, typed there in place.
  */
 import type { Request as ExpressRequest } from 'express';
 
