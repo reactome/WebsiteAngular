@@ -26,7 +26,7 @@ const OPENAPI = () =>
   ));
 
 let names;
-/** Names from the graph, as written (snapshot-graph-names.mjs). */
+/** Names from the graph, as written (snapshot-graph-names.ts). */
 const GRAPH_NAMES = () =>
   (names ??= JSON.parse(readFileSync(new URL('./graph-names.json', import.meta.url), 'utf8')));
 const DATABASES = () => GRAPH_NAMES().referenceDatabases;

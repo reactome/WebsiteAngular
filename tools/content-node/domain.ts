@@ -5,7 +5,7 @@
  *
  * Nothing about the model is restated here. Which properties each class writes,
  * in what order and in which view, and how each field maps onto the graph, are
- * read from the deployed libraries by snapshot-domain.mjs into
+ * read from the deployed libraries by snapshot-domain.ts into
  * domain-snapshot.json. What this file holds is the behaviour those libraries
  * have and a snapshot cannot carry: how SDN fills a field from relationships,
  * how Jackson writes a value, and the few getters that compute something
@@ -16,21 +16,30 @@ import { schemaClassOf, supertypes } from './schema.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
 /** A JSON property Jackson writes: its name, what it reads, its views, 'D' for a double. */
-type SnapshotProperty = [name: string, source: string, views: number, double?: 'D'];
+export type SnapshotProperty = [name: string, source: string, views: number, double?: 'D'];
 /** An SDN field: a property, or a relationship (RelationshipField). */
-type SnapshotField = [name: string, graphProperty: string] | RelationshipField;
+export type SnapshotField = [name: string, graphProperty: string] | RelationshipField;
+/**
+ * How a getter is answered: the field it reads, a computed getter by name,
+ * the constant it returns, one taking arguments (refused), or one not ported.
+ * 24 of the 286 entries are objects; 37 of the strings are a computed getter
+ * or Object.getClass, so 61 are not a field (measured on the snapshot).
+ */
+export type GetterSource =
+  string | { constant: string } | { arguments: number } | { unported: string };
+
 /** A getter /data/query/{id}/{attribute} can reach. */
-type SnapshotGetter = [
+export type SnapshotGetter = [
   lowercaseName: string,
   getterName: string,
-  source: string,
+  source: GetterSource,
   returns: string,
   element: string,
   projected: string,
 ];
 
 /** domain-snapshot.json as stored: every entry once, classes listing positions. */
-interface StoredSnapshot {
+export interface StoredSnapshot {
   properties: SnapshotProperty[];
   json: Record<string, number[]>;
   fields: SnapshotField[];
@@ -54,13 +63,13 @@ interface DomainSnapshot {
 }
 
 let snapshot: DomainSnapshot | undefined;
-/** domain-snapshot.json, read on first use: snapshot-domain.mjs imports this file to write it. */
+/** domain-snapshot.json, read on first use: snapshot-domain.ts imports this file to write it. */
 function SNAPSHOT(): DomainSnapshot {
   if (snapshot) return snapshot;
   const stored = JSON.parse(
     readFileSync(new URL('./domain-snapshot.json', import.meta.url), 'utf8')
   ) as StoredSnapshot;
-  // Stored interned (see snapshot-domain.mjs); expanded once here.
+  // Stored interned (see snapshot-domain.ts); expanded once here.
   // Every position names an entry: the snapshot is written so.
   const at = <T>(list: T[], position: number): T => list[position] as T;
   const json: DomainSnapshot['json'] = {};
@@ -311,7 +320,7 @@ interface Frame {
   found: unknown[];
 }
 
-/** A relationship field as the snapshot holds it (snapshot-domain.mjs). */
+/** A relationship field as the snapshot holds it (snapshot-domain.ts). */
 type RelationshipField = [
   name: string,
   type: string,
@@ -537,7 +546,7 @@ const constant = (value) => () => value;
 
 /**
  * The getters that compute their value, by declaring class and method. Every
- * other getter Jackson calls returns its field (snapshot-domain.mjs checks the
+ * other getter Jackson calls returns its field (snapshot-domain.ts checks the
  * bytecode for that, and fails on a getter that is in neither group).
  */
 const COMPUTED = {
@@ -608,7 +617,7 @@ const COMPUTED = {
     })[entity.fields.referenceType] ?? 'SummaryEntity',
 };
 
-/** The computed getters, by name, for snapshot-domain.mjs to check against graph-core. */
+/** The computed getters, by name, for snapshot-domain.ts to check against graph-core. */
 export const COMPUTED_GETTERS = Object.keys(COMPUTED);
 
 /**

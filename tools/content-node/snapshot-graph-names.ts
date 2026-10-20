@@ -13,7 +13,7 @@
  * A name or species a release adds is not here until this is run again: its
  * URLs are answered, just not stored.
  *
- *   node tools/content-node/snapshot-graph-names.mjs
+ *   node tools/content-node/snapshot-graph-names.ts
  *
  * WHEN TO RUN IT: after a release. Two queries, through the service's own
  * graph settings.

@@ -1,11 +1,11 @@
 // @vitest-environment node
 //
-// snapshot-openapi.mjs reduces Java's API description to what the parameter
+// snapshot-openapi.ts reduces Java's API description to what the parameter
 // record is checked against. A reduction that dropped a parameter, or a
 // default, would let the record drift from Java unseen.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { snapshotOf } from './snapshot-openapi.mjs';
+import { snapshotOf } from './snapshot-openapi.ts';
 
 const description = {
   openapi: '3.0.1',

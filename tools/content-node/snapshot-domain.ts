@@ -4,7 +4,7 @@
  * libraries rather than restated (see domain.ts for how it is used).
  *
  *   JAVA_HOME=<a JDK 21> CONTENT_SERVICE_LIB=<the ContentService webapp's WEB-INF/lib> \
- *     node tools/content-node/snapshot-domain.mjs
+ *     node tools/content-node/snapshot-domain.ts
  *
  * Two sources, both the libraries themselves:
  *
@@ -20,7 +20,7 @@
  *    so a getter graph-core adds cannot be written as a field it is not.
  *
  * WHEN TO RUN IT: when graph-core changes in the deployed content service --
- * the same trigger as schema.ts and snapshot-schema.mjs. JDK 21 compiles
+ * the same trigger as schema.ts and snapshot-schema.ts. JDK 21 compiles
  * and runs it (--release is left at the JDK's own).
  *
  * THEN: run the diff harness over /data/query/{id} before committing. Jackson
@@ -50,18 +50,51 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { COMPUTED_GETTERS } from './domain.ts';
+import {
+  COMPUTED_GETTERS,
+  type GetterSource,
+  type SnapshotField,
+  type SnapshotGetter,
+  type SnapshotProperty,
+  type StoredSnapshot,
+} from './domain.ts';
+
+/** What DomainSnapshot.java prints: Jackson's and SDN's view of each class. */
+interface Dump {
+  json: Record<
+    string,
+    [name: string, member: string, declaredBy: string, views: number, floating?: 'D'][]
+  >;
+  getters: Record<
+    string,
+    [
+      name: string,
+      declaredBy: string,
+      parameters: number,
+      returns: string,
+      element: string,
+      projected: string,
+      fresh: string | null,
+    ][]
+  >;
+  graph: Record<
+    string,
+    { fields: SnapshotField[]; defaults?: Record<string, unknown>; type?: string }
+  >;
+  store: [name: string, kind: string, labels: string[]][];
+  interfaces: string[];
+}
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(HERE, 'domain-snapshot.json');
-const LIB = process.env.CONTENT_SERVICE_LIB;
+const LIB = process.env['CONTENT_SERVICE_LIB'];
 if (!LIB) {
   console.error("CONTENT_SERVICE_LIB: the deployed ContentService webapp's WEB-INF/lib");
   process.exit(2);
 }
-const BIN = process.env.JAVA_HOME ? path.join(process.env.JAVA_HOME, 'bin') : '';
-const tool = (name) => (BIN ? path.join(BIN, name) : name);
-const run = (name, args, cwd) =>
+const BIN = process.env['JAVA_HOME'] ? path.join(process.env['JAVA_HOME'], 'bin') : '';
+const tool = (name: string) => (BIN ? path.join(BIN, name) : name);
+const run = (name: string, args: string[], cwd?: string) =>
   execFileSync(tool(name), args, {
     cwd,
     encoding: 'utf8',
@@ -107,7 +140,7 @@ try {
       '--serialised-only',
       summary,
     ])
-  );
+  ) as Dump;
 
   const bodies = methodBodies(
     run('javap', [
@@ -121,27 +154,29 @@ try {
     ])
   );
   const computed = new Set(COMPUTED_GETTERS);
-  const json = {};
+  const json: Record<string, SnapshotProperty[]> = {};
   for (const [schemaClass, properties] of Object.entries(dump.json)) {
-    json[schemaClass] = properties.map(([name, member, declaredBy, views, floating]) => {
-      const key = `${declaredBy}.${member}`;
-      const field = fieldRead(bodies, declaredBy, member);
-      let source;
-      if (computed.has(key)) source = key;
-      else if (member === 'getType' && dump.graph[schemaClass]?.type) source = key;
-      else if (field) source = field;
-      else
-        throw new Error(
-          `${schemaClass}.${name}: ${key} computes its value; implement it in domain.ts`
-        );
-      // Has.Default and SummaryEntity are built in code, not mapped from the graph.
-      if (source === field && schemaClass !== 'Default' && schemaClass !== 'SummaryEntity') {
-        const mapped = dump.graph[schemaClass]?.fields.some(([fieldName]) => fieldName === field);
-        if (!mapped)
-          throw new Error(`${schemaClass}.${name}: reads ${field}, which SDN does not map`);
+    json[schemaClass] = properties.map(
+      ([name, member, declaredBy, views, floating]): SnapshotProperty => {
+        const key = `${declaredBy}.${member}`;
+        const field = fieldRead(bodies, declaredBy, member);
+        let source: string;
+        if (computed.has(key)) source = key;
+        else if (member === 'getType' && dump.graph[schemaClass]?.type) source = key;
+        else if (field) source = field;
+        else
+          throw new Error(
+            `${schemaClass}.${name}: ${key} computes its value; implement it in domain.ts`
+          );
+        // Has.Default and SummaryEntity are built in code, not mapped from the graph.
+        if (source === field && schemaClass !== 'Default' && schemaClass !== 'SummaryEntity') {
+          const mapped = dump.graph[schemaClass]?.fields.some(([fieldName]) => fieldName === field);
+          if (!mapped)
+            throw new Error(`${schemaClass}.${name}: reads ${field}, which SDN does not map`);
+        }
+        return floating ? [name, source, views, 'D'] : [name, source, views];
       }
-      return floating ? [name, source, views, 'D'] : [name, source, views];
-    });
+    );
   }
   const unsettled = keepVerifiedOrder(json);
   for (const key of computed) {
@@ -155,8 +190,8 @@ try {
   // a constant it returns, Object.getClass, or -- for one that takes
   // arguments -- what invoking it with none does. Any other is left as
   // `unported`, named below; service.mjs answers no attribute that reaches one.
-  const getters = {};
-  const unported = new Set();
+  const getters: Record<string, SnapshotGetter[]> = {};
+  const unported = new Set<string>();
   // Only a model class can be the object a request names; a relationship
   // class (HasEvent, ComponentOf...) is reached only through one.
   const modelClasses = new Set(
@@ -165,9 +200,9 @@ try {
   for (const [schemaClass, methods] of Object.entries(dump.getters)) {
     if (!modelClasses.has(schemaClass)) continue;
     getters[schemaClass] = methods
-      .map(([name, declaredBy, parameters, returns, element, projected, fresh]) => {
+      .map(([name, declaredBy, parameters, returns, element, projected, fresh]): SnapshotGetter => {
         const key = `${declaredBy}.${name}`;
-        let source;
+        let source: GetterSource;
         if (parameters > 0) source = { arguments: parameters };
         else if (key === 'Object.getClass') source = key;
         else if (computed.has(key)) source = key;
@@ -185,7 +220,7 @@ try {
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
   }
 
-  const graph = {};
+  const graph: Dump['graph'] = {};
   for (const [schemaClass, entry] of Object.entries(dump.graph)) {
     const defaults = Object.fromEntries(
       Object.entries(entry.defaults ?? {}).filter(([field]) =>
@@ -207,14 +242,20 @@ try {
 
   // Most entries repeat in every subclass, so each distinct one is stored once
   // and classes list their positions: 218KB written out whole, 55KB this way.
-  const intern = (table, index) => (entry) => {
-    const key = JSON.stringify(entry);
-    if (!index.has(key)) index.set(key, table.push(entry) - 1);
-    return index.get(key);
-  };
-  const properties = [];
+  const intern =
+    <T>(table: T[], index: Map<string, number>) =>
+    (entry: T): number => {
+      const key = JSON.stringify(entry);
+      let at = index.get(key);
+      if (at === undefined) {
+        at = table.push(entry) - 1;
+        index.set(key, at);
+      }
+      return at;
+    };
+  const properties: SnapshotProperty[] = [];
   const property = intern(properties, new Map());
-  const fields = [];
+  const fields: SnapshotField[] = [];
   const field = intern(fields, new Map());
   const jsonByIndex = Object.fromEntries(
     Object.entries(json).map(([name, entries]) => [name, entries.map(property)])
@@ -225,14 +266,14 @@ try {
       { ...entry, fields: entry.fields.map(field) },
     ])
   );
-  const getterEntries = [];
+  const getterEntries: SnapshotGetter[] = [];
   const getterEntry = intern(getterEntries, new Map());
   const gettersByIndex = Object.fromEntries(
     Object.entries(getters).map(([name, entries]) => [name, entries.map(getterEntry)])
   );
   // One entry per line, so a change to the model is a readable diff.
-  const list = (items) => items.map((item) => `    ${JSON.stringify(item)}`).join(',\n');
-  const map = (object) =>
+  const list = (items: unknown[]) => items.map((item) => `    ${JSON.stringify(item)}`).join(',\n');
+  const map = (object: Record<string, unknown>) =>
     Object.entries(object)
       .map(([key, value]) => `    ${JSON.stringify(key)}: ${JSON.stringify(value)}`)
       .join(',\n');
@@ -272,20 +313,20 @@ try {
  * Returns the classes whose properties changed, whose new order is this run's
  * and has to be checked against Java (see THEN, above).
  */
-function keepVerifiedOrder(json) {
-  let previous;
+function keepVerifiedOrder(json: Record<string, SnapshotProperty[]>): string[] {
+  let previous: Record<string, string[]>;
   try {
-    const stored = JSON.parse(readFileSync(OUT, 'utf8'));
+    const stored = JSON.parse(readFileSync(OUT, 'utf8')) as StoredSnapshot;
     previous = Object.fromEntries(
       Object.entries(stored.json).map(([name, positions]) => [
         name,
-        positions.map((position) => stored.properties[position][0]),
+        positions.map((position) => stored.properties[position]?.[0] ?? ''),
       ])
     );
   } catch {
     return Object.keys(json);
   }
-  const unsettled = [];
+  const unsettled: string[] = [];
   for (const [name, properties] of Object.entries(json)) {
     const before = previous[name];
     const same =
@@ -332,7 +373,7 @@ function constantRead(bodies, declaredBy, member) {
     .map((key) => bodies.get(key))
     .filter((code) => !code.some(({ op }) => op === 'invokestatic'));
   const code = originals[0] ?? bodies.get(`${declaredBy}.${member}`);
-  if (!code || code.length !== 2) return undefined;
+  if (code?.length !== 2) return undefined;
   const [load, give] = code;
   return /^ldc(_w)?$/.test(load.op) && give.op === 'areturn' && load.text !== undefined
     ? load.text
