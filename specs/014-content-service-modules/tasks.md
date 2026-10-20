@@ -32,20 +32,20 @@ It must not mix in logic edits.
 
 **Purpose**: the checks that make every later move provable. Each is shown failing first.
 
-- [ ] T001 [P] Write `scripts/check-move.mjs` (research R6, contracts/checks.md). It parses the base branch's `tools/content-node/service.ts` (`git show <base>:…`) and today's `tools/content-node/*.ts` with TypeScript's parser.
+- [x] T001 [P] Write `scripts/check-move.mjs` (research R6, contracts/checks.md). It parses the base branch's `tools/content-node/service.ts` (`git show <base>:…`) and today's `tools/content-node/*.ts` with TypeScript's parser.
   - It matches every top-level declaration by name, and every endpoint by `path` plus method.
   - It compares their text with `export` and whitespace normalised, and reports `changed:` and `missing:` lines.
-  - Show it failing on one character changed in a moved function.
-- [ ] T002 [P] Write `scripts/check-baseline-totals.mjs` (R5). It compares the totals of `tools/loose-baseline.json`, `tools/implicit-any-baseline.json` and `lint-baseline.json` with the base branch's, and fails if any rose.
+  - Show it failing on one character changed in a moved function. — #569
+- [x] T002 [P] Write `scripts/check-baseline-totals.mjs` (R5). It compares the totals of `tools/loose-baseline.json`, `tools/implicit-any-baseline.json` and `lint-baseline.json` with the base branch's, and fails if any rose.
   - Run it in `scripts/preflight.sh` and `.github/workflows/tests.yml`, where the base is the pull request's base.
-  - Show it failing on one module's count raised by hand.
-- [ ] T003 [P] Write the route-order test in `tools/content-node/registry.spec.ts` (R3).
+  - Show it failing on one module's count raised by hand. — #569
+- [x] T003 [P] Write the route-order test in `tools/content-node/registry.spec.ts` (R3).
   - Record today's 88 paths with their methods, in order. Assert that the endpoint list equals the recording.
-  - Assert that each of the 13 order-dependent pairs is in its recorded order: the 5 person lists before `/{attribute}`; `enhanced`, `stId`, `ids/map` and `normalPathway` before `/query/{id}/{attribute}`; `schema/model` before `/{id}`; `diagram/summary` before `/{diagram}`; icon `facet` and `query` before `/{identifier}`.
-  - It reads the list from `service.ts` until T006 moves it. Show it failing on two swapped endpoints.
-- [ ] T004 [P] Write the boundary test in `tools/content-node/boundaries.spec.ts` (contracts/boundaries.md). It reads each module's import specifiers and fails on any the table does not allow, naming both modules.
+  - Assert that the 15 order-dependent pairs, named in the test, are in their measured order: the 5 person lists before `/{attribute}`; `enhanced`, `stId`, `ids/map` and `normalPathway` before `/query/{id}/{attribute}`, and `enhanced` before `/{id}/stId` and `/{id}/normalPathway`; `schema/model` before `/{id}`; `diagram/summary` before `/{diagram}`; icon `facet` and `query` before `/{identifier}`.
+  - It reads the list from `service.ts` until T006 moves it. Show it failing on two swapped endpoints. — #569
+- [x] T004 [P] Write the boundary test in `tools/content-node/boundaries.spec.ts` (contracts/boundaries.md). It reads each module's import specifiers and fails on any the table does not allow, naming both modules.
   - It passes trivially today, because only `service.ts` imports the leaves.
-  - Show it failing on a family-to-family import, using a fixture module written in the test.
+  - Show it failing on a family-to-family import, using a fixture module written in the test. — #569
 
 **Checkpoint**: four checks live in CI, and nothing has moved.
 
@@ -99,18 +99,18 @@ It must not mix in logic edits.
 
 ### Families, least coupled first (each its own PR: its endpoints in today's order, and the helpers only it uses)
 
-- [ ] T014 [P] [US1] `tools/content-node/citation.ts`: `/citation/*`.
-- [ ] T015 [P] [US1] `tools/content-node/content.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`).
-- [ ] T016 [P] [US1] `tools/content-node/person.ts`: `/data/person/*`, the role lists' generator kept as a generator.
+- [ ] T014 [P] [US1] `tools/content-node/citation-endpoints.ts`: `/citation/*`.
+- [ ] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`).
+- [ ] T016 [P] [US1] `tools/content-node/person-endpoints.ts`: `/data/person/*`, the role lists' generator kept as a generator.
 - [ ] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries.
-- [ ] T018 [P] [US1] `tools/content-node/interactors.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
-- [ ] T019 [P] [US1] `tools/content-node/exporters.ts`: `/exporter/*`, with the render-service requests.
-- [ ] T020 [P] [US1] `tools/content-node/entities.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
-- [ ] T021 [P] [US1] `tools/content-node/mapping-species.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`.
-- [ ] T022 [P] [US1] `tools/content-node/data-query.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`.
-- [ ] T023 [P] [US1] `tools/content-node/pathways-events.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator.
-- [ ] T024 [US1] `tools/content-node/search.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers.
-- [ ] T025 [US1] `tools/content-node/search-diagram.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
+- [ ] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
+- [ ] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests.
+- [ ] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
+- [ ] T021 [P] [US1] `tools/content-node/mapping-species-endpoints.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`.
+- [ ] T022 [P] [US1] `tools/content-node/data-query-endpoints.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`.
+- [ ] T023 [P] [US1] `tools/content-node/pathways-events-endpoints.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator.
+- [ ] T024 [US1] `tools/content-node/search-endpoints.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers.
+- [ ] T025 [US1] `tools/content-node/search-diagram-endpoints.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
   - Also show SC-003 here: two pull requests changing two different families at once, neither conflicting.
 
 ### The server

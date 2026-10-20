@@ -99,6 +99,18 @@ jobs:
       - name: Check unreachable code has not increased
         run: npm run check:dead
 
+      # A pull request that moves code between modules rewrites the
+      # per-module baselines, so a rise could hide inside the move (spec 014):
+      # each baseline's total is held to the base branch's.
+      - name: Check the ratchets' totals have not risen
+        # A dispatched run (the library-update branch's) is held to main.
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          node scripts/check-baseline-totals.mjs "origin/$BASE_REF"
+
       # A recorded answer cut off after its headers replayed as a successful
       # empty one, and the page quietly showed nothing. The harness aborts
       # those now; this refuses a recording that has one.
