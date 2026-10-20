@@ -81,7 +81,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 
 Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once moved, search and citation would import the registry that imports them.
 
-**Decision.** Before any move, one pull request adds `release.ts`, which answers the release once (cached as the version endpoint already is). The version endpoint and the three callers use it. It is the only logic edit Part 1 needs, it gets its own pull request, and it is verified like the others. No family module may import the registry or another family; only shared modules.
+**Decision.** Before any move, the version endpoint's cached handler is declared on its own, and the version endpoint and the three callers use it. It is the only logic edit Part 1 needs, and it is verified like the others. It went in with the typed `Endpoint` (T005–T006 in one pull request), because naming the handler changed what TypeScript inferred for the untyped list. It stays in `service.ts` until it moves to `release.ts` with the layer-6 modules, being built on `cached` (layer 4). No family module may import the registry or another family; only shared modules.
 
 ## R3. The registry and the order of routes
 

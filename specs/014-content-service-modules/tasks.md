@@ -53,11 +53,11 @@ It must not mix in logic edits.
 
 ## Phase 2: Foundational
 
-- [ ] T005 Add `tools/content-node/release.ts` (R2). It answers the release once, cached as the version endpoint is. Then:
-  - make the version endpoint use it;
-  - make search's `reportInformation`, the citation lookup and `/health` use it, instead of `endpoints.find(… '/data/database/version')`.
+- [x] T005 Break the release cycle (R2). The version endpoint's cached handler, `databaseVersion`, is declared on its own ahead of the list. Then:
+  - the version endpoint uses it as its handler;
+  - search's `reportInformation`, the citation lookup and `/health` call it, instead of `endpoints.find(… '/data/database/version')`.
 
-  This is the one logic edit of Part 1, in its own PR. Verify on beta: `/data/database/version`, `/health`'s release, a citation, and one no-result search report path. The report itself is not sent, because nothing is configured to receive it in a test run. Show with a spec that no helper reads the endpoint list any more.
+  This is the one logic edit of Part 1. It lives in `service.ts` until T013 moves it into `tools/content-node/release.ts`, because it is built on `cached` (T011) and the graph. Verify on beta: `/data/database/version`, `/health`'s release and a citation. The no-result report path is not exercised there, because it posts a real report; it makes the same call as the citation lookup. Show with a spec (`registry.spec.ts`) that no helper looks an endpoint up by its path any more. — #570
 
 ---
 
@@ -67,12 +67,9 @@ It must not mix in logic edits.
 
 **Independent Test**: a misspelled or mistyped endpoint field fails `check:types`, and `git grep` finds no cast on the endpoint list in the tools or specs.
 
-- [ ] T006 [US2] Add `tools/content-node/registry.ts`:
-  - the `Endpoint` type (data-model.md, the 11 fields plus `warms` on the handler);
-  - `endpoints`, re-exported from `service.ts` for now and typed `Endpoint[]` there in place;
-  - `endpointFor` and `getEndpointFor`, moved to it.
+- [x] T006 [US2] Add `tools/content-node/registry.ts` with the `Endpoint`, `Handler`, `Answer` and `Request` types (data-model.md, the 11 fields plus `warms` on the handler). `service.ts` types its list `Endpoint[]` in place, and `cached` returns a `Handler`. Show `sampel: '…'` on one endpoint failing the type check.
 
-  Point `deploy/nginx/routes.spec.ts` and the route-order test (T003) at the registry. Show `sampel: '…'` on one endpoint failing the type check.
+  Done with T005 in one PR: naming the version handler changed what TypeScript inferred for the untyped list, so the list had to be typed at the same time. The registry does not re-export the list yet, because nothing would read it there. `endpointFor` and `getEndpointFor` stay in `service.ts`, beside the server code that calls them; they move to the registry in T026, when it assembles the families and `service.ts` goes. `deploy/nginx/routes.spec.ts` and the route-order test move to the registry then too. — #570
 
 - [ ] T007 [US2] Remove the casts on the endpoint list: `tools/content-node/diff.ts` (`DiffEndpoint`, `as DiffEndpoint[]`), `tools/content-node/invalid-inputs.ts`/`.spec.ts` (`Endpoint`, the `as … []`), `tools/content-node/parameters.spec.ts`, and any other spec `git grep` finds. All of them use `Endpoint` from the registry.
 
@@ -93,7 +90,8 @@ It must not mix in logic edits.
 - [ ] T010 [US1] Move `tools/content-node/spring.ts` (layer 3): `Bound`, `booleanEditor`, the `spring*` binders, `servletParameter`/`servletDecode`, `queryValues`, `pathId`/`javaPathDecode`/`rawSegment`, `requiredString`, `writerFor`.
 - [ ] T011 [US1] Move `tools/content-node/answers.ts` (layer 4): `javaJson`, `javaError`, `notFound`, `unexpected`/`unexpectedFailure`, `springNotFound`, `compact` and its types, `only`, `nonEmptyJson`/`RawJson`, `Failure`, `neo4jFailureMessage`, `timedOut`, `cached`.
 - [ ] T012 [US1] Move `tools/content-node/objects.ts` (layer 5): `resolveId`, `graphCoreId`, `inDepthId`, `longPastRange`, `speciesFilter`/`speciesTaxId`, `lazyCollectionQuery`/`lazyRelationship`, `attributeOf`/`attributeAnswer`, `pathwayJson`, `Props`.
-- [ ] T013 [US1] Move the two pair-shared modules:
+- [ ] T013 [US1] Move the layer-6 modules:
+  - `tools/content-node/release.ts`: `databaseVersion` (T005);
   - `tools/content-node/reference-entities.ts`: `referenceEntityJson`, `REFERENCE_CLASSES`, `MOLECULE_TYPES`;
   - `tools/content-node/search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `diagramResult` and its queries.
 
@@ -116,6 +114,7 @@ It must not mix in logic edits.
 ### The server
 
 - [ ] T026 [US1] Move what is left into `tools/content-node/server.ts`: start-up, the path rules, the download guard, failure answering, `/health`, warm-up. Remove `service.ts`. Then:
+  - the registry assembles the families' lists in today's order, and `endpointFor` and `getEndpointFor` move to it (T006); point `deploy/nginx/routes.spec.ts` and the route-order test at it;
   - change `deploy/content-node/Dockerfile`'s CMD, `package.json`'s `content:node`, `scripts/preflight.sh` and `tools/started.spec.mjs`;
   - update every spec and document that names `service.ts` (historical specs aside);
   - run the end-to-end suite in full;

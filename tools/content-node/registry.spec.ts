@@ -94,7 +94,33 @@ const PAIRS_ANY_METHOD = [
   'POST /references/mapping/xrefs before GET /references/mapping/{identifier}',
 ];
 
+/**
+ * Reads of the endpoint list that pick one endpoint out by its path: a helper
+ * reaching into the list for another endpoint's answer, as the release lookup
+ * once did (research R2). A family module doing that would import the
+ * registry, which assembles the families: a cycle. A backstop for service.ts
+ * while it holds the list; boundaries.spec.ts holds the rule itself.
+ */
+function lookupsByPath(source: string): string[] {
+  return [
+    ...source.matchAll(
+      /endpoints\s*\.\s*(?:find|filter|some|findIndex)\(\s*\(?\s*(\w+)[^)\n]*\)\s*=>\s*[^;\n]*\1\.path\s*(?:\.\s*(?:endsWith|startsWith|includes)\(|===|!==|==)/g
+    ),
+  ].map((match) => match[0]);
+}
+
 describe('the endpoint list', () => {
+  it('is not read by a helper looking an endpoint up by its path', () => {
+    const source = readFileSync(new URL('./service.ts', import.meta.url), 'utf8');
+    expect(lookupsByPath(source)).toEqual([]);
+    // What it is there to catch, as the release lookup read before R2.
+    expect(
+      lookupsByPath(
+        "const version = endpoints.find((e) => e.path.endsWith('/data/database/version'));"
+      )
+    ).toHaveLength(1);
+  });
+
   it('is matched in the recorded order', () => {
     expect(routes).toEqual(RECORDED);
   });
