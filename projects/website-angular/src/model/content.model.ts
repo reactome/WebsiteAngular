@@ -119,8 +119,10 @@ export interface SchemaAttribute {
  * (simpleObjectJson and /instance/{id}/referrers in
  * tools/content-node/service.ts). An object of a class without a stable id --
  * an InstanceEdit, a Species -- has no `stId`, and non_empty leaves it
- * out; an empty displayName or schemaClass is left out the same way. A
- * missing displayName or schemaClass is written as the text "null".
+ * out; an empty displayName is left out the same way, and a missing one is
+ * written as the text "null". schemaClass is the class the labels name on
+ * /schema/{class}/min, always there; on /instance/{id}/referrers it is the
+ * object's property, "null" when missing and left out when empty.
  */
 export interface SimpleDatabaseObject {
   dbId: number;
