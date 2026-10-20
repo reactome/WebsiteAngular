@@ -25,7 +25,7 @@ Each step is undone after it has been seen to fail.
 ## Record the corpus again
 
 ```bash
-node tools/api-types/record.mjs [origin]    # default: the node content service on this host
+node tools/api-types/record.ts [origin]    # default: the node content service on this host
 ```
 
 Reads at most 40 URLs, one at a time with a pause, from our own service, and rewrites `tools/api-types/recorded/`. Never pointed at production.

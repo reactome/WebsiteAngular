@@ -17,13 +17,24 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
-import { ROOT } from './compile.mjs';
+import { ROOT } from './compile.ts';
+
+/** A content API call found in the source. */
+export interface ScannedCall {
+  file: string;
+  method: string;
+  /** The HttpClient method upper-cased, or FETCH. */
+  http: string;
+  /** Its type argument as written, its responseType, or '(untyped)'. */
+  readAs: string;
+  line: number;
+}
 
 const HTTP = new Set(['get', 'post', 'put', 'delete', 'request']);
 const CONTENT = /\bCONTENT_SERVICE\b|\/ContentService\b/;
 
-function sourceFiles(dir) {
-  const found = [];
+function sourceFiles(dir: string): string[] {
+  const found: string[] = [];
   for (const name of readdirSync(dir)) {
     const full = path.join(dir, name);
     if (statSync(full).isDirectory()) {
@@ -34,9 +45,12 @@ function sourceFiles(dir) {
   return found;
 }
 
+/** A node's parent: undefined for a source file, whatever its type says. */
+const parentOf = (node: ts.Node): ts.Node | undefined => node.parent as ts.Node | undefined;
+
 /** The name of the method, property or function a node sits in. */
-function enclosing(node) {
-  for (let at = node.parent; at; at = at.parent) {
+function enclosing(node: ts.Node): string {
+  for (let at = parentOf(node); at; at = parentOf(at)) {
     if (
       (ts.isMethodDeclaration(at) ||
         ts.isPropertyDeclaration(at) ||
@@ -56,12 +70,16 @@ function enclosing(node) {
  * through an identifier or `this.` property whose declaration in the same file
  * does, followed a few steps.
  */
-function reachesContent(expression, sourceFile, seen = new Set()) {
+function reachesContent(
+  expression: ts.Node,
+  sourceFile: ts.SourceFile,
+  seen = new Set<string>()
+): boolean {
   if (CONTENT.test(expression.getText())) return true;
   let reaches = false;
-  const visit = (node) => {
+  const visit = (node: ts.Node): void => {
     if (reaches) return;
-    let name;
+    let name: string | undefined;
     if (ts.isIdentifier(node)) name = node.text;
     else if (
       ts.isPropertyAccessExpression(node) &&
@@ -80,9 +98,9 @@ function reachesContent(expression, sourceFile, seen = new Set()) {
 }
 
 /** The value given a variable, property or parameter default named `name`, or a `this.name = …`, if any. */
-function findDeclaration(sourceFile, name) {
-  let found;
-  const visit = (node) => {
+function findDeclaration(sourceFile: ts.SourceFile, name: string): ts.Expression | undefined {
+  let found: ts.Expression | undefined;
+  const visit = (node: ts.Node): void => {
     if (found) return;
     if (
       (ts.isVariableDeclaration(node) || ts.isPropertyDeclaration(node) || ts.isParameter(node)) &&
@@ -105,14 +123,18 @@ function findDeclaration(sourceFile, name) {
 }
 
 /** What the call reads its answer as: its type argument, or the responseType it asks for. */
-function readAs(call) {
-  const options = call.arguments.find(
-    (a, i) => i > 0 && ts.isObjectLiteralExpression(a) && /\bresponseType\b/.test(a.getText())
+function readAs(call: ts.CallExpression): string {
+  const options = call.arguments
+    .slice(1)
+    .find(
+      (a): a is ts.ObjectLiteralExpression =>
+        ts.isObjectLiteralExpression(a) && /\bresponseType\b/.test(a.getText())
+    );
+  const property = options?.properties.find(
+    (p): p is ts.PropertyAssignment =>
+      ts.isPropertyAssignment(p) && p.name.getText() === 'responseType'
   );
-  const responseType = options?.properties
-    .find((p) => p.name?.getText() === 'responseType')
-    ?.initializer?.getText()
-    .replace(/['"]/g, '');
+  const responseType = property?.initializer.getText().replace(/['"]/g, '');
   if (responseType) return responseType;
   return call.typeArguments?.map((t) => t.getText()).join(', ') ?? '(untyped)';
 }
@@ -121,13 +143,13 @@ function readAs(call) {
  * [{file, method, http, readAs, line}] for every content API call under
  * `projects/`, in file order. `http` is the HttpClient method, or 'fetch'.
  */
-export function scanCalls(root = path.join(ROOT, 'projects')) {
-  const calls = [];
+export function scanCalls(root = path.join(ROOT, 'projects')): ScannedCall[] {
+  const calls: ScannedCall[] = [];
   for (const full of sourceFiles(root)) {
     const text = readFileSync(full, 'utf8');
     if (!/\b(http|fetch)\b/.test(text)) continue;
     const sourceFile = ts.createSourceFile(full, text, ts.ScriptTarget.Latest, true);
-    const visit = (node) => {
+    const visit = (node: ts.Node): void => {
       if (ts.isCallExpression(node) && node.arguments.length) {
         const callee = node.expression;
         const http =

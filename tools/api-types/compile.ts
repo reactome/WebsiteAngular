@@ -12,16 +12,35 @@
 import path from 'node:path';
 import ts from 'typescript';
 
+/** An answer to compile: what it is read as, and where it came from. */
+export interface Answer {
+  key: string;
+  route: string;
+  source?: string;
+  type: string;
+  body: string;
+}
+
+/** A problem found, by route, recording and JSON path. */
+export interface Problem {
+  route: string;
+  source: string;
+  key: string;
+  path: string;
+  message: string;
+}
+
 export const ROOT = path.join(import.meta.dirname, '..', '..');
 
-let options;
-function compilerOptions() {
+let options: ts.CompilerOptions | undefined;
+function compilerOptions(): ts.CompilerOptions {
   if (options) return options;
   const config = ts.getParsedCommandLineOfConfigFile(
     path.join(ROOT, 'tsconfig.json'),
     {},
     { ...ts.sys, onUnRecoverableConfigFileDiagnostic: () => {} }
   );
+  if (!config) throw new Error('the root tsconfig.json cannot be read');
   options = {
     ...config.options,
     noEmit: true,
@@ -41,8 +60,8 @@ function compilerOptions() {
  * The JSON path, from the answer's root, of the innermost value containing
  * `position` in the answer's initializer.
  */
-function jsonPath(initializer, position) {
-  let node = initializer;
+function jsonPath(initializer: ts.Expression, position: number): string {
+  let node: ts.Expression = initializer;
   let at = '$';
   for (;;) {
     if (ts.isObjectLiteralExpression(node)) {
@@ -56,9 +75,10 @@ function jsonPath(initializer, position) {
       node = property.initializer;
     } else if (ts.isArrayLiteralExpression(node)) {
       const index = node.elements.findIndex((e) => e.pos <= position && position < e.end);
-      if (index === -1) return at;
+      const element = node.elements[index];
+      if (!element) return at;
       at += `[${index}]`;
-      node = node.elements[index];
+      node = element;
     } else if (ts.isPrefixUnaryExpression(node) || ts.isParenthesizedExpression(node)) {
       return at;
     } else return at;
@@ -66,7 +86,7 @@ function jsonPath(initializer, position) {
 }
 
 /** The answer's value: the initializer of the file's one declaration. */
-const initializerOf = (sourceFile) =>
+const initializerOf = (sourceFile: ts.SourceFile | undefined) =>
   sourceFile?.statements.find(ts.isVariableStatement)?.declarationList.declarations[0]?.initializer;
 
 /**
@@ -78,10 +98,10 @@ const initializerOf = (sourceFile) =>
 const FIELD_CODES = new Set([2353, 2561, 2739, 2740, 2741]);
 
 /** Whether the deepest message of a diagnostic is about a missing or extra field. */
-function endsInField(d) {
+function endsInField(d: ts.Diagnostic): boolean {
+  if (typeof d.messageText === 'string') return false;
   let chain = d.messageText;
-  if (typeof chain === 'string') return false;
-  while (chain.next?.length) chain = chain.next[0];
+  for (let deeper = chain.next?.[0]; deeper; deeper = deeper.next?.[0]) chain = deeper;
   return FIELD_CODES.has(chain.code);
 }
 
@@ -91,9 +111,12 @@ function endsInField(d) {
  * whose type is a union is left to the compiler; one whose type allows any
  * field is checked only for the fields it requires.
  */
-function fieldProblems(checker, initializer) {
-  const found = [];
-  const walk = (node, at) => {
+function fieldProblems(
+  checker: ts.TypeChecker,
+  initializer: ts.Expression
+): { path: string; message: string }[] {
+  const found: { path: string; message: string }[] = [];
+  const walk = (node: ts.Node, at: string): void => {
     if (ts.isArrayLiteralExpression(node)) {
       node.elements.forEach((e, i) => walk(e, `${at}[${i}]`));
       return;
@@ -101,7 +124,7 @@ function fieldProblems(checker, initializer) {
     if (!ts.isObjectLiteralExpression(node)) return;
     const contextual = checker.getContextualType(node);
     const type = contextual && checker.getNonNullableType(contextual);
-    const names = new Map();
+    const names = new Map<string, ts.PropertyAssignment>();
     for (const p of node.properties)
       if (ts.isPropertyAssignment(p)) {
         const name = ts.isStringLiteral(p.name) ? p.name.text : p.name.getText();
@@ -131,7 +154,7 @@ function fieldProblems(checker, initializer) {
   return found;
 }
 
-const step = (at, name) =>
+const step = (at: string, name: string) =>
   /^[A-Za-z_$][\w$]*$/.test(name) ? `${at}.${name}` : `${at}[${JSON.stringify(name)}]`;
 
 /**
@@ -140,10 +163,10 @@ const step = (at, name) =>
  * {route, source, key, path, message}, sorted; a diagnostic outside the
  * answers (a broken type file) comes back with route 'elsewhere'.
  */
-export function compileAnswers(answers, header) {
+export function compileAnswers(answers: Answer[], header: string): Problem[] {
   const opts = compilerOptions();
   const prefix = `${header}\nexport const answer: `;
-  const files = new Map();
+  const files = new Map<string, { answer: Answer; text: string }>();
   for (const a of answers)
     files.set(path.join(ROOT, `answer-${a.key}.ts`), {
       answer: a,
@@ -155,14 +178,14 @@ export function compileAnswers(answers, header) {
   const source = host.getSourceFile.bind(host);
   host.readFile = (f) => files.get(f)?.text ?? read(f);
   host.fileExists = (f) => files.has(f) || exists(f);
-  host.getSourceFile = (f, language, ...rest) =>
-    files.has(f)
-      ? ts.createSourceFile(f, files.get(f).text, language, true)
-      : source(f, language, ...rest);
+  host.getSourceFile = (f, language, ...rest) => {
+    const file = files.get(f);
+    return file ? ts.createSourceFile(f, file.text, language, true) : source(f, language, ...rest);
+  };
   const program = ts.createProgram([...files.keys()], opts, host);
   const checker = program.getTypeChecker();
-  const problems = [];
-  const walked = new Set();
+  const problems: Problem[] = [];
+  const walked = new Set<string>();
   for (const [fileName, file] of files) {
     const initializer = initializerOf(program.getSourceFile(fileName));
     const { route, source: from, key } = file.answer;
@@ -188,7 +211,8 @@ export function compileAnswers(answers, header) {
       });
       continue;
     }
-    const initializer = initializerOf(program.getSourceFile(d.file.fileName));
+    const fileName = d.file?.fileName ?? '';
+    const initializer = initializerOf(program.getSourceFile(fileName));
     const at =
       initializer && d.start !== undefined && d.start >= initializer.getStart()
         ? jsonPath(initializer, d.start)
@@ -196,7 +220,7 @@ export function compileAnswers(answers, header) {
     // The same missing or extra field again, wrapped in "not assignable" (an
     // intersection type reports it so); kept where fieldProblems found
     // nothing there, as for a union, which it leaves to the compiler.
-    if (endsInField(d) && walked.has(`${d.file.fileName} ${at}`)) continue;
+    if (endsInField(d) && walked.has(`${fileName} ${at}`)) continue;
     const { route, source: from, key } = file.answer;
     problems.push({ route, source: from ?? '', key, path: at, message });
   }
@@ -208,7 +232,7 @@ export function compileAnswers(answers, header) {
 }
 
 /** One line per problem, as the checks report them (contracts/check-output.md). */
-export const describe = (p) =>
+export const describe = (p: Problem): string =>
   p.route === 'elsewhere'
     ? `elsewhere: ${p.source}: ${p.message}`
     : `${p.route} [${p.source}]: ${p.path}: ${p.message}`;

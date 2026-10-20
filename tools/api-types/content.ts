@@ -10,20 +10,20 @@
  */
 import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { recordedAnswers } from './answers.mjs';
-import { CALLS, TYPES } from './calls.mjs';
-import { compileAnswers, ROOT } from './compile.mjs';
+import { recordedAnswers, type RecordedAnswer, type Skipped } from './answers.ts';
+import { CALLS, TYPES, type Call } from './calls.ts';
+import { compileAnswers, ROOT, type Answer, type Problem } from './compile.ts';
 
 const NOT_JSON = new Set(['text', 'blob']);
 
-const routes = (call) => (Array.isArray(call.route) ? call.route : [call.route]);
-const pattern = (route) =>
+const routes = (call: Call): string[] => (Array.isArray(call.route) ? call.route : [call.route]);
+const pattern = (route: string) =>
   new RegExp(`^${route.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\{\w+\}/g, '[^/]+')}$`);
 
-const placeholders = (route) => route.match(/\{\w+\}/g)?.length ?? 0;
+const placeholders = (route: string) => route.match(/\{\w+\}/g)?.length ?? 0;
 
 /** The route of `call` that `answer` was asked on, if it is one this call reads. */
-function routeOf(call, answer) {
+function routeOf(call: Call, answer: RecordedAnswer): string | undefined {
   if (call.http !== answer.method || NOT_JSON.has(call.type)) return undefined;
   // A value is the one the call sends; null, a parameter it never sends.
   if (call.query && Object.entries(call.query).some(([k, v]) => answer.query.get(k) !== v))
@@ -32,10 +32,10 @@ function routeOf(call, answer) {
 }
 
 /** The groups the routes are compiled in, each its own program. */
-export function groupOf(route) {
+export function groupOf(route: string | undefined): string {
   if (route === '/data/eventsHierarchy/{taxId}') return 'events hierarchy';
   if (route === '/data/query/enhanced/v2/{id}') return 'enhanced v2';
-  return route.startsWith('/search') || route.startsWith('/interactors')
+  return route?.startsWith('/search') || route?.startsWith('/interactors')
     ? 'search and interactors'
     : 'data';
 }
@@ -45,14 +45,25 @@ export function groupOf(route) {
  * {key, route, source, type, body}; `notRead` counts answers on routes no call
  * reads, by path; `coverage` counts answers per call.
  */
-export function matchAnswers(recorded = recordedAnswers()) {
-  const checks = new Map();
-  const notRead = new Map();
-  const coverage = new Map(CALLS.map((c) => [c, 0]));
+/** What matching the answers to their readers found. */
+export interface Matched {
+  checks: Answer[];
+  notRead: Map<string, number>;
+  skipped: Skipped;
+  coverage: Map<Call, number>;
+}
+
+export function matchAnswers(recorded = recordedAnswers()): Matched {
+  const checks = new Map<string, Answer>();
+  const notRead = new Map<string, number>();
+  const coverage = new Map<Call, number>(CALLS.map((c) => [c, 0]));
   for (const answer of recorded.answers) {
     // A route written out wins over one with a placeholder that also fits:
     // /search/icon/query is not an icon called "query".
-    let readers = CALLS.map((call) => [call, routeOf(call, answer)]).filter(([, r]) => r);
+    let readers = CALLS.flatMap((call): [Call, string][] => {
+      const route = routeOf(call, answer);
+      return route ? [[call, route]] : [];
+    });
     const fewest = Math.min(...readers.map(([, r]) => placeholders(r)));
     readers = readers.filter(([, r]) => placeholders(r) === fewest);
     // A reader that names the query it sends is the one reading this answer:
@@ -61,7 +72,7 @@ export function matchAnswers(recorded = recordedAnswers()) {
     if (readers.some(([call]) => call.query)) readers = readers.filter(([call]) => call.query);
     const read = readers.length > 0;
     for (const [call, route] of readers) {
-      coverage.set(call, coverage.get(call) + 1);
+      coverage.set(call, (coverage.get(call) ?? 0) + 1);
       const key = createHash('sha1')
         .update(call.type)
         .update(answer.body)
@@ -84,18 +95,18 @@ export function matchAnswers(recorded = recordedAnswers()) {
 }
 
 /** The import lines for the names `types` use. */
-function header(types) {
+function header(types: string[]): string {
   const names = new Set(types.flatMap((t) => t.match(/(?<![.\w])[A-Z]\w*/g) ?? []));
   return [...names]
     .filter((n) => n in TYPES)
     .sort()
-    .map((n) => `import type { ${n} } from ${JSON.stringify(path.join(ROOT, TYPES[n]))};`)
+    .map((n) => `import type { ${n} } from ${JSON.stringify(path.join(ROOT, TYPES[n] ?? ''))};`)
     .join('\n');
 }
 
 /** The problems found compiling `checks`, one program per group. */
-export function checkAnswers(checks) {
-  const groups = new Map();
+export function checkAnswers(checks: Answer[]): Problem[] {
+  const groups = new Map<string, Answer[]>();
   for (const c of checks) {
     const group = groupOf(c.route.split(' ')[1]);
     groups.set(group, [...(groups.get(group) ?? []), c]);
@@ -109,10 +120,13 @@ export function checkAnswers(checks) {
  * The difference between the problems found and the counts the ratchet
  * allows: one line per route whose count is not exactly what it allows.
  */
-export function ratchet(problems, known) {
-  const found = new Map();
+export function ratchet(
+  problems: Pick<Problem, 'route'>[],
+  known: Record<string, number>
+): string[] {
+  const found = new Map<string, number>();
   for (const p of problems) found.set(p.route, (found.get(p.route) ?? 0) + 1);
-  const lines = [];
+  const lines: string[] = [];
   for (const route of new Set([...found.keys(), ...Object.keys(known)]).values()) {
     const count = found.get(route) ?? 0;
     const allowed = known[route] ?? 0;

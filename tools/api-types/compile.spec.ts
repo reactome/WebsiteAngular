@@ -4,10 +4,10 @@
 // message from the compiler does not, and an answer can be a megabyte.
 import path from 'node:path';
 import { describe as group, expect, it } from 'vitest';
-import { compileAnswers, describe } from './compile.mjs';
+import { compileAnswers, describe } from './compile.ts';
 
 const HEADER = `import type { Thing } from ${JSON.stringify(path.join(import.meta.dirname, 'fixtures/thing.model'))};`;
-const check = (type, value, header = HEADER) =>
+const check = (type: string, value: unknown, header = HEADER) =>
   compileAnswers(
     [{ key: 'k', route: 'GET /thing/{id}', source: 'fixture', type, body: JSON.stringify(value) }],
     header

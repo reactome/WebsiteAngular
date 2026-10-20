@@ -28,11 +28,29 @@
  *                    a caller), so the scan cannot see it; checked by name
  */
 
+/** One place the site asks the content API for something (see above). */
+export interface Call {
+  file: string;
+  method: string;
+  n?: number;
+  http: 'GET' | 'POST';
+  route: string | string[];
+  query?: Record<string, string | null>;
+  type: string;
+  reads?: string;
+  gap?: string;
+  indirect?: string;
+}
+
+/** Where a call is, as the checks name it: file, method, and which of its calls. */
+export const where = (c: { file: string; method: string; n?: number }): string =>
+  `${c.file} › ${c.method}${(c.n ?? 1) > 1 ? ` #${c.n}` : ''}`;
+
 const PB = 'projects/pathway-browser/src/app';
 const WEB = 'projects/website-angular/src';
 
 /** Where each name a type uses comes from, repository-relative, without extension. */
-export const TYPES = {
+export const TYPES: Record<string, string> = {
   DatabaseObject: `${PB}/model/graph/database-object.model`,
   Pathway: `${PB}/model/graph/event/pathway.model`,
   TopLevelPathway: `${PB}/model/graph/event/top-level-pathway.model`,
@@ -75,7 +93,7 @@ const UPLOAD = 'an upload is stored for good, so none is recorded';
 
 // One call per line reads as a table.
 // prettier-ignore
-export const CALLS = [
+export const CALLS: Call[] = [
   // pathway-browser
   { file: `${PB}/details/common/reaction-diagram/reaction-diagram.component.ts`, method: 'ngAfterViewInit', http: 'GET', route: '/exporter/reaction/{id}/diagram', type: 'ReactionJson' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', type: 'any' },
