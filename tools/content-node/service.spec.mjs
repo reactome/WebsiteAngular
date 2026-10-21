@@ -19,13 +19,13 @@ import {
   endpointFor,
   fingerprintFiles,
   failureAnswer,
-  inDepthAttributes,
   writeResult,
   deepLimit,
 } from './service.ts';
 import {
   PathwayBrowserNode,
   eventProjection,
+  inDepthAttributes,
   javaUrlDecode,
   locationsInPathwayBrowser,
   locationsQuery,

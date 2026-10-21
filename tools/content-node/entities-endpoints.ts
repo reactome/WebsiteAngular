@@ -1,7 +1,7 @@
 /**
  * The physical entity endpoints (spec 014, research R1, a family): an
- * event's participants (/data/participants/*), an entity's in-depth tree,
- * other forms and component-of (/data/entity/*), and complexes
+ * event's participants (/data/participants/*), an entity's other forms
+ * and component-of (/data/entity/*), and complexes
  * (/data/complex*), with the helpers only they use. Moved unchanged from
  * service.ts.
  */

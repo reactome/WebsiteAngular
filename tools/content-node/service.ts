@@ -22,9 +22,9 @@ import { createHash } from 'node:crypto';
 import { setInterval } from 'node:timers';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
-import { read, configured, close } from './graph.ts';
+import { configured, close } from './graph.ts';
 import { settings } from './settings.ts';
-import type { MappedRow } from './domain.ts';
+
 import type { Endpoint } from './endpoint.ts';
 
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
@@ -34,22 +34,11 @@ import { JavaHashMap } from './java-hashmap.ts';
 
 export { JavaHashMap };
 
-import { inDepthQuery, mapResult, writeDomain } from './domain.ts';
-
 import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java-text.ts';
-import { pathId, queryValues, rawSegment, springIntWithDefault, writerFor } from './spring.ts';
-import type { Bound } from './spring.ts';
-import {
-  deepShare,
-  javaError,
-  javaJson,
-  notFound,
-  springNotFound,
-  timedOut,
-  unexpected,
-} from './answers.ts';
+import { pathId, rawSegment } from './spring.ts';
+
+import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
-import { inDepthId } from './objects.ts';
 
 import { databaseVersion } from './release.ts';
 import { citationEndpoints } from './citation-endpoints.ts';
@@ -77,7 +66,8 @@ const PORT = settings.port();
 const HOST = settings.host();
 
 /**
- * The endpoints implemented so far, in the order they were ported.
+ * The endpoints implemented so far: each family's in its own order, the
+ * families in the order research R3 records.
  *
  * Each entry is the path the Java service uses, so the diff harness and the
  * proxy table can both address them by that one string.
@@ -88,74 +78,6 @@ export const endpoints: Endpoint[] = [
   ...contentEndpoints,
   ...personEndpoints,
   ...mappingSpeciesEndpoints,
-  ...[
-    {
-      kind: 'entity',
-      label: 'PhysicalEntity',
-      follow: 'hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker',
-      // A complex of a complex, so there is more than one level to follow.
-      sample: 'R-HSA-109796?includeRef=true&view=nested-aggregated',
-    },
-    {
-      kind: 'event',
-      label: 'Event',
-      follow: 'hasEvent',
-      sample: 'R-HSA-69620?includeRef=true&view=nested-aggregated',
-    },
-  ].map(({ kind, label, follow, sample }): Endpoint => ({
-    path: `/ContentService/data/${kind}/{id}/in-depth`,
-    // A whole tree below an object: may run for the full read timeout.
-    deep: true,
-    sample,
-    differs: [
-      // The 404 body names the service that answered; see /pathways/top/{id}.
-      new RegExp(`^/ContentService/data/${kind}/[^/]+/in-depth[^:]*: \\.url: `),
-      // An `attributes` that is not relationship type names: Java writes it
-      // into its query and answers Neo4j's syntax error; node refuses it before
-      // any query, with a message of its own.
-      new RegExp(`^/ContentService/data/${kind}/[^/]+/in-depth[^:]*: \\.messages\\[0\\]: `),
-    ],
-    /**
-     * An entity or an event and everything below it -- the Pathway Browser's
-     * object tree and details panel read them -- as graph-core's
-     * getPhysicalEntityInDepth / getEventInDepth: every path from it along
-     * its structure (`follow`) up to `maxDepth` steps, each node with
-     * its `attributes` relationships, written by the domain serialiser in the
-     * view the request asks for (the site asks nested-aggregated with JSOG).
-     *
-     * As Java: `maxDepth` (default 1) of 0 means 1 and below 0 means no limit;
-     * `attributes` (default species,compartment) is split on commas, trailing
-     * empties dropped, and an empty list means species. An id is read as
-     * graph-core's getIdentifier reads it (inDepthId). With no path below it
-     * there is no answer at all: an entity
-     * is Java's empty 200, an event its 404.
-     */
-    handler: async (request) => {
-      const raw = pathId(rawSegment(request, 4));
-      const depth = springIntWithDefault(queryValues(request, 'maxDepth'), 1);
-      if (depth.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', depth.error);
-      const attributes = inDepthAttributes(queryValues(request, 'attributes'));
-      if (attributes.error !== undefined)
-        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', attributes.error);
-      const id = inDepthId(raw);
-      const none =
-        kind === 'entity'
-          ? { status: 200, body: undefined }
-          : notFound(request, `No event found for given identifier: ${raw}`);
-      if (!id) return none;
-      const maxDepth = depth.value === 0 ? 1 : depth.value < 0 ? 2147483647 : depth.value;
-      const [row] = await read<MappedRow>(
-        inDepthQuery({ label, follow, idType: id.idType, maxDepth, attributes: attributes.value }),
-        { id: id.id }
-      );
-      if (!row) return none;
-      return {
-        status: 200,
-        serialised: writeDomain(mapResult(row), ...writerFor(request)),
-        type: 'application/json',
-      };
-    },
-  })),
   ...entitiesEndpoints,
   ...schemaEndpoints,
   ...interactorsEndpoints,
@@ -194,26 +116,6 @@ function getEndpointFor(path) {
       .filter((e) => !e.method)
       .find((e) => endpointPattern(e.path, '$').test(path))
   );
-}
-
-/**
- * `attributes` as the in-depth controllers read it: Spring joins repeated
- * values with ',', and an empty one takes the default; String.split(',')
- * drops trailing empties; an empty list means species. Joined with '|' for
- * the relationship pattern -- and refused unless that is relationship type
- * names, because Java writes it into the query text unchecked.
- */
-export function inDepthAttributes(
-  values: string[],
-  fallback = 'species,compartment'
-): Bound<string> {
-  const text = values.length && values.join(',') !== '' ? values.join(',') : fallback;
-  const parts = text.split(',');
-  while (parts.length && parts[parts.length - 1] === '') parts.pop();
-  const joined = (parts.length ? parts : ['species']).join('|');
-  if (!/^[A-Za-z_][A-Za-z0-9_]*(\|[A-Za-z_][A-Za-z0-9_]*)*$/.test(joined))
-    return { error: `attributes must be relationship type names, not: ${text}` };
-  return { value: joined };
 }
 
 /** rfd-snapshot.json: the extensions Spring trusts (snapshot-rfd.ts). */

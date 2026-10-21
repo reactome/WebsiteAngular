@@ -242,6 +242,16 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { id: 'oid' },
     query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
   },
+  '/ContentService/data/entity/{id}/in-depth': {
+    java: '/data/entity/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
+  },
+  '/ContentService/data/event/{id}/in-depth': {
+    java: '/data/event/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
+  },
   '/ContentService/data/content/toc': { java: '/data/content/toc' },
   '/ContentService/data/content/doi': { java: '/data/content/doi' },
   '/ContentService/data/content/contributors': { java: '/data/content/contributors' },
@@ -296,16 +306,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/orthology/{id}/species/{speciesId}': {
     java: '/data/orthology/{id}/species/{speciesId}',
     path: { id: 'oid', speciesId: 'long' },
-  },
-  '/ContentService/data/entity/{id}/in-depth': {
-    java: '/data/entity/{id}/in-depth',
-    path: { id: 'oid' },
-    values: IN_DEPTH,
-  },
-  '/ContentService/data/event/{id}/in-depth': {
-    java: '/data/event/{id}/in-depth',
-    path: { id: 'oid' },
-    values: IN_DEPTH,
   },
   '/ContentService/data/participants/{id}/referenceEntities': {
     java: '/data/participants/{id}/referenceEntities',
