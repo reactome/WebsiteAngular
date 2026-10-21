@@ -114,6 +114,7 @@ It must not mix in logic edits.
 ### The server
 
 - [ ] T026 [US1] Move what is left into `tools/content-node/server.ts`: start-up, the path rules, the download guard, failure answering, `/health`, warm-up. Remove `service.ts`. Then:
+  - start-up work a family owns goes through the registry, since the server imports no family: the PSICQUIC refresh (interactors-endpoints' refreshPsicquicResources, read at start and every five minutes), which service.ts calls directly until then;
   - the registry assembles the families' lists in today's order, and `endpointFor` and `getEndpointFor` move to it (T006); point `deploy/nginx/routes.spec.ts` and the route-order test at it;
   - change `deploy/content-node/Dockerfile`'s CMD, `package.json`'s `content:node`, `scripts/preflight.sh` and `tools/started.spec.mjs`;
   - update every spec and document that names `service.ts` (historical specs aside);
