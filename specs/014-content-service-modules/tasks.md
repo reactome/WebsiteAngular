@@ -93,7 +93,7 @@ It must not mix in logic edits.
 - [ ] T013 [US1] Move the layer-6 modules:
   - `tools/content-node/release.ts`: `databaseVersion` (T005);
   - `tools/content-node/reference-entities.ts`: `referenceEntityJson`, `REFERENCE_CLASSES`, `MOLECULE_TYPES`;
-  - `tools/content-node/search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `diagramResult` and its queries.
+  - `tools/content-node/search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `pair`, `diagramResult` and its queries; and `springFields` with search-core's `SOLR_FIELDS`, which T010 left here, being Solr's.
 
 ### Families, least coupled first (each its own PR: its endpoints in today's order, and the helpers only it uses)
 

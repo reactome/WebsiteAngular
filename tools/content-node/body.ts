@@ -67,7 +67,7 @@ export function plainText(body: Buffer, header?: string) {
   return (decoderFor(charset ?? 'utf-8') ?? UTF_8)(body);
 }
 
-export type Decoder = (body: Buffer) => string;
+type Decoder = (body: Buffer) => string;
 
 const UTF_8: Decoder = (body) => body.toString('utf8');
 
