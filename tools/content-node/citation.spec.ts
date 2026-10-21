@@ -539,7 +539,7 @@ describe('the citation endpoints', () => {
   });
 
   it("/pathway/{id}'s two citations are in Java's HashMap order, image first", async () => {
-    const { pathwayCitations } = await import('./service.ts');
+    const { pathwayCitations } = await import('./citation-endpoints.ts');
     expect(Object.keys(pathwayCitations(event(), 'd'))).toEqual([
       'imageCitation',
       'pathwayCitation',
