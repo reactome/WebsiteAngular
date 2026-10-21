@@ -31,11 +31,6 @@ import {
   participantJson,
   participantsFrom,
   physicalEntityJson,
-  schemaCountQuery,
-  schemaMinQuery,
-  schemaModelQuery,
-  schemaWindow,
-  simpleObjectJson,
   topPathwayJson,
   topSpeciesMatch,
   javaUrlDecode,
@@ -43,6 +38,13 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import {
+  schemaCountQuery,
+  schemaMinQuery,
+  schemaModelQuery,
+  schemaWindow,
+  simpleObjectJson,
+} from './schema-endpoints.ts';
 import { personWhere } from './person-endpoints.ts';
 import { referenceEntityJson } from './reference-entities.ts';
 import { inDepthId, pathwayJson, resolveId, speciesFilter } from './objects.ts';
