@@ -24,7 +24,6 @@ import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import { configured, close } from './graph.ts';
 import { settings } from './settings.ts';
-
 import type { Endpoint } from './endpoint.ts';
 
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
@@ -36,7 +35,6 @@ export { JavaHashMap };
 
 import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java-text.ts';
 import { pathId, rawSegment } from './spring.ts';
-
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
 

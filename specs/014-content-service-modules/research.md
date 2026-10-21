@@ -19,7 +19,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 | pathways-events | `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, `/data/{kind}/{id}/in-depth` |            411 |                    30/462 |
 | content         | `/data/content/*`                                                                                      |            216 |                      4/50 |
 | person          | `/data/person/*`                                                                                       |            255 |                      2/29 |
-| entities        | `/data/participants/*`, `/data/entity/*`, `/data/complex*`                                             |            298 |                      7/69 |
+| entities        | `/data/participants/*`, `/data/entity/*` (but in-depth), `/data/complex*`                              |            298 |                      7/69 |
 | mapping-species | `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`                               |            305 |                    15/221 |
 | schema          | `/data/schema/*`                                                                                       |            183 |                    12/109 |
 | interactors     | `/interactors/*`                                                                                       |            203 |                    12/154 |

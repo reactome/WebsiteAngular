@@ -3,9 +3,9 @@
  * top-level and lower-level pathways (/data/pathways/*), a pathway's
  * contained events (/data/pathway/*), an event's ancestors (/data/event/*),
  * the in-depth tree below an entity or an event
- * (/data/{entity,event}/{id}/in-depth) and where an object sits in the Pathway Browser
- * (/data/detail/*), with the helpers only they use. Moved unchanged from
- * service.ts.
+ * (/data/{entity,event}/{id}/in-depth) and where an object sits in the
+ * Pathway Browser (/data/detail/*), with the helpers only they use. Moved
+ * unchanged from service.ts.
  */
 import type { Endpoint } from './endpoint.ts';
 import { javaError, notFound, only } from './answers.ts';

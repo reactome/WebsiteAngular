@@ -103,7 +103,7 @@ It must not mix in logic edits.
 - [x] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries. — #589
 - [x] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh. — #590
 - [x] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests. — #590
-- [x] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`. — #590
+- [x] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*` (but in-depth, with T023), `/data/complex*`. — #590
 - [x] T021 [P] [US1] `tools/content-node/mapping-species-endpoints.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`. — #590
 - [x] T022 [P] [US1] `tools/content-node/data-query-endpoints.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`. — #590
 - [x] T023 [P] [US1] `tools/content-node/pathways-events-endpoints.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator. — #590
