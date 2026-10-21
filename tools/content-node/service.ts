@@ -76,7 +76,7 @@ import {
   javaUtf8,
   present,
 } from './java-text.ts';
-import { plainIds, plainText, plainTextProblem } from './body.ts';
+import { orthologyIds, plainText, plainTextProblem } from './body.ts';
 import {
   pathId,
   queryValues,
@@ -2196,19 +2196,6 @@ function findByIdFailure(ids) {
     if (refused) return refused;
   }
   return undefined;
-}
-
-/**
- * The ids in getOrthologies' body: String.split on , ; newline or tab --
- * trailing empty strings dropped, as Java's split drops them -- each trimmed;
- * more than twenty, the first twenty collected into a HashSet, in its order.
- */
-export function orthologyIds(body) {
-  const ids = plainIds(body);
-  if (ids.length <= 20) return ids;
-  const set = new JavaHashMap();
-  for (const id of ids.slice(0, 20)) set.set(id, true);
-  return [...set.keys()];
 }
 
 /** graph-core's SchemaRepository.getByClass(Disease): the nodes alone, by displayName. */

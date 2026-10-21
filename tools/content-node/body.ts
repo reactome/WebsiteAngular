@@ -5,6 +5,7 @@
  * service.ts.
  */
 import { javaTrim, present } from './java-text.ts';
+import { JavaHashMap } from './java-hashmap.ts';
 
 /**
  * A text/plain body of ids as the controllers split it: String.split on , ;
@@ -187,4 +188,17 @@ function utf32(body, order) {
         : String.fromCodePoint(point);
   }
   return at < body.length ? `${text}\ufffd` : text;
+}
+
+/**
+ * The ids in getOrthologies' body: String.split on , ; newline or tab --
+ * trailing empty strings dropped, as Java's split drops them -- each trimmed;
+ * more than twenty, the first twenty collected into a HashSet, in its order.
+ */
+export function orthologyIds(body) {
+  const ids = plainIds(body);
+  if (ids.length <= 20) return ids;
+  const set = new JavaHashMap();
+  for (const id of ids.slice(0, 20)) set.set(id, true);
+  return [...set.keys()];
 }
