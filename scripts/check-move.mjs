@@ -144,6 +144,9 @@ function pieces(file, text) {
     for (const element of list.elements) {
       // A family's own list spread into another (`...citationEndpoints`) is
       // no endpoint: its endpoints are read where that list is declared.
+      // Whether a family is spread in at all is not this check's: the
+      // route-order test (registry.spec) and the parameter record
+      // (parameters.spec) fail on one missing or spread twice.
       if (ts.isSpreadElement(element) && ts.isIdentifier(element.expression)) continue;
       let route = '?';
       let method = 'get';
