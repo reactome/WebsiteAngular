@@ -32,7 +32,6 @@ import {
   participantJson,
   participantsFrom,
   physicalEntityJson,
-  referenceEntityJson,
   schemaCountQuery,
   schemaMinQuery,
   schemaModelQuery,
@@ -45,6 +44,7 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import { referenceEntityJson } from './reference-entities.ts';
 import { inDepthId, pathwayJson, resolveId, speciesFilter } from './objects.ts';
 import { javaError, javaJson, neo4jFailureMessage, notFound, timedOut } from './answers.ts';
 import {
