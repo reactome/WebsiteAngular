@@ -43,6 +43,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 6. Pair-shared modules, named for what they hold. Measured: one family never needs another's code except through these.
    - `reference-entities.ts`: `referenceEntityJson`, `REFERENCE_CLASSES`, `MOLECULE_TYPES` (entities and mapping).
    - `search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `diagramResult` and its queries (search and exporters).
+   - **Added at T024:** `search-core.ts`, above layer 6: what both search families share, found when they were split (22 declarations: `searchEntry` and the Entry fields, `fromSolr`, the occurrence readers, `targetsOf`, the not-found report). It imports `release` and `search-params`, so it sits above them.
 7. `release.ts`: see R2.
 8. `server.ts`: routing, the download guard, `failureAnswer`/`writeResult`/`answer`, the health route, start-up. Plus `registry.ts`, which assembles the endpoint list.
 

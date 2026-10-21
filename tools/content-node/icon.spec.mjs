@@ -5,7 +5,8 @@
 // Spring's reading of the parameters. Java's answers measured 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, searchEntry } from './service.ts';
+import { app } from './service.ts';
+import { searchEntry } from './search-core.ts';
 import { javaJson } from './answers.ts';
 
 const icon = {
