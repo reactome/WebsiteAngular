@@ -5,7 +5,8 @@
 // Java's answers measured on 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, collations, facetMapping, suggestionsFrom } from './service.ts';
+import { app } from './service.ts';
+import { collations, facetMapping, suggestionsFrom } from './search-endpoints.ts';
 import { solr, queued } from './solr.ts';
 
 let base;

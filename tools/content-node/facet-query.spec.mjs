@@ -5,7 +5,8 @@
 // Java's answers measured on 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, facetQueryParams } from './service.ts';
+import { app } from './service.ts';
+import { facetQueryParams } from './search-endpoints.ts';
 import { springList, springScope } from './spring.ts';
 
 describe('springList, a List<String> parameter as Spring binds it', () => {

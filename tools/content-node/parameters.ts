@@ -408,6 +408,18 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
   '/ContentService/search/facet': { java: '/search/facet' },
   '/ContentService/search/facet_query': { java: '/search/facet_query' },
+  '/ContentService/search/pathways/of/{dbId}': {
+    java: '/search/pathways/of/{dbId}',
+    path: { dbId: 'long' },
+  },
+  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
+  '/ContentService/search/query': { java: '/search/query' },
+  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
+  '/ContentService/search/icon/query': { java: '/search/icon/query' },
+  '/ContentService/search/icon/{identifier}': {
+    java: '/search/icon/{identifier}',
+    path: { identifier: 'icon' },
+  },
   '/ContentService/search/diagram/summary': {
     java: null,
     why: 'An undocumented controller (the Pathway Browser’s search counts).',
@@ -440,13 +452,7 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { diagram: 'stId' },
   },
   '/ContentService/search/fireworks/flag': { java: '/search/fireworks/flag' },
-  '/ContentService/search/pathways/of/{dbId}': {
-    java: '/search/pathways/of/{dbId}',
-    path: { dbId: 'long' },
-  },
   '/ContentService/search/fireworks': { java: '/search/fireworks' },
-  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
-  '/ContentService/search/query': { java: '/search/query' },
   // The Europe PMC answers are live, and the site sends today's date to the
   // pathway's, so each day would be another entry for one answer.
   '/ContentService/citation/pathway/{id}': {
@@ -470,12 +476,6 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'An undocumented controller; never stored.',
     query: [],
     cache: 'never',
-  },
-  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
-  '/ContentService/search/icon/query': { java: '/search/icon/query' },
-  '/ContentService/search/icon/{identifier}': {
-    java: '/search/icon/{identifier}',
-    path: { identifier: 'icon' },
   },
 };
 
