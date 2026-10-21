@@ -449,7 +449,9 @@ export function app() {
 
   // Anything else that reaches here is this service's failure: Java's
   // envelope, never Express's page with a stack trace in it.
-  server.use((failure, request, response, _next) => {
+  server.use((failure, request, response: express.Response, next: (failure: unknown) => void) => {
+    // Begun already: Express ends the connection, as it must.
+    if (response.headersSent) return next(failure);
     console.error(`${request.path}: ${failure?.message}`);
     writeResult(response, unexpected(request));
   });

@@ -57,4 +57,14 @@ describe('a handler whose promise rejects', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(unhandled).toEqual([]);
   });
+
+  it('is answered the same where the path cannot be decoded (the URIError path)', async () => {
+    const response = await fetch(`${base}/ContentService/data/rejection-test/%FF`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    const body = (await response.json()) as { reason: string };
+    expect([response.status, body.reason]).toEqual([500, 'INTERNAL_SERVER_ERROR']);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(unhandled).toEqual([]);
+  });
 });

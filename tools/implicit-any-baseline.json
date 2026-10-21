@@ -25,7 +25,7 @@
   "tools/content-node/search-diagram-endpoints.ts": 35,
   "tools/content-node/search-endpoints.ts": 37,
   "tools/content-node/search-params.ts": 10,
-  "tools/content-node/server.ts": 36,
+  "tools/content-node/server.ts": 34,
   "tools/content-node/spring.ts": 15,
   "tools/render/pptx.ts": 72,
   "tools/render/render-core.ts": 18,

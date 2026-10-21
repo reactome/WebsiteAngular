@@ -317,7 +317,11 @@ const API_PAGE_ROOT = /^\/(ContentService|AnalysisService)\/?$/;
 // Client-side routing: anything not matched above is an Angular route.
 app.get(/.*/, (req, res) => {
   res.setHeader('Cache-Control', API_PAGE_ROOT.test(req.path) ? 'no-store' : 'no-cache');
-  res.sendFile(path.join(DIST, 'index.html'), (error) => {
+  // Relative to its root, so only 'index.html' is checked for a leading dot:
+  // given the whole path, Express 5 (send 1) refuses a build that sits under
+  // any dot-directory -- ~/.something, .claude/worktrees -- and every page
+  // was a 500.
+  res.sendFile('index.html', { root: DIST }, (error) => {
     if (!error || res.headersSent) return;
     if (error.code === 'ENOENT') {
       res.setHeader('Retry-After', '5');
