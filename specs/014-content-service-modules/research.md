@@ -19,7 +19,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 | pathways-events | `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, `/data/{kind}/{id}/in-depth` |            411 |                    30/462 |
 | content         | `/data/content/*`                                                                                      |            216 |                      4/50 |
 | person          | `/data/person/*`                                                                                       |            255 |                      2/29 |
-| entities        | `/data/participants/*`, `/data/entity/*`, `/data/complex*`                                             |            298 |                      7/69 |
+| entities        | `/data/participants/*`, `/data/entity/*` (but in-depth), `/data/complex*`                              |            298 |                      7/69 |
 | mapping-species | `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`                               |            305 |                    15/221 |
 | schema          | `/data/schema/*`                                                                                       |            183 |                    12/109 |
 | interactors     | `/interactors/*`                                                                                       |            203 |                    12/154 |
@@ -43,6 +43,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
 6. Pair-shared modules, named for what they hold. Measured: one family never needs another's code except through these.
    - `reference-entities.ts`: `referenceEntityJson`, `REFERENCE_CLASSES`, `MOLECULE_TYPES` (entities and mapping).
    - `search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `diagramResult` and its queries (search and exporters).
+   - **Added at T024:** `search-core.ts`, above layer 6: what both search families share, found when they were split (22 declarations: `searchEntry` and the Entry fields, `fromSolr`, the occurrence readers, `targetsOf`, the not-found report). It imports `release` and `search-params`, so it sits above them.
 7. `release.ts`: see R2.
 8. `server.ts`: routing, the download guard, `failureAnswer`/`writeResult`/`answer`, the health route, start-up. Plus `registry.ts`, which assembles the endpoint list.
 
@@ -99,8 +100,9 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
 **Decision.**
 
 - Each family exports its endpoints in today's order.
-- The registry concatenates the families. Their order between each other does not matter for matching, but it is kept as today's anyway so that `/health`'s list, the parity harness and the route tables read the same.
-- A new test pins it: the registry's list equals a recorded list of today's paths, in order, and every one of the 15 pairs is in its recorded order.
+- The registry concatenates the families. Their order between each other does not matter for matching: every pair of routes one URL can match, same method or not, is within one family.
+- **Amended at T020:** today's list interleaves several families (data-query appears in five separate runs), so a concatenation cannot keep today's order exactly. Each move spreads its family's list where the family's first endpoint was, keeping each family's own order; endpoints of the family that sat later move up to join it. `/health`'s list and the parity harness's order follow; no answer does.
+- A test pins it: the list equals a recorded order, re-recorded in the pull request that moves a family, so the diff shows which routes moved; and the 15 same-method pairs and 4 cross-method pairs are each in their measured order, whatever the order between families.
 - `deploy/nginx/routes.spec.ts` reads the registry instead of `service.ts`.
 - Specs that import a helper from `service.ts` import it from its new module. `service.ts` keeps no re-exports once its last family has gone; until then it re-exports only what has not moved yet.
 

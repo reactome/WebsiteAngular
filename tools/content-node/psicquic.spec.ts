@@ -9,7 +9,7 @@ import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { registryServices, psicquicResources } from './psicquic.ts';
-import { resourcesJson } from './service.ts';
+import { resourcesJson } from './interactors-endpoints.ts';
 
 const service = (name: string, active: string, rest = `http://${name}/rest/`, extra = '') =>
   `<service><name>${name}</name><soapUrl>http://${name}/soap</soapUrl><restUrl>${rest}</restUrl>` +
@@ -152,7 +152,7 @@ describe('/interactors/psicquic/resources', () => {
   });
 
   it('answers from the last reading of the registry, and the 500 once a reading fails', async () => {
-    const { refreshPsicquicResources } = await import('./service.ts');
+    const { refreshPsicquicResources } = await import('./interactors-endpoints.ts');
     await refreshPsicquicResources();
     const response = await get();
     expect([response.status, await response.text()]).toEqual([

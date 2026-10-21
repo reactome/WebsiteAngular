@@ -24,6 +24,17 @@ const SHARED: Record<string, string[]> = {
   'reference-entities': ['java-text', 'body', 'spring', 'answers', 'objects'],
   'search-params': ['java-text', 'body', 'spring', 'answers', 'objects'],
   release: ['java-text', 'body', 'spring', 'answers', 'objects'],
+  // Above layer 6: what both search families share (T024-T025).
+  'search-core': [
+    'java-text',
+    'body',
+    'spring',
+    'answers',
+    'objects',
+    'reference-entities',
+    'search-params',
+    'release',
+  ],
 };
 /**
  * The tools beside the service that read its endpoint list -- the parity

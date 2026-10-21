@@ -101,19 +101,22 @@ It must not mix in logic edits.
 - [x] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`). — #586
 - [x] T016 [P] [US1] `tools/content-node/person-endpoints.ts`: `/data/person/*`, the role lists' generator kept as a generator. — #588
 - [x] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries. — #589
-- [ ] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
-- [ ] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests.
-- [ ] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
-- [ ] T021 [P] [US1] `tools/content-node/mapping-species-endpoints.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`.
-- [ ] T022 [P] [US1] `tools/content-node/data-query-endpoints.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`.
-- [ ] T023 [P] [US1] `tools/content-node/pathways-events-endpoints.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator.
-- [ ] T024 [US1] `tools/content-node/search-endpoints.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers.
-- [ ] T025 [US1] `tools/content-node/search-diagram-endpoints.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
+- [x] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh. — #590
+- [x] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests. — #590
+- [x] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*` (but in-depth, with T023), `/data/complex*`. — #590
+- [x] T021 [P] [US1] `tools/content-node/mapping-species-endpoints.ts`: `/data/mapping/*`, `/references/*`, `/data/ortholog*`, `/data/species/*`. — #590
+- [x] T022 [P] [US1] `tools/content-node/data-query-endpoints.ts`: `/data/query/*`, `/data/database/*`, `/data/diseases*`, `/data/discover`, `/data/instance/*/referrers`. — #590
+- [x] T023 [P] [US1] `tools/content-node/pathways-events-endpoints.ts`: `/data/pathways/*`, `/data/pathway/*`, `/data/event/*`, `/data/detail/*`, the in-depth generator. — #590
+- [x] T024 [US1] `tools/content-node/search-endpoints.ts`: query, paginated, facets, suggest and spellcheck, icons, pathways-of, with the search entry and report helpers. — #590
+- [x] T025 [US1] `tools/content-node/search-diagram-endpoints.ts`: diagram summary, search, flag and occurrences; species overview and its flag. — #590
   - Also show SC-003 here: two pull requests changing two different families at once, neither conflicting.
+
+- **Batched (decided with the user, 21 Oct 2026):** T018–T025, with the three shared moves they needed (`orthologyIds` into `body.ts`, `deepShare` into `answers.ts`, `search-core.ts`), went in one pull request, a commit per move, to go faster; the one-move-per-PR rule is set aside for these. Each commit is still a pure move on its own, and the PR's check-move, baselines, beta comparison and review cover them together.
 
 ### The server
 
 - [ ] T026 [US1] Move what is left into `tools/content-node/server.ts`: start-up, the path rules, the download guard, failure answering, `/health`, warm-up. Remove `service.ts`. Then:
+  - start-up work a family owns goes through the registry, since the server imports no family: the PSICQUIC refresh (interactors-endpoints' refreshPsicquicResources, read at start and every five minutes), which service.ts calls directly until then;
   - the registry assembles the families' lists in today's order, and `endpointFor` and `getEndpointFor` move to it (T006); point `deploy/nginx/routes.spec.ts` and the route-order test at it;
   - change `deploy/content-node/Dockerfile`'s CMD, `package.json`'s `content:node`, `scripts/preflight.sh` and `tools/started.spec.mjs`;
   - update every spec and document that names `service.ts` (historical specs aside);

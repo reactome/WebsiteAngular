@@ -162,9 +162,95 @@ export interface RecordEntry {
 export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/database/version': { java: '/data/database/version' },
   '/ContentService/data/database/name': { java: '/data/database/name' },
+  '/ContentService/data/query/enhanced/v2/{id}': {
+    java: '/data/query/enhanced/v2/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/enhanced/{id}': {
+    java: '/data/query/enhanced/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}/stId': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}': { java: '/data/query/{id}', path: { id: 'oid' } },
+  '/ContentService/data/diseases': { java: '/data/diseases' },
+  '/ContentService/data/diseases/doid': { java: '/data/diseases/doid' },
+  '/ContentService/data/query/ids/map': {
+    java: null,
+    why: 'Java maps only POST here; a GET is always its 404, which is never stored.',
+    query: [],
+  },
+  '/ContentService/data/query/{id}/normalPathway': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}/{attribute}': {
+    java: '/data/query/{id}/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/discover/{id}': {
+    java: '/data/discover/{identifier}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/instance/{id}/referrers': {
+    java: '/data/instance/{id}/referrers',
+    path: { id: 'oid' },
+  },
   '/ContentService/data/pathways/top/{id}': {
     java: '/data/pathways/top/{species}',
     path: { id: 'taxId' },
+  },
+  '/ContentService/data/event/{id}/ancestors': {
+    java: '/data/event/{id}/ancestors',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathways/low/entity/{id}': {
+    java: '/data/pathways/low/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/entity/{id}/allForms': {
+    java: '/data/pathways/low/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}': {
+    java: '/data/pathways/low/diagram/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
+    java: '/data/pathways/low/diagram/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathway/{id}/containedEvents': {
+    java: '/data/pathway/{id}/containedEvents',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
+    java: '/data/pathway/{id}/containedEvents/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/detail/{id}/locationsInPWB': {
+    java: null,
+    why: 'An undocumented controller (the Pathway Browser’s locations tree).',
+    path: { id: 'oid' },
+    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
+  },
+  '/ContentService/data/entity/{id}/in-depth': {
+    java: '/data/entity/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
+  },
+  '/ContentService/data/event/{id}/in-depth': {
+    java: '/data/event/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
   },
   '/ContentService/data/content/toc': { java: '/data/content/toc' },
   '/ContentService/data/content/doi': { java: '/data/content/doi' },
@@ -196,94 +282,6 @@ export const RECORD: Record<string, RecordEntry> = {
   },
   '/ContentService/data/species/main': { java: '/data/species/main' },
   '/ContentService/data/species/all': { java: '/data/species/all' },
-  '/ContentService/data/query/enhanced/v2/{id}': {
-    java: '/data/query/enhanced/v2/{id}',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/enhanced/{id}': {
-    java: '/data/query/enhanced/{id}',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}/stId': {
-    java: '/data/query/{id}/{attributeName}',
-    attributeOf: true,
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}': { java: '/data/query/{id}', path: { id: 'oid' } },
-  '/ContentService/data/diseases': { java: '/data/diseases' },
-  '/ContentService/data/diseases/doid': { java: '/data/diseases/doid' },
-  '/ContentService/data/query/ids/map': {
-    java: null,
-    why: 'Java maps only POST here; a GET is always its 404, which is never stored.',
-    query: [],
-  },
-  '/ContentService/data/entity/{id}/in-depth': {
-    java: '/data/entity/{id}/in-depth',
-    path: { id: 'oid' },
-    values: IN_DEPTH,
-  },
-  '/ContentService/data/event/{id}/in-depth': {
-    java: '/data/event/{id}/in-depth',
-    path: { id: 'oid' },
-    values: IN_DEPTH,
-  },
-  '/ContentService/data/query/{id}/normalPathway': {
-    java: '/data/query/{id}/{attributeName}',
-    attributeOf: true,
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}/{attribute}': {
-    java: '/data/query/{id}/{attributeName}',
-    path: { id: 'oid', attribute: 'attribute' },
-  },
-  '/ContentService/data/event/{id}/ancestors': {
-    java: '/data/event/{id}/ancestors',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/pathways/low/entity/{id}': {
-    java: '/data/pathways/low/entity/{id}',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/entity/{id}/allForms': {
-    java: '/data/pathways/low/entity/{id}/allForms',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/diagram/entity/{id}': {
-    java: '/data/pathways/low/diagram/entity/{id}',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
-    java: '/data/pathways/low/diagram/entity/{id}/allForms',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/participants/{id}/referenceEntities': {
-    java: '/data/participants/{id}/referenceEntities',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/participants/{id}/participatingPhysicalEntities': {
-    java: '/data/participants/{id}/participatingPhysicalEntities',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/participants/{id}': {
-    java: '/data/participants/{id}',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/entity/{id}/otherForms': {
-    java: '/data/entity/{id}/otherForms',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/entity/{id}/componentOf': {
-    java: '/data/entity/{id}/componentOf',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/discover/{id}': {
-    java: '/data/discover/{identifier}',
-    path: { id: 'oid' },
-  },
   '/ContentService/data/mapping/{resource}/{identifier}/reactions': {
     java: '/data/mapping/{resource}/{identifier}/reactions',
     path: { resource: 'database', identifier: 'identifier' },
@@ -305,13 +303,29 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/references/mapping/{identifier}',
     path: { identifier: 'identifier' },
   },
-  '/ContentService/data/pathway/{id}/containedEvents': {
-    java: '/data/pathway/{id}/containedEvents',
+  '/ContentService/data/orthology/{id}/species/{speciesId}': {
+    java: '/data/orthology/{id}/species/{speciesId}',
+    path: { id: 'oid', speciesId: 'long' },
+  },
+  '/ContentService/data/participants/{id}/referenceEntities': {
+    java: '/data/participants/{id}/referenceEntities',
     path: { id: 'oid' },
   },
-  '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
-    java: '/data/pathway/{id}/containedEvents/{attributeName}',
-    path: { id: 'oid', attribute: 'attribute' },
+  '/ContentService/data/participants/{id}/participatingPhysicalEntities': {
+    java: '/data/participants/{id}/participatingPhysicalEntities',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/participants/{id}': {
+    java: '/data/participants/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/entity/{id}/otherForms': {
+    java: '/data/entity/{id}/otherForms',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/entity/{id}/componentOf': {
+    java: '/data/entity/{id}/componentOf',
+    path: { id: 'oid' },
   },
   '/ContentService/data/complex/{id}/subunits': {
     java: '/data/complex/{id}/subunits',
@@ -320,12 +334,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/complexes/{resource}/{identifier}': {
     java: '/data/complexes/{resource}/{identifier}',
     path: { resource: 'resource', identifier: 'identifier' },
-  },
-  '/ContentService/data/detail/{id}/locationsInPWB': {
-    java: null,
-    why: 'An undocumented controller (the Pathway Browser’s locations tree).',
-    path: { id: 'oid' },
-    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
   },
   '/ContentService/data/schema/{id}/count': {
     java: '/data/schema/{className}/count',
@@ -354,10 +362,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/schema/{id}/referrals': {
     java: '/data/schema/{className}/referrals',
     path: { id: 'className' },
-  },
-  '/ContentService/data/orthology/{id}/species/{speciesId}': {
-    java: '/data/orthology/{id}/species/{speciesId}',
-    path: { id: 'oid', speciesId: 'long' },
   },
   '/ContentService/interactors/static/molecule/{id}/details': {
     java: '/interactors/static/molecule/{acc}/details',
@@ -404,6 +408,18 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
   '/ContentService/search/facet': { java: '/search/facet' },
   '/ContentService/search/facet_query': { java: '/search/facet_query' },
+  '/ContentService/search/pathways/of/{dbId}': {
+    java: '/search/pathways/of/{dbId}',
+    path: { dbId: 'long' },
+  },
+  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
+  '/ContentService/search/query': { java: '/search/query' },
+  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
+  '/ContentService/search/icon/query': { java: '/search/icon/query' },
+  '/ContentService/search/icon/{identifier}': {
+    java: '/search/icon/{identifier}',
+    path: { identifier: 'icon' },
+  },
   '/ContentService/search/diagram/summary': {
     java: null,
     why: 'An undocumented controller (the Pathway Browser’s search counts).',
@@ -436,13 +452,7 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { diagram: 'stId' },
   },
   '/ContentService/search/fireworks/flag': { java: '/search/fireworks/flag' },
-  '/ContentService/search/pathways/of/{dbId}': {
-    java: '/search/pathways/of/{dbId}',
-    path: { dbId: 'long' },
-  },
   '/ContentService/search/fireworks': { java: '/search/fireworks' },
-  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
-  '/ContentService/search/query': { java: '/search/query' },
   // The Europe PMC answers are live, and the site sends today's date to the
   // pathway's, so each day would be another entry for one answer.
   '/ContentService/citation/pathway/{id}': {
@@ -466,16 +476,6 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'An undocumented controller; never stored.',
     query: [],
     cache: 'never',
-  },
-  '/ContentService/data/instance/{id}/referrers': {
-    java: '/data/instance/{id}/referrers',
-    path: { id: 'oid' },
-  },
-  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
-  '/ContentService/search/icon/query': { java: '/search/icon/query' },
-  '/ContentService/search/icon/{identifier}': {
-    java: '/search/icon/{identifier}',
-    path: { identifier: 'icon' },
   },
 };
 

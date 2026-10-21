@@ -386,7 +386,7 @@ describe('/diagram/summary', () => {
 
 describe('searchEntry for fireworks', () => {
   it("carries the document's species-overview species, where Entry declares them", async () => {
-    const { searchEntry } = await import('./service.ts');
+    const { searchEntry } = await import('./search-core.ts');
     const entry = searchEntry(
       { dbId: '1', fireworksSpecies: ['Homo sapiens'], iconName: 'x' },
       null,

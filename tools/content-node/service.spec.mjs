@@ -15,29 +15,28 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createHash } from 'node:crypto';
 import {
   app,
-  databaseObjectTsv,
   endpoints,
   endpointFor,
-  eventProjection,
   fingerprintFiles,
+  failureAnswer,
+  writeResult,
+  deepLimit,
+} from './service.ts';
+import {
+  PathwayBrowserNode,
+  eventProjection,
+  inDepthAttributes,
+  javaUrlDecode,
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
-  needsIncoming,
-  failureAnswer,
-  inDepthAttributes,
-  PathwayBrowserNode,
   pathwayBrowserJson,
-  participantJson,
-  participantsFrom,
-  physicalEntityJson,
   topPathwayJson,
   topSpeciesMatch,
-  javaUrlDecode,
-  writeResult,
-  deepShare,
-  deepLimit,
-} from './service.ts';
+} from './pathways-events-endpoints.ts';
+import { databaseObjectTsv, needsIncoming } from './data-query-endpoints.ts';
+import { deepShare } from './answers.ts';
+import { participantJson, participantsFrom, physicalEntityJson } from './entities-endpoints.ts';
 import {
   schemaCountQuery,
   schemaMinQuery,
@@ -294,11 +293,12 @@ describe('the deep queries, held to their own share of the graph', () => {
   // up to a diagram -- are the ones that can run for the full read timeout,
   // so they keep a smaller share of their own.
   it('marks the in-depth and locationsInPWB routes as deep', () => {
+    // As a set: which is listed first is the order between families (R3).
     const deep = endpoints.filter((endpoint) => endpoint.deep).map((endpoint) => endpoint.path);
-    expect(deep).toEqual([
+    expect(deep.sort()).toEqual([
+      '/ContentService/data/detail/{id}/locationsInPWB',
       '/ContentService/data/entity/{id}/in-depth',
       '/ContentService/data/event/{id}/in-depth',
-      '/ContentService/data/detail/{id}/locationsInPWB',
     ]);
   });
 
