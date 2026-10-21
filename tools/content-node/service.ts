@@ -104,7 +104,6 @@ import {
 } from './java-text.ts';
 import { plainIds, plainText, plainTextProblem } from './body.ts';
 import {
-  Bound,
   pathId,
   queryValues,
   rawSegment,
@@ -120,6 +119,7 @@ import {
   springScope,
   writerFor,
 } from './spring.ts';
+import type { Bound } from './spring.ts';
 
 /** A node's or map's properties, as read gives them. */
 type Props = Properties;
