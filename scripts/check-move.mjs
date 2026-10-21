@@ -132,10 +132,12 @@ function pieces(file, text) {
   const reexports = new Map(); // exported name -> [specifier, name there]
   const stars = []; // specifiers of `export * from`
   const uses = new Map(); // declaration or endpoint key -> the names it uses
-  // Endpoint lists by name: their endpoints are compared one by one, so a
-  // list is known by its name alone -- `endpoints` the same list in
-  // service.ts and the registry, which declare it.
-  const lists = new Set();
+  // Endpoint lists by name, each known by what it holds in order: a spread
+  // list's name or an endpoint's key. The endpoints themselves are compared
+  // one by one; this is what makes `endpoints` in the registry the list
+  // service.ts declared, and a reordered, shortened or shadowing list, or a
+  // same-named list from another module, a different one.
+  const lists = new Map();
   const add = (map, key, node) => {
     const list = map.get(key) ?? [];
     list.push(canonical(sf, node));
@@ -145,13 +147,17 @@ function pieces(file, text) {
     uses.set(key, used);
   };
   const endpointsIn = (list) => {
+    const held = [];
     for (const element of list.elements) {
       // A family's own list spread into another (`...citationEndpoints`) is
       // no endpoint: its endpoints are read where that list is declared.
       // Whether a family is spread in at all is not this check's: the
       // route-order test (registry.spec) and the parameter record
       // (parameters.spec) fail on one missing or spread twice.
-      if (ts.isSpreadElement(element) && ts.isIdentifier(element.expression)) continue;
+      if (ts.isSpreadElement(element) && ts.isIdentifier(element.expression)) {
+        held.push(`...${element.expression.text}`);
+        continue;
+      }
       let route = '?';
       let method = 'get';
       // The endpoint's own properties: a `method` deeper inside it is not its method.
@@ -176,7 +182,9 @@ function pieces(file, text) {
         find(element);
       }
       add(endpoints, `${method} ${route}`, element);
+      held.push(`${method} ${route}`);
     }
+    return held;
   };
   let unnamed = 0;
   for (const statement of sf.statements) {
@@ -211,8 +219,7 @@ function pieces(file, text) {
           list &&
           /endpoints$/i.test(declaration.name.text)
         ) {
-          lists.add(declaration.name.text);
-          endpointsIn(list);
+          lists.set(declaration.name.text, endpointsIn(list).join(', '));
         } else if (ts.isIdentifier(declaration.name))
           add(declarations, declaration.name.text, statement);
         else add(declarations, `(destructuring) ${declaration.name.getText(sf)}`, statement);
@@ -293,7 +300,7 @@ function bindingOf(modules, file, name) {
   const module = modules.get(file);
   if (module?.declarations.has(name))
     return `declared: ${module.declarations.get(name).join('\n')}`;
-  if (module?.lists.has(name)) return `declared: endpoint list ${name}`;
+  if (module?.lists.has(name)) return `declared: endpoint list ${name}: ${module.lists.get(name)}`;
   if (module?.imports.has(name))
     return `imported: ${identity(modules, ...module.imports.get(name))}`;
   return 'global';
@@ -323,7 +330,7 @@ function identity(modules, spec, name, seen = new Set()) {
   if (!module) return undefined;
   const declared = module.declarations.get(name);
   if (declared) return declared.join('\n');
-  if (module.lists.has(name)) return `endpoint list ${name}`;
+  if (module.lists.has(name)) return `endpoint list ${name}: ${module.lists.get(name)}`;
   const again = module.reexports.get(name) ?? module.imports.get(name);
   if (again) return identity(modules, again[0], again[1], seen);
   for (const star of module.stars) {
@@ -405,7 +412,7 @@ for (const file of receivers) {
     const expected = originsOf
       .map(([f, was]) => {
         if (was.declarations.has(local)) return [f, was.declarations.get(local).join('\n')];
-        if (was.lists.has(local)) return [f, `endpoint list ${local}`];
+        if (was.lists.has(local)) return [f, `endpoint list ${local}: ${was.lists.get(local)}`];
         if (was.imports.has(local)) return [f, identity(before, ...was.imports.get(local))];
         return undefined;
       })
