@@ -170,6 +170,12 @@ type SimpleObjectRow = {
   labels: string[];
 };
 
+/**
+ * graph-core's SimpleDatabaseObject as Jackson writes it. stId is read with
+ * asString(null), so a missing one is left out; displayName with asString(),
+ * which writes a missing one as the text "null". The class is the one the
+ * labels name (schemaClassOf), not the schemaClass property.
+ */
 export function simpleObjectJson(row: SimpleObjectRow): SimpleDatabaseObject {
   const displayName = row.displayName ?? 'null';
   const out: JsonWritten<SimpleDatabaseObject> = {

@@ -3389,13 +3389,6 @@ function getEndpointFor(path) {
 }
 
 /**
- * graph-core's SimpleDatabaseObject as Jackson writes it. stId is read with
- * asString(null), so a missing one is left out; displayName with asString(),
- * which writes a missing one as the text "null". The class is the one the
- * labels name (schemaClassOf), not the schemaClass property.
- */
-
-/**
  * graph-core's four locations queries (HierarchyRepository), by kind of id and
  * by `directParticipants`: Java's MATCH and expansion exactly, because the
  * paths come back in the order the plan expands them and parseHierarchy builds
