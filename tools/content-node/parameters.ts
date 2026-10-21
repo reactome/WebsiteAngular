@@ -196,6 +196,31 @@ export const RECORD: Record<string, RecordEntry> = {
   },
   '/ContentService/data/species/main': { java: '/data/species/main' },
   '/ContentService/data/species/all': { java: '/data/species/all' },
+  '/ContentService/data/mapping/{resource}/{identifier}/reactions': {
+    java: '/data/mapping/{resource}/{identifier}/reactions',
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
+  },
+  // GO is asked by its accession, cut to digits whatever letters lead it.
+  '/ContentService/data/mapping/{resource}/{identifier}/pathways': {
+    java: '/data/mapping/{resource}/{identifier}/pathways',
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
+    check: ({ resource, identifier }) =>
+      resource === 'GO' && !/^GO:\d{7}$/.test(identifier ?? '') ? 'path:identifier' : undefined,
+  },
+  '/ContentService/references/mapping/{identifier}/xrefs': {
+    java: '/references/mapping/{identifier}/xrefs',
+    path: { identifier: 'identifier' },
+  },
+  '/ContentService/references/mapping/{identifier}': {
+    java: '/references/mapping/{identifier}',
+    path: { identifier: 'identifier' },
+  },
+  '/ContentService/data/orthology/{id}/species/{speciesId}': {
+    java: '/data/orthology/{id}/species/{speciesId}',
+    path: { id: 'oid', speciesId: 'long' },
+  },
   '/ContentService/data/query/enhanced/v2/{id}': {
     java: '/data/query/enhanced/v2/{id}',
     path: { id: 'oid' },
@@ -292,27 +317,6 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/discover/{identifier}',
     path: { id: 'oid' },
   },
-  '/ContentService/data/mapping/{resource}/{identifier}/reactions': {
-    java: '/data/mapping/{resource}/{identifier}/reactions',
-    path: { resource: 'database', identifier: 'identifier' },
-    values: TAX_ID,
-  },
-  // GO is asked by its accession, cut to digits whatever letters lead it.
-  '/ContentService/data/mapping/{resource}/{identifier}/pathways': {
-    java: '/data/mapping/{resource}/{identifier}/pathways',
-    path: { resource: 'database', identifier: 'identifier' },
-    values: TAX_ID,
-    check: ({ resource, identifier }) =>
-      resource === 'GO' && !/^GO:\d{7}$/.test(identifier ?? '') ? 'path:identifier' : undefined,
-  },
-  '/ContentService/references/mapping/{identifier}/xrefs': {
-    java: '/references/mapping/{identifier}/xrefs',
-    path: { identifier: 'identifier' },
-  },
-  '/ContentService/references/mapping/{identifier}': {
-    java: '/references/mapping/{identifier}',
-    path: { identifier: 'identifier' },
-  },
   '/ContentService/data/pathway/{id}/containedEvents': {
     java: '/data/pathway/{id}/containedEvents',
     path: { id: 'oid' },
@@ -354,10 +358,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/schema/{id}/referrals': {
     java: '/data/schema/{className}/referrals',
     path: { id: 'className' },
-  },
-  '/ContentService/data/orthology/{id}/species/{speciesId}': {
-    java: '/data/orthology/{id}/species/{speciesId}',
-    path: { id: 'oid', speciesId: 'long' },
   },
   '/ContentService/interactors/static/molecule/{id}/details': {
     java: '/interactors/static/molecule/{acc}/details',

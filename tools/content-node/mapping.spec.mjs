@@ -22,7 +22,8 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app, reactionLikeEventJson } = await import('./service.ts');
+const { app } = await import('./service.ts');
+const { reactionLikeEventJson } = await import('./mapping-species-endpoints.ts');
 
 let base;
 let server;
