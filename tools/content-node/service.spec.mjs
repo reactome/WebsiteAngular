@@ -26,7 +26,6 @@ import {
   needsIncoming,
   failureAnswer,
   inDepthAttributes,
-  personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
   participantJson,
@@ -44,6 +43,7 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import { personWhere } from './person-endpoints.ts';
 import { referenceEntityJson } from './reference-entities.ts';
 import { inDepthId, pathwayJson, resolveId, speciesFilter } from './objects.ts';
 import { javaError, javaJson, neo4jFailureMessage, notFound, timedOut } from './answers.ts';
