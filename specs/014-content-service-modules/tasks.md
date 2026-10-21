@@ -100,7 +100,7 @@ It must not mix in logic edits.
 - [ ] T014 [P] [US1] `tools/content-node/citation-endpoints.ts`: `/citation/*`.
 - [x] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`). — #586
 - [x] T016 [P] [US1] `tools/content-node/person-endpoints.ts`: `/data/person/*`, the role lists' generator kept as a generator. — #588
-- [ ] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries.
+- [x] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries. — #589
 - [ ] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
 - [ ] T019 [P] [US1] `tools/content-node/exporters-endpoints.ts`: `/exporter/*`, with the render-service requests.
 - [ ] T020 [P] [US1] `tools/content-node/entities-endpoints.ts`: `/data/participants/*`, `/data/entity/*`, `/data/complex*`.
