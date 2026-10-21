@@ -204,6 +204,44 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/pathways/top/{species}',
     path: { id: 'taxId' },
   },
+  '/ContentService/data/event/{id}/ancestors': {
+    java: '/data/event/{id}/ancestors',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathways/low/entity/{id}': {
+    java: '/data/pathways/low/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/entity/{id}/allForms': {
+    java: '/data/pathways/low/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}': {
+    java: '/data/pathways/low/diagram/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
+    java: '/data/pathways/low/diagram/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathway/{id}/containedEvents': {
+    java: '/data/pathway/{id}/containedEvents',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
+    java: '/data/pathway/{id}/containedEvents/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/detail/{id}/locationsInPWB': {
+    java: null,
+    why: 'An undocumented controller (the Pathway Browser’s locations tree).',
+    path: { id: 'oid' },
+    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
+  },
   '/ContentService/data/content/toc': { java: '/data/content/toc' },
   '/ContentService/data/content/doi': { java: '/data/content/doi' },
   '/ContentService/data/content/contributors': { java: '/data/content/contributors' },
@@ -269,30 +307,6 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { id: 'oid' },
     values: IN_DEPTH,
   },
-  '/ContentService/data/event/{id}/ancestors': {
-    java: '/data/event/{id}/ancestors',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/pathways/low/entity/{id}': {
-    java: '/data/pathways/low/entity/{id}',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/entity/{id}/allForms': {
-    java: '/data/pathways/low/entity/{id}/allForms',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/diagram/entity/{id}': {
-    java: '/data/pathways/low/diagram/entity/{id}',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
-  '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
-    java: '/data/pathways/low/diagram/entity/{id}/allForms',
-    path: { id: 'oid' },
-    values: TAX_ID,
-  },
   '/ContentService/data/participants/{id}/referenceEntities': {
     java: '/data/participants/{id}/referenceEntities',
     path: { id: 'oid' },
@@ -320,20 +334,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/complexes/{resource}/{identifier}': {
     java: '/data/complexes/{resource}/{identifier}',
     path: { resource: 'resource', identifier: 'identifier' },
-  },
-  '/ContentService/data/pathway/{id}/containedEvents': {
-    java: '/data/pathway/{id}/containedEvents',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
-    java: '/data/pathway/{id}/containedEvents/{attributeName}',
-    path: { id: 'oid', attribute: 'attribute' },
-  },
-  '/ContentService/data/detail/{id}/locationsInPWB': {
-    java: null,
-    why: 'An undocumented controller (the Pathway Browser’s locations tree).',
-    path: { id: 'oid' },
-    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
   },
   '/ContentService/data/schema/{id}/count': {
     java: '/data/schema/{className}/count',
