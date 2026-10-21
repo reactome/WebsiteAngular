@@ -36,7 +36,7 @@ beforeAll(async () => {
   });
   await new Promise((resolve) => renderer.listen(0, '127.0.0.1', resolve));
   process.env.RENDER_SERVICE_URL = `http://127.0.0.1:${renderer.address().port}`;
-  const { app } = await import('./service.ts');
+  const { app } = await import('./server.ts');
   await new Promise((resolve) => {
     server = app().listen(0, '127.0.0.1', resolve);
   });

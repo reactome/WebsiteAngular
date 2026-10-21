@@ -87,7 +87,7 @@ const NOWHERE = {
 };
 
 it('starts the content service under another file name', async () => {
-  const said = await start('tools/content-node/service.ts', {
+  const said = await start('tools/content-node/server.ts', {
     ...NOWHERE,
     CONTENT_NODE_HOST: '127.0.0.1',
     CONTENT_NODE_PORT: await freePort(),

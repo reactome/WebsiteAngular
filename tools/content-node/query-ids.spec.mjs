@@ -41,7 +41,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app } = await import('./service.ts');
+const { app } = await import('./server.ts');
 const { idKeyedMap } = await import('./data-query-endpoints.ts');
 const { databaseObjectSet } = await import('./java-text.ts');
 

@@ -1,5 +1,8 @@
 /**
- * The content service, in node.
+ * The content service, in node: the server -- start-up, the path rules, the
+ * download guard, failure answering, /health and warm-up. The endpoints are
+ * the registry's (registry.ts), which assembles the families' lists (spec
+ * 014); this module imports the registry and never a family.
  *
  * A gradual replacement for the Java ContentService's read surface. It exposes
  * the same paths under the same shapes, one endpoint at a time, and every one is
@@ -24,34 +27,14 @@ import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import { configured, close } from './graph.ts';
 import { settings } from './settings.ts';
-import type { Endpoint } from './endpoint.ts';
-
 import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solrConfigured } from './solr.ts';
-
-import { JavaHashMap } from './java-hashmap.ts';
-
-export { JavaHashMap };
-
 import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java-text.ts';
 import { pathId, rawSegment } from './spring.ts';
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
-
 import { databaseVersion } from './release.ts';
-import { citationEndpoints } from './citation-endpoints.ts';
-import { contentEndpoints } from './content-endpoints.ts';
-import { personEndpoints } from './person-endpoints.ts';
-import { schemaEndpoints } from './schema-endpoints.ts';
-import { interactorsEndpoints, refreshPsicquicResources } from './interactors-endpoints.ts';
-import { exportersEndpoints } from './exporters-endpoints.ts';
-import { entitiesEndpoints } from './entities-endpoints.ts';
-import { mappingSpeciesEndpoints } from './mapping-species-endpoints.ts';
-import { dataQueryEndpoints } from './data-query-endpoints.ts';
-import { pathwaysEventsEndpoints } from './pathways-events-endpoints.ts';
-
-import { searchEndpoints } from './search-endpoints.ts';
-import { searchDiagramEndpoints } from './search-diagram-endpoints.ts';
+import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
 // Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
 declare global {
@@ -62,59 +45,6 @@ declare global {
 
 const PORT = settings.port();
 const HOST = settings.host();
-
-/**
- * The endpoints implemented so far: each family's in its own order, the
- * families in the order research R3 records.
- *
- * Each entry is the path the Java service uses, so the diff harness and the
- * proxy table can both address them by that one string.
- */
-export const endpoints: Endpoint[] = [
-  ...dataQueryEndpoints,
-  ...pathwaysEventsEndpoints,
-  ...contentEndpoints,
-  ...personEndpoints,
-  ...mappingSpeciesEndpoints,
-  ...entitiesEndpoints,
-  ...schemaEndpoints,
-  ...interactorsEndpoints,
-  ...exportersEndpoints,
-  ...searchEndpoints,
-  ...searchDiagramEndpoints,
-  ...citationEndpoints,
-];
-
-/**
- * The endpoint a path was expanded from, by its whole template. Matching on
- * the text before the first `{` gave every /schema/{id}/... path to the first
- * of them, /count, so /min was judged by /count's declared differences and
- * failed on a difference it declares itself.
- */
-export function endpointFor(path: string): Endpoint | undefined {
-  return endpoints.find((e) => endpointPattern(e.path, '(\\?|$)').test(path));
-}
-
-/** An endpoint's template as a pattern over a path, `tail` after it. */
-function endpointPattern(template, tail) {
-  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(
-    `^${template
-      .split(/\{\w+\}/)
-      .map(escape)
-      .join('[^/?]+')}${tail}`
-  );
-}
-
-/** The GET endpoint Express would route `path` (no query) to, if any. */
-function getEndpointFor(path) {
-  return (
-    endpoints
-      // GET endpoints declare no method; the only one declared is 'post'.
-      .filter((e) => !e.method)
-      .find((e) => endpointPattern(e.path, '$').test(path))
-  );
-}
 
 /** rfd-snapshot.json: the extensions Spring trusts (snapshot-rfd.ts). */
 export interface RfdSnapshot {

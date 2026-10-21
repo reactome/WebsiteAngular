@@ -28,4 +28,4 @@ ENV CONTENT_NODE_PORT=4400
 ENV NODE_ENV=production
 
 USER node
-CMD ["node", "tools/content-node/service.ts"]
+CMD ["node", "tools/content-node/server.ts"]

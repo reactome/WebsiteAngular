@@ -6,7 +6,8 @@
 // does not take. Every expected value below was measured against Java's
 // /data/orthology and /data/orthologies on 15 Oct 2026.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, JavaHashMap } from './service.ts';
+import { app } from './server.ts';
+import { JavaHashMap } from './java-hashmap.ts';
 import { orthologyMap } from './mapping-species-endpoints.ts';
 import { orthologyIds } from './body.ts';
 import { springPathLong } from './spring.ts';

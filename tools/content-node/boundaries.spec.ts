@@ -47,14 +47,11 @@ const isShared = (name: string) => name in SHARED;
 /**
  * Everything else is a leaf -- graph, solr, domain, schema, settings and the
  * like, and any module added without a place here -- and imports only
- * leaves: a leaf that reached the registry, a family or the service would
+ * leaves: a leaf that reached the registry, a family or the server would
  * close a cycle through whatever imports it.
  */
 const isLeaf = (name: string) =>
-  !isFamily(name) &&
-  !isShared(name) &&
-  !TOOLS.has(name) &&
-  !['registry', 'server', 'service'].includes(name);
+  !isFamily(name) && !isShared(name) && !TOOLS.has(name) && !['registry', 'server'].includes(name);
 
 /**
  * The local modules a source imports -- static, type-only, side-effect,
@@ -90,12 +87,10 @@ function violations(modules: Record<string, string>): string[] {
         if (!isLeaf(other) && !(SHARED[name] ?? []).includes(other))
           say(`${name} imports only ${(SHARED[name] ?? []).join(', ') || 'leaves'} beneath it`);
       } else if (name === 'registry') {
-        if (!isFamily(other)) say('the registry imports only the families');
+        // The families, and the Endpoint types their lists are declared in.
+        if (!isFamily(other) && other !== 'endpoint') say('the registry imports only the families');
       } else if (name === 'server') {
-        if (isFamily(other) || other === 'service')
-          say('the server imports the registry, never a family');
-      } else if (name === 'service') {
-        // The list's last home until T026 removes it: anything but a tool.
+        if (isFamily(other)) say('the server imports the registry, never a family');
       } else if (!isLeaf(other)) say('a leaf imports only leaves');
     }
   }
@@ -159,11 +154,11 @@ describe('the content service boundaries', () => {
     ]);
   });
 
-  it('refuse a leaf reaching the registry, a family, the service or a tool', () => {
+  it('refuse a leaf reaching the registry, a family, the server or a tool', () => {
     expect(
       violations({
         graph: "import { endpoints } from './registry.ts';",
-        solr: "import { x } from './search-endpoints.ts';\nimport './service.ts';",
+        solr: "import { x } from './search-endpoints.ts';\nimport './server.ts';",
         settings: "import { diffAll } from './diff.ts';",
         // A module added without a place in the table is a leaf too.
         'new-helper':
@@ -172,7 +167,7 @@ describe('the content service boundaries', () => {
     ).toEqual([
       'graph imports registry: a leaf imports only leaves',
       'solr imports search-endpoints: a leaf imports only leaves',
-      'solr imports service: a leaf imports only leaves',
+      'solr imports server: a leaf imports only leaves',
       'settings imports diff: nothing in the service imports a tool',
       'new-helper imports citation-endpoints: a leaf imports only leaves',
     ]);
@@ -184,7 +179,7 @@ describe('the content service boundaries', () => {
         server:
           "import { endpoints } from './registry.ts';\nimport { x } from './citation-endpoints.ts';\nimport { read } from './graph.ts';",
         registry:
-          "import { a } from './citation-endpoints.ts';\nimport { read } from './graph.ts';",
+          "import { a } from './citation-endpoints.ts';\nimport type { Endpoint } from './endpoint.ts';\nimport { read } from './graph.ts';",
       })
     ).toEqual([
       'server imports citation-endpoints: the server imports the registry, never a family',
@@ -204,7 +199,7 @@ describe('the content service boundaries', () => {
   it('let the tools read anything, the endpoint list included', () => {
     expect(
       violations({
-        diff: "import { endpoints } from './service.ts';\nimport { x } from './registry.ts';",
+        diff: "import { app } from './server.ts';\nimport { endpoints } from './registry.ts';",
       })
     ).toEqual([]);
   });

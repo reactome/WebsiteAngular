@@ -127,7 +127,7 @@ describe('/interactors/psicquic/resources', () => {
     // Without its slash, which the registry client adds.
     process.env['PSICQUIC_REGISTRY_URL'] =
       `http://127.0.0.1:${(registryServer.address() as AddressInfo).port}/registry`;
-    const { app } = await import('./service.ts');
+    const { app } = await import('./server.ts');
     await new Promise<void>((resolve) => {
       server = app().listen(0, '127.0.0.1', () => resolve());
     });

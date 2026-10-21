@@ -52,7 +52,7 @@
     "deployed": "bash scripts/deployed.sh",
     "check:types": "node scripts/check-types.mjs",
     "check:totals": "node scripts/check-baseline-totals.mjs",
-    "content:node": "node tools/content-node/service.ts",
+    "content:node": "node tools/content-node/server.ts",
     "content:diff": "node tools/content-node/diff.ts"
   },
   "private": true,

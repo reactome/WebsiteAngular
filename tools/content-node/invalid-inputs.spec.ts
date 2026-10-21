@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 import { invalidInputs } from './invalid-inputs.ts';
 import { RECORD, declaredQuery } from './parameters.ts';
 
-const { endpoints } = await import('./service.ts');
+const { endpoints } = await import('./registry.ts');
 // The GETs: an endpoint with no method (Endpoint's only method is 'post').
 const GETS = endpoints.filter((e) => !e.method);
 const corpus = invalidInputs(GETS);

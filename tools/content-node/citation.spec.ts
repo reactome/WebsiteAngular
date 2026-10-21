@@ -322,7 +322,7 @@ describe('the citation endpoints', () => {
     await new Promise<void>((resolve) => pmc.listen(0, '127.0.0.1', resolve));
     process.env['EUROPE_PMC_URL'] =
       `http://127.0.0.1:${(pmc.address() as AddressInfo).port}/search`;
-    const { app } = await import('./service.ts');
+    const { app } = await import('./server.ts');
     await new Promise<void>((resolve) => {
       server = app().listen(0, '127.0.0.1', () => resolve());
     });
@@ -475,7 +475,7 @@ describe('the citation endpoints', () => {
   });
 
   it("writes a Latin-1 file name whatever bytes end the response: a HEAD's Buffer, an empty one", async () => {
-    const { writeResult } = await import('./service.ts');
+    const { writeResult } = await import('./server.ts');
     const { default: express } = await import('express');
     const site = express();
     site.all('/:kind', (request, response) => {

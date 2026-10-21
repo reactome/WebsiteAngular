@@ -5,7 +5,7 @@
 // POST makes before any query. Every expected value was measured against
 // Java's /interactors/static on 15 Oct 2026.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app } from './service.ts';
+import { app } from './server.ts';
 import {
   customInteractionJson,
   interactionWithEntitiesJson,

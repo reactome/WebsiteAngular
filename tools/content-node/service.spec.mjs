@@ -13,15 +13,8 @@
 // is built from.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createHash } from 'node:crypto';
-import {
-  app,
-  endpoints,
-  endpointFor,
-  fingerprintFiles,
-  failureAnswer,
-  writeResult,
-  deepLimit,
-} from './service.ts';
+import { app, fingerprintFiles, failureAnswer, writeResult, deepLimit } from './server.ts';
+import { endpoints, endpointFor } from './registry.ts';
 import {
   PathwayBrowserNode,
   eventProjection,

@@ -16,7 +16,7 @@
  * a terminal.
  */
 import type { Endpoint } from './endpoint.ts';
-import { endpointFor, endpoints } from './service.ts';
+import { endpointFor, endpoints } from './registry.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const NODE = process.env['NODE_CONTENT_SERVICE'] || 'http://127.0.0.1:4400';
