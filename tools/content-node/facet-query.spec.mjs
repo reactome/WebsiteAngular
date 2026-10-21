@@ -5,7 +5,8 @@
 // Java's answers measured on 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app, springList, springScope, facetQueryParams } from './service.ts';
+import { app, facetQueryParams } from './service.ts';
+import { springList, springScope } from './spring.ts';
 
 describe('springList, a List<String> parameter as Spring binds it', () => {
   it('splits one value at commas and trims each part', () => {

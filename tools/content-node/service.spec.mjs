@@ -23,14 +23,11 @@ import {
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
-  pathId,
   timedOut,
   needsIncoming,
   failureAnswer,
   inDepthAttributes,
   inDepthId,
-  springIntWithDefault,
-  springPrimitiveBoolean,
   personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
@@ -48,19 +45,24 @@ import {
   schemaMinQuery,
   schemaModelQuery,
   schemaWindow,
-  servletParameter,
   simpleObjectJson,
   speciesFilter,
   topPathwayJson,
   topSpeciesMatch,
   javaUrlDecode,
   writeResult,
-  writerFor,
-  springBoolean,
-  springInteger,
   deepShare,
   deepLimit,
 } from './service.ts';
+import {
+  pathId,
+  servletParameter,
+  springBoolean,
+  springIntWithDefault,
+  springInteger,
+  springPrimitiveBoolean,
+  writerFor,
+} from './spring.ts';
 
 let base;
 let server;

@@ -12,8 +12,8 @@ import {
   interactorJson,
   interactorsJson,
   pagingUnboxFails,
-  springIntegerWithDefault,
 } from './service.ts';
+import { springIntegerWithDefault } from './spring.ts';
 
 let base;
 let server;
