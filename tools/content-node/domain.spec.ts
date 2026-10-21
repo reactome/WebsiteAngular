@@ -264,7 +264,10 @@ describe('writeDomain on a deep graph', () => {
     expect(text.split('"precedingEvent"').length - 1).toBe(count - 1);
     // Identity holds: the last event is written once, then referred to.
     expect(JSON.parse(text).precedingEvent[0].followingEvent).toEqual([100]);
-  });
+    // About two seconds alone; the whole suite in parallel, on a busy host,
+    // took it past vitest's five-second default (seen in the pre-push run).
+    // What it tests is the stack, not the time.
+  }, 30_000);
 });
 
 describe("summaryEntity, the content service's SummaryEntity", () => {
