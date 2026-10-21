@@ -33,7 +33,7 @@ a shared module by concern. One that no endpoint reaches belongs to the server.
   fingerprint, `PORT`/`HOST`, the deep-query share, the PSICQUIC refresh, `readBody`,
   `startedDirectly`.
 
-**The shared modules, by concern** (layered: each imports only those above it):
+**The shared modules, by concern** (layered: each imports only those listed before it, and the leaves -- the service's standalone modules such as `java-hashmap`, `graph`, `schema` and `domain`, which sit beneath layer 1; contracts/boundaries.md):
 
 1. `java-text.ts`: Java's text and number semantics. `caseInsensitive` with the case snapshot, `javaTrim`/`javaTrimAll`, `JAVA_WHITESPACE`, `javaNumeric`, `asciiDigits`, `javaParseInteger`/`javaParseInt`/`javaDecode`/`javaDigit`, `JavaNumberFormat`, `javaSplit`, `hashSetOf`, `longHash`, `databaseObjectHash`/`databaseObjectSet`, `present`, `javaUtf8`.
 2. `body.ts`: request bodies as Spring reads them. `plainText` and its charset table, `decoderFor`, `utf16`, `utf32`, `knownCharset`, `plainTextProblem`, `plainIds`.
