@@ -99,8 +99,9 @@ Each runs `endpoints.find(... '/data/database/version').handler(...)`. Once move
 **Decision.**
 
 - Each family exports its endpoints in today's order.
-- The registry concatenates the families. Their order between each other does not matter for matching, but it is kept as today's anyway so that `/health`'s list, the parity harness and the route tables read the same.
-- A new test pins it: the registry's list equals a recorded list of today's paths, in order, and every one of the 15 pairs is in its recorded order.
+- The registry concatenates the families. Their order between each other does not matter for matching: every pair of routes one URL can match, same method or not, is within one family.
+- **Amended at T020:** today's list interleaves several families (data-query appears in five separate runs), so a concatenation cannot keep today's order exactly. Each move spreads its family's list where the family's first endpoint was, keeping each family's own order; endpoints of the family that sat later move up to join it. `/health`'s list and the parity harness's order follow; no answer does.
+- A test pins it: the list equals a recorded order, re-recorded in the pull request that moves a family, so the diff shows which routes moved; and the 15 same-method pairs and 4 cross-method pairs are each in their measured order, whatever the order between families.
 - `deploy/nginx/routes.spec.ts` reads the registry instead of `service.ts`.
 - Specs that import a helper from `service.ts` import it from its new module. `service.ts` keeps no re-exports once its last family has gone; until then it re-exports only what has not moved yet.
 

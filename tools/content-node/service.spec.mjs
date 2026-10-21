@@ -28,9 +28,6 @@ import {
   inDepthAttributes,
   PathwayBrowserNode,
   pathwayBrowserJson,
-  participantJson,
-  participantsFrom,
-  physicalEntityJson,
   topPathwayJson,
   topSpeciesMatch,
   javaUrlDecode,
@@ -38,6 +35,7 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import { participantJson, participantsFrom, physicalEntityJson } from './entities-endpoints.ts';
 import {
   schemaCountQuery,
   schemaMinQuery,

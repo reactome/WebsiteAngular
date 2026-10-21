@@ -280,6 +280,14 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/entity/{id}/componentOf',
     path: { id: 'oid' },
   },
+  '/ContentService/data/complex/{id}/subunits': {
+    java: '/data/complex/{id}/subunits',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/complexes/{resource}/{identifier}': {
+    java: '/data/complexes/{resource}/{identifier}',
+    path: { resource: 'resource', identifier: 'identifier' },
+  },
   '/ContentService/data/discover/{id}': {
     java: '/data/discover/{identifier}',
     path: { id: 'oid' },
@@ -312,14 +320,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
     java: '/data/pathway/{id}/containedEvents/{attributeName}',
     path: { id: 'oid', attribute: 'attribute' },
-  },
-  '/ContentService/data/complex/{id}/subunits': {
-    java: '/data/complex/{id}/subunits',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/complexes/{resource}/{identifier}': {
-    java: '/data/complexes/{resource}/{identifier}',
-    path: { resource: 'resource', identifier: 'identifier' },
   },
   '/ContentService/data/detail/{id}/locationsInPWB': {
     java: null,
