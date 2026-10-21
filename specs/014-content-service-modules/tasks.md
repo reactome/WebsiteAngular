@@ -111,6 +111,8 @@ It must not mix in logic edits.
 - [ ] T025 [US1] `tools/content-node/search-diagram-endpoints.ts`: diagram summary, search, flag and occurrences; species overview and its flag.
   - Also show SC-003 here: two pull requests changing two different families at once, neither conflicting.
 
+- **Batched (decided with the user, 21 Oct 2026):** T018–T025, with the three shared moves they needed (`orthologyIds` into `body.ts`, `deepShare` into `answers.ts`, `search-core.ts`), went in one pull request, a commit per move, to go faster; the one-move-per-PR rule is set aside for these. Each commit is still a pure move on its own, and the PR's check-move, baselines, beta comparison and review cover them together.
+
 ### The server
 
 - [ ] T026 [US1] Move what is left into `tools/content-node/server.ts`: start-up, the path rules, the download guard, failure answering, `/health`, warm-up. Remove `service.ts`. Then:
