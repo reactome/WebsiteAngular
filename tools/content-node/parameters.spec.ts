@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { PATH_KINDS, RECORD, declaredQuery, standardForm } from './parameters.ts';
 
-const { endpoints } = await import('./service.ts');
+const { endpoints } = await import('./registry.ts');
 // The GETs: an endpoint with no method (Endpoint's only method is 'post').
 const GETS = endpoints.filter((e) => !e.method).map((e) => e.path);
 const OPENAPI = JSON.parse(

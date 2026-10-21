@@ -91,7 +91,7 @@ export function invalidInputs(endpoints: Endpoint[]) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { endpoints } = await import('./service.ts');
+  const { endpoints } = await import('./registry.ts');
   for (const path of invalidInputs(
     // The GETs: an endpoint with no method is one (Endpoint's only method is 'post').
     endpoints.filter((e) => !e.method)

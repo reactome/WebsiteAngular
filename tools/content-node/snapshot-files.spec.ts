@@ -22,7 +22,7 @@ import type { JsoupTables } from './jsoup-text.ts';
 import type { GraphNames } from './parameters.ts';
 import type { SchemaSnapshot } from './schema.ts';
 import type { CaseSnapshot } from './java-text.ts';
-import type { RfdSnapshot } from './service.ts';
+import type { RfdSnapshot } from './server.ts';
 import type { OpenApiSnapshot } from './snapshot-openapi.ts';
 
 /**

@@ -14,7 +14,7 @@ The contract here is between the modules:
 | `reference-entities`, `search-params`, `release`                                                                                                                           | the above, `solr`                                                         |
 | `search-core`                                                                                                                                                              | the above, layer 6 included (what both search families share)             |
 | a family (`<family>-endpoints`: data-query, pathways-events, content, person, entities, mapping-species, schema, interactors, exporters, citation, search, search-diagram) | any shared module, any leaf; **never another family, never the registry** |
-| `registry`                                                                                                                                                                 | the families                                                              |
+| `registry`                                                                                                                                                                 | the families, and `endpoint`'s types                                      |
 | `server`                                                                                                                                                                   | the registry, the shared modules                                          |
 
 A test reads each module's imports and fails on any import this table does not allow, naming the module and the import. It is shown failing first: make one family import another.

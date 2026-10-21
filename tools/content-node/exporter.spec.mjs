@@ -5,7 +5,7 @@
 // refused before anything is resolved, and how a resolution becomes the render
 // request. Java's answers measured on 15 Oct 2026.
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
-import { app } from './service.ts';
+import { app } from './server.ts';
 import { diagramExportRequest, figureProblem, splitExportName } from './exporters-endpoints.ts';
 
 let base;

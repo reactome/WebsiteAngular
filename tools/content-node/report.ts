@@ -54,7 +54,7 @@ const wellFormed = <T>(text: T): T =>
     ? text.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '?')
     : text) as T;
 
-/** Who asked, as SearchService's report has it (service.ts, reportInformation). */
+/** Who asked, as SearchService's report has it (search-core.ts, reportInformation). */
 export interface ReportInfo {
   release: string | null;
   ip: string;

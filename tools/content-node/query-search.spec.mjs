@@ -14,7 +14,7 @@ vi.mock('./graph.ts', () => ({
   envSetting: (key, fallback = '') => process.env[key] || fallback,
 }));
 
-const { app } = await import('./service.ts');
+const { app } = await import('./server.ts');
 const { facetQueryParams } = await import('./search-endpoints.ts');
 
 let base;

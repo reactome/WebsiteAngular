@@ -17,7 +17,7 @@ export const settings = {
   port: (): number => Number(process.env['CONTENT_NODE_PORT']) || 4400,
   /** The address to listen on: loopback unless CONTENT_NODE_HOST says otherwise. */
   host: (): string => process.env['CONTENT_NODE_HOST'] || '127.0.0.1',
-  /** DEEP_QUERY_LIMIT as given; deepLimit (service.ts) bounds it. */
+  /** DEEP_QUERY_LIMIT as given; deepLimit (server.ts) bounds it. */
   deepQueryLimit: (): string | undefined => process.env['DEEP_QUERY_LIMIT'],
   /** Where the render service listens: loopback only, never public. */
   renderService: (): string => process.env['RENDER_SERVICE_URL'] || 'http://127.0.0.1:4310',

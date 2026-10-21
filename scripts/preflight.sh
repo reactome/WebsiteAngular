@@ -194,7 +194,7 @@ if [ "$mode" != "fast" ]; then
     # server sends the endpoints node serves to CONTENT_NODE_TARGET, which is
     # otherwise the deployed one -- and a pushed port the deployed one lacks
     # (the renderer reads /data/query/{id}) failed every figure here.
-    CONTENT_NODE_PORT=4313 node tools/content-node/service.ts >"$render_cache/content-node.log" 2>&1 &
+    CONTENT_NODE_PORT=4313 node tools/content-node/server.ts >"$render_cache/content-node.log" 2>&1 &
     content_pid=$!
     RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
       node tools/render/service.ts >"$render_cache/service.log" 2>&1 &

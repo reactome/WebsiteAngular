@@ -136,7 +136,7 @@ class Relation {
 /**
  * A Java Map written as a JSON object, its entries in the order given -- the
  * Map's own iteration order, which the caller decides (see JavaHashMap in
- * service.ts). Its values are written in one pass with everything else, so
+ * java-hashmap.ts). Its values are written in one pass with everything else, so
  * `@id` numbering runs on across them as Jackson's does.
  */
 export class JsonMap {

@@ -3,8 +3,7 @@
  * data-model.md): types only, a leaf every module may import. Families
  * declare their lists as `Endpoint[]`, and `cached` (answers) returns a
  * `Handler`, without importing the registry that assembles the families --
- * which would be a cycle. Until the families move out of service.ts the
- * list is service.ts's, typed there in place.
+ * which would be a cycle.
  */
 import type { Request as ExpressRequest } from 'express';
 
