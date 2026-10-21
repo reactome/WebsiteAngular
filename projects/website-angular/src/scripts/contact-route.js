@@ -164,8 +164,13 @@ function sendmail(raw, from, sendmailPath = '/usr/sbin/sendmail', timeoutMs = 30
     child.on('error', fail);
     child.on('close', (code) => {
       clearTimeout(timer);
-      if (code === 0) resolve();
-      else reject(new Error(`sendmail exited ${code}: ${stderr.trim()}`));
+      // Sent only when it was also all read: a sendmail that exits 0 before
+      // reading the whole message has not sent it, and whether its EPIPE or
+      // its exit is heard first is a race.
+      if (code !== 0) reject(new Error(`sendmail exited ${code}: ${stderr.trim()}`));
+      else if (!child.stdin.writableFinished)
+        reject(new Error('sendmail exited before reading the whole message'));
+      else resolve();
     });
     // Unheard, a sendmail that exits before reading all of this (EPIPE) would
     // be an uncaught error, and take the whole server down with it.
