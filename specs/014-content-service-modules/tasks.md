@@ -143,6 +143,8 @@ It must not mix in logic edits.
   - add a spec in which a handler that rejects is answered with the service's 500, with no unhandled rejection. Show it failing on Express 4 first.
 - [ ] T029 [US3] On beta after the upgrade, run T027's three sets again and compare. They must be identical. Record the result in the PR.
 
+  T028 and T030 land in one pull request. There is one `express` in the root `package.json`: the render image takes its version from there, and so does the site's own server (`projects/website-angular/src/scripts/serve-prod.js`, with the contact and search-answer routes). So the upgrade covers that server too, at its next restart. Its specs pass on Express 5, its catch-all route is a RegExp (which Express 5 still takes), and it reads `req.body` defensively.
+
 ---
 
 ## Phase 6: User Story 4 — The render service on Express 5 (Priority: P3)
