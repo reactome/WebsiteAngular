@@ -26,22 +26,18 @@ import {
   needsIncoming,
   failureAnswer,
   inDepthAttributes,
-  inDepthId,
   personWhere,
   PathwayBrowserNode,
   pathwayBrowserJson,
   participantJson,
   participantsFrom,
-  pathwayJson,
   physicalEntityJson,
   referenceEntityJson,
-  resolveId,
   schemaCountQuery,
   schemaMinQuery,
   schemaModelQuery,
   schemaWindow,
   simpleObjectJson,
-  speciesFilter,
   topPathwayJson,
   topSpeciesMatch,
   javaUrlDecode,
@@ -49,6 +45,7 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import { inDepthId, pathwayJson, resolveId, speciesFilter } from './objects.ts';
 import { javaError, javaJson, neo4jFailureMessage, notFound, timedOut } from './answers.ts';
 import {
   pathId,
