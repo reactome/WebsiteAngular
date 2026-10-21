@@ -90,7 +90,7 @@ It must not mix in logic edits.
 - [x] T010 [US1] Move `tools/content-node/spring.ts` (layer 3): `Bound`, `booleanEditor`, the `spring*` binders, `servletParameter`/`servletDecode`, `queryValues`, `pathId`/`javaPathDecode`/`rawSegment`, `requiredString`, `writerFor`. `springScope` takes its `SCOPES`; `springFields` waits for T013 with `SOLR_FIELDS` and `pair`. — #581
 - [x] T011 [US1] Move `tools/content-node/answers.ts` (layer 4): `javaJson`, `javaError`, `notFound`, `unexpected`/`unexpectedFailure`, `springNotFound`, `compact` and its types, `only`, `nonEmptyJson`/`RawJson`, `Failure`, `neo4jFailureMessage`, `timedOut`, `cached`. With them, compact's types (`JsonWritten`, `BeforeNonEmpty`, `Written`, `OptionalKeys`). — #582
 - [x] T012 [US1] Move `tools/content-node/objects.ts` (layer 5): `resolveId`, `graphCoreId`, `inDepthId`, `longPastRange`, `speciesFilter`/`speciesTaxId`, `lazyCollectionQuery`/`lazyRelationship`, `attributeOf`/`attributeAnswer`, `pathwayJson`, `Props`. — #583
-- [ ] T013 [US1] Move the layer-6 modules:
+- [x] T013 [US1] Move the layer-6 modules (#584):
   - `tools/content-node/release.ts`: `databaseVersion` (T005);
   - `tools/content-node/reference-entities.ts`: `referenceEntityJson`, `REFERENCE_CLASSES`, `MOLECULE_TYPES`;
   - `tools/content-node/search-params.ts`: `searchParams`, `SCOPE_FILTER`, `PARSER_TYPES`, `plainFilter`, `SolrParams`, `pair`, `diagramResult` and its queries; and `springFields` with search-core's `SOLR_FIELDS`, which T010 left here, being Solr's.
