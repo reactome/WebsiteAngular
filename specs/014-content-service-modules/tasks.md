@@ -98,7 +98,7 @@ It must not mix in logic edits.
 ### Families, least coupled first (each its own PR: its endpoints in today's order, and the helpers only it uses)
 
 - [ ] T014 [P] [US1] `tools/content-node/citation-endpoints.ts`: `/citation/*`.
-- [ ] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`).
+- [x] T015 [P] [US1] `tools/content-node/content-endpoints.ts`: `/data/content/*` (toc, doi, contributors, `peopleByPathway`, `simplePeople`). — #586
 - [ ] T016 [P] [US1] `tools/content-node/person-endpoints.ts`: `/data/person/*`, the role lists' generator kept as a generator.
 - [ ] T017 [P] [US1] `tools/content-node/schema-endpoints.ts`: `/data/schema/*`, with `schemaPage` and its queries.
 - [ ] T018 [P] [US1] `tools/content-node/interactors-endpoints.ts`: `/interactors/*`, holding `psicquicCache` and the PSICQUIC refresh.
