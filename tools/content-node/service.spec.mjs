@@ -32,9 +32,9 @@ import {
   topSpeciesMatch,
   javaUrlDecode,
   writeResult,
-  deepShare,
   deepLimit,
 } from './service.ts';
+import { deepShare } from './answers.ts';
 import { participantJson, participantsFrom, physicalEntityJson } from './entities-endpoints.ts';
 import {
   schemaCountQuery,

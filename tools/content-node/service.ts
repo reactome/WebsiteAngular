@@ -97,6 +97,7 @@ import type { Bound } from './spring.ts';
 import {
   cached,
   compact,
+  deepShare,
   javaError,
   javaJson,
   neo4jFailureMessage,
@@ -4797,23 +4798,6 @@ export function app() {
   });
 
   return server;
-}
-
-/**
- * How many deep queries (an endpoint marked `deep`) may run at once. The
- * graph pool is 32 so that a few slow requests cannot hold every connection;
- * these routes can each run for the full read timeout and cost the database
- * the most, so they keep a smaller share. One past it is a 503 at once rather
- * than a wait, as the render service answers a full queue.
- */
-export function deepShare(max) {
-  let running = 0;
-  return {
-    enter: () => (running < max ? ((running += 1), true) : false),
-    leave: () => {
-      running = Math.max(0, running - 1);
-    },
-  };
 }
 
 /** DEEP_QUERY_LIMIT when it is a whole number from 1 to 32 (the pool's default); otherwise 4. */
