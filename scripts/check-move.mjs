@@ -142,6 +142,9 @@ function pieces(file, text) {
   };
   const endpointsIn = (list) => {
     for (const element of list.elements) {
+      // A family's own list spread into another (`...citationEndpoints`) is
+      // no endpoint: its endpoints are read where that list is declared.
+      if (ts.isSpreadElement(element) && ts.isIdentifier(element.expression)) continue;
       let route = '?';
       let method = 'get';
       // The endpoint's own properties: a `method` deeper inside it is not its method.
