@@ -9,7 +9,7 @@ WORKDIR /content-node
 
 # Only what the service imports. The repository's own lockfile would drag in
 # Angular, Playwright and the CMS to run two endpoints.
-RUN npm install --omit=dev --no-audit --no-fund neo4j-driver@^6.2.0 express@^4.22.2
+RUN npm install --omit=dev --no-audit --no-fund neo4j-driver@^6.2.0 express@5.2.1
 
 COPY tools/content-node/ ./tools/content-node/
 # The nearest package.json is what tells Node a .ts module is a module (spec

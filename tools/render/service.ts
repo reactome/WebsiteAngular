@@ -470,6 +470,9 @@ function buildId() {
 // ---- http ----------------------------------------------------------------
 const app = express();
 app.disable('x-powered-by');
+// Express 4's parser, which Express 5 no longer defaults to: `x[y]=1` is a
+// parameter named `x`, as every refusal below has always named it (spec 014 R7).
+app.set('query parser', 'extended');
 
 app.get('/health', (_req, res) => {
   res.json({
@@ -660,9 +663,9 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   }
 };
 
-// Express 4 does not wait on a handler's promise; the handler answers every
-// failure itself (its catch above), so the promise is left on purpose.
-app.get('/render/:name.:ext', (req, res) => void renderRoute(req, res));
+// The handler answers every failure of its own (its catch above); anything
+// past that is Express 5's to answer, which waits on the handler's promise.
+app.get('/render/:name.:ext', renderRoute);
 
 /**
  * Only listen when run as a program, so the handlers can be imported and

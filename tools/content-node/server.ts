@@ -350,38 +350,35 @@ export function app() {
     next();
   });
 
-  // Express 4 does not wait on a handler's promise; this one answers itself.
-  server.get('/health', (_request, response) => {
-    void (async () => {
-      // The release this process is holding, which is the one thing here that can
-      // be wrong without anything looking wrong. Caches live for the life of the
-      // process by agreement -- updating the database includes restarting this --
-      // and a missed restart shows up as diagram, figure and icon URLs pointing at
-      // the previous release's bucket prefix, silently. Reporting it makes that
-      // one curl away from obvious.
-      //
-      // Read through the same cache the endpoint uses, so this reports what is
-      // being *served* rather than what the graph currently says. A health check
-      // that went straight to the database would answer correctly while every
-      // other response was stale, which is the opposite of useful.
-      // Whatever the version endpoint's body is, written as it is.
-      let release: unknown = null;
-      try {
-        const answer = await databaseVersion({ params: {}, query: {} });
-        release = answer.body ?? null;
-      } catch {
-        // A health check that fails because the graph is down is reporting the
-        // wrong thing: the process is up, and that is what this answers.
-      }
-      response.json({
-        ok: true,
-        ...buildId(),
-        graph: configured(),
-        solr: solrConfigured(),
-        release,
-        endpoints: endpoints.map((e) => e.path),
-      });
-    })();
+  server.get('/health', async (_request, response) => {
+    // The release this process is holding, which is the one thing here that can
+    // be wrong without anything looking wrong. Caches live for the life of the
+    // process by agreement -- updating the database includes restarting this --
+    // and a missed restart shows up as diagram, figure and icon URLs pointing at
+    // the previous release's bucket prefix, silently. Reporting it makes that
+    // one curl away from obvious.
+    //
+    // Read through the same cache the endpoint uses, so this reports what is
+    // being *served* rather than what the graph currently says. A health check
+    // that went straight to the database would answer correctly while every
+    // other response was stale, which is the opposite of useful.
+    // Whatever the version endpoint's body is, written as it is.
+    let release: unknown = null;
+    try {
+      const answer = await databaseVersion({ params: {}, query: {} });
+      release = answer.body ?? null;
+    } catch {
+      // A health check that fails because the graph is down is reporting the
+      // wrong thing: the process is up, and that is what this answers.
+    }
+    response.json({
+      ok: true,
+      ...buildId(),
+      graph: configured(),
+      solr: solrConfigured(),
+      release,
+      endpoints: endpoints.map((e) => e.path),
+    });
   });
 
   for (const endpoint of endpoints) {
@@ -391,10 +388,11 @@ export function app() {
     const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
     // A POST's body arrives as bytes; its handler decodes them as Java would.
     const body = endpoint.method === 'post' ? [readBody] : [];
-    // Express 4 does not wait on a handler's promise; answerWith answers itself.
-    server[endpoint.method ?? 'get'](route, ...body, (request, response) => {
-      void answerWith(endpoint, request, response);
-    });
+    // answerWith answers every failure of the handler's; a rejection past it
+    // reaches the error handler below, which Express 5 waits for.
+    server[endpoint.method ?? 'get'](route, ...body, (request, response) =>
+      answerWith(endpoint, request, response)
+    );
   }
 
   // Any other method on these paths is Java's 405: nginx sends every method
@@ -446,7 +444,7 @@ export function app() {
         )
       );
     const body = endpoint.method === 'post' ? readBody : (_request, _response, done) => done();
-    body(request, response, () => answerWith(endpoint, request, response));
+    body(request, response, () => answerWith(endpoint, request, response).catch(next));
   });
 
   // Anything else that reaches here is this service's failure: Java's

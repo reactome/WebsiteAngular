@@ -85,6 +85,14 @@ describe('the request handler runs at all', () => {
     expect(body.canonical).toBe('/render/R-HSA-109606.png');
   });
 
+  it('names a bracketed parameter by its name, as the extended query parser reads it', async () => {
+    // Express 5's default parser keeps `x[y]` as one key; this service keeps
+    // Express 4's, which reads it as `x` holding `{ y }` (spec 014 R7).
+    const response = await fetch(`${base}/render/R-HSA-109606.png?x[y]=1`);
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: string }).error).toBe('unknown parameter "x"');
+  });
+
   it('refuses a repeated parameter, the case that was throwing', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?token=a&token=b`);
     expect(response.status).toBe(400);
