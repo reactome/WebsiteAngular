@@ -162,6 +162,44 @@ export interface RecordEntry {
 export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/database/version': { java: '/data/database/version' },
   '/ContentService/data/database/name': { java: '/data/database/name' },
+  '/ContentService/data/query/enhanced/v2/{id}': {
+    java: '/data/query/enhanced/v2/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/enhanced/{id}': {
+    java: '/data/query/enhanced/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}/stId': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}': { java: '/data/query/{id}', path: { id: 'oid' } },
+  '/ContentService/data/diseases': { java: '/data/diseases' },
+  '/ContentService/data/diseases/doid': { java: '/data/diseases/doid' },
+  '/ContentService/data/query/ids/map': {
+    java: null,
+    why: 'Java maps only POST here; a GET is always its 404, which is never stored.',
+    query: [],
+  },
+  '/ContentService/data/query/{id}/normalPathway': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}/{attribute}': {
+    java: '/data/query/{id}/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/discover/{id}': {
+    java: '/data/discover/{identifier}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/instance/{id}/referrers': {
+    java: '/data/instance/{id}/referrers',
+    path: { id: 'oid' },
+  },
   '/ContentService/data/pathways/top/{id}': {
     java: '/data/pathways/top/{species}',
     path: { id: 'taxId' },
@@ -221,27 +259,6 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/orthology/{id}/species/{speciesId}',
     path: { id: 'oid', speciesId: 'long' },
   },
-  '/ContentService/data/query/enhanced/v2/{id}': {
-    java: '/data/query/enhanced/v2/{id}',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/enhanced/{id}': {
-    java: '/data/query/enhanced/{id}',
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}/stId': {
-    java: '/data/query/{id}/{attributeName}',
-    attributeOf: true,
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}': { java: '/data/query/{id}', path: { id: 'oid' } },
-  '/ContentService/data/diseases': { java: '/data/diseases' },
-  '/ContentService/data/diseases/doid': { java: '/data/diseases/doid' },
-  '/ContentService/data/query/ids/map': {
-    java: null,
-    why: 'Java maps only POST here; a GET is always its 404, which is never stored.',
-    query: [],
-  },
   '/ContentService/data/entity/{id}/in-depth': {
     java: '/data/entity/{id}/in-depth',
     path: { id: 'oid' },
@@ -251,15 +268,6 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/event/{id}/in-depth',
     path: { id: 'oid' },
     values: IN_DEPTH,
-  },
-  '/ContentService/data/query/{id}/normalPathway': {
-    java: '/data/query/{id}/{attributeName}',
-    attributeOf: true,
-    path: { id: 'oid' },
-  },
-  '/ContentService/data/query/{id}/{attribute}': {
-    java: '/data/query/{id}/{attributeName}',
-    path: { id: 'oid', attribute: 'attribute' },
   },
   '/ContentService/data/event/{id}/ancestors': {
     java: '/data/event/{id}/ancestors',
@@ -312,10 +320,6 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/complexes/{resource}/{identifier}': {
     java: '/data/complexes/{resource}/{identifier}',
     path: { resource: 'resource', identifier: 'identifier' },
-  },
-  '/ContentService/data/discover/{id}': {
-    java: '/data/discover/{identifier}',
-    path: { id: 'oid' },
   },
   '/ContentService/data/pathway/{id}/containedEvents': {
     java: '/data/pathway/{id}/containedEvents',
@@ -466,10 +470,6 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'An undocumented controller; never stored.',
     query: [],
     cache: 'never',
-  },
-  '/ContentService/data/instance/{id}/referrers': {
-    java: '/data/instance/{id}/referrers',
-    path: { id: 'oid' },
   },
   '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
   '/ContentService/search/icon/query': { java: '/search/icon/query' },

@@ -15,7 +15,6 @@ import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createHash } from 'node:crypto';
 import {
   app,
-  databaseObjectTsv,
   endpoints,
   endpointFor,
   eventProjection,
@@ -23,7 +22,6 @@ import {
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
-  needsIncoming,
   failureAnswer,
   inDepthAttributes,
   PathwayBrowserNode,
@@ -34,6 +32,7 @@ import {
   writeResult,
   deepLimit,
 } from './service.ts';
+import { databaseObjectTsv, needsIncoming } from './data-query-endpoints.ts';
 import { deepShare } from './answers.ts';
 import { participantJson, participantsFrom, physicalEntityJson } from './entities-endpoints.ts';
 import {
