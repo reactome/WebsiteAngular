@@ -1,4 +1,5 @@
 {
+  "tools/content-node/answers.ts": 15,
   "tools/content-node/body.ts": 9,
   "tools/content-node/citation.spec.ts": 10,
   "tools/content-node/citation.ts": 44,
@@ -7,7 +8,7 @@
   "tools/content-node/java-hashmap.ts": 26,
   "tools/content-node/java-text.ts": 32,
   "tools/content-node/parameters.ts": 25,
-  "tools/content-node/service.ts": 367,
+  "tools/content-node/service.ts": 352,
   "tools/content-node/spring.ts": 15,
   "tools/render/pptx.ts": 72,
   "tools/render/render-core.ts": 18,

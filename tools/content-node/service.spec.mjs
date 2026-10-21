@@ -23,7 +23,6 @@ import {
   locationsInPathwayBrowser,
   locationsQuery,
   parseHierarchy,
-  timedOut,
   needsIncoming,
   failureAnswer,
   inDepthAttributes,
@@ -36,10 +35,6 @@ import {
   pathwayJson,
   physicalEntityJson,
   referenceEntityJson,
-  javaError,
-  javaJson,
-  neo4jFailureMessage,
-  notFound,
   resolveId,
   schemaCountQuery,
   schemaMinQuery,
@@ -54,6 +49,7 @@ import {
   deepShare,
   deepLimit,
 } from './service.ts';
+import { javaError, javaJson, neo4jFailureMessage, notFound, timedOut } from './answers.ts';
 import {
   pathId,
   servletParameter,
