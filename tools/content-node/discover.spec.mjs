@@ -20,7 +20,8 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const { app, schemaDataSet, lazyCollectionQuery } = await import('./service.ts');
+const { app, schemaDataSet } = await import('./service.ts');
+const { lazyCollectionQuery } = await import('./objects.ts');
 
 describe('schemaDataSet', () => {
   const event = {
