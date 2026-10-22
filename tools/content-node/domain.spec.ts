@@ -396,7 +396,7 @@ describe('javaDouble, as Double.toString writes a number', () => {
     [1234567, '1234567.0'],
     [12345678, '1.2345678E7'],
     [-2.5, '-2.5'],
-  ]) {
+  ] as [number, string][]) {
     it(`writes ${value} as ${text}`, () => expect(javaDouble(value)).toBe(text));
   }
 });

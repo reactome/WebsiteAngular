@@ -107,6 +107,9 @@ class Entity {
   }
 }
 
+/** A mapped graph-core object, as mapResult and mapNodes give them. */
+export type DomainEntity = Entity;
+
 /** A relationship with properties (graph-core's Has subclasses): Input, HasComponent... */
 class Relation {
   declare schemaClass: string;
@@ -178,7 +181,7 @@ function composedOf(entity) {
 }
 
 /** Whether a class is, or descends from, another (Class.isAssignableFrom). */
-export const isA = (schemaClass, target) => supertypes(schemaClass).has(target);
+export const isA = (schemaClass: string, target: string) => supertypes(schemaClass).has(target);
 
 /**
  * A query result as the mapping reads it: the root, the nodes and
@@ -335,7 +338,7 @@ type RelationshipField = [
   relationClass: string | null,
 ];
 
-function map(state, node, target) {
+function map(state, node, target): Entity {
   const frames: Frame[] = [];
   const make = (from: GraphNode, to) => {
     const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
@@ -692,7 +695,11 @@ export function writeDomain(value: unknown, view = VIEW.flatten, { jsog = false 
     const { value: current, floating } = item;
     if (current instanceof Entity) {
       if (seen.has(current)) {
-        out.push(jsog ? `{"@ref":"${seen.get(current)}"}` : number(current.fields['dbId']));
+        out.push(
+          jsog
+            ? `{"@ref":"${seen.get(current)}"}`
+            : number(current.fields['dbId'] as number | string)
+        );
         continue;
       }
       seen.set(current, seen.size + 1);
@@ -752,7 +759,7 @@ function open(
   }
 }
 
-function scalar(value, floating) {
+function scalar(value: unknown, floating: boolean | undefined): string {
   if (typeof value === 'string') return javaString(value);
   if (typeof value === 'boolean') return String(value);
   if (typeof value === 'number') return floating ? javaDouble(value) : number(value);
@@ -761,14 +768,16 @@ function scalar(value, floating) {
 }
 
 /** A whole number as Java writes a Long; graph.ts hands an unsafe one over as text. */
-function number(value) {
+function number(value: number | string): string {
   return String(value);
 }
 
 /** A string as Jackson escapes it: as JSON.stringify, with upper-case \u00XX. */
-function javaString(text) {
-  return JSON.stringify(text).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
-    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+function javaString(text: string): string {
+  return JSON.stringify(text).replace(
+    /(\\+)u00([0-9a-f]{2})/g,
+    (match: string, slashes: string, hex: string) =>
+      slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
 }
 
@@ -776,11 +785,12 @@ function javaString(text) {
  * Double.toString: always a decimal point; scientific notation, as `1.0E-4`,
  * below 10^-3 and from 10^7.
  */
-export function javaDouble(value) {
+export function javaDouble(value: number): string {
   if (!Number.isFinite(value)) return JSON.stringify(String(value));
   const magnitude = Math.abs(value);
   if (magnitude !== 0 && (magnitude < 1e-3 || magnitude >= 1e7)) {
-    const [mantissa, exponent] = value.toExponential().split('e');
+    // toExponential always writes an 'e': both parts are there.
+    const [mantissa = '', exponent] = value.toExponential().split('e');
     return `${mantissa.includes('.') ? mantissa : `${mantissa}.0`}E${Number(exponent)}`;
   }
   const text = String(value);
@@ -806,7 +816,7 @@ export function javaDouble(value) {
  * with all of them, ~100ms without.
  */
 export function findByIdQuery(
-  where,
+  where: string,
   {
     anchor = 'n:DatabaseObject',
     ordered = true,
@@ -827,7 +837,7 @@ export function findByIdQuery(
 }
 
 /** The labels of the object findByIdQuery will load, to pick its parameters by. */
-export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
+export function rootLabelsQuery(where: string, { anchor = 'n:DatabaseObject' } = {}) {
   return `MATCH (${anchor}) WHERE ${where} RETURN labels(n) AS labels LIMIT 1`;
 }
 
@@ -845,7 +855,19 @@ export function rootLabelsQuery(where, { anchor = 'n:DatabaseObject' } = {}) {
  * meanwhile. Each node and relationship comes back once instead, in the order
  * of its first appearance -- the only order the mapping uses (mapResult).
  */
-export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
+export function inDepthQuery({
+  label,
+  follow,
+  idType,
+  maxDepth,
+  attributes,
+}: {
+  label: string;
+  follow: string;
+  idType: string;
+  maxDepth: number;
+  attributes: string;
+}) {
   const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
   const rel = (r) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
@@ -881,7 +903,13 @@ export function inDepthQuery({ label, follow, idType, maxDepth, attributes }) {
  * matters to the mapping (fill), and collecting each list DISTINCT keeps that
  * order: a node first appears where it first appears in its first list.
  */
-export function oldEnhancedQuery({ idType, outgoingOnly }) {
+export function oldEnhancedQuery({
+  idType,
+  outgoingOnly,
+}: {
+  idType: string;
+  outgoingOnly: boolean;
+}) {
   const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
   const rel = (r) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
@@ -905,7 +933,17 @@ export function oldEnhancedQuery({ idType, outgoingOnly }) {
  * `includeDisease`, is anything in disease. Java's text, with its RETURN
  * taken apart as findByIdQuery's is.
  */
-export function enhancedQuery({ idType, summarise, includeDisease, outgoingOnly }) {
+export function enhancedQuery({
+  idType,
+  summarise,
+  includeDisease,
+  outgoingOnly,
+}: {
+  idType: string;
+  summarise?: boolean | undefined;
+  includeDisease?: boolean | undefined;
+  outgoingOnly: boolean;
+}) {
   const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
   const rel = (r) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
@@ -1096,12 +1134,12 @@ export function summaryEntity(reference) {
  * comes back twice is the same object -- and written the second time as its
  * dbId.
  */
-export function mapNodes(nodes: GraphNode[]) {
-  const mapped = new Map();
+export function mapNodes(nodes: GraphNode[]): Entity[] {
+  const mapped = new Map<GraphNode['id'], Entity>();
   return nodes.map((node) => {
     if (!mapped.has(node.id))
       mapped.set(node.id, mapResult({ root: node, nodes: [], relationships: [] }));
-    return mapped.get(node.id);
+    return mapped.get(node.id) as Entity;
   });
 }
 
@@ -1139,7 +1177,7 @@ export function findByIdParameters(labels: string[]) {
  * getters differ only in case, so that is at most one, whatever order the
  * JVM lists them in. Undefined when there is none.
  */
-export function attributeGetter(schemaClass, attribute) {
+export function attributeGetter(schemaClass: string, attribute: string) {
   const wanted = `get${attribute}`.toLowerCase();
   const entry = SNAPSHOT().getters[schemaClass]?.find(([lower]) => lower === wanted);
   if (!entry) return undefined;
@@ -1231,7 +1269,7 @@ export async function attributeValue(entity, getter, lazyLoad, { outgoingLoaded 
 }
 
 /** Whether a class is a DatabaseObject, as the aspect's pointcut asks. */
-function isDomainObject(name) {
+function isDomainObject(name: string) {
   try {
     return isA(name, 'DatabaseObject');
   } catch {
