@@ -27,8 +27,10 @@ const form = (text: string) =>
 
 /** JSON as Jackson writes it: a control character's escape in upper case (\u001F). */
 const jacksonJson = (value: unknown) =>
-  JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
-    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+  JSON.stringify(value).replace(
+    /(\\+)u00([0-9a-f]{2})/g,
+    (match: string, slashes: string, hex: string) =>
+      slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
 
 /**

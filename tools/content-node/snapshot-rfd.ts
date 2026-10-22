@@ -60,7 +60,7 @@ const entry = (jar: string, name: string) =>
 const springWeb = readdirSync(LIB).find((name) => /^spring-web-\d.*\.jar$/.test(name));
 if (!springWeb) throw new Error(`no spring-web jar in ${LIB}`);
 
-const tomcat = new Map();
+const tomcat = new Map<string, string>();
 for (const line of entry(
   path.join(TOMCAT, 'catalina.jar'),
   'org/apache/catalina/startup/MimeTypeMappings.properties'
@@ -70,13 +70,13 @@ for (const line of entry(
   const at = text.indexOf('=');
   tomcat.set(text.slice(0, at).trim().toLowerCase(), text.slice(at + 1).trim());
 }
-const spring = new Map();
+const spring = new Map<string, string>();
 for (const line of entry(path.join(LIB, springWeb), 'org/springframework/http/mime.types').split(
   '\n'
 )) {
   const text = line.trim();
   if (!text || text.startsWith('#')) continue;
-  const [type, ...extensions] = text.split(/\s+/);
+  const [type = '', ...extensions] = text.split(/\s+/);
   for (const extension of extensions)
     if (!spring.has(extension.toLowerCase())) spring.set(extension.toLowerCase(), type);
 }
