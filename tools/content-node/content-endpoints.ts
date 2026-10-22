@@ -22,6 +22,9 @@ import { cached, compact } from './answers.ts';
  * SimplePerson) -- firstname and orcidId often not.
  */
 type PersonProps = Props & { dbId: number; displayName: string; surname: string };
+/** The roles a pathway's people are read in, and the relationships each follows. */
+type Role = 'authors' | 'reviewers' | 'editors';
+type RolePattern = { own: string; descendants: string };
 
 /** A pathway in the contents lists: /content/toc and the DOI list. */
 type PathwayListRow = {
@@ -48,16 +51,23 @@ type PathwayListRow = {
  * `pattern` is spliced into the query, so it is written here and never taken
  * from a request. Both callers pass a literal.
  */
-async function peopleByPathway(pattern, overrides = {}) {
-  const roles = {
+async function peopleByPathway(
+  pattern: string,
+  overrides: Partial<Record<Role, RolePattern>> = {}
+) {
+  const roles: Record<Role, RolePattern> = {
     authors: { own: ':authored|revised', descendants: ':authored|revised' },
     reviewers: { own: ':reviewed', descendants: ':reviewed' },
     editors: { own: ':edited', descendants: ':edited' },
     ...overrides,
   };
-  const out = { authors: new Map(), reviewers: new Map(), editors: new Map() };
+  const out: Record<Role, Map<string, PersonProps[]>> = {
+    authors: new Map(),
+    reviewers: new Map(),
+    editors: new Map(),
+  };
 
-  for (const [role, relationship] of Object.entries(roles)) {
+  for (const [role, relationship] of Object.entries(roles) as [Role, RolePattern][]) {
     const rows = await read<{ stId: string; own: PersonProps[]; sub: PersonProps[] }>(
       `MATCH ${pattern}
        OPTIONAL MATCH (p)<-[${relationship.own}]-(:InstanceEdit)<-[:author]-(own:Person)
@@ -66,7 +76,7 @@ async function peopleByPathway(pattern, overrides = {}) {
        RETURN p.stId AS stId, own, COLLECT(DISTINCT sub) AS sub`
     );
     for (const row of rows) {
-      const seen = new Map();
+      const seen = new Map<number, PersonProps>();
       // COLLECT leaves out nulls and gives [] for none.
       for (const person of [...row.own, ...row.sub]) {
         if (!seen.has(person.dbId)) seen.set(person.dbId, person);

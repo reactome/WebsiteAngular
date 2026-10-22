@@ -4,6 +4,7 @@
  * endpoints. Moved unchanged from service.ts.
  */
 import { only } from './answers.ts';
+import type { Props } from './objects.ts';
 
 /**
  * The ReferenceEntity classes, most specific first: a node carries the labels
@@ -25,7 +26,7 @@ const REFERENCE_CLASSES = [
 ];
 
 /** What each class's constructor sets moleculeType to; ReferenceGroup sets none. */
-const MOLECULE_TYPES = {
+const MOLECULE_TYPES: Record<string, string> = {
   ReferenceIsoform: 'Protein',
   ReferenceGeneProduct: 'Protein',
   ReferenceDNASequence: 'Entity',
@@ -40,7 +41,7 @@ const MOLECULE_TYPES = {
  * one key order fits them all, measured from Java over 16,000 entities of six
  * classes. Stored but never written: ReferenceMolecule's `trivial`.
  */
-export function referenceEntityJson(node, labels) {
+export function referenceEntityJson(node: Props, labels: string[]) {
   const className = REFERENCE_CLASSES.find((name) => labels.includes(name)) ?? 'ReferenceEntity';
   const moleculeType = MOLECULE_TYPES[className];
   return {
