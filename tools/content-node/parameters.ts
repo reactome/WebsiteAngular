@@ -396,10 +396,18 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'private',
   },
-  // Takes an analysis token: one person's result.
+  // Both take an analysis token: one person's result.
+  '/ContentService/exporter/voronoi/{id}': {
+    java: null,
+    why: 'No Java counterpart: the Voronoi overview, which replaced /exporter/fireworks/{species}.{ext}; never stored at the edge anyway.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'private',
+  },
+  // A redirect to the Voronoi overview, keeping the query (an analysis token).
   '/ContentService/exporter/fireworks/{id}': {
     java: null,
-    why: 'Java documents it as /exporter/fireworks/{species}.{ext}; never stored at the edge anyway.',
+    why: 'Java documents it as /exporter/fireworks/{species}.{ext}; node redirects it to /exporter/voronoi/.',
     path: { id: 'any' },
     query: [],
     cache: 'private',

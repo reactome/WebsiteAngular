@@ -45,8 +45,9 @@ the site's default species unless `species` names another by taxId
 its own species. The page reports which species it drew, and a render is
 refused unless that is the one asked for: a site too old to know `species`
 draws the default one, which would otherwise come back as a success.
-content-node answers the old `/exporter/fireworks/<species>.<ext>` with it
-(spec 006 T093).
+content-node answers `/ContentService/exporter/voronoi/<species>.<ext>` with it,
+and redirects the old `/exporter/fireworks/<species>.<ext>` there (spec 006
+T093).
 
 ## The theme is an explicit choice
 

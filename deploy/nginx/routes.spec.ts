@@ -169,8 +169,6 @@ describe('nginx and the dev proxy agree', () => {
 const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
-  // The species overview at the old fireworks exporter's URL, held back with it.
-  '/ContentService/exporter/fireworks/{id}': 'spec 006 T093',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
@@ -214,7 +212,7 @@ describe('where nginx sends things', () => {
 
   // The exporters share the render budget whichever side draws them
   // (routes.conf); a location that won the match without it would drop it.
-  for (const kind of ['diagram', 'fireworks', 'document/event', 'event'])
+  for (const kind of ['diagram', 'voronoi', 'fireworks', 'document/event', 'event'])
     for (const ext of ['png', 'svg', 'pdf'])
       it(`keeps the render budget on /ContentService/exporter/${kind}/….${ext}`, () => {
         const url = `/ContentService/exporter/${kind}/R-HSA-109581.${ext}`;

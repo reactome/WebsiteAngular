@@ -1,8 +1,8 @@
 // @vitest-environment node
 //
-// /exporter/fireworks/{species}.{ext}: a species' overview at the old fireworks
-// exporter's URL, drawn as the overview is now -- the Reacfoam (Voronoi) map,
-// the render service's genome-wide view (spec 006 T093). A stand-in graph
+// /exporter/voronoi/{species}.{ext}: a species' overview, the Voronoi map the
+// site shows (Reacfoam), the render service's genome-wide view (spec 006
+// T093); the old /exporter/fireworks/ URL redirects to it. A stand-in graph
 // answers the species lookup, and a stand-in render service records what it
 // is asked for. Java's answers measured on production, 19 Oct 2026.
 import { createServer } from 'node:http';
@@ -47,13 +47,13 @@ afterAll(async () => {
   await new Promise((resolve) => renderer.close(resolve));
 });
 
-const at = (path) => fetch(`${base}/ContentService/exporter/fireworks/${path}`);
+const at = (path) => fetch(`${base}/ContentService/exporter/voronoi/${path}`);
 const envelope = async (response) => {
   const body = await response.json();
   return [response.status, body.reason, body.messages];
 };
 
-describe('the species overview at the old fireworks URL', () => {
+describe('the species overview, the Voronoi map', () => {
   it('reads the species as Java does, and asks for that species’ genome-wide view', async () => {
     asked.length = 0;
     for (const species of ['Homo_sapiens', 'homo_sapiens', '9606', '48887', 'Homo%20sapiens'])
@@ -133,5 +133,40 @@ describe('the species overview at the old fireworks URL', () => {
   it('reads an empty selection as none, and drops empty items from one', async () => {
     expect((await at('Homo_sapiens.svg?sel=,')).status).toBe(200);
     expect((await envelope(await at('Homo_sapiens.svg?sel=a,,b')))[2][0]).toContain('sel=a,b');
+  });
+});
+
+describe('the old fireworks URL', () => {
+  it('redirects to the Voronoi overview, keeping the species, the extension and the query', async () => {
+    for (const path of ['9606.svg', 'Homo_sapiens.png?token=ABC&quality=7', 'Nosuchspecies.svg']) {
+      const response = await fetch(`${base}/ContentService/exporter/fireworks/${path}`, {
+        redirect: 'manual',
+      });
+      expect([path, response.status, response.headers.get('location')]).toEqual([
+        path,
+        301,
+        `/ContentService/exporter/voronoi/${path}`,
+      ]);
+    }
+  });
+
+  it('redirects an encoded spelling of the old URL too, rather than to itself', async () => {
+    // Routing decodes letters; the path's own text still has the escape.
+    for (const [path, to] of [
+      ['fire%77orks/9606.svg', '9606.svg'],
+      [
+        'fire%77orks/9606.svg?x=/ContentService/exporter/fireworks/',
+        '9606.svg?x=/ContentService/exporter/fireworks/',
+      ],
+    ]) {
+      const response = await fetch(`${base}/ContentService/exporter/${path}`, {
+        redirect: 'manual',
+      });
+      expect([path, response.status, response.headers.get('location')]).toEqual([
+        path,
+        301,
+        `/ContentService/exporter/voronoi/${to}`,
+      ]);
+    }
   });
 });
