@@ -18,6 +18,7 @@ import {
   imageText,
   staticCitationFrom,
 } from './citation.ts';
+import type { Citation } from './citation.ts';
 import { javaError, unexpectedFailure } from './answers.ts';
 import type { Failure } from './answers.ts';
 import { hashSetOf } from './java-text.ts';
@@ -72,10 +73,11 @@ function citationFailure(request: Request, caught: unknown) {
 }
 
 /** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
-function tomcatHeader(text) {
+function tomcatHeader(text: string) {
   return [...text]
     .map((char) => {
-      const code = char.codePointAt(0);
+      // One character of the text, so it has a code point.
+      const code = char.codePointAt(0) as number;
       if (code > 0xff) return '?';
       return (code < 0x20 && char !== '\t') || code === 0x7f ? ' ' : char;
     })
@@ -83,18 +85,18 @@ function tomcatHeader(text) {
 }
 
 /** The two citations of /citation/pathway/{id}, in the order Java's HashMap writes them. */
-export function pathwayCitations(citation, date) {
-  const texts = {
+export function pathwayCitations(citation: Citation, date: string) {
+  const texts: Record<string, string> = {
     pathwayCitation: eventText(citation, date),
     imageCitation: imageText(citation, date),
   };
-  const body = {};
+  const body: Record<string, string | undefined> = {};
   for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys()) body[key] = texts[key];
   return body;
 }
 
 /** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
-async function staticCitationFor(id) {
+async function staticCitationFor(id: string) {
   const query = new URLSearchParams();
   query.set('query', `src:med ext_id:${id}`);
   query.set('format', 'json');
@@ -194,7 +196,7 @@ export const citationEndpoints: Endpoint[] = [
         const found = await eventCitationOrFailure(request, values.id as string);
         if (found.failure) return found.failure;
         citation = found.citation;
-      } else citation = await staticCitationFor(values.id);
+      } else citation = await staticCitationFor(values.id as string);
       if (!citation) return { status: 200 };
       const format = isPathway.value ? formatEventCitation : formatStaticCitation;
       let body;

@@ -60,9 +60,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const lines = readFileSync(process.argv[2] ?? '', 'utf8')
     .split('\n')
     .filter(Boolean);
-  const seen = new Map();
+  const seen = new Map<string, NonNullable<ReturnType<typeof classify>> & { test: string }>();
   for (const line of lines) {
-    const { method, url, test } = JSON.parse(line);
+    // One audit line: the request and the test that made it.
+    const { method, url, test } = JSON.parse(line) as { method: string; url: string; test: string };
     const found = classify(method, url);
     if (!found) continue;
     const at = url.indexOf('/ContentService/');
@@ -71,7 +72,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   const standard = [...seen.values()].filter((found) => found.ok).length;
   console.log(`${seen.size} distinct node requests, ${standard} in standard form`);
-  const byRule = new Map();
+  const byRule = new Map<string, string[]>();
   for (const [key, found] of seen)
     if (!found.ok)
       byRule.set(found.rule, [...(byRule.get(found.rule) ?? []), `${key}  (${found.test})`]);

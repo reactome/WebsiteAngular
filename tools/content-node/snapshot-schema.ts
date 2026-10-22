@@ -50,15 +50,18 @@ const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snap
 
 /** As answers.ts's javaJson; repeated so this script needs no graph. */
 const javaJson = (value: unknown) =>
-  JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
-    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+  JSON.stringify(value).replace(
+    /(\\+)u00([0-9a-f]{2})/g,
+    (match: string, slashes: string, hex: string) =>
+      slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
 
-async function get(pathname: string) {
+/** One of Java's answers, as the type the caller reads it as. */
+async function get<T = unknown>(pathname: string): Promise<T> {
   const response = await fetch(`${JAVA}/ContentService/data${pathname}`);
   const text = await response.text();
   if (response.status !== 200) throw new Error(`${pathname}: ${response.status} ${text}`);
-  const value = JSON.parse(text);
+  const value = JSON.parse(text) as T;
   if (javaJson(value) !== text) throw new Error(`${pathname}: does not round-trip byte for byte`);
   return value;
 }
@@ -73,15 +76,15 @@ const answered = (map: Record<string, SchemaAttribute[]>, name: string) => {
   return rows;
 };
 for (const name of classes) {
-  attributes[name] = await get(`/schema/${encodeURIComponent(name)}/attributes`);
-  referrals[name] = await get(`/schema/${encodeURIComponent(name)}/referrals`);
+  attributes[name] = await get<SchemaAttribute[]>(`/schema/${encodeURIComponent(name)}/attributes`);
+  referrals[name] = await get<SchemaAttribute[]>(`/schema/${encodeURIComponent(name)}/referrals`);
 }
 
 let closure: SchemaTables['closure'] | undefined;
 for (const name of AJC_CLOSURE_NAMES) {
   const answer = {
-    attributes: await get(`/schema/${encodeURIComponent(name)}/attributes`),
-    referrals: await get(`/schema/${encodeURIComponent(name)}/referrals`),
+    attributes: await get<SchemaAttribute[]>(`/schema/${encodeURIComponent(name)}/attributes`),
+    referrals: await get<SchemaAttribute[]>(`/schema/${encodeURIComponent(name)}/referrals`),
   };
   closure ??= answer;
   if (javaJson(answer) !== javaJson(closure)) {

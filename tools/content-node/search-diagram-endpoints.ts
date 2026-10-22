@@ -147,9 +147,15 @@ function paging(query): SolrParams {
 }
 
 /** SolrCore.getDiagrams: the documents in a diagram matching the query. */
+/** The scope's filter, as a parameter: none for a scope with none. */
+const scopeFilter = (scope: string): SolrParams => {
+  const filter = SCOPE_FILTER[scope];
+  return filter ? [pair('fq', filter)] : [];
+};
+
 function diagramParams(query): SolrParams {
   return [
-    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
+    ...scopeFilter(query.scope),
     ...speciesAndTypes(query),
     ['fq', `${query.includeInteractors ? 'diagramsWithInteractor' : 'diagrams'}:${query.diagram}`],
     ...paging(query),
@@ -170,7 +176,7 @@ function speciesWideParams(query): SolrParams {
   const kept = species.filter((name) => name !== '' && name !== null);
   const types = query.types?.length ? speciesAndTypes({ types: query.types }) : [];
   return [
-    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
+    ...scopeFilter(query.scope),
     ['fq', kept.length ? `fireworksSpecies:("${kept.join('" OR "')}")` : ''],
     ...types,
     ...paging(query),
