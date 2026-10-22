@@ -4,7 +4,6 @@
   "tools/content-node/data-query-endpoints.ts": 19,
   "tools/content-node/domain.spec.ts": 16,
   "tools/content-node/domain.ts": 13,
-  "tools/content-node/exporters-endpoints.ts": 15,
   "tools/content-node/interactors-endpoints.ts": 17,
   "tools/content-node/objects.ts": 4,
   "tools/content-node/parameters.ts": 25,
