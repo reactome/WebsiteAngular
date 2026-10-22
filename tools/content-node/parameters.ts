@@ -40,7 +40,7 @@ const GRAPH_NAMES = () =>
   ) as GraphNames);
 const DATABASES = () => GRAPH_NAMES().referenceDatabases;
 
-let attributes;
+let attributes: Set<string> | undefined;
 /** Every getter's attribute name, as Java's getProperty is meant to be asked. */
 const ATTRIBUTES = () =>
   (attributes ??= new Set(
@@ -54,7 +54,7 @@ const ATTRIBUTES = () =>
 const STABLE_ID = /^R-[A-Z]{3}-[1-9]\d*$/;
 const DB_ID = /^[1-9]\d{0,18}$/;
 const LONG_MAX = 2n ** 63n - 1n;
-const dbId = (text) => DB_ID.test(text) && BigInt(text) <= LONG_MAX;
+const dbId = (text: string) => DB_ID.test(text) && BigInt(text) <= LONG_MAX;
 
 /**
  * Path variable kinds. Each refuses what Java also answers -- surrounding
@@ -62,7 +62,10 @@ const dbId = (text) => DB_ID.test(text) && BigInt(text) <= LONG_MAX;
  * resource written as a regular expression -- since each is another URL for
  * the same answer.
  */
-export const PATH_KINDS = {
+/** A check of one value's text. */
+type Kind = (text: string) => boolean;
+
+export const PATH_KINDS: Record<string, Kind> = {
   // A stable id with up to three version digits (Java drops the version),
   // a dbId, an old REACT_ id, or a `resource:identifier` the Pathway Browser
   // sends for an external entity.
@@ -106,7 +109,7 @@ export const PATH_KINDS = {
  *    relationship pattern, where an unknown name, a name in another case or
  *    another order matches what the list without it matches.
  */
-const VALUE_KINDS = {
+const VALUE_KINDS: Record<string, Kind> = {
   species: (text) => GRAPH_NAMES().speciesTaxIds.includes(text),
   depth: (text) => text === '-1' || /^([1-9]|10)$/.test(text),
   attributes: (text) =>
@@ -115,7 +118,7 @@ const VALUE_KINDS = {
 const TAX_ID = { species: 'species' };
 const IN_DEPTH = { maxDepth: 'depth', attributes: 'attributes' };
 
-const bool = (name, extra = {}) => ({
+const bool = (name: string, extra = {}) => ({
   name,
   in: 'query',
   type: 'boolean',
@@ -499,8 +502,9 @@ export function declaredQuery(endpoint: string): Parameter[] {
 
 const INT32 = 2 ** 31;
 /** One value, decoded, in the one spelling standard form takes for its type. */
-function valid(parameter, value, kind) {
-  if (kind) return VALUE_KINDS[kind](value);
+function valid(parameter: Parameter, value: string, kind: string | undefined) {
+  // A kind the record names, which VALUE_KINDS has.
+  if (kind) return (VALUE_KINDS[kind] as Kind)(value);
   if (parameter.type === 'array')
     return value
       .split(',')
@@ -510,13 +514,13 @@ function valid(parameter, value, kind) {
   if (parameter.type === 'integer') {
     if (!/^(0|-?[1-9]\d*)$/.test(value)) return false;
     const number = Number(value);
-    return parameter.format === 'int64'
+    return parameter['format'] === 'int64'
       ? Number.isSafeInteger(number)
       : number >= -INT32 && number < INT32;
   }
   return plainText(value);
 }
-const plainText = (text) => text !== '' && text.trim() === text;
+const plainText = (text: string) => text !== '' && text.trim() === text;
 
 /**
  * A value as sent must be one encoding of what it decodes to: the strict
@@ -524,7 +528,7 @@ const plainText = (text) => text !== '' && text.trim() === text;
  * `@ : $ , ; = ? /` bare. Anything else -- `%31` for 1, `+` for a space --
  * is the same value spelled again.
  */
-function encodedOnce(raw, value) {
+function encodedOnce(raw: string, value: string) {
   const strict = encodeURIComponent(value);
   const angular = strict.replace(/%(40|3A|24|2C|3B|3D|3F|2F)/gi, (escape) =>
     decodeURIComponent(escape)
@@ -532,7 +536,7 @@ function encodedOnce(raw, value) {
   return raw === strict || raw === angular;
 }
 
-function decode(text) {
+function decode(text: string) {
   try {
     return decodeURIComponent(text.replace(/\+/g, ' '));
   } catch {
@@ -603,7 +607,8 @@ export function standardForm(
     const value = raw === undefined ? undefined : decode(raw);
     if (
       value === undefined ||
-      !encodedOnce(raw, value) ||
+      // A value is decoded from a raw one: there is one here.
+      !encodedOnce(raw as string, value) ||
       !valid(parameter, value, entry.values?.[name])
     )
       return { ok: false, rule: `parameter:${name}` };

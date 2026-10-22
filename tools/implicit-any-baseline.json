@@ -6,7 +6,6 @@
   "tools/content-node/domain.ts": 13,
   "tools/content-node/interactors-endpoints.ts": 17,
   "tools/content-node/objects.ts": 4,
-  "tools/content-node/parameters.ts": 25,
   "tools/content-node/pathways-events-endpoints.ts": 45,
   "tools/content-node/search-diagram-endpoints.ts": 20,
   "tools/content-node/search-endpoints.ts": 20,
