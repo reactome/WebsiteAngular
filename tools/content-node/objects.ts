@@ -9,6 +9,7 @@ import type { GraphNode, Properties } from './graph.ts';
 import { asciiDigits, databaseObjectSet, javaNumeric, javaTrim, present } from './java-text.ts';
 import { notFound, only, unexpected } from './answers.ts';
 import { read } from './graph.ts';
+import type { DomainEntity } from './domain.ts';
 import {
   AttributeFailure,
   attributeGetter,
@@ -165,7 +166,7 @@ export function lazyCollectionQuery(type: string, direction: string, schemaClass
  * naming the attribute and the object's class when there is no getter or it
  * returns nothing.
  */
-export async function attributeAnswer(request: Request, object, attribute) {
+export async function attributeAnswer(request: Request, object: DomainEntity, attribute: string) {
   const answer = await attributeOf(request, object, attribute);
   if ('status' in answer) return answer;
   return { status: 200, body: answer.text, type: 'text/plain;charset=UTF-8' };
@@ -179,8 +180,8 @@ export async function attributeAnswer(request: Request, object, attribute) {
  */
 export async function attributeOf(
   request: Request,
-  object,
-  attribute,
+  object: DomainEntity,
+  attribute: string,
   { outgoingLoaded = true } = {}
 ) {
   const missing = () =>
@@ -232,7 +233,7 @@ async function lazyRelationship(
   // the objects with Collectors.toSet -- one each, no stoichiometry, in a
   // HashSet's order (DatabaseObject.hashCode). Event.getInferredFrom is one.
   if (getter.returns === 'Set') return databaseObjectSet(mapNodes(rows.map((row) => row.m)));
-  return mapNodes(rows.flatMap((row) => Array(row.n ?? 1).fill(row.m)));
+  return mapNodes(rows.flatMap((row) => Array<GraphNode>(row.n ?? 1).fill(row.m)));
 }
 
 /**

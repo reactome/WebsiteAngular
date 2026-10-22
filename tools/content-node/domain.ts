@@ -361,7 +361,7 @@ type RelationshipField = [
 
 function map(state: MapState, node: GraphNode, target: string | undefined): Entity {
   const frames: Frame[] = [];
-  const make = (from: GraphNode, to) => {
+  const make = (from: GraphNode, to: string | undefined) => {
     const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
     const entity = new Entity(from.id, schemaClass, from.props);
     // Known before its fields are filled, so a field leading back finds it.
@@ -386,7 +386,7 @@ function map(state: MapState, node: GraphNode, target: string | undefined): Enti
   };
   // An object mapped in a previous record: its relationships filled again
   // from this one (populateProperties with objectAlreadyMapped).
-  const refill = (entity) => {
+  const refill = (entity: Entity) => {
     const graph = SNAPSHOT().graph[entity.schemaClass];
     if (graph)
       frames.push({
@@ -403,7 +403,7 @@ function map(state: MapState, node: GraphNode, target: string | undefined): Enti
   };
   // DefaultNeo4jEntityConverter.map: a known object as it is, unless it is
   // from a previous record; a new one made.
-  const reach = (from, to) => {
+  const reach = (from: GraphNode, to: string | undefined) => {
     const known = state.known.get(from.id);
     if (!known) return make(from, to);
     return state.previous.has(from.id) ? refill(known) : known;
@@ -460,7 +460,7 @@ function map(state: MapState, node: GraphNode, target: string | undefined): Enti
     else state.processed.set(key, used + 1);
     const otherId = direction === 'OUTGOING' ? relationship.end : relationship.start;
     // A new entity pushes its frame: its fields are filled before this one goes on.
-    let other;
+    let other: Entity;
     if (otherId === frame.entity.id) other = frame.entity;
     // Every relationship's ends are nodes of this record (byId).
     else if (frame.merging)
@@ -523,7 +523,8 @@ function matchingFor(
   [, type, direction, target]: RelationshipField
 ) {
   const outgoing = direction === 'OUTGOING';
-  const otherEnd = (relationship) => (outgoing ? relationship.end : relationship.start);
+  const otherEnd = (relationship: GraphRelationship) =>
+    outgoing ? relationship.end : relationship.start;
   return (
     (state.byEnd.get(`${direction} ${type} ${entity.id}`) ?? [])
       .filter((relationship) => !state.removed.has(relationship.id))
@@ -591,7 +592,9 @@ function collect(found: unknown[], collection: string, relationClass: string | n
 /** Has.Util.expandStoichiometry: each element as many times as its stoichiometry. */
 function expand(relations: Relation[] | null | undefined) {
   if (relations === undefined || relations === null) return undefined;
-  return relations.flatMap((relation) => Array(relation.stoichiometry).fill(relation.element));
+  return relations.flatMap((relation) =>
+    Array<Relation['element']>(relation.stoichiometry).fill(relation.element)
+  );
 }
 
 const expanding = (field: string) => (entity: Target) =>
@@ -928,8 +931,8 @@ export function inDepthQuery({
   maxDepth: number;
   attributes: string;
 }) {
-  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
-  const rel = (r) =>
+  const node = (n: string) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r: string) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
   return `MATCH (root:DatabaseObject) WHERE root.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'} AND root:${label}
      MATCH path=(root)-[:${follow}*1..${maxDepth}]->(:${label})
@@ -970,8 +973,8 @@ export function oldEnhancedQuery({
   idType: string;
   outgoingOnly: boolean;
 }) {
-  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
-  const rel = (r) =>
+  const node = (n: string) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r: string) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
   return `MATCH (n:DatabaseObject) WHERE n.${idType} = ${idType === 'dbId' ? 'toInteger($id)' : '$id'}
      OPTIONAL MATCH (n)-[r1]-${outgoingOnly ? '>' : ''}(m)
@@ -1004,8 +1007,8 @@ export function enhancedQuery({
   includeDisease?: boolean | undefined;
   outgoingOnly: boolean;
 }) {
-  const node = (n) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
-  const rel = (r) =>
+  const node = (n: string) => `{id: id(${n}), labels: labels(${n}), props: properties(${n})}`;
+  const rel = (r: string) =>
     `{id: id(${r}), type: type(${r}), start: id(startNode(${r})), end: id(endNode(${r})), props: properties(${r})}`;
   const expand = !summarise
     ? 'WITH root, root AS n '
@@ -1398,7 +1401,7 @@ export function attributeText(
   value: unknown,
   jsoupText: (html: string) => string,
   getter?: { returns: string }
-) {
+): string {
   // A Double or Float getter: Double.toString, which writes 2.0 where JavaScript writes 2.
   if (typeof value === 'number' && getter && /^(Double|Float|double|float)$/.test(getter.returns))
     return javaDouble(value);
@@ -1414,7 +1417,8 @@ export function attributeText(
     return value.map((item) => `${attributeText(item, jsoupText)}\n`).join('');
   if (value instanceof Relation) return relationText(value);
   if (value && typeof value === 'object' && 'javaClass' in value && value.javaClass)
-    return value.javaClass;
+    // getterResult's getClass(), the one producer: its text.
+    return value.javaClass as string;
   if (typeof value === 'number' && !Number.isInteger(value)) return javaDouble(value);
   return String(value);
 }
