@@ -415,7 +415,7 @@ export async function reportInformation(request) {
 }
 
 /** A TargetResult's hashCode: Objects.hash(term), 31 more than its term's. */
-const targetHash = (term) => 31 + JavaHashMap.stringHash(term);
+const targetHash = (term: string) => 31 + JavaHashMap.stringHash(term);
 
 /** Java's String.split(regex) on runs of its whitespace, \s: leading runs leave an empty term. */
 function javaWords(text) {
