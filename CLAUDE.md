@@ -50,6 +50,19 @@ is how a formatting failure reached CI.
   nginx (`deploy/nginx/common/routes-core.conf`) and the dev proxy
   (`proxy.conf.js`). `deploy/nginx/routes.spec.ts` checks they agree, and every
   node route takes a trailing slash, as Spring's routes do.
+- **How it is laid out** (spec 014): each family of endpoints is a module of
+  its own, `<family>-endpoints.ts`. What several families share sits in shared
+  modules (`java-text`, `body`, `spring`, `answers`, `objects` and the like),
+  layered, each importing only those beneath it. `registry.ts` assembles the
+  families' lists in the order requests are matched in, and `server.ts` serves
+  them. **A family imports only shared modules and leaves**: never another
+  family, the registry or the server. `boundaries.spec.ts` holds that, and
+  `fixtures/route-order.json` holds the order. Moving code between modules is
+  a move only if `scripts/check-move.mjs` says so: nothing changed, missing,
+  added or rebound.
+- **Express 5:** handlers return their promises, and a rejection reaches the
+  error handler, which answers the service's 500 in Java's envelope. The
+  render service keeps Express 4's query parser (`extended`), set explicitly.
 - **No fallback:** a route node answers is never answered by Java as a fallback.
   Which operations stay in Java, and the rule that decides it, are in
   `specs/010-java-services`; the operation-by-operation list is Phase 9 of

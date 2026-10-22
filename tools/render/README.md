@@ -250,6 +250,11 @@ Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache
 key, so two variants of a pathway never masquerade as each other.
 
+The service runs on Express 5 with Express 4's query parser (`extended`), set
+explicitly: `?x[y]=1` is the parameter `x`, refused as unknown under that name.
+A parameter given more than once is refused, as is one the service does not
+take; the refusal names it and the URL to use instead.
+
 ### Measured behaviour
 
 |                                        |                                           |
