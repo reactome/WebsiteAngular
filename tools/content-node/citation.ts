@@ -5,8 +5,11 @@
  * the default author line, the placeholders a paper without a journal or a
  * volume gets.
  */
+import type { DomainEntity } from './domain.ts';
+
 const DEFAULT_AUTHOR = 'The Reactome Consortium';
-const NOTE = (date) => `Provided by Reactome. Citation Accessed on ${date}`;
+// A date of null is written as Java writes one: "null".
+const NOTE = (date: string | null) => `Provided by Reactome. Citation Accessed on ${String(date)}`;
 
 /** Java's DateFormatSymbols short months, for Citation.setMonth. */
 const SHORT_MONTHS = [
@@ -28,7 +31,7 @@ const SHORT_MONTHS = [
  * Citation.setMonth: Integer.parseInt of the text, a month only for 1 to 12;
  * text that is no int is Java's NumberFormatException.
  */
-function citationMonth(text) {
+function citationMonth(text: string) {
   const month = /^[+-]?\d+$/.test(String(text)) ? Number(text) : NaN;
   if (!(month >= -2147483648 && month <= 2147483647))
     throw javaFailure(`For input string: "${text}"`);
@@ -40,40 +43,42 @@ function citationMonth(text) {
  * NullPointerException as "Something unexpected happened", anything else
  * with its own message (javaFailure).
  */
-function unexpected(message) {
+function unexpected(message: string) {
   return Object.assign(new Error(message), { unexpected: true });
 }
-function javaFailure(message) {
+function javaFailure(message: string) {
   return Object.assign(new Error(message), { javaMessage: message });
 }
 
 /** String.substring's StringIndexOutOfBoundsException, as JDK 11 words it. */
-function substring(text, begin, end) {
+function substring(text: string, begin: number, end: number) {
   if (end > text.length) throw javaFailure(`begin ${begin}, end ${end}, length ${text.length}`);
   return text.slice(begin, end);
 }
 
 /** The class Jackson reads a JSON value as, into a Map<String, Object>. */
-function javaClass(value) {
+function javaClass(value: unknown) {
   if (typeof value === 'string') return 'java.lang.String';
   if (typeof value === 'boolean') return 'java.lang.Boolean';
   if (Array.isArray(value)) return 'java.util.ArrayList';
   if (typeof value === 'object') return 'java.util.LinkedHashMap';
   if (!Number.isInteger(value)) return 'java.lang.Double';
-  if (value >= -2147483648 && value <= 2147483647) return 'java.lang.Integer';
-  return Number.isSafeInteger(value) ? 'java.lang.Long' : 'java.math.BigInteger';
+  // A JSON value that is none of those: an integer.
+  const number = value as number;
+  if (number >= -2147483648 && number <= 2147483647) return 'java.lang.Integer';
+  return Number.isSafeInteger(number) ? 'java.lang.Long' : 'java.math.BigInteger';
 }
 
 /** A cast of a JSON value as Java's checkcast does it: null passes, a misfit is JDK 11's ClassCastException. */
-function javaCast(value, target, fits) {
+function javaCast(value: unknown, target: string, fits: (value: unknown) => boolean) {
   if (value === null || value === undefined || fits(value)) return;
   const from = javaClass(value);
   throw javaFailure(
     `class ${from} cannot be cast to class ${target} (${from} and ${target} are in module java.base of loader 'bootstrap')`
   );
 }
-const isString = (value) => typeof value === 'string';
-const isMap = (value) => typeof value === 'object' && !Array.isArray(value);
+const isString = (value: unknown) => typeof value === 'string';
+const isMap = (value: unknown) => typeof value === 'object' && !Array.isArray(value);
 
 /**
  * The casts StaticCitation's toBibtex/toRIS (by name) and toText (by full
@@ -83,26 +88,28 @@ const isMap = (value) => typeof value === 'object' && !Array.isArray(value);
  * name for text -- one author at a time; a null author is the
  * NullPointerException of author.get.
  */
-function checkStaticAuthors(authors, ext) {
+function checkStaticAuthors(authors: readonly unknown[] | null | undefined, ext: string) {
   if (!authors?.length) return;
   for (const author of authors) {
     javaCast(author, 'java.util.Map', isMap);
     if (author === null) throw unexpected('a null author');
+    // A map: javaCast refused anything else.
+    const names = author as Record<string, unknown>;
     if (ext === 'bib' || ext === 'ris') {
-      javaCast(author.lastName, 'java.lang.String', isString);
+      javaCast(names['lastName'], 'java.lang.String', isString);
       javaCast(
-        'firstName' in author ? author.firstName : author.initials,
+        'firstName' in names ? names['firstName'] : names['initials'],
         'java.lang.String',
         isString
       );
-    } else javaCast(author.fullName, 'java.lang.String', isString);
+    } else javaCast(names['fullName'], 'java.lang.String', isString);
   }
 }
 
 /** An author as a citation lists one: an event's by initials, Europe PMC's by full name. */
 interface Author {
-  lastName?: string | null;
-  firstName?: string | null;
+  lastName?: string | null | undefined;
+  firstName?: string | null | undefined;
   initials?: string;
   fullName?: string | null;
 }
@@ -121,7 +128,7 @@ export interface Citation {
   doi?: string | null;
   urls?: string[];
   authors?: Author[] | null;
-  release?: unknown;
+  release?: string;
   pages?: string | null;
   pmid?: string | null;
   pmcid?: string | null;
@@ -140,27 +147,39 @@ export interface Citation {
  * throws on -- no name or release date, a short or non-numeric one, a
  * person with no initial -- throws the same.
  */
-export function citationOfEvent(event, raw, release, isPathway) {
+export function citationOfEvent(
+  event: Pick<DomainEntity, 'properties' | 'fields'>,
+  raw: string,
+  release: string,
+  isPathway: boolean
+) {
   const props = event.properties;
   // The Citation constructor's own check.
-  if (props.displayName == null) throw javaFailure('Title or id can not be null');
-  if (props.releaseDate == null) throw unexpected('an event with no release date');
-  const date = String(props.releaseDate);
+  if (props['displayName'] == null) throw javaFailure('Title or id can not be null');
+  if (props['releaseDate'] == null) throw unexpected('an event with no release date');
+  const date = String(props['releaseDate']);
   const citation: Citation & { urls: string[] } = {
     id: raw,
-    title: props.displayName,
+    // The graph's text properties, as the model types them.
+    title: props['displayName'] as string,
     year: substring(date, 0, 4),
     month: citationMonth(substring(date, 6, 7)),
     doi: null,
     urls: [],
     authors: null,
   };
-  if (isPathway && props.doi) {
-    citation.doi = props.doi;
-    citation.urls.push(`https://doi.org/${props.doi}`);
+  const doi = props['doi'] as string | null | undefined;
+  if (isPathway && doi) {
+    citation.doi = doi;
+    citation.urls.push(`https://doi.org/${doi}`);
   } else citation.urls.push(`https://reactome.org/content/detail/${raw}`);
   citation.release = release;
-  const fields = event.fields;
+  // InstanceEdits, and their authors' Persons, as the model types the fields.
+  const fields = event.fields as {
+    authored?: DomainEntity[] | null;
+    created?: DomainEntity | null;
+    reviewed?: DomainEntity[] | null;
+  };
   const edits = fields.authored?.length
     ? fields.authored
     : fields.created
@@ -171,8 +190,12 @@ export function citationOfEvent(event, raw, release, isPathway) {
   if (edits) {
     citation.authors = [];
     for (const edit of edits)
-      for (const person of edit.fields?.author ?? []) {
-        const { surname, initial, firstname } = person.properties;
+      for (const person of (edit.fields['author'] as DomainEntity[] | null | undefined) ?? []) {
+        const { surname, initial, firstname } = person.properties as {
+          surname?: string | null;
+          initial?: string | null;
+          firstname?: string | null;
+        };
         if (initial == null) throw unexpected('a person with no initial');
         citation.authors.push({
           lastName: surname,
@@ -185,12 +208,18 @@ export function citationOfEvent(event, raw, release, isPathway) {
 }
 
 /** A value joined into text as Java joins it: a missing one is "null". */
-const java = (value) => (value === null || value === undefined ? 'null' : value);
+const java = (value: string | null | undefined) =>
+  value === null || value === undefined ? 'null' : value;
 
-const byName = (author) =>
+const byName = (author: Author) =>
   `${java(author.lastName)}, ${java('firstName' in author ? author.firstName : author.initials)}`;
 
-function ris(citation: Citation, type: string, date, extra: [string, unknown][] = []) {
+function ris(
+  citation: Citation,
+  type: string,
+  date: string | null,
+  extra: [string, unknown][] = []
+) {
   let text = `${NOTE(date)}\n\nTY  - ${type}\nTI  - ${citation.title}\n`;
   for (const author of citation.authors ?? []) text += `AU  - ${byName(author)}\n`;
   text += `AN  - ${citation.id}\n`;
@@ -204,7 +233,12 @@ function ris(citation: Citation, type: string, date, extra: [string, unknown][] 
   return `${text}ER  - \n`;
 }
 
-function bibtex(citation: Citation, kind: string, date, middle: [string, unknown][]) {
+function bibtex(
+  citation: Citation,
+  kind: string,
+  date: string | null,
+  middle: [string, unknown][]
+) {
   let text = `@${kind}{${citation.id},\nTitle = {${citation.title}},\n`;
   for (const [name, value] of middle)
     if (value !== undefined) text += `${name} = {${String(value)}},\n`;
@@ -212,7 +246,7 @@ function bibtex(citation: Citation, kind: string, date, middle: [string, unknown
 }
 
 /** EventCitation.toText, toBibtex or toRIS, as `ext` (bib, ris, anything else text) picks. */
-export function formatEventCitation(citation, ext, date) {
+export function formatEventCitation(citation: Citation, ext: string, date: string) {
   const authors = citation.authors?.length ? citation.authors : null;
   if (ext === 'bib')
     return bibtex(citation, 'misc', date, [
@@ -227,24 +261,25 @@ export function formatEventCitation(citation, ext, date) {
 }
 
 /** EventCitation.eventCitation: authors by their initials, the year, then the common part. */
-export function eventText(citation, date) {
+export function eventText(citation: Citation, date: string) {
   let text = DEFAULT_AUTHOR;
   if (citation.authors?.length) {
     const names = citation.authors.map(
       (author) => `${java(author.lastName)}, ${java(author.initials)}`
     );
-    text = names.at(-1);
+    // One at least: the authors' length was checked.
+    text = names.at(-1) as string;
     if (names.length > 1) text = `${names.slice(0, -1).join(' ,')} & ${text}`;
   }
   if (citation.year != null) text += ` (${citation.year}). `;
   return text + commonText(citation, date);
 }
 
-export function imageText(citation, date) {
+export function imageText(citation: Citation, date: string) {
   return `Image Citation for ${commonText(citation, date)}`;
 }
 
-function commonText(citation, date) {
+function commonText(citation: Citation, date: string) {
   let text = `${citation.title}. `;
   if (citation.release != null) text += `Reactome, ${citation.release}, `;
   if (citation.urls?.length) text += `${citation.urls.join(', ')} `;
@@ -252,7 +287,7 @@ function commonText(citation, date) {
 }
 
 /** StaticCitation.toText, toBibtex or toRIS. `date` null is no "Provided by" line. */
-export function formatStaticCitation(citation, ext, date) {
+export function formatStaticCitation(citation: Citation, ext: string, date: string | null) {
   checkStaticAuthors(citation.authors, ext);
   if (ext === 'bib')
     return bibtex(citation, 'article', date, [
@@ -306,9 +341,9 @@ export function formatStaticCitation(citation, ext, date) {
  * anything else as itself. A null is the NullPointerException Java's
  * toString() on it is.
  */
-function javaString(value) {
+function javaString(value: unknown): string {
   if (value === null || value === undefined) throw new Error('toString of null');
-  const inner = (item) => (item === null ? 'null' : javaString(item));
+  const inner = (item: unknown) => (item === null ? 'null' : javaString(item));
   if (Array.isArray(value)) return `[${value.map(inner).join(', ')}]`;
   if (typeof value === 'object')
     return `{${Object.entries(value)
@@ -318,10 +353,10 @@ function javaString(value) {
 }
 
 /** Java's cast to Map: null passes, anything but an object is its ClassCastException. */
-function asMap(value) {
+function asMap(value: unknown) {
   if (value !== null && (typeof value !== 'object' || Array.isArray(value)))
     throw new Error('not a map');
-  return value;
+  return value as Record<string, unknown> | null;
 }
 
 /**
@@ -330,34 +365,40 @@ function asMap(value) {
  * result, no id or title, a month that is no int -- throws, and the caller
  * answers as Java's catch does.
  */
-export function staticCitationFrom(answer) {
-  const map = answer?.resultList?.result?.[0];
-  if (map?.id == null || map.title == null) throw new Error('no citation in Europe PMC answer');
-  const journalInfo = 'journalInfo' in map ? asMap(map.journalInfo) : null;
-  const journal = journalInfo && 'journal' in journalInfo ? asMap(journalInfo.journal) : null;
-  const citation: Citation = { id: javaString(map.id), title: javaString(map.title) };
-  if ('pageInfo' in map) citation.pages = javaString(map.pageInfo);
-  if ('pmid' in map) citation.pmid = javaString(map.pmid);
-  if ('pmcid' in map) citation.pmcid = javaString(map.pmcid);
-  if (journal && 'title' in journal) citation.journal = javaString(journal.title);
+export function staticCitationFrom(answer: unknown) {
+  // What Java reads of the answer. Anything else fails here, as Java's
+  // reading does: a result that is no object has no id.
+  const map = (answer as { resultList?: { result?: Record<string, unknown>[] } } | null | undefined)
+    ?.resultList?.result?.[0];
+  if (map?.['id'] == null || map['title'] == null)
+    throw new Error('no citation in Europe PMC answer');
+  const journalInfo = 'journalInfo' in map ? asMap(map['journalInfo']) : null;
+  const journal = journalInfo && 'journal' in journalInfo ? asMap(journalInfo['journal']) : null;
+  const citation: Citation = { id: javaString(map['id']), title: javaString(map['title']) };
+  if ('pageInfo' in map) citation.pages = javaString(map['pageInfo']);
+  if ('pmid' in map) citation.pmid = javaString(map['pmid']);
+  if ('pmcid' in map) citation.pmcid = javaString(map['pmcid']);
+  if (journal && 'title' in journal) citation.journal = javaString(journal['title']);
   if (journalInfo && 'yearOfPublication' in journalInfo)
-    citation.year = javaString(journalInfo.yearOfPublication);
+    citation.year = javaString(journalInfo['yearOfPublication']);
   if (journalInfo && 'monthOfPublication' in journalInfo)
-    citation.month = citationMonth(javaString(journalInfo.monthOfPublication));
-  if (journalInfo && 'issue' in journalInfo) citation.number = javaString(journalInfo.issue);
-  if (journalInfo && 'volume' in journalInfo) citation.volume = javaString(journalInfo.volume);
-  if (journal && 'issn' in journal) citation.issn = javaString(journal.issn);
-  if ('doi' in map && map.doi != null) {
-    citation.doi = javaString(map.doi);
+    citation.month = citationMonth(javaString(journalInfo['monthOfPublication']));
+  if (journalInfo && 'issue' in journalInfo) citation.number = javaString(journalInfo['issue']);
+  if (journalInfo && 'volume' in journalInfo) citation.volume = javaString(journalInfo['volume']);
+  if (journal && 'issn' in journal) citation.issn = javaString(journal['issn']);
+  if ('doi' in map && map['doi'] != null) {
+    citation.doi = javaString(map['doi']);
     citation.urls = [`https://doi.org/${citation.doi}`];
   }
   if ('authorList' in map) {
-    const authorList = asMap(map.authorList);
+    const authorList = asMap(map['authorList']);
     if (authorList === null) throw new Error('authorList is null');
     if ('author' in authorList) {
-      const authors = authorList.author;
+      const authors: unknown = authorList['author'];
       if (authors !== null && !Array.isArray(authors)) throw new Error('author is not a list');
-      citation.authors = authors;
+      // Unchecked: formatStaticCitation casts each as Java does
+      // (checkStaticAuthors) before any is read.
+      citation.authors = authors as Author[] | null;
     }
   }
   return citation;

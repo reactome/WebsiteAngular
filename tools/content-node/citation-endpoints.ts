@@ -190,7 +190,7 @@ export const citationEndpoints: Endpoint[] = [
         if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
         values[name] = given.join(',');
       }
-      let citation;
+      let citation: Citation | undefined;
       if (isPathway.value) {
         // Set above, or the 400 was answered.
         const found = await eventCitationOrFailure(request, values.id as string);
@@ -201,7 +201,8 @@ export const citationEndpoints: Endpoint[] = [
       const format = isPathway.value ? formatEventCitation : formatStaticCitation;
       let body;
       try {
-        body = format(citation, values.ext, values.dateAccessed);
+        // Set above, or the 400 was answered.
+        body = format(citation, values.ext as string, values.dateAccessed as string);
       } catch (failure) {
         return citationFailure(request, failure);
       }
