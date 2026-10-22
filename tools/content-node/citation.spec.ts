@@ -13,6 +13,7 @@ import {
   formatStaticCitation,
   staticCitationFrom,
 } from './citation.ts';
+import type { Citation } from './citation.ts';
 
 const event = (overrides = {}) => ({
   id: 'R-HSA-1',
@@ -250,7 +251,12 @@ describe('StaticCitation', () => {
   it("casts the authors as Java's formatters do, outside its try", () => {
     const failure = (authors: unknown, ext: string) => {
       try {
-        formatStaticCitation({ ...event(), authors }, ext, 'd');
+        // Unchecked, as staticCitationFrom leaves them.
+        formatStaticCitation(
+          { ...event(), authors: authors as NonNullable<Citation['authors']> },
+          ext,
+          'd'
+        );
       } catch (thrown) {
         const { unexpected, javaMessage } = thrown as {
           unexpected?: boolean;
