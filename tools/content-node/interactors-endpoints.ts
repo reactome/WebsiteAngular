@@ -207,7 +207,8 @@ export function customInteractionJson(row) {
 export function interactionWithEntitiesJson(row) {
   const entities = (row.physicalEntity ?? [])
     .map((pe) => ({ ...pe, displayName: pe.displayName ?? 'null' }))
-    .sort((a, b) => caseInsensitive(a.displayName, b.displayName));
+    // A graph displayName, or 'null' (above): a string either way.
+    .sort((a, b) => caseInsensitive(a.displayName as string, b.displayName as string));
   const written = entities.map((pe) =>
     nonEmptyJson([
       ['dbId', pe.dbId],

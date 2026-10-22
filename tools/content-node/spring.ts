@@ -203,7 +203,7 @@ function servletDecode(text) {
 export function springPrimitiveBoolean(values: string[], fallback: boolean): Bound<boolean> {
   // Only one empty value is Spring's "absent": repeated, the array is converted.
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
-  const value = javaTrim(values[0]).toLowerCase();
+  const value = javaTrim(values[0] ?? '').toLowerCase();
   if (['true', 'on', 'yes', '1'].includes(value)) return { value: true };
   if (['false', 'off', 'no', '0'].includes(value)) return { value: false };
   const edited = booleanEditor(values);
@@ -359,7 +359,7 @@ export function springScope(values: string[], fallback = 'PHYSICAL_ENTITY'): Bou
   if (values.length === 0 || (values.length === 1 && values[0] === '')) {
     return { value: fallback };
   }
-  const [sent] = values;
+  const [sent = ''] = values;
   const name = javaTrim(sent);
   if (values.length === 1 ? name === '' : sent === '') return { value: null };
   if (SCOPES.includes(name)) return { value: name };
@@ -392,7 +392,7 @@ export function springEnum(
   constants: string[]
 ): Bound<string | null> {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return { value: fallback };
-  const [sent] = values;
+  const [sent = ''] = values;
   const name = javaTrim(sent);
   if (values.length === 1 ? name === '' : sent === '') return { value: null };
   if (constants.includes(name)) return { value: name };

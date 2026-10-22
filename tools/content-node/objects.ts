@@ -110,7 +110,7 @@ export function pathwayJson(node) {
  */
 export function inDepthId(raw) {
   const trimmed = javaTrim(raw);
-  const id = trimmed.includes(':') ? trimmed : trimmed.split('.')[0];
+  const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
   // getIdentifier swaps an old REACT_ id for the stable id it became: the
   // object whose oldStId it is.
   if (id.startsWith('REACT_')) return { idType: 'oldStId', id };
@@ -131,8 +131,11 @@ export function inDepthId(raw) {
  * parameters, `byDbId` whether it is the dbId query.
  */
 export async function graphCoreId(raw) {
-  let { where, params } = resolveId(raw);
-  if (where === 'false') return undefined;
+  const resolved = resolveId(raw);
+  if (resolved.where === 'false') return undefined;
+  // Anything but 'false' read an id.
+  let { where } = resolved;
+  let params = resolved.params as { id: string };
   if (where.startsWith('n.oldStId')) {
     const [found] = await read<{ stId: string | null }>(
       'MATCH (n:DatabaseObject) WHERE n.oldStId = $id RETURN n.stId AS stId LIMIT 1',

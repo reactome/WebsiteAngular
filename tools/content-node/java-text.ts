@@ -17,7 +17,7 @@ export interface CaseSnapshot {
 }
 
 /** case-snapshot.json, as two maps from a UTF-16 unit to its case, read on first use. */
-let javaCase;
+let javaCase: { upper: Map<number, number>; lower: Map<number, number> } | undefined;
 
 /**
  * String.CASE_INSENSITIVE_ORDER: per UTF-16 unit, equal if their upper cases
@@ -25,13 +25,15 @@ let javaCase;
  * sorts as s) -- each the JVM's Character mapping
  * (case-snapshot.json; snapshot-case.ts says why not JavaScript's).
  */
-export function caseInsensitive(a, b) {
+export function caseInsensitive(a: string, b: string): number {
   if (!javaCase) {
     const { upper, lower } = JSON.parse(
       readFileSync(new URL('./case-snapshot.json', import.meta.url), 'utf8')
     ) as CaseSnapshot;
-    const pairs = (flat) =>
-      new Map(flat.flatMap((unit, at) => (at % 2 ? [] : [[unit, flat[at + 1]]])));
+    const pairs = (flat: number[]) =>
+      new Map(
+        flat.flatMap((unit, at) => (at % 2 ? [] : [[unit, flat[at + 1]] as [number, number]]))
+      );
     javaCase = { upper: pairs(upper), lower: pairs(lower) };
   }
   const length = Math.min(a.length, b.length);
@@ -49,7 +51,7 @@ export function caseInsensitive(a, b) {
 }
 
 /** Long.hashCode, as an int: the value's two halves XORed. */
-function longHash(value) {
+function longHash(value: number) {
   const big = BigInt.asUintN(64, BigInt(value));
   return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
 }
@@ -58,7 +60,15 @@ function longHash(value) {
  * graph-core's DatabaseObject.hashCode: dbId, then stId, then displayName,
  * 31 apart, 0 for a missing one. Equal objects (the same three) are one.
  */
-function databaseObjectHash({ dbId, stId, displayName }) {
+function databaseObjectHash({
+  dbId,
+  stId,
+  displayName,
+}: {
+  dbId: number | null;
+  stId: string | null;
+  displayName: string | null;
+}) {
   let result = dbId == null ? 0 : longHash(dbId);
   result = (Math.imul(31, result) + (stId == null ? 0 : JavaHashMap.stringHash(stId))) | 0;
   return (
@@ -67,15 +77,22 @@ function databaseObjectHash({ dbId, stId, displayName }) {
 }
 
 /** A java.util.HashSet of DatabaseObjects, in its iteration order. */
-export function databaseObjectSet(objects) {
-  const byKey = new Map();
-  const keyOf = (object) => {
+export function databaseObjectSet<T extends { properties: Record<string, unknown> }>(
+  objects: T[]
+): T[] {
+  const byKey = new Map<string, T>();
+  const keyOf = (object: T) => {
     const { dbId, stId, displayName } = object.properties;
     return JSON.stringify([dbId ?? null, stId ?? null, displayName ?? null]);
   };
-  const set = new JavaHashMap({
-    hash: (key) => {
-      const [dbId, stId, displayName] = JSON.parse(key);
+  const set = new JavaHashMap<string, boolean>({
+    hash: (key: string) => {
+      // As keyOf wrote them: the graph's dbId, stId and displayName, or null.
+      const [dbId, stId, displayName] = JSON.parse(key) as [
+        number | null,
+        string | null,
+        string | null,
+      ];
       return databaseObjectHash({ dbId, stId, displayName });
     },
   });
@@ -84,14 +101,15 @@ export function databaseObjectSet(objects) {
     if (!byKey.has(key)) byKey.set(key, object);
     set.set(key, true);
   }
-  return [...set.keys()].map((key) => byKey.get(key));
+  // Every key in the set was put in byKey first.
+  return [...set.keys()].map((key) => byKey.get(key) as T);
 }
 
 /**
  * Java's String.trim: every character up to U+0020 off both ends, control
  * characters included, and nothing above it -- a no-break space stays.
  */
-export function javaTrim(text) {
+export function javaTrim(text: string): string {
   let start = 0;
   let end = text.length;
   while (start < end && text.charCodeAt(start) <= 0x20) start += 1;
@@ -105,7 +123,7 @@ export function javaTrim(text) {
  * because that is what Java tests -- a digit outside the BMP (U+1D7CF) is a
  * surrogate pair to it, and neither half is a digit.
  */
-export function javaNumeric(text) {
+export function javaNumeric(text: string): boolean {
   if (text.length === 0) return false;
   for (let i = 0; i < text.length; i += 1) {
     if (!/\p{Nd}/u.test(String.fromCharCode(text.charCodeAt(i)))) return false;
@@ -118,8 +136,8 @@ export function javaNumeric(text) {
  * digits in contiguous runs from 0 to 9, some runs back to back, so a digit's
  * value is its distance from the start of its run, modulo ten.
  */
-export function asciiDigits(digits) {
-  const isDigit = (code) => /\p{Nd}/u.test(String.fromCodePoint(code));
+export function asciiDigits(digits: string): string {
+  const isDigit = (code: number) => /\p{Nd}/u.test(String.fromCodePoint(code));
   return [...digits]
     .map((char) => {
       const code = char.codePointAt(0) ?? 0;
@@ -137,10 +155,13 @@ export function asciiDigits(digits) {
  * (ED A0 80) is one, where the WHATWG decoder Node uses makes three -- and an
  * incomplete sequence at the end one more.
  */
-export function javaUtf8(bytes) {
-  const continuation = (b) => (b & 0xc0) === 0x80;
-  const malformed3 = (b1, b2) => (b1 === 0xe0 && (b2 & 0xe0) === 0x80) || !continuation(b2);
-  const malformed4 = (b1, b2) =>
+export function javaUtf8(bytes: ArrayLike<number>): string {
+  // Every read below is inside `bytes`: each branch checks how many are left.
+  const byte = (at: number) => bytes[at] as number;
+  const continuation = (b: number) => (b & 0xc0) === 0x80;
+  const malformed3 = (b1: number, b2: number) =>
+    (b1 === 0xe0 && (b2 & 0xe0) === 0x80) || !continuation(b2);
+  const malformed4 = (b1: number, b2: number) =>
     b1 > 0xf4 ||
     (b1 === 0xf0 && (b2 < 0x90 || b2 > 0xbf)) ||
     (b1 === 0xf4 && (b2 & 0xf0) !== 0x80) ||
@@ -148,30 +169,30 @@ export function javaUtf8(bytes) {
   let text = '';
   let at = 0;
   while (at < bytes.length) {
-    const b1 = bytes[at];
+    const b1 = byte(at);
     const left = bytes.length - at;
     if (b1 < 0x80) {
       text += String.fromCharCode(b1);
       at += 1;
     } else if (b1 >= 0xc2 && b1 <= 0xdf) {
       if (left < 2) break;
-      if (!continuation(bytes[at + 1])) {
+      if (!continuation(byte(at + 1))) {
         text += '\ufffd';
         at += 1;
         continue;
       }
-      text += String.fromCharCode(((b1 & 0x1f) << 6) | (bytes[at + 1] & 0x3f));
+      text += String.fromCharCode(((b1 & 0x1f) << 6) | (byte(at + 1) & 0x3f));
       at += 2;
     } else if (b1 >= 0xe0 && b1 <= 0xef) {
       if (left < 3) {
-        if (left > 1 && malformed3(b1, bytes[at + 1])) {
+        if (left > 1 && malformed3(b1, byte(at + 1))) {
           text += '\ufffd';
           at += 1;
           continue;
         }
         break;
       }
-      const [b2, b3] = [bytes[at + 1], bytes[at + 2]];
+      const [b2, b3] = [byte(at + 1), byte(at + 2)];
       if (malformed3(b1, b2) || !continuation(b3)) {
         text += '\ufffd';
         at += malformed3(b1, b2) ? 1 : 2;
@@ -182,19 +203,19 @@ export function javaUtf8(bytes) {
       at += 3;
     } else if (b1 >= 0xf0 && b1 <= 0xf7) {
       if (left < 4) {
-        if (b1 > 0xf4 || (left > 1 && malformed4(b1, bytes[at + 1]))) {
+        if (b1 > 0xf4 || (left > 1 && malformed4(b1, byte(at + 1)))) {
           text += '\ufffd';
           at += 1;
           continue;
         }
-        if (left > 2 && !continuation(bytes[at + 2])) {
+        if (left > 2 && !continuation(byte(at + 2))) {
           text += '\ufffd';
           at += 2;
           continue;
         }
         break;
       }
-      const [b2, b3, b4] = [bytes[at + 1], bytes[at + 2], bytes[at + 3]];
+      const [b2, b3, b4] = [byte(at + 1), byte(at + 2), byte(at + 3)];
       const point = ((b1 & 0x07) << 18) | ((b2 & 0x3f) << 12) | ((b3 & 0x3f) << 6) | (b4 & 0x3f);
       if (
         !continuation(b2) ||
@@ -254,7 +275,7 @@ export function present<T>(value: T | undefined): T {
 }
 
 /** Spring's StringUtils.trimAllWhitespace. */
-export function javaTrimAll(text) {
+export function javaTrimAll(text: string): string {
   return text.replace(JAVA_WHITESPACE, '');
 }
 
@@ -276,7 +297,7 @@ export function javaParseInteger(text: string, bits = 32): number | bigint {
 }
 
 /** Integer.decode, or Long.decode, as far as parseNumber reaches it. */
-function javaDecode(text, bits) {
+function javaDecode(text: string, bits: number): bigint {
   if (text === '') throw new JavaNumberFormat('Zero length string');
   let index = 0;
   let radix = 10;
@@ -311,8 +332,8 @@ function javaDecode(text, bits) {
  * Integer.parseInt(text, radix), or Long.parseLong for 64 bits, as the
  * service's JVM has them, per UTF-16 unit. A bigint either way.
  */
-export function javaParseInt(text, radix, bits) {
-  const refuse = () => {
+export function javaParseInt(text: string, radix: number, bits: number): bigint {
+  const refuse = (): never => {
     throw new JavaNumberFormat(`For input string: "${text}"`);
   };
   if (text.length === 0) refuse();
@@ -320,11 +341,12 @@ export function javaParseInt(text, radix, bits) {
   let i = 0;
   let negative = false;
   let limit = min + 1n;
-  if (text[0] < '0') {
-    if (text[0] === '-') {
+  // Not empty: refused above.
+  if (text.charAt(0) < '0') {
+    if (text.charAt(0) === '-') {
       negative = true;
       limit = min;
-    } else if (text[0] !== '+') refuse();
+    } else if (text.charAt(0) !== '+') refuse();
     if (text.length === 1) refuse();
     i += 1;
   }
@@ -332,7 +354,7 @@ export function javaParseInt(text, radix, bits) {
   const multmin = limit / base;
   let result = 0n;
   while (i < text.length) {
-    const digit = javaDigit(text[i], radix);
+    const digit = javaDigit(text.charAt(i), radix);
     i += 1;
     if (digit < 0 || result < multmin) refuse();
     result *= base;
@@ -346,7 +368,7 @@ export function javaParseInt(text, radix, bits) {
  * Character.digit(char, radix): a decimal digit of any script, and for hex the
  * Latin letters A-F in either case, fullwidth ones included.
  */
-function javaDigit(char, radix) {
+function javaDigit(char: string, radix: number): number {
   const code = char.charCodeAt(0);
   if (radix === 16) {
     for (const start of [0x41, 0x61, 0xff21, 0xff41]) {
@@ -369,7 +391,7 @@ export function javaSplit(text: string, separator: string | RegExp): string[] {
 }
 
 /** A java.util.HashSet of these strings, added in this order, as its iteration order. */
-export function hashSetOf(items) {
+export function hashSetOf(items: Iterable<string>) {
   const map = new JavaHashMap();
   for (const item of items) map.set(item, true);
   return map;
