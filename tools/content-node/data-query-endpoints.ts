@@ -30,7 +30,7 @@ import {
   summaryEntity,
   writeDomain,
 } from './domain.ts';
-import type { MappedRow } from './domain.ts';
+import type { DomainEntity, MappedRow } from './domain.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 import neo4j from 'neo4j-driver';
 import type { Props } from './objects.ts';
@@ -714,12 +714,19 @@ export const dataQueryEndpoints: Endpoint[] = [
           {
             schemaClass: event.schemaClass,
             properties: event.properties,
-            summations: (event.fields.summation ?? []).map((summation) => summation.fields.text),
-            references: (event.fields.literatureReference ?? []).map((reference) => ({
+            // Relationship fields: lists of mapped objects, when present.
+            summations: ((event.fields['summation'] as DomainEntity[] | undefined) ?? []).map(
+              (summation) => summation.fields['text']
+            ),
+            references: (
+              (event.fields['literatureReference'] as DomainEntity[] | undefined) ?? []
+            ).map((reference) => ({
               schemaClass: reference.schemaClass,
               ...reference.fields,
             })),
-            authored: (event.fields.authored ?? []).map((edit) => edit.properties.dbId),
+            authored: ((event.fields['authored'] as DomainEntity[] | undefined) ?? []).map(
+              (edit) => edit.properties['dbId']
+            ),
           },
           info?.version ?? null,
           lazyCollection
