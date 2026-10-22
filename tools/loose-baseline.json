@@ -7,7 +7,6 @@
   "tools/content-node/parameters.spec.ts": 2,
   "tools/content-node/pathways-events-endpoints.ts": 164,
   "tools/content-node/psicquic.spec.ts": 1,
-  "tools/content-node/search-diagram-endpoints.ts": 78,
   "tools/content-node/server.ts": 105,
   "tools/content-node/snapshot-openapi.spec.ts": 5,
   "tools/render/pptx.spec.ts": 40,

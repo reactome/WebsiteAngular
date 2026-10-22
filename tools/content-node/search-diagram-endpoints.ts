@@ -88,7 +88,7 @@ async function identifierProblems(diagram: string, object?: string) {
 }
 
 /** String.compareTo: by UTF-16 unit, then by length. */
-function compareJavaStrings(a, b) {
+function compareJavaStrings(a: string, b: string) {
   const length = Math.min(a.length, b.length);
   for (let at = 0; at < length; at += 1) {
     const difference = a.charCodeAt(at) - b.charCodeAt(at);
@@ -124,10 +124,22 @@ function entriesResult(answer: SolrAnswer | null | undefined, options = {}) {
   };
 }
 
+/** A diagram search's query, as its controller binds it. */
+interface DiagramQuery {
+  query: string;
+  scope: string | null;
+  species?: (string | null)[] | null;
+  types?: (string | null)[] | null;
+  start?: number | null;
+  rows?: number | null;
+  includeInteractors?: boolean;
+  diagram?: string;
+}
+
 /** The filters SolrCore adds for a query's species (fireworksSpecies) and types. */
-function speciesAndTypes(query) {
+function speciesAndTypes(query: Pick<DiagramQuery, 'species' | 'types'>) {
   const params: [string, string][] = [];
-  const filter = (list, field) => {
+  const filter = (list: (string | null)[], field: string) => {
     const kept = list.filter((name) => name !== '' && name !== null);
     list.splice(0, list.length, ...kept);
     return kept.length ? `${field}:("${kept.join('" OR "')}")` : '';
@@ -138,7 +150,7 @@ function speciesAndTypes(query) {
 }
 
 /** start and rows, as SolrQuery sets them: a null one is left out. */
-function paging(query): SolrParams {
+function paging(query: Pick<DiagramQuery, 'start' | 'rows'>): SolrParams {
   return [
     ...(query.start === null || query.start === undefined
       ? []
@@ -149,16 +161,20 @@ function paging(query): SolrParams {
 
 /** SolrCore.getDiagrams: the documents in a diagram matching the query. */
 /** The scope's filter, as a parameter: none for a scope with none. */
-const scopeFilter = (scope: string): SolrParams => {
-  const filter = SCOPE_FILTER[scope];
+const scopeFilter = (scope: string | null): SolrParams => {
+  // No key for an absent scope.
+  const filter = SCOPE_FILTER[scope ?? ''];
   return filter ? [pair('fq', filter)] : [];
 };
 
-function diagramParams(query): SolrParams {
+function diagramParams(query: DiagramQuery): SolrParams {
   return [
     ...scopeFilter(query.scope),
     ...speciesAndTypes(query),
-    ['fq', `${query.includeInteractors ? 'diagramsWithInteractor' : 'diagrams'}:${query.diagram}`],
+    [
+      'fq',
+      `${query.includeInteractors ? 'diagramsWithInteractor' : 'diagrams'}:${String(query.diagram)}`,
+    ],
     ...paging(query),
     ['q', query.query],
   ];
@@ -172,7 +188,7 @@ function diagramParams(query): SolrParams {
  * keys and the public /search/fireworks URLs -- and is kept there so answers
  * stay byte-identical and old links work.
  */
-function speciesWideParams(query): SolrParams {
+function speciesWideParams(query: DiagramQuery): SolrParams {
   const species = query.species ?? [];
   const kept = species.filter((name) => name !== '' && name !== null);
   const types = query.types?.length ? speciesAndTypes({ types: query.types }) : [];
@@ -186,7 +202,7 @@ function speciesWideParams(query): SolrParams {
 }
 
 /** A String parameter with a default: absent or one empty value is the default; several are joined. */
-function singleString(values, fallback) {
+function singleString(values: string[], fallback: string) {
   if (values.length === 0 || (values.length === 1 && values[0] === '')) return fallback;
   return values.join(',');
 }
@@ -198,9 +214,9 @@ function singleString(values, fallback) {
  * the document's own stable id when it is in the diagram, its subpathways,
  * and what it interacts with -- each a HashSet, NON_EMPTY leaving out none.
  */
-function diagramFlags(answer, pathway, field) {
-  const occurrences = new JavaHashMap();
-  const interactsWith = new JavaHashMap();
+function diagramFlags(answer: SolrAnswer | null, pathway: string, field: string) {
+  const occurrences = new JavaHashMap<string, boolean>();
+  const interactsWith = new JavaHashMap<string, boolean>();
   for (const doc of answer?.response?.docs ?? []) {
     for (const raw of solrStrings(doc, field)) {
       if (!raw.startsWith(pathway)) continue;
@@ -236,9 +252,9 @@ function diagramFlags(answer, pathway, field) {
  * interactors less those pathways, kept to the species' own ids
  * ("R-" + its abbreviation) -- each a HashSet, refilled after the filter.
  */
-function speciesWideFlags(answer, abbreviation) {
-  const llps = new JavaHashMap();
-  const interactsWith = new JavaHashMap();
+function speciesWideFlags(answer: SolrAnswer | null, abbreviation: string | null) {
+  const llps = new JavaHashMap<string, boolean>();
+  const interactsWith = new JavaHashMap<string, boolean>();
   for (const doc of answer?.response?.docs ?? []) {
     for (const id of solrStrings(doc, 'llps')) llps.set(id, true);
     for (const raw of solrStrings(doc, 'occurrences')) {
@@ -248,8 +264,10 @@ function speciesWideFlags(answer, abbreviation) {
     }
   }
   if (llps.size && interactsWith.size) for (const id of llps.keys()) interactsWith.delete(id);
-  const prefix = `R-${abbreviation}`;
-  const kept = (map) => hashSetOf([...map.keys()].filter((id) => id.startsWith(prefix)));
+  // A species without an abbreviation is 'R-null', as Java concatenates it.
+  const prefix = `R-${String(abbreviation)}`;
+  const kept = (map: JavaHashMap<string, boolean>) =>
+    hashSetOf([...map.keys()].filter((id) => id.startsWith(prefix)));
   const species = kept(llps);
   const interacting = kept(interactsWith);
   // The site's SpeciesOverviewFlagResult; javaJson leaves an undefined one out.
@@ -261,7 +279,7 @@ function speciesWideFlags(answer, abbreviation) {
 }
 
 /** A DatabaseObject's toString in graph-core, as Java's messages write a Species. */
-function speciesToString(row) {
+function speciesToString(row: { dbId: number; displayName: string | null }) {
   return `Species {dbId=${row.dbId}, displayName='${row.displayName}'}`;
 }
 
@@ -391,14 +409,10 @@ export const searchDiagramEndpoints: Endpoint[] = [
         request,
         '/ContentService/search/diagram/{diagram}/occurrences/{instance}',
         async (signal) => {
-          const ask = async (scope) => {
+          const ask = async (scope: string | null) => {
             const answer = await solr(
               '/diagrams/occurrences',
-              [
-                ...(SCOPE_FILTER[scope] ? [pair('fq', SCOPE_FILTER[scope])] : []),
-                ['q', instance],
-                ['fl', field],
-              ],
+              [...scopeFilter(scope), ['q', instance], ['fl', field]],
               { signal }
             );
             for (const doc of answer?.response?.docs ?? [])
@@ -566,8 +580,9 @@ export const searchDiagramEndpoints: Endpoint[] = [
           `No entries found for query: ${query.query}`
         );
         if (targets.length === 0) return missing;
-        const envelope = JSON.parse(missing.body);
-        envelope.targets = targets;
+        // Java's envelope, as javaError wrote it.
+        const envelope = JSON.parse(missing.body) as Record<string, unknown>;
+        envelope['targets'] = targets;
         return { ...missing, body: javaJson(envelope) };
       });
     },
