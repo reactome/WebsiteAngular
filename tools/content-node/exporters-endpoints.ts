@@ -3,7 +3,7 @@
  * diagrams, the species overview and figures drawn by the render service,
  * with the helpers only they use. Moved unchanged from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import { read } from './graph.ts';
 import { settings } from './settings.ts';
 import { javaError, springNotFound, unexpected } from './answers.ts';
@@ -88,11 +88,11 @@ type ExportValues = { sel?: string[]; token?: string | null; [name: string]: unk
  * and trimmed, several taken as they are.
  */
 function exporterParameters(
-  request,
+  request: Request,
   fields: ExportField[] = DIAGRAM_EXPORT
 ): { answer: ReturnType<typeof javaError> } | { values: ExportValues } {
   const values: ExportValues = {};
-  const integer = (name, fallback) => {
+  const integer = (name: string, fallback) => {
     const read = springIntegerWithDefault(queryValues(request, name), fallback);
     if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
     values[name] = read.value;
@@ -100,7 +100,7 @@ function exporterParameters(
   };
   // Absent or a single empty value is the default; a blank one converts to
   // null, which the controller then passes on as it is.
-  const boolean = (name, fallback) => {
+  const boolean = (name: string, fallback) => {
     const given = queryValues(request, name);
     if (given.length === 0 || (given.length === 1 && given[0] === '')) {
       values[name] = fallback;
@@ -112,7 +112,7 @@ function exporterParameters(
     return undefined;
   };
   // A String: repeated values arrive joined by ',', as Spring joins a String[].
-  const text = (name, fallback) => {
+  const text = (name: string, fallback) => {
     const given = queryValues(request, name);
     values[name] =
       given.length > 1
@@ -121,7 +121,7 @@ function exporterParameters(
           ? fallback
           : given[0];
   };
-  const list = (name) => {
+  const list = (name: string) => {
     const given = queryValues(request, name);
     values[name] = (
       given.length === 1

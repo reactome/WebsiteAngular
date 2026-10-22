@@ -5,7 +5,7 @@
  * family, as schema.ts is the model's class table. Moved unchanged from
  * service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import { pathId, queryValues, rawSegment, springInteger, writerFor } from './spring.ts';
 import { cached, javaError, javaJson, neo4jFailureMessage, nonEmptyJson } from './answers.ts';
 import {
@@ -44,7 +44,7 @@ function schemaPage({
   species: speciesFilter = true,
   accepts = (_className: string): boolean => true,
 }) {
-  return async (request) => {
+  return async (request: Request) => {
     const className = pathId(rawSegment(request, 4));
     // In the controller's parameter order: species is a String and cannot
     // fail. /reference has no species parameter: one given is not read.
@@ -189,7 +189,7 @@ export function simpleObjectJson(row: SimpleObjectRow): SimpleDatabaseObject {
 }
 
 /** The ContentService's answer to a ClassNotFoundException. */
-function classNotFound(request) {
+function classNotFound(request: Request) {
   return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Specified class was not found');
 }
 
