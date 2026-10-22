@@ -93,6 +93,9 @@ module.exports = {
   // `/data/species/{taxId}` shapes that node does not, and a prefix would
   // claim them and 404 what currently works.
   '^/ContentService/data/species/(main|all)/?(\\?|$)': contentNode,
+  // The species overview, the Voronoi map, and the old fireworks exporter's
+  // URL, which node redirects to it (spec 006 T093).
+  '^/ContentService/exporter/(voronoi|fireworks)/[^/?]+/?(\\?|$)': contentNode,
   // An object with everything around it, for the details panel and the
   // website's detail pages; a reference entity as a summary of its entities.
   '^/ContentService/data/query/enhanced/v2/[^/?]+/?(\\?|$)': contentNode,

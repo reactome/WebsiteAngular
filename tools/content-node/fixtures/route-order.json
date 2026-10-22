@@ -67,6 +67,7 @@
   "GET /ContentService/interactors/static/molecule/enhanced/{id}/details",
   "GET /ContentService/interactors/static/molecule/{id}/withEntities",
   "GET /ContentService/exporter/diagram/{id}",
+  "GET /ContentService/exporter/voronoi/{id}",
   "GET /ContentService/exporter/fireworks/{id}",
   "GET /ContentService/search/suggest",
   "GET /ContentService/search/spellcheck",

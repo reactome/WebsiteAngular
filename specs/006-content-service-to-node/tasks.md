@@ -97,7 +97,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [ ] T090 `GET /exporter/diagram/{identifier}.{ext}`, for the formats the render page draws — implemented in #479, not yet routed: Java still answers it until the log scan (#273)
 - [ ] T091 `GET /exporter/diagram/{identifier}.{ext}`, the remaining formats and options (#273, after the log scan)
 - [ ] T092 `GET /exporter/reaction/{identifier}.{ext}`, `GET /exporter/reaction/{identifier}/diagram`
-- [ ] T093 The species overview image (the Reacfoam Voronoi map; there are no Fireworks images any more), answered at the old URL `GET /exporter/fireworks/{species}.{ext}`, whose name is fixed on the wire — implemented (render page and service take `species`; node answers the old URL), not yet routed: held back with T090 until the exporter log scan (#273)
+- [x] T093 The species overview image (the Reacfoam Voronoi map; there are no Fireworks images any more). Decided 22 Oct 2026: answered at `GET /exporter/voronoi/{species}.{ext}`, a URL named for what it draws, and the old `GET /exporter/fireworks/{species}.{ext}` is a 301 to it with the species, extension and query kept. Both are routed to node, within the render budget, ahead of T090's log scan (#273): the voronoi URL is new, so no caller depends on Java there. The render page reports the species it drew, which beta's site build (rebuilt 22 Oct) needs for the overview to render.
 
 ## Phase 9: Homed in Java for now ([spec 010](../010-java-services/spec.md))
 

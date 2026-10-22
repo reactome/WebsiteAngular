@@ -58,6 +58,11 @@ describe('the dev server proxy', () => {
     });
   }
 
+  it('sends the species overview, and the old URL that redirects to it, to the content service', async () => {
+    await expectContentNode('/ContentService/exporter/voronoi/Homo_sapiens.svg');
+    await expectContentNode('/ContentService/exporter/fireworks/9606.png?token=x');
+  });
+
   for (const id of ['70486', 'R-HSA-70486.4', 'REACT_1081', 'UniProt:P04637']) {
     it(`sends the stable id of ${id} to the content service`, async () => {
       await expectContentNode(`/ContentService/data/query/${id}/stId`);

@@ -404,24 +404,22 @@ export const exportersEndpoints: Endpoint[] = [
     },
   },
   {
-    path: '/ContentService/exporter/fireworks/{id}',
-    // The error path only, as for the diagram: the picture is another
-    // renderer's, and this box's Java has no overview data to draw from.
-    sample: 'Nosuchspecies.svg',
+    path: '/ContentService/exporter/voronoi/{id}',
+    // No sample, and none from --ids: Java has no such URL, so the parity
+    // harness has nothing to compare it with. overview-export.spec.mjs holds it.
     samplesOnly: true,
-    differs: [/: \.url: /],
     /**
-     * A species' overview, at the old fireworks exporter's URL (spec 006
-     * T093): the overview the site shows now -- the Reacfoam (Voronoi) map,
-     * drawn by the render service's genome-wide view -- not the retired
-     * Fireworks layout Java's fireworks-exporter draws. The species is read
-     * as Java reads it: a taxId, a dbId, or a name in any case with '_' for a
-     * space ('Homo_sapiens', 'homo_sapiens' and 9606 are all human).
+     * A species' overview, the Voronoi map the site shows (Reacfoam), drawn
+     * by the render service's genome-wide view -- at a URL named for it
+     * (spec 006 T093, decided 22 Oct 2026). The old fireworks exporter's URL
+     * redirects here; Fireworks itself is retired. The species is read as
+     * Java's exporter read it: a taxId, a dbId, or a name in any case with
+     * '_' for a space ('Homo_sapiens', 'homo_sapiens' and 9606 are all human).
      *
-     * Not routed yet (#273), with the diagram exporter. Every parameter Java
-     * takes is converted as Spring converts it, and one this does not draw is
-     * refused by name at a value other than its default: an overview that
-     * leaves out a flag or a profile asked for is a 200 no caller can detect.
+     * Every parameter the old exporter took is converted as Spring converts
+     * it, and one this does not draw is refused by name at a value other than
+     * its default: an overview that leaves out a flag or a profile asked for
+     * is a 200 no caller can detect.
      */
     handler: async (request) => {
       const name = splitExportName(pathId(rawSegment(request, 4)));
@@ -448,6 +446,29 @@ export const exportersEndpoints: Endpoint[] = [
         overviewExportRequest(taxId, { ext, token: asked.values.token }),
         ext
       );
+    },
+  },
+  {
+    path: '/ContentService/exporter/fireworks/{id}',
+    // No sample, and none from --ids: Java draws here, node redirects.
+    samplesOnly: true,
+    /**
+     * The old fireworks exporter's URL, a 301 to the Voronoi overview with the
+     * same species, extension and query (decided 22 Oct 2026): Fireworks is
+     * retired, and a caller of the old URL gets the overview the site shows.
+     */
+    // Built from its parts, not by rewriting the URL as sent: routing
+    // decodes `fire%77orks` to fireworks, which a text replace would miss
+    // and redirect to itself.
+    handler: async (request) => {
+      const url = String(request.originalUrl);
+      const at = url.indexOf('?');
+      return {
+        status: 301,
+        headers: {
+          Location: `/ContentService/exporter/voronoi/${rawSegment(request, 4)}${at === -1 ? '' : url.slice(at)}`,
+        },
+      };
     },
   },
 ];
