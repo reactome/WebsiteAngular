@@ -12,7 +12,7 @@ import { JavaHashMap } from './java-hashmap.ts';
  * newline or tab -- trailing empty strings dropped, as Java's split drops
  * them -- each trimmed.
  */
-export function plainIds(body) {
+export function plainIds(body: string): string[] {
   const parts = body.split(/,|;|\n|\t/);
   if (parts.length > 1) while (parts.length && parts.at(-1) === '') parts.pop();
   return parts.map((part) => javaTrim(part));
@@ -24,9 +24,9 @@ export function plainIds(body) {
  * -- the type and subtype lower-cased, parameters as given, a charset Java
  * must know -- and only text/plain is compatible: `text/*` is not.
  */
-export function plainTextProblem(header) {
+export function plainTextProblem(header: string | undefined): string | undefined {
   if (!header) return "Content type '' not supported";
-  const invalid = (why) => `Invalid mime type "${header}": ${why}`;
+  const invalid = (why: string) => `Invalid mime type "${header}": ${why}`;
   const [first = '', ...rest] = header.split(';');
   const full = first.trim() === '*' ? '*/*' : first.trim();
   const slash = full.indexOf('/');
@@ -50,7 +50,7 @@ export function plainTextProblem(header) {
   return `Content type '${type}/${subtype}${parameters.join('')}' not supported`;
 }
 
-function knownCharset(value) {
+function knownCharset(value: string) {
   return decoderFor(value.replace(/^"(.*)"$/, '$1').toLowerCase()) !== undefined;
 }
 
@@ -122,19 +122,21 @@ function decoderFor(charset: string): Decoder | undefined {
  * a character. A reversed mark (U+FFFE) anywhere, a lone surrogate or an odd
  * last byte is U+FFFD -- one for a high surrogate and the odd byte after it.
  */
-function utf16(body, order) {
+function utf16(body: Buffer, order: 'be' | 'le' | undefined): string {
+  // Every read below is inside `body`: each checks the length first.
+  const byte = (at: number) => body[at] as number;
   let at = 0;
   let little = order === 'le';
   if (order === undefined && body.length >= 2) {
-    if (body[0] === 0xfe && body[1] === 0xff) at = 2;
-    else if (body[0] === 0xff && body[1] === 0xfe) {
+    if (byte(0) === 0xfe && byte(1) === 0xff) at = 2;
+    else if (byte(0) === 0xff && byte(1) === 0xfe) {
       at = 2;
       little = true;
     }
   }
   const units: number[] = [];
   for (; at + 1 < body.length; at += 2)
-    units.push(little ? body[at] | (body[at + 1] << 8) : (body[at] << 8) | body[at + 1]);
+    units.push(little ? byte(at) | (byte(at + 1) << 8) : (byte(at) << 8) | byte(at + 1));
   let text = '';
   for (let i = 0; i < units.length; i += 1) {
     const unit = present(units[i]);
@@ -166,7 +168,7 @@ function utf16(body, order) {
  * the other order's mark; a value past U+10FFFF, a surrogate, or a short last
  * group is U+FFFD.
  */
-function utf32(body, order) {
+function utf32(body: Buffer, order: 'be' | 'le' | undefined): string {
   let at = 0;
   let little = order === 'le';
   if (body.length >= 4) {
@@ -195,10 +197,10 @@ function utf32(body, order) {
  * trailing empty strings dropped, as Java's split drops them -- each trimmed;
  * more than twenty, the first twenty collected into a HashSet, in its order.
  */
-export function orthologyIds(body) {
+export function orthologyIds(body: string): string[] {
   const ids = plainIds(body);
   if (ids.length <= 20) return ids;
-  const set = new JavaHashMap();
+  const set = new JavaHashMap<string, boolean>();
   for (const id of ids.slice(0, 20)) set.set(id, true);
   return [...set.keys()];
 }

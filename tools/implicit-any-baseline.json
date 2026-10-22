@@ -1,6 +1,5 @@
 {
   "tools/content-node/answers.ts": 16,
-  "tools/content-node/body.ts": 10,
   "tools/content-node/citation-endpoints.ts": 11,
   "tools/content-node/citation.spec.ts": 10,
   "tools/content-node/citation.ts": 44,
