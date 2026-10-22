@@ -5,7 +5,8 @@
  * family, as schema.ts is the model's class table. Moved unchanged from
  * service.ts.
  */
-import type { Endpoint, Request } from './endpoint.ts';
+import type { Props } from './objects.ts';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { pathId, queryValues, rawSegment, springInteger, writerFor } from './spring.ts';
 import { cached, javaError, javaJson, neo4jFailureMessage, nonEmptyJson } from './answers.ts';
 import {
@@ -18,7 +19,6 @@ import {
 } from './schema.ts';
 import { javaNumeric } from './java-text.ts';
 import { read } from './graph.ts';
-import type { Row } from './graph.ts';
 import neo4j from 'neo4j-driver';
 import type { SimpleDatabaseObject } from '../../projects/website-angular/src/model/content.model.ts';
 import type { JsonWritten } from './answers.ts';
@@ -37,12 +37,21 @@ export const schemaModelQuery =
  * passed to Neo4j, whose refusal is Java's 500. A class Java does not have is
  * its 500; a species for a class without one, or no rows, its 404.
  */
-function schemaPage({
+/** How a species narrows a schema query: by taxId, or by name. */
+type By = 'taxId' | 'speciesName';
+
+function schemaPage<R>({
   cap,
   query,
   answer,
   species: speciesFilter = true,
   accepts = (_className: string): boolean => true,
+}: {
+  cap: number;
+  query: (className: string, by: By | undefined) => string;
+  answer: (rows: R[], request: Request) => Answer;
+  species?: boolean;
+  accepts?: (className: string) => boolean;
 }) {
   return async (request: Request) => {
     const className = pathId(rawSegment(request, 4));
@@ -59,15 +68,15 @@ function schemaPage({
       javaError(request, 404, 'NOT_FOUND', `No entries found for class: ${className}`);
     if (!accepts(className)) return none();
     const species = given.length ? given.join(',') : undefined;
-    let by;
+    let by: By | undefined;
     if (species !== undefined) {
       if (!isSpeciesClass(className)) return none();
       by = javaNumeric(species) ? 'taxId' : 'speciesName';
     }
     const { skip, limit } = schemaWindow(page.value, offset.value, cap);
-    let rows;
+    let rows: R[];
     try {
-      rows = await read<Row>(query(className, by), {
+      rows = await read<R>(query(className, by), {
         ...(by && { [by]: species }),
         skip: neo4j.int(skip),
         limit: neo4j.int(limit),
@@ -86,7 +95,7 @@ function schemaPage({
  * graph-core's SchemaRepository.getSimpleReferencesObjectsByClass(Class, skip,
  * limit), as written: a reference class's objects by identifier.
  */
-function schemaReferenceQuery(className) {
+function schemaReferenceQuery(className: string) {
   return (
     `MATCH (n:${className}) ` +
     'RETURN n.dbId AS dbId, n.databaseName AS databaseName, n.identifier AS identifier ' +
@@ -99,7 +108,10 @@ function schemaReferenceQuery(className) {
  * databaseName read with asString(), so a missing one is the text "null";
  * NON_EMPTY leaves out an empty one.
  */
-function simpleReferenceJson(row) {
+/** A reference entity's row, as schemaReferenceQuery returns it. */
+type ReferenceRow = { dbId: number; identifier: string | null; databaseName: string | null };
+
+function simpleReferenceJson(row: ReferenceRow) {
   return nonEmptyJson([
     ['dbId', row.dbId],
     ['identifier', row.identifier ?? 'null'],
@@ -113,7 +125,7 @@ function simpleReferenceJson(row) {
  * every page Java's -- with the node's labels and id beside it, which the
  * domain objects need and read() does not keep.
  */
-function schemaObjectsQuery(className, by) {
+function schemaObjectsQuery(className: string, by: By | undefined) {
   return (
     `${schemaMatch(className, by)} RETURN n, labels(n) AS labels, id(n) AS id ` +
     'ORDER BY n.displayName SKIP $skip LIMIT $limit'
@@ -125,7 +137,7 @@ function schemaObjectsQuery(className, by) {
  * species taxId, species name or neither. `className` is spliced in, as Java
  * splices it, and is only ever a name isSchemaClass accepted.
  */
-export function schemaMinQuery(className, by) {
+export function schemaMinQuery(className: string, by: By | undefined) {
   return (
     `${schemaMatch(className, by)} ` +
     'RETURN DISTINCT(n.dbId) as dbId, n.stId as stId, n.displayName as displayName, labels(n) as labels ' +
@@ -139,12 +151,12 @@ export function schemaMinQuery(className, by) {
  * without, the label count Spring Data's `count(Class)` makes, which reads
  * Neo4j's count store. Quoted, because a woven `X$AjcClosure3` is a class too.
  */
-export function schemaCountQuery(className, by?) {
+export function schemaCountQuery(className: string, by?: By) {
   if (by === undefined) return `MATCH (n:\`${className}\`) RETURN count(n) AS n`;
   return `${schemaMatch(className, by)} RETURN COUNT(n) AS n`;
 }
 
-function schemaMatch(className, by) {
+function schemaMatch(className: string, by: By | undefined) {
   if (by === 'taxId') return `MATCH (s:Species{taxId:$taxId})<-[:species]-(n:${className})`;
   if (by === 'speciesName') {
     return `MATCH (s:Species{displayName:$speciesName})<-[:species]-(n:${className})`;
@@ -157,7 +169,7 @@ function schemaMatch(className, by) {
  * at 20000, skip `(page - 1) * offset` in Java's int arithmetic, overflow and
  * all. Negative values are left for Neo4j to refuse, as Java leaves them.
  */
-export function schemaWindow(page, offset, cap = 20000) {
+export function schemaWindow(page: number, offset: number, cap = 20000) {
   const limit = offset > cap ? cap : offset;
   return { skip: Math.imul((page - 1) | 0, limit), limit };
 }
@@ -257,7 +269,7 @@ export const schemaEndpoints: Endpoint[] = [
      * 500. A class Java does not have is its 500; a species for a class
      * without one, or no rows, its 404.
      */
-    handler: schemaPage({
+    handler: schemaPage<SimpleObjectRow>({
       cap: 20000,
       query: schemaMinQuery,
       answer: (rows) => ({
@@ -305,7 +317,7 @@ export const schemaEndpoints: Endpoint[] = [
      * limit), the nodes alone (no relationship), written as the domain
      * objects. /min's rules (schemaPage), at most 25 to a page.
      */
-    handler: schemaPage({
+    handler: schemaPage<{ id: number | string; labels: string[]; n: Props }>({
       cap: 25,
       query: schemaObjectsQuery,
       answer: (rows, request) => ({
@@ -329,7 +341,7 @@ export const schemaEndpoints: Endpoint[] = [
      * most 20000 to a page, and a class that is neither a ReferenceEntity nor
      * an ExternalOntology (SchemaService.isValidReferenceClass) its 404.
      */
-    handler: schemaPage({
+    handler: schemaPage<ReferenceRow>({
       cap: 20000,
       species: false,
       accepts: (className) =>

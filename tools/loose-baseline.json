@@ -12,7 +12,6 @@
   "tools/content-node/parameters.ts": 48,
   "tools/content-node/pathways-events-endpoints.ts": 164,
   "tools/content-node/psicquic.spec.ts": 1,
-  "tools/content-node/schema-endpoints.ts": 31,
   "tools/content-node/search-core.ts": 53,
   "tools/content-node/search-diagram-endpoints.ts": 91,
   "tools/content-node/search-endpoints.ts": 62,
