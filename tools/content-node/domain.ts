@@ -195,7 +195,7 @@ export interface MappedRow {
   // A query that does not return a relationship's id gets one per record
   // (readRecord).
   relationships: (Omit<GraphRelationship, 'id'> & { id?: number | string })[];
-  order?: (number | string)[];
+  order?: (number | string)[] | undefined;
 }
 
 /**
@@ -223,7 +223,7 @@ export function mapResult({ root, nodes, relationships: returned, order }: Mappe
  * alreadyMappedInPreviousRecord branch; see refill in map). The relationships
  * a record names are counted across records as SDN counts them.
  */
-export function mapResults(records) {
+export function mapResults(records: MappedRow[]) {
   const state = newState();
   return records.map((record) => {
     // KnownObjects.nextRecord: what is known so far is from a previous record.
@@ -235,36 +235,56 @@ export function mapResults(records) {
 }
 
 /** One KnownObjects, for the records a mapping reads. */
+type Id = number | string;
+
+/** What map() keeps across one result: the objects made, and the record being read. */
+interface MapState {
+  known: Map<Id, Entity>;
+  relations: Map<string, Relation>;
+  processed: Map<string, number>;
+  previous: Set<Id>;
+  current: Set<Id>;
+  // Set by readRecord, for the record being mapped.
+  byId: Map<Id, GraphNode>;
+  position: Map<Id, number>;
+  relationships: GraphRelationship[];
+  removed: Set<Id>;
+  byEnd: Map<string, GraphRelationship[]>;
+}
+
 function newState() {
+  // The record's own maps are readRecord's to set, before map() reads them.
   return {
     known: new Map(),
     relations: new Map(),
     processed: new Map(),
     previous: new Set(),
     current: new Set(),
-  };
+  } as MapState;
 }
 
 /** A record's nodes and relationships, as the mapping of it reads them. */
-function readRecord(state, { root, nodes, relationships: returned, order }) {
+function readRecord(state: MapState, { root, nodes, relationships: returned, order }: MappedRow) {
   // extractRelationships / extractNodes: each relationship and node once, in
   // the order of first appearance -- the nodes of list columns first, then
   // single-node columns, so the root sits where it first appears in a list
   // and otherwise last.
-  const seenRelationships = new Set();
+  const seenRelationships = new Set<Id>();
   const relationships = returned
     // One without an id (a test's) is its own relationship, under a key of its own.
     .map((relationship, at) =>
-      relationship.id === undefined ? { ...relationship, id: `#${at}` } : relationship
+      relationship.id === undefined
+        ? { ...relationship, id: `#${at}` }
+        : (relationship as GraphRelationship)
     )
     .filter(
       (relationship) =>
         !seenRelationships.has(relationship.id) && seenRelationships.add(relationship.id)
     );
   const listed = nodes.filter(Boolean);
-  const byId = new Map();
+  const byId = new Map<Id, GraphNode>();
   for (const node of [...listed, root]) if (!byId.has(node.id)) byId.set(node.id, node);
-  const position = new Map();
+  const position = new Map<Id, number>();
   for (const id of [...(order ?? listed.map((node) => node.id)), root.id])
     if (!position.has(id)) position.set(id, position.size);
   Object.assign(state, { byId, position, relationships, removed: new Set(), byEnd: new Map() });
@@ -274,7 +294,7 @@ function readRecord(state, { root, nodes, relationships: returned, order }) {
       `INCOMING ${relationship.type} ${relationship.end}`,
     ]) {
       if (!state.byEnd.has(key)) state.byEnd.set(key, []);
-      state.byEnd.get(key).push(relationship);
+      (state.byEnd.get(key) as GraphRelationship[]).push(relationship);
     }
   }
 }
@@ -339,7 +359,7 @@ type RelationshipField = [
   relationClass: string | null,
 ];
 
-function map(state, node, target): Entity {
+function map(state: MapState, node: GraphNode, target: string | undefined): Entity {
   const frames: Frame[] = [];
   const make = (from: GraphNode, to) => {
     const schemaClass = to ? classFor(to, from.labels) : schemaClassOf(from.labels);
@@ -419,8 +439,8 @@ function map(state, node, target): Entity {
     }
     const field = frame.fields[frame.at];
     const matching = frame.matching;
-    // Both set just above, or on an earlier pass for this field.
-    if (!field || !matching) throw new Error('map: a field being filled has no matches');
+    // Set just above, or on an earlier pass for this field (matching is too).
+    if (!field) throw new Error('map: a field being filled has no matches');
     const [name, , direction, target, collection, relationClass] = field;
     if (frame.next === matching.length) {
       frame.entity.fields[name] = frame.merging
@@ -441,9 +461,10 @@ function map(state, node, target): Entity {
     // A new entity pushes its frame: its fields are filled before this one goes on.
     let other;
     if (otherId === frame.entity.id) other = frame.entity;
+    // Every relationship's ends are nodes of this record (byId).
     else if (frame.merging)
-      other = state.known.get(otherId) ?? make(state.byId.get(otherId), target);
-    else other = reach(state.byId.get(otherId), target);
+      other = state.known.get(otherId) ?? make(state.byId.get(otherId) as GraphNode, target);
+    else other = reach(state.byId.get(otherId) as GraphNode, target);
     if (!relationClass) {
       frame.found.push(other);
       continue;
@@ -487,7 +508,11 @@ function merged(existing, provided, collection, relationClass) {
 }
 
 /** One field's relationships, in candidate order (see map). */
-function matchingFor(state, entity: Entity, [, type, direction, target]: RelationshipField) {
+function matchingFor(
+  state: MapState,
+  entity: Entity,
+  [, type, direction, target]: RelationshipField
+) {
   const outgoing = direction === 'OUTGOING';
   const otherEnd = (relationship) => (outgoing ? relationship.end : relationship.start);
   return (
@@ -495,7 +520,11 @@ function matchingFor(state, entity: Entity, [, type, direction, target]: Relatio
       .filter((relationship) => !state.removed.has(relationship.id))
       .filter((relationship) => state.byId.get(otherEnd(relationship))?.labels.includes(target))
       // Candidate order; stable, so relationships to one node keep theirs.
-      .sort((a, b) => state.position.get(otherEnd(a)) - state.position.get(otherEnd(b)))
+      // Every node of the record has a position.
+      .sort(
+        (a, b) =>
+          (state.position.get(otherEnd(a)) as number) - (state.position.get(otherEnd(b)) as number)
+      )
   );
 }
 
