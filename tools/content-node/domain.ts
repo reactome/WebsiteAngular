@@ -150,33 +150,34 @@ export class JsonMap {
 }
 
 /** Has.Util.wrapUniqueElements: a plain relationship as Has.Default, for composedOf. */
-const wrap = (entities, type) =>
+const wrap = (entities: unknown[] | null | undefined, type: string) =>
   (entities ?? []).map((entity) => new Relation('Default', entity, {}, type));
 
 /**
  * CompositionAggregator.getComposedOf: the relationships each class composes
  * itself of (its defineCompositionRelations), concatenated in its order.
  */
-function composedOf(entity) {
-  const is = (name) => isA(entity.schemaClass, name);
-  const fields = entity.fields;
-  const all = (...lists) => lists.flatMap((list) => list ?? []);
+function composedOf(entity: Entity) {
+  const is = (name: string) => isA(entity.schemaClass, name);
+  // A relationship field: its objects, or nothing loaded.
+  const list = (name: string) => entity.fields[name] as unknown[] | null | undefined;
+  const all = (...lists: (unknown[] | null | undefined)[]) => lists.flatMap((list) => list ?? []);
   if (is('ReactionLikeEvent'))
     return all(
-      fields.input,
-      fields.output,
-      wrap(fields.catalystActivity, 'catalyst'),
-      wrap(fields.regulatedBy, 'regulation')
+      list('input'),
+      list('output'),
+      wrap(list('catalystActivity'), 'catalyst'),
+      wrap(list('regulatedBy'), 'regulation')
     );
-  if (is('Complex')) return all(fields.hasComponent);
-  if (is('CandidateSet')) return all(fields.hasMember, fields.hasCandidate);
-  if (is('EntitySet')) return all(fields.hasMember);
-  if (is('EntityWithAccessionedSequence')) return all(fields.hasModifiedResidue);
+  if (is('Complex')) return all(list('hasComponent'));
+  if (is('CandidateSet')) return all(list('hasMember'), list('hasCandidate'));
+  if (is('EntitySet')) return all(list('hasMember'));
+  if (is('EntityWithAccessionedSequence')) return all(list('hasModifiedResidue'));
   if (is('Cell'))
-    return all(wrap(fields.RNAMarker, 'rnaMarker'), wrap(fields.proteinMarker, 'proteinMarker'));
-  if (is('Polymer')) return all(fields.repeatedUnit);
+    return all(wrap(list('RNAMarker'), 'rnaMarker'), wrap(list('proteinMarker'), 'proteinMarker'));
+  if (is('Polymer')) return all(list('repeatedUnit'));
   // Pathway leaves hasEncapsulatedEvent out, as graph-core does (it loops).
-  if (is('Pathway')) return all(fields.hasEvent);
+  if (is('Pathway')) return all(list('hasEvent'));
   throw new Error(`domain: ${entity.schemaClass} is not a CompositionAggregator`);
 }
 
@@ -545,20 +546,27 @@ function collect(found, collection, relationClass) {
 }
 
 /** Has.Util.expandStoichiometry: each element as many times as its stoichiometry. */
-function expand(relations) {
+function expand(relations: Relation[] | null | undefined) {
   if (relations === undefined || relations === null) return undefined;
   return relations.flatMap((relation) => Array(relation.stoichiometry).fill(relation.element));
 }
 
-const expanding = (field) => (entity) => expand(entity.fields[field]);
-const constant = (value) => () => value;
+const expanding = (field: string) => (entity: Target) =>
+  expand(entity.fields[field] as Relation[] | null | undefined);
+const constant = (value: string) => () => value;
 
 /**
  * The getters that compute their value, by declaring class and method. Every
  * other getter Jackson calls returns its field (snapshot-domain.ts checks the
  * bytecode for that, and fails on a getter that is in neither group).
  */
-const COMPUTED = {
+/**
+ * What a computed getter is called with: an object of its declaring class --
+ * an Entity, or for a relationship class's getters a Relation.
+ */
+type Target = Entity & Relation;
+
+const COMPUTED: Record<string, (target: Target) => unknown> = {
   'DatabaseObject.getClassName': (entity) => entity.schemaClass,
   'DatabaseObject.getSchemaClass': (entity) => entity.schemaClass,
   'EntitySet.getClassName': constant('Set'),
@@ -567,11 +575,13 @@ const COMPUTED = {
   'SimpleEntity.getClassName': constant('Chemical Compound'),
   // Otherwise super.getClassName(): GenomeEncodedEntity's.
   'EntityWithAccessionedSequence.getClassName': (entity) =>
-    ({
-      ReferenceGeneProduct: 'Protein',
-      ReferenceDNASequence: 'DNA Sequence',
-      ReferenceRNASequence: 'RNA Sequence',
-    })[entity.fields.referenceType] ?? 'Genes and Transcripts',
+    (
+      ({
+        ReferenceGeneProduct: 'Protein',
+        ReferenceDNASequence: 'DNA Sequence',
+        ReferenceRNASequence: 'RNA Sequence',
+      }) as Record<string, string>
+    )[entity.fields['referenceType'] as string] ?? 'Genes and Transcripts',
   'CandidateSet.getHasCandidate': expanding('hasCandidate'),
   'Complex.getHasComponent': expanding('hasComponent'),
   'Complex.getIncludedLocation': expanding('includedLocation'),
@@ -582,13 +592,14 @@ const COMPUTED = {
   'Pathway.getHasEvent': expanding('hasEvent'),
   'Pathway.getHasEncapsulatedEvent': expanding('hasEncapsulatedEvent'),
   // super.getCreated() / getModified(): DatabaseObject's field.
-  'Person.getCreated': (entity) => entity.fields.created,
-  'Person.getModified': (entity) => entity.fields.modified,
+  'Person.getCreated': (entity) => entity.fields['created'],
+  'Person.getModified': (entity) => entity.fields['modified'],
   // databaseName.replace(" ", "-"); no database name is Java's NullPointerException.
   'ReferenceEntity.getSimplifiedDatabaseName': (entity) => {
-    if (entity.fields.databaseName === undefined || entity.fields.databaseName === null)
+    const name = entity.fields['databaseName'] as string | null | undefined;
+    if (name === undefined || name === null)
       throw new AttributeFailure('null', 'ReferenceEntity.getSimplifiedDatabaseName');
-    return entity.fields.databaseName.replaceAll(' ', '-');
+    return name.replaceAll(' ', '-');
   },
   'PhysicalEntity.getCandidateOf': expanding('candidateOf'),
   'PhysicalEntity.getCompartment': expanding('compartment'),
@@ -602,14 +613,16 @@ const COMPUTED = {
   'ReactionLikeEvent.getDiseaseReaction': expanding('diseaseReactions'),
   'ReactionLikeEvent.getInput': expanding('input'),
   'ReactionLikeEvent.getOutput': expanding('output'),
-  'PhysicalEntity.getMarkingReferences': (entity) => entity.fields.markingReferences,
+  'PhysicalEntity.getMarkingReferences': (entity) => entity.fields['markingReferences'],
   'Person.getPublications': (entity) =>
-    entity.fields.publicationAuthorList?.map((relation) => relation.element),
+    (entity.fields['publicationAuthorList'] as Relation[] | undefined)?.map(
+      (relation) => relation.element
+    ),
   'LiteratureReference.getUrl': (entity) =>
-    entity.fields.pubMedIdentifier === undefined || entity.fields.pubMedIdentifier === null
+    entity.fields['pubMedIdentifier'] === undefined || entity.fields['pubMedIdentifier'] === null
       ? undefined
-      : PUBMED_URL + entity.fields.pubMedIdentifier,
-  'DBInfo.getVersion': (entity) => entity.fields.releaseNumber,
+      : PUBMED_URL + (entity.fields['pubMedIdentifier'] as string | number),
+  'DBInfo.getVersion': (entity) => entity.fields['releaseNumber'],
   'AuthorPublication.getPublication': (relation) => relation.element,
   'Has.getOrder': (relation) => relation.order,
   'Has.getStoichiometry': (relation) => relation.stoichiometry,
@@ -619,11 +632,13 @@ const COMPUTED = {
   'SummaryEntity.getHasModifiedResidue': expanding('hasModifiedResidue'),
   // Otherwise super.getClassName(): DatabaseObject's, the class's own name.
   'SummaryEntity.getClassName': (entity) =>
-    ({
-      ReferenceGeneProduct: 'Protein',
-      ReferenceDNASequence: 'DNA Sequence',
-      ReferenceRNASequence: 'RNA Sequence',
-    })[entity.fields.referenceType] ?? 'SummaryEntity',
+    (
+      ({
+        ReferenceGeneProduct: 'Protein',
+        ReferenceDNASequence: 'DNA Sequence',
+        ReferenceRNASequence: 'RNA Sequence',
+      }) as Record<string, string>
+    )[entity.fields['referenceType'] as string] ?? 'SummaryEntity',
 };
 
 /** The computed getters, by name, for snapshot-domain.ts to check against graph-core. */
@@ -1103,9 +1118,13 @@ export function summaryEntity(reference) {
         if (!value?.length) continue;
         to[name] = union(to[name], value);
       } else if (name in stoichiometric) {
-        const value = expand(entity.fields[name]);
+        // A stoichiometric field: relations, here and in what is being built.
+        const value = expand(entity.fields[name] as Relation[] | undefined);
         if (!value?.length) continue;
-        to[name] = aggregate(union(expand(to[name]), value), stoichiometric[name]);
+        to[name] = aggregate(
+          union(expand(to[name] as Relation[] | undefined), value),
+          stoichiometric[name]
+        );
       } else {
         // inputFor / outputFor: the relations themselves, one per element.
         const value = entity.fields[name];
