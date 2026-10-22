@@ -86,7 +86,8 @@ export function facetMapping(answer: SolrAnswer | null | undefined) {
     const available: FacetContainer[] = [];
     const counts = flat ?? [];
     for (let at = 0; at + 1 < counts.length; at += 2)
-      available.push(facetContainer(counts[at], counts[at + 1]));
+      // Solr's flat list: a name, then its count.
+      available.push(facetContainer(counts[at] as string | null, counts[at + 1] as number));
     lists[key] = available.length ? { available } : {};
   }
   const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
@@ -151,7 +152,8 @@ function facetMappingFor(answer: SolrAnswer | null | undefined, query) {
     const chosen: FacetContainer[] = [];
     const available: FacetContainer[] = [];
     for (let at = 0; at + 1 < flat.length; at += 2) {
-      const container = facetContainer(flat[at], flat[at + 1]);
+      // Solr's flat list: a name, then its count.
+      const container = facetContainer(flat[at] as string | null, flat[at + 1] as number);
       (query[list]?.includes(flat[at]) ? chosen : available).push(container);
     }
     selected[list] = chosen.map((container) => container.name ?? null);
@@ -403,7 +405,12 @@ function facetAnswer(answer) {
  * in order, less those /exists finds nothing for. One at a time, as Java
  * asks: Solr's heap is small and the list is a handful.
  */
-export async function suggestionsFrom(handler, query, ask = solr, signal = undefined) {
+export async function suggestionsFrom(
+  handler: string,
+  query: string,
+  ask = solr,
+  signal: AbortSignal | undefined = undefined
+) {
   const offered = collations(await ask(handler, [['spellcheck.q', query]], { signal }));
   const kept: string[] = [];
   for (const collation of offered) {
