@@ -86,8 +86,8 @@ async function findObject(raw: string) {
 }
 
 /** A java.util.HashMap<String, V> of these entries, put in this order, as its iteration order. */
-export function idKeyedMap(entries) {
-  const map = new JavaHashMap();
+export function idKeyedMap<V>(entries: [string, V][]) {
+  const map = new JavaHashMap<string, V>();
   for (const [key, value] of entries) map.set(key, value);
   return [...map.entries()];
 }
@@ -99,7 +99,17 @@ export function idKeyedMap(entries) {
  * concatenation of null. toTSV prefers a `getText()` over the name; no class
  * served through here has one, so it is not read.
  */
-export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
+export function databaseObjectTsv({
+  dbId,
+  stId,
+  displayName,
+  schemaClass,
+}: {
+  dbId: number | string;
+  stId: string | null | undefined;
+  displayName: string | null;
+  schemaClass: string;
+}) {
   const id = stId !== null && stId !== undefined && stId !== '' ? stId : dbId;
   return `${id}\t${displayName ?? 'null'}\t${schemaClass}`;
 }
@@ -112,10 +122,10 @@ export function databaseObjectTsv({ dbId, stId, displayName, schemaClass }) {
  * Anything Long.valueOf refuses, or no such object, is Java's caught
  * exception: false.
  */
-export async function needsIncoming(raw) {
+export async function needsIncoming(raw: string) {
   if (raw.startsWith('R') || raw.includes(':'))
     return !raw.startsWith('R-ALL-') && !raw.startsWith('chebi:');
-  const sign = /^[+-]/.test(raw) ? raw[0] : '';
+  const sign = /^[+-]/.test(raw) ? raw.charAt(0) : '';
   const digits = raw.slice(sign.length);
   if (!javaNumeric(digits)) return false;
   const value = BigInt(`${sign === '-' ? '-' : ''}${asciiDigits(digits)}`);
@@ -139,7 +149,10 @@ const LAZY_FIELDS: Record<'author' | 'affiliation', [direction: string, schemaCl
  * object with its relationship's stoichiometry, as [properties, n].
  * findCollectionByRelationship adds an object that many times.
  */
-async function lazyCollection(dbId, field: keyof typeof LAZY_FIELDS) {
+async function lazyCollection(
+  dbId: number,
+  field: keyof typeof LAZY_FIELDS
+): Promise<[Props, number][]> {
   const [direction, schemaClass] = LAZY_FIELDS[field];
   const rows = await read<{ m: Props; n: number | null }>(
     lazyCollectionQuery(field, direction, schemaClass),
@@ -147,7 +160,7 @@ async function lazyCollection(dbId, field: keyof typeof LAZY_FIELDS) {
       dbId: neo4j.int(dbId),
     }
   );
-  return rows.map((row) => [row.m, row.n ?? 1]);
+  return rows.map((row): [Props, number] => [row.m, row.n ?? 1]);
 }
 
 /** graph-core's SchemaDataDownloadType, in declaration order: format, address. */
@@ -185,25 +198,42 @@ const SCHEMA_DOWNLOADS: [fileFormat: string, address: string][] = [
  * edits that authored it, each list in the order findById's derived query
  * gives.
  */
-export async function schemaDataSet(event, version, lazy) {
+/** The event schemaDataSet describes, as its handler reads it. */
+interface SchemaEvent {
+  schemaClass: string;
+  properties: Record<string, unknown>;
+  summations?: unknown[];
+  references?: Props[];
+  authored?: unknown[];
+}
+
+export async function schemaDataSet(
+  event: SchemaEvent,
+  version: number | null,
+  lazy: (dbId: number, field: 'author' | 'affiliation') => Promise<[Props, number][]>
+) {
   // Jackson's NON_EMPTY, ContentService's setting: no null, "" or [].
-  const kept = (name, value) =>
+  const kept = (name: string, value: unknown) =>
     value === null || value === undefined || value === '' || (Array.isArray(value) && !value.length)
       ? {}
       : { [name]: value };
-  const expand = (pairs) => pairs.flatMap(([object, n]) => Array(n).fill(object));
+  const expand = (pairs: [Props, number][]) =>
+    pairs.flatMap(([object, n]) => Array<Props>(n).fill(object));
   const creator: unknown[] = [];
+  // The authoring edits' dbIds, and each Person and Affiliation's properties.
   for (const edit of event.authored ?? []) {
-    for (const person of expand(await lazy(edit, 'author'))) {
-      const affiliation = expand(await lazy(person.dbId, 'affiliation')).map((org) => ({
-        ...kept('name', org.displayName),
-        '@type': 'Organization',
-      }));
+    for (const person of expand(await lazy(edit as number, 'author'))) {
+      const affiliation = expand(await lazy(person['dbId'] as number, 'affiliation')).map(
+        (org) => ({
+          ...kept('name', org['displayName']),
+          '@type': 'Organization',
+        })
+      );
       creator.push({
-        ...kept('givenName', person.firstname),
-        ...kept('familyName', person.surname),
+        ...kept('givenName', person['firstname']),
+        ...kept('familyName', person['surname']),
         ...kept('affiliation', affiliation),
-        url: `http://europepmc.org/authors/${person.orcidId ?? 'null'}`,
+        url: `http://europepmc.org/authors/${String(person['orcidId'] ?? 'null')}`,
         '@type': 'Person',
       });
     }
@@ -211,22 +241,22 @@ export async function schemaDataSet(event, version, lazy) {
   const citation: unknown[] = [];
   for (const reference of event.references ?? []) {
     const cited =
-      reference.schemaClass === 'LiteratureReference'
-        ? reference.pubMedIdentifier == null
+      reference['schemaClass'] === 'LiteratureReference'
+        ? reference['pubMedIdentifier'] == null
           ? null
-          : `http://www.ncbi.nlm.nih.gov/pubmed/${reference.pubMedIdentifier}`
-        : reference.schemaClass === 'Book'
-          ? reference.ISBN
-          : reference.displayName;
+          : `http://www.ncbi.nlm.nih.gov/pubmed/${String(reference['pubMedIdentifier'])}`
+        : reference['schemaClass'] === 'Book'
+          ? reference['ISBN']
+          : reference['displayName'];
     if (cited != null) citation.push(cited);
   }
   const summations = event.summations ?? [];
   const description = summations.length ? summations[0] : '';
-  const dbId = event.properties.dbId;
+  const dbId = event.properties['dbId'];
   return {
-    ...kept('name', event.properties.displayName),
+    ...kept('name', event.properties['displayName']),
     ...kept('description', description),
-    url: `https://reactome.org/PathwayBrowser/#/${event.properties.stId ?? 'null'}`,
+    url: `https://reactome.org/PathwayBrowser/#/${String(event.properties['stId'] ?? 'null')}`,
     version: String(version ?? 'null'),
     keywords: [event.schemaClass],
     ...kept('creator', creator),
@@ -467,7 +497,8 @@ export const dataQueryEndpoints: Endpoint[] = [
         'public java.util.Collection<org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIds(java.lang.String)',
       // QueryObjectController.findByIds: graph-core's findByIds, each id's
       // findById gathered in a HashSet -- written in that set's order.
-      answer: (found) => databaseObjectSet(found.map(([, object]) => object)),
+      answer: (found: [string, DomainEntity][]) =>
+        databaseObjectSet(found.map(([, object]) => object)),
     },
     {
       path: '/ContentService/data/query/ids/map',
@@ -477,7 +508,7 @@ export const dataQueryEndpoints: Endpoint[] = [
       // a HashMap -- written in that map's order. Each object is its own
       // lookup, so one reached by two ids is written in full twice, as
       // Jackson's identity is per instance.
-      answer: (found) => new JsonMap(idKeyedMap(found)),
+      answer: (found: [string, DomainEntity][]) => new JsonMap(idKeyedMap(found)),
     },
   ].map(({ path, signature, answer }): Endpoint => ({
     path,
@@ -513,7 +544,7 @@ export const dataQueryEndpoints: Endpoint[] = [
       const ids = orthologyIds(plainText(request.body, contentType));
       const refused = findByIdFailure(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
-      const found: [string, unknown][] = [];
+      const found: [string, DomainEntity][] = [];
       for (const id of ids) {
         const object = await findObject(id);
         if (object) found.push([id, object]);
