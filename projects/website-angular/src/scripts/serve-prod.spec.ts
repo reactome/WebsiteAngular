@@ -53,7 +53,10 @@ describe('serve-prod', () => {
   let server: ChildProcess | undefined;
 
   beforeAll(async () => {
-    dist = await mkdtemp(path.join(tmpdir(), 'serve-prod-'));
+    // Under a directory whose name starts with a dot, as a checkout under
+    // ~/.something or .claude/worktrees is: Express 5's sendFile refuses a
+    // dotfile anywhere in an absolute path, and every page was a 500.
+    dist = await mkdtemp(path.join(tmpdir(), '.serve-prod-'));
     await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
     await mkdir(path.join(dist, 'assets'), { recursive: true });
     await writeFile(path.join(dist, 'assets', 'thing.txt'), 'an asset', 'utf8');

@@ -133,15 +133,17 @@ It must not mix in logic edits.
 
 **Independent Test**: the parity harness and the invalid-input corpus against Java give the same result before and after, and a rejecting handler is answered by the error handling.
 
-- [ ] T027 [US3] Before upgrading, record the baselines on beta, small and spaced:
+- [x] T027 [US3] Before upgrading, record the baselines on beta, small and spaced:
   - the parity harness against Java over every endpoint's samples (`node tools/content-node/diff.ts`);
   - the invalid-input corpus against both;
-  - the spec's URL forms (trailing slash, matrix parameter, encoded and doubled slashes, malformed escape, repeated parameter), saved as captures.
-- [ ] T028 [US3] Upgrade `express` to 5 in `package.json` and `deploy/content-node/Dockerfile`, keeping the lockfile diff to Express and its own dependencies. Then:
+  - the spec's URL forms (trailing slash, matrix parameter, encoded and doubled slashes, malformed escape, repeated parameter), saved as captures. — #592
+- [x] T028 [US3] Upgrade `express` to 5 in `package.json` and `deploy/content-node/Dockerfile`, keeping the lockfile diff to Express and its own dependencies. Then:
   - remove the `void (async () => …)()` wrappers in `tools/content-node/server.ts`;
   - re-measure the `URIError` path (a malformed escape in a path) against Java, keeping the handler only if Express 5 still raises it;
-  - add a spec in which a handler that rejects is answered with the service's 500, with no unhandled rejection. Show it failing on Express 4 first.
-- [ ] T029 [US3] On beta after the upgrade, run T027's three sets again and compare. They must be identical. Record the result in the PR.
+  - add a spec in which a handler that rejects is answered with the service's 500, with no unhandled rejection. Show it failing on Express 4 first. — #592
+- [x] T029 [US3] On beta after the upgrade, run T027's three sets again and compare. They must be identical. Record the result in the PR. — #592
+
+  T028 and T030 land in one pull request. There is one `express` in the root `package.json`: the render image takes its version from there, and so does the site's own server (`projects/website-angular/src/scripts/serve-prod.js`, with the contact and search-answer routes). So the upgrade covers that server too, at its next restart. Its specs pass on Express 5, its catch-all route is a RegExp (which Express 5 still takes), and it reads `req.body` defensively.
 
 ---
 
@@ -151,14 +153,14 @@ It must not mix in logic edits.
 
 **Independent Test**: its specs pass, and a few figures and refusals on beta answer as before.
 
-- [ ] T030 [US4] Upgrade `tools/render` to Express 5 (`deploy/render/Dockerfile` if it pins Express). Then:
+- [x] T030 [US4] Upgrade `tools/render` to Express 5 (`deploy/render/Dockerfile` if it pins Express). Then:
   - set the query parser to `extended` explicitly (R7), and add a spec with `?x[y]=1` refused naming `x`, as today;
-  - remove its route's `void` wrapper.
-- [ ] T031 [US4] On beta, before and after, send:
+  - remove its route's `void` wrapper. — #592
+- [x] T031 [US4] On beta, before and after, send:
   - one small figure per format that is already cached;
   - one refusal each for an unknown parameter, a repeated parameter and an out-of-range value.
 
-  Each answer must be identical.
+  Each answer must be identical. — #592
 
 ---
 
