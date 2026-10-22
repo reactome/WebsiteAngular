@@ -65,16 +65,20 @@ export function pair(name: string, value: string): [string, string] {
   return [name, value];
 }
 
-export const SCOPE_FILTER = {
+export const SCOPE_FILTER: Record<string, string> = {
   REFERENCE_ENTITY: 'hasReferenceEntity:false',
   PHYSICAL_ENTITY: '-isReferenceSummary:true',
 };
 
 /** search-core's ParserType: the defType each sends, STD none. */
-export const PARSER_TYPES = { DISMAX: 'dismax', EDISMAX: 'edismax', STD: '' };
+export const PARSER_TYPES: Record<string, string> = {
+  DISMAX: 'dismax',
+  EDISMAX: 'edismax',
+  STD: '',
+};
 
 /** search-core's SolrConverter.Field: each constant's name, and the Solr field it names. */
-const SOLR_FIELDS = {
+const SOLR_FIELDS: Record<string, string> = {
   DB_ID: 'dbId',
   ST_ID: 'stId',
   PHYSICAL_ENTITIES_DB_ID: 'physicalEntitiesDbId',
@@ -168,17 +172,34 @@ export function springFields(values: string[]): Bound<(string | null)[] | null> 
           `java.lang.IllegalArgumentException: No enum constant org.reactome.server.search.solr.SolrConverter.Field.${name}`,
       };
     }
-    fields.push(SOLR_FIELDS[name]);
+    // Checked just above: a field Java's enum has.
+    fields.push(SOLR_FIELDS[name] as string);
   }
   return { value: fields };
 }
 
 /** SolrCore.getFilterString without a tag: "" for no list, as Java sends it. */
-function plainFilter(list, field) {
+function plainFilter(list: (string | null)[] | null, field: string) {
   if (!list) return '';
   const kept = list.filter((name) => name !== '' && name !== null);
   list.splice(0, list.length, ...kept);
   return kept.length ? `${field}:("${kept.join('" OR "')}")` : '';
+}
+
+/** A search as the controllers bind it (the Query search-core builds from the parameters). */
+export interface SearchQuery {
+  query: string;
+  originalQuery: string;
+  scope: string | null;
+  // Set by the search before it reads it.
+  deleted?: boolean;
+  parserType?: string | null;
+  species: (string | null)[] | null;
+  types: (string | null)[] | null;
+  keywords: (string | null)[] | null;
+  compartments: (string | null)[] | null;
+  start: number | null;
+  rows: number | null;
 }
 
 /**
@@ -186,14 +207,17 @@ function plainFilter(list, field) {
  * (empty when there is none -- Java sends those too), deleted or not, the
  * scope, the parser.
  */
-export function searchParams(query): SolrParams {
+export function searchParams(query: SearchQuery): SolrParams {
+  // Neither table has a key for an absent value.
+  const scope = SCOPE_FILTER[query.scope ?? ''];
+  const parser = PARSER_TYPES[query.parserType ?? ''];
   return [
     ['fq', plainFilter(query.species, 'species_facet')],
     ['fq', plainFilter(query.types, 'type_facet')],
     ['fq', plainFilter(query.compartments, 'compartment_facet')],
     ['fq', plainFilter(query.keywords, 'keywords_facet')],
     ['fq', query.deleted ? 'deleted:true' : '-deleted'],
-    ...(SCOPE_FILTER[query.scope] ? [pair('fq', SCOPE_FILTER[query.scope])] : []),
-    ...(PARSER_TYPES[query.parserType] ? [pair('defType', PARSER_TYPES[query.parserType])] : []),
+    ...(scope ? [pair('fq', scope)] : []),
+    ...(parser ? [pair('defType', parser)] : []),
   ];
 }

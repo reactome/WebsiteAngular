@@ -20,6 +20,7 @@ import {
   targetsOf,
 } from './search-core.ts';
 import { PARSER_TYPES, SCOPE_FILTER, pair, searchParams, springFields } from './search-params.ts';
+import type { SearchQuery } from './search-params.ts';
 import { solr } from './solr.ts';
 import { javaError, javaJson, notFound, unexpectedFailure } from './answers.ts';
 import {
@@ -110,7 +111,8 @@ const QUERY_FILTERS: [list: string, tag: string, field: string, key: string][] =
  */
 export function facetQueryParams(query) {
   const params: [string, string][] = [];
-  if (SCOPE_FILTER[query.scope]) params.push(['fq', SCOPE_FILTER[query.scope]]);
+  const scope = SCOPE_FILTER[query.scope];
+  if (scope) params.push(['fq', scope]);
   for (const [list, tag, field] of QUERY_FILTERS) {
     const given = query[list];
     if (!given || given.length === 0) continue;
@@ -119,7 +121,8 @@ export function facetQueryParams(query) {
     params.push(['fq', kept.length ? `${tag}${field}:("${kept.join('" OR "')}")` : tag]);
   }
   params.push(['fq', query.deleted ? 'deleted:true' : '-deleted']);
-  if (PARSER_TYPES[query.parserType]) params.push(['defType', PARSER_TYPES[query.parserType]]);
+  const parser = PARSER_TYPES[query.parserType];
+  if (parser) params.push(['defType', parser]);
   params.push(['q', query.query]);
   return params;
 }
@@ -268,7 +271,7 @@ function plainEntries(answer: SolrAnswer | null | undefined): SearchResult {
  * grouped or not; an empty page names the targets and reports. Found
  * nowhere: the targets, the report, and Java's null.
  */
-async function searchFor(query, { rowCount, page, grouped, force, request, signal }) {
+async function searchFor(query: SearchQuery, { rowCount, page, grouped, force, request, signal }) {
   const facetsFor = async () => (query.query === '' ? null : facetsOf(query, force, signal));
   query.deleted = false;
   let mapping = await facetsFor();
