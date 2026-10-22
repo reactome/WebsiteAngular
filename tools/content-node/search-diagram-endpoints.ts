@@ -53,9 +53,9 @@ import { solr } from './solr.ts';
  * undefined when nothing is. Every id the graph does not have "cannot be
  * found", a blank one too, named as it was sent.
  */
-async function identifierProblems(diagram, object?) {
+async function identifierProblems(diagram: string, object?: string) {
   const report: string[] = [];
-  const found = async (id) => {
+  const found = async (id: string) => {
     // graph-core's trimId splits an id without ':' at '.', and Java's split
     // of dots alone is empty: indexing it is the 500 below. Then findById's
     // Long.parseLong refuses a dbId past a long.

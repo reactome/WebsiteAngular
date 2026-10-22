@@ -505,7 +505,7 @@ export function pathwayBrowserJson(node: PathwayBrowserNode) {
  * an id of dots, which trimId splits to nothing (Java's 500 with no
  * message), and a dbId past a long (Long.parseLong's). Undefined otherwise.
  */
-function containedEventsFailure(request: Request, raw) {
+function containedEventsFailure(request: Request, raw: string) {
   const trimmed = javaTrim(raw);
   if (/^\.+$/.test(trimmed)) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
   const tooLong = longPastRange([raw]);
@@ -519,7 +519,7 @@ function containedEventsFailure(request: Request, raw) {
  * with the hasEvent relationships of its paths and the pathway asked about,
  * mapped as SDN maps many records (mapResults). [] for none.
  */
-async function containedEvents(raw) {
+async function containedEvents(raw: string) {
   const id = await graphCoreId(raw);
   if (!id) return [];
   const rows = await read<{
@@ -645,7 +645,8 @@ async function lowerLevelPathways(request: Request, segment, { column, query }) 
   if (rows.length === 0) return missing();
   return {
     status: 200,
-    body: rows.map((row) => pathwayJson(row[column])),
+    // query returns `column`, so every row has it.
+    body: rows.map((row) => pathwayJson(row[column] as Props)),
     type: 'application/json',
   };
 }

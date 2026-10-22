@@ -51,7 +51,7 @@ import type { JsonWritten } from './answers.ts';
  * '.' to nothing, an ArrayIndexOutOfBounds) or a dbId past a long.
  * Undefined when Java would throw on none.
  */
-function findByIdFailure(ids) {
+function findByIdFailure(ids: string[]) {
   for (const raw of ids) {
     const trimmed = javaTrim(raw);
     if (/^\.+$/.test(trimmed)) return 'Index 0 out of bounds for length 0';
@@ -73,7 +73,7 @@ async function diseases() {
  * One object with everything it points to, as graph-core's
  * findById(id, OUTGOING) gives it; undefined when there is none.
  */
-async function findObject(raw) {
+async function findObject(raw: string) {
   const { where, params } = resolveId(raw);
   if (where === 'false') return undefined;
   const [found] = await read<{ labels: string[] }>(rootLabelsQuery(where), params);
@@ -129,7 +129,7 @@ export async function needsIncoming(raw) {
 }
 
 /** The fields schemaDataSet reads lazily, as graph-core's domain declares them. */
-const LAZY_FIELDS = {
+const LAZY_FIELDS: Record<'author' | 'affiliation', [direction: string, schemaClass: string]> = {
   author: ['INCOMING', 'Person'],
   affiliation: ['OUTGOING', 'Affiliation'],
 };
@@ -139,7 +139,7 @@ const LAZY_FIELDS = {
  * object with its relationship's stoichiometry, as [properties, n].
  * findCollectionByRelationship adds an object that many times.
  */
-async function lazyCollection(dbId, field) {
+async function lazyCollection(dbId, field: keyof typeof LAZY_FIELDS) {
   const [direction, schemaClass] = LAZY_FIELDS[field];
   const rows = await read<{ m: Props; n: number | null }>(
     lazyCollectionQuery(field, direction, schemaClass),
