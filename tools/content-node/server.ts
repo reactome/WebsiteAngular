@@ -110,7 +110,7 @@ export function failureAnswer(request: Request, path: string, failure) {
   const refused = failure.message.match(/integer, (\S+), is too large$/)?.[1];
   const idAt = path.split('/').indexOf('{id}');
   const candidates = [
-    ...(idAt < 0 ? [] : [javaTrim(pathId(rawSegment(request, idAt))).split('.')[0]]),
+    ...(idAt < 0 ? [] : [javaTrim(pathId(rawSegment(request, idAt))).split('.')[0] ?? '']),
     ...[...new URLSearchParams(String(request.originalUrl ?? '').split('?')[1] ?? '').values()],
   ];
   const named = candidates.find((text) => {

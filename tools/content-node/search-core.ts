@@ -85,7 +85,7 @@ export function solrStrings(doc: SolrDoc, field: string) {
 }
 
 /** String.isBlank: nothing but Character.isWhitespace. */
-function javaIsBlank(text) {
+function javaIsBlank(text: string) {
   return javaTrimAll(text) === '';
 }
 
@@ -105,7 +105,7 @@ function iconPhysicalEntities(doc) {
     const [stId, type, name, compartments] = fourParts(packed, '#', [0, 1, 2, 3]);
     const displayName = name + (javaIsBlank(compartments) ? '' : ` [${compartments}]`);
     const at = names.findIndex((other) => caseInsensitive(displayName, other) <= 0);
-    if (at > -1 && caseInsensitive(displayName, names[at]) === 0) continue;
+    if (at > -1 && caseInsensitive(displayName, names[at] as string) === 0) continue;
     const where = at === -1 ? set.length : at;
     // NON_EMPTY reaches into the bean: an empty part is left out.
     const parts = Object.entries({ stId, type, name, compartments, displayName });
@@ -455,7 +455,7 @@ export async function targetsOf(query, scope, signal) {
   }
   const docs = answer?.response?.docs ?? [];
   if (docs.length === 0) return [];
-  const same = (a, b) => caseInsensitive(a, b) === 0 && a.length === b.length;
+  const same = (a: string, b: string) => caseInsensitive(a, b) === 0 && a.length === b.length;
   const targets = new JavaHashMap<string, TargetResult>({ hash: targetHash });
   for (const term of javaWords(query)) {
     let target = false;
