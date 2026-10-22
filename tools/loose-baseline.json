@@ -9,7 +9,6 @@
   "tools/content-node/entities-endpoints.ts": 39,
   "tools/content-node/exporters-endpoints.ts": 52,
   "tools/content-node/interactors-endpoints.ts": 75,
-  "tools/content-node/java-hashmap.ts": 138,
   "tools/content-node/mapping-species-endpoints.ts": 41,
   "tools/content-node/objects.ts": 10,
   "tools/content-node/parameters.spec.ts": 2,

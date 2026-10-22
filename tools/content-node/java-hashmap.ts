@@ -21,10 +21,10 @@ interface HashNode {
   value: unknown;
   next: HashNode | null;
   tree?: boolean;
-  prev?: HashNode | null;
-  parent?: HashNode | null;
-  left?: HashNode | null;
-  right?: HashNode | null;
+  prev?: HashNode | null | undefined;
+  parent?: HashNode | null | undefined;
+  left?: HashNode | null | undefined;
+  right?: HashNode | null | undefined;
   red?: boolean;
 }
 
@@ -41,20 +41,21 @@ export class JavaHashMap<K = string, V = unknown> {
     this.#keyHash = hash;
   }
 
-  #hashOf(key) {
-    if (!this.#keyHash) return JavaHashMap.#hash(key);
+  #hashOf(key: K): number {
+    // Without a hash of its own, a key is a string: String.hashCode.
+    if (!this.#keyHash) return JavaHashMap.#hash(key as string);
     const h = this.#keyHash(key) | 0;
     return h ^ (h >>> 16);
   }
 
   /** String.hashCode, as an int. */
-  static stringHash(key) {
+  static stringHash(key: string): number {
     let h = 0;
     for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
     return h;
   }
 
-  static #hash(key) {
+  static #hash(key: string): number {
     let h = 0;
     for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
     return h ^ (h >>> 16);
@@ -101,7 +102,7 @@ export class JavaHashMap<K = string, V = unknown> {
    * a new root to the front, which is not ported, and unlinking alone
    * would leave the tree to give wrong answers later.
    */
-  delete(key) {
+  delete(key: K): boolean {
     const hash = this.#hashOf(key);
     const index = (this.#table.length - 1) & hash;
     if (this.#table[index]?.tree)
@@ -153,7 +154,7 @@ export class JavaHashMap<K = string, V = unknown> {
     }
   }
 
-  #treeifyBin(hash) {
+  #treeifyBin(hash: number) {
     const table = this.#table;
     if (table.length < 64) return this.#resize();
     const index = (table.length - 1) & hash;
@@ -173,7 +174,7 @@ export class JavaHashMap<K = string, V = unknown> {
   }
 
   /** TreeNode.split: the bucket's nodes, in order, to the two halves of a doubled table. */
-  #split(table, head, index, bit) {
+  #split(table: (HashNode | null)[], head: HashNode, index: number, bit: number) {
     const [lo, hi]: [HashNode[], HashNode[]] = [[], []];
     for (let node: HashNode | null = head; node; node = node.next)
       ((node.hash & bit) === 0 ? lo : hi).push(node);
@@ -192,23 +193,25 @@ export class JavaHashMap<K = string, V = unknown> {
           node.tree = false;
           node.parent = node.left = node.right = node.prev = null;
         }
-        table[at] = list[0];
+        table[at] = list[0] ?? null;
       } else {
-        table[at] = list[0];
-        if (other.length) this.#treeify(table, list[0]);
+        table[at] = list[0] ?? null;
+        if (other.length) this.#treeify(table, list[0] ?? null);
       }
     }
   }
 
-  static #direction(hash, key, node) {
+  static #direction(hash: number, key: unknown, node: HashNode): number {
     if (node.hash > hash) return -1;
     if (node.hash < hash) return 1;
-    return key < node.key ? -1 : key > node.key ? 1 : 0;
+    // A tree orders equal hashes by String.compareTo: the keys are strings.
+    const [a, b] = [key as string, node.key as string];
+    return a < b ? -1 : a > b ? 1 : 0;
   }
 
-  #treeify(table, head) {
+  #treeify(table: (HashNode | null)[], head: HashNode | null | undefined) {
     let root: HashNode | null = null;
-    for (let x: HashNode | null = head, next: HashNode | null; x; x = next) {
+    for (let x: HashNode | null = head ?? null, next: HashNode | null; x; x = next) {
       next = x.next;
       x.left = x.right = null;
       if (root === null) {
@@ -232,19 +235,22 @@ export class JavaHashMap<K = string, V = unknown> {
         p = child;
       }
     }
-    JavaHashMap.#moveRootToFront(table, root);
+    // Called on a bucket with nodes in it, so a root was made.
+    JavaHashMap.#moveRootToFront(table, root as HashNode);
   }
 
-  #putTreeValue(table, hash, key, value) {
-    const root = table[(table.length - 1) & hash];
-    for (let p = root; ;) {
+  #putTreeValue(table: (HashNode | null)[], hash: number, key: K, value: V): HashNode | null {
+    // A tree bin: its head is its root.
+    const root = table[(table.length - 1) & hash] as HashNode;
+    for (let p: HashNode = root; ;) {
       if (p.hash === hash && p.key === key) return p;
       const dir = JavaHashMap.#direction(hash, key, p);
       const xp = p;
-      p = dir <= 0 ? p.left : p.right;
-      if (p === null) {
+      // A tree node's children are set, to null at least, when it joins.
+      const child = (dir <= 0 ? p.left : p.right) ?? null;
+      if (child === null) {
         const xpn = xp.next;
-        const x = {
+        const x: HashNode = {
           hash,
           key,
           value,
@@ -263,12 +269,13 @@ export class JavaHashMap<K = string, V = unknown> {
         JavaHashMap.#moveRootToFront(table, JavaHashMap.#balanceInsertion(root, x));
         return null;
       }
+      p = child;
     }
   }
 
-  static #moveRootToFront(table, root) {
+  static #moveRootToFront(table: (HashNode | null)[], root: HashNode) {
     const index = (table.length - 1) & root.hash;
-    const first = table[index];
+    const first = table[index] ?? null;
     if (root === first) return;
     table[index] = root;
     const { prev: rp, next: rn } = root;
@@ -279,7 +286,7 @@ export class JavaHashMap<K = string, V = unknown> {
     root.prev = null;
   }
 
-  static #rotateLeft(root, p) {
+  static #rotateLeft(root: HashNode, p: HashNode): HashNode {
     const r = p.right;
     if (!r) return root;
     const rl = (p.right = r.left);
@@ -293,7 +300,7 @@ export class JavaHashMap<K = string, V = unknown> {
     return root;
   }
 
-  static #rotateRight(root, p) {
+  static #rotateRight(root: HashNode, p: HashNode): HashNode {
     const l = p.left;
     if (!l) return root;
     const lr = (p.left = l.right);
@@ -307,7 +314,7 @@ export class JavaHashMap<K = string, V = unknown> {
     return root;
   }
 
-  static #balanceInsertion(root, x) {
+  static #balanceInsertion(root: HashNode, x: HashNode): HashNode {
     x.red = true;
     for (;;) {
       const xp = x.parent;
@@ -330,7 +337,7 @@ export class JavaHashMap<K = string, V = unknown> {
       // x's parent is red and its uncle black: rotate x up to where its parent
       // was if it is the inner grandchild, then rotate the grandparent.
       const left = xp === xppl;
-      let parent = xp;
+      let parent: HashNode | null | undefined = xp;
       if (x === (left ? xp.right : xp.left)) {
         x = xp;
         root = left ? JavaHashMap.#rotateLeft(root, x) : JavaHashMap.#rotateRight(root, x);
