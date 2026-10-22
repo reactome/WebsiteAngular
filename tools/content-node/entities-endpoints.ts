@@ -19,7 +19,7 @@ import type { Failure } from './answers.ts';
  * entity's fields: a missing value is not left out but written as the text
  * "null", because NullValue.asString() returns that.
  */
-function asJavaString(value) {
+function asJavaString(value: unknown) {
   return value === null || value === undefined ? 'null' : String(value);
 }
 
@@ -29,7 +29,7 @@ function asJavaString(value) {
  * does not -- a difference in graph-core, kept, because it shows: for a Cell
  * the dbId form reaches its RNA markers and the stable-id form returns [].
  */
-export function participantsFrom(byDbId) {
+export function participantsFrom(byDbId: boolean) {
   return byDbId
     ? 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|RNAMarker|proteinMarker|regulator'
     : 'hasEvent|input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator';
@@ -40,24 +40,32 @@ export function participantsFrom(byDbId) {
  * class (a missing name or class left out -- asString(null) there), then its
  * reference entities in ParticipantRefEntities' field order.
  */
-export function participantJson(row) {
+/** A participant row, as the participants query returns it. */
+interface ParticipantRow {
+  peDbId: number;
+  displayName: string | null;
+  schemaClass: string | null;
+  refEntities: Props[] | null;
+}
+
+export function participantJson(row: ParticipantRow) {
   return {
     peDbId: row.peDbId,
     ...only(row, ['displayName', 'schemaClass']),
     refEntities: (row.refEntities ?? []).map((ref) => ({
-      dbId: ref.dbId,
-      stId: asJavaString(ref.stId),
-      identifier: asJavaString(ref.identifier),
-      schemaClass: asJavaString(ref.schemaClass),
-      displayName: asJavaString(ref.displayName),
-      icon: asJavaString(ref.icon),
-      url: asJavaString(ref.url),
+      dbId: ref['dbId'],
+      stId: asJavaString(ref['stId']),
+      identifier: asJavaString(ref['identifier']),
+      schemaClass: asJavaString(ref['schemaClass']),
+      displayName: asJavaString(ref['displayName']),
+      icon: asJavaString(ref['icon']),
+      url: asJavaString(ref['url']),
     })),
   };
 }
 
 /** EntityWithAccessionedSequence.getClassName: by the reference type. */
-const EWAS_CLASS_NAMES = {
+const EWAS_CLASS_NAMES: Record<string, string> = {
   ReferenceGeneProduct: 'Protein',
   ReferenceDNASequence: 'DNA Sequence',
   ReferenceRNASequence: 'RNA Sequence',
@@ -90,7 +98,7 @@ const PHYSICAL_ENTITY_FIELDS = [
  * writes an overridden className before inDisease; DatabaseObject's own -- the
  * simple class name -- comes last.
  */
-const PHYSICAL_ENTITY_CLASS_NAMES = {
+const PHYSICAL_ENTITY_CLASS_NAMES: Record<string, string> = {
   GenomeEncodedEntity: 'Genes and Transcripts',
   SimpleEntity: 'Chemical Compound',
   CandidateSet: 'Set',
@@ -114,19 +122,17 @@ const PHYSICAL_ENTITY_CLASS_NAMES = {
  *
  * `isInDisease` is written as `inDisease`; `oldStId` never (@JsonIgnore).
  */
-export function physicalEntityJson(node) {
+export function physicalEntityJson(node: Props) {
   const head = only(node, PHYSICAL_ENTITY_FIELDS);
-  const tail = only({ inDisease: node.isInDisease, schemaClass: node.schemaClass }, [
-    'inDisease',
-    'schemaClass',
-  ]);
-  if (node.schemaClass === 'EntityWithAccessionedSequence') {
-    const className = EWAS_CLASS_NAMES[node.referenceType] ?? 'Genes and Transcripts';
+  const schemaClass = node['schemaClass'] as string | undefined;
+  const tail = only({ inDisease: node['isInDisease'], schemaClass }, ['inDisease', 'schemaClass']);
+  if (schemaClass === 'EntityWithAccessionedSequence') {
+    const className = EWAS_CLASS_NAMES[node['referenceType'] as string] ?? 'Genes and Transcripts';
     return { ...head, className, ...tail };
   }
-  const className = PHYSICAL_ENTITY_CLASS_NAMES[node.schemaClass];
+  const className = PHYSICAL_ENTITY_CLASS_NAMES[schemaClass as string];
   if (className) return { ...head, className, ...tail };
-  return { ...head, ...tail, ...(node.schemaClass && { className: node.schemaClass }) };
+  return { ...head, ...tail, ...(schemaClass && { className: schemaClass }) };
 }
 
 export const entitiesEndpoints: Endpoint[] = [
@@ -406,7 +412,7 @@ export const entitiesEndpoints: Endpoint[] = [
     handler: async (request) => {
       const resource = pathId(rawSegment(request, 4));
       const identifier = pathId(rawSegment(request, 5));
-      let rows;
+      let rows: { c: Props }[];
       try {
         rows = await read<{ c: Props }>(
           'MATCH (rd:ReferenceDatabase)<-[:referenceDatabase]-(n{identifier:$identifier}) WHERE rd.displayName =~ $resource WITH DISTINCT n MATCH (n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity) WITH DISTINCT pe MATCH (c:Complex)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe) RETURN DISTINCT c',
