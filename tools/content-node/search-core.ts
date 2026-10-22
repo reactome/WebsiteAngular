@@ -32,7 +32,11 @@ import { sendReport } from './report.ts';
  * Java's GlobalExceptionHandler 500, whose message repeats the parameters
  * sent to Solr -- this one says only what failed.
  */
-export async function fromSolr(request: Request, path, work) {
+export async function fromSolr<T>(
+  request: Request,
+  path: string,
+  work: (signal: AbortSignal) => Promise<T>
+) {
   const gone = new AbortController();
   const { res } = request;
   res?.on('close', () => {
@@ -69,7 +73,7 @@ export async function fromSolr(request: Request, path, work) {
 /** search-core's FacetContainer: a facet's name, absent for an unnamed one, and its count. */
 export type FacetContainer = { name?: string; count: number };
 
-export function facetContainer(name, count): FacetContainer {
+export function facetContainer(name: string | null, count: number): FacetContainer {
   return name === null || name === '' ? { count } : { name, count };
 }
 
@@ -98,7 +102,7 @@ function javaIsBlank(text: string) {
  * as compareToIgnoreCase does, and so one of each such name. Fewer than four
  * parts is Java's ArrayIndexOutOfBoundsException, a failure here too.
  */
-function iconPhysicalEntities(doc) {
+function iconPhysicalEntities(doc: SolrDoc) {
   const set: Record<string, string>[] = [];
   // Each entity's display name, kept apart: NON_EMPTY may leave it out of
   // what is written, but the TreeSet still orders by it.
@@ -118,8 +122,9 @@ function iconPhysicalEntities(doc) {
 }
 
 /** selectRightReferenceIdentifier: the first identifier with no ':', else the first. */
-function referenceIdentifier(doc) {
-  if (doc.referenceIdentifiers === undefined || doc.referenceIdentifiers === null) return null;
+function referenceIdentifier(doc: SolrDoc) {
+  if (doc['referenceIdentifiers'] === undefined || doc['referenceIdentifiers'] === null)
+    return null;
   const values = solrStrings(doc, 'referenceIdentifiers');
   return values.find((value) => !value.includes(':')) ?? values[0] ?? null;
 }
@@ -305,7 +310,7 @@ export function searchEntry(
   });
   entry.replacementStIds = solrStrings(doc, 'replacementStIds');
 
-  const empty = (value) =>
+  const empty = (value: unknown) =>
     value === undefined ||
     value === null ||
     value === '' ||
@@ -358,7 +363,7 @@ export const OCCURRENCE_READS = [0, 2, 3, 1];
  */
 export function rawOccurrence(raw: string) {
   const line = fourParts(raw, ':', OCCURRENCE_READS);
-  const set = (text) => {
+  const set = (text: string) => {
     if (text === '#') return undefined;
     const map = new JavaHashMap<string, boolean>();
     for (const item of javaSplit(text, ',')) map.set(item, true);
@@ -384,7 +389,7 @@ export function rawOccurrence(raw: string) {
  * the single empty value, which is the default): Java's code then unboxes
  * it, its NullPointerException.
  */
-export function blankBoolean(values, read) {
+export function blankBoolean(values: string[], read: { value?: unknown }) {
   return (
     read.value === undefined && values.length > 0 && !(values.length === 1 && values[0] === '')
   );
@@ -395,7 +400,7 @@ export function blankBoolean(values, read) {
  * X-Forwarded-For as nginx sends it to Tomcat and here alike, else the
  * connection's -- and the release, for the report service.
  */
-export async function reportInformation(request) {
+export async function reportInformation(request: Request) {
   const forwarded = request.get?.('x-forwarded-for');
   const address = String(request.socket?.remoteAddress ?? '').replace(/^::ffff:/, '');
   // The release from the cached version, which a report can do without:
@@ -418,7 +423,7 @@ export async function reportInformation(request) {
 const targetHash = (term: string) => 31 + JavaHashMap.stringHash(term);
 
 /** Java's String.split(regex) on runs of its whitespace, \s: leading runs leave an empty term. */
-function javaWords(text) {
+function javaWords(text: string) {
   const parts = text.split(/[ \t\n\v\f\r]+/);
   if (parts.length === 1) return parts;
   while (parts.length > 0 && parts[parts.length - 1] === '') parts.pop();
@@ -442,14 +447,20 @@ export interface TargetResult {
  * core has no field for: Solr refuses it, Java swallows the error, and only
  * the BOTH scope finds any.
  */
-export async function targetsOf(query, scope, signal) {
-  let answer;
+export async function targetsOf(
+  query: string,
+  scope: string | null,
+  signal: AbortSignal | undefined
+) {
+  let answer: SolrAnswer | null;
+  // Neither table has a key for an absent scope.
+  const filter = SCOPE_FILTER[scope ?? ''];
   try {
-    answer = await solr(
-      '/search',
-      [...(SCOPE_FILTER[scope] ? [pair('fq', SCOPE_FILTER[scope])] : []), ['q', query]],
-      { signal, core: 'target', method: 'GET' }
-    );
+    answer = await solr('/search', [...(filter ? [pair('fq', filter)] : []), ['q', query]], {
+      signal,
+      core: 'target',
+      method: 'GET',
+    });
   } catch (caught) {
     const failure = caught as Failure;
     if (failure.busy || signal?.aborted) throw failure;
@@ -467,8 +478,8 @@ export async function targetsOf(query, scope, signal) {
       // getFieldValues(accessions).stream() and identifier.equalsIgnoreCase:
       // a document without either is Java's NullPointerException.
       if (
-        doc.accessions === undefined ||
-        doc.accessions === null ||
+        doc['accessions'] === undefined ||
+        doc['accessions'] === null ||
         typeof solrValue(doc, 'identifier') !== 'string'
       )
         throw Object.assign(new Error('a target without an identifier or accessions'), {

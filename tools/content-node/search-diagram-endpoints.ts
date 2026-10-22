@@ -102,7 +102,8 @@ function typeFacets(answer: SolrAnswer | null | undefined) {
   const flat = answer?.facet_counts?.facet_fields?.['type_facet'] ?? [];
   const facets: FacetContainer[] = [];
   for (let at = 0; at + 1 < flat.length; at += 2)
-    facets.push(facetContainer(flat[at], flat[at + 1]));
+    // Solr's flat list: a name, then its count.
+    facets.push(facetContainer(flat[at] as string | null, flat[at + 1] as number));
   return facets;
 }
 
