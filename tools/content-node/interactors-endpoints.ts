@@ -72,12 +72,15 @@ type InteractionWithEntitiesRow = {
   score: number | null;
   accession: string;
   accessionURL: string | null;
-  physicalEntity: {
-    dbId: number | null;
-    stId: string | null;
-    displayName: string | null;
-    schemaClass: string | null;
-  }[];
+  // COLLECT gives [] for none; read with a guard all the same.
+  physicalEntity:
+    | {
+        dbId: number | null;
+        stId: string | null;
+        displayName: string | null;
+        schemaClass: string | null;
+      }[]
+    | null;
   evidences: number | null;
   url: string | null;
 };
@@ -102,7 +105,10 @@ function interactorPaging(request: Request) {
  * pageSize: it reads page first, and pageSize only when page is not -1. It
  * runs once per accession, so a request with none never fails here.
  */
-export function pagingUnboxFails({ page, pageSize }) {
+/** A page and its size, as Spring binds them: null when blank. */
+type Paging = { page: number | null; pageSize: number | null };
+
+export function pagingUnboxFails({ page, pageSize }: Paging) {
   return page === null || (page !== -1 && pageSize === null);
 }
 
@@ -114,7 +120,7 @@ export function pagingUnboxFails({ page, pageSize }) {
  * homodimer). A negative SKIP or LIMIT is Java's 500 with Neo4j's message,
  * returned as `answer`.
  */
-async function interactionsOf(request: Request, acc, { page, pageSize }) {
+async function interactionsOf(request: Request, acc: string, { page, pageSize }: Paging) {
   if (pagingUnboxFails({ page, pageSize })) return { answer: unexpected(request) };
   const paged = page !== -1 && pageSize !== -1;
   try {
@@ -126,7 +132,11 @@ async function interactionsOf(request: Request, acc, { page, pageSize }) {
               [x IN res | {labels: labels(x), identifier: x.identifier,
                            variantIdentifier: x.variantIdentifier, url: x.url,
                            geneName: x.geneName}] AS partners`,
-      { acc, ...(paged && { page: neo4j.int(page), pageSize: neo4j.int(pageSize) }) }
+      // Paged, both are numbers: a null one failed above.
+      {
+        acc,
+        ...(paged && { page: neo4j.int(page as number), pageSize: neo4j.int(pageSize as number) }),
+      }
     );
   } catch (failure) {
     const message = neo4jFailureMessage(failure);
@@ -140,8 +150,8 @@ async function interactionsOf(request: Request, acc, { page, pageSize }) {
  * variant identifier if it is an isoform with one, else its identifier; its
  * first gene name as the alias; the evidence count, score and URLs.
  */
-export function interactorJson(row) {
-  const [partner = {}] = row.partners;
+export function interactorJson(row: InteractionRow) {
+  const [partner = {} as Partial<InteractionRow['partners'][number]>] = row.partners;
   const isoform = partner.labels?.includes('ReferenceIsoform');
   const acc = isoform && partner.variantIdentifier ? partner.variantIdentifier : partner.identifier;
   const alias = partner.labels?.includes('ReferenceSequence') ? partner.geneName?.[0] : undefined;
@@ -160,7 +170,7 @@ export function interactorJson(row) {
  * The content service's Interactors: `static`, and an entry for each
  * accession -- its interactors' count, and the list, left out when empty.
  */
-export function interactorsJson(entities) {
+export function interactorsJson(entities: [acc: string, rows: InteractionRow[]][]) {
   const written = entities.map(([acc, rows]) =>
     nonEmptyJson([
       ['acc', acc],
@@ -178,9 +188,9 @@ export function interactorsJson(entities) {
  * geneName is an empty list. A missing dbId, score or evidenceCount fails
  * asLong() or asDouble(): undefined, the service's failure.
  */
-export function customInteractionJson(row) {
+export function customInteractionJson(row: CustomInteractionRow) {
   if ([row.dbId, row.score, row.evidenceCount].some((value) => value === null)) return undefined;
-  const text = (value) => value ?? 'null';
+  const text = (value: string | null) => value ?? 'null';
   return nonEmptyJson([
     ['dbId', row.dbId],
     ['identifier', text(row.identifier)],
@@ -204,7 +214,7 @@ export function customInteractionJson(row) {
  * Each entity is a SimpleDatabaseObject built from a map: stId asString(null),
  * displayName and schemaClass asString(), which writes a missing one "null".
  */
-export function interactionWithEntitiesJson(row) {
+export function interactionWithEntitiesJson(row: InteractionWithEntitiesRow) {
   const entities = (row.physicalEntity ?? [])
     .map((pe) => ({ ...pe, displayName: pe.displayName ?? 'null' }))
     // A graph displayName, or 'null' (above): a string either way.
@@ -235,7 +245,7 @@ export function interactionWithEntitiesJson(row) {
  * written in that map's order as Interactors of InteractorEntity (acc,
  * count), each with a count above nothing.
  */
-async function staticSummary(accs) {
+async function staticSummary(accs: string[]) {
   const rows = await read<{ s: string; t: number }>(
     `MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction)
      WHERE t.variantIdentifier IN $accs OR (t.variantIdentifier IS NULL AND t.identifier IN $accs)
@@ -452,9 +462,9 @@ export const interactorsEndpoints: Endpoint[] = [
           'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsDetailsByAccs(java.lang.Integer,java.lang.Integer,java.lang.String)'
         );
       const proteins = plainText(request.body, contentType);
-      const accs = new JavaHashMap();
+      const accs = new JavaHashMap<string, boolean>();
       for (const acc of plainIds(proteins)) accs.set(acc, true);
-      const entities: [string, unknown[]][] = [];
+      const entities: [string, InteractionRow[]][] = [];
       for (const acc of accs.keys()) {
         const rows = await interactionsOf(request, acc, window);
         if ('answer' in rows) return rows.answer;
