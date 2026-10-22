@@ -253,7 +253,7 @@ function javaAsString(value) {
  * Spring translates it, and a value that is not text the driver's
  * Uncoercible; both returned here as the answer to give.
  */
-async function crossReferenceResults(request, identifier, dbFilter) {
+async function crossReferenceResults(request: Request, identifier, dbFilter) {
   try {
     const rows = await read<{
       reference: string | null;

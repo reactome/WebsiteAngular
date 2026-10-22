@@ -32,7 +32,7 @@ const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
  * gif, whose renderer draws the expression animation, not a still.
  */
 export function figureProblem(values, ext) {
-  const fail = (message) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
+  const fail = (message: string) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
   if (ext === 'pdf') return fail('Unsupported file extension pdf');
   if (values.quality === null) return 'unexpected';
   if (values.quality < 1 || values.quality > 10) return fail('quality must be in the range [1-10]');
@@ -298,7 +298,7 @@ const FIGURE_TYPE = {
  * full queue -- is passed on with its Retry-After; any other failure is a 500
  * naming it, and a render service that cannot be reached is a 503.
  */
-async function renderFigure(request, url, ext) {
+async function renderFigure(request: Request, url: string | URL, ext) {
   let response;
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
@@ -325,7 +325,7 @@ async function renderFigure(request, url, ext) {
   if (!response.ok) {
     const reason = await response
       .json()
-      .then((body) => body.error)
+      .then((body: { error?: string }) => body.error ?? null)
       .catch(() => `the figure service answered ${response.status}`);
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', reason);
   }

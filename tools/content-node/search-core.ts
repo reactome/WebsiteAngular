@@ -6,6 +6,7 @@
  * not-found report of a search that found nothing. Shared by the search
  * and diagram-search families. Moved unchanged from service.ts.
  */
+import type { Request } from './endpoint.ts';
 import type { Failure, Written } from './answers.ts';
 import { javaError } from './answers.ts';
 import type { SolrAnswer, SolrDoc, SolrValue } from './solr.ts';
@@ -31,10 +32,11 @@ import { sendReport } from './report.ts';
  * Java's GlobalExceptionHandler 500, whose message repeats the parameters
  * sent to Solr -- this one says only what failed.
  */
-export async function fromSolr(request, path, work) {
+export async function fromSolr(request: Request, path, work) {
   const gone = new AbortController();
-  request.res?.on('close', () => {
-    if (!request.res.writableFinished) gone.abort();
+  const { res } = request;
+  res?.on('close', () => {
+    if (!res.writableFinished) gone.abort();
   });
   try {
     return await work(gone.signal);

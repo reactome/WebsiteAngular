@@ -4,7 +4,7 @@
  * pathways an object is in, with the helpers only they use. Moved unchanged
  * from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import type { SolrAnswer, SolrGrouping } from './solr.ts';
 import type { Written } from './answers.ts';
 import type { FacetContainer, TargetResult } from './search-core.ts';
@@ -363,7 +363,7 @@ async function searchFor(query, { rowCount, page, grouped, force, request, signa
 }
 
 /** The controller's answer to a search: the GroupedResult, or the 404 with any targets. */
-function searchAnswer(request, query, result) {
+function searchAnswer(request: Request, query, result) {
   if (result?.results?.length) {
     const { targetResults, ...written } = result;
     // NON_EMPTY, in a 200: a target's null or empty term or resource is

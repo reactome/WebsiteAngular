@@ -4,6 +4,7 @@
  * id, dbId), the species filter, the lazy loads behind a getter, and the
  * attribute answers built on them. Moved unchanged from service.ts.
  */
+import type { Request } from './endpoint.ts';
 import type { GraphNode, Properties } from './graph.ts';
 import { asciiDigits, databaseObjectSet, javaNumeric, javaTrim, present } from './java-text.ts';
 import { notFound, only, unexpected } from './answers.ts';
@@ -164,7 +165,7 @@ export function lazyCollectionQuery(type, direction, schemaClass) {
  * naming the attribute and the object's class when there is no getter or it
  * returns nothing.
  */
-export async function attributeAnswer(request, object, attribute) {
+export async function attributeAnswer(request: Request, object, attribute) {
   const answer = await attributeOf(request, object, attribute);
   if ('status' in answer) return answer;
   return { status: 200, body: answer.text, type: 'text/plain;charset=UTF-8' };
@@ -176,7 +177,12 @@ export async function attributeAnswer(request, object, attribute) {
  * when there is no getter or it returns nothing, its 500 when the getter
  * fails. `outgoingLoaded` as attributeValue takes it.
  */
-export async function attributeOf(request, object, attribute, { outgoingLoaded = true } = {}) {
+export async function attributeOf(
+  request: Request,
+  object,
+  attribute,
+  { outgoingLoaded = true } = {}
+) {
   const missing = () =>
     notFound(
       request,

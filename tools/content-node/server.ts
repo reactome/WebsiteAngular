@@ -33,7 +33,7 @@ import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java
 import { pathId, rawSegment } from './spring.ts';
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
-import type { Request } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import { databaseVersion } from './release.ts';
 import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
@@ -427,7 +427,7 @@ export function app() {
   // trace, NODE_ENV being unset -- where Java decodes it to U+FFFD and answers
   // as usual. Handlers read the raw path (rawSegment), so the endpoint is run
   // regardless.
-  server.use((failure, request, response, next) => {
+  server.use((failure, request: express.Request, response, next) => {
     if (!(failure instanceof URIError) || response.headersSent) return next(failure);
     // The path as routing saw it, less a trailing slash, which Express
     // ignores too.
@@ -453,12 +453,19 @@ export function app() {
 
   // Anything else that reaches here is this service's failure: Java's
   // envelope, never Express's page with a stack trace in it.
-  server.use((failure, request, response: express.Response, next: (failure: unknown) => void) => {
-    // Begun already: Express ends the connection, as it must.
-    if (response.headersSent) return next(failure);
-    console.error(`${request.path}: ${failure?.message}`);
-    writeResult(response, unexpected(request));
-  });
+  server.use(
+    (
+      failure,
+      request: express.Request,
+      response: express.Response,
+      next: (failure: unknown) => void
+    ) => {
+      // Begun already: Express ends the connection, as it must.
+      if (response.headersSent) return next(failure);
+      console.error(`${request.path}: ${failure?.message}`);
+      writeResult(response, unexpected(request));
+    }
+  );
 
   return server;
 }
@@ -475,7 +482,7 @@ const DEEP = deepShare(deepLimit(settings.deepQueryLimit()));
  * One endpoint's answer to one request: its handler's result, or what a
  * failure means in Java's terms, never a stack trace.
  */
-async function answerWith(endpoint, request, response) {
+async function answerWith(endpoint: Endpoint, request: express.Request, response) {
   if (endpoint.deep) {
     if (!DEEP.enter())
       return writeResult(response, {
@@ -491,7 +498,7 @@ async function answerWith(endpoint, request, response) {
   return answer(endpoint, request, response);
 }
 
-export async function answer(endpoint, request, response) {
+export async function answer(endpoint: Endpoint, request: express.Request, response) {
   // The answer's caching label, from the request exactly as it was sent:
   // request.url has been rewritten for routing by now (spec 011).
   const write = (result) => {
@@ -500,7 +507,7 @@ export async function answer(endpoint, request, response) {
       label({
         method: request.method,
         endpoint: endpoint.path,
-        originalUrl: String(request.originalUrl ?? ''),
+        originalUrl: request.originalUrl,
         status: result.status,
       })
     );

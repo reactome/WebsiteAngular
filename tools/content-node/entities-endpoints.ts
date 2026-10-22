@@ -370,7 +370,8 @@ export const entitiesEndpoints: Endpoint[] = [
           request,
           500,
           'INTERNAL_SERVER_ERROR',
-          neo4jFailureMessage(failure, [failure.code])
+          // Its own code is in the list, so this is a message.
+          neo4jFailureMessage(failure, [failure.code]) as string
         );
       }
       const noStructures = exclude.value ? ' WHERE NOT (pe:Complex) AND NOT(pe:EntitySet)' : '';
