@@ -166,8 +166,8 @@ It must not mix in logic edits.
 
 ## Phase 7: Polish
 
-- [x] T032 [P] Update `CLAUDE.md`'s content-service section and `tools/render/README.md` for the new modules, the registry and Express 5. Name the boundary rule (families import only shared modules).
-- [x] T033 [P] Record in spec 013's `tasks.md` (T021/T022) that the content service's remaining typing proceeds per family module.
+- [x] T032 [P] Update `CLAUDE.md`'s content-service section and `tools/render/README.md` for the new modules, the registry and Express 5. Name the boundary rule (families import only shared modules). — #593
+- [x] T033 [P] Record in spec 013's `tasks.md` (T021/T022) that the content service's remaining typing proceeds per family module. — #593
 
 ---
 
