@@ -31,11 +31,13 @@ const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
  * ImageIO writes nothing and it answers an empty 200; this names it -- and
  * gif, whose renderer draws the expression animation, not a still.
  */
-export function figureProblem(values, ext) {
+export function figureProblem(values: ExportValues, ext: string) {
   const fail = (message: string) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
   if (ext === 'pdf') return fail('Unsupported file extension pdf');
   if (values.quality === null) return 'unexpected';
-  if (values.quality < 1 || values.quality > 10) return fail('quality must be in the range [1-10]');
+  // Read with its default, so a number here.
+  const quality = values.quality as number;
+  if (quality < 1 || quality > 10) return fail('quality must be in the range [1-10]');
   if (values.ehld === null) return 'unexpected';
   if (!EXPORT_FORMATS.includes(ext)) return fail(`Unsupported file extension ${ext}`);
   if (ext === 'gif')
@@ -49,7 +51,7 @@ export function figureProblem(values, ext) {
 }
 
 /** Whether a pathway is drawn as its illustration (hasEHLD), as the render page draws it. */
-async function hasIllustration(stId) {
+async function hasIllustration(stId: string) {
   const [row] = await read<{ ehld: boolean | null }>(
     'MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld',
     { stId }
@@ -79,7 +81,14 @@ type ExportField =
   | [kind: 'list', name: string];
 
 /** The exporters' parameters, converted, by name. */
-type ExportValues = { sel?: string[]; token?: string | null; [name: string]: unknown };
+type ExportValues = {
+  sel?: string[];
+  token?: string | null;
+  quality?: number | null;
+  ehld?: boolean | null;
+  margin?: number | null;
+  [name: string]: unknown;
+};
 
 /**
  * diagramImage's parameters, converted in its order as Spring converts them,
@@ -92,7 +101,7 @@ function exporterParameters(
   fields: ExportField[] = DIAGRAM_EXPORT
 ): { answer: ReturnType<typeof javaError> } | { values: ExportValues } {
   const values: ExportValues = {};
-  const integer = (name: string, fallback) => {
+  const integer = (name: string, fallback: number | null) => {
     const read = springIntegerWithDefault(queryValues(request, name), fallback);
     if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
     values[name] = read.value;
@@ -100,7 +109,7 @@ function exporterParameters(
   };
   // Absent or a single empty value is the default; a blank one converts to
   // null, which the controller then passes on as it is.
-  const boolean = (name: string, fallback) => {
+  const boolean = (name: string, fallback: boolean) => {
     const given = queryValues(request, name);
     if (given.length === 0 || (given.length === 1 && given[0] === '')) {
       values[name] = fallback;
@@ -112,7 +121,7 @@ function exporterParameters(
     return undefined;
   };
   // A String: repeated values arrive joined by ',', as Spring joins a String[].
-  const text = (name: string, fallback) => {
+  const text = (name: string, fallback: string | null) => {
     const given = queryValues(request, name);
     values[name] =
       given.length > 1
@@ -135,7 +144,7 @@ function exporterParameters(
   const read = {
     integer,
     boolean,
-    text: (name, fallback) => (text(name, fallback), undefined),
+    text: (name: string, fallback: string | null) => (text(name, fallback), undefined),
     list,
   };
   for (const [kind, name, fallback] of fields) {
@@ -188,7 +197,7 @@ const OVERVIEW_EXPORT: ExportField[] = [
  * the render service does not draw for it yet, as `name=value`: the species
  * overview draws an analysis (`token`) and nothing else asked of it.
  */
-function overviewNotDrawnYet(values) {
+function overviewNotDrawnYet(values: ExportValues) {
   const defaults = {
     flgInteractors: true,
     title: true,
@@ -201,17 +210,16 @@ function overviewNotDrawnYet(values) {
       ([name, fallback]) =>
         values[name] !== fallback && !(name === 'margin' && values.margin === null)
     )
-    .map(([name]) => `${name}=${values[name] ?? ''}`);
-  if (
-    values.quality !== null &&
-    values.quality !== 5 &&
-    values.quality >= 1 &&
-    values.quality <= 10
-  )
-    named.push(`quality=${values.quality}`);
+    .map(([name]) => `${name}=${String(values[name] ?? '')}`);
+  // Read with its default, so a number or null here.
+  const quality = values.quality as number | null;
+  if (quality !== null && quality !== 5 && quality >= 1 && quality <= 10)
+    named.push(`quality=${quality}`);
   for (const name of ['flg', 'diagramProfile', 'expColumn'])
-    if (values[name] !== null && values[name] !== undefined) named.push(`${name}=${values[name]}`);
-  if (values.sel.length) named.push(`sel=${values.sel.join(',')}`);
+    if (values[name] !== null && values[name] !== undefined)
+      named.push(`${name}=${String(values[name])}`);
+  const sel = values.sel as string[];
+  if (sel.length) named.push(`sel=${sel.join(',')}`);
   return named;
 }
 
@@ -220,7 +228,7 @@ function overviewNotDrawnYet(values) {
  * view, the species by taxId, with an analysis when one is asked for.
  */
 function overviewExportRequest(
-  taxId,
+  taxId: string | number,
   { ext, token }: { ext: string; token?: string | null | undefined }
 ) {
   const format = ext === 'jpg' ? 'jpeg' : ext;
@@ -234,7 +242,7 @@ function overviewExportRequest(
  * The parameters given at something other than their default that the render
  * service does not draw yet (#273, step 4), as `name=value`.
  */
-function notDrawnYet(values) {
+function notDrawnYet(values: ExportValues) {
   const defaults = {
     quality: 5,
     flgInteractors: true,
@@ -247,18 +255,19 @@ function notDrawnYet(values) {
   };
   // Left for after the resolution, where Java fails on them (figureProblem):
   // a quality outside 1-10, and a blank quality or ehld.
-  const later = (name) =>
-    (name === 'quality' &&
-      (values.quality === null || values.quality < 1 || values.quality > 10)) ||
+  const quality = values.quality as number | null;
+  const later = (name: string) =>
+    (name === 'quality' && (quality === null || quality < 1 || quality > 10)) ||
     (name === 'ehld' && values.ehld === null) ||
     // RasterArgs.setMargin(null) keeps its 15: a blank margin is the default.
     (name === 'margin' && values.margin === null);
   const named = Object.entries(defaults)
     .filter(([name, fallback]) => !later(name) && values[name] !== fallback)
-    .map(([name]) => `${name}=${values[name] ?? ''}`);
+    .map(([name]) => `${name}=${String(values[name] ?? '')}`);
   // Opt-in: anything given is something not drawn.
   for (const name of ['flg', 'expColumn'])
-    if (values[name] !== null && values[name] !== undefined) named.push(`${name}=${values[name]}`);
+    if (values[name] !== null && values[name] !== undefined)
+      named.push(`${name}=${String(values[name])}`);
   return named;
 }
 
@@ -269,7 +278,7 @@ function notDrawnYet(values) {
  * Java draws a selection. jpg is jpeg to the render service.
  */
 export function diagramExportRequest(
-  result,
+  result: { diagramStId: string; events?: string[] | null },
   {
     ext,
     sel,
@@ -286,7 +295,7 @@ export function diagramExportRequest(
 
 /** The content type Java sends with each format. */
 // UTF-8 on every type, images included: the service forces the encoding.
-const FIGURE_TYPE = {
+const FIGURE_TYPE: Record<string, string> = {
   svg: 'image/svg+xml;charset=UTF-8',
   png: 'image/png;charset=UTF-8',
   jpg: 'image/jpg;charset=UTF-8',
@@ -298,8 +307,8 @@ const FIGURE_TYPE = {
  * full queue -- is passed on with its Retry-After; any other failure is a 500
  * naming it, and a render service that cannot be reached is a 503.
  */
-async function renderFigure(request: Request, url: string | URL, ext) {
-  let response;
+async function renderFigure(request: Request, url: string | URL, ext: string) {
+  let response: Response;
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
   } catch (caught) {
@@ -332,7 +341,8 @@ async function renderFigure(request: Request, url: string | URL, ext) {
   return {
     status: 200,
     body: Buffer.from(await response.arrayBuffer()),
-    type: FIGURE_TYPE[ext],
+    // A format checked before the render was asked for.
+    type: FIGURE_TYPE[ext] as string,
   };
 }
 
