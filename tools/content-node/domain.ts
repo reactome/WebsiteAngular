@@ -444,7 +444,8 @@ function map(state: MapState, node: GraphNode, target: string | undefined): Enti
     const [name, , direction, target, collection, relationClass] = field;
     if (frame.next === matching.length) {
       frame.entity.fields[name] = frame.merging
-        ? merged(frame.entity.fields[name], frame.found, collection, relationClass)
+        ? // Merging only a field that already holds a list (above).
+          merged(frame.entity.fields[name] as unknown[], frame.found, collection, relationClass)
         : collect(frame.found, collection, relationClass);
       frame.matching = undefined;
       frame.at += 1;
@@ -487,16 +488,24 @@ function map(state: MapState, node: GraphNode, target: string | undefined): Enti
  * dbId -- and put in a new collection of the same kind in that map's order
  * (DefaultNeo4jEntityConverter.mergeCollections).
  */
-function merged(existing, provided, collection, relationClass) {
-  const longHash = (id) => {
-    const big = BigInt.asUintN(64, BigInt(id));
+function merged(
+  existing: unknown[],
+  provided: unknown[],
+  collection: string,
+  relationClass: string | null | undefined
+) {
+  const longHash = (id: unknown) => {
+    const big = BigInt.asUintN(64, BigInt(id as number | string));
     return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
   };
   // Keyed by relationship id or dbId, hashed as a Long.
   const map = new JavaHashMap<unknown, boolean>({ hash: longHash });
-  const values = new Map();
+  const values = new Map<unknown, unknown>();
   for (const item of [...existing, ...provided]) {
-    const id = relationClass ? item.relationshipId : Number(item.properties.dbId);
+    // Relations when the field has a relation class, objects otherwise.
+    const id = relationClass
+      ? (item as Relation).relationshipId
+      : Number((item as Entity).properties['dbId']);
     map.set(id, true);
     values.set(id, item);
   }
@@ -541,9 +550,9 @@ function matchingFor(
  * TopLevelPathway inside its UpdateTracker and as a Pathway on its own.
  * Failing a full match, the class missing the fewest of its labels.
  */
-function classFor(target, labels: string[]) {
+function classFor(target: string, labels: string[]) {
   if (!SNAPSHOT().interfaces.has(target)) return schemaClassOf(labels);
-  let best;
+  let best: string | undefined;
   let fewest = Infinity;
   for (const [name, staticLabels] of SNAPSHOT().store) {
     if (labels.every((label) => staticLabels.includes(label))) return name;
@@ -554,18 +563,23 @@ function classFor(target, labels: string[]) {
 }
 
 /** The field's collection as SDN creates it: ArrayList, LinkedHashSet, TreeSet. */
-function collect(found, collection, relationClass) {
+function collect(found: unknown[], collection: string, relationClass: string | null | undefined) {
   // A single value is the first found (createInstanceOfRelationships: value.get(0)).
   if (collection === '') return found.length ? found[0] : undefined;
   if (collection === 'List') return found;
   // Has.equals compares elements; DatabaseObject.equals, the node.
-  const key = relationClass ? (item) => item.element : (item) => item;
+  // Relations when the field has a relation class, objects otherwise.
+  const key = relationClass
+    ? (item: unknown) => (item as Relation).element
+    : (item: unknown) => item;
   if (collection === 'Set') {
     const seen = new Set();
     return found.filter((item) => !seen.has(key(item)) && seen.add(key(item)));
   }
   // A TreeSet: Has compares by order, DatabaseObject by dbId; equal ones are dropped.
-  const rank = relationClass ? (item) => item.order : (item) => Number(item.properties['dbId']);
+  const rank = relationClass
+    ? (item: unknown) => (item as Relation).order
+    : (item: unknown) => Number((item as Entity).properties['dbId']);
   const sorted: unknown[] = [];
   for (const item of found) {
     if (sorted.some((kept) => rank(kept) === rank(item))) continue;
@@ -678,16 +692,18 @@ export const COMPUTED_GETTERS = Object.keys(COMPUTED);
  * what a computed getter works out. A relationship class's getType() is the
  * constant the snapshot recorded.
  */
-function valueOf(target, source) {
+function valueOf(target: Entity | Relation, source: string) {
   if (!source.includes('.'))
-    return target instanceof Relation ? target[source] : target.fields[source];
+    return target instanceof Relation
+      ? (target as unknown as Record<string, unknown>)[source]
+      : target.fields[source];
   const computed = COMPUTED[source];
-  if (computed) return computed(target);
+  if (computed) return computed(target as Target);
   return SNAPSHOT().graph[target.schemaClass]?.type;
 }
 
 /** JsonInclude.NON_EMPTY: no null, no empty string, no empty collection. */
-const empty = (value) =>
+const empty = (value: unknown) =>
   value === undefined || value === null || value === '' || (Array.isArray(value) && !value.length);
 
 /**
@@ -1046,11 +1062,11 @@ export function enhancedQuery({
  *   expands and re-aggregates; a single value (species, referenceType)
  *   replaced by the entity's if it has one.
  */
-export function summaryEntity(reference) {
+export function summaryEntity(reference: Entity) {
   const summary = new Entity(reference.id, 'SummaryEntity', {});
   const from = reference.fields;
   const to = summary.fields;
-  const copy = (...names) => {
+  const copy = (...names: string[]) => {
     for (const name of names) to[name] = from[name];
   };
   copy('dbId', 'stId', 'displayName', 'name');
@@ -1064,7 +1080,7 @@ export function summaryEntity(reference) {
     'otherIdentifier',
     'crossReference'
   );
-  const is = (name) => isA(reference.schemaClass, name);
+  const is = (name: string) => isA(reference.schemaClass, name);
   if (is('ReferenceSequence'))
     copy(
       'geneName',
@@ -1080,26 +1096,29 @@ export function summaryEntity(reference) {
   if (is('ReferenceGeneProduct')) copy('chain', 'referenceGene', 'referenceTranscript');
   if (is('ReferenceIsoform')) copy('variantIdentifier', 'isoformParent');
 
-  const residues = (entity) =>
+  // Relationship fields: lists of mapped objects, when loaded.
+  const residues = (entity: Entity) =>
     isA(entity.schemaClass, 'EntityWithAccessionedSequence')
-      ? (entity.fields.hasModifiedResidue ?? []).length
+      ? ((entity.fields['hasModifiedResidue'] as unknown[] | undefined) ?? []).length
       : 0;
-  const entities = from.physicalEntity ?? [];
+  const entities = (from['physicalEntity'] as Entity[] | undefined) ?? [];
   entities.sort(
-    (a, b) => residues(a) - residues(b) || Number(a.fields.dbId) - Number(b.fields.dbId)
+    (a, b) => residues(a) - residues(b) || Number(a.fields['dbId']) - Number(b.fields['dbId'])
   );
   to['summarisedEntities'] = entities;
 
-  const union = (existing, added) => [...new Set([...(existing ?? []), ...added])];
-  const unionRelations = (existing, added) => {
-    const out = [...(existing ?? [])];
+  const union = (existing: unknown, added: unknown[]) => [
+    ...new Set([...((existing as unknown[] | undefined) ?? []), ...added]),
+  ];
+  const unionRelations = (existing: unknown, added: Relation[]) => {
+    const out = [...((existing as Relation[] | undefined) ?? [])];
     for (const relation of added)
       if (!out.some((kept) => kept.element === relation.element)) out.push(relation);
     return out;
   };
   // PhysicalEntity's setter for a stoichiometric list: one relation per element,
   // in the order given (Has.Util.aggregateStoichiometry).
-  const aggregate = (elements, relationClass) =>
+  const aggregate = (elements: unknown[], relationClass: string) =>
     elements.map(
       (element, order) => new Relation(relationClass, element, { order, stoichiometry: 1 })
     );
@@ -1115,7 +1134,7 @@ export function summaryEntity(reference) {
     'negativelyRegulates',
     'markingReferences',
   ];
-  const stoichiometric = {
+  const stoichiometric: Record<string, string> = {
     compartment: 'HasCompartment',
     componentOf: 'ComponentOf',
     memberOf: 'MemberOf',
@@ -1143,7 +1162,7 @@ export function summaryEntity(reference) {
   for (const entity of entities) {
     for (const name of order) {
       if (plain.includes(name)) {
-        const value = entity.fields[name];
+        const value = entity.fields[name] as unknown[] | undefined;
         if (!value?.length) continue;
         to[name] = union(to[name], value);
       } else if (name in stoichiometric) {
@@ -1152,25 +1171,25 @@ export function summaryEntity(reference) {
         if (!value?.length) continue;
         to[name] = aggregate(
           union(expand(to[name] as Relation[] | undefined), value),
-          stoichiometric[name]
+          stoichiometric[name] as string
         );
       } else {
         // inputFor / outputFor: the relations themselves, one per element.
-        const value = entity.fields[name];
+        const value = entity.fields[name] as Relation[] | undefined;
         if (!value?.length) continue;
         to[name] = unionRelations(to[name], value);
       }
     }
     if (isA(entity.schemaClass, 'GenomeEncodedEntity') || isA(entity.schemaClass, 'SimpleEntity')) {
-      if (entity.fields.species !== undefined && entity.fields.species !== null)
-        to['species'] = entity.fields.species;
+      if (entity.fields['species'] !== undefined && entity.fields['species'] !== null)
+        to['species'] = entity.fields['species'];
     }
     if (
       isA(entity.schemaClass, 'SimpleEntity') ||
       isA(entity.schemaClass, 'EntityWithAccessionedSequence')
     ) {
-      if (entity.fields.referenceType !== undefined && entity.fields.referenceType !== null)
-        to['referenceType'] = entity.fields.referenceType;
+      if (entity.fields['referenceType'] !== undefined && entity.fields['referenceType'] !== null)
+        to['referenceType'] = entity.fields['referenceType'];
     }
   }
   return summary;
@@ -1236,30 +1255,43 @@ export function attributeGetter(schemaClass: string, attribute: string) {
 /** A getter that cannot be answered: one taking arguments, or one not ported. */
 export class AttributeFailure extends Error {
   declare kind: string;
-  declare detail: string;
-  constructor(kind: string, detail: string) {
+  declare detail: string | number;
+  constructor(kind: string, detail: string | number) {
     super(`${kind}: ${detail}`);
     this.kind = kind;
     this.detail = detail;
   }
 }
 
+/** A getter as attributeGetter finds it. */
+type Getter = NonNullable<ReturnType<typeof attributeGetter>>;
+
+/** What loads a relationship the aspect would (objects.ts, lazyRelationship). */
+type LazyLoad = (
+  dbId: number,
+  type: string,
+  direction: string,
+  getter: Getter,
+  collection: string
+) => Promise<Entity[]>;
+
 /** What a getter returns, from the fields as they now stand. */
-function getterResult(entity, getter) {
+function getterResult(entity: Entity, getter: Getter) {
   const { source } = getter;
   if (typeof source === 'string') {
     if (source === 'Object.getClass')
       return { javaClass: `class org.reactome.server.graph.domain.model.${entity.schemaClass}` };
-    if (COMPUTED[source]) return COMPUTED[source](entity);
+    if (COMPUTED[source]) return COMPUTED[source](entity as Target);
     return entity.fields[source];
   }
-  if (Object.hasOwn(source, 'constant')) return source.constant;
-  if (Object.hasOwn(source, 'arguments')) throw new AttributeFailure('arguments', source.arguments);
-  throw new AttributeFailure('unported', source.unported);
+  if (Object.hasOwn(source, 'constant')) return (source as { constant: string }).constant;
+  if (Object.hasOwn(source, 'arguments'))
+    throw new AttributeFailure('arguments', (source as { arguments: number }).arguments);
+  throw new AttributeFailure('unported', (source as { unported: string }).unported);
 }
 
 const COLLECTIONS = new Set(['List', 'Set', 'SortedSet', 'Collection']);
-const isEmptyResult = (value) =>
+const isEmptyResult = (value: unknown) =>
   value === undefined || value === null || (Array.isArray(value) && value.length === 0);
 
 /**
@@ -1267,10 +1299,10 @@ const isEmptyResult = (value) =>
  * it to what the aspect loaded: one relationship per object, in the order
  * first met (its `order` counting from 0), its stoichiometry the times met.
  */
-function aggregate(relationClass, entities) {
-  const byId = new Map();
+function aggregate(relationClass: string, entities: Entity[]) {
+  const byId = new Map<unknown, Relation>();
   for (const entity of entities) {
-    const key = entity.properties.dbId;
+    const key = entity.properties['dbId'];
     const relation = byId.get(key);
     if (relation) relation.stoichiometry += 1;
     else byId.set(key, new Relation(relationClass, entity, { order: byId.size, stoichiometry: 1 }));
@@ -1291,7 +1323,12 @@ function aggregate(relationClass, entities) {
  * aroundReactomeProjectedRelationship: a getter whose value is empty first
  * calls the getter it names, then is called again.
  */
-export async function attributeValue(entity, getter, lazyLoad, { outgoingLoaded = true } = {}) {
+export async function attributeValue(
+  entity: Entity,
+  getter: Getter,
+  lazyLoad: LazyLoad,
+  { outgoingLoaded = true } = {}
+) {
   let value = getterResult(entity, getter);
   if (getter.projected && isEmptyResult(value)) {
     const named = attributeGetter(entity.schemaClass, getter.projected.slice(3));
@@ -1304,12 +1341,19 @@ export async function attributeValue(entity, getter, lazyLoad, { outgoingLoaded 
     (spec) => spec[0] === fieldName && spec.length > 2
   );
   if (!field) return value;
-  const [, type, direction, , collection, relationClass] = field;
+  // Found by its length: a relationship field.
+  const [, type, direction, , collection, relationClass] = field as RelationshipField;
   const returnsObjects = COLLECTIONS.has(getter.returns)
     ? getter.element !== '' && isDomainObject(getter.element)
     : isDomainObject(getter.returns);
   if (!returnsObjects || (direction !== 'INCOMING' && outgoingLoaded)) return value;
-  const loaded = await lazyLoad(entity.properties.dbId, type, direction, getter, collection);
+  const loaded = await lazyLoad(
+    entity.properties['dbId'] as number,
+    type,
+    direction,
+    getter,
+    collection
+  );
   if (relationClass) entity.fields[fieldName] = aggregate(relationClass, loaded);
   else if (collection === '') entity.fields[fieldName] = loaded[0];
   else entity.fields[fieldName] = loaded;
@@ -1326,16 +1370,21 @@ function isDomainObject(name: string) {
 }
 
 /** DatabaseObject.toString: "Class {dbId=…, stId='…', displayName='…'}", no stId when there is none. */
-function objectText(entity) {
-  const { dbId, stId, displayName } = entity.properties;
+function objectText(entity: Entity) {
+  const { dbId, stId, displayName } = entity.properties as {
+    dbId: number | string;
+    stId?: string | null;
+    displayName?: string | null;
+  };
   const id = stId === null || stId === undefined ? `dbId=${dbId}` : `dbId=${dbId}, stId='${stId}'`;
-  return `${entity.schemaClass} {${id}, displayName='${displayName ?? null}'}`;
+  // String(null) is 'null', as Java writes a null displayName.
+  return `${entity.schemaClass} {${id}, displayName='${String(displayName ?? null)}'}`;
 }
 
 /** Has.toString. */
-function relationText(relation) {
+function relationText(relation: Relation) {
   const type = relation.type ?? SNAPSHOT().graph[relation.schemaClass]?.type;
-  return `Has{type=${type}, stoichiometry=${relation.stoichiometry}, order=${relation.order}, element=${objectText(relation.element)}}`;
+  return `Has{type=${type}, stoichiometry=${relation.stoichiometry}, order=${relation.order}, element=${objectText(relation.element as Entity)}}`;
 }
 
 /**
@@ -1346,7 +1395,7 @@ function relationText(relation) {
  * (jsoup-text.ts).
  */
 export function attributeText(
-  value,
+  value: unknown,
   jsoupText: (html: string) => string,
   getter?: { returns: string }
 ) {
@@ -1364,7 +1413,8 @@ export function attributeText(
   if (Array.isArray(value))
     return value.map((item) => `${attributeText(item, jsoupText)}\n`).join('');
   if (value instanceof Relation) return relationText(value);
-  if (value && typeof value === 'object' && value.javaClass) return value.javaClass;
+  if (value && typeof value === 'object' && 'javaClass' in value && value.javaClass)
+    return value.javaClass;
   if (typeof value === 'number' && !Number.isInteger(value)) return javaDouble(value);
   return String(value);
 }
