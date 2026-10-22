@@ -134,6 +134,29 @@ describe('the attribute as it was sent', () => {
   });
 });
 
+describe('stId and normalPathway in any case', () => {
+  // Their own routes, the light query each makes, never the general route's
+  // load of the whole object -- whose answer, being Java's, is the same, so
+  // only the query asked says which route answered.
+  it('are answered by their own routes, not /query/{id}/{attribute}', async () => {
+    root = pathway;
+    for (const [spelled, own] of [
+      ['stid', /n\.stId AS stId, n\.schemaClass AS schemaClass/],
+      ['STID', /n\.stId AS stId, n\.schemaClass AS schemaClass/],
+      ['normalpathway', /\[:normalPathway\]/],
+      ['NormalPathway', /\[:normalPathway\]/],
+    ]) {
+      asked.length = 0;
+      await get(`query/R-HSA-9/${spelled}`);
+      expect([
+        spelled,
+        asked.some((cypher) => own.test(cypher)),
+        asked.some((cypher) => /AS root/.test(cypher)),
+      ]).toEqual([spelled, true, false]);
+    }
+  });
+});
+
 describe("Java's other answers", () => {
   it("leaves Java's own /query/abridged/{id}, /query/enhanced/{id} and /query/{id}/more alone", async () => {
     root = pathway;

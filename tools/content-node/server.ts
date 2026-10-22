@@ -33,7 +33,7 @@ import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java
 import { pathId, rawSegment } from './spring.ts';
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
-import type { Endpoint, Request } from './endpoint.ts';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { databaseVersion } from './release.ts';
 import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
@@ -53,7 +53,7 @@ export interface RfdSnapshot {
 }
 
 /** rfd-snapshot.json's extensions, read on first use. */
-let safeExtensions;
+let safeExtensions: Set<string> | undefined;
 
 /**
  * Whether Java would mark this answer `Content-Disposition:
@@ -65,17 +65,17 @@ let safeExtensions;
  * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
  * much as `.exe`.
  */
-export function downloadGuard(request) {
+export function downloadGuard(request: Request) {
   const uri = present(String(request.originalUrl ?? '').split('?')[0]);
   const last = uri.slice(uri.lastIndexOf('/') + 1);
-  safeExtensions ??= new Set(
+  const safe = (safeExtensions ??= new Set(
     (
       JSON.parse(
         readFileSync(new URL('./rfd-snapshot.json', import.meta.url), 'utf8')
       ) as RfdSnapshot
     ).safe
-  );
-  const trusted = (text) => {
+  ));
+  const trusted = (text: string) => {
     let decoded = text;
     try {
       decoded = decodeURIComponent(text);
@@ -85,7 +85,7 @@ export function downloadGuard(request) {
     const dot = decoded.lastIndexOf('.');
     if (dot === -1 || decoded.lastIndexOf('/') > dot) return true;
     const extension = decoded.slice(dot + 1);
-    return javaTrimAll(extension) === '' || safeExtensions.has(extension.toLowerCase());
+    return javaTrimAll(extension) === '' || safe.has(extension.toLowerCase());
   };
   return !trusted(last);
 }
@@ -96,7 +96,7 @@ export function downloadGuard(request) {
  * any version cut); Neo4j's toInteger refuses it the same way, which is how
  * this sees it -- on every endpoint, whatever its id rules.
  */
-export function failureAnswer(request: Request, path: string, failure) {
+export function failureAnswer(request: Request, path: string, failure: Failure | undefined) {
   const tooLong = timedOut(request, failure);
   if (tooLong) return tooLong;
   if (
@@ -175,6 +175,15 @@ function buildId() {
 const LATIN1_DISPOSITION = Symbol('latin1Disposition');
 
 /**
+ * What writeResult writes to: Express's response, as much of it as is used --
+ * a spec's stand-in has no request -- marked once latin1Disposition is on.
+ */
+type Written = Pick<
+  express.Response,
+  'status' | 'type' | 'send' | 'end' | 'setHeader' | 'getHeader' | 'headersSent'
+> & { req?: Request; [LATIN1_DISPOSITION]?: boolean };
+
+/**
  * Node reads a Content-Disposition value back as UTF-8 when the head goes
  * out with a body's bytes counted (nodejs/node#46528) -- so the Latin-1 byte
  * Tomcat writes for é became U+FFFD. Decided at end(), on the bytes Node is
@@ -185,11 +194,12 @@ const LATIN1_DISPOSITION = Symbol('latin1Disposition');
  * per response, so a second writeResult (an error after a first) does not
  * convert twice.
  */
-function latin1Disposition(response) {
+function latin1Disposition(response: Written) {
   if (response[LATIN1_DISPOSITION]) return;
   response[LATIN1_DISPOSITION] = true;
-  const end = response.end.bind(response);
-  response.end = (chunk, ...rest) => {
+  // end's overloads, as one: what Express and Node hand it, passed on as given.
+  const end = response.end.bind(response) as (...args: unknown[]) => express.Response;
+  response.end = ((chunk?: string | Uint8Array | (() => void), ...rest: unknown[]) => {
     const encoding = (typeof rest[0] === 'string' ? rest[0] : 'utf8') as BufferEncoding;
     const bytes =
       typeof chunk === 'string'
@@ -201,7 +211,7 @@ function latin1Disposition(response) {
     if (typeof value === 'string')
       response.setHeader('Content-Disposition', Buffer.from(value, 'utf8').toString('latin1'));
     return end(chunk, ...rest);
-  };
+  }) as express.Response['end'];
 }
 
 /**
@@ -212,7 +222,7 @@ function latin1Disposition(response) {
  * controller returns null, where send('') would add a text/html content type
  * Java does not.
  */
-export function writeResult(response, result) {
+export function writeResult(response: Written, result: Answer) {
   response.status(result.status);
   if (result.type) response.type(result.type);
   const body = result.body !== undefined || Boolean(result.serialised);
@@ -235,10 +245,16 @@ export function writeResult(response, result) {
  * as Spring does. Past 10MB the rest is read and dropped and the handler
  * answers 413, where Java would read on; no client sends that many ids.
  */
-function readBody(request, _response, next) {
+type BodyReader = (
+  request: express.Request & { tooLarge?: boolean },
+  response: express.Response,
+  next: (failure?: unknown) => void
+) => void;
+
+const readBody: BodyReader = (request, _response, next) => {
   const chunks: Buffer[] = [];
   let size = 0;
-  request.on('data', (chunk) => {
+  request.on('data', (chunk: Buffer) => {
     size += chunk.length;
     if (size > 10 * 1024 * 1024) request.tooLarge = true;
     else chunks.push(chunk);
@@ -248,10 +264,13 @@ function readBody(request, _response, next) {
     next();
   });
   request.on('error', next);
-}
+};
 
 /** The /data/query/{id}/{attribute} names node answers, by their lower case. */
-const QUERY_ATTRIBUTES = { stid: 'stId', normalpathway: 'normalPathway' };
+const QUERY_ATTRIBUTES = new Map([
+  ['stid', 'stId'],
+  ['normalpathway', 'normalPathway'],
+]);
 
 export function app() {
   const server = express();
@@ -322,10 +341,9 @@ export function app() {
       .replace(
         /^(\/data\/query\/([^/]+)\/)([^/]+)(\/?)$/,
         (path: string, head: string, id: string, attribute: string, slash: string) => {
-          const lower = attribute.toLowerCase();
-          if (['enhanced', 'abridged'].includes(id) || !Object.hasOwn(QUERY_ATTRIBUTES, lower))
-            return path;
-          return head + QUERY_ATTRIBUTES[lower] + slash;
+          const name = QUERY_ATTRIBUTES.get(attribute.toLowerCase());
+          if (['enhanced', 'abridged'].includes(id) || name === undefined) return path;
+          return head + name + slash;
         }
       );
     // One URL per answer (spec 011): Java answers /x/ as /x, and the edge
@@ -427,35 +445,43 @@ export function app() {
   // trace, NODE_ENV being unset -- where Java decodes it to U+FFFD and answers
   // as usual. Handlers read the raw path (rawSegment), so the endpoint is run
   // regardless.
-  server.use((failure, request: express.Request, response, next) => {
-    if (!(failure instanceof URIError) || response.headersSent) return next(failure);
-    // The path as routing saw it, less a trailing slash, which Express
-    // ignores too.
-    const path = present(String(request.url).split('?')[0]).replace(/(.)\/$/, '$1');
-    const endpoint = endpointFor(path);
-    if (!endpoint) return next(failure);
-    // HEAD is answered as GET, as Express answers it; any other method the
-    // template does not take is Java's 405, as for a decodable id.
-    const method = request.method === 'HEAD' ? 'get' : request.method.toLowerCase();
-    if ((endpoint.method ?? 'get') !== method)
-      return writeResult(
-        response,
-        javaError(
-          request,
-          405,
-          'METHOD_NOT_ALLOWED',
-          `Request method '${request.method}' not supported`
-        )
-      );
-    const body = endpoint.method === 'post' ? readBody : (_request, _response, done) => done();
-    body(request, response, () => answerWith(endpoint, request, response).catch(next));
-  });
+  server.use(
+    (
+      failure: unknown,
+      request: express.Request,
+      response: express.Response,
+      next: (failure: unknown) => void
+    ) => {
+      if (!(failure instanceof URIError) || response.headersSent) return next(failure);
+      // The path as routing saw it, less a trailing slash, which Express
+      // ignores too.
+      const path = present(String(request.url).split('?')[0]).replace(/(.)\/$/, '$1');
+      const endpoint = endpointFor(path);
+      if (!endpoint) return next(failure);
+      // HEAD is answered as GET, as Express answers it; any other method the
+      // template does not take is Java's 405, as for a decodable id.
+      const method = request.method === 'HEAD' ? 'get' : request.method.toLowerCase();
+      if ((endpoint.method ?? 'get') !== method)
+        return writeResult(
+          response,
+          javaError(
+            request,
+            405,
+            'METHOD_NOT_ALLOWED',
+            `Request method '${request.method}' not supported`
+          )
+        );
+      const body: BodyReader =
+        endpoint.method === 'post' ? readBody : (_request, _response, done) => done();
+      body(request, response, () => void answerWith(endpoint, request, response).catch(next));
+    }
+  );
 
   // Anything else that reaches here is this service's failure: Java's
   // envelope, never Express's page with a stack trace in it.
   server.use(
     (
-      failure,
+      failure: Failure | undefined,
       request: express.Request,
       response: express.Response,
       next: (failure: unknown) => void
@@ -471,7 +497,7 @@ export function app() {
 }
 
 /** DEEP_QUERY_LIMIT when it is a whole number from 1 to 32 (the pool's default); otherwise 4. */
-export function deepLimit(setting) {
+export function deepLimit(setting: unknown) {
   const limit = Number(setting);
   return Number.isInteger(limit) && limit >= 1 && limit <= 32 ? limit : 4;
 }
@@ -482,7 +508,11 @@ const DEEP = deepShare(deepLimit(settings.deepQueryLimit()));
  * One endpoint's answer to one request: its handler's result, or what a
  * failure means in Java's terms, never a stack trace.
  */
-async function answerWith(endpoint: Endpoint, request: express.Request, response) {
+async function answerWith(
+  endpoint: Endpoint,
+  request: express.Request,
+  response: express.Response
+) {
   if (endpoint.deep) {
     if (!DEEP.enter())
       return writeResult(response, {
@@ -498,10 +528,14 @@ async function answerWith(endpoint: Endpoint, request: express.Request, response
   return answer(endpoint, request, response);
 }
 
-export async function answer(endpoint: Endpoint, request: express.Request, response) {
+export async function answer(
+  endpoint: Endpoint,
+  request: express.Request,
+  response: express.Response
+) {
   // The answer's caching label, from the request exactly as it was sent:
   // request.url has been rewritten for routing by now (spec 011).
-  const write = (result) => {
+  const write = (result: Answer) => {
     setLabel(
       response,
       label({
@@ -555,7 +589,7 @@ if (startedDirectly()) {
     // scheduler does.
     // A mistake of ours is logged, not left to end the process.
     const refresh = () =>
-      void refreshPsicquicResources().catch((error) =>
+      void refreshPsicquicResources().catch((error: Error) =>
         console.error(`PSICQUIC resources: ${error.stack}`)
       );
     refresh();
@@ -563,7 +597,7 @@ if (startedDirectly()) {
     for (const endpoint of endpoints) {
       if (!endpoint.handler.warms) continue;
       // A warmed handler is a cached one, which reads nothing of its request.
-      Promise.resolve(endpoint.handler({ params: {} })).catch((error) =>
+      Promise.resolve(endpoint.handler({ params: {} })).catch((error: Error) =>
         console.error(`warming ${endpoint.path}: ${error.message}`)
       );
     }
