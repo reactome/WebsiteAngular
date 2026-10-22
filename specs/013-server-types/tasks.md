@@ -65,6 +65,8 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 - [ ] T021 [US4] `noImplicitAny` on per module (3,373 errors in all, measured), smallest first, each module's loose count lowered in the same pull request. The option cannot be set per file, so `check:types` compiles tools/ with it and ratchets the count per module (`tools/implicit-any-baseline.json`); 1,123 in 38 modules when it began, 1,091 in 25 after the first pass (#564), 958 in 12 after the second (#565), 912 in 10 after the third (#567); java-hashmap's red-black tree is left for a careful pass of its own.
 - [ ] T022 [US4] Each module's loose count to zero, starting with those that read graph rows or write answers (SC-004).
 
+  For the content service, T021 and T022 go on per family module (spec 014): one `<family>-endpoints.ts`, or one shared module, per pull request. `service.ts` is gone, and its counts are now spread across the families, the shared modules, `registry.ts` and `server.ts` (786 implicit `any`s in 31 modules on 22 Oct).
+
 ---
 
 ## Phase 6: Polish
