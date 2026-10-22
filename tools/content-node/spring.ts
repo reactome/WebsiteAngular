@@ -63,9 +63,9 @@ export function rawSegment(request: { originalUrl?: unknown }, index: number): s
  * for which the long s, ſ, is s, so "yeſ" is true. Undefined when that fails
  * too, and the converter's 400 stands. Measured against Java.
  */
-function booleanEditor(values) {
+function booleanEditor(values: string[]): boolean | undefined {
   const text = javaTrim(values.join(','));
-  const is = (words) => words.some((word) => caseInsensitive(text, word) === 0);
+  const is = (words: string[]) => words.some((word) => caseInsensitive(text, word) === 0);
   if (is(['true', 'on', 'yes', '1'])) return true;
   if (is(['false', 'off', 'no', '0'])) return false;
   return undefined;
@@ -160,7 +160,7 @@ export function springInteger(values: string[], name: string): Bound<number> {
  * escape (`%zz`, a lone `%`) is dropped whole -- Tomcat logs it and carries on
  * -- which URLSearchParams does not do: it keeps the text as it is.
  */
-export function servletParameter(query, name) {
+export function servletParameter(query: string, name: string): string[] {
   const values: string[] = [];
   for (const pair of String(query).split('&')) {
     if (pair === '') continue;
@@ -174,10 +174,10 @@ export function servletParameter(query, name) {
 }
 
 /** Percent-decoding as Tomcat's query parser does it, or null when malformed. */
-function servletDecode(text) {
+function servletDecode(text: string): string | null {
   const bytes: number[] = [];
   for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
+    const char = text.charAt(i);
     if (char === '+') {
       bytes.push(0x20);
     } else if (char === '%') {
@@ -309,7 +309,9 @@ export function springPathLong(text: string, name: string): Bound<bigint, { stat
  * domain objects with, from `?view=` and `?includeRef=`, as writeDomain's
  * arguments. getParameter is the first value; Boolean.parseBoolean ignores case.
  */
-export function writerFor(request): [view: number, options: { jsog: boolean }] {
+export function writerFor(request: {
+  originalUrl?: unknown;
+}): [view: number, options: { jsog: boolean }] {
   const [view] = queryValues(request, 'view');
   const [includeRef] = queryValues(request, 'includeRef');
   return [
@@ -323,7 +325,7 @@ export function writerFor(request): [view: number, options: { jsog: boolean }] {
 }
 
 /** The values of one query parameter as the servlet reads them, in order. */
-export function queryValues(request, name) {
+export function queryValues(request: { originalUrl?: unknown }, name: string): string[] {
   const url = String(request.originalUrl ?? '');
   const at = url.indexOf('?');
   return servletParameter(at === -1 ? '' : url.slice(at + 1), name);
@@ -335,11 +337,13 @@ export function queryValues(request, name) {
  * -- so "" is the empty list); several are taken as they are, neither split
  * nor trimmed. Measured against Java's /search/facet_query.
  */
-export function springList(values) {
+export function springList(values: string[]): string[] | null {
   if (values.length === 0) return null;
   if (values.length > 1) return [...values];
-  if (values[0] === '') return [];
-  return values[0].split(',').map(javaTrim);
+  // One value, so `only` is it.
+  const [only = ''] = values;
+  if (only === '') return [];
+  return only.split(',').map(javaTrim);
 }
 
 const SCOPES = ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'];
@@ -375,7 +379,7 @@ export function springScope(values: string[], fallback = 'PHYSICAL_ENTITY'): Bou
 }
 
 /** Spring's 400 for a missing required String parameter. */
-export function requiredString(name) {
+export function requiredString(name: string): string {
   return `Required request parameter '${name}' for method parameter type String is not present`;
 }
 

@@ -7,7 +7,7 @@
  * Pathway Browser (/data/detail/*), with the helpers only they use. Moved
  * unchanged from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import { javaError, notFound, only } from './answers.ts';
 import { asciiDigits, javaNumeric, javaTrim, javaUtf8 } from './java-text.ts';
 import type { Written } from './answers.ts';
@@ -623,7 +623,7 @@ const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS = {
  * A species that is not found filters nothing, as in Java; the 404 message
  * repeats the parameter as given, and says "null" when there is none.
  */
-async function lowerLevelPathways(request, segment, { column, query }) {
+async function lowerLevelPathways(request: Request, segment, { column, query }) {
   const raw = pathId(rawSegment(request, segment));
   // By the servlet's rules (queryValues), not Express's query parser, which
   // reads brackets in a name as structure; repeated, Spring joins them.

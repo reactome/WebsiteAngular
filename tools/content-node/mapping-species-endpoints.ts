@@ -5,7 +5,7 @@
  * (/data/ortholog*) and the species lists (/data/species/*), with the
  * helpers only they use. Moved unchanged from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import type { GraphNode } from './graph.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 import { inDepthId, longPastRange, pathwayJson, speciesFilter, speciesTaxId } from './objects.ts';
@@ -151,7 +151,7 @@ const MAPPED_REACTION_ROLES =
  *   once the species has been looked up, as MappingService does.
  * - Nothing found is Java's 404, naming the resource and identifier as given.
  */
-async function mappingAnswer(request, kind) {
+async function mappingAnswer(request: Request, kind) {
   const resource = pathId(rawSegment(request, 4));
   const identifier = pathId(rawSegment(request, 5));
   const given = queryValues(request, 'species');

@@ -5,7 +5,7 @@
  * minutes -- with the helpers only they use. Moved unchanged from
  * service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import {
   pathId,
   queryValues,
@@ -87,7 +87,7 @@ type InteractionWithEntitiesRow = {
  * default to -1, paging only when neither is -1. A blank one is null, which
  * the service may fail on (pagingUnboxFails).
  */
-function interactorPaging(request) {
+function interactorPaging(request: Request) {
   const page = springIntegerWithDefault(queryValues(request, 'page'), -1);
   if (page.error !== undefined)
     return { answer: javaError(request, 400, 'BAD_REQUEST', page.error) };
