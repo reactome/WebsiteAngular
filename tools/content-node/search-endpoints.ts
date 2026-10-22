@@ -90,13 +90,18 @@ export function facetMapping(answer: SolrAnswer | null | undefined) {
       available.push(facetContainer(counts[at] as string | null, counts[at + 1] as number));
     lists[key] = available.length ? { available } : {};
   }
-  const mapping = { totalNumFount: answer?.response?.numFound ?? 0 };
+  const mapping: FacetMapping = { totalNumFount: answer?.response?.numFound ?? 0 };
   for (const key of FACET_FIELDS.values()) if (key in lists) mapping[key] = lists[key];
   return mapping;
 }
 
 /** The filters a query takes, in the order SolrCore adds them, with its tag and field. */
-const QUERY_FILTERS: [list: string, tag: string, field: string, key: string][] = [
+const QUERY_FILTERS: [
+  list: 'species' | 'types' | 'keywords' | 'compartments',
+  tag: string,
+  field: string,
+  key: string,
+][] = [
   ['species', '{!tag=sf}', 'species_facet', 'speciesFacet'],
   ['types', '{!tag=tf}', 'type_facet', 'typeFacet'],
   ['keywords', '{!tag=kf}', 'keywords_facet', 'keywordFacet'],
@@ -110,9 +115,17 @@ const QUERY_FILTERS: [list: string, tag: string, field: string, key: string][] =
  * are dropped here too, so the caller sees the lists as Java's are after --
  * and a list with nothing left is a bare tag, as Java sends it.
  */
-export function facetQueryParams(query) {
+/** What the facet queries read of a search: its text, scope, filters and flags. */
+type FacetQuery = Pick<
+  SearchQuery,
+  'query' | 'scope' | 'species' | 'types' | 'keywords' | 'compartments'
+> &
+  Partial<Pick<SearchQuery, 'deleted' | 'parserType'>>;
+
+export function facetQueryParams(query: FacetQuery) {
   const params: [string, string][] = [];
-  const scope = SCOPE_FILTER[query.scope];
+  // Neither table has a key for an absent scope or parser.
+  const scope = SCOPE_FILTER[query.scope ?? ''];
   if (scope) params.push(['fq', scope]);
   for (const [list, tag, field] of QUERY_FILTERS) {
     const given = query[list];
@@ -122,7 +135,7 @@ export function facetQueryParams(query) {
     params.push(['fq', kept.length ? `${tag}${field}:("${kept.join('" OR "')}")` : tag]);
   }
   params.push(['fq', query.deleted ? 'deleted:true' : '-deleted']);
-  const parser = PARSER_TYPES[query.parserType];
+  const parser = PARSER_TYPES[query.parserType ?? ''];
   if (parser) params.push(['defType', parser]);
   params.push(['q', query.query]);
   return params;
@@ -140,7 +153,7 @@ type FacetMapping = {
  * into the names the query selected and the rest, as FacetList(selected,
  * available) -- a facet Solr did not count is left out, empty lists too.
  */
-function facetMappingFor(answer: SolrAnswer | null | undefined, query) {
+function facetMappingFor(answer: SolrAnswer | null | undefined, query: FacetQuery) {
   const fields = answer?.facet_counts?.facet_fields ?? {};
   const mapping: FacetMapping = {
     totalNumFount: answer?.response?.numFound ?? 0,
@@ -154,7 +167,7 @@ function facetMappingFor(answer: SolrAnswer | null | undefined, query) {
     for (let at = 0; at + 1 < flat.length; at += 2) {
       // Solr's flat list: a name, then its count.
       const container = facetContainer(flat[at] as string | null, flat[at + 1] as number);
-      (query[list]?.includes(flat[at]) ? chosen : available).push(container);
+      (query[list]?.includes(flat[at] as string | null) ? chosen : available).push(container);
     }
     selected[list] = chosen.map((container) => container.name ?? null);
     mapping[key] = {
@@ -172,20 +185,21 @@ function facetMappingFor(answer: SolrAnswer | null | undefined, query) {
  * selects nothing is no filter. A list with no facet to check is Java's
  * NullPointerException, a failure here too.
  */
-async function facetsOf(query, forceFilters, signal) {
+async function facetsOf(query: FacetQuery, forceFilters: boolean, signal: AbortSignal | undefined) {
   const ask = async () =>
     facetMappingFor(await solr('/facet', facetQueryParams(query), { signal }), query);
   const first = await ask();
   if (forceFilters) return first.mapping;
   let correct = true;
   for (const [list] of QUERY_FILTERS) {
-    if (!query[list]) continue;
+    const given = query[list];
+    if (!given) continue;
     const found = first.selected[list];
     if (found === undefined)
       throw Object.assign(new Error(`no ${list} facet to check the filter against`), {
         unexpected: true,
       });
-    if (found.length !== query[list].length) {
+    if (found.length !== given.length) {
       correct = false;
       query[list] = found;
     }
@@ -273,7 +287,24 @@ function plainEntries(answer: SolrAnswer | null | undefined): SearchResult {
  * grouped or not; an empty page names the targets and reports. Found
  * nowhere: the targets, the report, and Java's null.
  */
-async function searchFor(query: SearchQuery, { rowCount, page, grouped, force, request, signal }) {
+async function searchFor(
+  query: SearchQuery,
+  {
+    rowCount,
+    page,
+    grouped,
+    force,
+    request,
+    signal,
+  }: {
+    rowCount: number;
+    page: number;
+    grouped: boolean;
+    force: boolean;
+    request: Request;
+    signal: AbortSignal | undefined;
+  }
+) {
   const facetsFor = async () => (query.query === '' ? null : facetsOf(query, force, signal));
   query.deleted = false;
   let mapping = await facetsFor();
@@ -368,12 +399,12 @@ async function searchFor(query: SearchQuery, { rowCount, page, grouped, force, r
 }
 
 /** The controller's answer to a search: the GroupedResult, or the 404 with any targets. */
-function searchAnswer(request: Request, query, result) {
-  if (result?.results?.length) {
+function searchAnswer(request: Request, query: string, result: SearchResult | null) {
+  if (result?.results.length) {
     const { targetResults, ...written } = result;
     // NON_EMPTY, in a 200: a target's null or empty term or resource is
     // left out (a query with a leading space has an empty first term).
-    const kept = (text) => text !== null && text !== undefined && text !== '';
+    const kept = (text: unknown) => text !== null && text !== undefined && text !== '';
     const targets = targetResults?.map(({ term, resource, target }) => ({
       ...(kept(term) ? { term } : {}),
       ...(kept(resource) ? { resource } : {}),
@@ -387,13 +418,14 @@ function searchAnswer(request: Request, query, result) {
   }
   const missing = javaError(request, 404, 'NOT_FOUND', `No entries found for query: ${query}`);
   if (!result?.targetResults?.length) return missing;
-  const envelope = JSON.parse(missing.body);
-  envelope.targets = result.targetResults;
+  // Java's envelope, as javaError wrote it.
+  const envelope = JSON.parse(missing.body) as Record<string, unknown>;
+  envelope['targets'] = result.targetResults;
   return { ...missing, body: javaJson(envelope) };
 }
 
 /** A FacetMapping endpoint's answer: the mapping, or Java's empty 200 for its null. */
-function facetAnswer(answer) {
+function facetAnswer(answer: SolrAnswer | null) {
   const mapping = facetMapping(answer);
   return mapping === undefined
     ? { status: 200 }

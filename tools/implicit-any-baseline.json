@@ -6,7 +6,6 @@
   "tools/content-node/objects.ts": 4,
   "tools/content-node/pathways-events-endpoints.ts": 45,
   "tools/content-node/search-diagram-endpoints.ts": 20,
-  "tools/content-node/search-endpoints.ts": 20,
   "tools/content-node/server.ts": 26,
   "tools/render/pptx.ts": 72,
   "tools/render/render-core.ts": 18,
