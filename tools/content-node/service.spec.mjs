@@ -424,6 +424,41 @@ describe('the edges of a path, answered as Tomcat and Spring answer them', () =>
     }
   });
 
+  it("answers a malformed escape or an encoded NUL in the path with Tomcat's 400", async () => {
+    // Tomcat refuses these before Spring sees the path (measured 22 Oct
+    // 2026): a '%' not followed by two hex digits, and %00.
+    for (const path of [
+      '/ContentService/data/query/R-HSA-%E0%A4%A',
+      '/ContentService/data/query/%',
+      '/ContentService/data/query/R-HSA-69620/%zz',
+      '/ContentService/data/query/R-HSA-%G1',
+      '/ContentService/data/query/R-HSA-%00',
+    ]) {
+      const response = await fetch(base + path);
+      expect([path, response.status]).toEqual([path, 400]);
+      expect(response.headers.get('content-type')).toMatch(/^text\/html/);
+      expect(await response.text()).not.toMatch(/tomcat|apache/i);
+    }
+  });
+
+  it('leaves an escape Tomcat decodes, and any in the query, to the endpoint', async () => {
+    // %FF is not UTF-8, but Tomcat decodes it (to U+FFFD) and Java answers as
+    // usual; the query string is the endpoint's to read.
+    for (const path of [
+      '/ContentService/data/query/R-HSA-%FF',
+      '/ContentService/data/query/R-HSA-69620/%25',
+      '/ContentService/search/query?query=%zz',
+    ]) {
+      // No graph here, so the endpoint's own answer is a failure; what
+      // matters is that it is the endpoint's, not Tomcat's page.
+      const response = await fetch(base + path);
+      expect([path, response.headers.get('content-type')]).not.toEqual([
+        path,
+        expect.stringMatching(/^text\/html/),
+      ]);
+    }
+  });
+
   it("answers a dbId beyond a long's range with Java's 500, naming the id as given", () => {
     const failure = Object.assign(new Error('integer, 99999999999999999999, is too large'), {
       code: 'Neo.ClientError.Statement.TypeError',

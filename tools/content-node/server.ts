@@ -281,11 +281,14 @@ export function app() {
 
   // Before any route, as Tomcat and Spring look at a path before any
   // controller does. A slash or backslash encoded, or a raw backslash, is Tomcat's 400 -- its page
-  // names the server and its version, which this does not copy -- and a
-  // doubled slash matches no mapping, which is Spring's own 404.
+  // names the server and its version, which this does not copy -- and so is
+  // a '%' not followed by two hex digits, or an encoded NUL: Tomcat cannot
+  // decode the path. Not undecodable UTF-8 (%FF), which Tomcat decodes to
+  // U+FFFD, nor anything in the query. A doubled slash matches no mapping,
+  // which is Spring's own 404.
   server.use('/ContentService', (request, response, next) => {
     const path = present(String(request.originalUrl).split('?')[0]);
-    if (/%2f|%5c|\\/i.test(path))
+    if (/%2f|%5c|\\|%(?![0-9A-Fa-f]{2})|%00/i.test(path))
       return response
         .status(400)
         .type('text/html')
