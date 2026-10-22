@@ -65,7 +65,7 @@ const REASON = { 400: 'BAD_REQUEST', 500: 'INTERNAL_SERVER_ERROR' };
  * (Java's empty list). A REACT_ id is the object whose oldStId it is, or, when
  * there is none, looked for as a stable id -- and not found, as in Java.
  */
-async function orthologyOf(raw, species) {
+async function orthologyOf(raw: string, species) {
   const id = inDepthId(raw);
   if (!id) return null;
   let { idType, id: value } = id;
@@ -204,7 +204,8 @@ async function mappingAnswer(request: Request, kind) {
   return {
     status: 200,
     body: rows.map((row) =>
-      kind === 'reactions' ? reactionLikeEventJson(row.rle) : pathwayJson(row.p)
+      // The pathways query returns p, the reactions query rle.
+      kind === 'reactions' ? reactionLikeEventJson(row.rle) : pathwayJson(row.p as Props)
     ),
     type: 'application/json',
   };

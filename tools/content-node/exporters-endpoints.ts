@@ -65,7 +65,7 @@ const RENDER_SERVICE = settings.renderService();
  * greedy, so the extension is what follows the last dot and a versioned id
  * keeps its version (graph-core then cuts it). No dot matches nothing.
  */
-export function splitExportName(segment) {
+export function splitExportName(segment: string) {
   const dot = segment.lastIndexOf('.');
   if (dot === -1) return undefined;
   return { identifier: segment.slice(0, dot), ext: segment.slice(dot + 1) };

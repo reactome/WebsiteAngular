@@ -30,7 +30,7 @@ import { pathId, queryValues, rawSegment, requiredString, springBoolean } from '
  * enhanced object (graph-core's findEnhancedObjectById); undefined for an id
  * that is no event. What goes into it is citationOfEvent's.
  */
-async function eventCitationFor(raw) {
+async function eventCitationFor(raw: string) {
   const id = inDepthId(raw);
   if (!id) return undefined;
   const [row] = await read<MappedRow>(
@@ -54,7 +54,7 @@ async function eventCitationFor(raw) {
  * getEventCitationObject throws -- no release date, or a person with no
  * initial.
  */
-async function eventCitationOrFailure(request, raw) {
+async function eventCitationOrFailure(request: Request, raw: string) {
   try {
     return { citation: await eventCitationFor(raw) };
   } catch (failure) {
@@ -190,7 +190,8 @@ export const citationEndpoints: Endpoint[] = [
       }
       let citation;
       if (isPathway.value) {
-        const found = await eventCitationOrFailure(request, values.id);
+        // Set above, or the 400 was answered.
+        const found = await eventCitationOrFailure(request, values.id as string);
         if (found.failure) return found.failure;
         citation = found.citation;
       } else citation = await staticCitationFor(values.id);

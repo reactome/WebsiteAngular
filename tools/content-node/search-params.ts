@@ -27,7 +27,7 @@ type DiagramResult = {
  * to select there: none for a pathway with a diagram of its own, a
  * subpathway's reactions, or the reaction itself.
  */
-export async function diagramResult(raw) {
+export async function diagramResult(raw: string) {
   const id = inDepthId(raw);
   if (!id) return undefined;
   let { idType, id: value } = id;

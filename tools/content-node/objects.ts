@@ -27,7 +27,7 @@ export type Props = Properties;
  * as Java read it (trimmed, any version cut), or undefined. neo4j.int would
  * wrap round instead and find some other object.
  */
-export function longPastRange(ids) {
+export function longPastRange(ids: string[]) {
   for (const raw of ids) {
     const id = inDepthId(raw);
     if (id?.idType === 'dbId' && BigInt(id.id) > 9223372036854775807n)
@@ -57,7 +57,7 @@ export function longPastRange(ids) {
  * disjunction: a disjunction across properties uses no index and scans the
  * whole graph (see the person endpoints).
  */
-export function resolveId(raw) {
+export function resolveId(raw: string) {
   const trimmed = javaTrim(String(raw));
   const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
   if (id.startsWith('REACT_')) return { where: 'n.oldStId = $id', params: { id } };
@@ -75,10 +75,10 @@ export function resolveId(raw) {
  * Java's answers, which agree across 150 pathways: `oldStId` and the diagram
  * size are on the node but not written, and `className` repeats the class.
  */
-export function pathwayJson(node) {
+export function pathwayJson(node: Props) {
   // hasEHLD has a field default of false in Java, should a node lack it (none
   // does today); isCanonical is declared but on no node yet.
-  const out = only({ ...node, hasEHLD: node.hasEHLD ?? false }, [
+  const out = only({ ...node, hasEHLD: node['hasEHLD'] ?? false }, [
     'dbId',
     'displayName',
     'stId',
@@ -109,7 +109,7 @@ export function pathwayJson(node) {
  * if it starts with R or has a ':', else a dbId if numeric (any script's
  * digits), else nothing.
  */
-export function inDepthId(raw) {
+export function inDepthId(raw: string) {
   const trimmed = javaTrim(raw);
   const id = trimmed.includes(':') ? trimmed : (trimmed.split('.')[0] ?? '');
   // getIdentifier swaps an old REACT_ id for the stable id it became: the
@@ -131,7 +131,7 @@ export function inDepthId(raw) {
  * `object` is the pattern the query matches the object by, `params` its
  * parameters, `byDbId` whether it is the dbId query.
  */
-export async function graphCoreId(raw) {
+export async function graphCoreId(raw: string) {
   const resolved = resolveId(raw);
   if (resolved.where === 'false') return undefined;
   // Anything but 'false' read an id.
@@ -154,7 +154,7 @@ export async function graphCoreId(raw) {
  * the query its LazyFetchAspect runs when a collection getter finds nothing
  * loaded: the objects of one relationship, in the relationship's order.
  */
-export function lazyCollectionQuery(type, direction, schemaClass) {
+export function lazyCollectionQuery(type: string, direction: string, schemaClass: string) {
   const [left, right] = direction === 'INCOMING' ? ['<-', '-'] : ['-', '->'];
   return `MATCH (a:DatabaseObject{dbId:$dbId})${left}[r:${type}]${right}(m:${schemaClass}) RETURN m, r.stoichiometry as n ORDER BY r.order`;
 }
@@ -210,7 +210,13 @@ export async function attributeOf(
  * nodes of the getter's class, in the relationship's order, each as many
  * times as its stoichiometry -- as entities, one per node.
  */
-async function lazyRelationship(dbId, type, direction, getter, collection) {
+async function lazyRelationship(
+  dbId: number,
+  type: string,
+  direction: string,
+  getter: { returns: string; element: string },
+  collection: string
+) {
   const label = collection === '' ? getter.returns : getter.element;
   const rows = await read<{ m: GraphNode; n: number | null }>(
     lazyCollectionQuery(type, direction, label).replace(
@@ -235,7 +241,11 @@ async function lazyRelationship(dbId, type, direction, getter, collection) {
  * else as a name -- lower-cased, runs of '_' and ' ' made one space, first
  * letter capitalised -- matched against a Species' names.
  */
-export function speciesFilter(raw) {
+/** The species parameter, read: none, a number (taxId, then dbId), or a name. */
+export type SpeciesFilter =
+  { kind: 'none' } | { kind: 'number'; value: string } | { kind: 'name'; value: string };
+
+export function speciesFilter(raw: string | undefined): SpeciesFilter {
   if (raw === undefined || raw === '') return { kind: 'none' };
   if (javaNumeric(raw)) return { kind: 'number', value: raw };
   const name = raw.toLowerCase().replace(/[_ ]+/g, ' ');
@@ -243,7 +253,7 @@ export function speciesFilter(raw) {
 }
 
 /** The taxId of the species a filter names, or undefined: none, or not found. */
-export async function speciesTaxId(filter) {
+export async function speciesTaxId(filter: SpeciesFilter) {
   if (filter.kind === 'none') return undefined;
   if (filter.kind === 'number') {
     const [byTaxId] = await read<{ taxId: string | null }>(
