@@ -6,7 +6,6 @@
   "tools/content-node/domain.ts": 22,
   "tools/content-node/exporters-endpoints.ts": 52,
   "tools/content-node/interactors-endpoints.ts": 75,
-  "tools/content-node/mapping-species-endpoints.ts": 41,
   "tools/content-node/objects.ts": 9,
   "tools/content-node/parameters.spec.ts": 2,
   "tools/content-node/parameters.ts": 48,
