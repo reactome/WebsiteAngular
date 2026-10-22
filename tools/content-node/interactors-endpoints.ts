@@ -114,7 +114,7 @@ export function pagingUnboxFails({ page, pageSize }) {
  * homodimer). A negative SKIP or LIMIT is Java's 500 with Neo4j's message,
  * returned as `answer`.
  */
-async function interactionsOf(request, acc, { page, pageSize }) {
+async function interactionsOf(request: Request, acc, { page, pageSize }) {
   if (pagingUnboxFails({ page, pageSize })) return { answer: unexpected(request) };
   const paged = page !== -1 && pageSize !== -1;
   try {

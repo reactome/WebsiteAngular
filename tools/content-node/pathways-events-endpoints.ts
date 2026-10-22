@@ -505,7 +505,7 @@ export function pathwayBrowserJson(node: PathwayBrowserNode) {
  * an id of dots, which trimId splits to nothing (Java's 500 with no
  * message), and a dbId past a long (Long.parseLong's). Undefined otherwise.
  */
-function containedEventsFailure(request, raw) {
+function containedEventsFailure(request: Request, raw) {
   const trimmed = javaTrim(raw);
   if (/^\.+$/.test(trimmed)) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
   const tooLong = longPastRange([raw]);

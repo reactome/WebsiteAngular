@@ -4,7 +4,7 @@
  * as BibTeX, RIS or text -- with the helpers only they use. Moved unchanged
  * from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
 import { inDepthId } from './objects.ts';
 import { read } from './graph.ts';
 import type { MappedRow } from './domain.ts';
@@ -19,6 +19,7 @@ import {
   staticCitationFrom,
 } from './citation.ts';
 import { javaError, unexpectedFailure } from './answers.ts';
+import type { Failure } from './answers.ts';
 import { hashSetOf } from './java-text.ts';
 import { URLSearchParams } from 'node:url';
 import { settings } from './settings.ts';
@@ -62,7 +63,8 @@ async function eventCitationOrFailure(request, raw) {
 }
 
 /** GlobalExceptionHandler's 500 for what citation.ts throws as Java does; anything else is ours. */
-function citationFailure(request, failure) {
+function citationFailure(request: Request, caught: unknown) {
+  const failure = caught as Failure;
   if (failure.unexpected) return unexpectedFailure(request);
   if (failure.javaMessage)
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);

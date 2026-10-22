@@ -8,7 +8,7 @@ import { javaDouble } from './domain.ts';
 import type { Answer, Handler, Request } from './endpoint.ts';
 
 /** Java's answer to an exception its handler has no mapping for: a NullPointerException. */
-export function unexpected(request) {
+export function unexpected(request: Request) {
   return javaError(
     request,
     500,
@@ -22,13 +22,17 @@ export function unexpected(request) {
  * members in order, any null, empty text or empty list left out. A `double`
  * member is written as Java writes a Double (1.0, not 1).
  */
-export function nonEmptyJson(members) {
+export function nonEmptyJson(members: [name: string, value: unknown, double?: boolean][]): string {
   const out: string[] = [];
   for (const [name, value, double] of members) {
     if (value === null || value === undefined || value === '') continue;
     if (Array.isArray(value) && value.length === 0) continue;
     const written =
-      value instanceof RawJson ? value.text : double ? javaDouble(value) : javaJson(value);
+      value instanceof RawJson
+        ? value.text
+        : double
+          ? javaDouble(value as number)
+          : javaJson(value);
     out.push(`${javaJson(name)}:${written}`);
   }
   return `{${out.join(',')}}`;
@@ -48,9 +52,11 @@ export class RawJson {
  * JSON.stringify writes `\u001f`. Only an escape is changed -- an odd run of
  * backslashes before `u00` -- never a literal backslash followed by text.
  */
-export function javaJson(value) {
-  return JSON.stringify(value).replace(/(\\+)u00([0-9a-f]{2})/g, (match, slashes, hex) =>
-    slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
+export function javaJson(value: unknown): string {
+  return JSON.stringify(value).replace(
+    /(\\+)u00([0-9a-f]{2})/g,
+    (match: string, slashes: string, hex: string) =>
+      slashes.length % 2 ? `${slashes}u00${hex.toUpperCase()}` : match
   );
 }
 
@@ -60,11 +66,16 @@ export function javaJson(value) {
  * answers a negative SKIP or LIMIT with. Undefined for any other failure:
  * those are not part of Java's contract to mirror.
  */
-export function neo4jFailureMessage(failure, codes = ['Neo.ClientError.Statement.ArgumentError']) {
-  if (!codes.includes(failure?.code)) return undefined;
+export function neo4jFailureMessage(
+  failure: unknown,
+  codes = ['Neo.ClientError.Statement.ArgumentError']
+) {
+  // Whatever was thrown: a driver error carries both, anything else neither.
+  const { code, message } = (failure ?? {}) as { code?: string; message?: string };
+  if (!codes.includes(code as string)) return undefined;
   return (
-    `${failure.message}; Error code '${failure.code}'; ` +
-    `nested exception is org.neo4j.driver.exceptions.ClientException: ${failure.message}`
+    `${message}; Error code '${code}'; ` +
+    `nested exception is org.neo4j.driver.exceptions.ClientException: ${message}`
   );
 }
 
@@ -190,7 +201,7 @@ export function compact<T extends object = Written>(fields: BeforeNonEmpty<T>): 
  * species in its url where Java does not -- hidden from the diff harness by
  * the `.url` differences endpoints declare for the host.
  */
-export function notFound(request, message) {
+export function notFound(request: Request, message: string) {
   return javaError(request, 404, 'NOT_FOUND', message);
 }
 
@@ -198,10 +209,11 @@ export function notFound(request, message) {
 export type Written = { [property: string]: unknown };
 
 /** The named properties that are actually present. Absent means omitted, not null. */
-export function only(source, keys: string[]): Written {
+export function only(source: unknown, keys: string[]): Written {
   const out: Written = {};
+  const from = source as Record<string, unknown>;
   for (const key of keys) {
-    if (source[key] !== undefined && source[key] !== null) out[key] = source[key];
+    if (from[key] !== undefined && from[key] !== null) out[key] = from[key];
   }
   return out;
 }
@@ -212,11 +224,13 @@ export function only(source, keys: string[]): Written {
  * malformed, the service will not answer it -- or undefined for any other
  * failure.
  */
-export function timedOut(request, failure) {
-  const code = String(failure?.code ?? '');
+export function timedOut(request: Request, failure: unknown) {
+  // Whatever was thrown: a driver error carries a code and a message.
+  const { code: given, message } = (failure ?? {}) as { code?: unknown; message?: unknown };
+  const code = String(given ?? '');
   // Every connection in use: the driver says so in its message alone. Not the
   // caller's fault and not for long, so the same 503 with a reason that fits.
-  if (String(failure?.message ?? '').startsWith('Connection acquisition timed out'))
+  if (String(message ?? '').startsWith('Connection acquisition timed out'))
     return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The service is busy; try again shortly');
   const ended =
     code.startsWith('Neo.ClientError.Transaction.TransactionTimedOut') ||
@@ -243,7 +257,7 @@ export function timedOut(request, failure) {
  * BasicErrorController's, with the time it was answered and the path as it
  * came.
  */
-export function springNotFound(request) {
+export function springNotFound(request: Request) {
   const path = String(request.originalUrl ?? '').split('?')[0];
   return {
     status: 404,
@@ -264,7 +278,7 @@ export type Failure = Error & {
 };
 
 /** Java's GlobalExceptionHandler answer to its own NullPointerException. */
-export function unexpectedFailure(request) {
+export function unexpectedFailure(request: Request) {
   return javaError(
     request,
     500,
@@ -279,7 +293,7 @@ export function unexpectedFailure(request) {
  * writes it (javaJson): a message carrying a control character -- the id or
  * parameter as given -- is `\u001F` in Java's, and was `\u001f` in ours.
  */
-export function javaError(request, code, reason, message) {
+export function javaError(request: Request, code: number, reason: string, message: string | null) {
   const host = request.get?.('host') ?? 'localhost';
   const protocol = request.protocol ?? 'http';
   const url = String(request.originalUrl ?? '').split('?')[0];
@@ -303,7 +317,7 @@ export function javaError(request, code, reason, message) {
  * the most, so they keep a smaller share. One past it is a 503 at once rather
  * than a wait, as the render service answers a full queue.
  */
-export function deepShare(max) {
+export function deepShare(max: number) {
   let running = 0;
   return {
     enter: () => (running < max ? ((running += 1), true) : false),
