@@ -107,7 +107,7 @@ export function solrConfigured() {
 function coreUrl() {
   const given = settings.solrUrl();
   if (!given) throw new Error('SOLR_URL is not set');
-  let url;
+  let url: URL;
   try {
     url = new URL(given);
   } catch {

@@ -118,7 +118,7 @@ function tokens(html: string): Token[] {
   };
   let at = 0;
   // RAWTEXT and RCDATA: after these start tags, text up to the matching end tag.
-  let raw;
+  let raw: { name: string; references: boolean } | undefined;
   while (at < html.length) {
     if (raw) {
       const close = html.toLowerCase().indexOf(`</${raw.name}`, at);

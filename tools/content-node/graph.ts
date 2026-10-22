@@ -242,7 +242,7 @@ function withGraph(value: unknown): GraphValue {
   if (value instanceof neo4j.types.Relationship)
     return {
       id: plain(value.identity),
-      type: value.type,
+      type: value.type as string,
       start: plain(value.start),
       end: plain(value.end),
       props: plain(value.properties),

@@ -106,7 +106,7 @@ function jsonFrom(origin: string, fetch: WarmFetch = globalThis.fetch) {
     const text = await response.text();
     if (response.status !== 200) throw new Error(`${path}: ${response.status}`);
     try {
-      return JSON.parse(text);
+      return JSON.parse(text) as unknown;
     } catch {
       throw new Error(`${path}: not JSON (${text.slice(0, 60)})`);
     }
@@ -170,7 +170,7 @@ export async function main(
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main(process.argv.slice(2)).then(
     (code) => process.exit(code),
-    (failure) => {
+    (failure: Error) => {
       console.error(failure.message);
       process.exit(1);
     }
