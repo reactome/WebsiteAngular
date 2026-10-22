@@ -65,7 +65,7 @@ const REASON = { 400: 'BAD_REQUEST', 500: 'INTERNAL_SERVER_ERROR' };
  * (Java's empty list). A REACT_ id is the object whose oldStId it is, or, when
  * there is none, looked for as a stable id -- and not found, as in Java.
  */
-async function orthologyOf(raw: string, species) {
+async function orthologyOf(raw: string, species: bigint) {
   const id = inDepthId(raw);
   if (!id) return null;
   let { idType, id: value } = id;
@@ -97,7 +97,7 @@ async function orthologyOf(raw: string, species) {
  * and, overridden, Jackson writes it before schemaClass. Measured from Java's
  * /mapping answers over Reaction, BlackBoxEvent and FailedReaction.
  */
-export function reactionLikeEventJson(node) {
+export function reactionLikeEventJson(node: Props) {
   return {
     ...only(node, [
       'dbId',
@@ -151,7 +151,7 @@ const MAPPED_REACTION_ROLES =
  *   once the species has been looked up, as MappingService does.
  * - Nothing found is Java's 404, naming the resource and identifier as given.
  */
-async function mappingAnswer(request: Request, kind) {
+async function mappingAnswer(request: Request, kind: string) {
   const resource = pathId(rawSegment(request, 4));
   const identifier = pathId(rawSegment(request, 5));
   const given = queryValues(request, 'species');
@@ -174,8 +174,8 @@ async function mappingAnswer(request: Request, kind) {
   }
   if (asked === '') return missing();
 
-  let cypher;
-  let params;
+  let cypher: string;
+  let params: Record<string, string>;
   if (go) {
     cypher =
       taxId === undefined
@@ -205,7 +205,7 @@ async function mappingAnswer(request: Request, kind) {
     status: 200,
     body: rows.map((row) =>
       // The pathways query returns p, the reactions query rle.
-      kind === 'reactions' ? reactionLikeEventJson(row.rle) : pathwayJson(row.p as Props)
+      kind === 'reactions' ? reactionLikeEventJson(row.rle as Props) : pathwayJson(row.p as Props)
     ),
     type: 'application/json',
   };
@@ -235,7 +235,7 @@ class Uncoercible extends Error {}
  * else -- a number, a boolean -- is the driver's Uncoercible, which only a
  * query the identifier or filter has rewritten can return.
  */
-function javaAsString(value) {
+function javaAsString(value: unknown): string {
   if (value === null || value === undefined) return 'null';
   if (typeof value === 'string') return value;
   const type =
@@ -254,7 +254,11 @@ function javaAsString(value) {
  * Spring translates it, and a value that is not text the driver's
  * Uncoercible; both returned here as the answer to give.
  */
-async function crossReferenceResults(request: Request, identifier, dbFilter) {
+async function crossReferenceResults(
+  request: Request,
+  identifier: string,
+  dbFilter: string | undefined
+) {
   try {
     const rows = await read<{
       reference: string | null;
@@ -309,7 +313,7 @@ async function crossReferenceResults(request: Request, identifier, dbFilter) {
  * it is a BigInt and the answer is written by pageText. PageImpl corrects the
  * total when the slice runs past it: offset plus what the page holds.
  */
-export function pageJson(content, page, size, total) {
+export function pageJson<T>(content: T[], page: number, size: number, total: number) {
   const offset = BigInt(page) * BigInt(size);
   const counted =
     content.length && offset + BigInt(size) > BigInt(total)
@@ -334,7 +338,7 @@ export function pageJson(content, page, size, total) {
 }
 
 /** pageJson's answer as Jackson writes it, its long offset as digits. */
-export function pageText(page) {
+export function pageText(page: ReturnType<typeof pageJson>) {
   const marker = '\u0000long:';
   const text = javaJson({
     ...page,
@@ -353,20 +357,27 @@ const BATCHES = deepShare(2);
  * does `signal` (the client gone): no lookup starts once nobody will read
  * the answer.
  */
-async function inOrderPool(items, width, work, signal?: AbortSignal) {
-  const answers = new Array(items.length);
+async function inOrderPool<T, A>(
+  items: T[],
+  width: number,
+  work: (item: T) => Promise<A>,
+  signal?: AbortSignal
+) {
+  const answers = new Array<A | undefined>(items.length);
   let next = 0;
   let stopped = false;
   const worker = async () => {
     while (!stopped && !signal?.aborted && next < items.length) {
       const at = next++;
       try {
-        answers[at] = await work(items[at]);
+        // Below items.length: the loop's condition.
+        answers[at] = await work(items[at] as T);
       } catch (caught) {
         stopped = true;
         throw caught;
       }
-      if (answers[at]?.status) stopped = true;
+      // An answer to give instead (a failure) has a status; results do not.
+      if ((answers[at] as { status?: unknown } | undefined)?.status) stopped = true;
     }
   };
   await Promise.all(Array.from({ length: Math.min(width, items.length) }, worker));
@@ -517,7 +528,7 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
           ),
           headers: { 'Retry-After': '5' },
         };
-      let answers;
+      let answers: (Awaited<ReturnType<typeof crossReferenceResults>> | undefined)[];
       try {
         answers = await inOrderPool(
           trimmed,
@@ -530,7 +541,11 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
       }
       // Nobody to answer: whatever is written goes nowhere.
       if (gone.signal.aborted) return { status: 500 };
-      const failed = answers.find((results) => results?.status);
+      // The first answer to give instead: it has a status, where results do not.
+      const failed = answers.find(
+        (results): results is Exclude<typeof results, unknown[] | undefined> =>
+          !!(results as { status?: unknown } | undefined)?.status
+      );
       if (failed) return failed;
       const content = trimmed.map((identifier, at) => ({ [identifier]: answers[at] }));
       if (page.value < 0)
