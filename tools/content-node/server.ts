@@ -33,6 +33,7 @@ import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java
 import { pathId, rawSegment } from './spring.ts';
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
+import type { Request } from './endpoint.ts';
 import { databaseVersion } from './release.ts';
 import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
@@ -95,7 +96,7 @@ export function downloadGuard(request) {
  * any version cut); Neo4j's toInteger refuses it the same way, which is how
  * this sees it -- on every endpoint, whatever its id rules.
  */
-export function failureAnswer(request, path, failure) {
+export function failureAnswer(request: Request, path: string, failure) {
   const tooLong = timedOut(request, failure);
   if (tooLong) return tooLong;
   if (

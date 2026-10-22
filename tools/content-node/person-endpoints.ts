@@ -32,7 +32,7 @@ import { attributeAnswer } from './objects.ts';
  * A dbId is matched under DatabaseObject, where it is indexed, and the label
  * asserted after; an ORCID is indexed on Person (see the person lists).
  */
-export function personWhere(id, { email = false } = {}) {
+export function personWhere(id: string, { email = false } = {}) {
   // Pattern.matches: the whole id; `.` stops at Java's line terminators.
   if (email && /^[^\n\r\u0085\u2028\u2029]+@[^\n\r\u0085\u2028\u2029]+\.[a-z]+$/.test(id))
     return { anchor: 'n:Person', where: 'n.eMailAddress = $id', params: { id } };
@@ -52,7 +52,7 @@ export function personWhere(id, { email = false } = {}) {
  * node and what it points to but InstanceEdits (see /person/{id}).
  * Undefined when there is none.
  */
-async function findPerson(id) {
+async function findPerson(id: string) {
   const person = personWhere(id);
   if (!person) return undefined;
   const options = { anchor: person.anchor, ordered: false, without: 'InstanceEdit' };

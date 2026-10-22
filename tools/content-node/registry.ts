@@ -54,8 +54,8 @@ export function endpointFor(path: string): Endpoint | undefined {
 }
 
 /** An endpoint's template as a pattern over a path, `tail` after it. */
-function endpointPattern(template, tail) {
-  const escape = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function endpointPattern(template: string, tail: string) {
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(
     `^${template
       .split(/\{\w+\}/)
@@ -65,7 +65,7 @@ function endpointPattern(template, tail) {
 }
 
 /** The GET endpoint Express would route `path` (no query) to, if any. */
-export function getEndpointFor(path) {
+export function getEndpointFor(path: string): Endpoint | undefined {
   return (
     endpoints
       // GET endpoints declare no method; the only one declared is 'post'.

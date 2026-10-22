@@ -22,7 +22,7 @@ import { VIEW } from './domain.ts';
  * `request.params` its own way, so the raw segment is read instead (nginx
  * passes the request's own URI through). A raw ';' never gets this far.
  */
-export function pathId(segment) {
+export function pathId(segment: string): string {
   return javaPathDecode(String(segment));
 }
 
@@ -31,7 +31,7 @@ export function pathId(segment) {
  * UTF-8, each malformed sequence U+FFFD -- Java answers person/%FF with "No
  * person found for id: \ufffd". decodeURIComponent throws on those instead.
  */
-function javaPathDecode(text) {
+function javaPathDecode(text: string): string {
   if (!text.includes('%')) return text;
   const bytes: number[] = [];
   for (let at = 0; at < text.length; at += 1) {
@@ -39,7 +39,8 @@ function javaPathDecode(text) {
       bytes.push(parseInt(text.slice(at + 1, at + 3), 16));
       at += 2;
     } else {
-      const code = text.codePointAt(at);
+      // Defined: `at` is inside the text.
+      const code = text.codePointAt(at) as number;
       if (code > 0xffff) at += 1;
       bytes.push(...Buffer.from(String.fromCodePoint(code), 'utf8'));
     }
@@ -48,7 +49,7 @@ function javaPathDecode(text) {
 }
 
 /** The raw, undecoded path segment at `index` (`/ContentService/data/query/{id}` is 4). */
-export function rawSegment(request, index) {
+export function rawSegment(request: { originalUrl?: unknown }, index: number): string {
   return (
     String(request.originalUrl ?? '')
       .split('?')[0]
