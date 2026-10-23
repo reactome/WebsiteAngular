@@ -59,10 +59,10 @@ export function canonicalUrl(name: string, format: string, query: Query) {
   const kept = ACCEPTED.filter(
     (key) =>
       key in query &&
-      // A repeated parameter has no single value to suggest, and joining the
-      // array would recommend `token=a%2Cb` -- a different URL that is also
-      // wrong.
-      !Array.isArray(query[key]) &&
+      // Text only. A repeated parameter has no single value to suggest, and
+      // joining the array would recommend `token=a%2Cb` -- a different URL
+      // that is also wrong; a bracketed one's object would be `[object Object]`.
+      typeof query[key] === 'string' &&
       !(key in BOUNDS && !inBounds(key, query[key]))
   ).map((key) => `${key}=${encodeURIComponent(String(query[key]))}`);
   return `/render/${name}.${format}${kept.length ? `?${kept.join('&')}` : ''}`;
@@ -149,4 +149,20 @@ export function speciesProblem(name: string, query: Query) {
  */
 export function repeated(query: Query) {
   return Object.keys(query).filter((key) => Array.isArray(query[key]));
+}
+
+/**
+ * Parameters given with brackets -- `token[a]=x` -- which the query parser
+ * (Express 4's, kept: service.ts) hands over as an object.
+ *
+ * The same hole as a repeated one: `token`, `select` and `highlight` are read
+ * only when they are text, so `?token[a]=x` drew the figure with no analysis
+ * overlay, and a 200. The others were refused only because their value checks
+ * failed on the object. Refused as a rule.
+ */
+export function bracketed(query: Query) {
+  return Object.keys(query).filter((key) => {
+    const value = query[key];
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  });
 }

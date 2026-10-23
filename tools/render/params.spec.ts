@@ -17,6 +17,7 @@ import {
   ENUMS,
   REACTION_CLASSES,
   badEnums,
+  bracketed,
   canonicalUrl,
   inBounds,
   repeated,
@@ -169,6 +170,26 @@ describe('a parameter given more than once', () => {
 
   it('is left out of the canonical url, which has no single value to offer', () => {
     expect(canonicalUrl('R-HSA-1', 'png', { token: ['a', 'b'], scale: '1' })).toBe(
+      '/render/R-HSA-1.png?scale=1'
+    );
+  });
+});
+
+describe('a parameter given with brackets', () => {
+  it('catches token, select and highlight, which were dropped silently', () => {
+    // Read only when they are text, so `token[a]=x` drew the figure with no
+    // analysis overlay, and a 200.
+    expect(
+      bracketed({ token: { a: 'x' }, select: { 0: 'R-HSA-1' }, highlight: 'R-HSA-2' })
+    ).toEqual(['token', 'select']);
+  });
+
+  it('is not a repeated one, nor a value', () => {
+    expect(bracketed({ token: ['a', 'b'], dark: 'true', scale: '2' })).toEqual([]);
+  });
+
+  it('is left out of the canonical url, which would offer [object Object]', () => {
+    expect(canonicalUrl('R-HSA-1', 'png', { token: { a: 'x' }, scale: '1' })).toBe(
       '/render/R-HSA-1.png?scale=1'
     );
   });
