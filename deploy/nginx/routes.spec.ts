@@ -47,18 +47,28 @@ const UPSTREAMS: Record<string, string> = {
 };
 
 type Location = { kind: string; path: string; target: string; body: string };
-const locations: Location[] = [
-  ...conf.matchAll(/^location\s+(=|~\*?|\^~)?\s*("[^"]*"|\S+)\s*\{([^}]*)\}/gm),
-].map((m) => ({
-  kind: m[1] ?? '',
-  // A quoted path is nginx's way to write one holding ';' or '{'.
-  path: m[2].replace(/^"(.*)"$/, '$1'),
-  target: m[3].includes('content-node-proxy.conf')
-    ? 'node'
-    : (UPSTREAMS[m[3].match(/proxy_pass\s+https?:\/\/([\w-]+)/)?.[1] ?? ''] ??
-      (/proxy_pass/.test(m[3]) ? 'unclassified' : 'none')),
-  body: m[3],
-}));
+/** A file's locations, in file order: indented ones too (local.conf's are). */
+const parse = (text: string): Location[] =>
+  [...text.matchAll(/^\s*location\s+(=|~\*?|\^~)?\s*("[^"]*"|\S+)\s*\{([^}]*)\}/gm)].map((m) => ({
+    kind: m[1] ?? '',
+    // A quoted path is nginx's way to write one holding ';' or '{'.
+    path: m[2].replace(/^"(.*)"$/, '$1'),
+    target: m[3].includes('content-node-proxy.conf')
+      ? 'node'
+      : (UPSTREAMS[m[3].match(/proxy_pass\s+https?:\/\/([\w-]+)/)?.[1] ?? ''] ??
+        (/proxy_pass/.test(m[3]) ? 'unclassified' : 'none')),
+    body: m[3],
+  }));
+const locations = parse(conf);
+
+/**
+ * local.conf (the compose setup): its own locations, then routes-core.conf's,
+ * which its server block includes last. Not routes.conf -- local has no render
+ * budget -- so a route only routes.conf carries is not routed locally, and
+ * the species overview reached Java there while the dev proxy sent it to node.
+ */
+const localConf = readFileSync(join(__dirname, 'local.conf'), 'utf8');
+const localLocations = [...parse(localConf), ...parse(core)];
 
 // routes-core.conf's `if ($request_uri ~ "…") { return 418; }`, which hands
 // a matrix parameter to node to refuse whatever location would match.
@@ -69,23 +79,24 @@ const refusing = conf.match(/^if \(\$request_uri ~ "([^"]+)"\) \{ return 418; \}
  * order; else the longest prefix. (No `^~` locations exist; a test below
  * says so.)
  */
-function nginxLocation(url: string): Location | undefined {
+function nginxLocation(url: string, within = locations): Location | undefined {
   const path = url.split('?')[0];
   // The server-level refusal, before any location: on the path as sent.
   if (refusing && new RegExp(refusing).test(url))
-    return locations.find((l) => l.path === '@content_node_refuses');
-  const exact = locations.find((l) => l.kind === '=' && l.path === path);
+    return within.find((l) => l.path === '@content_node_refuses');
+  const exact = within.find((l) => l.kind === '=' && l.path === path);
   if (exact) return exact;
-  const regex = locations.find(
+  const regex = within.find(
     (l) => l.kind.startsWith('~') && new RegExp(l.path, l.kind === '~*' ? 'i' : '').test(path)
   );
   if (regex) return regex;
-  return locations
+  return within
     .filter((l) => l.kind === '' && path.startsWith(l.path))
     .sort((a, b) => b.path.length - a.path.length)[0];
 }
 
-const nginxTarget = (url: string) => nginxLocation(url)?.target ?? 'none';
+const nginxTarget = (url: string, within = locations) =>
+  nginxLocation(url, within)?.target ?? 'none';
 const nginxSendsToNode = (url: string) => nginxTarget(url) === 'node';
 
 // The dev proxy, read as `ng serve` reads it (see proxy-order.spec.ts).
@@ -123,6 +134,12 @@ describe('nginx and the dev proxy agree', () => {
     expect(locations).toHaveLength(conf.match(/^\s*location\s/gm)?.length ?? 0);
     expect(locations.filter((l) => l.target === 'node')).toHaveLength(
       conf.match(/content-node-proxy\.conf/g)?.length ?? 0
+    );
+  });
+
+  it("reading every location local.conf has, so its routing is local's", () => {
+    expect(localLocations).toHaveLength(
+      `${localConf}\n${core}`.match(/^\s*location\s/gm)?.length ?? 0
     );
   });
 
@@ -202,6 +219,14 @@ describe('where nginx sends things', () => {
   for (const path of nodeEndpoints.filter((p) => !(p in NOT_YET_ROUTED)))
     it(`sends what node answers to node: ${path}`, () => {
       expect([sample(path), nginxTarget(sample(path))]).toEqual([sample(path), 'node']);
+    });
+
+  for (const path of nodeEndpoints.filter((p) => !(p in NOT_YET_ROUTED)))
+    it(`sends what node answers to node locally too (local.conf): ${path}`, () => {
+      expect([sample(path), nginxTarget(sample(path), localLocations)]).toEqual([
+        sample(path),
+        'node',
+      ]);
     });
 
   for (const [path, why] of Object.entries(NOT_YET_ROUTED))
