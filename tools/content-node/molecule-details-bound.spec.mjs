@@ -36,6 +36,9 @@ function post(accessions) {
   const sent = httpRequest({
     host: '127.0.0.1',
     port,
+    // A connection of its own, closed with its answer: the server's count of
+    // open connections then says when a dropped one has gone.
+    agent: false,
     method: 'POST',
     path: '/ContentService/interactors/static/molecules/details',
     headers: { 'Content-Type': 'text/plain' },
@@ -77,21 +80,30 @@ describe('the molecule details batch', () => {
     expect((await after.answered).status).toBe(404);
   });
 
-  it('stops asking once the client is gone', async () => {
+  it('stops asking once the client is gone, and gives its place back', async () => {
     asked = 0;
     const { answered, drop } = post(['P1', 'P2', 'P3', 'P4', 'P5']);
     answered.catch(() => {});
     await until(() => held.length === 1);
     drop();
-    // The close is seen before the first lookup returns; no second one starts.
-    await new Promise((r) => setTimeout(r, 50));
+    // The server has seen the close before the first lookup returns.
+    const open = () =>
+      new Promise((resolve) => server.getConnections((_error, count) => resolve(count)));
+    let connections = 1;
+    for (let i = 0; i < 200 && connections > 0; i += 1) {
+      connections = await open();
+      if (connections > 0) await new Promise((r) => setTimeout(r, 10));
+    }
+    expect(connections).toBe(0);
     release();
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 20));
     expect(asked).toBe(1);
-    // Its place is given back.
-    const next = post(['P6']);
-    await until(() => held.length === 1);
+    // All four places are free again: four run, and a fifth is refused. A
+    // dropped batch that kept its place would leave three.
+    const four = [1, 2, 3, 4].map((n) => post([`Q0000${n}`]));
+    await until(() => held.length === 4);
+    expect((await post(['Q00005']).answered).status).toBe(503);
     release();
-    expect((await next.answered).status).toBe(404);
+    for (const { answered: each } of four) expect((await each).status).toBe(404);
   });
 });
