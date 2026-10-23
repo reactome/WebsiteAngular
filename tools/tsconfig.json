@@ -27,9 +27,11 @@
     "noFallthroughCasesInSwitch": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // Off for the mechanical conversion (research R4: 1,180 errors to clear,
-    // 3,373 with it on); turned on module by module (tasks T021).
-    "noImplicitAny": false
+    // On, as strict has it: off for the mechanical conversion (research R4:
+    // 1,180 errors to clear, 3,373 with it on), then cleared module by module
+    // (tasks T021) until none was left. check:types still counts it, a
+    // second line should this be turned off again.
+    "noImplicitAny": true
     // verbatimModuleSyntax and erasableSyntaxOnly are not set: the services
     // import the site's model types, which a whole-program option would hold
     // to them too. Lint enforces both for tools/, and tools/load.spec.mjs loads

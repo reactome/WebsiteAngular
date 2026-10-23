@@ -14,7 +14,7 @@ const { endpoints } = await import('./registry.ts');
 const GETS = endpoints.filter((e) => !e.method).map((e) => e.path);
 const OPENAPI = JSON.parse(
   readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
-);
+) as { paths: Record<string, { get?: unknown } | undefined> };
 const variables = (path: string) => [...path.matchAll(/\{([^}]+)\}/g)].map((m) => m[1]);
 const shape = (path: string) => path.replace(/\{[^}]+\}/g, '{}');
 

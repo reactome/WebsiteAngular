@@ -231,7 +231,7 @@ describe('StaticCitation', () => {
   });
 
   it('reads a map and a list as Java prints them, and treats what Java cannot read as no citation', () => {
-    const one = (changes) =>
+    const one = (changes: Record<string, unknown>) =>
       staticCitationFrom({ resultList: { result: [{ ...europePmc, ...changes }] } });
     expect(one({ pageInfo: { a: 1, b: [2, null] } }).pages).toBe('{a=1, b=[2, null]}');
     expect(one({ journalInfo: null }).year).toBe(undefined);
@@ -266,7 +266,7 @@ describe('StaticCitation', () => {
       }
       return undefined;
     };
-    const cce = (from, to) =>
+    const cce = (from: string, to: string) =>
       `class ${from} cannot be cast to class ${to} (${from} and ${to} are in module java.base of loader 'bootstrap')`;
     expect(failure(['x'], 'txt')).toBe(cce('java.lang.String', 'java.util.Map'));
     expect(failure([[1]], 'bib')).toBe(cce('java.util.ArrayList', 'java.util.Map'));
@@ -290,7 +290,7 @@ describe('StaticCitation', () => {
 });
 
 vi.mock('./graph.ts', async () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: unknown) => {
     // The release as the service reads it: releaseNumber, not another property.
     if (cypher === 'MATCH (n:DBInfo) RETURN n.releaseNumber AS version LIMIT 1')
       return [{ version: 97 }];
@@ -300,8 +300,11 @@ vi.mock('./graph.ts', async () => ({
   },
   configured: () => true,
   close: async () => {},
-  envSetting: (key, fallback = '') => process.env[key] || fallback,
+  envSetting: (key: string, fallback = '') => process.env[key] || fallback,
 }));
+
+/** What the stand-in Europe PMC answers, when a test sets it. */
+const europePmcStub = globalThis as { pmcAnswer?: unknown };
 
 /** What the stand-in graph answers, and what it was last asked. */
 const graph = globalThis as { graphAsked?: unknown; graphRows?: unknown[] };
@@ -392,15 +395,15 @@ describe('the citation endpoints', () => {
   it("/pathway/{id} cites the event by the id as given; only a pathway's by its DOI", async () => {
     try {
       graph.graphRows = [eventRow('Pathway', ['Pathway'])];
-      const pathway = await (
+      const pathway = (await (
         await fetch(`${base}/ContentService/citation/pathway/9?dateAccessed=d`)
-      ).json();
+      ).json()) as unknown;
       // Asked by a versioned stable id, neither its stId nor its dbId: the
       // link names the id as given.
       graph.graphRows = [eventRow('Reaction', ['ReactionLikeEvent', 'Reaction'])];
-      const reaction = await (
+      const reaction = (await (
         await fetch(`${base}/ContentService/citation/pathway/R-HSA-9.1?dateAccessed=d`)
-      ).json();
+      ).json()) as unknown;
       expect([pathway, reaction]).toEqual([
         {
           imageCitation:
@@ -439,7 +442,7 @@ describe('the citation endpoints', () => {
   });
 
   it('/static/{id} is "unable to fetch" for an answer Java cannot read', async () => {
-    globalThis.pmcAnswer = { resultList: { result: [{ ...europePmc, journalInfo: [] }] } };
+    europePmcStub.pmcAnswer = { resultList: { result: [{ ...europePmc, journalInfo: [] }] } };
     try {
       const response = await fetch(`${base}/ContentService/citation/static/12345`);
       expect([response.status, await response.text()]).toEqual([
@@ -447,7 +450,7 @@ describe('the citation endpoints', () => {
         'Unable to fetch static citation',
       ]);
     } finally {
-      delete globalThis.pmcAnswer;
+      delete europePmcStub.pmcAnswer;
     }
   });
 
@@ -528,19 +531,22 @@ describe('the citation endpoints', () => {
   });
 
   it("/static/{id} is GlobalExceptionHandler's 500 for an author Java cannot cast", async () => {
-    globalThis.pmcAnswer = {
+    europePmcStub.pmcAnswer = {
       resultList: { result: [{ ...europePmc, authorList: { author: ['x'] } }] },
     };
     try {
       const response = await fetch(`${base}/ContentService/citation/static/12345`);
-      expect([response.status, (await response.json()).messages]).toEqual([
+      expect([
+        response.status,
+        ((await response.json()) as { messages: string[] }).messages,
+      ]).toEqual([
         500,
         [
           "class java.lang.String cannot be cast to class java.util.Map (java.lang.String and java.util.Map are in module java.base of loader 'bootstrap')",
         ],
       ]);
     } finally {
-      delete globalThis.pmcAnswer;
+      delete europePmcStub.pmcAnswer;
     }
   });
 
@@ -569,10 +575,10 @@ describe('the citation endpoints', () => {
       const response = await fetch(
         `${base}/ContentService/citation/pathway/R-HSA-9?dateAccessed=d`
       );
-      expect([response.status, (await response.json()).messages]).toEqual([
-        500,
-        ['Something unexpected happened and the error has been reported.'],
-      ]);
+      expect([
+        response.status,
+        ((await response.json()) as { messages: string[] }).messages,
+      ]).toEqual([500, ['Something unexpected happened and the error has been reported.']]);
     } finally {
       graph.graphRows = [];
     }
@@ -582,7 +588,7 @@ describe('the citation endpoints', () => {
     const response = await fetch(
       `${base}/ContentService/citation/export?id=x&ext=bib&dateAccessed=d`
     );
-    expect((await response.json()).messages).toEqual([
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
       "Required request parameter 'isPathway' for method parameter type Boolean is not present",
     ]);
   });
