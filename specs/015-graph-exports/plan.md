@@ -52,7 +52,8 @@ The node content service writes the SBML export (at its two existing URLs) and a
 - no module over 1,500 lines (spec 014);
 - the ratchets (no lint rise, no loose values or implicit `any`);
 - no personal data in fixtures or logs;
-- light load on the shared graph.
+- light load on the shared graph;
+- **no request to the production site, ever** (decided 23 Oct 2026). Every reference answer, sample and check uses the beta host's own services (the Java ContentService, the legacy BioPAX service, its databases). `reactome.org` appears in the exports only as text, in identifiers and the BioPAX base address.
 
 **Scale/Scope**:
 
