@@ -14,6 +14,8 @@ import {
   VIEW,
   writeDomain,
 } from './domain.ts';
+import type { MappedRow } from './domain.ts';
+import type { GraphNode, GraphRelationship, Properties } from './graph.ts';
 
 const EVENT = [
   'DatabaseObject',
@@ -26,9 +28,34 @@ const EVENT = [
 const COMPLEX = ['DatabaseObject', 'PhysicalEntity', 'Complex', 'Trackable', 'Deletable'];
 const PATHWAY = ['DatabaseObject', 'Event', 'Pathway', 'Trackable', 'Deletable'];
 
-const node = (id, labels, props) => ({ id, labels, props: { dbId: id, ...props } });
-const rel = (type, start, end, props = {}) => ({ type, start, end, props });
-const write = (row, ...options) => JSON.parse(writeDomain(mapResult(row), ...options));
+const node = (id: number, labels: string[], props: Properties): GraphNode => ({
+  id,
+  labels,
+  props: { dbId: id, ...props },
+});
+const rel = (
+  type: string,
+  start: number | string,
+  end: number | string,
+  props: GraphRelationship['props'] = {}
+) => ({ type, start, end, props });
+const write = (row: MappedRow, view?: number, flags?: { jsog?: boolean }): unknown =>
+  JSON.parse(writeDomain(mapResult(row), view, flags));
+
+/**
+ * What was written, read back along a path -- a field's name, a list's
+ * index -- as the tests name it: what is there, or undefined.
+ */
+function at(json: unknown, ...path: (string | number)[]): unknown {
+  return path.reduce<unknown>(
+    (value, step) => (value as Record<string | number, unknown> | null | undefined)?.[step],
+    json
+  );
+}
+
+/** A written list's entries as dbIds: an object's own, or the dbId a repeat is written as. */
+const ids = (list: unknown) =>
+  (list as unknown[]).map((entry) => (entry as { dbId?: unknown } | null)?.dbId ?? entry);
 
 /** A reaction with two inputs and an output; complex 3 is an input and the output. */
 const reaction = {
@@ -50,7 +77,7 @@ const reaction = {
 describe('mapResult and writeDomain, as SDN and Jackson load and write an object', () => {
   it("writes the class's properties in Jackson's order, empty ones left out", () => {
     const json = write(reaction);
-    expect(Object.keys(json)).toEqual([
+    expect(Object.keys(json as object)).toEqual([
       'dbId',
       'displayName',
       'stId',
@@ -60,40 +87,39 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       'className',
       'schemaClass',
     ]);
-    expect(json.isInDisease).toBe(false);
-    expect(json.className).toBe('Reaction');
+    expect(at(json, 'isInDisease')).toBe(false);
+    expect(at(json, 'className')).toBe('Reaction');
   });
 
   it('repeats an input by its stoichiometry, the repeat as a dbId', () => {
-    expect(write(reaction).input.map((entry) => entry.dbId ?? entry)).toEqual([2, 2, 3]);
-    expect(write(reaction).input[1]).toBe(2);
+    expect(ids(at(write(reaction), 'input'))).toEqual([2, 2, 3]);
+    expect(at(write(reaction), 'input', 1)).toBe(2);
   });
 
   it('fills a field in the order its nodes first appear, not by relationship order', () => {
     // 3 is output order 1 but was met among the inputs, so it is the first output.
-    expect(write(reaction).output).toEqual([3, expect.objectContaining({ dbId: 4 })]);
+    expect(at(write(reaction), 'output')).toEqual([3, expect.objectContaining({ dbId: 4 })]);
   });
 
   it('orders by every related node, including the ones the query did not return whole', () => {
     // 4 first appears through a relationship no field of a reaction holds,
     // which findByIdQuery leaves out of `nodes` -- but not out of `order`.
     const json = write({ ...reaction, order: [4, 2, 3, 4, 3] });
-    expect(json.output.map((entry) => entry.dbId ?? entry)).toEqual([4, 3]);
+    expect(ids(at(json, 'output'))).toEqual([4, 3]);
   });
 
   it('puts the root among the candidates where it first appears, else last, as SDN does', () => {
     // A regulation whose reaction is also regulated by another: the root is a
     // candidate for the reaction's regulatedBy alongside the other one.
     const regulation = ['DatabaseObject', 'Regulation', 'PositiveRegulation'];
-    const make = (nodes) => ({
+    const make = (nodes: GraphNode[]) => ({
       root: node(50, regulation, { displayName: 'root' }),
       nodes,
       relationships: [rel('regulatedBy', 51, 50), rel('regulatedBy', 51, 52)],
     });
     const reaction = node(51, EVENT, { displayName: 'reaction' });
     const other = node(52, regulation, { displayName: 'other' });
-    const order = (row) =>
-      write(row).regulatedEntity[0].regulatedBy.map((entry) => entry.dbId ?? entry);
+    const order = (row: MappedRow) => ids(at(write(row), 'regulatedEntity', 0, 'regulatedBy'));
     // Not in any list: last.
     expect(order(make([reaction, other]))).toEqual([52, 50]);
     // In a list before the other: there.
@@ -117,31 +143,36 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
         { ...rel('species', 1, 9), id: 77 },
       ],
     };
-    expect(write(row).species).toEqual([expect.objectContaining({ dbId: 9 })]);
+    expect(at(write(row), 'species')).toEqual([expect.objectContaining({ dbId: 9 })]);
   });
 
   it('gives a related object the fields that point back at the root, by stoichiometry too', () => {
     // As Java writes reaction 9834076's: an input of two is consumed by it twice.
-    expect(write(reaction).input[0].consumedByEvent).toEqual([1, 1]);
-    expect(write(reaction).input[2].consumedByEvent).toEqual([1]);
+    expect(at(write(reaction), 'input', 0, 'consumedByEvent')).toEqual([1, 1]);
+    expect(at(write(reaction), 'input', 2, 'consumedByEvent')).toEqual([1]);
   });
 
   it('writes JSOG ids and references for ?includeRef=true', () => {
     const json = write(reaction, VIEW.flatten, { jsog: true });
-    expect(Object.keys(json)[0]).toBe('@id');
-    expect(json['@id']).toBe('1');
-    expect(json.input[0]['@id']).toBe('2');
-    expect(json.input[1]).toEqual({ '@ref': '2' });
-    expect(json.input[0].consumedByEvent).toEqual([{ '@ref': '1' }, { '@ref': '1' }]);
+    expect(Object.keys(json as object)[0]).toBe('@id');
+    expect(at(json, '@id')).toBe('1');
+    expect(at(json, 'input', 0, '@id')).toBe('2');
+    expect(at(json, 'input', 1)).toEqual({ '@ref': '2' });
+    expect(at(json, 'input', 0, 'consumedByEvent')).toEqual([{ '@ref': '1' }, { '@ref': '1' }]);
   });
 
   it('writes the relationships themselves in the nested view', () => {
     const json = write(reaction, VIEW.nested);
-    expect(json.input).toBeUndefined();
-    expect(json.inputs[0]).toEqual(
+    expect(at(json, 'input')).toBeUndefined();
+    expect(at(json, 'inputs', 0)).toEqual(
       expect.objectContaining({ type: 'input', stoichiometry: 2, order: 0 })
     );
-    expect(Object.keys(json.inputs[0])).toEqual(['type', 'stoichiometry', 'order', 'element']);
+    expect(Object.keys(at(json, 'inputs', 0) as object)).toEqual([
+      'type',
+      'stoichiometry',
+      'order',
+      'element',
+    ]);
   });
 
   it('composes a reaction of its inputs, outputs and wrapped catalysts in nested-aggregated', () => {
@@ -151,7 +182,7 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       relationships: [...reaction.relationships, rel('catalystActivity', 1, 5)],
     };
     const json = write(row, VIEW.nestedAggregated);
-    expect(json.composedOf.map((entry) => entry.type)).toEqual([
+    expect((at(json, 'composedOf') as { type: string }[]).map((entry) => entry.type)).toEqual([
       'input',
       'input',
       'output',
@@ -166,14 +197,14 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       nodes: [node(11, PATHWAY, { displayName: 'Apoptosis' })],
       relationships: [rel('updatedInstance', 10, 11)],
     };
-    expect(write(row).updatedInstance[0].schemaClass).toBe('TopLevelPathway');
+    expect(at(write(row), 'updatedInstance', 0, 'schemaClass')).toBe('TopLevelPathway');
     // Through a field typed by a class, the node's own labels decide.
     const direct = {
       root: node(11, PATHWAY, { displayName: 'Apoptosis' }),
       nodes: [],
       relationships: [],
     };
-    expect(write(direct).schemaClass).toBe('Pathway');
+    expect(at(write(direct), 'schemaClass')).toBe('Pathway');
   });
 
   it('gives a node the class of the field that reaches it first, depth first, as SDN does', () => {
@@ -198,11 +229,11 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
         rel('regulatedBy', 63, 62),
       ],
     };
-    const [first, second] = write(row).replacementInstances;
-    expect(first.schemaClass).toBe('PositiveGeneExpressionRegulation');
+    const [first, second] = at(write(row), 'replacementInstances') as unknown[];
+    expect(at(first, 'schemaClass')).toBe('PositiveGeneExpressionRegulation');
     // Written in full where it was first met, inside the first's reaction.
     expect(second).toBe(62);
-    const [, nested] = first.regulatedEntity[0].regulatedBy;
+    const [, nested] = at(first, 'regulatedEntity', 0, 'regulatedBy') as unknown[];
     expect(nested).toMatchObject({ dbId: 62, schemaClass: 'PositiveRegulation' });
   });
 
@@ -216,7 +247,7 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       nodes: [],
       relationships: [],
     };
-    expect(write(row).moleculeType).toBe('Protein');
+    expect(at(write(row), 'moleculeType')).toBe('Protein');
   });
 
   it('reads a getter whose field is named otherwise: Book.isbn is ISBN', () => {
@@ -225,7 +256,7 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       nodes: [],
       relationships: [],
     };
-    expect(write(row).isbn).toBe('0-86720-937-2');
+    expect(at(write(row), 'isbn')).toBe('0-86720-937-2');
   });
 
   it("falls back to GenomeEncodedEntity's class name for an EWAS of another reference", () => {
@@ -240,7 +271,7 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
       nodes: [],
       relationships: [],
     };
-    expect(write(row).className).toBe('Genes and Transcripts');
+    expect(at(write(row), 'className')).toBe('Genes and Transcripts');
   });
 });
 
@@ -263,7 +294,7 @@ describe('writeDomain on a deep graph', () => {
     expect(text.startsWith('{"dbId":100,')).toBe(true);
     expect(text.split('"precedingEvent"').length - 1).toBe(count - 1);
     // Identity holds: the last event is written once, then referred to.
-    expect(JSON.parse(text).precedingEvent[0].followingEvent).toEqual([100]);
+    expect(at(JSON.parse(text) as unknown, 'precedingEvent', 0, 'followingEvent')).toEqual([100]);
     // About two seconds alone; the whole suite in parallel, on a busy host,
     // took it past vitest's five-second default (seen in the pre-push run).
     // What it tests is the stack, not the time.
@@ -322,7 +353,7 @@ describe("summaryEntity, the content service's SummaryEntity", () => {
       rel('species', 71, 95),
     ],
   };
-  const summary = () => JSON.parse(writeDomain(summaryEntity(mapResult(row))));
+  const summary = (): unknown => JSON.parse(writeDomain(summaryEntity(mapResult(row))));
 
   it('is the reference entity under its own identity, written as a SummaryEntity', () => {
     const json = summary();
@@ -332,24 +363,24 @@ describe("summaryEntity, the content service's SummaryEntity", () => {
       schemaClass: 'SummaryEntity',
       className: 'Protein',
     });
-    expect(json.identifier).toBe('P01112');
-    expect(json.geneName).toEqual(['HRAS']);
+    expect(at(json, 'identifier')).toBe('P01112');
+    expect(at(json, 'geneName')).toEqual(['HRAS']);
   });
 
   it('lists the entities by modified residues, then dbId', () => {
     // 71 has a modified residue, so it comes after 72 despite its lower dbId.
-    expect(summary().summarisedEntities.map((entity) => entity.dbId ?? entity)).toEqual([72, 71]);
+    expect(ids(at(summary(), 'summarisedEntities'))).toEqual([72, 71]);
   });
 
   it('merges their compartments once each, in the order met', () => {
     // 72 brings plasma membrane; 71 cytosol, and plasma membrane again.
-    expect(summary().compartment.map((entity) => entity.dbId ?? entity)).toEqual([80, 81]);
+    expect(ids(at(summary(), 'compartment'))).toEqual([80, 81]);
   });
 
   it("takes an entity's species and reference type when it has one", () => {
     const json = summary();
-    expect(json.species).toEqual(95);
-    expect(json.referenceType).toBe('ReferenceGeneProduct');
+    expect(at(json, 'species')).toEqual(95);
+    expect(at(json, 'referenceType')).toBe('ReferenceGeneProduct');
   });
 });
 
@@ -362,7 +393,7 @@ describe('mapNodes, a query that returns nodes alone', () => {
   });
 
   it('maps a node that comes back twice to one object, written the second time as its dbId', () => {
-    expect(JSON.parse(writeDomain(mapNodes([book, book])))[1]).toBe(30);
+    expect(at(JSON.parse(writeDomain(mapNodes([book, book]))) as unknown, 1)).toBe(30);
   });
 });
 

@@ -558,7 +558,7 @@ describe('a payload framed on one event', () => {
    */
   const FRAMED = JSON.parse(
     readFileSync(new URL('./fixtures/shapes-framed-reaction.json', import.meta.url), 'utf8')
-  );
+  ) as RenderShapes;
 
   it('is a frame, not the whole diagram', () => {
     expect(FRAMED.shapes.length).toBeLessThan(REAL.shapes.length / 4);
@@ -576,7 +576,7 @@ describe('a payload framed on one event', () => {
    */
   const FRAMED_ARROWHEAD = JSON.parse(
     readFileSync(new URL('./fixtures/shapes-framed-arrowhead.json', import.meta.url), 'utf8')
-  );
+  ) as RenderShapes;
 
   it.each([
     ['framed', () => FRAMED],

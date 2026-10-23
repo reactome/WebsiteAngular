@@ -19,6 +19,17 @@ import { app, cacheKey, httpError, isModule, statusOf } from './service.ts';
 let base: string;
 let server: Server;
 
+/** The fields of the service's JSON answers these tests read: /health's, and a refusal's. */
+interface Answer {
+  ok?: boolean;
+  build?: string;
+  modules?: number;
+  error?: string;
+  canonical?: string;
+  formats?: string[];
+}
+const json = async (response: Response) => (await response.json()) as Answer;
+
 beforeAll(async () => {
   await new Promise<void>((resolve) => {
     server = app.listen(0, '127.0.0.1', () => resolve());
@@ -32,7 +43,7 @@ describe('/health', () => {
   it('answers, which is the assertion that was missing', async () => {
     const response = await fetch(`${base}/health`);
     expect(response.status).toBe(200);
-    expect((await response.json()).ok).toBe(true);
+    expect((await json(response)).ok).toBe(true);
   });
 
   it('says which code is running, so a stale container can be spotted', async () => {
@@ -40,7 +51,7 @@ describe('/health', () => {
     // merging. Without this the only way to tell what a container was running
     // was to read the source on disk -- the CLI's copy, which always agrees
     // with you.
-    const body = await (await fetch(`${base}/health`)).json();
+    const body = await json(await fetch(`${base}/health`));
     expect(body.build, 'a fingerprint of its own modules').toMatch(/^[0-9a-f]{12}$/);
     expect(body.modules, 'the number of modules hashed').toBeGreaterThan(1);
   });
@@ -80,7 +91,7 @@ describe('the request handler runs at all', () => {
   it('refuses an unknown parameter instead of throwing', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?bogus=1`);
     expect(response.status).toBe(400);
-    const body = await response.json();
+    const body = await json(response);
     expect(body.error).toContain('bogus');
     expect(body.canonical).toBe('/render/R-HSA-109606.png');
   });
@@ -96,7 +107,7 @@ describe('the request handler runs at all', () => {
   it('refuses a repeated parameter, the case that was throwing', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?token=a&token=b`);
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toContain('more than once');
+    expect((await json(response)).error).toContain('more than once');
   });
 
   it('refuses a bracketed token, which drew the figure without its overlay', async () => {
@@ -111,7 +122,7 @@ describe('the request handler runs at all', () => {
   it('refuses a value outside its range', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?scale=4`);
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toContain('scale');
+    expect((await json(response)).error).toContain('scale');
   });
 
   it('refuses select and highlight together, which ask for two different figures', async () => {
@@ -121,19 +132,19 @@ describe('the request handler runs at all', () => {
       `${base}/render/R-HSA-69620.svg?select=R-HSA-69608&highlight=R-HSA-69608`
     );
     expect(response.status).toBe(400);
-    expect((await response.json()).error).toContain(
+    expect((await json(response)).error).toContain(
       '"select" and "highlight" cannot be used together'
     );
   });
 
   it('refuses a species anywhere but the genome-wide view, and one that is not a taxId', async () => {
     const onPathway = await fetch(`${base}/render/R-HSA-69620.svg?species=10090`);
-    expect([onPathway.status, (await onPathway.json()).error]).toEqual([
+    expect([onPathway.status, (await json(onPathway)).error]).toEqual([
       400,
       '"species" applies only to genome-wide; a pathway is its own species',
     ]);
     const byName = await fetch(`${base}/render/genome-wide.svg?species=Mus%20musculus`);
-    const refused = await byName.json();
+    const refused = await json(byName);
     expect([byName.status, refused.error]).toEqual([400, '"species" must be a taxId, e.g. 9606']);
     // No suggestion: without the species it would be the default species'
     // overview, a figure of the wrong species.
@@ -147,7 +158,7 @@ describe('the request handler runs at all', () => {
   it('refuses a format it cannot draw', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.tiff`);
     expect(response.status).toBe(400);
-    expect((await response.json()).formats).toContain('jpeg');
+    expect((await json(response)).formats).toContain('jpeg');
   });
 });
 

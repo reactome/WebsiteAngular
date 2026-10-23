@@ -59,12 +59,12 @@ describe('snapshotOf', () => {
   });
 
   it("is what Java's description held when it was taken: Java's own spaced names included", () => {
+    // The snapshot's form: each path's GET as the list of its parameters.
     const snapshot = JSON.parse(
       readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
-    );
+    ) as { paths: Record<string, { get: { name: string }[] }> };
     expect(Object.keys(snapshot.paths).length).toBeGreaterThan(90);
-    expect(snapshot.paths['/search/query'].get.map((p: { name: string }) => p.name)).toContain(
-      'Start row'
-    );
+    const query = snapshot.paths['/search/query'] as { get: { name: string }[] };
+    expect(query.get.map((p) => p.name)).toContain('Start row');
   });
 });

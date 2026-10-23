@@ -144,10 +144,9 @@ describe('/interactors/psicquic/resources', () => {
 
   it("is Java's 500 before the registry has been read", async () => {
     const response = await get();
-    expect([response.status, (await response.json()).messages]).toEqual([
-      500,
-      ["Couldn't load PSICQUIC Resources"],
-    ]);
+    expect([response.status, ((await response.json()) as { messages: string[] }).messages]).toEqual(
+      [500, ["Couldn't load PSICQUIC Resources"]]
+    );
     expect(asked).toBe(0);
   });
 
