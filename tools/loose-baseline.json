@@ -5,6 +5,5 @@
   "tools/content-node/psicquic.spec.ts": 1,
   "tools/content-node/snapshot-openapi.spec.ts": 5,
   "tools/render/pptx.spec.ts": 40,
-  "tools/render/pptx.ts": 192,
   "tools/render/service.spec.ts": 15
 }
