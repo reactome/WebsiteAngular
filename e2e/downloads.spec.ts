@@ -283,6 +283,37 @@ test.describe('Diagram downloads', () => {
     await expect(reason).toHaveCount(0);
   });
 
+  test('moving to another pathway mid-export saves the first one, and blames nothing', async ({
+    page,
+  }) => {
+    // The view being drawn from is replaced while its figure is encoding. The
+    // new view used to take the same request up, find nothing drawn, and report
+    // "no illustration on screen" while the old one went on to save a file
+    // named after the new pathway.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 4000);
+      };
+    });
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const saved = page.waitForEvent('download', { timeout: 240_000 });
+    await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
+    await expect(page.locator('.button--busy')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Cell Cycle', exact: true }).first().click();
+    await expect(page).toHaveURL(/R-HSA-1640170/);
+
+    const download = await saved;
+    expect(download.suggestedFilename()).toBe(`${HEAVY_ILLUSTRATION}.png`);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(page.locator('.button--busy')).toHaveCount(0);
+    await expect(page.locator('.download-failure')).toHaveCount(0);
+  });
+
   test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
     // Circadian clock builds six of its shapes out of <foreignObject>, which is
     // how a design tool exports a conic gradient. Chromium taints a canvas the

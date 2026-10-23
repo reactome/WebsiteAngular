@@ -50,6 +50,12 @@ export type ImageType = (typeof IMAGES_FORMAT)[keyof typeof IMAGES_FORMAT];
 export type DownloadRequest = {
   /** Which click this is, so that a drawer ends this request and no other. */
   id: number;
+  /**
+   * The drawer that was ready when the click came, and the only one that may
+   * take it up. A drawer created while the request is still set -- the reader
+   * moved on mid-export -- has nothing drawn, and was taking it.
+   */
+  owner: object;
   target: DownloadTarget.DIAGRAM | DownloadTarget.REACFOAM;
   format: DownloadFormat;
   options?: DownloadOptions;
@@ -69,6 +75,8 @@ export type FigureState = 'loading' | 'ready' | 'failed';
 export const FIGURE_LOADING = 'The figure is still loading; try again once it is on screen.';
 export const FIGURE_UNAVAILABLE =
   'There is no figure on screen to download: this view could not be shown.';
+/** Between views, or where the page shows none: nothing to say it failed. */
+export const FIGURE_NONE = 'There is no figure on screen to download yet.';
 export const FIGURE_BUSY = 'One figure at a time: try again once this one has saved.';
 
 @Injectable({
@@ -137,8 +145,16 @@ export class DownloadService {
   requestDownload(target: DownloadTarget, format: DownloadFormat, options?: DownloadOptions) {
     // One at a time: the drawers share one request, so a second click while a
     // figure is being made would replace the first one's request mid-draw.
-    if (this.working()) {
-      this.failure.set(FIGURE_BUSY);
+    const settings = { ...defaultDownloadOptions, ...options };
+    const working = this.working();
+    if (working) {
+      // The second click of a double-click is the same figure, whose spinner
+      // already says what is happening.
+      const same =
+        working.target === target &&
+        working.format === format &&
+        working.animated === settings.animate;
+      if (!same) this.failure.set(FIGURE_BUSY);
       return;
     }
     // A new request clears the last one's complaint; otherwise a reason that has
@@ -147,12 +163,17 @@ export class DownloadService {
 
     const figure = this.figure();
     if (figure?.target !== target || figure.state !== 'ready') {
-      this.failure.set(figure?.state === 'loading' ? FIGURE_LOADING : FIGURE_UNAVAILABLE);
+      this.failure.set(
+        figure?.target !== target
+          ? FIGURE_NONE
+          : figure.state === 'loading'
+            ? FIGURE_LOADING
+            : FIGURE_UNAVAILABLE
+      );
       return;
     }
 
     const id = ++this.lastId;
-    const settings = { ...defaultDownloadOptions, ...options };
     this.working.set({ id, target, format, animated: settings.animate });
     // A drawer that never answers would otherwise leave the button working for
     // good. The work itself cannot be stopped; if it does finish, the file is
@@ -166,7 +187,7 @@ export class DownloadService {
         ),
       FIGURE_DEADLINE_MS
     );
-    this.downloadRequest.set({ id, target, format, options: settings });
+    this.downloadRequest.set({ id, owner: figure.owner, target, format, options: settings });
   }
 
   /**
@@ -174,6 +195,8 @@ export class DownloadService {
    * up on is not this one: ending it would stop the spinner of a later click.
    */
   finished(id: number) {
+    // Its own request only: a later click's must still reach its drawer.
+    if (this.downloadRequest()?.id === id) this.resetDownload();
     if (this.working()?.id !== id) return;
     clearTimeout(this.deadline);
     this.working.set(null);

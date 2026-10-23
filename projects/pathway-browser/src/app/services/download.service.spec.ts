@@ -7,6 +7,7 @@ import {
   FIGURE_BUSY,
   FIGURE_DEADLINE_MS,
   FIGURE_LOADING,
+  FIGURE_NONE,
   FIGURE_UNAVAILABLE,
   dataUrlToBlob,
   defaultDownloadOptions,
@@ -124,16 +125,26 @@ describe('DownloadService.working', () => {
       format: DownloadFormat.PNG,
       animated: false,
     });
-    service.resetDownload();
     expect(service.working(), 'picking the request up is not finishing it').not.toBeNull();
     service.finished(id);
-    expect(service.working()).toBeNull();
+    expect([service.working(), service.downloadRequest()]).toEqual([null, null]);
   });
 
   it('ends with the reason when the figure fails', () => {
     const id = request(DownloadFormat.JPEG);
     service.failed(new Error('this illustration embeds HTML'), 'EHLD image export failed', id);
     expect([service.working(), service.failure()]).toEqual([null, 'this illustration embeds HTML']);
+  });
+
+  it('hands the request to the drawer that was ready, and no other', () => {
+    request();
+    expect(service.downloadRequest()?.owner).toBe(drawer);
+  });
+
+  it('says nothing more to the second click of a double-click', () => {
+    request(DownloadFormat.PNG);
+    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    expect(service.failure()).toBeNull();
   });
 
   it('takes one figure at a time, and says so', () => {
@@ -159,7 +170,7 @@ describe('DownloadService.working', () => {
     expect(service.failure()).toBe(FIGURE_UNAVAILABLE);
     service.figureGone(drawer);
     service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
-    expect([service.working(), service.failure()]).toEqual([null, FIGURE_UNAVAILABLE]);
+    expect([service.working(), service.failure()]).toEqual([null, FIGURE_NONE]);
   });
 
   it("forgets a drawer's word only if no other drawer has spoken since", () => {
@@ -195,6 +206,9 @@ describe('DownloadService.working', () => {
     vi.advanceTimersByTime(FIGURE_DEADLINE_MS);
     const second = request(DownloadFormat.PNG);
     service.finished(first);
+    expect(service.downloadRequest()?.id, 'the later request still reaches its drawer').toBe(
+      second
+    );
     service.failed(new Error('late'), 'late', first);
     expect(service.working()?.id).toBe(second);
     expect(service.downloadRequest()?.id).toBe(second);

@@ -1,4 +1,13 @@
-import { Component, computed, inject, signal, Signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  Signal,
+  untracked,
+  WritableSignal,
+} from '@angular/core';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DataStateService } from '../../../services/data-state.service';
 import { isPathway } from '../../../services/utils';
@@ -86,6 +95,14 @@ export class DownloadTabComponent {
    * button simply did nothing and said so only to the console.
    */
   readonly downloadFailure = this.download.failure;
+
+  constructor() {
+    // A reason given for one pathway's figure says nothing about the next one.
+    effect(() => {
+      this.finalEventId();
+      untracked(() => this.download.failure.set(null));
+    });
+  }
 
   /** Whether this figure is the one being made in the page just now. */
   isWorking(target: DownloadTarget, format: DownloadFormat, animated = false) {
@@ -282,8 +299,6 @@ export class DownloadTabComponent {
       isShown: signal(true),
     },
   ];
-
-  constructor() {}
 
   getGsaIcon(name: string): Icon | undefined {
     switch (name) {

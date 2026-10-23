@@ -395,7 +395,7 @@ export class ReacfoamComponent implements OnDestroy {
       const request = this.download.downloadRequest();
       // Once per request: it stays set until the file is saved, and this
       // effect runs again whenever a signal the export reads changes.
-      if (!request || request.id === this.handled) return;
+      if (request?.owner !== this || request.id === this.handled) return;
       this.handled = request.id;
       void (async () => {
         let options = request.options || defaultDownloadOptions;
@@ -414,7 +414,6 @@ export class ReacfoamComponent implements OnDestroy {
               ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
             };
             this.exportRaster(request.format, params);
-            this.download.resetDownload();
             this.download.finished(request.id);
           } else if (request.format === DownloadFormat.SVG) {
             this.download.export(
@@ -422,7 +421,6 @@ export class ReacfoamComponent implements OnDestroy {
               request.format,
               'reacfoam'
             );
-            this.download.resetDownload();
             this.download.finished(request.id);
           }
         } finally {

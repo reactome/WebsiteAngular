@@ -298,7 +298,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading');
     effect(() => {
       const request = this.download.downloadRequest();
-      if (request) {
+      // Only a request made while this diagram was the one on screen.
+      if (request?.owner === this) {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
         void this.export(request.format).then(

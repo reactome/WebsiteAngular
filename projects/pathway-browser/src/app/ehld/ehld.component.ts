@@ -206,23 +206,19 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       // The request stays set until its file is saved, and this effect also
       // runs again when a signal the export reads changes -- the selection,
       // say. Once per request, or the figure is made and saved twice.
-      if (!request || request.id === this.handled) return;
+      if (request?.owner !== this || request.id === this.handled) return;
       this.handled = request.id;
 
       if (this.download.isRasterFormat(request.format)) {
         void this.ehldService
           .downloadImage(request.format)
-          .then(() => {
-            this.download.resetDownload();
-            this.download.finished(request.id);
-          })
+          .then(() => this.download.finished(request.id))
           .catch((error) => this.download.failed(error, 'EHLD image export failed', request.id));
       } else if (request.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)
           .then((svg) => {
             this.download.export(svg, request.format, pathwayId);
-            this.download.resetDownload();
             this.download.finished(request.id);
           })
           .catch((error) => this.download.failed(error, 'EHLD SVG export failed', request.id));
