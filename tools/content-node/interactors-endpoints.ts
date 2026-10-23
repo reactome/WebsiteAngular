@@ -15,6 +15,7 @@ import {
 } from './spring.ts';
 import {
   RawJson,
+  deepShare,
   javaError,
   neo4jFailureMessage,
   nonEmptyJson,
@@ -315,6 +316,9 @@ export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
   }
 }
 
+/** Batches of molecule lookups running at once (POST /interactors/static/molecules/details). */
+const MOLECULE_BATCHES = deepShare(4);
+
 export const interactorsEndpoints: Endpoint[] = [
   {
     path: '/ContentService/interactors/static/molecule/{id}/details',
@@ -464,12 +468,36 @@ export const interactorsEndpoints: Endpoint[] = [
       const proteins = plainText(request.body, contentType);
       const accs = new JavaHashMap<string, boolean>();
       for (const acc of plainIds(proteins)) accs.set(acc, true);
+      // One query per accession, one at a time as Java asks: a diagram's
+      // proteins (273 for R-HSA-69620) take a second, and a 10MB body holds
+      // hundreds of thousands. Batches have a share of their own, and stop
+      // when nobody is left to read the answer (as the xrefs batch does).
+      const gone = new AbortController();
+      request.res?.on('close', () => {
+        if (!request.res?.writableFinished) gone.abort();
+      });
+      if (!MOLECULE_BATCHES.enter())
+        return {
+          ...javaError(
+            request,
+            503,
+            'SERVICE_UNAVAILABLE',
+            'The service is busy; try again shortly'
+          ),
+          headers: { 'Retry-After': '5' },
+        };
       const entities: [string, InteractionRow[]][] = [];
-      for (const acc of accs.keys()) {
-        const rows = await interactionsOf(request, acc, window);
-        if ('answer' in rows) return rows.answer;
-        if (rows.some((row) => row.accession === null)) return unexpected(request);
-        entities.push([acc, rows]);
+      try {
+        for (const acc of accs.keys()) {
+          // Nobody to answer: whatever is written goes nowhere.
+          if (gone.signal.aborted) return { status: 500 };
+          const rows = await interactionsOf(request, acc, window);
+          if ('answer' in rows) return rows.answer;
+          if (rows.some((row) => row.accession === null)) return unexpected(request);
+          entities.push([acc, rows]);
+        }
+      } finally {
+        MOLECULE_BATCHES.leave();
       }
       if (entities.every(([, rows]) => rows.length === 0))
         return notFound(request, `No interactors found for accession: ${proteins}`);
