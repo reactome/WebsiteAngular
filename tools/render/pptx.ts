@@ -30,7 +30,19 @@
  * makes PowerPoint offer to repair a file.
  */
 import { zipSync, strToU8 } from 'fflate';
-import type { RenderShapes } from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
+import type {
+  RenderEdgeShape,
+  RenderNodeShape,
+  RenderShapes,
+} from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
+
+type Shape = RenderNodeShape | RenderEdgeShape;
+/** A box on the slide, in EMU. */
+type Box = { x: number; y: number; cx: number; cy: number };
+/** A box in diagram pixels, placed on the slide. */
+type Place = (x: number, y: number, w: number, h: number) => Box;
+/** The slide's size, in EMU. */
+type Slide = { cx: number; cy: number };
 
 /** English Metric Units per pixel at 96dpi, the unit all OOXML geometry uses. */
 const EMU_PER_PX = 9525;
@@ -68,7 +80,7 @@ const SVG_BLIP_EXT = '{96DAC541-7B7A-43D3-8B79-37D633B846F1}';
 
 const DECLARATION = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n';
 
-function escapeXml(text) {
+function escapeXml(text: unknown) {
   return String(text).replace(
     /[<>&'"]/g,
     (character) =>
@@ -77,7 +89,7 @@ function escapeXml(text) {
   );
 }
 
-function relationships(entries) {
+function relationships(entries: { id: string; type: string; target: string }[]) {
   return (
     DECLARATION +
     `<Relationships xmlns="${NS.pr}">` +
@@ -98,7 +110,7 @@ function relationships(entries) {
  * glyph in it carries meaning in its proportions -- and that scale is 1:1 unless
  * the diagram is larger than a slide can be.
  */
-function layout({ width, height, hasTitle }) {
+function layout({ width, height, hasTitle }: { width: number; height: number; hasTitle: boolean }) {
   const titleHeight = hasTitle ? TITLE_HEIGHT : 0;
   const room = MAX_SLIDE - 2 * MARGIN;
   const emuPerPx = Math.min(
@@ -129,7 +141,7 @@ function layout({ width, height, hasTitle }) {
   };
 }
 
-function titleShape(title, slide) {
+function titleShape(title: string, slide: Slide) {
   return (
     `<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>` +
     `<p:spPr><a:xfrm><a:off x="${MARGIN}" y="${MARGIN}"/>` +
@@ -154,7 +166,7 @@ function titleShape(title, slide) {
  * Anything unrecognised returns null, and a null fill is a shape with no fill
  * rather than a shape painted black.
  */
-function srgb(colour) {
+function srgb(colour: unknown) {
   if (!colour) return null;
   const text = String(colour).trim();
   if (text === 'none' || text === 'transparent') return null;
@@ -172,14 +184,24 @@ function srgb(colour) {
     text
   );
   if (rgb) {
-    const [r, g, b] = rgb.slice(1, 4).map((value) => clampByte(Number(value)));
+    // Three groups, each matched.
+    const [r, g, b] = rgb.slice(1, 4).map((value) => clampByte(Number(value))) as [
+      number,
+      number,
+      number,
+    ];
     const alpha = rgb[4] === undefined ? 1 : Number(rgb[4]);
     return { hex: hex6(r, g, b), alpha: Number.isFinite(alpha) ? alpha : 1 };
   }
 
   const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(text);
   if (short) {
-    const [r, g, b] = short.slice(1, 4).map((digit) => parseInt(digit + digit, 16));
+    // Three digits, each matched.
+    const [r, g, b] = short.slice(1, 4).map((digit) => parseInt(digit + digit, 16)) as [
+      number,
+      number,
+      number,
+    ];
     return { hex: hex6(r, g, b), alpha: 1 };
   }
 
@@ -194,11 +216,11 @@ function srgb(colour) {
   return null;
 }
 
-function clampByte(value) {
+function clampByte(value: number) {
   return Math.max(0, Math.min(255, Math.round(Number.isFinite(value) ? value : 0)));
 }
 
-function hex6(r, g, b) {
+function hex6(r: number, g: number, b: number) {
   return [r, g, b]
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('')
@@ -206,7 +228,7 @@ function hex6(r, g, b) {
 }
 
 /** A solid fill, or nothing at all -- alpha below 1 becomes a real alpha. */
-function solidFill(colour) {
+function solidFill(colour: unknown) {
   const parsed = srgb(colour);
   if (!parsed) return '<a:noFill/>';
   return (
@@ -222,7 +244,12 @@ function solidFill(colour) {
  * OOXML line widths are EMU, and a hairline is `w="0"` rather than a missing
  * width, so a sub-pixel border stays visible instead of vanishing.
  */
-function outline(colour, widthPx, emuPerPx, { dashed = false, extra = '' } = {}) {
+function outline(
+  colour: unknown,
+  widthPx: number,
+  emuPerPx: number,
+  { dashed = false, extra = '' } = {}
+) {
   const parsed = srgb(colour);
   if (!parsed) return '<a:ln><a:noFill/></a:ln>';
   const w = Math.max(0, Math.round(widthPx * emuPerPx));
@@ -249,7 +276,13 @@ function outline(colour, widthPx, emuPerPx, { dashed = false, extra = '' } = {})
  * text, so a long name would have grown its entity and moved it off its own
  * connectors.
  */
-function textBody({ label, fontSize, fontColor, bold, emuPerPx }) {
+function textBody({
+  label,
+  fontSize,
+  fontColor,
+  bold,
+  emuPerPx,
+}: Pick<RenderNodeShape, 'label' | 'fontSize' | 'fontColor' | 'bold'> & { emuPerPx: number }) {
   const body =
     `<a:bodyPr wrap="square" lIns="0" tIns="0" rIns="0" bIns="0" anchor="ctr">` +
     `<a:noAutofit/></a:bodyPr><a:lstStyle/>`;
@@ -270,7 +303,7 @@ function textBody({ label, fontSize, fontColor, bold, emuPerPx }) {
 }
 
 /** A node: a preset rectangle, rounded rectangle or ellipse, with its label. */
-function nodeShape(shape, id, place, emuPerPx) {
+function nodeShape(shape: RenderNodeShape, id: number, place: Place, emuPerPx: number) {
   const at = place(shape.x, shape.y, shape.w, shape.h);
   const stroke =
     shape.strokeWidth > 0 || !shape.fill
@@ -299,12 +332,10 @@ function nodeShape(shape, id, place, emuPerPx) {
  * polyline's bounds; a perfectly straight run gives that box a zero side, which
  * is legal but which PowerPoint handles badly, so both sides have a floor.
  */
-function edgeShape(shape, id, place, emuPerPx) {
+function edgeShape(shape: RenderEdgeShape, id: number, place: Place, emuPerPx: number) {
   // Closed and filled means an arrowhead; the page hands those over as points
   // for the same reason it hands over everything else.
-  const points = (shape.points ?? []).filter(
-    (point) => Number.isFinite(point?.x) && Number.isFinite(point?.y)
-  );
+  const points = drawnPoints(shape.points);
   if (points.length < 2) return '';
 
   const xs = points.map((point) => point.x);
@@ -342,12 +373,24 @@ function edgeShape(shape, id, place, emuPerPx) {
   );
 }
 
-/** A shape's box on the slide, in EMU: its own box, or its points' bounds. */
-function boundsOf(shape, place) {
-  if (shape.kind !== 'edge') return place(shape.x, shape.y, shape.w, shape.h);
-  const points = (shape.points ?? []).filter(
-    (point) => Number.isFinite(point?.x) && Number.isFinite(point?.y)
+/**
+ * An edge's points that can be drawn. They cross from the page as JSON
+ * (page.evaluate), so they are read as JSON may carry them: a list missing,
+ * a point null, a coordinate not a number.
+ */
+function drawnPoints(
+  points: readonly ({ x?: unknown; y?: unknown } | null | undefined)[] | undefined
+) {
+  return (points ?? []).filter(
+    (point): point is { x: number; y: number } =>
+      Number.isFinite(point?.x) && Number.isFinite(point?.y)
   );
+}
+
+/** A shape's box on the slide, in EMU: its own box, or its points' bounds. */
+function boundsOf(shape: Shape, place: Place): Box | null {
+  if (shape.kind !== 'edge') return place(shape.x, shape.y, shape.w, shape.h);
+  const points = drawnPoints(shape.points);
   if (!points.length) return null;
   const xs = points.map((point) => point.x);
   const ys = points.map((point) => point.y);
@@ -363,19 +406,27 @@ function boundsOf(shape, place) {
  * rectangle, so the members' own coordinates -- already on the slide -- mean
  * exactly what they did ungrouped.
  */
-function groupShape(members, nextId, one, place) {
+function groupShape(
+  members: Shape[],
+  nextId: () => number,
+  one: (shape: Shape) => string,
+  place: Place
+) {
   // The group's id comes before its members', which take theirs as they are
   // written. A shape with nothing to draw writes nothing, so a group is made
   // only of what is actually drawn, and only when that is more than one shape.
   const id = nextId();
   const drawn = members.map((shape) => ({ shape, xml: one(shape) })).filter((member) => member.xml);
   if (drawn.length < 2) return drawn.map((member) => member.xml).join('');
-  const boxes = drawn.map((member) => boundsOf(member.shape, place)).filter(Boolean);
+  const boxes = drawn
+    .map((member) => boundsOf(member.shape, place))
+    .filter((box): box is Box => box !== null);
   const x = Math.min(...boxes.map((box) => box.x));
   const y = Math.min(...boxes.map((box) => box.y));
   const cx = Math.max(1, Math.max(...boxes.map((box) => box.x + box.cx)) - x);
   const cy = Math.max(1, Math.max(...boxes.map((box) => box.y + box.cy)) - y);
-  const name = members.find((shape) => shape.groupName)?.groupName ?? members[0].group;
+  // A group has at least one member: the slice it was given.
+  const name = members.find((shape) => shape.groupName)?.groupName ?? (members[0] as Shape).group;
   return (
     `<p:grpSp><p:nvGrpSpPr><p:cNvPr id="${id}" name="${escapeXml(name)}"/>` +
     `<p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>` +
@@ -392,8 +443,20 @@ function groupShape(members, nextId, one, place) {
  * Every coordinate is mapped through the same fit the picture used, so a shape
  * slide and a picture slide put the diagram in the same place at the same size.
  */
-function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
-  const place = (x, y, w, h) => ({
+function shapesSlideXml({
+  title,
+  shapes,
+  at,
+  emuPerPx,
+  slide,
+}: {
+  title: string;
+  shapes: RenderShapes;
+  at: Box;
+  emuPerPx: number;
+  slide: Slide;
+}) {
+  const place: Place = (x, y, w, h) => ({
     x: Math.round(at.x + (x - shapes.x) * emuPerPx),
     y: Math.round(at.y + (y - shapes.y) * emuPerPx),
     cx: Math.max(1, Math.round(w * emuPerPx)),
@@ -403,7 +466,7 @@ function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
   // Shape ids are unique within the tree and 1 is the group itself; the title,
   // when there is one, is 2.
   let nextId = 3;
-  const one = (shape) =>
+  const one = (shape: Shape) =>
     shape.kind === 'edge'
       ? edgeShape(shape, nextId++, place, emuPerPx)
       : nodeShape(shape, nextId++, place, emuPerPx);
@@ -415,11 +478,13 @@ function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
   let drawn = '';
   const list = shapes.shapes;
   for (let i = 0; i < list.length;) {
-    const key = list[i].group;
+    // i is below the length: the loop's condition.
+    const current = list[i] as Shape;
+    const key = current.group;
     let end = i + 1;
-    if (key) while (end < list.length && list[end].group === key) end++;
+    if (key) while (end < list.length && list[end]?.group === key) end++;
     const members = list.slice(i, end);
-    drawn += key ? groupShape(members, () => nextId++, one, place) : one(list[i]);
+    drawn += key ? groupShape(members, () => nextId++, one, place) : one(current);
     i = end;
   }
 
@@ -444,7 +509,17 @@ function shapesSlideXml({ title, shapes, at, emuPerPx, slide }) {
  * view draws to a canvas -- embeds the SVG as the blip itself rather than
  * naming a part that is not in the package.
  */
-function slideXml({ title, at, slide, hasRaster = true }) {
+function slideXml({
+  title,
+  at,
+  slide,
+  hasRaster = true,
+}: {
+  title: string;
+  at: Box;
+  slide: Slide;
+  hasRaster?: boolean;
+}) {
   return (
     DECLARATION +
     `<p:sld xmlns:a="${NS.a}" xmlns:r="${NS.r}" xmlns:p="${NS.p}"><p:cSld><p:spTree>` +
@@ -493,7 +568,7 @@ const SLIDE_LAYOUT =
   `<p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:sldLayout>`;
 
 /** The presentation, whose slide size is the size this diagram needs. */
-function presentationXml(slide) {
+function presentationXml(slide: Slide) {
   return (
     DECLARATION +
     `<p:presentation xmlns:a="${NS.a}" xmlns:r="${NS.r}" xmlns:p="${NS.p}" saveSubsetFonts="1">` +
@@ -619,7 +694,7 @@ export function pptx({
     : { width: width ?? 0, height: height ?? 0 };
   const { slide, at, emuPerPx } = layout({ ...figure, hasTitle: Boolean(title) });
 
-  const parts = {
+  const parts: Record<string, Uint8Array> = {
     '[Content_Types].xml': strToU8(CONTENT_TYPES),
     '_rels/.rels': strToU8(
       relationships([{ id: 'rId1', type: 'officeDocument', target: 'ppt/presentation.xml' }])

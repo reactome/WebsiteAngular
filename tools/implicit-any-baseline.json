@@ -1,5 +1,4 @@
 {
   "tools/content-node/citation.spec.ts": 10,
-  "tools/content-node/domain.spec.ts": 16,
-  "tools/render/pptx.ts": 72
+  "tools/content-node/domain.spec.ts": 16
 }
