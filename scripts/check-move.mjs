@@ -132,11 +132,12 @@ function pieces(file, text) {
   const reexports = new Map(); // exported name -> [specifier, name there]
   const stars = []; // specifiers of `export * from`
   const uses = new Map(); // declaration or endpoint key -> the names it uses
-  // Endpoint lists by name, each known by what it holds in order: a spread
-  // list's name or an endpoint's key. The endpoints themselves are compared
-  // one by one; this is what makes `endpoints` in the registry the list
-  // service.ts declared, and a reordered, shortened or shadowing list, or a
-  // same-named list from another module, a different one.
+  // Endpoint lists by name, each what it holds in order: an endpoint's key,
+  // or `...name` for a list spread into it, which listIdentity follows to the
+  // list that name is bound to. The endpoints themselves are compared one by
+  // one; this is what makes `endpoints` in the registry the list service.ts
+  // declared, and a reordered, shortened or shadowing list, or one spread
+  // under another list's name (`import { a as b }`), a different one.
   const lists = new Map();
   const add = (map, key, node) => {
     const list = map.get(key) ?? [];
@@ -219,7 +220,7 @@ function pieces(file, text) {
           list &&
           /endpoints$/i.test(declaration.name.text)
         ) {
-          lists.set(declaration.name.text, endpointsIn(list).join(', '));
+          lists.set(declaration.name.text, endpointsIn(list));
         } else if (ts.isIdentifier(declaration.name))
           add(declarations, declaration.name.text, statement);
         else add(declarations, `(destructuring) ${declaration.name.getText(sf)}`, statement);
@@ -293,6 +294,44 @@ function namesUsed(node) {
 }
 
 /**
+ * An endpoint list as what it holds, every spread followed to the list its
+ * name is bound to -- declared in the module, or imported (through
+ * re-exports) from another -- and expanded: the endpoints' keys in order.
+ * A name that cannot be followed is kept as written.
+ */
+function listIdentity(modules, file, name, seen = new Set()) {
+  const held = modules.get(file)?.lists.get(name) ?? [];
+  return `endpoint list ${name}: ${expand(modules, file, held, seen).join(', ')}`;
+}
+
+function expand(modules, file, held, seen) {
+  return held.flatMap((item) => {
+    if (!item.startsWith('...')) return [item];
+    const found = spreadList(modules, file, item.slice(3), seen);
+    return found ?? [item];
+  });
+}
+
+/** The keys a list spread as `name` in `file` holds, or undefined. */
+function spreadList(modules, file, name, seen) {
+  const key = `${file}#${name}`;
+  // A list that spreads itself, however indirectly, is no list to follow.
+  if (seen.has(key)) return undefined;
+  const path = new Set(seen).add(key);
+  const module = modules.get(file);
+  if (module?.lists.has(name)) return expand(modules, file, module.lists.get(name), path);
+  const from = module?.imports.get(name) ?? module?.reexports.get(name);
+  if (from?.[0].startsWith('local:'))
+    return spreadList(modules, `${from[0].slice(6)}.ts`, from[1], path);
+  for (const star of module?.stars ?? [])
+    if (star.startsWith('local:')) {
+      const found = spreadList(modules, `${star.slice(6)}.ts`, name, path);
+      if (found) return found;
+    }
+  return undefined;
+}
+
+/**
  * What a name is bound to at the top of a module: its declaration there,
  * what it imports (followed to a declaration), or a global.
  */
@@ -300,7 +339,7 @@ function bindingOf(modules, file, name) {
   const module = modules.get(file);
   if (module?.declarations.has(name))
     return `declared: ${module.declarations.get(name).join('\n')}`;
-  if (module?.lists.has(name)) return `declared: endpoint list ${name}: ${module.lists.get(name)}`;
+  if (module?.lists.has(name)) return `declared: ${listIdentity(modules, file, name)}`;
   if (module?.imports.has(name))
     return `imported: ${identity(modules, ...module.imports.get(name))}`;
   return 'global';
@@ -330,7 +369,7 @@ function identity(modules, spec, name, seen = new Set()) {
   if (!module) return undefined;
   const declared = module.declarations.get(name);
   if (declared) return declared.join('\n');
-  if (module.lists.has(name)) return `endpoint list ${name}: ${module.lists.get(name)}`;
+  if (module.lists.has(name)) return listIdentity(modules, `${spec.slice(6)}.ts`, name);
   const again = module.reexports.get(name) ?? module.imports.get(name);
   if (again) return identity(modules, again[0], again[1], seen);
   for (const star of module.stars) {
@@ -412,7 +451,7 @@ for (const file of receivers) {
     const expected = originsOf
       .map(([f, was]) => {
         if (was.declarations.has(local)) return [f, was.declarations.get(local).join('\n')];
-        if (was.lists.has(local)) return [f, `endpoint list ${local}: ${was.lists.get(local)}`];
+        if (was.lists.has(local)) return [f, listIdentity(before, f, local)];
         if (was.imports.has(local)) return [f, identity(before, ...was.imports.get(local))];
         return undefined;
       })
