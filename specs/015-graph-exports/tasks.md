@@ -42,7 +42,7 @@
 - [x] T002 Measure the host's free disk and the size of release 97's published graph database (from its published dump), and decide where references are generated. Record the measurement and the decision in research.md R8:
   - a private graph database of release 97, started apart from beta's, if it fits with a safe margin;
   - otherwise small, spaced runs against the shared one. — #637
-- [ ] T003 Write the SBML reference harness (research R1), as a throwaway Maven module kept outside the repository (its instructions in `specs/015-graph-exports/reference-harness.md`). It runs sbml-exporter 2.2.7's graph-only `SbmlConverter` with the four named fixes:
+- [x] T003 Write the SBML reference harness (research R1), as a throwaway Maven module kept outside the repository (its instructions in `specs/015-graph-exports/reference-harness.md`). It runs sbml-exporter 2.2.7's graph-only `SbmlConverter` with the four named fixes:
   1. a new `Participant` per row;
   2. catalysts read from their own column;
   3. positive regulators set;
@@ -50,7 +50,7 @@
 
   It also turns on `Helper.setUseIdentifierURL(true)`. It runs on JDK 11 with `-Duser.timezone=UTC -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8`.
 
-  Generate the sample's references (T001) where T002 decided, outside the repository. Record each fix as an accepted deviation in `contracts/differences.md`, and offer the fixes upstream as an issue on sbml-exporter.
+  Generate the sample's references (T001) where T002 decided, outside the repository. Record each fix as an accepted deviation in `contracts/differences.md`, and offer the fixes upstream as an issue on sbml-exporter. — #638 (the upstream issue waits for the user's OK)
 
 - [ ] T004 Take today's answers for the sample, once and spaced, from the beta host only, and keep them outside the repository:
   - SBML from the Java ContentService, `http://localhost:8080/ContentService/exporter/event/{id}.sbml`;
