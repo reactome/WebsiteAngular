@@ -52,11 +52,11 @@
 
   Generate the sample's references (T001) where T002 decided, outside the repository. Record each fix as an accepted deviation in `contracts/differences.md`, and offer the fixes upstream as an issue on sbml-exporter. — #638 (the upstream issue waits for the user's OK)
 
-- [ ] T004 Take today's answers for the sample, once and spaced, from the beta host only, and keep them outside the repository:
+- [x] T004 Take today's answers for the sample, once and spaced, from the beta host only, and keep them outside the repository:
   - SBML from the Java ContentService, `http://localhost:8080/ContentService/exporter/event/{id}.sbml`;
   - BioPAX from the legacy RESTful service, `http://localhost:8080/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}`.
 
-  For each, record status, headers, size and time.
+  For each, record status, headers, size and time. — #640 (`today.md`)
 
 ---
 
