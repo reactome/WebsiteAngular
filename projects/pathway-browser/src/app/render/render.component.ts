@@ -1643,6 +1643,19 @@ export class RenderComponent {
       return canvas.toDataURL(jpeg ? 'image/jpeg' : 'image/png', 1.0);
     }
 
+    // The genome-wide view draws to a canvas through FoamTree, which exports
+    // its own image -- as the page's own download does (ReacfoamComponent's
+    // exportRaster). Without this, a .png or .jpeg of a species overview was a
+    // 500, though its .svg worked.
+    const reacfoam = this.reacfoam();
+    if (reacfoam) {
+      return untracked(reacfoam.foamTree).get('imageData', {
+        format: jpeg ? 'image/jpeg' : 'image/png',
+        pixelRatio: scale,
+        ...(jpeg ? { quality: 0.9, backgroundColor: '#ffffff' } : {}),
+      });
+    }
+
     throw new Error(`this view cannot export ${type.toUpperCase()} yet`);
   }
 }

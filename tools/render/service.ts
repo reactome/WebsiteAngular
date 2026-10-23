@@ -168,6 +168,14 @@ export const statusOf = (error: unknown): number =>
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/**
+ * What a failed render tells the caller: the message's first line. A
+ * failure inside the page arrives from Playwright with the page's stack
+ * appended -- bundle file names and the address the service reaches the
+ * site on -- which belongs in the log, not in a public answer.
+ */
+export const publicMessage = (error: unknown): string => messageOf(error).split('\n')[0] ?? '';
+
 // ---- queue ---------------------------------------------------------------
 let active = 0;
 const waiting: {
@@ -687,7 +695,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
     if (status === 503) res.setHeader('Retry-After', '5');
     else stats.failed++;
     console.error(`failed ${name}.${format}: ${messageOf(error)}`);
-    return res.status(status).json({ error: messageOf(error) });
+    return res.status(status).json({ error: publicMessage(error) });
   }
 };
 
