@@ -107,11 +107,40 @@ export class DownloadService {
     return `image/${format}` as 'image/png' | 'image/jpeg';
   }
 
-  export(data: string, format: DownloadFormat, name = 'reacfoam') {
+  /**
+   * Save a file the page has made: a Blob, a data: URL, a blob: URL, or an
+   * address.
+   *
+   * A data: URL is the whole file written into the link, and Chrome follows no
+   * link longer than 2 MB. An illustration's PNG and JPEG are drawn at three
+   * times their size on screen, which made the one reported 2.7 and 2.5 MB of
+   * link: those failed as "Site wasn't available" while its SVG saved. So the
+   * file goes through a blob: URL, which is short however large the file. A
+   * data: URL is still accepted, for the genome-wide view, whose library gives
+   * nothing else.
+   */
+  export(data: string | Blob, format: DownloadFormat, name = 'reacfoam') {
+    const blob = typeof data === 'string' && data.startsWith('data:') ? dataUrlToBlob(data) : data;
+    const url = typeof blob === 'string' ? blob : URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = data;
+    a.href = url;
     a.download = `${name}.${format}`;
     a.click();
     a.remove();
+    // Not at once: the browser reads the blob after the click returns.
+    if (url !== data) setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
+}
+
+/** A data: URL's bytes and type, as a Blob. */
+export function dataUrlToBlob(data: string): Blob {
+  const comma = data.indexOf(',');
+  const header = data.slice(5, comma);
+  const body = data.slice(comma + 1);
+  const type = header.split(';')[0] || 'text/plain';
+  if (!header.split(';').includes('base64')) return new Blob([decodeURIComponent(body)], { type });
+  const binary = atob(body);
+  const bytes = new Uint8Array(binary.length);
+  for (let at = 0; at < binary.length; at += 1) bytes[at] = binary.charCodeAt(at);
+  return new Blob([bytes], { type });
 }
