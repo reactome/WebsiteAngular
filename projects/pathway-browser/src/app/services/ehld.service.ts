@@ -474,7 +474,7 @@ export class EhldService {
 
   async downloadImage(format: DownloadFormat) {
     const svg = document.getElementById('ehld')?.querySelector('svg');
-    if (!svg) return;
+    if (!svg) throw new Error('There is no illustration on screen to export');
 
     const canvas = await this.rasterise(
       svg as SVGSVGElement,

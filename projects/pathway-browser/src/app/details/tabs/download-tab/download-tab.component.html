@@ -25,6 +25,7 @@
       @if (hasEHLD() && analysis.samples().length > 1) {
         <cr-download-button
           (click)="onEHLDAnimatedDownload()"
+          [working]="isWorking(DownloadTarget.DIAGRAM, DownloadFormat.SVG)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />
@@ -35,6 +36,7 @@
           [label]="item.format.toUpperCase()"
           [icon]="item.icon"
           [download]="item.download"
+          [working]="!item.url && isWorking(DownloadTarget.DIAGRAM, item.format)"
           (click)="item.method?.()"
         >
         </cr-download-button>
@@ -59,6 +61,7 @@
       @if (analysis.samples().length > 1) {
         <cr-download-button
           (click)="onReacfoamAnimatedDownload()"
+          [working]="isWorking(DownloadTarget.REACFOAM, DownloadFormat.SVG)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />
@@ -67,6 +70,7 @@
       @for (format of reacfoamFormats; track format) {
         <cr-download-button
           (click)="onReacfoamDownload(format)"
+          [working]="isWorking(DownloadTarget.REACFOAM, format)"
           [label]="format.toUpperCase()"
           [icon]="{ id: 'image' }"
         />

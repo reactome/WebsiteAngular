@@ -186,6 +186,42 @@ test.describe('Diagram downloads', () => {
     ).toEqual(['blob: short', 'blob: short']);
   });
 
+  test('a figure made in the page says it is being made until it is saved', async ({ page }) => {
+    // A large illustration takes seconds to draw, and its buttons said nothing
+    // in that time. The encoding is held back a little so the state is there to
+    // see however fast the machine.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 1500);
+      };
+    });
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const button = page.locator('.container.diagram cr-download-button').filter({
+      has: page.getByText('PNG', { exact: true }),
+    });
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 240_000 }),
+      (async () => {
+        await button.locator('a').click();
+        await expect(button.locator('a')).toHaveClass(/button--busy/);
+        await expect(button.locator('mat-progress-spinner')).toBeVisible();
+        await expect(button.getByRole('status')).toHaveText('Preparing…');
+      })(),
+    ]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+
+    await expect(button.locator('a')).not.toHaveClass(/button--busy/);
+    // By class: an empty live region leaves the accessibility tree, so a role
+    // lookup finds nothing once it has nothing to say.
+    await expect(button.locator('.button__state')).toHaveText('');
+    await expect(page.locator('.download-failure')).toHaveCount(0);
+  });
+
   test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
     // Circadian clock builds six of its shapes out of <foreignObject>, which is
     // how a design tool exports a conic gradient. Chromium taints a canvas the

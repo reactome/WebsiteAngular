@@ -58,7 +58,7 @@ type AnaLysisItem = {
 };
 
 type DiagramItem = {
-  format: string;
+  format: DownloadFormat;
   icon?: Icon;
   url?: Signal<string>;
   method?: () => void;
@@ -86,7 +86,15 @@ export class DownloadTabComponent {
    * button simply did nothing and said so only to the console.
    */
   readonly downloadFailure = this.download.failure;
+
+  /** Whether this figure is the one being made in the page just now. */
+  isWorking(target: DownloadTarget, format: DownloadFormat) {
+    const working = this.download.working();
+    return working?.target === target && working.format === format;
+  }
   protected readonly includeSubpathways = includeSubpathways;
+  protected readonly DownloadTarget = DownloadTarget;
+  protected readonly DownloadFormat = DownloadFormat;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 

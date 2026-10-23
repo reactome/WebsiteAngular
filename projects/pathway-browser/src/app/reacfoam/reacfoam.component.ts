@@ -401,6 +401,7 @@ export class ReacfoamComponent implements OnDestroy {
             };
             this.exportRaster(request.format, params);
             this.download.resetDownload();
+            this.download.finished();
           } else if (request.format === DownloadFormat.SVG) {
             this.download.export(
               await this.svgExporter.exportReacfoam(this, options),
@@ -408,6 +409,7 @@ export class ReacfoamComponent implements OnDestroy {
               'reacfoam'
             );
             this.download.resetDownload();
+            this.download.finished();
           }
         } finally {
           loader.close();

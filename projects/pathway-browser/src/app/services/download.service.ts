@@ -53,6 +53,13 @@ export type DownloadRequest = {
   options?: DownloadOptions;
 } | null;
 
+/**
+ * How long a figure may take before the button gives up on it. An animated
+ * illustration across many samples is the slowest thing made here; the files
+ * fetched from the server get the same three minutes.
+ */
+export const FIGURE_DEADLINE_MS = 3 * 60 * 1000;
+
 @Injectable({
   providedIn: 'root',
 })
@@ -75,11 +82,43 @@ export class DownloadService {
    */
   readonly failure = signal<string | null>(null);
 
+  /**
+   * The figure being made in the page, from the click until it is saved or has
+   * failed.
+   *
+   * Not `downloadRequest`, which is a message to whichever component draws the
+   * view and is cleared when that component picks it up -- the diagram does so
+   * before it has drawn anything. A large illustration takes seconds to draw,
+   * and with nothing on the button in that time the click looked lost.
+   */
+  readonly working = signal<{ target: DownloadTarget; format: DownloadFormat } | null>(null);
+  private deadline: ReturnType<typeof setTimeout> | undefined;
+
   requestDownload(target: DownloadTarget, format: DownloadFormat, options?: DownloadOptions) {
+    // One at a time: the drawers share one request, so a second click while a
+    // figure is being made would replace the first one's request mid-draw.
+    if (this.working()) return;
     // A new request clears the last one's complaint; otherwise a reason that has
     // been dealt with sits under a download that is working.
     this.failure.set(null);
+    this.working.set({ target, format });
+    // A request nothing picks up -- no view drawn to take it -- would otherwise
+    // leave the button working for good.
+    this.deadline = setTimeout(
+      () =>
+        this.failed(
+          new Error('The figure was not made in time; please try again'),
+          'Figure timed out'
+        ),
+      FIGURE_DEADLINE_MS
+    );
     this.downloadRequest.set({ target, format, options: options || defaultDownloadOptions });
+  }
+
+  /** The figure has been saved. */
+  finished() {
+    clearTimeout(this.deadline);
+    this.working.set(null);
   }
 
   resetDownload() {
@@ -95,6 +134,7 @@ export class DownloadService {
     console.error(whatFailed, error);
     this.failure.set(error instanceof Error && error.message ? error.message : whatFailed);
     this.resetDownload();
+    this.finished();
   }
 
   constructor() {}
@@ -138,7 +178,8 @@ export function dataUrlToBlob(data: string): Blob {
   const header = data.slice(5, comma);
   const body = data.slice(comma + 1);
   const type = header.split(';')[0] || 'text/plain';
-  if (!header.split(';').includes('base64')) return new Blob([decodeURIComponent(body)], { type });
+  if (!header.toLowerCase().split(';').includes('base64'))
+    return new Blob([decodeURIComponent(body)], { type });
   const binary = atob(body);
   const bytes = new Uint8Array(binary.length);
   for (let at = 0; at < binary.length; at += 1) bytes[at] = binary.charCodeAt(at);

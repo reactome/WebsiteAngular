@@ -295,8 +295,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       if (request) {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
-        void this.export(request.format).catch((error) =>
-          this.download.failed(error, `Diagram ${request.format} export failed`)
+        void this.export(request.format).then(
+          () => this.download.finished(),
+          (error: unknown) => this.download.failed(error, `Diagram ${request.format} export failed`)
         );
         this.download.resetDownload();
       }
@@ -357,15 +358,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     } else {
       // The diagram itself is always the first layer.
       const [only] = blobs;
-      if (only === undefined) return;
+      if (only === undefined) throw new Error('There is no diagram on screen to export');
       blob = await only;
     }
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.pathwayId()}.${format}`;
-    a.click();
-    a.remove();
+    this.download.export(blob, format as DownloadFormat, this.pathwayId());
   }
 
   /**
@@ -439,17 +436,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    */
   private exportSvg() {
     const svgs = this.cys.map((cy) => cy.svg({ full: true }));
-    if (!svgs.length) return;
+    if (!svgs.length) throw new Error('There is no diagram on screen to export');
 
     const blob = new Blob([this.withDiagramFont(this.composeSvgs(svgs))], {
       type: 'image/svg+xml;charset=utf-8',
     });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.pathwayId()}.svg`;
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
+    // Saved as every figure is: revoking the link straight after the click, as
+    // this used to, can cancel the download before the browser has read it.
+    this.download.export(blob, DownloadFormat.SVG, this.pathwayId());
   }
 
   /**

@@ -5,17 +5,17 @@
   class="button"
   crManagedDownload
   #managed="managedDownload"
-  [class.button--busy]="managed.busy()"
+  [class.button--busy]="managed.busy() || working()"
   [class.button--failed]="managed.failed()"
   [attr.href]="url()"
   [attr.download]="download() === true ? '' : download()"
   [attr.target]="openInNewTab()"
-  [matTooltip]="managed.reason() ?? tooltip()"
+  [matTooltip]="managed.reason() ?? (working() ? 'Being drawn…' : tooltip())"
   (click)="onClick($event)"
 >
   <!-- The spinner takes the icon's place rather than sitting beside it, so the
        button does not change width while it works. -->
-  @if (managed.busy()) {
+  @if (managed.busy() || working()) {
     <mat-progress-spinner mode="indeterminate" [diameter]="16" [strokeWidth]="2" />
   } @else if (icon(); as icon) {
     <mat-icon [svgIcon]="icon.svg ? icon.id : ''" [fontSet]="!icon.svg ? 'symbols' : ''">
@@ -31,5 +31,7 @@
        is being made, which the spinner alone does not tell them. The region is
        always here, empty when there is nothing to say -- a live region added to
        the page at the same moment as its text is not reliably read out. -->
-  <span class="button__state" role="status" aria-live="polite">{{ managed.label() }}</span>
+  <span class="button__state" role="status" aria-live="polite">{{
+    managed.label() ?? (working() ? 'Preparing…' : '')
+  }}</span>
 </a>

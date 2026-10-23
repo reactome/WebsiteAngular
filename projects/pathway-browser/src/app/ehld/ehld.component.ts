@@ -193,7 +193,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       if (request && this.download.isRasterFormat(request.format)) {
         void this.ehldService
           .downloadImage(request.format)
-          .then(() => this.download.resetDownload())
+          .then(() => {
+            this.download.resetDownload();
+            this.download.finished();
+          })
           .catch((error) => this.download.failed(error, 'EHLD image export failed'));
       } else if (request?.format === DownloadFormat.SVG) {
         void this.svgExporter
@@ -201,6 +204,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
           .then((svg) => {
             this.download.export(svg, request.format, pathwayId);
             this.download.resetDownload();
+            this.download.finished();
           })
           .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
       }
