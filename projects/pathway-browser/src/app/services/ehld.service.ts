@@ -484,11 +484,17 @@ export class EhldService {
       format === DownloadFormat.JPEG ? '#ffffff' : undefined
     );
     const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
-    this.download.export(
-      canvas.toDataURL(mimeType, 1.0),
-      format,
-      `${this.data.currentPathway()?.stId}`
+    // A Blob, not `toDataURL`: the file as a data: URL is several megabytes of
+    // link, more than Chrome will follow (see DownloadService.export).
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (made) =>
+          made ? resolve(made) : reject(new Error(`the browser could not encode the ${format}`)),
+        mimeType,
+        1.0
+      )
     );
+    this.download.export(blob, format, `${this.data.currentPathway()?.stId}`);
   }
 
   /**
