@@ -1,5 +1,9 @@
+import type { Page } from '@playwright/test';
 import { describe, expect, it } from 'vitest';
 import { render } from './render-core.ts';
+
+// A stand-in page: only what render reaches before the test stops it.
+const stand = (page: object) => page as Page;
 
 // What address the render page is opened at, read off a stand-in page that
 // stops at the first navigation. The address is the whole contract between
@@ -14,7 +18,7 @@ async function addressFor(options: Partial<Parameters<typeof render>[1]> = {}) {
       throw new Error('stop here');
     },
   };
-  await render(page, { base: 'http://site', pathway: 'R-HSA-6805479', ...options }).catch(
+  await render(stand(page), { base: 'http://site', pathway: 'R-HSA-6805479', ...options }).catch(
     () => undefined
   );
   return new URL(opened);
@@ -64,10 +68,10 @@ describe('a figure of another species', () => {
       },
     });
     await expect(
-      render(page(undefined), { base: 'http://site', species: '10090' })
+      render(stand(page(undefined)), { base: 'http://site', species: '10090' })
     ).rejects.toThrow('asked for species 10090, the page drew one it did not name');
-    await expect(render(page('9606'), { base: 'http://site', species: '10090' })).rejects.toThrow(
-      'asked for species 10090, the page drew 9606'
-    );
+    await expect(
+      render(stand(page('9606')), { base: 'http://site', species: '10090' })
+    ).rejects.toThrow('asked for species 10090, the page drew 9606');
   });
 });

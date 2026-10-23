@@ -66,7 +66,8 @@ import {
   utimes,
 } from 'node:fs/promises';
 import path from 'node:path';
-import { FORMATS, render } from './render-core.ts';
+import { FORMATS, isFormat, render } from './render-core.ts';
+import type { Format } from './render-core.ts';
 
 const PORT = Number(process.env['RENDER_PORT'] || 4310);
 const HOST = process.env['RENDER_HOST'] || '127.0.0.1';
@@ -114,7 +115,7 @@ const MAX_QUEUE = Number(process.env['RENDER_QUEUE'] || 8);
  */
 const MAX_CACHE = Number(process.env['RENDER_CACHE_MAX'] ?? 2 * 1024 ** 3);
 
-const CONTENT_TYPE = {
+const CONTENT_TYPE: Record<Format, string> = {
   svg: 'image/svg+xml; charset=utf-8',
   png: 'image/png',
   jpeg: 'image/jpeg',
@@ -137,7 +138,7 @@ const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0, evicted
  * Clamped rather than rejected -- a number slightly out of range is a caller
  * being optimistic, not a caller being wrong.
  */
-function clamp(value, low, high, fallback) {
+function clamp(value: unknown, low: number, high: number, fallback: number) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(high, Math.max(low, number)) : fallback;
 }
@@ -201,6 +202,22 @@ function pump() {
 }
 
 // ---- cache ---------------------------------------------------------------
+/** One figure as the handler asks for it: everything that decides its bytes. */
+interface RenderParams {
+  pathway: string;
+  format: string;
+  token: string;
+  scale: number;
+  subpathways: boolean;
+  dark: boolean;
+  select: string;
+  highlight: string;
+  layout: string;
+  species: string;
+  delay: number;
+  maxSize: number;
+}
+
 function cacheKey({
   pathway,
   format,
@@ -214,7 +231,7 @@ function cacheKey({
   layout,
   highlight = '',
   species = '',
-}) {
+}: Omit<RenderParams, 'highlight' | 'species'> & { highlight?: string; species?: string }) {
   // The token is part of the key rather than a reason not to cache: repeat
   // requests for the same analysis are exactly what a report generator makes.
   //
@@ -243,7 +260,7 @@ function cacheKey({
     .digest('hex');
 }
 
-async function fromCache(key, format) {
+async function fromCache(key: string, format: string) {
   const file = path.join(CACHE, `${key}.${format}`);
   try {
     await stat(file);
@@ -259,7 +276,7 @@ async function fromCache(key, format) {
   }
 }
 
-async function toCache(key, format, bytes) {
+async function toCache(key: string, format: string, bytes: Buffer) {
   await mkdir(CACHE, { recursive: true });
   // Write then rename, so a reader never sees a half-written file.
   const file = path.join(CACHE, `${key}.${format}`);
@@ -331,7 +348,7 @@ async function evict() {
 // A request for something already rendering waits for that render instead of
 // starting its own. Without this, a report generator asking several workers for
 // the same pathway pays for it several times.
-const inFlight = new Map();
+const inFlight = new Map<string, Promise<{ bytes: Buffer; cached: boolean }>>();
 
 /**
  * Whether the id is something the backend knows about.
@@ -341,7 +358,7 @@ const inFlight = new Map();
  * a typo occupies a render slot until it times out -- and ids arrive from URLs,
  * so typos are the normal case rather than the exceptional one.
  */
-async function describe(pathway) {
+async function describe(pathway: string) {
   if (!pathway) return { known: true, schemaClass: '' }; // the genome-wide view takes no id
   try {
     const response = await fetch(`${BASE}/ContentService/data/query/${pathway}`, {
@@ -352,7 +369,8 @@ async function describe(pathway) {
     // The class comes free: this request was already being made to find out
     // whether the id resolves, and it is what says whether `layout=reaction` can
     // mean anything for it.
-    const body = await response.json().catch(() => ({}));
+    // Any JSON at all: only its class is read, if it has one.
+    const body = (await response.json().catch(() => ({}))) as { schemaClass?: unknown };
     return { known: true, schemaClass: String(body.schemaClass ?? '') };
   } catch {
     // If the check itself cannot run, let the render decide rather than
@@ -362,7 +380,7 @@ async function describe(pathway) {
   }
 }
 
-async function renderCached(params) {
+async function renderCached(params: RenderParams) {
   const key = cacheKey(params);
 
   const cached = await fromCache(key, params.format);
@@ -493,7 +511,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   // `jpg` is the same picture under the name Java's enum also accepts, so a
   // caller moved from that endpoint keeps whichever spelling they already use.
   const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
-  if (!FORMATS.includes(format)) {
+  if (!isFormat(format)) {
     return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
   }
 
@@ -576,7 +594,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
     });
   }
 
-  const params = {
+  const params: RenderParams = {
     pathway: name === 'genome-wide' ? '' : name,
     format,
     token: typeof req.query['token'] === 'string' ? req.query['token'] : '',
@@ -681,7 +699,7 @@ app.get('/render/:name.:ext', renderRoute);
  * (spec 013: a module renamed would drop out of the hash unseen), not a spec.
  * A declaration, so it is there however early the fingerprint is taken.
  */
-export function isModule(name) {
+export function isModule(name: string) {
   // A declaration (`.d.ts`) describes types for the checker; nothing runs it.
   return /\.(mjs|ts)$/.test(name) && !/\.(spec\.(mjs|ts)|d\.ts)$/.test(name);
 }
