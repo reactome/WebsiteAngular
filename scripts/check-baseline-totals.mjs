@@ -8,10 +8,11 @@
  * reaches goes up, and the per-module checks read the baseline in the tree.
  * So a move could carry a rise inside it unseen. This compares each
  * baseline's total with the base branch's: a move keeps the totals, typing
- * lowers them, nothing may raise them. A module the base already counts may
- * not rise either (moves create their modules), so a rise cannot hide behind
- * a fall elsewhere. lint-baseline.json's total and the dead-code total are
- * compared too.
+ * lowers them, nothing may raise them. No module may rise either, so a rise
+ * cannot hide behind a fall elsewhere -- one the base does not list counts
+ * from 0, as the per-module checks hold it: --update drops a module at zero,
+ * so every typed module is absent from the base's baseline. lint-baseline.json's
+ * total and the dead-code total are compared too.
  *
  *   node scripts/check-baseline-totals.mjs [base]    # base defaults to origin/main
  */
@@ -65,20 +66,18 @@ for (const [name, file, total] of BASELINES) {
   if (before !== undefined && now > before) rose.push(`${name} rose: ${now}, base ${before}`);
 }
 
-// A module the base already counts may not rise, unless it is one the split
-// creates to receive moved code (spec 014: the shared modules, the families,
-// the registry and the server), which a later move may add to. Code is moved
-// out of service.ts into those, never into the services' other modules, so
-// a rise in any other is new code, whatever fell elsewhere to keep the
-// total. The split's modules are held by the total.
-const RECEIVES_MOVES =
-  /^tools\/content-node\/(java-text|body|spring|answers|objects|reference-entities|search-params|release|registry|server|[\w-]+-endpoints)\.ts$/;
+// No module may rise: one the base does not list is at 0 there (a module
+// typed to zero leaves the baseline). Spec 014's split, whose modules received
+// moved code and could rise while service.ts fell, is done; untyped code moved
+// into a new module now has to be typed as it moves, as new code does --
+// renaming or splitting a module that still has counts (pptx.ts, the specs
+// still listed) is refused until they are typed away.
 for (const [name, file] of BASELINES.slice(0, 2)) {
   const now = JSON.parse(readFileSync(file, 'utf8'));
   const was = atBase(file) ?? {};
   for (const [module, count] of Object.entries(now))
-    if (module in was && count > was[module] && !RECEIVES_MOVES.test(module))
-      rose.push(`${name} in ${module} rose: ${count}, base ${was[module]}`);
+    if (count > (was[module] ?? 0))
+      rose.push(`${name} in ${module} rose: ${count}, base ${was[module] ?? 0}`);
 }
 
 // Lint's counts are per rule and global, so no move changes them; a rise in
