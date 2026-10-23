@@ -14,7 +14,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { app, cacheKey, httpError, isModule, statusOf } from './service.ts';
+import { app, cacheKey, httpError, isModule, publicMessage, statusOf } from './service.ts';
 
 let base: string;
 let server: Server;
@@ -179,6 +179,21 @@ describe('isModule, what /health hashes', () => {
 
 // What replaced `error.status || 500` (spec 013): the status a failed render
 // answers with (review of #552).
+describe('publicMessage, what a failed render tells the caller', () => {
+  it("keeps the message's first line, not the page's stack behind it", () => {
+    // As Playwright reports a failure inside the page: the page's stack,
+    // naming its bundles and the address the service reaches the site on.
+    const failure = new Error(
+      'page.evaluate: Error: this view cannot export PNG yet\n' +
+        '    at i.exportRaster (http://internal-host:4200/chunk-ABC.js:1:2)\n' +
+        '    at Object.png (http://internal-host:4200/chunk-ABC.js:3:4)'
+    );
+    expect(publicMessage(failure)).toBe('page.evaluate: Error: this view cannot export PNG yet');
+    expect(publicMessage(httpError(404, 'no such pathway: X'))).toBe('no such pathway: X');
+    expect(publicMessage('a string')).toBe('a string');
+  });
+});
+
 describe('statusOf, what a failed render answers with', () => {
   it('answers with the status the failure was given, and 500 for any other', () => {
     expect(

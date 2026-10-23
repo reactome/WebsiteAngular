@@ -98,7 +98,9 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // v10: a PowerPoint groups each entity's and each reaction's shapes (#299, in
 // #442), so every .pptx cached under v9 is the ungrouped slide curators could
 // not drag apart.
-const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v10';
+// v11: the genome-wide view exports a PNG (#639), so a genome-wide .pptx
+// cached under v10 has no fallback picture beside its SVG.
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v11';
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
@@ -167,6 +169,14 @@ export const statusOf = (error: unknown): number =>
 
 const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
+
+/**
+ * What a failed render tells the caller: the message's first line. A
+ * failure inside the page arrives from Playwright with the page's stack
+ * appended -- bundle file names and the address the service reaches the
+ * site on -- which belongs in the log, not in a public answer.
+ */
+export const publicMessage = (error: unknown): string => messageOf(error).split('\n')[0] ?? '';
 
 // ---- queue ---------------------------------------------------------------
 let active = 0;
@@ -687,7 +697,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
     if (status === 503) res.setHeader('Retry-After', '5');
     else stats.failed++;
     console.error(`failed ${name}.${format}: ${messageOf(error)}`);
-    return res.status(status).json({ error: messageOf(error) });
+    return res.status(status).json({ error: publicMessage(error) });
   }
 };
 

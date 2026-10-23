@@ -232,9 +232,13 @@ export class RenderComponent {
       // undefined, so a 404 surfaces here rather than through an error signal.
       // Without this the wait died silently and the caller paid a full timeout
       // to learn nothing.
+      // A failed request's message names the URL it asked, and the host in
+      // it is the address the render service reaches the site on, which the
+      // service's answer would pass on: the path is kept, the host is not.
+      const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
         `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          (failure instanceof Error ? failure.message : String(failure))
+          message.replace(/\bhttps?:\/\/[^/\s]+/g, '')
       );
       this.publish();
     }
@@ -1641,6 +1645,19 @@ export class RenderComponent {
     if (svg) {
       const canvas = await this.ehldService.rasterise(svg, scale, jpeg ? '#ffffff' : undefined);
       return canvas.toDataURL(jpeg ? 'image/jpeg' : 'image/png', 1.0);
+    }
+
+    // The genome-wide view draws to a canvas through FoamTree, which exports
+    // its own image -- as the page's own download does (ReacfoamComponent's
+    // exportRaster). Without this, a .png or .jpeg of a species overview was a
+    // 500, though its .svg worked.
+    const reacfoam = this.reacfoam();
+    if (reacfoam) {
+      return untracked(reacfoam.foamTree).get('imageData', {
+        format: jpeg ? 'image/jpeg' : 'image/png',
+        pixelRatio: scale,
+        ...(jpeg ? { quality: 0.9, backgroundColor: '#ffffff' } : {}),
+      });
     }
 
     throw new Error(`this view cannot export ${type.toUpperCase()} yet`);

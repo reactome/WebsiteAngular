@@ -305,9 +305,10 @@ async function pptxFromPage(page: Page, { scale, title }: { scale: number; title
   // scale the fallback came out at 6MB, dwarfing the vector version PowerPoint
   // actually uses. Cap it at the same size the animation uses.
   const longest = Math.max(size.width, size.height);
-  // The genome-wide view draws to a canvas and declines to export a PNG at all.
-  // It has an SVG, so it gets a slide; losing the fallback raster costs viewers
-  // older than PowerPoint 2016, and is better than losing the export.
+  // A view that cannot export a PNG still has an SVG, so it gets a slide;
+  // losing the fallback raster costs viewers older than PowerPoint 2016, and is
+  // better than losing the export. (The genome-wide view was such a view; it
+  // exports one through FoamTree now.)
   let png: Buffer | null = null;
   try {
     png = await rasterBytes(page, Math.min(scale, FALLBACK_MAX_SIZE / longest));
