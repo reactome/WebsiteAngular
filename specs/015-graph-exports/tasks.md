@@ -32,12 +32,12 @@
 
 **Purpose**: the reference answers every later task is compared with.
 
-- [ ] T001 Choose and list the 30-event sample in `specs/015-graph-exports/sample.md`:
+- [x] T001 Choose and list the 30-event sample in `specs/015-graph-exports/sample.md`:
   - top-level pathways of several sizes, including Signal Transduction (R-HSA-162582) and R-HSA-69620;
   - sub-pathways with and without their own diagram;
   - reactions, a black-box event, disease and inferred events, and a set-heavy pathway.
 
-  Each is listed by stable id and dbId, with the reason it is in the sample. Ids are looked up on the beta host, never guessed.
+  Each is listed by stable id and dbId, with the reason it is in the sample. Ids are looked up on the beta host, never guessed. — #636
 
 - [ ] T002 Measure the host's free disk and the size of release 97's published graph database (from its published dump), and decide where references are generated. Record the measurement and the decision in research.md R8:
   - a private graph database of release 97, started apart from beta's, if it fits with a safe margin;
