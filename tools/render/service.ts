@@ -47,6 +47,7 @@ import {
   BOUNDS,
   REACTION_CLASSES,
   badEnums,
+  bracketed,
   canonicalUrl,
   inBounds,
   repeated,
@@ -530,6 +531,15 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
       // Said rather than implied: a caller that has just been refused is the one
       // most likely to act on being told what to send instead.
       accepted: ACCEPTED,
+      canonical: canonicalUrl(name, format, req.query),
+    });
+  }
+
+  // After the unknown ones, so `x[y]` is named as the parameter it is not.
+  const shaped = bracketed(req.query);
+  if (shaped.length) {
+    return res.status(400).json({
+      error: shaped.map((k) => `"${k}" given with brackets; send it as ${k}=…`).join('; '),
       canonical: canonicalUrl(name, format, req.query),
     });
   }
