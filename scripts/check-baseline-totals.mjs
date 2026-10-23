@@ -69,7 +69,9 @@ for (const [name, file, total] of BASELINES) {
 // No module may rise: one the base does not list is at 0 there (a module
 // typed to zero leaves the baseline). Spec 014's split, whose modules received
 // moved code and could rise while service.ts fell, is done; untyped code moved
-// into a new module now has to be typed as it moves, as new code does.
+// into a new module now has to be typed as it moves, as new code does --
+// renaming or splitting a module that still has counts (pptx.ts, the specs
+// still listed) is refused until they are typed away.
 for (const [name, file] of BASELINES.slice(0, 2)) {
   const now = JSON.parse(readFileSync(file, 'utf8'));
   const was = atBase(file) ?? {};

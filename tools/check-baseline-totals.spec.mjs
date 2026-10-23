@@ -34,7 +34,23 @@ function check(base, head) {
   writeFileSync(path.join(repo, 'lint-baseline.json'), JSON.stringify(LINT));
   writeFileSync(path.join(repo, 'dead-code-baseline.json'), JSON.stringify(DEAD));
   git('add', '.');
-  git('-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '-m', 'base');
+  // Whatever the machine's git says: this runs inside the pre-push hook, where
+  // a signing prompt would hang it and a global hook would run on a throwaway.
+  git(
+    '-c',
+    'user.name=t',
+    '-c',
+    'user.email=t@t',
+    '-c',
+    'commit.gpgsign=false',
+    '-c',
+    'core.hooksPath=/dev/null',
+    'commit',
+    '-q',
+    '--no-verify',
+    '-m',
+    'base'
+  );
   write(repo, head);
   const run = spawnSync(process.execPath, [SCRIPT, 'HEAD'], { cwd: repo, encoding: 'utf8' });
   return { status: run.status, output: run.stdout + run.stderr };
