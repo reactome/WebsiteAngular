@@ -363,3 +363,29 @@ describe('the upstreams of each deployment', () => {
       expect(shared).toEqual([]);
     });
 });
+
+/**
+ * Beta's BioPAX download (spec 015, User Story 3). Both of the site's
+ * download links ask the legacy RESTful service for it, which runs in beta's
+ * Tomcat; with no location for it the request fell to the site, which
+ * answered its own page under a BioPAX name. Only beta's server block
+ * routes it: no other deployment is known to have the service.
+ */
+describe("beta's BioPAX download (dev.conf)", () => {
+  const beta = parse(readFileSync(join(__dirname, 'dev.conf'), 'utf8'));
+  const route = (url: string) =>
+    beta.find((l) => l.kind.startsWith('~') && new RegExp(l.path).test(url))?.target ?? 'none';
+
+  it('sends a Level 3 download, by dbId, to Tomcat', () => {
+    expect(route('/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/109862')).toBe('tomcat');
+  });
+
+  it('routes nothing else of the legacy service', () => {
+    for (const url of [
+      '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level2/109862',
+      '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/R-HSA-109862',
+      '/ReactomeRESTfulAPI/RESTfulWS/queryById/Pathway/109862',
+    ])
+      expect([url, route(url)]).toEqual([url, 'none']);
+  });
+});

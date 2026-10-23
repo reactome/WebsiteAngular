@@ -197,6 +197,9 @@ module.exports = {
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
     localService('/ExperimentDigester'),
+    // The per-event BioPAX download, the legacy RESTful service in the same
+    // Tomcat, as beta's nginx routes it (dev.conf; spec 015, User Story 3).
+    localService('/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/'),
   ]),
   // The headless render service (tools/render/service.ts), which produces the
   // formats the Java exporters used to: GIF, PPTX and anything else a document
