@@ -67,7 +67,7 @@ type LocationsRow = { db: LocationStep; steps: LocationStep[] | null };
  * list were compared path for path over twelve ids, both relationship sets,
  * and agreed every time; the diff harness then compares the answers.
  */
-export function locationsQuery(byDbId, directParticipants) {
+export function locationsQuery(byDbId: boolean, directParticipants: boolean) {
   const match = byDbId
     ? 'MATCH (n:DatabaseObject{dbId:$dbId}) '
     : 'MATCH (n:DatabaseObject{stId:$stId}) ';
@@ -91,7 +91,7 @@ export function locationsQuery(byDbId, directParticipants) {
  * except the ones the projection defaults: false for the flags, 0 for the
  * diagram size -- which is why a reaction says `"hasDiagram":false`.
  */
-export function eventProjection(node) {
+export function eventProjection(node: Props) {
   return {
     ...only(node, [
       'dbId',
@@ -106,13 +106,13 @@ export function eventProjection(node) {
       'releaseDate',
       'releaseStatus',
     ]),
-    hasDiagram: node.hasDiagram ?? false,
-    hasEHLD: node.hasEHLD ?? false,
-    diagramWidth: node.diagramWidth ?? 0,
-    diagramHeight: node.diagramHeight ?? 0,
+    hasDiagram: node['hasDiagram'] ?? false,
+    hasEHLD: node['hasEHLD'] ?? false,
+    diagramWidth: node['diagramWidth'] ?? 0,
+    diagramHeight: node['diagramHeight'] ?? 0,
     ...only(node, ['category', 'isCanonical', 'definition']),
-    inferred: node.isInferred ?? false,
-    inDisease: node.isInDisease ?? false,
+    inferred: node['isInferred'] ?? false,
+    inDisease: node['isInDisease'] ?? false,
   };
 }
 
@@ -125,7 +125,7 @@ export function eventProjection(node) {
  * parseInt takes a sign, so '%-1' is the "negative value" error and '%+F' is
  * 0x0F, as in Java; its digits are Character.digit's.
  */
-export function javaUrlDecode(text) {
+export function javaUrlDecode(text: string) {
   let out = '';
   let i = 0;
   while (i < text.length) {
@@ -152,8 +152,8 @@ export function javaUrlDecode(text) {
 }
 
 /** Integer.parseInt(two, 16) as URLDecoder uses it, with its messages. */
-function javaHexByte(two) {
-  const digit = (ch) => {
+function javaHexByte(two: string) {
+  const digit = (ch: string) => {
     if (/^[0-9a-fA-F]$/.test(ch)) return parseInt(ch, 16);
     const code = ch.charCodeAt(0);
     // Fullwidth A-F and a-f, which Character.digit accepts.
@@ -162,7 +162,7 @@ function javaHexByte(two) {
     if (javaNumeric(ch)) return Number(asciiDigits(ch));
     return -1;
   };
-  const refuse = (index) =>
+  const refuse = (index: number) =>
     new Error(
       `URLDecoder: Illegal hex characters in escape (%) pattern - Error at index ${index} in: "${two}"`
     );
@@ -174,7 +174,8 @@ function javaHexByte(two) {
   }
   let value = 0;
   for (let k = start; k < two.length; k += 1) {
-    const d = digit(two[k]);
+    // k is below the length.
+    const d = digit(two[k] as string);
     if (d < 0) throw refuse(k);
     value = value * 16 + d;
   }
@@ -192,7 +193,7 @@ function javaHexByte(two) {
  * "homo sapiens" and "Homo_sapiens" are 404s. Not the looser speciesFilter
  * other endpoints use.
  */
-export function topSpeciesMatch(raw) {
+export function topSpeciesMatch(raw: string) {
   return javaNumeric(raw)
     ? { where: 's.taxId = $species', params: { species: raw } }
     : { where: 's.displayName = $species', params: { species: raw } };
@@ -204,7 +205,7 @@ export function topSpeciesMatch(raw) {
  * the species, then doi -- with `species` the one-element array the caller
  * builds (the Species object the first time, its dbId after).
  */
-export function topPathwayJson(pathway, species) {
+export function topPathwayJson(pathway: Props, species: unknown) {
   return {
     ...only(pathway, [
       'dbId',
@@ -221,8 +222,8 @@ export function topPathwayJson(pathway, species) {
     ]),
     species: [species],
     ...only(pathway, ['doi', 'hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
-    schemaClass: pathway.schemaClass,
-    className: pathway.schemaClass,
+    schemaClass: pathway['schemaClass'],
+    className: pathway['schemaClass'],
   };
 }
 
@@ -233,7 +234,7 @@ export function topPathwayJson(pathway, species) {
 class JavaNullPointer extends Error {}
 
 /** Java's String.compareTo: by UTF-16 unit, which is also what `<` compares. */
-function javaCompare(a, b) {
+function javaCompare(a: string | null | undefined, b: string | null | undefined) {
   if (a === null || a === undefined) throw new JavaNullPointer('compareTo on null');
   if (b === null || b === undefined) throw new JavaNullPointer('compareTo with null');
   return a < b ? -1 : a > b ? 1 : 0;
@@ -254,22 +255,24 @@ function javaCompare(a, b) {
  */
 export class PathwayBrowserNode {
   // Initialised, not declared: Jackson's order is these fields' (pathwayBrowserJson).
+  // type and unique may be null too, as Java's may: treeFromLeaf checks them
+  // as Java dereferences them.
   stId: string | undefined = undefined;
   name: string | undefined = undefined;
   species: string | undefined = undefined;
   url: string | undefined = undefined;
-  type: string | undefined = undefined;
+  type: string | null | undefined = undefined;
   diagram: boolean | undefined = undefined;
-  unique: boolean | undefined = undefined;
+  unique: boolean | null | undefined = undefined;
   order: number | undefined = undefined;
   children: PathwayBrowserNode[] | null = null;
   parent: PathwayBrowserNode[] | null = null;
 
-  addChild(node) {
+  addChild(node: PathwayBrowserNode) {
     this.children = sortedAdd(this.children, node);
   }
 
-  addParent(node) {
+  addParent(node: PathwayBrowserNode) {
     this.parent = sortedAdd(this.parent, node);
   }
 
@@ -278,7 +281,7 @@ export class PathwayBrowserNode {
   }
 
   /** PathwayBrowserNode.compareTo. */
-  compareTo(node) {
+  compareTo(node: PathwayBrowserNode) {
     const species = javaCompare(this.species ?? '', node.species ?? '');
     if (species !== 0) return species;
     const order = (this.order ?? 0) - (node.order ?? 0);
@@ -287,7 +290,7 @@ export class PathwayBrowserNode {
   }
 
   /** getLeaves: a TreeSet, so leaves that compare equal are one. */
-  getLeaves() {
+  getLeaves(): PathwayBrowserNode[] {
     if (this.children === null) return [this];
     let leaves: PathwayBrowserNode[] | null = null;
     for (const child of this.children) {
@@ -298,7 +301,7 @@ export class PathwayBrowserNode {
 }
 
 /** TreeSet.add: in compareTo order, and nothing added when an equal one is there. */
-function sortedAdd(set, node) {
+function sortedAdd(set: PathwayBrowserNode[] | null, node: PathwayBrowserNode) {
   const list = set ?? [];
   // TreeMap.put on an empty map still compares the key with itself.
   if (list.length === 0) node.compareTo(node);
@@ -306,7 +309,8 @@ function sortedAdd(set, node) {
   let high = list.length;
   while (low < high) {
     const middle = (low + high) >> 1;
-    const order = node.compareTo(list[middle]);
+    // middle is below the length.
+    const order = node.compareTo(list[middle] as PathwayBrowserNode);
     if (order === 0) return list;
     if (order < 0) high = middle;
     else low = middle + 1;
@@ -320,7 +324,7 @@ function sortedAdd(set, node) {
  * schemaClass, labels, order]` row of the query, read with the driver's
  * defaults -- a missing flag is false and a missing order 0.
  */
-function treeItem(row) {
+function treeItem(row: LocationStep) {
   return {
     stId: row[0] ?? null,
     displayName: row[1] ?? null,
@@ -333,7 +337,7 @@ function treeItem(row) {
 }
 
 /** The types the browser cannot place, which the tree skips unless told not to. */
-function displayable(type) {
+function displayable(type: string | null | undefined) {
   if (type === null || type === undefined) throw new JavaNullPointer('type');
   return (
     type !== 'CatalystActivity' &&
@@ -354,7 +358,11 @@ function displayable(type) {
  * starts again from the root. That rule is why the query is run exactly as
  * Java writes it: the rows' order is part of the answer.
  */
-export function parseHierarchy(rootRow, paths, omitNonDisplayableItems) {
+export function parseHierarchy(
+  rootRow: LocationStep,
+  paths: LocationStep[][] | null,
+  omitNonDisplayableItems: boolean
+) {
   const rootItem = treeItem(rootRow);
   const root = new PathwayBrowserNode();
   root.stId = rootItem.stId ?? undefined;
@@ -368,7 +376,7 @@ export function parseHierarchy(rootRow, paths, omitNonDisplayableItems) {
   }
 
   const nodes = new Map([[rootItem.stId, root]]);
-  const addNode = (previous, row) => {
+  const addNode = (previous: PathwayBrowserNode, row: LocationStep) => {
     const found = treeItem(row);
     let node = nodes.get(found.stId);
     if (!node) {
@@ -393,7 +401,8 @@ export function parseHierarchy(rootRow, paths, omitNonDisplayableItems) {
   let previousSize = 0;
   for (const path of paths ?? []) {
     if (path.length > previousSize) {
-      previous = addNode(previous, path[path.length - 1]);
+      // Longer than the last, so not empty.
+      previous = addNode(previous, path[path.length - 1] as LocationStep);
     } else {
       previous = root;
       for (const row of path) previous = addNode(previous, row);
@@ -414,14 +423,20 @@ const PATHWAY_TYPES = new Set(['Pathway', 'CellLineagePath', 'TopLevelPathway'])
  * Kept line for line, `unique` included: it is written onto the shared graph
  * nodes as the walk goes, so a node's address depends on the walk's order.
  */
-export function locationsInPathwayBrowser(root) {
+export function locationsInPathwayBrowser(root: PathwayBrowserNode) {
   const leaves = root.getLeaves().filter((leaf) => leaf.type === 'TopLevelPathway');
   let trees: PathwayBrowserNode[] | null = null;
   for (const leaf of leaves) trees = sortedAdd(trees, treeFromLeaf(leaf, '', '', '', ''));
   return trees ?? [];
 }
 
-function treeFromLeaf(leaf, sel, path, shortPath, lastNodeWithDiagram) {
+function treeFromLeaf(
+  leaf: PathwayBrowserNode,
+  sel: string | null | undefined,
+  path: string,
+  shortPath: string,
+  lastNodeWithDiagram: string | undefined
+): PathwayBrowserNode {
   const tree = new PathwayBrowserNode();
   tree.stId = leaf.stId;
   tree.name = leaf.name;
@@ -433,7 +448,7 @@ function treeFromLeaf(leaf, sel, path, shortPath, lastNodeWithDiagram) {
   const hasDiagram = leaf.hasDiagram();
   leaf.unique = false;
 
-  let main;
+  let main: string | undefined;
   if (isPathway) {
     main = leaf.stId;
   } else {
@@ -446,14 +461,16 @@ function treeFromLeaf(leaf, sel, path, shortPath, lastNodeWithDiagram) {
     if (children === null) {
       leaf.unique = true;
     } else if (children.length === 1) {
-      const only = children[0].unique;
+      // One child: the length was checked.
+      const only = (children[0] as PathwayBrowserNode).unique;
       if (only === null || only === undefined) throw new JavaNullPointer('isUnique');
       if (only) leaf.unique = true;
     }
   }
 
   // StringBuilder.append(null) writes "null".
-  const text = (value) => (value === null || value === undefined ? 'null' : String(value));
+  const text = (value: string | null | undefined) =>
+    value === null || value === undefined ? 'null' : String(value);
   let url = PATHWAY_BROWSER_URL;
   if (leaf.unique) {
     url += text(leaf.stId);
@@ -563,7 +580,13 @@ const FORMS_OF =
  * named Species -- and they are kept, not tidied, since tidying a query is
  * what reordered rows before.
  */
-const PATHWAYS_FOR = {
+/** A /pathways/low query: the column its rows carry, and its text for an object and a species. */
+interface LowQuery {
+  column: string;
+  query: (object: string, species: (pattern: string) => string) => string;
+}
+
+const PATHWAYS_FOR: LowQuery = {
   column: 'p',
   query: (object, species) => {
     const sp = species('(:Species{taxId:$taxId})');
@@ -578,7 +601,7 @@ const PATHWAYS_FOR = {
   },
 };
 
-const PATHWAYS_FOR_ALL_FORMS = {
+const PATHWAYS_FOR_ALL_FORMS: LowQuery = {
   column: 'p',
   query: (object, species) =>
     `MATCH (:DatabaseObject${object})-[:${FORMS_OF}]->(re:ReferenceEntity)
@@ -587,7 +610,7 @@ const PATHWAYS_FOR_ALL_FORMS = {
      RETURN DISTINCT p`,
 };
 
-const PATHWAYS_WITH_DIAGRAM_FOR = {
+const PATHWAYS_WITH_DIAGRAM_FOR: LowQuery = {
   column: 'm',
   query: (object, species) =>
     `MATCH (:PhysicalEntity${object})<-[:${PARTICIPANT_OF}]-(r:ReactionLikeEvent)<-[:hasEvent*]-(p:Pathway{hasDiagram:True})${species('(Species{taxId:$taxId})')}
@@ -603,7 +626,7 @@ const PATHWAYS_WITH_DIAGRAM_FOR = {
      RETURN DISTINCT m`,
 };
 
-const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS = {
+const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS: LowQuery = {
   column: 'm',
   query: (object, species) =>
     `MATCH (:PhysicalEntity${object})-[:${FORMS_OF}]->(re:ReferenceEntity)
@@ -623,7 +646,7 @@ const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS = {
  * A species that is not found filters nothing, as in Java; the 404 message
  * repeats the parameter as given, and says "null" when there is none.
  */
-async function lowerLevelPathways(request: Request, segment, { column, query }) {
+async function lowerLevelPathways(request: Request, segment: number, { column, query }: LowQuery) {
   const raw = pathId(rawSegment(request, segment));
   // By the servlet's rules (queryValues), not Express's query parser, which
   // reads brackets in a name as structure; repeated, Spring joins them.
@@ -637,7 +660,7 @@ async function lowerLevelPathways(request: Request, segment, { column, query }) 
   const { object, params } = id;
 
   const taxId = await speciesTaxId(speciesFilter(species));
-  const inSpecies = (pattern) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
+  const inSpecies = (pattern: string) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
   const rows = await read<{ [column: string]: Props }>(query(object, inSpecies), {
     ...params,
     ...(taxId === undefined ? {} : { taxId }),
@@ -703,7 +726,7 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
       // content-service decodes the species once more (URLDecoder), so
       // 'Homo+sapiens' finds human; a malformed escape is Java's 500. The 404
       // message below names the species before that decoding, as Java's does.
-      let decoded;
+      let decoded: string;
       try {
         decoded = javaUrlDecode(taxId);
       } catch (failure) {
@@ -729,7 +752,7 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
       // Scoped to this response: the back-reference is only meaningful within
       // the document it appears in.
       const seenSpecies = new Set();
-      const full = (species) => {
+      const full = (species: Props) => {
         seenSpecies.add(species.dbId);
         return {
           ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
@@ -979,7 +1002,9 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
       try {
         // One row per path; no path at all is one row with none, which Java's
         // collect drops.
-        const paths = rows.map((each) => each.steps).filter((steps) => steps !== null);
+        const paths = rows
+          .map((each) => each.steps)
+          .filter((steps): steps is LocationStep[] => steps !== null);
         const root = parseHierarchy(row.db, paths, omit.value ?? true);
         const trees = locationsInPathwayBrowser(root);
         if (trees.length === 0) {
