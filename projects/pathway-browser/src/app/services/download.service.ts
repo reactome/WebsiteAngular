@@ -48,10 +48,36 @@ export const defaultDownloadOptions: DownloadOptions = {
 export type ImageType = (typeof IMAGES_FORMAT)[keyof typeof IMAGES_FORMAT];
 
 export type DownloadRequest = {
+  /** Which click this is, so that a drawer ends this request and no other. */
+  id: number;
+  /**
+   * The drawer that was ready when the click came, and the only one that may
+   * take it up. A drawer created while the request is still set -- the reader
+   * moved on mid-export -- has nothing drawn, and was taking it.
+   */
+  owner: object;
   target: DownloadTarget.DIAGRAM | DownloadTarget.REACFOAM;
   format: DownloadFormat;
   options?: DownloadOptions;
 } | null;
+
+/**
+ * How long a figure may take before the button gives up on it. An animated
+ * illustration across many samples is the slowest thing made here; the files
+ * fetched from the server get the same three minutes.
+ */
+export const FIGURE_DEADLINE_MS = 3 * 60 * 1000;
+
+/** Where the view a figure is made from has got to. */
+export type FigureState = 'loading' | 'ready' | 'failed';
+
+/** What a figure button says when there is nothing on screen to make it from. */
+export const FIGURE_LOADING = 'The figure is still loading; try again once it is on screen.';
+export const FIGURE_UNAVAILABLE =
+  'There is no figure on screen to download: this view could not be shown.';
+/** Between views, or where the page shows none: nothing to say it failed. */
+export const FIGURE_NONE = 'There is no figure on screen to download yet.';
+export const FIGURE_BUSY = 'One figure at a time: try again once this one has saved.';
 
 @Injectable({
   providedIn: 'root',
@@ -75,11 +101,106 @@ export class DownloadService {
    */
   readonly failure = signal<string | null>(null);
 
+  /**
+   * The figure being made in the page, from the click until it is saved or has
+   * failed.
+   *
+   * Not `downloadRequest`, which is a message to whichever component draws the
+   * view and is cleared when that component picks it up -- the diagram does so
+   * before it has drawn anything. A large illustration takes seconds to draw,
+   * and with nothing on the button in that time the click looked lost.
+   */
+  readonly working = signal<{
+    id: number;
+    target: DownloadTarget;
+    format: DownloadFormat;
+    animated: boolean;
+  } | null>(null);
+  private deadline: ReturnType<typeof setTimeout> | undefined;
+  private lastId = 0;
+
+  /**
+   * The view a figure would be drawn from, as its drawer last reported it.
+   *
+   * A click before the diagram has loaded, or on a pathway whose diagram could
+   * not be shown, used to be handed to a drawer that had nothing to draw: it
+   * either failed with "no diagram on screen" a second before the diagram
+   * appeared, or waited for one that would never come. The button says which
+   * it is instead, at once.
+   */
+  readonly figure = signal<{ owner: object; target: DownloadTarget; state: FigureState } | null>(
+    null
+  );
+
+  /** A drawer says where its view has got to. */
+  figureState(owner: object, target: DownloadTarget, state: FigureState) {
+    this.figure.set({ owner, target, state });
+  }
+
+  /** A drawer is going away; what it said no longer holds, unless another has spoken since. */
+  figureGone(owner: object) {
+    if (this.figure()?.owner === owner) this.figure.set(null);
+  }
+
   requestDownload(target: DownloadTarget, format: DownloadFormat, options?: DownloadOptions) {
+    // One at a time: the drawers share one request, so a second click while a
+    // figure is being made would replace the first one's request mid-draw.
+    const settings = { ...defaultDownloadOptions, ...options };
+    const working = this.working();
+    if (working) {
+      // The second click of a double-click is the same figure, whose spinner
+      // already says what is happening.
+      const same =
+        working.target === target &&
+        working.format === format &&
+        working.animated === settings.animate;
+      if (!same) this.failure.set(FIGURE_BUSY);
+      return;
+    }
     // A new request clears the last one's complaint; otherwise a reason that has
     // been dealt with sits under a download that is working.
     this.failure.set(null);
-    this.downloadRequest.set({ target, format, options: options || defaultDownloadOptions });
+
+    const figure = this.figure();
+    if (figure?.target !== target || figure.state !== 'ready') {
+      this.failure.set(
+        figure?.target !== target
+          ? FIGURE_NONE
+          : figure.state === 'loading'
+            ? FIGURE_LOADING
+            : FIGURE_UNAVAILABLE
+      );
+      return;
+    }
+
+    const id = ++this.lastId;
+    this.working.set({ id, target, format, animated: settings.animate });
+    // A drawer that never answers would otherwise leave the button working for
+    // good. The work itself cannot be stopped; if it does finish, the file is
+    // still saved, and its ending is ignored by then (see `finished`).
+    this.deadline = setTimeout(
+      () =>
+        this.failed(
+          new Error('The figure is taking too long to make; please try again'),
+          'Figure timed out',
+          id
+        ),
+      FIGURE_DEADLINE_MS
+    );
+    this.downloadRequest.set({ id, owner: figure.owner, target, format, options: settings });
+  }
+
+  /**
+   * Request `id`'s figure has been saved. A request that has already been given
+   * up on is not this one: ending it would stop the spinner of a later click.
+   */
+  finished(id: number) {
+    // Its own request only: a later click's must still reach its drawer.
+    if (this.downloadRequest()?.id === id) this.resetDownload();
+    if (this.working()?.id !== id) return;
+    clearTimeout(this.deadline);
+    this.working.set(null);
+    if (this.failure() === FIGURE_BUSY) this.failure.set(null);
   }
 
   resetDownload() {
@@ -90,11 +211,15 @@ export class DownloadService {
    * A download that could not be produced: say why, and stop saying it is on its
    * way. `whatFailed` names the exporter for the console; the reader gets the
    * error's own message when it has one, because those are written to be read.
+   * A request already given up on goes to the console only.
    */
-  failed(error: unknown, whatFailed: string) {
+  failed(error: unknown, whatFailed: string, id: number) {
     console.error(whatFailed, error);
+    if (this.working()?.id !== id) return;
     this.failure.set(error instanceof Error && error.message ? error.message : whatFailed);
-    this.resetDownload();
+    if (this.downloadRequest()?.id === id) this.resetDownload();
+    clearTimeout(this.deadline);
+    this.working.set(null);
   }
 
   constructor() {}
@@ -138,7 +263,8 @@ export function dataUrlToBlob(data: string): Blob {
   const header = data.slice(5, comma);
   const body = data.slice(comma + 1);
   const type = header.split(';')[0] || 'text/plain';
-  if (!header.split(';').includes('base64')) return new Blob([decodeURIComponent(body)], { type });
+  if (!header.toLowerCase().split(';').includes('base64'))
+    return new Blob([decodeURIComponent(body)], { type });
   const binary = atob(body);
   const bytes = new Uint8Array(binary.length);
   for (let at = 0; at < binary.length; at += 1) bytes[at] = binary.charCodeAt(at);

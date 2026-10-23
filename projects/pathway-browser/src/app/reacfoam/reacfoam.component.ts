@@ -21,6 +21,7 @@ import {
   defaultDownloadOptions,
   DownloadFormat,
   DownloadService,
+  DownloadTarget,
 } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { isRLE } from '../services/utils';
@@ -202,12 +203,22 @@ export class ReacfoamComponent implements OnDestroy {
     });
   }
 
+  /** The last download request this view took up (see the download effect). */
+  private handled = 0;
+
   constructor() {
     effect(() => {
       // Initialise
       this.reacfoam.data(); // Set data whenever it is updated
       // if (!untracked(this.relaxing)) // Avoid errors happening when setting data while relaxing
       this.foamTree().set('dataObject', { groups: this.reacfoam.data()! });
+      untracked(() =>
+        this.download.figureState(
+          this,
+          DownloadTarget.REACFOAM,
+          this.reacfoam.data() ? 'ready' : 'loading'
+        )
+      );
 
       if (untracked(this.correctedSelectedId)) {
         // Initial select
@@ -381,11 +392,14 @@ export class ReacfoamComponent implements OnDestroy {
       // Kept synchronous so a rejection cannot vanish. Signals read before
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
+      const request = this.download.downloadRequest();
+      // Once per request: it stays set until the file is saved, and this
+      // effect runs again whenever a signal the export reads changes.
+      if (request?.owner !== this || request.id === this.handled) return;
+      this.handled = request.id;
       void (async () => {
-        const request = this.download.downloadRequest();
-        let options = request?.options || defaultDownloadOptions;
+        let options = request.options || defaultDownloadOptions;
         options = { ...defaultDownloadOptions, ...options };
-        if (!request) return;
         const loader = this.dialog.open(BlockingLoaderComponent, {
           disableClose: true,
           width: '150px',
@@ -400,19 +414,21 @@ export class ReacfoamComponent implements OnDestroy {
               ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
             };
             this.exportRaster(request.format, params);
-            this.download.resetDownload();
+            this.download.finished(request.id);
           } else if (request.format === DownloadFormat.SVG) {
             this.download.export(
               await this.svgExporter.exportReacfoam(this, options),
               request.format,
               'reacfoam'
             );
-            this.download.resetDownload();
+            this.download.finished(request.id);
           }
         } finally {
           loader.close();
         }
-      })().catch((error) => this.download.failed(error, 'Genome-wide view export failed'));
+      })().catch((error) =>
+        this.download.failed(error, 'Genome-wide view export failed', request.id)
+      );
     });
   }
 
@@ -420,6 +436,7 @@ export class ReacfoamComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    this.download.figureGone(this);
   }
 
   exportRaster(format: DownloadFormat, params: FoamTree.ImageFormat) {

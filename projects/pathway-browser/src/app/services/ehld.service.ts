@@ -474,7 +474,10 @@ export class EhldService {
 
   async downloadImage(format: DownloadFormat) {
     const svg = document.getElementById('ehld')?.querySelector('svg');
-    if (!svg) return;
+    if (!svg) throw new Error('There is no illustration on screen to export');
+    // Named now, for the illustration being drawn: by the time it is encoded
+    // the reader may be on another pathway.
+    const name = `${this.data.currentPathway()?.stId}`;
 
     const canvas = await this.rasterise(
       svg as SVGSVGElement,
@@ -494,7 +497,7 @@ export class EhldService {
         1.0
       )
     );
-    this.download.export(blob, format, `${this.data.currentPathway()?.stId}`);
+    this.download.export(blob, format, name);
   }
 
   /**

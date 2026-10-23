@@ -36,6 +36,13 @@ export class DownloadButtonComponent {
   readonly download = input<string | boolean>();
   readonly icon = input<Icon>();
 
+  /**
+   * A figure made in the page is under way. Those have no link for the
+   * directive to fetch, so the page says so instead; it looks and reads the
+   * same as a file being made on the server.
+   */
+  readonly working = input(false);
+
   readonly label = input<string>();
   readonly tooltip = input<string>();
   readonly openInNewTab = input<string>('_blank');
