@@ -1,6 +1,6 @@
 # Research: SBML and BioPAX built from the graph
 
-Measured on 23 Oct 2026 (release 97). Sources: the code of `reactome/sbml-exporter` (main, v2.2.7), `reactome/content-service` (main), `reactome/graph-core` (main), JSBML 1.5 and JTidy r938, `reactome/restfulapi_mini` and `reactome/Pathway-Exchange` (BioPAX); live answers from the Java ContentService on the beta host and from reactome.org's legacy BioPAX service; the diagram JSON for R-HSA-69620.
+Measured on 23 Oct 2026 (release 97). Sources: the code of `reactome/sbml-exporter` (main, v2.2.7), `reactome/content-service` (main), `reactome/graph-core` (main), JSBML 1.5 and JTidy r938, `reactome/restfulapi_mini` and `reactome/Pathway-Exchange` (BioPAX); live answers from the Java services on the beta host (ContentService, and the legacy RESTful service, which serves today's BioPAX from the relational database on the same host); a few samples from reactome.org's copy of that service, first, before the local one was found; the diagram JSON for R-HSA-69620.
 
 Personal data: SBML's History (creators) and BioPAX's citations and curation comments carry people's names. They were compared by hash only, are never printed in this research, and no sample containing them is in the repository (R8).
 
@@ -107,6 +107,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Measured.**
 
+- **The legacy service runs on the beta host too.** Its Tomcat answers `/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}` (200, BioPAX, 0.02 s for a reaction) from the relational database on the same host, release 97. Only nginx does not route it, which is why beta's links answer the site's page. The same reaction from reactome.org has the same size and the same 80 individuals, in another order. **This local service is the reference** for the BioPAX comparison.
 - **Production runs `restfulapi_mini`.** `GET /RESTfulWS/biopaxExporter/{level}/{dbId}` uses Pathway-Exchange's `ReactomeToBioPAX3XMLConverter` and writes with JDOM (`Format.getPrettyFormat()`): CRLF line endings, a 2-space indent and trimmed text. Every data property carries `rdf:datatype`.
 - **Samples:** a reaction (109862), a degradation black box (201425), a disease reaction (1248655), a pathway of 14 events (112409) and Apoptosis (109581, 3.2 MB, 4,731 top-level elements).
 - **The answer is identical when asked twice, but the order and ids are not reproducible across runs:**
@@ -208,15 +209,15 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 ## R7. The interim BioPAX link (User Story 3)
 
-**Measured.** Both site links build `${RESTFUL_API}/biopaxExporter/Level3/{id}` (`environment.ts:128`). On beta, `RESTFUL_API` is the page's own origin, which nothing routes.
+**Measured.** Both site links build `${RESTFUL_API}/biopaxExporter/Level3/{id}` (`environment.ts:128`). On beta, `RESTFUL_API` is the page's own origin. The legacy service that answers that path runs on the beta host's Tomcat (R4), but no nginx location sends `/ReactomeRESTfulAPI/` there, so it falls to the site.
 
-**Decision.** Point `RESTFUL_API` at `https://reactome.org/ReactomeRESTfulAPI/RESTfulWS` until User Story 2 ships. Then the two links move to the new export, and the constant is deleted. It needs a beta site rebuild, which the user approves.
+**Decision.** Route `^/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/` to the host's Tomcat in nginx, and in the dev proxy alike, until User Story 2 ships. Then that route is replaced by node's 301 to the new export, the two links move to it, and `RESTFUL_API` is deleted. It needs only an nginx rebuild; the site is unchanged.
 
-**Rationale.** It is one line, it serves a real BioPAX file (production's release, stated), and it is undone by reverting the constant.
+**Rationale.** Beta then serves its own BioPAX, from its own release, with no dependency on reactome.org and no site rebuild. It is undone by removing one location.
 
 **Alternatives considered.**
 
-- _nginx proxying to reactome.org_: rejected. Beta's origin would depend on production through Cloudflare, and beta's edge could store production's answers.
+- _Pointing `RESTFUL_API` at reactome.org_: rejected. Beta would depend on production, it would need a site rebuild, and it would serve another release's file.
 - _Hiding the links_: kept as the fallback.
 
 ## R8. Load on the shared graph, and fixtures

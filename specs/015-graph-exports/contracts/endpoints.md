@@ -31,4 +31,4 @@ All are answered by the node content service from the graph database. Their rout
 
 ## The site
 
-Both download links (the Pathway Browser's download tab, and the website's detail download bar) point to `/ContentService/exporter/event/{stId}.biopax` once the export ships. The `RESTFUL_API` constant is then deleted. Until then it points at reactome.org (research R7).
+Both download links (the Pathway Browser's download tab, and the website's detail download bar) point to `/ContentService/exporter/event/{stId}.biopax` once the export ships. The `RESTFUL_API` constant is then deleted. Until then, nginx and the dev proxy route the legacy path to the beta host's own legacy service (research R7).

@@ -12,7 +12,7 @@ The node content service writes the SBML export (at its two existing URLs) and a
 - **SBML's layout** is ported from the relational converter's algorithm, over the diagram JSON the site draws, for the events that have one today. It is exact in structure. Its coordinates are the diagram's own (R3).
 - **BioPAX** reproduces today's converter's classes and values, in a deterministic order, and is compared with today's file by meaning (R4).
 - **Validators** for both formats run in a new CI job (R5).
-- **Meanwhile,** the site's broken BioPAX link points at reactome.org (R7).
+- **Meanwhile,** the site's broken BioPAX links are fixed by routing the legacy path to the beta host's own legacy service, which nginx was not routing (R7). The same service is the BioPAX comparison's reference (R4).
 
 ## Technical Context
 
@@ -127,8 +127,8 @@ projects/website-angular/src/app/content/detail/detail-download-bar/ # the BioPA
 ## Order of work
 
 1. **US3, the interim link:**
-   - `RESTFUL_API` points at reactome.org.
-   - It needs a beta site rebuild, with the user's approval.
+   - nginx and the dev proxy route `/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/` to the host's Tomcat;
+   - an nginx rebuild on beta (standing approval); the site is unchanged.
 2. **The instruments:**
    - the SBML reference harness and the 30-event sample's references, from a private graph of the same release where possible;
    - the SBML and BioPAX comparison tools, each shown failing;

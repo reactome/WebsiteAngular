@@ -28,7 +28,7 @@ Expected: the model is identical apart from the generation note. The layout has 
 
 ## 4. BioPAX against today's file
 
-1. For a sample of events, take today's legacy BioPAX once from reactome.org, spaced.
+1. For a sample of events, take today's legacy BioPAX once from the beta host's own legacy service (`/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}` on its Tomcat), spaced. The files stay outside the repository: they hold personal names.
 2. Ask the node service for the same events.
 3. Run the BioPAX comparison tool.
 
