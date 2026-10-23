@@ -99,6 +99,15 @@ describe('the request handler runs at all', () => {
     expect((await response.json()).error).toContain('more than once');
   });
 
+  it('refuses a bracketed token, which drew the figure without its overlay', async () => {
+    const response = await fetch(`${base}/render/R-HSA-109606.png?token[a]=ABC&scale=1`);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: '"token" given with brackets; send it as token=…',
+      canonical: '/render/R-HSA-109606.png?scale=1',
+    });
+  });
+
   it('refuses a value outside its range', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?scale=4`);
     expect(response.status).toBe(400);
