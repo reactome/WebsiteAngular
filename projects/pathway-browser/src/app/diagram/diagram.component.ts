@@ -54,7 +54,12 @@ import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
 
 import { DarkService } from '../services/dark.service';
-import { DownloadFormat, DownloadService, includeSubpathways } from '../services/download.service';
+import {
+  DownloadFormat,
+  DownloadService,
+  DownloadTarget,
+  includeSubpathways,
+} from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
 import { Interactor } from '../interactors/model/interactor.model';
@@ -290,14 +295,16 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       this.avoidSideEffect(() => this.applyDeltaSignalOverlay(overlay, palette));
     });
 
+    this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading');
     effect(() => {
       const request = this.download.downloadRequest();
       if (request) {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
         void this.export(request.format).then(
-          () => this.download.finished(),
-          (error: unknown) => this.download.failed(error, `Diagram ${request.format} export failed`)
+          () => this.download.finished(request.id),
+          (error: unknown) =>
+            this.download.failed(error, `Diagram ${request.format} export failed`, request.id)
         );
         this.download.resetDownload();
       }
@@ -801,6 +808,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    this.download.figureGone(this);
     // Cytoscape binds resize, scroll and pointer listeners on window, and only
     // destroy() removes them. A new instance in the same container destroys the
     // old one itself, so this is only for the last: without it, every diagram
@@ -878,6 +886,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       .subscribe((drawn) => {
         this.isInitialLoad = false;
         this.loadFailed.set(!drawn);
+        this.download.figureState(this, DownloadTarget.DIAGRAM, drawn ? 'ready' : 'failed');
         if (drawn) this.diagramLoaded.emit(this.pathwayId());
         else this.diagramFailed.emit(this.pathwayId());
       });
@@ -904,6 +913,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (this.drawing === pathwayId) return EMPTY;
     this.drawing = pathwayId;
     this.loadFailed.set(false);
+    this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading');
 
     const container = cytoscapeContainer.nativeElement;
     return this.diagram.getDiagram(this.pathwayId()!).pipe(

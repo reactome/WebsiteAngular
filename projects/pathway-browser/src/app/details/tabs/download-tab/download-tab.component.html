@@ -25,7 +25,7 @@
       @if (hasEHLD() && analysis.samples().length > 1) {
         <cr-download-button
           (click)="onEHLDAnimatedDownload()"
-          [working]="isWorking(DownloadTarget.DIAGRAM, DownloadFormat.SVG)"
+          [working]="isWorking(DownloadTarget.DIAGRAM, DownloadFormat.SVG, true)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />
@@ -61,7 +61,7 @@
       @if (analysis.samples().length > 1) {
         <cr-download-button
           (click)="onReacfoamAnimatedDownload()"
-          [working]="isWorking(DownloadTarget.REACFOAM, DownloadFormat.SVG)"
+          [working]="isWorking(DownloadTarget.REACFOAM, DownloadFormat.SVG, true)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />

@@ -4,8 +4,12 @@ import {
   DownloadFormat,
   DownloadService,
   DownloadTarget,
+  FIGURE_BUSY,
   FIGURE_DEADLINE_MS,
+  FIGURE_LOADING,
+  FIGURE_UNAVAILABLE,
   dataUrlToBlob,
+  defaultDownloadOptions,
 } from './download.service';
 
 // A picture the page makes -- an illustration, the genome-wide view -- is
@@ -89,10 +93,15 @@ describe('dataUrlToBlob', () => {
 // A figure drawn in the page takes seconds for a large illustration, and the
 // button has to say so from the click until the file is saved or has failed.
 describe('DownloadService.working', () => {
+  const drawer = {};
+  let service: DownloadService;
+
   beforeEach(() => {
     vi.useFakeTimers();
     vi.spyOn(console, 'error').mockImplementation(() => undefined);
     TestBed.configureTestingModule({});
+    service = TestBed.inject(DownloadService);
+    service.figureState(drawer, DownloadTarget.DIAGRAM, 'ready');
   });
 
   afterEach(() => {
@@ -100,54 +109,103 @@ describe('DownloadService.working', () => {
     vi.restoreAllMocks();
   });
 
+  const request = (format = DownloadFormat.PNG) => {
+    service.requestDownload(DownloadTarget.DIAGRAM, format);
+    const made = service.downloadRequest();
+    if (!made) throw new Error('the request was refused');
+    return made.id;
+  };
+
   it('runs from the request until the figure is saved, not until it is picked up', () => {
-    const service = TestBed.inject(DownloadService);
-    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    const id = request();
     expect(service.working()).toEqual({
+      id,
       target: DownloadTarget.DIAGRAM,
       format: DownloadFormat.PNG,
+      animated: false,
     });
     service.resetDownload();
     expect(service.working(), 'picking the request up is not finishing it').not.toBeNull();
-    service.finished();
+    service.finished(id);
     expect(service.working()).toBeNull();
   });
 
   it('ends with the reason when the figure fails', () => {
-    const service = TestBed.inject(DownloadService);
-    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.JPEG);
-    service.failed(new Error('this illustration embeds HTML'), 'EHLD image export failed');
+    const id = request(DownloadFormat.JPEG);
+    service.failed(new Error('this illustration embeds HTML'), 'EHLD image export failed', id);
     expect([service.working(), service.failure()]).toEqual([null, 'this illustration embeds HTML']);
   });
 
-  it('takes one figure at a time', () => {
-    const service = TestBed.inject(DownloadService);
-    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+  it('takes one figure at a time, and says so', () => {
+    const id = request(DownloadFormat.PNG);
     service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.JPEG);
     expect(service.downloadRequest()?.format).toBe(DownloadFormat.PNG);
     expect(service.working()?.format).toBe(DownloadFormat.PNG);
+    expect(service.failure()).toBe(FIGURE_BUSY);
+    service.finished(id);
+    expect(service.failure(), 'the notice goes once the figure has saved').toBeNull();
+  });
+
+  it('says at once when the figure is still loading, or could not be shown', () => {
+    service.figureState(drawer, DownloadTarget.DIAGRAM, 'loading');
+    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    expect([service.working(), service.downloadRequest(), service.failure()]).toEqual([
+      null,
+      null,
+      FIGURE_LOADING,
+    ]);
+    service.figureState(drawer, DownloadTarget.DIAGRAM, 'failed');
+    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    expect(service.failure()).toBe(FIGURE_UNAVAILABLE);
+    service.figureGone(drawer);
+    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    expect([service.working(), service.failure()]).toEqual([null, FIGURE_UNAVAILABLE]);
+  });
+
+  it("forgets a drawer's word only if no other drawer has spoken since", () => {
+    const next = {};
+    service.figureState(next, DownloadTarget.DIAGRAM, 'ready');
+    service.figureGone(drawer);
+    expect(service.figure()?.owner).toBe(next);
   });
 
   it('gives up, and says so, when nothing makes the figure', () => {
-    const service = TestBed.inject(DownloadService);
-    service.requestDownload(DownloadTarget.REACFOAM, DownloadFormat.PNG);
+    request();
     vi.advanceTimersByTime(FIGURE_DEADLINE_MS - 1);
     expect(service.working()).not.toBeNull();
     vi.advanceTimersByTime(1);
     expect(service.working()).toBeNull();
-    expect(service.failure()).toMatch(/not made in time/);
+    expect(service.failure()).toMatch(/taking too long/);
     expect(service.downloadRequest(), 'nor is it drawn later').toBeNull();
   });
 
   it('does not time out a figure that was saved', () => {
-    const service = TestBed.inject(DownloadService);
-    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.SVG);
+    const id = request(DownloadFormat.SVG);
     // Saved partway through: the first figure's deadline would fall inside
     // the second's if it were left running.
     vi.advanceTimersByTime(10_000);
-    service.finished();
-    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.PNG);
+    service.finished(id);
+    request(DownloadFormat.PNG);
     vi.advanceTimersByTime(FIGURE_DEADLINE_MS - 1);
     expect(service.failure()).toBeNull();
+  });
+
+  it('lets a late ending of a request given up on touch nothing later', () => {
+    const first = request(DownloadFormat.SVG);
+    vi.advanceTimersByTime(FIGURE_DEADLINE_MS);
+    const second = request(DownloadFormat.PNG);
+    service.finished(first);
+    service.failed(new Error('late'), 'late', first);
+    expect(service.working()?.id).toBe(second);
+    expect(service.downloadRequest()?.id).toBe(second);
+    expect(service.failure()).toBeNull();
+  });
+
+  it('tells an animated SVG from a still one', () => {
+    service.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.SVG, {
+      ...defaultDownloadOptions,
+      animate: true,
+    });
+    expect(service.working()?.animated).toBe(true);
   });
 });

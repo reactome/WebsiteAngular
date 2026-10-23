@@ -48,6 +48,8 @@ export const defaultDownloadOptions: DownloadOptions = {
 export type ImageType = (typeof IMAGES_FORMAT)[keyof typeof IMAGES_FORMAT];
 
 export type DownloadRequest = {
+  /** Which click this is, so that a drawer ends this request and no other. */
+  id: number;
   target: DownloadTarget.DIAGRAM | DownloadTarget.REACFOAM;
   format: DownloadFormat;
   options?: DownloadOptions;
@@ -59,6 +61,15 @@ export type DownloadRequest = {
  * fetched from the server get the same three minutes.
  */
 export const FIGURE_DEADLINE_MS = 3 * 60 * 1000;
+
+/** Where the view a figure is made from has got to. */
+export type FigureState = 'loading' | 'ready' | 'failed';
+
+/** What a figure button says when there is nothing on screen to make it from. */
+export const FIGURE_LOADING = 'The figure is still loading; try again once it is on screen.';
+export const FIGURE_UNAVAILABLE =
+  'There is no figure on screen to download: this view could not be shown.';
+export const FIGURE_BUSY = 'One figure at a time: try again once this one has saved.';
 
 @Injectable({
   providedIn: 'root',
@@ -91,34 +102,82 @@ export class DownloadService {
    * before it has drawn anything. A large illustration takes seconds to draw,
    * and with nothing on the button in that time the click looked lost.
    */
-  readonly working = signal<{ target: DownloadTarget; format: DownloadFormat } | null>(null);
+  readonly working = signal<{
+    id: number;
+    target: DownloadTarget;
+    format: DownloadFormat;
+    animated: boolean;
+  } | null>(null);
   private deadline: ReturnType<typeof setTimeout> | undefined;
+  private lastId = 0;
+
+  /**
+   * The view a figure would be drawn from, as its drawer last reported it.
+   *
+   * A click before the diagram has loaded, or on a pathway whose diagram could
+   * not be shown, used to be handed to a drawer that had nothing to draw: it
+   * either failed with "no diagram on screen" a second before the diagram
+   * appeared, or waited for one that would never come. The button says which
+   * it is instead, at once.
+   */
+  readonly figure = signal<{ owner: object; target: DownloadTarget; state: FigureState } | null>(
+    null
+  );
+
+  /** A drawer says where its view has got to. */
+  figureState(owner: object, target: DownloadTarget, state: FigureState) {
+    this.figure.set({ owner, target, state });
+  }
+
+  /** A drawer is going away; what it said no longer holds, unless another has spoken since. */
+  figureGone(owner: object) {
+    if (this.figure()?.owner === owner) this.figure.set(null);
+  }
 
   requestDownload(target: DownloadTarget, format: DownloadFormat, options?: DownloadOptions) {
     // One at a time: the drawers share one request, so a second click while a
     // figure is being made would replace the first one's request mid-draw.
-    if (this.working()) return;
+    if (this.working()) {
+      this.failure.set(FIGURE_BUSY);
+      return;
+    }
     // A new request clears the last one's complaint; otherwise a reason that has
     // been dealt with sits under a download that is working.
     this.failure.set(null);
-    this.working.set({ target, format });
-    // A request nothing picks up -- no view drawn to take it -- would otherwise
-    // leave the button working for good.
+
+    const figure = this.figure();
+    if (figure?.target !== target || figure.state !== 'ready') {
+      this.failure.set(figure?.state === 'loading' ? FIGURE_LOADING : FIGURE_UNAVAILABLE);
+      return;
+    }
+
+    const id = ++this.lastId;
+    const settings = { ...defaultDownloadOptions, ...options };
+    this.working.set({ id, target, format, animated: settings.animate });
+    // A drawer that never answers would otherwise leave the button working for
+    // good. The work itself cannot be stopped; if it does finish, the file is
+    // still saved, and its ending is ignored by then (see `finished`).
     this.deadline = setTimeout(
       () =>
         this.failed(
-          new Error('The figure was not made in time; please try again'),
-          'Figure timed out'
+          new Error('The figure is taking too long to make; please try again'),
+          'Figure timed out',
+          id
         ),
       FIGURE_DEADLINE_MS
     );
-    this.downloadRequest.set({ target, format, options: options || defaultDownloadOptions });
+    this.downloadRequest.set({ id, target, format, options: settings });
   }
 
-  /** The figure has been saved. */
-  finished() {
+  /**
+   * Request `id`'s figure has been saved. A request that has already been given
+   * up on is not this one: ending it would stop the spinner of a later click.
+   */
+  finished(id: number) {
+    if (this.working()?.id !== id) return;
     clearTimeout(this.deadline);
     this.working.set(null);
+    if (this.failure() === FIGURE_BUSY) this.failure.set(null);
   }
 
   resetDownload() {
@@ -129,12 +188,15 @@ export class DownloadService {
    * A download that could not be produced: say why, and stop saying it is on its
    * way. `whatFailed` names the exporter for the console; the reader gets the
    * error's own message when it has one, because those are written to be read.
+   * A request already given up on goes to the console only.
    */
-  failed(error: unknown, whatFailed: string) {
+  failed(error: unknown, whatFailed: string, id: number) {
     console.error(whatFailed, error);
+    if (this.working()?.id !== id) return;
     this.failure.set(error instanceof Error && error.message ? error.message : whatFailed);
-    this.resetDownload();
-    this.finished();
+    if (this.downloadRequest()?.id === id) this.resetDownload();
+    clearTimeout(this.deadline);
+    this.working.set(null);
   }
 
   constructor() {}

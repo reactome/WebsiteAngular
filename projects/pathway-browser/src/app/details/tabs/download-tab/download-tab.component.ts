@@ -88,9 +88,9 @@ export class DownloadTabComponent {
   readonly downloadFailure = this.download.failure;
 
   /** Whether this figure is the one being made in the page just now. */
-  isWorking(target: DownloadTarget, format: DownloadFormat) {
+  isWorking(target: DownloadTarget, format: DownloadFormat, animated = false) {
     const working = this.download.working();
-    return working?.target === target && working.format === format;
+    return working?.target === target && working.format === format && working.animated === animated;
   }
   protected readonly includeSubpathways = includeSubpathways;
   protected readonly DownloadTarget = DownloadTarget;

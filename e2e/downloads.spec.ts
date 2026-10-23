@@ -222,6 +222,67 @@ test.describe('Diagram downloads', () => {
     await expect(page.locator('.download-failure')).toHaveCount(0);
   });
 
+  test("a diagram's figure says it is being made until it is saved", async ({ page }) => {
+    // The diagram is drawn by cytoscape rather than from an illustration, and
+    // its drawer picks the request up before it has drawn anything: the
+    // spinner has to last until the file, not until the pickup.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 1500);
+      };
+    });
+    await openDownloadTab(page, DIAGRAM);
+    const button = page.locator('.container.diagram cr-download-button').filter({
+      has: page.getByText('PNG', { exact: true }),
+    });
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 240_000 }),
+      (async () => {
+        await button.locator('a').click();
+        await expect(button.locator('a')).toHaveClass(/button--busy/);
+        await expect(button.getByRole('status')).toHaveText('Preparing…');
+      })(),
+    ]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(button.locator('a')).not.toHaveClass(/button--busy/);
+  });
+
+  test('a figure asked for before the diagram has loaded says so at once', async ({ page }) => {
+    // Handed to a drawer with nothing drawn yet, the click failed with "no
+    // diagram on screen" a second before the diagram appeared. The diagram's
+    // file is held back here so the click lands while it is still loading.
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(`**/diagram/${DIAGRAM}.json`, async (route) => {
+      await held;
+      await route.fallback();
+    });
+    await page.goto(`/PathwayBrowser/${DIAGRAM}`);
+    await page
+      .locator('[role="tab"]')
+      .filter({ hasText: /Download/i })
+      .first()
+      .click();
+    const png = page.locator('.container.diagram').getByText('PNG', { exact: true }).first();
+    await png.click();
+
+    const reason = page.locator('.download-failure');
+    await expect(reason).toHaveText('The figure is still loading; try again once it is on screen.');
+    await expect(page.locator('.button--busy'), 'and nothing is left working').toHaveCount(0);
+
+    release();
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(2500);
+    const [download] = await Promise.all([page.waitForEvent('download'), png.click()]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(reason).toHaveCount(0);
+  });
+
   test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
     // Circadian clock builds six of its shapes out of <foreignObject>, which is
     // how a design tool exports a conic gradient. Chromium taints a canvas the

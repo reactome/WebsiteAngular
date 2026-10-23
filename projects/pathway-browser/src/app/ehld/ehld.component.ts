@@ -27,6 +27,7 @@ import {
   defaultDownloadOptions,
   DownloadFormat,
   DownloadService,
+  DownloadTarget,
 } from '../services/download.service';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { map } from 'rxjs';
@@ -124,6 +125,9 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private initialPan = { x: 0, y: 0 };
   currentSample: string | undefined;
 
+  /** The last download request this view took up (see the download effect). */
+  private handled = 0;
+
   constructor() {
     effect(
       () =>
@@ -163,12 +167,15 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.stIdToSVGGElement.set(this.ehldService.setStIdToSVGGElementMap(this.ehldContainer()));
         this.addEventListenerToSvg();
         this.initializePanAndZoom();
+        this.download.figureState(this, DownloadTarget.DIAGRAM, 'ready');
         this.illustrationLoaded.emit(untracked(this.pathwayId));
       }
     });
     effect(() => {
-      if (this.loadError() || this.drawError())
+      if (this.loadError() || this.drawError()) {
+        this.download.figureState(this, DownloadTarget.DIAGRAM, 'failed');
         this.illustrationFailed.emit(untracked(this.pathwayId));
+      }
     });
     // A file that fails to arrive must not leave the previous pathway's drawing
     // on screen under a message saying this one could not be loaded.
@@ -183,30 +190,42 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       this.currentSample = this.state.sample() || undefined;
     });
 
+    // A new illustration is on its way: nothing to make a figure of until it
+    // is drawn.
+    effect(() => {
+      if (this.svgData.isLoading())
+        untracked(() => this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading'));
+    });
+
     effect(() => {
       const request = this.download.downloadRequest();
       const options = request?.options || defaultDownloadOptions;
       // Read up front, not after the await below: a signal read after an await
       // runs outside the effect's tracking, so this one was never a dependency.
       const pathwayId = this.pathwayId();
+      // The request stays set until its file is saved, and this effect also
+      // runs again when a signal the export reads changes -- the selection,
+      // say. Once per request, or the figure is made and saved twice.
+      if (!request || request.id === this.handled) return;
+      this.handled = request.id;
 
-      if (request && this.download.isRasterFormat(request.format)) {
+      if (this.download.isRasterFormat(request.format)) {
         void this.ehldService
           .downloadImage(request.format)
           .then(() => {
             this.download.resetDownload();
-            this.download.finished();
+            this.download.finished(request.id);
           })
-          .catch((error) => this.download.failed(error, 'EHLD image export failed'));
-      } else if (request?.format === DownloadFormat.SVG) {
+          .catch((error) => this.download.failed(error, 'EHLD image export failed', request.id));
+      } else if (request.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)
           .then((svg) => {
             this.download.export(svg, request.format, pathwayId);
             this.download.resetDownload();
-            this.download.finished();
+            this.download.finished(request.id);
           })
-          .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
+          .catch((error) => this.download.failed(error, 'EHLD SVG export failed', request.id));
       }
     });
   }
@@ -377,6 +396,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.resizeObserver.disconnect();
+    this.download.figureGone(this);
     if (this.panZoomInstance) {
       this.panZoomInstance.destroy();
     }
