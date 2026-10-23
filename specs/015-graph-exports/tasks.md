@@ -56,7 +56,7 @@
   - SBML from the Java ContentService, `http://localhost:8080/ContentService/exporter/event/{id}.sbml`;
   - BioPAX from the legacy RESTful service, `http://localhost:8080/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}`.
 
-  For each, record status, headers, size and time.
+  For each, record status, headers, size and time. — #640 (`today.md`)
 
 ---
 
