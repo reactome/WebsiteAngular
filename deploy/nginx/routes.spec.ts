@@ -372,7 +372,17 @@ describe('the upstreams of each deployment', () => {
  * routes it: no other deployment is known to have the service.
  */
 describe("beta's BioPAX download (dev.conf)", () => {
-  const beta = parse(readFileSync(join(__dirname, 'dev.conf'), 'utf8'));
+  // beta's own HTTPS server block, not every location in the file: the
+  // location must be in the block that answers beta's pages.
+  const blocks = readFileSync(join(__dirname, 'dev.conf'), 'utf8').split(/^server \{$/m);
+  const block = blocks.find(
+    (text) => text.includes('server_name beta.reactome.org;') && text.includes('listen 443 ssl;')
+  );
+  const beta = parse(block ?? '');
+
+  it("reads beta's HTTPS server block", () => {
+    expect(block).toBeDefined();
+  });
   const route = (url: string) =>
     beta.find((l) => l.kind.startsWith('~') && new RegExp(l.path).test(url))?.target ?? 'none';
 
