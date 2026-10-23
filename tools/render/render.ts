@@ -30,7 +30,7 @@
  */
 import { chromium } from '@playwright/test';
 import { writeFile } from 'node:fs/promises';
-import { FORMATS, render } from './render-core.ts';
+import { FORMATS, isFormat, render } from './render-core.ts';
 import { speciesProblem } from './params.ts';
 
 const args = process.argv.slice(2);
@@ -97,7 +97,7 @@ const pathway = flag('pathway', '');
 const format = (flag('format', 'svg') || '').toLowerCase();
 const out = flag('out', `${pathway || 'genome-wide'}.${format}`);
 
-if (!FORMATS.includes(format)) {
+if (!isFormat(format)) {
   console.error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
   process.exit(2);
 }

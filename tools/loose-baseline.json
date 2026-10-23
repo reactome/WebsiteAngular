@@ -6,8 +6,5 @@
   "tools/content-node/snapshot-openapi.spec.ts": 5,
   "tools/render/pptx.spec.ts": 40,
   "tools/render/pptx.ts": 192,
-  "tools/render/render-core.ts": 83,
-  "tools/render/render.ts": 18,
-  "tools/render/service.spec.ts": 15,
-  "tools/render/service.ts": 35
+  "tools/render/service.spec.ts": 15
 }

@@ -5,11 +5,19 @@
  * "wait for the page, ask it for the artefact" -- the whole point of this work
  * is not having two renderers, and that argument applies to its callers too.
  */
+import type { ConsoleMessage, Page } from '@playwright/test';
 import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
 import { pptx } from './pptx.ts';
 
 /** Formats the render page can produce. */
-export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'];
+export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'] as const;
+
+export type Format = (typeof FORMATS)[number];
+
+/** Whether a format is one of FORMATS. */
+export function isFormat(format: string): format is Format {
+  return (FORMATS as readonly string[]).includes(format);
+}
 
 /**
  * Longest side of the raster PowerPoint falls back to when it cannot draw SVG.
@@ -23,7 +31,14 @@ export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'];
 const FALLBACK_MAX_SIZE = 2000;
 
 /** Anything smaller than this is not a real render; see the Reacfoam notes. */
-const MIN_BYTES = { svg: 2000, png: 5000, jpeg: 5000, pdf: 5000, gif: 5000, pptx: 10_000 };
+const MIN_BYTES: Record<Format, number> = {
+  svg: 2000,
+  png: 5000,
+  jpeg: 5000,
+  pdf: 5000,
+  gif: 5000,
+  pptx: 10_000,
+};
 
 /**
  * The floor for a PowerPoint built out of shapes.
@@ -52,6 +67,16 @@ function renderUrl({
   layout = '',
   highlight = '',
   species = '',
+}: {
+  base: string;
+  pathway: string;
+  token: string;
+  subpathways?: boolean;
+  dark?: boolean;
+  select?: string;
+  layout?: string;
+  highlight?: string;
+  species?: string;
 }) {
   const url = new URL(
     `${base.replace(/\/$/, '')}/PathwayBrowser/render${pathway ? '/' + pathway : ''}`
@@ -77,6 +102,46 @@ function renderUrl({
   return url.toString();
 }
 
+/** What a render is asked for: the site, the pathway, and how to draw it. */
+export interface RenderOptions {
+  base: string;
+  pathway?: string;
+  format?: string;
+  token?: string;
+  scale?: number;
+  subpathways?: boolean;
+  dark?: boolean;
+  select?: string;
+  layout?: string;
+  highlight?: string;
+  species?: string;
+  delay?: number;
+  maxSize?: number;
+  timeout?: number;
+}
+
+/** What the export adds to the page's report: the shapes, the picture, the frames. */
+interface Detail {
+  shapes?: number;
+  picture?: string;
+  size?: string;
+  frames?: number;
+  distinct?: number;
+  truncated?: number;
+}
+
+/**
+ * What a render reports drawing, for the line a run logs: the page's
+ * RenderState -- whichever view drew it, so any of its counts may be absent --
+ * with what the export added.
+ */
+export type RenderReport = Detail & {
+  view?: string | undefined;
+  elements?: number | undefined;
+  groups?: number | undefined;
+  [field: string]: unknown;
+};
+
 /**
  * Render one pathway on an existing Playwright page.
  *
@@ -85,7 +150,7 @@ function renderUrl({
  * difference between a diagram and an empty canvas.
  */
 export async function render(
-  page,
+  page: Page,
   {
     base,
     pathway = '',
@@ -101,15 +166,15 @@ export async function render(
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
-  }
-) {
-  if (!FORMATS.includes(format)) {
+  }: RenderOptions
+): Promise<{ bytes: Buffer; state: RenderReport; problems: string[] }> {
+  if (!isFormat(format)) {
     throw new Error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
   }
 
   const problems: string[] = [];
   const onPageError = (e: Error) => problems.push(String(e).slice(0, 200));
-  const onConsole = (m) => {
+  const onConsole = (m: ConsoleMessage) => {
     if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`);
   };
   page.on('pageerror', onPageError);
@@ -140,14 +205,16 @@ export async function render(
     // A page that does not know `species` draws the site's default species
     // and reports none: a figure of the wrong species, with every sign of
     // success. Refused unless the page says it drew the one asked for.
-    if (species && state?.species !== species) {
+    // Only the species overview names one.
+    const drewSpecies = (state as { species?: string } | undefined)?.species;
+    if (species && drewSpecies !== species) {
       throw new Error(
-        `asked for species ${species}, the page drew ${state?.species ?? 'one it did not name'}`
+        `asked for species ${species}, the page drew ${drewSpecies ?? 'one it did not name'}`
       );
     }
 
-    let bytes;
-    const detail: { shapes?: number; [key: string]: unknown } = {};
+    let bytes: Buffer;
+    const detail: Detail = {};
     if (format === 'svg') {
       bytes = Buffer.from(
         await page.evaluate(async () => await window.__renderExport.svg()),
@@ -194,19 +261,20 @@ export async function render(
 }
 
 /** The diagram as raster bytes, decoded from the data URL the page hands back. */
-async function rasterBytes(page, scale, format = 'png') {
-  const dataUrl = await page.evaluate(
-    async ([s, f]) => await window.__renderExport[f](s),
-    [scale, format]
-  );
-  return Buffer.from(dataUrl.split(',')[1], 'base64');
+async function rasterBytes(page: Page, scale: number, format: 'png' | 'jpeg' = 'png') {
+  const dataUrl = await page.evaluate(async ([s, f]) => await window.__renderExport[f](s), [
+    scale,
+    format,
+  ] as const);
+  // A data URL: its header, a comma, the base64.
+  return Buffer.from(dataUrl.split(',')[1] as string, 'base64');
 }
 
 /**
  * The size the SVG declares, which is the diagram's own size rather than the
  * viewport's. Everything that puts a diagram in a document needs it.
  */
-function svgSize(svg) {
+function svgSize(svg: string) {
   return {
     width: Number(/\bwidth="([\d.]+)"/.exec(svg)?.[1] ?? 1600),
     height: Number(/\bheight="([\d.]+)"/.exec(svg)?.[1] ?? 1000),
@@ -217,7 +285,7 @@ function svgSize(svg) {
  * PowerPoint of the rendered diagram: the SVG for PowerPoint to draw and to
  * convert to shapes, and a PNG for everything that cannot.
  */
-async function pptxFromPage(page, { scale, title }) {
+async function pptxFromPage(page: Page, { scale, title }: { scale: number; title: string }) {
   // Shapes first: a slide of shapes needs no picture, and the diagram is around
   // 6000px wide, so rendering one to throw it away is the expensive half of the
   // export.
@@ -258,7 +326,7 @@ async function pptxFromPage(page, { scale, title }) {
  * The page is a viewport-sized window onto the diagram; the SVG is the whole
  * thing at its own size, which is what belongs in a document.
  */
-async function pdfFromSvg(page, timeout) {
+async function pdfFromSvg(page: Page, timeout: number) {
   const svg = await page.evaluate(async () => await window.__renderExport.svg());
   const { width, height } = svgSize(svg);
 
