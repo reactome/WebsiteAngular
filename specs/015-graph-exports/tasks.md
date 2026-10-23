@@ -32,7 +32,7 @@
 
 **Purpose**: the reference answers every later task is compared with.
 
-- [ ] T001 Choose and list the 30-event sample in `specs/015-graph-exports/sample.md`:
+- [x] T001 Choose and list the 30-event sample in `specs/015-graph-exports/sample.md`:
   - top-level pathways of several sizes, including Signal Transduction (R-HSA-162582) and R-HSA-69620;
   - sub-pathways with and without their own diagram;
   - reactions, a black-box event, disease and inferred events, and a set-heavy pathway.
