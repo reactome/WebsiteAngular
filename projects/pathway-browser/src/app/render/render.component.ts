@@ -232,9 +232,13 @@ export class RenderComponent {
       // undefined, so a 404 surfaces here rather than through an error signal.
       // Without this the wait died silently and the caller paid a full timeout
       // to learn nothing.
+      // A failed request's message names the URL it asked, and the host in
+      // it is the address the render service reaches the site on, which the
+      // service's answer would pass on: the path is kept, the host is not.
+      const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
         `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          (failure instanceof Error ? failure.message : String(failure))
+          message.replace(/\bhttps?:\/\/[^/\s]+/g, '')
       );
       this.publish();
     }

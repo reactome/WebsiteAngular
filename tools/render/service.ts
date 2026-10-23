@@ -98,7 +98,9 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // v10: a PowerPoint groups each entity's and each reaction's shapes (#299, in
 // #442), so every .pptx cached under v9 is the ungrouped slide curators could
 // not drag apart.
-const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v10';
+// v11: the genome-wide view exports a PNG (#639), so a genome-wide .pptx
+// cached under v10 has no fallback picture beside its SVG.
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v11';
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
