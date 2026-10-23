@@ -226,7 +226,19 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Decision.**
 
-- **Reference outputs** come from a **private graph database of the same release**, run apart from beta's. If disk allows, it is started from the release's published graph database; otherwise the run is small and spaced against the shared one.
+- **Reference outputs** come from a **private graph database of the same release**, run apart from beta's.
+
+**Measured for T002 (23 Oct 2026).**
+
+- **Where beta's graph keeps its data.** It runs from the local image `local-test/graphdb:Release97-community` (4.49 GB). Its data is the Docker volume `websiteangular_graphdb-release97-community`; all local volumes together are 4.49 GB.
+- **Disk.** 2.7 GB was free (98% used): not enough for a copy. With the user's approval, Docker's build cache (5.9 GB, cached build layers only) was cleared. That left 8.6 GB free (91%).
+
+**Decision (T002).**
+
+- **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host.
+- **The container.** It is started from the same local image on another loopback-only port, with authentication off and a smaller memory setting than beta's, so the host's memory is shared safely. Beta's graph is neither stopped nor restarted; its store is not written after the release load, so a copy taken while it runs is consistent in practice, and Neo4j checks the store when the copy starts.
+- **Afterwards.** The copy is stopped once the references are made (T003, and again for T013 and T016 if needed), and its volume is deleted, giving the disk back.
+- **The fallback** is small, spaced runs against the shared graph. It is used only if the copy fails to start cleanly.
 - **Committed fixtures** have personal values replaced: SBML vCard names; BioPAX `bp:author` and the `Authored:`, `Reviewed:` and `Edited:` comments. The comparison tools hash those values and never print them.
 
 **Rationale.** FR-011 and the organisation's rule on personal information.
