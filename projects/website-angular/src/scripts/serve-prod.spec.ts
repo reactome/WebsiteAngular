@@ -376,6 +376,17 @@ describe('serve-prod and the API roots', () => {
     expect(body).toBe('content-node /ContentService/data/database/version');
   });
 
+  it("sends beta's BioPAX download by dbId to the legacy service, as nginx does", async () => {
+    // Level 3 by dbId only (dev.conf): any other form is the app, there too.
+    const api = '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/109862';
+    expect(await (await fetch(base + api)).text()).toBe(`backend ${api}`);
+    for (const other of [`${api}/`, '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/R-HSA-1'])
+      expect([other, await (await fetch(base + other)).text()]).toEqual([
+        other,
+        expect.stringContaining(INDEX_MARKER),
+      ]);
+  });
+
   it('leaves ExperimentDigester alone, which has no page here', async () => {
     const body = await (await fetch(base + '/ExperimentDigester/')).text();
     expect(body).toBe('backend /ExperimentDigester/');

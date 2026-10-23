@@ -197,6 +197,12 @@ module.exports = {
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
     localService('/ExperimentDigester'),
+    // The per-event BioPAX download, the legacy RESTful service in the same
+    // Tomcat, as beta's nginx routes it (dev.conf; spec 015, User Story 3):
+    // Level 3 by dbId and nothing else. Anchored, as nginx's location is: a
+    // plain prefix ending in '/' was a different match in ng serve (any
+    // suffix) and in serve-prod (never), and both disagreed with nginx.
+    localService('^/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/\\d+(\\?|$)'),
   ]),
   // The headless render service (tools/render/service.ts), which produces the
   // formats the Java exporters used to: GIF, PPTX and anything else a document
