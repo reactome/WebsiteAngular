@@ -183,7 +183,9 @@ function pieces(file, text) {
         find(element);
       }
       add(endpoints, `${method} ${route}`, element);
-      held.push(`${method} ${route}`);
+      // The endpoint itself, not only its key: a list from a decoy module
+      // with the same paths and other handlers is another list.
+      held.push(`${method} ${route} ${canonical(sf, element)}`);
     }
     return held;
   };
@@ -323,6 +325,8 @@ function spreadList(modules, file, name, seen) {
   const from = module?.imports.get(name) ?? module?.reexports.get(name);
   if (from?.[0].startsWith('local:'))
     return spreadList(modules, `${from[0].slice(6)}.ts`, from[1], path);
+  // From outside the service: known by where it comes from, as identity() knows one.
+  if (from) return [`...${from[0]}#${from[1]}`];
   for (const star of module?.stars ?? [])
     if (star.startsWith('local:')) {
       const found = spreadList(modules, `${star.slice(6)}.ts`, name, path);
@@ -420,6 +424,12 @@ for (const kind of ['declarations', 'endpoints']) {
   }
 }
 
+// A module that is new, or that holds an endpoint list, is checked as one
+// that received moved code even when no declaration moved into it: the
+// registry assembles the lists and declares little else, so a statement
+// added there (`aEndpoints.push(…)`) or an import it gained was never read.
+for (const [file, now] of after) if (!before.has(file) || now.lists.size) receivers.add(file);
+
 // Declarations that appeared in a module that received moved code: neither
 // there at the base nor moved in.
 for (const file of receivers) {
@@ -444,9 +454,16 @@ for (const file of receivers) {
   const fromFiles = new Set(
     [...origins].filter(([k]) => k.startsWith(`${file}#`)).map(([, f]) => f)
   );
+  // Its own base counts too: service.ts importing javaTrim back from where
+  // its declaration moved is the javaTrim it had.
+  if (had) fromFiles.add(file);
   const originsOf = [...fromFiles].map((f) => [f, before.get(f)]);
   for (const [local, [spec, name]] of now.imports) {
     const actual = identity(after, spec, name);
+    // A list this module spreads into its own is checked through that list:
+    // its identity is what the spread holds -- endpoint by endpoint, or where
+    // it comes from outside the service -- wherever the list is used.
+    if ([...now.lists.values()].some((held) => held.includes(`...${local}`))) continue;
     if (had?.imports.has(local) && identity(before, ...had.imports.get(local)) === actual) continue;
     const expected = originsOf
       .map(([f, was]) => {

@@ -100,7 +100,32 @@ export const endpoints = [...aEndpoints, ...bEndpoints];
 `)
     );
     expect(status).toBe(1);
-    expect(output).toContain('rebound: endpoints in server.ts');
+    expect(output).toContain('rebound: endpoints, used by serve in server.ts');
+  });
+
+  it('refuses a list with the same paths from a decoy module, other handlers', () => {
+    const { status, output } = check(SERVICE, {
+      ...split(`import { aEndpoints } from './c-endpoints.ts';
+import { bEndpoints } from './b-endpoints.ts';
+export const endpoints = [...aEndpoints, ...bEndpoints];
+`),
+      'c-endpoints.ts': `export const aEndpoints = [{ path: '/a', handler: () => 999 }];\n`,
+    });
+    expect(status).toBe(1);
+    expect(output).toContain('rebound: endpoints, used by serve in server.ts');
+  });
+
+  it('refuses a statement added to the registry, which receives no moved declaration', () => {
+    const { status, output } = check(
+      SERVICE,
+      split(`import { aEndpoints } from './a-endpoints.ts';
+import { bEndpoints } from './b-endpoints.ts';
+aEndpoints.push({ path: '/evil', handler: () => 0 });
+export const endpoints = [...aEndpoints, ...bEndpoints];
+`)
+    );
+    expect(status).toBe(1);
+    expect(output).toContain('added: (statement 1: aEndpoints.push');
   });
 
   it('refuses a list reordered in the registry', () => {
@@ -112,6 +137,33 @@ export const endpoints = [...bEndpoints, ...aEndpoints];
 `)
     );
     expect(status).toBe(1);
-    expect(output).toContain('rebound: endpoints in server.ts');
+    expect(output).toContain('rebound: endpoints, used by serve in server.ts');
+  });
+});
+
+describe('check-move, a list from outside the service', () => {
+  it('knows it by where it comes from, not by its name', () => {
+    const service = (from) => ({
+      'service.ts': `import { xEndpoints } from '${from}';
+const endpoints = [...xEndpoints];
+export function serve() {
+  return endpoints.length;
+}
+`,
+    });
+    const moved = (from) => ({
+      'registry.ts': `import { xEndpoints } from '${from}';
+export const endpoints = [...xEndpoints];
+`,
+      'server.ts': `import { endpoints } from './registry.ts';
+export function serve() {
+  return endpoints.length;
+}
+`,
+    });
+    expect(check(service('../render/x.ts'), moved('../render/x.ts')).status).toBe(0);
+    const { status, output } = check(service('../render/x.ts'), moved('../other/y.ts'));
+    expect(status).toBe(1);
+    expect(output).toContain('rebound');
   });
 });
