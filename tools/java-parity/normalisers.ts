@@ -16,7 +16,7 @@ import { gunzipSync } from 'node:zlib';
  * never share one: its value -- only its value -- is blanked inside
  * `summary`.
  */
-function withoutToken(bytes) {
+function withoutToken(bytes: Buffer): Buffer {
   // latin1 maps bytes to code units one to one, so nothing else is re-encoded.
   const text = bytes.toString('latin1');
   const token = /("summary"\s*:\s*\{[^{}]*?"token"\s*:\s*)"(?:[^"\\]|\\.)*"/;
@@ -25,7 +25,10 @@ function withoutToken(bytes) {
   return Buffer.from(text.replace(token, '$1""'), 'latin1');
 }
 
-export const normalisers = {
+/** Takes a body as it came and returns the bytes to compare. */
+export type Normaliser = (body: Buffer) => Buffer;
+
+export const normalisers: Record<'identity' | 'analysisResult' | 'analysisResultGz', Normaliser> = {
   /** Byte for byte. */
   identity: (body) => body,
   /** An analysis result (JSON) with its token blanked. */

@@ -1,14 +1,34 @@
 // Harness that renders Reactome's legend pathway with ngx-reactome-cytoscape-style
 // against this repo's modified cytoscape (so cy.svg() is exercised).
 
-import cytoscape from 'cytoscape';
+import cytoscape, { type Core, type ElementsDefinition } from 'cytoscape';
 import { Style } from 'ngx-reactome-cytoscape-style';
+
+// Left on the page for a person poking at it in the console, and for
+// harness.check.ts, which reads `lastSvg`.
+declare global {
+  interface Window {
+    cytoscape: typeof cytoscape;
+    cy: Core;
+    reactomeStyle: Style;
+    lastSvg?: string;
+  }
+}
 
 window.cytoscape = cytoscape;
 
-async function loadLegend() {
+/** An element the page is built with; missing means index.html changed under it. */
+function byId<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`index.html has no #${id}`);
+  return element as T;
+}
+
+const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e));
+
+async function loadLegend(): Promise<ElementsDefinition> {
   const res = await fetch('legend.json');
-  return await res.json();
+  return (await res.json()) as ElementsDefinition;
 }
 
 async function run() {
@@ -17,7 +37,7 @@ async function run() {
   // Prepare two cytoscape instances side-by-side: a live one whose canvas is
   // visible (and which we screenshot for the PNG export), and we use the same
   // instance to export SVG. Reactome's Style needs the live container.
-  const liveHost = document.getElementById('cy-live');
+  const liveHost = byId<HTMLDivElement>('cy-live');
 
   const reactomeStyle = new Style(liveHost);
   const stylesheet = reactomeStyle.getStyleSheet();
@@ -43,28 +63,29 @@ async function run() {
   cy.fit(undefined, 30);
   await new Promise((r) => setTimeout(r, 500));
 
-  const errors = [];
+  const errors: string[] = [];
   try {
     const png = cy.png({ output: 'base64uri', full: true, scale: 1, bg: '#ffffff' });
-    document.getElementById('out-png').src = png;
+    byId<HTMLImageElement>('out-png').src = png;
   } catch (e) {
-    errors.push('png: ' + e.message);
+    errors.push('png: ' + messageOf(e));
   }
 
   try {
     const svg = cy.svg({ full: true, scale: 1, bg: '#ffffff' });
-    document.getElementById('out-svg').innerHTML = svg;
+    byId('out-svg').innerHTML = svg;
     window.lastSvg = svg;
   } catch (e) {
-    errors.push('svg: ' + e.message);
+    errors.push('svg: ' + messageOf(e));
   }
 
-  document.getElementById('status').textContent =
+  byId('status').textContent =
     errors.length === 0
-      ? `OK — rendered ${elements.nodes.length} nodes, ${(elements.edges || []).length} edges`
+      ? `OK — rendered ${elements.nodes.length} nodes, ${elements.edges.length} edges`
       : 'ERRORS: ' + errors.join('; ');
 }
 
-run().catch((e) => {
-  document.getElementById('status').textContent = 'fatal: ' + e.message + '\n' + e.stack;
+run().catch((e: unknown) => {
+  const status = document.getElementById('status');
+  if (status) status.textContent = `fatal: ${messageOf(e)}\n${e instanceof Error ? e.stack : ''}`;
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compare } from './check-library-update.mjs';
+import { compare } from './check-library-update.ts';
 
 const lib = 'node_modules/ngx-reactome-style';
 const pinned = (sha) => ({

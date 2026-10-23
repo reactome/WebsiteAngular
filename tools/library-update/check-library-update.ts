@@ -14,8 +14,10 @@ import { isEntry } from '../../scripts/is-entry.mjs';
 
 export const LIBRARIES = ['ngx-reactome-cytoscape-style', 'ngx-reactome-style'];
 
+type Packages = Record<string, unknown>;
+
 /** Lockfile entries that differ, split into the libraries' and the rest. */
-export function compare(before, after, libraries = LIBRARIES) {
+export function compare(before: Packages, after: Packages, libraries = LIBRARIES) {
   const allowed = new Set(libraries.map((l) => `node_modules/${l}`));
   const keys = new Set([...Object.keys(before), ...Object.keys(after)]);
   const moved = [...keys].filter((k) => JSON.stringify(before[k]) !== JSON.stringify(after[k]));
@@ -26,8 +28,11 @@ export function compare(before, after, libraries = LIBRARIES) {
 }
 
 if (isEntry(import.meta.url)) {
-  const before = JSON.parse(execFileSync('git', ['show', 'HEAD:package-lock.json'])).packages;
-  const after = JSON.parse(readFileSync('package-lock.json', 'utf8')).packages;
+  const packages = (text: string) => (JSON.parse(text) as { packages: Packages }).packages;
+  const before = packages(
+    execFileSync('git', ['show', 'HEAD:package-lock.json'], { encoding: 'utf8' })
+  );
+  const after = packages(readFileSync('package-lock.json', 'utf8'));
   const { updated, stray } = compare(before, after);
   if (stray.length) {
     console.error(`npm update changed more than the libraries:\n  ${stray.join('\n  ')}`);

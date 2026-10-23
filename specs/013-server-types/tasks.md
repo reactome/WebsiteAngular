@@ -72,6 +72,9 @@ Each task: rename to `.ts`, update imports, file names that name it (R3 list), f
 ## Phase 6: Polish
 
 - [ ] T023 The tools beside the services that they do not import (`tools/java-parity`, `tools/library-update`, `tools/svg-export-harness`, the check specs): converted the same way, or recorded as left and why.
+
+  Measured 23 Oct with `checkJs` on: 1,229 errors in 47 `.mjs` files, 70 of them in the five tools and 1,159 in 42 specs. The tools are converted, typed, held at zero both counts, and still run as before (parity and the library guard directly under Node, the harness through its new `playwright.config.ts`, which also mends the README's command: it had found no tests since the harness stopped being called a spec) — #643. The specs go next, in batches.
+
 - [ ] T024 `CLAUDE.md`: the rule for new service code (typed, and a load test entry for a new entry point) if one emerges.
 
 ---

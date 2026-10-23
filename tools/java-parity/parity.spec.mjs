@@ -11,8 +11,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { compareAll, verdict } from './parity.mjs';
-import { normalisers } from './normalisers.mjs';
+import { compareAll, verdict } from './parity.ts';
+import { normalisers } from './normalisers.ts';
 
 /** A server answering from a table of path -> { status, headers, body }. */
 function stub(table) {
@@ -275,7 +275,7 @@ describe('the parity harness', () => {
     try {
       const requests = join(dir, 'requests.json');
       writeFileSync(requests, JSON.stringify([{ path: '/x' }]));
-      const cli = join(import.meta.dirname, 'parity.mjs');
+      const cli = join(import.meta.dirname, 'parity.ts');
       for (const args of [
         ['--reference', 'ftp://x', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
         ['--reference', 'not a url', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
