@@ -4,13 +4,13 @@ Each check is shown failing on wrong output before it is trusted (constitution I
 
 ## SBML comparison (FR-002, FR-003)
 
-A tool (`tools/exports-compare/sbml-compare.ts`) that compares an exporter's SBML with a reference file, wherever the file came from: the exporter's own run, or the website's answer.
+`sbml-exporter`'s `ci/compare.py` (its spec 001, T016), which compares two folders of SBML, wherever the files came from: the exporter's own run, or the website's answer. It replaces the tool this spec first planned here.
 
-- **The model:** byte for byte, after removing the generation note's timestamp. What the layout changes in the model (the drawn species' SBO terms, the root's `layout:required` and layout namespace; FR-002) is compared with the layout, not here. The reference is the corrected graph-only converter's file (research R1).
+- **The model:** element by element with today's relational file of the same release: compartments, species, reactions, reactants, products and modifiers (role, stoichiometry), names, SBO terms, notes, annotations and identifier URLs. Set aside: the generation note's timestamp, element order (today's is HashSet order; elements are matched by id) and the layout, compared below.
 - **The layout:** the glyph sets, ids, roles, order and targets exactly, compared with today's file. Coordinates are compared by meaning: today's equal the diagram's plus one offset, except at the nodes Java resized, which are listed.
 - **Inputs:** the 30-event sample (pathways of several sizes, reactions, disease and inferred events), drawn once from a private graph of the same release (research R8).
 - **Output:** each difference, by element path. Personal values (vCard names) appear as hashes.
-- **Shown failing:** on a file with a species reference removed, a sboTerm changed, and a glyph moved.
+- **Shown failing:** on a file with a species reference removed, a sboTerm changed, and a glyph moved (the glyph once the layout is compared, its T021).
 
 ## BioPAX comparison (FR-005, FR-009)
 

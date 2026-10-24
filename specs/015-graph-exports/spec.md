@@ -22,7 +22,7 @@ Each exporter reads the graph and lives in its own repository: `reactome/sbml-ex
 What the first version produced is kept and used as the instruments for proving the exporters:
 
 - the 30-event sample ([sample.md](sample.md));
-- the corrected SBML reference and its harness ([reference-harness.md](reference-harness.md));
+- the SBML reference harness, which found the graph-only converter's defects ([reference-harness.md](reference-harness.md));
 - today's answers from the beta host ([today.md](today.md));
 - the BioPAX mapping ([data-model.md](data-model.md));
 - the comparison and validator decisions ([research.md](research.md) R1, R3–R5, R8).
@@ -72,11 +72,11 @@ The people served are:
 
 A researcher downloads SBML for one pathway or reaction from the website, or the whole set from the download page. Either way the file comes from the same exporter, reading the graph. It has the same model as today, its species, reactions, compartments, identifiers and annotations, and a layout drawn from the diagram the website shows. Making it needs no relational database.
 
-**Why this priority**: the model has an exact reference (the corrected graph-only converter, already built), and the exporter already has a graph-only half. It is the smaller of the two proofs, and it retires the relational database from both the release's SBML and the website's.
+**Why this priority**: the model has a reference to match (today's relational file of the same release), and the exporter already has a graph-only half. It is the smaller of the two proofs, and it retires the relational database from both the release's SBML and the website's.
 
 **Independent Test**:
 
-- **The model.** For the 30-event sample, the exporter's model is byte-identical to the corrected reference, generation note aside.
+- **The model.** For the 30-event sample, the exporter's model matches today's relational file element by element, element order and the generation note's timestamp aside.
 - **The layout.** It matches today's by meaning (R3).
 - **The bulk run.** With no relational database configured, it produces the same set of files under the same names as the release's published archives in its download directory (`download.reactome.org/{release}/`), and a sample of its files compares with theirs.
 - **Validity.** Every file passes the SBML consistency check.
@@ -84,7 +84,7 @@ A researcher downloads SBML for one pathway or reaction from the website, or the
 
 **Acceptance Scenarios**:
 
-1. **Given** a pathway or a reaction, **When** the exporter writes its SBML, **Then** everything but the layout and the generation note is byte-identical to the corrected reference.
+1. **Given** a pathway or a reaction, **When** the exporter writes its SBML, **Then** its model matches today's relational file element by element, apart from element order, the generation note's timestamp and recorded differences.
 2. **Given** a pathway with its own diagram drawing a reaction, **When** its SBML is written, **Then** the layout places and connects every element today's does, with the same identifiers, roles and order, at the diagram's own coordinates.
 3. **Given** a release, **When** the bulk SBML is made with no relational database, **Then** both archives hold the same file names as that release's published archives, and every file is valid.
 4. **Given** the website's SBML link, **When** it is followed, **Then** the status, content type, file name and errors are today's, and the file is the exporter's.
@@ -152,7 +152,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 **SBML (`reactome/sbml-exporter`)**
 
 - **FR-001**: The graph-only converter MUST be corrected: the five defects (R1, R9) fixed, with tests that fail without each fix. With those fixes it is the SBML model for both the bulk files and the website.
-- **FR-002**: Its model MUST be byte-identical to the corrected reference (R1) for every event in the sample, apart from the generation note and what the layout changes in the model: the drawn species' SBO terms, and the root's `layout:required` and layout namespace (R3).
+- **FR-002**: Its model MUST match today's relational file of the same release (R1) for every event in the sample, element by element (compartments, species, reactions, participants with role and stoichiometry, names, SBO terms, notes, annotations and identifier URLs), apart from element order, the generation note's timestamp and what the layout changes in the model (the drawn species' SBO terms, and the root's `layout:required` and layout namespace; R3), or each difference recorded with its reason.
 - **FR-003**: It MUST write the layout from the diagram files the site draws (R3), for the events that have one today and only those. It MUST place and connect the same elements, with the same identifiers, roles and order, as today's layout. Coordinate differences are recorded and accepted (R3).
 - **FR-004**: Its command line MUST make the bulk files with no relational database. The relational options become unnecessary, and the file names and archives stay today's.
 
@@ -189,7 +189,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 - **Event**: a pathway or a reaction. It is what one on-demand file describes.
 - **Species file**: one species' whole BioPAX, or the set of per-event SBML files in an archive.
 - **Reference**: what an exporter is compared with:
-  - for SBML's model, the corrected graph-only converter (exact);
+  - for SBML's model, today's relational file (element by element);
   - for SBML's layout, today's layout (by meaning);
   - for BioPAX, today's Pathway-Exchange files (by meaning): the release's published `biopax.zip` for the species files, and the legacy service's answer for one event.
 - **Accepted difference**: a recorded way the new output may differ from its reference, with the reason. Nothing switches until every difference found is recorded.

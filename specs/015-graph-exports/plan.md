@@ -21,7 +21,6 @@ Each format gets one implementation, reading the graph, used by both the release
 - **The website** gets both from spec 010's Java library service, fronted by node at the URLs R6 decided, with no fallback (R10). That service is spec 010's to build; this spec changes its SBML operation and adds BioPAX.
 - **This repository keeps the instruments:**
   - the sample;
-  - the corrected SBML reference;
   - today's answers, and the release's published bulk files;
   - the comparison tools;
   - the validator runs.
@@ -83,7 +82,7 @@ The changes to the two exporters go to their maintainers: an issue first, then p
 
 **Constraints**:
 
-- byte parity for SBML's model;
+- SBML's model matching today's relational file element by element;
 - comparison by meaning for SBML's layout and for BioPAX;
 - the deep shares;
 - no personal data in this repository's fixtures, logs or output;
@@ -124,7 +123,7 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 - **V. Comments carry the failure.** Every recorded difference states why ([contracts/differences.md](contracts/differences.md)). **Pass.**
 - **The repository's working rules** (CLAUDE.md, and keeping `RELEASE-TESTING.md` and `CURATOR-REPORT.md` current):
   - **An explicit exception to "byte-identical to Java's answer".**
-    - The SBML body is compared with the corrected reference and today's layout, by T030.
+    - The SBML body is compared with today's relational file, model and layout, by `sbml-exporter`'s `ci/compare.py` (T030).
     - The BioPAX body has no Java counterpart at its URL, and is compared by T031.
     - Status, headers and errors are still compared live with the parity harness.
   - **T054 updates the two documents** when the site's links move.
@@ -177,7 +176,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 ## Order of work
 
 1. **Done:**
-   - the sample, the corrected SBML reference made from a private graph copy (since removed; T032 recreates it), and today's answers (T001–T004);
+   - the sample, the SBML reference harness that found the converter's defects, and today's answers (T001–T004);
    - the interim BioPAX link (T009, #634);
    - the issue drafts (T027);
    - the amendments to spec 010 (T043).

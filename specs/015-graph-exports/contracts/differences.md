@@ -2,12 +2,7 @@
 
 Each way the new exports differ from their reference, with the reason. An export switches only when every difference its sample shows is here. Additions found during the work are recorded with the pull request that finds them.
 
-## SBML, from the corrected graph-only reference
-
-| Difference                                                                                                                                                                                                                                                                         | Reason                                                                                                                    |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| The four defects of the graph-only converter are corrected, in the harness ([reference-harness.md](../reference-harness.md)) (one reactant and one product per reaction; catalysts and negative regulators filled from the positive regulators; positive regulators never written) | The reference is the corrected converter; the uncorrected one would lose participants that today's file has (research R1) |
-| The generation note's timestamp                                                                                                                                                                                                                                                    | It differs on every answer, today too                                                                                     |
+SBML's model is compared with today's relational file of the same release (decided 24 Oct 2026; there is no separate corrected-converter reference any more). The one list for SBML is `sbml-exporter`'s [`specs/001-graph-only-sbml/differences.md`](https://github.com/reactome/sbml-exporter/blob/graph-only/specs/001-graph-only-sbml/differences.md), which its T016 creates; the rows below move there then. The generation note's timestamp is set aside, as it differs on every answer, today's too.
 
 ## SBML, from today's relational file
 

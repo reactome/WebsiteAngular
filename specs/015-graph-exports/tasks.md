@@ -86,12 +86,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
 - [x] T028 Post the two issues once the user has read and approved them, and record their links here: [BioPAX3Exporter#4](https://github.com/reactome/BioPAX3Exporter/issues/4) and [sbml-exporter#14](https://github.com/reactome/sbml-exporter/issues/14), posted on 24 Oct 2026. Spec Kit adoption pull requests: [BioPAX3Exporter#5](https://github.com/reactome/BioPAX3Exporter/pull/5) and [sbml-exporter#15](https://github.com/reactome/sbml-exporter/pull/15). — #648
 - [ ] T029 [ext] Agree graph-core and the JDK with both exporters' maintainers: each works on the graph-core version spec 010's library service pins, on JDK 17 (R10). Record the version here.
-- [ ] T030 [P] Write the SBML comparison tool, `tools/exports-compare/sbml-compare.ts`, with its spec (`contracts/checks.md`):
-  - **the model:** byte for byte, the generation note's timestamp set aside, and the layout's changes to the model (FR-002) compared with the layout;
-  - **the layout:** glyph sets, ids, roles, order and targets exactly; coordinates by meaning, against the diagram plus one offset, with the resized nodes listed;
-  - **output:** element paths, with vCard names as hashes.
-
-  Show it failing on a removed species reference, a changed sboTerm and a moved glyph.
+- [ ] T030 [P] [ext] The SBML comparison tool is `sbml-exporter`'s `ci/compare.py` (its spec 001, T016 for the model, T021 for the layout), not a tool here (decided 24 Oct 2026). It compares element by element with today's relational file of the same release, order and the timestamp set aside; it is shown failing on a removed species reference, a changed sboTerm and, for the layout, a moved glyph. Tick this when its T021 has merged.
 
 - [ ] T031 [P] Write the BioPAX comparison tool, `tools/exports-compare/biopax-compare.ts`, with its spec:
   - each file canonicalised to (class, property, target-key) triples, with `rdf:ID`s replaced by content keys (R4);
@@ -100,7 +95,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
   It takes a species file as well as an event's. Show it failing on a changed stoichiometry and a removed xref.
 
-- [ ] T032 The private graph copy (R8), for the release being compared, recreated whenever a comparison needs it and removed afterwards. If beta's graph has moved to a newer release by then, regenerate the SBML references (T003) and today's per-event answers (T004) for that release, and compare with that release's download directory.
+- [ ] T032 The private graph copy (R8), for the release being compared, recreated whenever a comparison needs it and removed afterwards. If beta's graph has moved to a newer release by then, regenerate today's per-event answers (T004) for that release, and compare with that release's download directory.
 - [ ] T033 (`biopax.zip` done for release 97, recorded in `today.md`; the SBML archives when T041 needs them.) Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
 - [ ] T034 Run the validators on today's files and record the baselines in research.md R5:
   - libSBML 5.21.2's `checkConsistency()` over T004's SBML and a sample of T033's archive, with the units and modelling-practice categories off;
@@ -132,13 +127,13 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
 **Independent Test**:
 
-- the sample's models are byte-identical to the corrected reference;
+- the sample's models match today's relational files element by element;
 - the layouts match today's by meaning;
 - a graph-only bulk run matches the release's published archives in file names and in a sample of files;
 - the website's SBML comes from the exporter.
 
-- [ ] T036 [US1] [ext] In `sbml-exporter`: fix the five defects (R9), each with a test that fails without its fix. Add tests for the two queries' row mapping.
-- [ ] T037 [US1] Compare the fixed exporter's models with the references over the whole sample (T030), from T032's copy. Byte-identical apart from the timestamp. Record any difference in `contracts/differences.md`, or send it back to T036.
+- [x] T036 [US1] [ext] In `sbml-exporter`: fix the five defects (R9), each with a test that fails without its fix. Add tests for the two queries' row mapping. — sbml-exporter #22, #23, #24 (into its `graph-only` branch)
+- [ ] T037 [US1] Compare the fixed exporter's models with today's relational files over the whole sample (T030), from T032's copy: element by element, order and the timestamp set aside. Done as `sbml-exporter`'s T016; record the result here.
 - [ ] T038 [US1] [ext] In `sbml-exporter`: the layout from the diagram files. `LayoutConverter`'s algorithm, ported over `diagram/{stId}.json` of the same release (R3), keeping:
   - the same ids, order and glyph sets;
   - the same roles and backbone rules;
@@ -146,8 +141,8 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
   It is written only for an event whose own diagram draws a reaction.
 
-- [ ] T039 [US1] Compare the layouts with today's files (T004) over the sample's events with diagrams: glyph sets, ids, roles, order and targets exactly; coordinates against the recorded offset and the resized nodes. Compare every event's model again, outside the layout, byte for byte (FR-002). Record each difference in `contracts/differences.md`.
-- [ ] T040 [US1] [ext] In `sbml-exporter`: a graph-only command line. The relational options are dropped. The graph converter with its layout is used for listed ids, species and `all`, writing every pathway of a species as today. File names stay `{stId}.sbml`, and the archives stay as today.
+- [ ] T039 [US1] Compare the layouts with today's files (T004) over the sample's events with diagrams: glyph sets, ids, roles, order and targets exactly; coordinates against the recorded offset and the resized nodes. Compare every event's model again, element by element (FR-002). Record each difference in `contracts/differences.md`.
+- [ ] T040 [US1] [ext] In `sbml-exporter`: a graph-only command line. The relational options are dropped (done in sbml-exporter #30, with no switch: its branch reads nothing relational; the diagram folder is left). The graph converter with its layout is used for listed ids, species and `all`, writing every pathway of a species as today. File names stay `{stId}.sbml`, and the archives stay as today.
 - [ ] T041 [US1] A graph-only bulk dry run for one species, from T032's copy, compared with the release's published archive (T033): the same file names, every file valid (libSBML), and a sample of files compared as in T037 and T039. Record the run's time.
 - [ ] T042 [US1] [ext] In `sbml-exporter`'s CI: libSBML's consistency check over the converter's output for a small fixture graph, failing on any error.
 - [x] T043 [US1] Spec 010 amended for this spec (R10):
