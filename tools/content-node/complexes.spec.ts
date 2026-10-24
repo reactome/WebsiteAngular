@@ -5,13 +5,19 @@
 // with a stand-in graph. PhysicalEntityController over graph-core's
 // PhysicalEntityRepository, whose queries are kept as written. The entities
 // here are invented; Java's messages were measured 17 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const asked = [];
-let rows = [];
-let failure;
+/** A query's parameters, as the service passes them. */
+type Params = { id?: unknown; taxId?: unknown; [name: string]: unknown };
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
+let rows: unknown[] = [];
+/** What the stand-in graph throws next, if anything. */
+let failure: Error | undefined;
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     if (failure) throw failure;
     return rows;
@@ -23,26 +29,35 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/data/${path}`);
-const last = () => asked[asked.length - 1];
-const oneLine = (cypher) => cypher.replace(/\s+/g, ' ').trim();
-const entity = (dbId, schemaClass) => ({
+const get = (path: string) => fetch(`${base}/ContentService/data/${path}`);
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const oneLine = (cypher: string) => cypher.replace(/\s+/g, ' ').trim();
+const entity = (dbId: number, schemaClass: string) => ({
   dbId,
   stId: `R-HSA-${dbId}`,
   displayName: `E${dbId}`,
   schemaClass,
 });
-const messages = async (response) => [response.status, (await response.json()).messages];
+/** Status and the messages of Java's error envelope. */
+const messages = async (response: Response) => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
 
 describe('/data/complex/{id}/subunits', () => {
   it("runs graph-core's query as written and writes the entities in the rows' order", async () => {
@@ -50,7 +65,7 @@ describe('/data/complex/{id}/subunits', () => {
     failure = undefined;
     asked.length = 0;
     const response = await get('complex/R-HSA-5/subunits');
-    expect((await response.json()).map((e) => e.dbId)).toEqual([2, 1]);
+    expect(((await response.json()) as { dbId: number }[]).map((e) => e.dbId)).toEqual([2, 1]);
     expect(oneLine(last()[0])).toBe(
       'MATCH (:PhysicalEntity{stId: $id})-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity) RETURN DISTINCT pe'
     );
@@ -111,7 +126,7 @@ describe('/data/complexes/{resource}/{identifier}', () => {
     failure = undefined;
     asked.length = 0;
     const response = await get('complexes/(%3Fi)uniprot/P00533');
-    expect((await response.json()).map((e) => e.dbId)).toEqual([3]);
+    expect(((await response.json()) as { dbId: number }[]).map((e) => e.dbId)).toEqual([3]);
     expect(oneLine(last()[0])).toBe(
       'MATCH (rd:ReferenceDatabase)<-[:referenceDatabase]-(n{identifier:$identifier}) WHERE rd.displayName =~ $resource WITH DISTINCT n MATCH (n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene*]-(pe:PhysicalEntity) WITH DISTINCT pe MATCH (c:Complex)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe) RETURN DISTINCT c'
     );
