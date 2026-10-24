@@ -7,12 +7,18 @@
 // identifier and filter passed as parameters where Java writes them into the
 // text, and graph-core's ReferenceEntityRepository. The entities here are invented; Java's answers
 // were measured 17 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-let answer = () => [];
-const asked = [];
+/** A query's parameters, as the service passes them. */
+type Params = { identifier?: unknown; dbFilter?: unknown; [name: string]: unknown };
+/** The stand-in graph's rows for a query, or a promise of them. */
+let answer: (cypher: string, params: Params) => unknown = () => [];
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     return answer(cypher, params);
   },
@@ -24,25 +30,34 @@ vi.mock('./graph.ts', () => ({
 const { app } = await import('./server.ts');
 const { crossReferenceQuery, pageJson, pageText } = await import('./mapping-species-endpoints.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/references/mapping/${path}`);
-const post = (query, body, type = 'text/plain') =>
+const get = (path: string) => fetch(`${base}/ContentService/references/mapping/${path}`);
+const post = (query: string, body: string | undefined, type = 'text/plain') =>
   fetch(`${base}/ContentService/references/mapping/xrefs${query}`, {
     method: 'POST',
     headers: type ? { 'content-type': type } : {},
-    body,
+    ...(body === undefined ? {} : { body }),
   });
-const messages = async (response) => [response.status, (await response.json()).messages];
-const last = () => asked[asked.length - 1];
+/** Status and the messages of Java's error envelope. */
+const messages = async (response: Response): Promise<[number, string[]]> => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
 
 describe('crossReferenceQuery', () => {
   it("is the controller's text, the identifier and filter as parameters", () => {
@@ -83,7 +98,7 @@ describe('/references/mapping/{identifier}', () => {
     ];
     asked.length = 0;
     const response = await get('P1');
-    expect((await response.json()).map((e) => e.dbId)).toEqual([1]);
+    expect(((await response.json()) as { dbId: number }[]).map((e) => e.dbId)).toEqual([1]);
     expect(last()[0].replace(/\s+/g, ' ').trim()).toMatch(
       /^MATCH \(rd:ReferenceDatabase\)<--\(n\{identifier:\$identifier\}\)<-\[:referenceEntity\|referenceSequence\|crossReference\|referenceGene\*\]-\(pe:PhysicalEntity\) WITH DISTINCT pe MATCH \(pe\)-\[:referenceEntity\]->\(n:ReferenceEntity\) ?RETURN DISTINCT n, labels\(n\) AS labels$/
     );
@@ -173,7 +188,7 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     const response = await get('P36%22897/xrefs?dbFilter=D%22');
     expect(response.status).toBe(404);
     expect(asked).toEqual([[crossReferenceQuery('D"'), { identifier: 'P36"897', dbFilter: 'D"' }]]);
-    expect(asked[0][0]).not.toContain('P36');
+    expect(last()[0]).not.toContain('P36');
   });
 
   it("is the service's 503 when the database ends the query, as everywhere", async () => {
@@ -184,15 +199,20 @@ describe('/references/mapping/{identifier}/xrefs', () => {
     };
     const response = await get('P1/xrefs');
     expect(response.status).toBe(503);
-    expect((await response.json()).reason).toBe('SERVICE_UNAVAILABLE');
+    expect(((await response.json()) as { reason: string }).reason).toBe('SERVICE_UNAVAILABLE');
   });
 });
 
 describe('POST /references/mapping/xrefs', () => {
   it('pages the identifiers, each to its results or NO MATCH', async () => {
-    answer = (cypher, params) => (params.identifier === 'P1' ? [XREF_ROW] : []);
+    answer = (_cypher, params) => (params.identifier === 'P1' ? [XREF_ROW] : []);
     const response = await post('?page=0&pageSize=2', 'P1, xyz;Q2');
-    const json = await response.json();
+    const json = (await response.json()) as {
+      content: unknown[];
+      totalElements: number;
+      totalPages: number;
+      numberOfElements: number;
+    };
     expect(json.content).toEqual([
       {
         P1: [
@@ -213,7 +233,9 @@ describe('POST /references/mapping/xrefs', () => {
 
   it('splits on newline and tab too, and trims as String.trim does', async () => {
     answer = () => [];
-    const json = await (await post('', 'A\nB\tC\u0001 ')).json();
+    const json = (await (await post('', 'A\nB\tC\u0001 ')).json()) as {
+      content: Record<string, unknown>[];
+    };
     expect(json.content.map((entry) => Object.keys(entry)[0])).toEqual(['A', 'B', 'C']);
   });
 
@@ -236,19 +258,19 @@ describe('POST /references/mapping/xrefs', () => {
   });
 
   it("is the first failure's answer when one identifier breaks the query", async () => {
-    answer = (cypher, params) => {
+    answer = (_cypher, params) => {
       if (params.identifier === 'B')
         throw Object.assign(new Error('bad'), { code: 'Neo.ClientError.Statement.SyntaxError' });
       return [];
     };
     const [status, [message]] = await messages(await post('', 'A,B,C'));
-    expect([status, message.startsWith('bad; Error code')]).toEqual([500, true]);
+    expect([status, message?.startsWith('bad; Error code')]).toEqual([500, true]);
   });
 
   it('starts no lookup after one throws', async () => {
     asked.length = 0;
     // The first lookup fails; the others would each take 5ms.
-    answer = (cypher, params) => {
+    answer = (_cypher, params) => {
       if (params.identifier === 'I0') throw new Error('the database is gone');
       return new Promise((resolve) => setTimeout(() => resolve([]), 5));
     };
@@ -261,8 +283,8 @@ describe('POST /references/mapping/xrefs', () => {
 
   it('starts no lookup once the client has gone', async () => {
     asked.length = 0;
-    let started;
-    const first = new Promise((resolve) => (started = resolve));
+    let started: () => void = () => undefined;
+    const first = new Promise<void>((resolve) => (started = resolve));
     answer = () => {
       started();
       return new Promise((resolve) => setTimeout(() => resolve([]), 20));
@@ -286,8 +308,8 @@ describe('POST /references/mapping/xrefs', () => {
   });
 
   it('runs two batches at once and answers a third 503, Retry-After', async () => {
-    let release;
-    const held = new Promise((resolve) => (release = resolve));
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
     answer = () => held.then(() => []);
     const two = [post('', 'A'), post('', 'B')];
     await new Promise((resolve) => setTimeout(resolve, 50));
