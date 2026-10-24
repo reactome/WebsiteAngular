@@ -4,10 +4,24 @@
 // what search-core asks Solr's /facet handler, and its filter correction.
 // Java's answers measured on 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app } from './server.ts';
 import { facetQueryParams } from './search-endpoints.ts';
 import { springList, springScope } from './spring.ts';
+
+/** A form body as the service sent it to Solr: name and value, in order. */
+type Sent = [string, string][];
+/** The facet query facetQueryParams takes. */
+type FacetQuery = Parameters<typeof facetQueryParams>[0];
+/**
+ * A facet query with some lists left out. The endpoint always fills them, and
+ * facetQueryParams reads an absent list as an empty one, which these cases
+ * rely on.
+ */
+const paramsFor = (given: Pick<FacetQuery, 'query' | 'scope'> & Partial<FacetQuery>) =>
+  facetQueryParams(given as FacetQuery);
 
 describe('springList, a List<String> parameter as Spring binds it', () => {
   it('splits one value at commas and trims each part', () => {
@@ -23,7 +37,7 @@ describe('springList, a List<String> parameter as Spring binds it', () => {
 });
 
 describe('springScope, the Query.Scope parameter with its default', () => {
-  const message = (type, value) =>
+  const message = (type: string, value: string) =>
     `Failed to convert value of type '${type}' to required type 'org.reactome.server.search.domain.Query$Scope'; ` +
     'nested exception is org.springframework.core.convert.ConversionFailedException: Failed to convert from type ' +
     '[java.lang.String] to type [@io.swagger.v3.oas.annotations.Parameter @org.springframework.web.bind.annotation.RequestParam ' +
@@ -59,7 +73,7 @@ describe('springScope, the Query.Scope parameter with its default', () => {
 describe('facetQueryParams, as SolrCore.getFacetingInformation(Query) asks', () => {
   it('scopes, then filters by species, types, keywords and compartments, then not deleted', () => {
     expect(
-      facetQueryParams({
+      paramsFor({
         query: 'TP53',
         scope: 'PHYSICAL_ENTITY',
         species: ['Homo sapiens', 'Mus musculus'],
@@ -78,71 +92,71 @@ describe('facetQueryParams, as SolrCore.getFacetingInformation(Query) asks', () 
     ]);
   });
   it('REFERENCE_ENTITY and BOTH scopes, and no filter for an empty list', () => {
-    expect(facetQueryParams({ query: 'x', scope: 'REFERENCE_ENTITY', species: [] })).toEqual([
+    expect(paramsFor({ query: 'x', scope: 'REFERENCE_ENTITY', species: [] })).toEqual([
       ['fq', 'hasReferenceEntity:false'],
       ['fq', '-deleted'],
       ['q', 'x'],
     ]);
-    expect(facetQueryParams({ query: 'x', scope: 'BOTH' })).toEqual([
+    expect(paramsFor({ query: 'x', scope: 'BOTH' })).toEqual([
       ['fq', '-deleted'],
       ['q', 'x'],
     ]);
   });
   it('drops empty names from a list, leaving a bare tag when nothing is left', () => {
     const species = ['', 'Homo sapiens'];
-    expect(facetQueryParams({ query: 'x', scope: 'BOTH', species })[0]).toEqual([
+    expect(paramsFor({ query: 'x', scope: 'BOTH', species })[0]).toEqual([
       'fq',
       '{!tag=sf}species_facet:("Homo sapiens")',
     ]);
-    expect(facetQueryParams({ query: 'x', scope: 'BOTH', types: [''] })[0]).toEqual([
-      'fq',
-      '{!tag=tf}',
-    ]);
+    expect(paramsFor({ query: 'x', scope: 'BOTH', types: [''] })[0]).toEqual(['fq', '{!tag=tf}']);
   });
 });
 
 describe('the facet_query endpoint, against a stand-in Solr', () => {
-  let base;
-  let server;
-  let solrServer;
-  let asked;
-  let answer;
-  const saved = {};
+  let base: string;
+  let server: Server;
+  let solrServer: Server;
+  /** What the stand-in Solr was asked: the path, and the form it was sent. */
+  let asked: [string, Sent][];
+  /** The stand-in Solr's answer to a request. */
+  let answer: (sent: Sent) => unknown;
+  const saved: Record<string, string | undefined> = {};
   const names = ['SOLR_URL', 'SOLR_USER', 'SOLR_PASSWORD'];
 
   beforeAll(async () => {
     const { createServer } = await import('node:http');
     solrServer = createServer((request, response) => {
       let body = '';
-      request.on('data', (chunk) => (body += chunk));
+      request.on('data', (chunk: Buffer) => (body += chunk.toString()));
       request.on('end', () => {
         const sent = [...new URLSearchParams(body)];
-        asked.push([request.url, sent]);
+        asked.push([request.url ?? '', sent]);
         response.setHeader('Content-Type', 'application/json');
         response.end(JSON.stringify(answer(sent)));
       });
     });
-    await new Promise((resolve) => solrServer.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) => solrServer.listen(0, '127.0.0.1', resolve));
     for (const name of names) saved[name] = process.env[name];
-    process.env.SOLR_URL = `http://127.0.0.1:${solrServer.address().port}/solr/reactome`;
-    process.env.SOLR_USER = 'reader';
-    process.env.SOLR_PASSWORD = 'not-a-secret';
-    await new Promise((resolve) => {
-      server = app().listen(0, '127.0.0.1', resolve);
+    process.env['SOLR_URL'] =
+      `http://127.0.0.1:${(solrServer.address() as AddressInfo).port}/solr/reactome`;
+    process.env['SOLR_USER'] = 'reader';
+    process.env['SOLR_PASSWORD'] = 'not-a-secret';
+    await new Promise<void>((resolve) => {
+      server = app().listen(0, '127.0.0.1', () => resolve());
     });
-    base = `http://127.0.0.1:${server.address().port}`;
+    base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
   });
 
   afterAll(async () => {
     for (const name of names)
       if (saved[name] === undefined) delete process.env[name];
       else process.env[name] = saved[name];
-    await new Promise((resolve) => server.close(resolve));
-    await new Promise((resolve) => solrServer.close(resolve));
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    await new Promise<void>((resolve) => solrServer.close(() => resolve()));
   });
 
   // Solr's counts for TP53, filtered by species when a species fq is sent.
-  const counts = (sent) => {
+  const counts = (sent: Sent) => {
     const filtered = sent.some(
       ([name, value]) => name === 'fq' && value.includes('species_facet:')
     );
@@ -182,7 +196,7 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
     const corrected = await fetch(
       `${base}/ContentService/search/facet_query?query=TP53&species=Nonexistent`
     );
-    expect((await corrected.json()).totalNumFount).toBe(3428);
+    expect(((await corrected.json()) as { totalNumFount: number }).totalNumFount).toBe(3428);
     expect(asked.map(([, sent]) => sent.filter(([name]) => name === 'fq'))).toEqual([
       [
         ['fq', '-isReferenceSummary:true'],
@@ -214,11 +228,11 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
     const force = await fetch(
       `${base}/ContentService/search/facet_query?query=x&Force%20filters=maybe`
     );
-    expect((await force.json()).messages).toEqual([
+    expect(((await force.json()) as { messages: string[] }).messages).toEqual([
       "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; nested exception is java.lang.IllegalArgumentException: Invalid boolean value [maybe]",
     ]);
     const blank = await fetch(`${base}/ContentService/search/facet_query?query=x&scope=%20`);
-    expect([blank.status, (await blank.json()).messages]).toEqual([
+    expect([blank.status, ((await blank.json()) as { messages: string[] }).messages]).toEqual([
       500,
       ['Something unexpected happened and the error has been reported.'],
     ]);
@@ -231,11 +245,11 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
       'query=TP53&Force%20filters=&Force%20filters=true',
     ]) {
       const response = await fetch(`${base}/ContentService/search/facet_query?${forced}`);
-      expect([forced, response.status, (await response.json()).messages]).toEqual([
+      expect([
         forced,
-        500,
-        unexpected,
-      ]);
+        response.status,
+        ((await response.json()) as { messages: string[] }).messages,
+      ]).toEqual([forced, 500, unexpected]);
     }
     const emptyBlank = await fetch(`${base}/ContentService/search/facet_query?query=&scope=%20`);
     expect([emptyBlank.status, await emptyBlank.text()]).toEqual([200, '']);
@@ -273,9 +287,8 @@ describe('the facet_query endpoint, against a stand-in Solr', () => {
       `${base}/ContentService/search/facet_query?query=TP53&species=Homo%20sapiens`
     );
     // Java's NullPointerException, not a Solr failure.
-    expect([response.status, (await response.json()).messages]).toEqual([
-      500,
-      ['Something unexpected happened and the error has been reported.'],
-    ]);
+    expect([response.status, ((await response.json()) as { messages: string[] }).messages]).toEqual(
+      [500, ['Something unexpected happened and the error has been reported.']]
+    );
   });
 });

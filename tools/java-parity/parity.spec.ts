@@ -3,7 +3,8 @@
 // The Java-against-Java parity harness (spec 010, research R7), against two
 // stub servers standing in for the reference (what runs today) and the
 // candidate (what replaces it).
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { setInterval, clearInterval } from 'node:timers';
 import { spawnSync } from 'node:child_process';
 import { writeFileSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
@@ -11,18 +12,33 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { compareAll, verdict } from './parity.ts';
+import {
+  compareAll,
+  verdict,
+  type ParityOptions,
+  type ParityRequest,
+  type Report,
+} from './parity.ts';
 import { normalisers } from './normalisers.ts';
 
+/** One canned answer. */
+type Answer = { status?: number; headers?: Record<string, string>; body: string | Buffer };
+/** Path to answer, and which side the table is (the candidate's is named). */
+type Table = { name?: string; answers: Record<string, Answer> };
+/** A started stub, and its base URL. */
+type Stub = { server: Server; url: string };
+
 /** A server answering from a table of path -> { status, headers, body }. */
-function stub(table) {
+function stub({ name, answers }: Table) {
   let calls = 0;
-  const server = createServer((request, response) => {
+  // Each early return ends the answer (or deliberately leaves it hanging); none
+  // returns a value anyone reads.
+  const server = createServer((request, response): void => {
     calls += 1;
     // Live third-party data: a different answer every time.
-    if (request.url === '/live') return response.end(`live ${calls}`);
+    if (request.url === '/live') return void response.end(`live ${calls}`);
     // An answer built from the Host it was asked with.
-    if (request.url === '/host') return response.end(`host ${request.headers.host}`);
+    if (request.url === '/host') return void response.end(`host ${request.headers.host}`);
     // A server that never answers.
     if (request.url === '/hang') return;
     // One that never stops answering, a byte at a time.
@@ -32,34 +48,35 @@ function stub(table) {
       return;
     }
     // Two Content-Types, which a parsed header map shows as one.
-    if (request.url === '/twice' && !table.name) {
+    if (request.url === '/twice' && !name) {
       response.setHeader('content-type', ['text/plain', 'text/html']);
-      return response.end('x');
+      return void response.end('x');
     }
     // A body cut off by a reset, part way.
     if (request.url === '/reset') {
       response.writeHead(200, { 'content-length': '100' });
       response.write('partial');
-      return setTimeout(() => request.socket.destroy(), 20);
+      setTimeout(() => request.socket.destroy(), 20);
+      return;
     }
     // A status difference whose error page claims gzip and is not.
-    if (request.url === '/badgz' && table.name)
-      return response.writeHead(500, { 'content-encoding': 'gzip' }).end('not gzip');
+    if (request.url === '/badgz' && name)
+      return void response.writeHead(500, { 'content-encoding': 'gzip' }).end('not gzip');
     // Context-path aware: only /ctx/x exists.
-    if (request.url === '/ctx/x') return response.end(`ctx ${table.name ?? ''}`);
-    const answer = table[request.url] ?? { status: 404, body: 'none' };
+    if (request.url === '/ctx/x') return void response.end(`ctx ${name ?? ''}`);
+    const answer = answers[request.url ?? ''] ?? { status: 404, body: 'none' };
     response.writeHead(answer.status ?? 200, answer.headers ?? { 'content-type': 'text/plain' });
     response.end(answer.body);
   });
-  return new Promise((resolve) =>
+  return new Promise<Stub>((resolve) =>
     server.listen(0, '127.0.0.1', () =>
-      resolve({ server, url: `http://127.0.0.1:${server.address().port}` })
+      resolve({ server, url: `http://127.0.0.1:${(server.address() as AddressInfo).port}` })
     )
   );
 }
 
-const json = { 'content-type': 'application/json;charset=UTF-8' };
-const reference = {
+const json: Record<string, string> = { 'content-type': 'application/json;charset=UTF-8' };
+const reference: Record<string, Answer> = {
   '/same': { body: 'abc' },
   '/byte': { body: 'abc' },
   '/status': { status: 200, body: 'x' },
@@ -81,9 +98,10 @@ const reference = {
   '/badgz': { headers: { 'content-type': 'text/plain' }, body: 'ok' },
   '/secret/ABC123': { body: 'x' },
 };
-const candidate = {
+/** The candidate's table is named; the reference's is not. */
+const candidateName = 'candidate';
+const candidate: Record<string, Answer> = {
   ...reference,
-  name: 'candidate',
   '/twice': { headers: { 'content-type': 'text/plain' }, body: 'x' },
   '/byte': { body: 'abd' },
   '/status': { status: 500, body: 'x' },
@@ -103,24 +121,31 @@ const candidate = {
   },
 };
 
-let ref;
-let cand;
+let ref: Stub;
+let cand: Stub;
 beforeAll(async () => {
-  ref = await stub(reference);
-  cand = await stub(candidate);
+  ref = await stub({ answers: reference });
+  cand = await stub({ name: candidateName, answers: candidate });
 });
 afterAll(async () => {
   ref.server.closeAllConnections();
   cand.server.closeAllConnections();
-  await new Promise((resolve) => ref.server.close(resolve));
-  await new Promise((resolve) => cand.server.close(resolve));
+  await new Promise<void>((resolve) => ref.server.close(() => resolve()));
+  await new Promise<void>((resolve) => cand.server.close(() => resolve()));
 });
 
-const run = (paths, options = {}) =>
+const run = (paths: (string | ParityRequest)[], options: Partial<ParityOptions> = {}) =>
   compareAll(
     paths.map((path) => (typeof path === 'string' ? { method: 'GET', path } : path)),
     { reference: ref.url, candidate: cand.url, ...options }
   );
+
+/** A report's first result; none is the test's failure, not undefined. */
+const first = (report: Report) => {
+  const [result] = report.results;
+  if (!result) throw new Error('the report has no result');
+  return result;
+};
 
 describe('the parity harness', () => {
   it('finds identical answers identical', async () => {
@@ -159,7 +184,7 @@ describe('the parity harness', () => {
       1
     );
     // Byte for byte apart from the token: no JSON round trip to lose a digit.
-    const strip = (text) => normalisers.analysisResult(Buffer.from(text)).toString();
+    const strip = (text: string) => normalisers.analysisResult(Buffer.from(text)).toString();
     expect(strip('{"summary":{"token":"T1"},"n":9007199254740993}')).toBe(
       '{"summary":{"token":""},"n":9007199254740993}'
     );
@@ -185,8 +210,8 @@ describe('the parity harness', () => {
   it('never puts a body, and with redaction no path, in its report', async () => {
     const report = await run(['/secret/ABC123'], { redact: true });
     expect(JSON.stringify(report)).not.toContain('ABC123');
-    expect(report.results[0].request).toBe('#0');
-    expect(Object.keys(report.results[0]).sort()).toEqual(['differs', 'request', 'status']);
+    expect(first(report).request).toBe('#0');
+    expect(Object.keys(first(report)).sort()).toEqual(['differs', 'request', 'status']);
   });
 
   it('calibrates against the reference itself: a difference counts only where the reference agreed with itself', async () => {
@@ -197,7 +222,7 @@ describe('the parity harness', () => {
     // and a run that compared nothing is not a pass.
     const live = await run(['/live'], { calibrate: true });
     expect(live.counts).toEqual({ identical: 0, different: 0, unstable: 1 });
-    expect(live.results[0].calibrated).toBe(false);
+    expect(first(live).calibrated).toBe(false);
     expect(verdict(live)).toBe(2);
   });
 
@@ -222,27 +247,27 @@ describe('the parity harness', () => {
   it('times out the whole request, not just a silence', async () => {
     const started = Date.now();
     const report = await run(['/trickle'], { timeout: 300 });
-    expect(report.results[0].error).toBe('timeout');
+    expect(first(report).error).toBe('timeout');
     expect(Date.now() - started).toBeLessThan(2000);
   });
 
   it('sees a header sent twice', async () => {
     const report = await run(['/twice']);
-    expect(report.results[0].differs).toContain('content-type');
+    expect(first(report).differs).toContain('content-type');
     // And how the body was framed: Content-Length on one side, chunked on the other.
-    expect(report.results[0].differs).toContain('transfer-encoding');
+    expect(first(report).differs).toContain('transfer-encoding');
   });
 
   it('names what failed: the normaliser, not the network', async () => {
     const report = await run(['/same'], { normalise: normalisers.analysisResultGz });
-    expect(report.results[0].error).toBe('normaliser');
+    expect(first(report).error).toBe('normaliser');
     // A token normaliser that finds no token is an error, not a silent pass.
     expect(() => normalisers.analysisResult(Buffer.from('{"n":1}'))).toThrow();
   });
 
   it('reports a status difference even when the body cannot be normalised', async () => {
     const report = await run(['/status'], { normalise: normalisers.analysisResult });
-    expect(report.results[0].differs).toContain('status');
+    expect(first(report).differs).toContain('status');
   });
 
   it('ignores a header only when the run declares it, and says so', async () => {
@@ -258,7 +283,7 @@ describe('the parity harness', () => {
     const before = timers();
     const started = Date.now();
     const report = await run(['/reset'], { timeout: 60_000 });
-    expect(report.results[0].error).toMatch(/^network/);
+    expect(first(report).error).toMatch(/^network/);
     expect(Date.now() - started).toBeLessThan(2000);
     // A timer left armed would keep the process alive for the full minute.
     expect(timers() - before).toBe(0);
@@ -266,7 +291,7 @@ describe('the parity harness', () => {
 
   it('reports a status difference even when the error page cannot be decoded', async () => {
     const report = await run(['/badgz']);
-    expect(report.results[0].differs).toEqual(expect.arrayContaining(['status', 'body']));
+    expect(first(report).differs).toEqual(expect.arrayContaining(['status', 'body']));
     expect(verdict(report)).toBe(1);
   });
 
