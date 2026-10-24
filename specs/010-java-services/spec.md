@@ -1,5 +1,12 @@
 # Feature Specification: The Java side of Reactome's services
 
+> **Amended by [spec 015](../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
+>
+> - **SBML:** the library service's SBML operation uses `sbml-exporter`'s fixed graph-only converter, with its layout drawn from the diagram files. It needs no relational database, and its body is proven by spec 015's comparison rather than byte-identical to the old server's relational answer. Status, headers and errors are still Java's.
+> - **BioPAX:** the service gains a BioPAX Level 3 operation through `BioPAX3Exporter`.
+> - **Runtime:** the service runs on JDK 17, because BioPAX3Exporter is built for it. Libraries built for Java 11 run there unchanged.
+> - **SBML is cut over by spec 015** (its T044), not here.
+
 **Feature Branch**: `spec/010-java-services`
 
 **Created**: 2026-10-17
@@ -199,7 +206,7 @@ A researcher submits an analysis while the service is busy. Their analysis waits
 - The Java library service lives in a new Reactome repository, which its owners create (research R2).
 - The host has room for the Java services alongside the current ones once the old server stops; FR-017 measures this rather than assuming the amounts.
 - Analysis token storage and lifetimes are kept exactly as the current service has them; changing them is a separate decision.
-- BioPAX files are produced by the release pipeline, not by these services, and are out of scope; a BioPAX endpoint, if ever wanted, would belong to the Java side by the rule in FR-002.
+- BioPAX files are produced by the release pipeline. A per-event BioPAX endpoint was later wanted, and belongs to the Java side by the rule in FR-002: spec 015 adds it to the library service.
 - The ORCID endpoints, porting any analysis maths, porting the GPL-licensed scoring libraries, and changing any response shape are out of scope.
 - Running GPL-3.0 libraries as a separate service on Reactome's own servers is not distribution of this repository's code; if the Java service's own source is published, its licence is chosen to be compatible with them.
 - This repository is public: the record, the plan and the configuration name no internal hosts, file paths or incidents.

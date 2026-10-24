@@ -1,6 +1,6 @@
 # Contract: the export endpoints
 
-All are answered by the node content service from the graph database. Their routes are in nginx (`routes.conf`, `local.conf`, `routes-core.conf`) and the dev proxy alike (`routes.spec.ts`), each with its slashed form. None falls back to Java.
+All are answered by the node content service. The bodies come from spec 010's Java library service (research R10), which runs the same exporters the release runs: `sbml-exporter` and `BioPAX3Exporter`. Node writes the headers, the errors and the cache. **When the library service cannot answer** (down, timed out or refusing), node answers 503 in the service's envelope, never a fallback to another implementation. Their routes are in nginx (`routes.conf`, `local.conf`, `routes-core.conf`) and the dev proxy alike (`routes.spec.ts`), each with its slashed form. None falls back to Java.
 
 ## SBML
 
@@ -26,7 +26,7 @@ All are answered by the node content service from the graph database. Their rout
 
 `GET /ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}`
 
-- **301** to `/ContentService/exporter/event/{dbId}.biopax`, with the query kept, as the fireworks redirect does. Routed in `routes-core.conf`, so local has it too, and in `proxy.conf.js`.
+- **301** to `/ContentService/exporter/event/{stId}.biopax`: node resolves the dbId to its stable id, so the reader lands on a stable address (constitution IV). The query is kept, as the fireworks redirect keeps it. A dbId that is no event is a 404 in the envelope. Routed in `routes-core.conf`, so local has it too, and in `proxy.conf.js`.
 - Level 2 is not answered: it is out of scope, and nothing on the site links it.
 
 ## The site

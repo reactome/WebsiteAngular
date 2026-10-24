@@ -1,36 +1,38 @@
-# Tasks: SBML and BioPAX built from the graph
+# Tasks: SBML and BioPAX from the graph, one exporter each
 
 **Input**:
 
-- [plan.md](plan.md) (order of work 1–7)
+- [plan.md](plan.md) (order of work 1–9; rewritten 24 Oct 2026)
 - [spec.md](spec.md)
-- [research.md](research.md) (R1–R8, measured)
+- [research.md](research.md) (R1–R10, measured)
 - [data-model.md](data-model.md)
 - [contracts/](contracts/) (endpoints, checks, differences)
 - [quickstart.md](quickstart.md)
 
+**Rewritten on 24 Oct 2026.** T001–T004 and T009 are done, and their records stand. The old T005–T026 were for a TypeScript port in the node service, and are withdrawn; they are in this file's history. The new tasks start at T027, so that no id means two things. They make `sbml-exporter` and `BioPAX3Exporter` the single implementation of each format (spec, "What changed").
+
 **Tests**: required. Every new check is shown failing on a deliberate mistake before it is trusted (constitution III).
 
-**Each task** is one pull request. It must:
+**Each task here** is one pull request in this repository. It must:
 
 - have an adversarial review;
 - pass CI and merge, then the merge commit is checked on main;
 - tick its task here with the PR number, in the same pull request.
 
+**A task in another repository** (marked **[ext]**) is ticked here with that repository's pull request, once its maintainers have merged it. No change is pushed there without their agreement (FR-010).
+
 **Rules that hold throughout:**
 
-- **No request to reactome.org, ever.** Every reference answer, sample and check uses the beta host's own services: the Java ContentService and the legacy RESTful service on its Tomcat, and its databases.
+- **No request to reactome.org's services, ever.** Every reference answer, sample and check uses the beta host's own services and the private graph copy (R8). The one exception (24 Oct 2026, with the user): the release's published bulk files in its download directory, `download.reactome.org/{release}/` (`biopax.zip`, `all_species.3.1.sbml.tgz`, `homo_sapiens.3.1.sbml.tgz`), are the bulk references, fetched one at a time when a task needs them and kept outside the repository.
 - **The shared graph:** load small, sequential and spaced.
-- **Personal names** (SBML creators, BioPAX authors and curation comments) never appear in fixtures, logs or output. Reference files that hold them stay outside the repository. Comparison tools hash them.
+- **Personal names** (SBML creators, BioPAX authors and curation comments) never appear in this repository's fixtures, logs or output. Comparison tools hash them.
 - This repository is public.
 
 ## Format: `[ID] [P?] [Story] Description`
 
 ---
 
-## Phase 1: Setup (the references and the sample)
-
-**Purpose**: the reference answers every later task is compared with.
+## Phase 1: Setup (the references and the sample) — done
 
 - [x] T001 Choose and list the 30-event sample in `specs/015-graph-exports/sample.md`:
   - top-level pathways of several sizes, including Signal Transduction (R-HSA-162582) and R-HSA-69620;
@@ -53,45 +55,56 @@
   Generate the sample's references (T001) where T002 decided, outside the repository. Record each fix as an accepted deviation in `contracts/differences.md`, and offer the fixes upstream as an issue on sbml-exporter. — #638 (the upstream issue waits for the user's OK)
 
 - [x] T004 Take today's answers for the sample, once and spaced, from the beta host only, and keep them outside the repository:
-  - SBML from the Java ContentService, `http://localhost:8080/ContentService/exporter/event/{id}.sbml`;
-  - BioPAX from the legacy RESTful service, `http://localhost:8080/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}`.
+  - SBML from the Java ContentService's `exporter/event/{id}.sbml`;
+  - BioPAX from the legacy RESTful service's `biopaxExporter/Level3/{dbId}`.
 
   For each, record status, headers, size and time. — #640 (`today.md`)
 
 ---
 
-## Phase 2: Foundational (the instruments)
+## Phase 2: The maintainers, and the instruments
 
-**Purpose**: the checks that make the exports provable. Each is shown failing first. Blocks both stories.
+**Purpose**: agreement on the direction with each exporter's maintainers, and the checks and references that prove each exporter. Blocks both stories.
 
-- [ ] T005 [P] Write the SBML comparison tool, `tools/content-node/sbml-compare.ts`, with its spec (`contracts/checks.md`):
-  - **the model:** byte for byte, the generation note's timestamp set aside;
+- [x] T027 Draft the two issues outside the repository, for the user to read before anything is posted (this repository is public, so a draft merged here would already be published):
+  - **for `sbml-exporter`**: the five defects with their fixes (reference-harness.md), the layout from the diagram files (R3), the graph-only command line, and the plan to make the exporter the one implementation for the bulk files and the website;
+  - **for `BioPAX3Exporter`**: the coverage gap against today's files (R9, data-model.md), the mode and `xml:base` defects, the per-reaction export, and how it will be proven (R4's comparison against the release's `biopax.zip`).
+
+  — #646 (drafted 24 Oct, with the user to read)
+
+- [ ] T028 Post the two issues once the user has read and approved them, and record their links here.
+- [ ] T029 [ext] Agree graph-core and the JDK with both exporters' maintainers: each works on the graph-core version spec 010's library service pins, on JDK 17 (R10). Record the version here.
+- [ ] T030 [P] Write the SBML comparison tool, `tools/exports-compare/sbml-compare.ts`, with its spec (`contracts/checks.md`):
+  - **the model:** byte for byte, the generation note's timestamp set aside, and the layout's changes to the model (FR-002) compared with the layout;
   - **the layout:** glyph sets, ids, roles, order and targets exactly; coordinates by meaning, against the diagram plus one offset, with the resized nodes listed;
   - **output:** element paths, with vCard names as hashes.
 
   Show it failing on a removed species reference, a changed sboTerm and a moved glyph.
 
-- [ ] T006 [P] Write the BioPAX comparison tool, `tools/content-node/biopax-compare.ts`, with its spec:
-  - each file canonicalised to (class, property, target-key) triples, with `rdf:ID`s replaced by content keys (research R4);
+- [ ] T031 [P] Write the BioPAX comparison tool, `tools/exports-compare/biopax-compare.ts`, with its spec:
+  - each file canonicalised to (class, property, target-key) triples, with `rdf:ID`s replaced by content keys (R4);
   - accepted differences read from `contracts/differences.md`;
   - authors and curation comments hashed.
 
-  Show it failing on a changed stoichiometry and a removed xref.
+  It takes a species file as well as an event's. Show it failing on a changed stoichiometry and a removed xref.
 
-- [ ] T007 Make the committed fixtures in `tools/content-node/fixtures/exports/`: recorded graph rows and diagram JSON for a few sample events, with every personal value replaced by a fixed placeholder (research R8). Add a spec that fails if any fixture holds a value matching a name pattern taken from the recorded rows' person fields.
-- [ ] T008 Run the validators on today's files from T004 and record the baselines in research.md R5:
-  - libSBML 5.21.2's `checkConsistency()`, with the units and modelling-practice categories off;
-  - the BioPAX validator 6.0.0, on JDK 17, reading its XML reports.
+- [ ] T032 The private graph copy (R8), for the release being compared, recreated whenever a comparison needs it and removed afterwards. If beta's graph has moved to a newer release by then, regenerate the SBML references (T003) and today's per-event answers (T004) for that release, and compare with that release's download directory.
+- [ ] T033 (`biopax.zip` done for release 97, recorded in `today.md`; the SBML archives when T041 needs them.) Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
+- [ ] T034 Run the validators on today's files and record the baselines in research.md R5:
+  - libSBML 5.21.2's `checkConsistency()` over T004's SBML and a sample of T033's archive, with the units and modelling-practice categories off;
+  - the BioPAX validator 6.0.0, on JDK 17, over T004's files and three of `biopax.zip`'s species files, reading its XML reports.
 
-  Any error found in today's files is recorded as known, so "zero errors" is a fair bar for the new ones.
+  Any error in today's files is recorded as known.
 
-**Checkpoint**: the references, the sample and the comparison tools exist, and each tool has been shown failing on wrong input.
+- [ ] T035 Run BioPAX3Exporter as it is today, from T032's copy, over the sample's pathways and the same three species, and compare with T004 and T033 by T031. Record the result in research.md R9: the baseline the BioPAX work is measured from.
+
+- [ ] T061 [ext] Organise each exporter as a library and a command line (R10): in `BioPAX3Exporter`, a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run; in `sbml-exporter`, likewise (`SbmlConverter` with its layout, then `Main`). Each library is published as a versioned Maven artefact; until it is, spec 010's service builds it from a pinned commit. The library modules exist before T044 and T052.
+
+**Checkpoint**: the issues are posted, graph-core is agreed, the references are in hand, and each comparison tool has been shown failing on wrong input.
 
 ---
 
-## Phase 3: User Story 3 — The broken BioPAX link fixed now (Priority: P1)
-
-**Goal**: beta's BioPAX links deliver BioPAX, never the site's page.
+## Phase 3: User Story 3 — The broken BioPAX link fixed now (Priority: P1) — done
 
 - [x] T009 [US3] Route `^/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/\d+$` in beta's server block (`deploy/nginx/dev.conf`) to the host's Tomcat, under the render budget.
   - The dev-proxy key in `proxy.conf.js` is anchored to the same expression.
@@ -101,142 +114,127 @@
 
 ---
 
-## Phase 4: User Story 1 — SBML from the graph (Priority: P1) 🎯 MVP
+## Phase 4: User Story 1 — SBML from the graph, one exporter (Priority: P1) 🎯 MVP
 
-**Goal**: SBML at its two URLs, built from the graph by the node content service, with no relational database.
+**Goal**: `sbml-exporter`'s graph-only converter makes both the bulk archives and the website's SBML.
 
-**Independent test**:
+**Independent Test**:
 
-- every sample event's model is byte-identical to its reference (T003), the timestamp set aside;
-- the layout matches today's in structure exactly;
-- libSBML reports 0 errors;
-- the URLs are answered by node.
+- the sample's models are byte-identical to the corrected reference;
+- the layouts match today's by meaning;
+- a graph-only bulk run matches the release's published archives in file names and in a sample of files;
+- the website's SBML comes from the exporter.
 
-### The model
+- [ ] T036 [US1] [ext] In `sbml-exporter`: fix the five defects (R9), each with a test that fails without its fix. Add tests for the two queries' row mapping.
+- [ ] T037 [US1] Compare the fixed exporter's models with the references over the whole sample (T030), from T032's copy. Byte-identical apart from the timestamp. Record any difference in `contracts/differences.md`, or send it back to T036.
+- [ ] T038 [US1] [ext] In `sbml-exporter`: the layout from the diagram files. `LayoutConverter`'s algorithm, ported over `diagram/{stId}.json` of the same release (R3), keeping:
+  - the same ids, order and glyph sets;
+  - the same roles and backbone rules;
+  - the hidden compartments, the SBO override and the root attributes.
 
-- [ ] T010 [US1] Write `tools/content-node/xml-writer.ts` and its spec: an element tree written in JTidy's final form (research R2).
-  - an element per line, 2 spaces per level, text elements inline, empty ones as `<x a="b" />`;
-  - attributes alphabetical, with the root's namespaces first and `xmlns:layout` last;
-  - whitespace collapsed, and escaping as measured (`&#160;` for U+00A0);
-  - `\n` line ends, and the declaration `<?xml version='1.0' encoding='utf-8' standalone='no'?>`.
+  It is written only for an event whose own diagram draws a reaction.
 
-  Show its spec failing on each rule.
+- [ ] T039 [US1] Compare the layouts with today's files (T004) over the sample's events with diagrams: glyph sets, ids, roles, order and targets exactly; coordinates against the recorded offset and the resized nodes. Compare every event's model again, outside the layout, byte for byte (FR-002). Record each difference in `contracts/differences.md`.
+- [ ] T040 [US1] [ext] In `sbml-exporter`: a graph-only command line. The relational options are dropped. The graph converter with its layout is used for listed ids, species and `all`, writing every pathway of a species as today. File names stay `{stId}.sbml`, and the archives stay as today.
+- [ ] T041 [US1] A graph-only bulk dry run for one species, from T032's copy, compared with the release's published archive (T033): the same file names, every file valid (libSBML), and a sample of files compared as in T037 and T039. Record the run's time.
+- [ ] T042 [US1] [ext] In `sbml-exporter`'s CI: libSBML's consistency check over the converter's output for a small fixture graph, failing on any error.
+- [x] T043 [US1] Spec 010 amended for this spec (R10):
+  - a notice at the top of each of its documents: SBML from the graph-only converter, proven by this spec's comparison; a BioPAX operation; the JDK 17 runtime; SBML cut over here;
+  - its tasks T011, T014, T017, T028 and T029, and its plan's runtime line, changed to match.
 
-- [ ] T011 [US1] Write `tools/content-node/sbml-model.ts` and its spec (research R1), building the model in document order:
-  - the two queries, REACTIONS_QUERY and PARTICIPANTS_QUERY, verbatim, their row order kept;
-  - the model's pathway (the event, or a reaction's first parent by `hasEvent.order`);
-  - notes through the `removeTags` rules, and History (creators in order; dates parsed with `hh`, so 12 becomes 00, written in GMT);
-  - CVTerms in their order;
-  - species (attributes, the SBO table, explanation notes, annotation) and compartments, with metaids interleaved;
-  - reactions, with `addCVTerms`, reactants, products and modifiers;
-  - the provenance note in `M/d/yy, h:mm a` UTC.
+  — #646
 
-  The spec runs on the fixtures (T007).
+- [ ] T044 [US1] Route the website's SBML through spec 010's library service, once it serves the operation (spec 010 T011–T022) and T037 and T039 have passed:
+  - node answers `/ContentService/exporter/event/{id}.sbml` and `/exporter/sbml/{id}.xml`, slashed forms included, with R6's headers and errors, through spec 010's pass-through;
+  - it caches per release under spec 011, and answers 503 in the envelope when the service cannot answer;
+  - the routes go in nginx and the dev proxy alike, and `routes.spec.ts` follows, with `.sbgn` kept as Java's neighbour;
+  - the parity harness compares status, headers and errors with Java's, and T030 compares the body;
+  - check before and after on beta.
 
-- [ ] T012 [US1] Add the SBML endpoints to `tools/content-node/exporters-endpoints.ts` (contracts/endpoints.md): `/ContentService/exporter/event/{id}.sbml` and `/ContentService/exporter/sbml/{id}.xml`.
-  - The id is read as `resolveId` reads one. Not found is a 404 (`Identifier '{id}' not found`); not an event is a 400, decided from labels, never by loading every relationship.
-  - The answer is `application/sbml+xml;charset=UTF-8`, `attachment; filename="{stId}.sbml"`.
-  - The endpoints are `deep`, with their own share of 2.
-  - They are listed in `deploy/nginx/routes.spec.ts`'s NOT_YET_ROUTED until T017.
-  - Add `parameters.ts` RECORD entries: path kind `oid`, with Java's `includeRef` and `view` ignored.
-- [ ] T013 [US1] Compare the node answers with the references over the whole sample, with the comparison tool (T005). Ask the node service on the beta host, spaced. Every event without a diagram must be byte-identical apart from the timestamp. Every difference found is fixed, or recorded with its reason in `contracts/differences.md`.
-
-### The layout
-
-- [ ] T014 [US1] Write `tools/content-node/diagram-files.ts` and its spec. It reads `diagram/{stId}.json` of the same release, from a location set in `settings.ts` (the release's download base by version, or a mounted folder), and never mixes releases. Add the nodes' `textPosition` to `projects/pathway-browser/src/app/model/diagram.model.ts`.
-- [ ] T015 [US1] Write `tools/content-node/sbml-layout.ts` and its spec: `LayoutConverter` ported literally over the diagram JSON (research R3). It writes a layout only for an event with its own diagram drawing a reaction:
-  - compartment glyphs, with the hidden ones;
-  - species glyphs, one per drawing, with the RNA inset;
-  - reaction glyphs, with the backbone midpoint and the single-input and single-output rules;
-  - species-reference glyphs (`layout_{rid}_{role}_{i}`);
-  - text glyphs;
-  - ids sorted within each list;
-  - the SBO override by render class (with the EntitySet Drug query), and the root's layout attributes.
-
-  Run libSBML on its output in the spec.
-
-- [ ] T016 [US1] Compare the layouts with today's files (T004) over the sample's events that have diagrams: glyph sets, ids, roles, order and targets exactly; coordinates against the recorded offset and the resized nodes. Record each difference in `contracts/differences.md`, and confirm R-HSA-69620's 10 resized nodes and 14 curves are the only coordinate differences there.
-
-### The switch
-
-- [ ] T017 [US1] Route both SBML URLs to node:
-  - **nginx:** in `deploy/nginx/common/routes.conf`, a node location before Java's `exporter/(diagram|document|event)` location, under the render budget; in `deploy/nginx/local.conf`, the same without it.
-  - **dev proxy:** `proxy.conf.js` agrees.
-  - **`routes.spec.ts`:** `.sbml` comes off NOT_YET_ROUTED, `/exporter/event/R-HSA-109581.sbgn` is added to JAVAS, and `sbml` joins the render-budget loop.
-  - **Checks:** run `deploy/nginx/test-config.sh`; add the endpoint's parity-harness entry (`diff.ts`) for status, headers and errors against Java.
-  - **On beta:** before and after the rebuild, ask for a reaction's and R-HSA-69620's SBML through nginx. Expect the contract's headers, a cache hit the second time, and SBGN still from Java.
-
-**Checkpoint**: SBML is node's, from the graph, on beta.
+**Checkpoint**: SBML needs no relational database, for the release or the website.
 
 ---
 
-## Phase 5: User Story 2 — BioPAX from the graph (Priority: P2)
+## Phase 5: User Story 2 — BioPAX Level 3 from the graph, one exporter (Priority: P2)
 
-**Goal**: BioPAX Level 3, per pathway or reaction, built from the graph by the node content service, and both site links delivering it.
+**Goal**: `BioPAX3Exporter` makes the Level 3 species files and the website's BioPAX, with today's content.
 
-**Independent test**:
+**Independent Test**:
 
-- every sample event's canonical triples equal today's file's (T004), apart from recorded differences;
-- the BioPAX validator reports 0 errors;
-- both links deliver it.
+- its species files compare with the release's published `biopax.zip` by meaning;
+- its per-event files compare with the legacy service's;
+- every difference is recorded;
+- every file is valid.
 
-- [ ] T018 [US2] Write `tools/content-node/biopax-model.ts` and its spec (data-model.md's table, research R4):
-  - events: Pathway, BiochemicalReaction, Degradation and TemplateReaction;
-  - Catalysis, Control and PathwayStep;
-  - physical entities typed by reference, with sets typed by their members' common type as today's samples show;
-  - features, entity references, xrefs, BioSource and PublicationXref;
-  - the deterministic order: graph order, then dbId.
-- [ ] T019 [US2] Write `tools/content-node/biopax-rdf.ts` and its spec. It writes RDF/XML with today's header and namespaces, `xml:base` from the release, `rdf:ID="{Class}{n}"`, and `rdf:datatype` on every data property.
-- [ ] T020 [US2] Compare node's BioPAX with the legacy service's files (T004) over the sample, with the comparison tool (T006). Record each difference in `contracts/differences.md`; expected are EC numbers, chapter authors, and every cross-reference and disease written. Re-sample a few more set-heavy events from the local legacy service first: its set typing differs from its source on GitHub.
-- [ ] T021 [US2] Add `/ContentService/exporter/event/{id}.biopax` to `tools/content-node/exporters-endpoints.ts`:
-  - `application/rdf+xml;charset=UTF-8`, `attachment; filename="{stId}.biopax"`, opting out of the download guard (`server.ts` `writeResult`; research R6);
-  - 404 and 400 as for SBML; `deep`; cached per release; a RECORD entry with `java: null` and its reason.
+- [ ] T045 [US2] [ext] In `BioPAX3Exporter`: physical entities with their entity references and cross-references (UniProt, ChEBI and the rest, data-model.md), complex components and cellular locations. Unit tests for each.
+- [ ] T046 [US2] [ext] In `BioPAX3Exporter`: reactions with stoichiometry, catalysis with its controller, and regulation (positive and negative, as data-model.md maps them).
+- [ ] T047 [US2] [ext] In `BioPAX3Exporter`: literature, evidence, provenance and stable-identifier cross-references.
+- [ ] T048 [US2] [ext] In `BioPAX3Exporter`, the modes and the output:
+  - the species mode writes each pathway once and includes the events in no pathway;
+  - `-l` writes the events it was given;
+  - there is a per-reaction export;
+  - species files carry `xml:base="http://www.reactome.org/biopax/{release}/{species dbId}#"` as the published ones do (FR-007), held per model rather than statically;
+  - the validator is 6.0.0, as the baselines are.
+- [ ] T049 [US2] Compare the exporter's species files with the release's published `biopax.zip` (T033), by T031: three species first, then all of them. Then compare its per-event files with the legacy service's over the sample.
+  - Record each difference in `contracts/differences.md`.
+  - Expected differences: order and ids, EC numbers, chapter authors, and the early return (R4).
+  - Anything else goes back to T045–T048.
+- [ ] T050 [US2] Validate the exporter's files over the sample and the three species with the BioPAX validator, against T034's baseline.
+- [ ] T051 [US2] [ext] In `BioPAX3Exporter`'s CI: the validator over its output for a small fixture graph, failing on any error in the reports.
+- [ ] T052 [US2] Serve the website's BioPAX through spec 010's library service, once it serves the operation and T049 and T050 have passed:
+  - node answers `/ContentService/exporter/event/{id}.biopax` as R6 decided (`application/rdf+xml`, named by stable id, 404 and 400 in the envelope, 503 when the service cannot answer);
+  - it caches per release;
+  - it is routed in nginx and the dev proxy alike.
+- [ ] T053 [US2] Replace #634's Tomcat location for the legacy path with node's 301, resolving the dbId and redirecting to the stable-id URL (`/ContentService/exporter/event/{stId}.biopax`):
+  - in `deploy/nginx/dev.conf`, `routes-core.conf` and the dev proxy, with `routes.spec.ts` and `serve-prod.spec.ts` following;
+  - rebuild beta's nginx and check both link forms.
+- [ ] T054 [US2] Point the site's two BioPAX links (the download tab and the detail download bar) at `/ContentService/exporter/event/{stId}.biopax`:
+  - delete `RESTFUL_API`;
+  - update the e2e tests, `RELEASE-TESTING.md` and `CURATOR-REPORT.md`.
 
-  Route it in `routes.conf`, `local.conf` and `proxy.conf.js`, and cover it in `routes.spec.ts`.
+  A site rebuild on beta needs the user's OK.
 
-- [ ] T022 [US2] Replace beta's Tomcat location for the legacy path (`deploy/nginx/dev.conf`, #634) with node's 301 to `/ContentService/exporter/event/{dbId}.biopax`. It is a node endpoint, routed in `routes-core.conf` and the dev proxy's anchored key, and `routes.spec.ts` and `serve-prod.spec.ts` follow. Rebuild beta's nginx and check both link forms.
-- [ ] T023 [US2] Point the site's two links at `/ContentService/exporter/event/{stId}.biopax`:
-  - `projects/pathway-browser/src/app/details/tabs/download-tab/download-tab.component.ts`;
-  - `projects/website-angular/src/app/content/detail/detail-download-bar/detail-download-bar.component.ts`.
-
-  Delete `RESTFUL_API` from `projects/pathway-browser/src/environments/environment.ts`. The beta site rebuild needs the user's OK.
-
-**Checkpoint**: BioPAX is node's, from the graph, and the relational database is needed by no export the site offers (SC-001).
+**Checkpoint**: BioPAX Level 3 needs no relational database for the website, and the exporter is proven for the release.
 
 ---
 
-## Phase 6: Polish and cross-cutting
+## Phase 6: User Story 4 — The release, without the relational database for these formats (Priority: P3)
 
-- [ ] T024 Add the `exports` job to `.github/workflows/tests.yml` (research R5, contracts/checks.md), running alongside `unit`:
-  1. Build the sample exports from the fixtures (T007).
-  2. `pip install python-libsbml==5.21.2`, and run the check script. It fails on errors and fatals, not on warnings.
-  3. Run the BioPAX validator 6.0.0: restored from `actions/cache` by version and sha1, or fetched from Maven Central with its sha1 checked, on JDK 17, once over the directory. Fail on any `ERROR` in its XML reports, since its exit code is always 0.
+- [ ] T055 [US4] [ext] With the release's maintainers: the Level 3 step moves from `release-download-directory`'s Pathway-Exchange converter to `BioPAX3Exporter`, keeping `biopax.zip`'s name and layout, after a full dry run compared as in T049.
+- [x] T056 [US4] Level 2: decided with the user on 24 Oct 2026. `biopax2.zip` is no longer produced, and the decision is recorded in spec.md's edge cases. With the release's maintainers, the Level 2 step is turned off when the Level 3 step moves (T055). — #646
+- [ ] T057 [US4] [ext] With the release's maintainers: `sbml-exporter`'s release run moves to the graph-only command line (T040), after T041.
+- [ ] T058 [US4] Record in research.md R9 what is left for whoever retires `release-download-directory`:
+  - its other relational steps, and those `data-export` already makes from the graph;
+  - what in `sbml-exporter` (its relational half) and the legacy service can go once nothing calls them.
 
-  Show each step failing on a wrong file. Add it with the first export's fixtures, and extend it for the second.
+---
 
-- [ ] T025 [P] Close #631 and #632, and update `specs/006-content-service-to-node/tasks.md` Phase 9 and `specs/010-java-services` for the two exports, which are no longer Java's.
-- [ ] T026 [P] Check the success criteria and record the result here:
-  - SC-002: the sample is identical;
-  - SC-004: the validators report 0 errors;
-  - SC-005: both links deliver BioPAX;
-  - SC-006: a repeat answer is as fast as today's, and a first export of Signal Transduction completes within the deep limits.
+## Phase 7: Polish and cross-cutting
+
+- [ ] T059 [P] Close #631 and #632. Update `specs/006-content-service-to-node/tasks.md` Phase 9 and `specs/010-java-services` for the two exports, which are no longer the Java ContentService's.
+- [ ] T060 [P] Check the success criteria and record the result here.
 
 ---
 
 ## Dependencies and execution order
 
-- **Phase 1 then Phase 2** block both stories. T001 comes first. T003 and T004 depend on T001 and T002.
-- **US3** is done (#634).
-- **US1:** T010 → T011 → T012 → T013, then T014 → T015 → T016, then T017.
-- **US2** (T018–T023) can start once Phase 2 is done, in parallel with US1's layout. T021 needs T012's endpoint shape. T022 needs T021, and T023 needs T022.
-- **T024** starts with the first fixtures and grows. T025 and T026 come last.
+- **Phase 2** blocks the stories.
+  - T028 comes before any **[ext]** task in an exporter, and T029 before any that depends on graph-core.
+  - T030 and T031 come before any comparison.
+  - T032 and T033 come before the comparisons that use them.
+- **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T044 needs T037 and T039 and spec 010's service.
+- **BioPAX (US2):** T035 sets the baseline. T045–T048 can go in any order the maintainers prefer. T049 and T050 need them all. T052 needs T049, T050 and spec 010's service; T053 and T054 follow T052.
+- **US4:** T055 after T049. T057 after T041.
+- **The libraries:** T061 comes before the website's switches (T044, T052).
 
 ## Parallel opportunities
 
-- T005 and T006, the two comparison tools.
-- After T012: the layout (T014–T016) and BioPAX's model (T018–T019).
-- T025 and T026.
+- T030 and T031; T032 and T033.
+- The SBML work (Phase 4) and the BioPAX content work (T045–T048), once the issues are agreed.
 
 ## Implementation strategy
 
-**MVP: User Story 1's model.** T010–T013 give byte-identical SBML for every event without a layout, behind NOT_YET_ROUTED. Then the layout, then the switch. BioPAX follows; US3 already keeps its links working meanwhile.
+1. **The issues first.** Nothing in either exporter changes before its maintainers agree.
+2. **SBML first.** It has an exact reference and an existing graph-only converter.
+3. **BioPAX second.** It has the larger gap, measured by T035's baseline before any building starts. Its main proof is the release's own `biopax.zip`.
+4. **Every switch after its proof:** the website's and the release's alike (FR-009).

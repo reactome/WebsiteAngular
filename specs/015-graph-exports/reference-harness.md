@@ -38,13 +38,13 @@ In `org/reactome/server/tools/sbml/data/result/ReactionBaseResult.java` (`build`
 
 ## The private graph (research R8, T002)
 
-Copy beta's release volume read-only into a new volume, then start the same local image on another loopback port. Leave out the compose wrapper, so authentication stays off as the image is built; leave beta's credentials out too; and use smaller memory settings:
+Copy beta's release volume read-only into a new volume, then start the same local image bound to loopback only, without the compose wrapper or beta's settings, and with smaller memory settings:
 
 ```sh
 docker volume create graphdb-ref97
 docker run --rm --entrypoint sh \
   -v <beta's release volume>:/from:ro -v graphdb-ref97:/to <release image> -c 'cp -a /from/. /to/'
-docker run -d --name graphdb-ref97 -p 127.0.0.1:7697:7687 -v graphdb-ref97:/var/lib/neo4j/data \
+docker run -d --name graphdb-ref97 -p 127.0.0.1:<port>:7687 -v graphdb-ref97:/var/lib/neo4j/data \
   -e NEO4J_dbms_default__database=graph.db \
   -e NEO4J_dbms_memory_heap_max__size=1g -e NEO4J_dbms_memory_pagecache_size=1500m \
   <release image> neo4j
@@ -56,7 +56,7 @@ On 23 Oct 2026 the copy started cleanly, with no recovery, and reported release 
 
 ```sh
 java -Duser.timezone=UTC -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8 -Xmx4g \
-  -cp "classes:<the jars above>" Harness bolt://127.0.0.1:7697 graph.db <outdir> <ids...>
+  -cp "classes:<the jars above>" Harness bolt://127.0.0.1:<port> graph.db <outdir> <ids...>
 ```
 
 ## The sample's references (23 Oct 2026)
