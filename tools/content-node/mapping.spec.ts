@@ -5,12 +5,17 @@
 // -- with a stand-in graph. MappingController over graph-core's
 // MappingService and MappingRepository, whose queries are kept as written.
 // The events here are invented; Java's answers were measured 17 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const asked = [];
-let rows = [];
+/** A query's parameters; the species' taxId is the one these read by name. */
+type Params = { taxId?: string; value?: string; [name: string]: unknown };
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
+let rows: unknown[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     // speciesTaxId's lookups: 9606 and Homo sapiens are a species, nothing else.
     if (/^MATCH \(s:Species/.test(cypher))
@@ -25,21 +30,29 @@ vi.mock('./graph.ts', () => ({
 const { app } = await import('./server.ts');
 const { reactionLikeEventJson } = await import('./mapping-species-endpoints.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/data/mapping/${path}`);
+const get = (path: string) => fetch(`${base}/ContentService/data/mapping/${path}`);
 const mapped = () => asked.filter(([cypher]) => !/^MATCH \(s:Species/.test(cypher));
-const last = () => mapped()[mapped().length - 1];
-const oneLine = (cypher) => cypher.replace(/\s+/g, ' ').trim();
-const messages = async (response) => [response.status, (await response.json()).messages];
+/** The last query asked but the species lookups; none at all is a failure. */
+const last = () => {
+  const query = mapped().at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const oneLine = (cypher: string) => cypher.replace(/\s+/g, ' ').trim();
+const messages = async (response: Response) => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
 
 const MAPPED =
   'MATCH (n)-[:referenceDatabase]->(rd:ReferenceDatabase) WHERE toLower(rd.displayName) = toLower($databaseName) AND (n.identifier = $identifier OR n.variantIdentifier = $identifier OR $identifier IN n.geneName OR $identifier IN n.name) WITH DISTINCT n MATCH (pe:PhysicalEntity)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n) WITH DISTINCT pe ';
@@ -95,7 +108,8 @@ describe('/data/mapping/{resource}/{identifier}/reactions', () => {
     rows = [{ rle: { dbId: 2, stId: 'R-HSA-2', schemaClass: 'Reaction' } }];
     asked.length = 0;
     const response = await get('UniProt/P04637/reactions');
-    expect((await response.json()).map((r) => [r.dbId, r.className])).toEqual([[2, 'Reaction']]);
+    const reactions = (await response.json()) as { dbId: number; className: string }[];
+    expect(reactions.map((r) => [r.dbId, r.className])).toEqual([[2, 'Reaction']]);
     expect(oneLine(last()[0])).toBe(
       `${MAPPED}MATCH (rle:ReactionLikeEvent)-${UNDER} RETURN DISTINCT rle ORDER BY rle.stId`
     );
@@ -139,7 +153,7 @@ describe('/data/mapping/{resource}/{identifier}/pathways', () => {
     rows = [{ p: { dbId: 3, stId: 'R-HSA-3', schemaClass: 'Pathway' } }];
     asked.length = 0;
     const response = await get('uniprot/P04637/pathways?species=9606');
-    expect((await response.json()).map((p) => p.dbId)).toEqual([3]);
+    expect(((await response.json()) as { dbId: number }[]).map((p) => p.dbId)).toEqual([3]);
     expect(oneLine(last()[0])).toBe(
       `${MAPPED}MATCH (rle:ReactionLikeEvent)-${UNDER} WITH DISTINCT rle MATCH (:Species{taxId:$taxId})<-[:species]-(p:Pathway)-[:hasEvent]->(rle) RETURN DISTINCT p ORDER BY p.stId`
     );

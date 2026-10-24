@@ -5,12 +5,15 @@
 // a stand-in graph. PhysicalEntityController over graph-core's
 // ComponentOfLinkageRepository, whose query is kept as written; rows come in
 // the order Neo4j gives them, unsorted, as in Java. The rows here are invented.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const asked = [];
-let rows = [];
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, unknown][] = [];
+let rows: unknown[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: unknown) => {
     asked.push([cypher, params]);
     return rows;
   },
@@ -21,19 +24,24 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (id) => fetch(`${base}/ContentService/data/entity/${id}/componentOf`);
-const last = () => asked[asked.length - 1];
-const oneLine = (cypher) => cypher.replace(/\s+/g, ' ').trim();
+const get = (id: string) => fetch(`${base}/ContentService/data/entity/${id}/componentOf`);
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const oneLine = (cypher: string) => cypher.replace(/\s+/g, ' ').trim();
 
 describe('/data/entity/{id}/componentOf', () => {
   it("runs graph-core's query as written and writes each group as Java does", async () => {
@@ -99,14 +107,14 @@ describe('/data/entity/{id}/componentOf', () => {
     rows = [];
     for (const id of ['xyz', 'R-HSA-162582']) {
       const response = await get(id);
-      const body = await response.json();
+      const body = (await response.json()) as unknown;
       expect([id, response.status, body]).toEqual([
         id,
         404,
         {
           code: 404,
           reason: 'NOT_FOUND',
-          url: expect.stringMatching(/\/componentOf$/),
+          url: expect.stringMatching(/\/componentOf$/) as unknown,
           messages: [`Id: ${id} has not been found in the System`],
           targets: null,
         },

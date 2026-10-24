@@ -16,10 +16,10 @@ afterEach(() => {
   for (const repo of repos.splice(0)) rmSync(repo, { recursive: true, force: true });
 });
 
-/** The script's exit code and output: `base` committed, `head` in the tree. */
 /** File name to its text. */
 type Files = Record<string, string>;
 
+/** The script's exit code and output: `base` committed, `head` in the tree. */
 function check(base: Files, head: Files) {
   const repo = mkdtempSync(path.join(tmpdir(), 'move-'));
   repos.push(repo);
