@@ -13,22 +13,26 @@ const SCRIPT = fileURLToPath(new URL('../scripts/check-baseline-totals.mjs', imp
 const LINT = { rules: { 'no-unused-vars': 3 } };
 const DEAD = { total: 5 };
 
-const repos = [];
+const repos: string[] = [];
 afterEach(() => {
   for (const repo of repos.splice(0)) rmSync(repo, { recursive: true, force: true });
 });
 
-function write(repo, { loose, implicitAny }) {
+/** A baseline: module name to count. */
+type Baseline = Record<string, number>;
+type Baselines = { loose: Baseline; implicitAny: Baseline };
+
+function write(repo: string, { loose, implicitAny }: Baselines) {
   writeFileSync(path.join(repo, 'tools/loose-baseline.json'), JSON.stringify(loose));
   writeFileSync(path.join(repo, 'tools/implicit-any-baseline.json'), JSON.stringify(implicitAny));
 }
 
 /** The script's exit code and output: `base` committed, `head` in the tree. */
-function check(base, head) {
+function check(base: Baselines, head: Baselines) {
   const repo = mkdtempSync(path.join(tmpdir(), 'totals-'));
   repos.push(repo);
   mkdirSync(path.join(repo, 'tools'));
-  const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
   git('init', '-q');
   write(repo, base);
   writeFileSync(path.join(repo, 'lint-baseline.json'), JSON.stringify(LINT));

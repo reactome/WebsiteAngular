@@ -34,7 +34,7 @@
     "noImplicitAny": true
     // verbatimModuleSyntax and erasableSyntaxOnly are not set: the services
     // import the site's model types, which a whole-program option would hold
-    // to them too. Lint enforces both for tools/, and tools/load.spec.mjs loads
+    // to them too. Lint enforces both for tools/, and tools/load.spec.ts loads
     // every entry point under Node, which fails on what they would catch.
   },
   "include": ["**/*.ts", "**/*.mjs"],

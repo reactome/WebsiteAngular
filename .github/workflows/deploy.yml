@@ -29,7 +29,7 @@ jobs:
     # Nor may a pull request's: Tests runs on those too, forks included, and
     # the branch filter above matches the head branch -- a fork's branch named
     # main or prod would deploy its own commit with this job's AWS role. Only a
-    # push to this repository deploys (tools/workflows.spec.mjs).
+    # push to this repository deploys (tools/workflows.spec.ts).
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' &&
@@ -51,7 +51,7 @@ jobs:
 
       - name: Determine version
         id: version
-        # Through env, never pasted into the script (tools/workflows.spec.mjs).
+        # Through env, never pasted into the script (tools/workflows.spec.ts).
         # The branch that was tested: under workflow_run, github.ref_name is the
         # default branch whichever branch Tests ran on, so a prod deploy was
         # versioned as the next release.

@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { compare, countLoose, countWarnings, looseIncreases } from '../../scripts/check-lint.mjs';
 
 // The shape of ESLint's JSON report, as much of it as the check reads.
-const report = (...rules) => [
+/** A rule and its severity: 1 a warning, 2 an error. */
+type Rule = [ruleId: string, severity?: number];
+
+const report = (...rules: Rule[]) => [
   { filePath: 'a.ts', messages: rules.map(([ruleId, severity = 1]) => ({ ruleId, severity })) },
 ];
 
@@ -40,7 +43,7 @@ describe('the lint ratchet', () => {
 // The services' `any` and what it lets through are counted per module apart
 // (spec 013): converting a service adds thousands at once.
 describe('the services\u2019 loose values', () => {
-  const file = (filePath, ...rules) => ({
+  const file = (filePath: string, ...rules: string[]) => ({
     filePath,
     messages: rules.map((ruleId) => ({ ruleId, severity: 1 })),
   });
