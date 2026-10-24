@@ -5,17 +5,16 @@ import cytoscape, { type Core, type ElementsDefinition } from 'cytoscape';
 import { Style } from 'ngx-reactome-cytoscape-style';
 
 // Left on the page for a person poking at it in the console, and for
-// harness.check.ts, which reads `lastSvg`.
-declare global {
-  interface Window {
-    cytoscape: typeof cytoscape;
-    cy: Core;
-    reactomeStyle: Style;
-    lastSvg?: string;
-  }
-}
+// harness.check.ts, which reads `lastSvg`. Not declared on Window globally:
+// that would claim them for every page tools/ type-checks.
+const page = window as Window & {
+  cytoscape?: typeof cytoscape;
+  cy?: Core;
+  reactomeStyle?: Style;
+  lastSvg?: string;
+};
 
-window.cytoscape = cytoscape;
+page.cytoscape = cytoscape;
 
 /** An element the page is built with; missing means index.html changed under it. */
 function byId<T extends HTMLElement>(id: string): T {
@@ -53,8 +52,8 @@ async function run() {
   reactomeStyle.bindToCytoscape(cy);
   reactomeStyle.clearCache();
 
-  window.cy = cy;
-  window.reactomeStyle = reactomeStyle;
+  page.cy = cy;
+  page.reactomeStyle = reactomeStyle;
 
   // Reactome's image-builder is async (it generates dataURI backgrounds via a
   // virtual canvas). Wait for the images to settle before exporting so the
@@ -74,7 +73,7 @@ async function run() {
   try {
     const svg = cy.svg({ full: true, scale: 1, bg: '#ffffff' });
     byId('out-svg').innerHTML = svg;
-    window.lastSvg = svg;
+    page.lastSvg = svg;
   } catch (e) {
     errors.push('svg: ' + messageOf(e));
   }

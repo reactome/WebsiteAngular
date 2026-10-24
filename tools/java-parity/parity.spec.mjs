@@ -6,7 +6,7 @@
 import { createServer } from 'node:http';
 import { setInterval, clearInterval } from 'node:timers';
 import { spawnSync } from 'node:child_process';
-import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gzipSync } from 'node:zlib';
@@ -276,7 +276,11 @@ describe('the parity harness', () => {
       const requests = join(dir, 'requests.json');
       writeFileSync(requests, JSON.stringify([{ path: '/x' }]));
       const cli = join(import.meta.dirname, 'parity.ts');
+      const both = ['--reference', 'http://127.0.0.1:1', '--candidate', 'http://127.0.0.1:1'];
       for (const args of [
+        // Names Object gives every object: `toString` once blanked every body.
+        [...both, '--requests', requests, '--normalise', 'toString'],
+        [...both, '--requests', requests, '--normalise', 'constructor'],
         ['--reference', 'ftp://x', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
         ['--reference', 'not a url', '--candidate', 'http://127.0.0.1:1', '--requests', requests],
         [
@@ -293,6 +297,19 @@ describe('the parity harness', () => {
           args.join(' '),
           3,
         ]);
+    } finally {
+      rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('runs when started through a link of any name', () => {
+    // Matched by its file name, a link called anything else ran nothing, said
+    // nothing and exited 0.
+    const dir = mkdtempSync(join(tmpdir(), 'parity-'));
+    try {
+      const link = join(dir, 'p.ts');
+      symlinkSync(join(import.meta.dirname, 'parity.ts'), link);
+      expect(spawnSync(process.execPath, [link]).status).toBe(3);
     } finally {
       rmSync(dir, { recursive: true });
     }

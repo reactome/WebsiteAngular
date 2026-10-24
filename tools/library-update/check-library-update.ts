@@ -30,7 +30,11 @@ export function compare(before: Packages, after: Packages, libraries = LIBRARIES
 if (isEntry(import.meta.url)) {
   const packages = (text: string) => (JSON.parse(text) as { packages: Packages }).packages;
   const before = packages(
-    execFileSync('git', ['show', 'HEAD:package-lock.json'], { encoding: 'utf8' })
+    execFileSync('git', ['show', 'HEAD:package-lock.json'], {
+      encoding: 'utf8',
+      // The lockfile is most of the 1 MiB default already.
+      maxBuffer: 64 * 1024 * 1024,
+    })
   );
   const after = packages(readFileSync('package-lock.json', 'utf8'));
   const { updated, stray } = compare(before, after);

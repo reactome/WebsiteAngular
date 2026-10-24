@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const OUT_DIR = path.resolve('test-results/reactome-pathway');
+// The repository's ignored results, wherever the run was started from.
+const OUT_DIR = path.join(import.meta.dirname, '../../test-results/reactome-pathway');
 
 test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   fs.mkdirSync(OUT_DIR, { recursive: true });

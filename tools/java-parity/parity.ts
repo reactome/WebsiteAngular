@@ -28,6 +28,7 @@ import { readFileSync } from 'node:fs';
 import { request as httpRequest } from 'node:http';
 import { request as httpsRequest } from 'node:https';
 import { brotliDecompressSync, gunzipSync, inflateSync } from 'node:zlib';
+import { isEntry } from '../../scripts/is-entry.mjs';
 import { normalisers, type Normaliser } from './normalisers.ts';
 
 /** One request to send to both sides. */
@@ -297,8 +298,9 @@ export function verdict({ counts }: Report): 0 | 1 | 2 {
   return counts.different ? 1 : 0;
 }
 
-// Started directly rather than imported by a test.
-if (process.argv[1]?.endsWith('parity.ts')) {
+// Started directly rather than imported by a test. By its real path: matched
+// by name, a link called anything else ran nothing and exited 0.
+if (isEntry(import.meta.url)) {
   const args = process.argv.slice(2);
   const option = (name: string) => {
     const at = args.indexOf(`--${name}`);
@@ -306,6 +308,8 @@ if (process.argv[1]?.endsWith('parity.ts')) {
   };
   const flag = (name: string) => args.includes(`--${name}`);
   const named = option('normalise') ?? 'identity';
+  // Own names only: `toString` and the rest inherited from Object were taken as
+  // normalisers, and `toString` made every body compare equal.
   const normalise = Object.hasOwn(normalisers, named)
     ? normalisers[named as keyof typeof normalisers]
     : undefined;
