@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { summarise } from '../../scripts/check-flaky.mjs';
 
 // The shape of Playwright's JSON report, as much of it as the check reads.
-const report = (...tests) => ({
+/** Title, status, and the skip's reason if it gave one. */
+type Test = [title: string, status: string, reason?: string];
+
+const report = (...tests: Test[]) => ({
   suites: [
     {
       file: 'downloads.spec.ts',
@@ -35,7 +38,7 @@ describe('skipped tests', () => {
 
   it('says so when a skip gives no reason', () => {
     const result = summarise(report(['a PNG tier', 'skipped', '']), expected);
-    expect(result.unexpected[0].reason).toBe('(no reason given)');
+    expect(result.unexpected[0]?.reason).toBe('(no reason given)');
   });
 
   it('still counts flaky tests, and ignores ones that passed', () => {
@@ -49,7 +52,7 @@ describe('tests a failure stopped', () => {
   it('are not refused as skips when an earlier test in the file failed', () => {
     const result = summarise(report(['first', 'unexpected'], ['second', 'skipped', '']), {});
     expect(result.unexpected).toEqual([]);
-    expect(result.skipped[0].reason).toBe('not run: an earlier test in its file failed');
+    expect(result.skipped[0]?.reason).toBe('not run: an earlier test in its file failed');
   });
 
   it('still refuse an unexplained skip in a file where nothing failed', () => {

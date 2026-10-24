@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fullyStubbed, harKey, stripStubbed, stubsFile } from '../../e2e/support/har-stubs.mjs';
 
-const entry = (url, status = 200, method = 'GET') => ({
+const entry = (url: string, status = 200, method = 'GET') => ({
   request: { method, url },
   response: { status },
 });

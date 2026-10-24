@@ -21,7 +21,7 @@ export const BACKEND =
  */
 
 /** Whether the recording kept a body for this response, inline or beside it. */
-export function hasBody(/** @type {HarEntry} */ entry) {
+export function hasBody(/** @type {Pick<HarEntry, 'response'>} */ entry) {
   const c = entry.response.content ?? {};
   return Boolean(c._file) || (c.text !== undefined && c.text !== '');
 }
@@ -38,7 +38,7 @@ export function hasBody(/** @type {HarEntry} */ entry) {
  * length, so a cut-off one otherwise looked like an answer that really was
  * empty. An explicit Content-Length of 0, and 204, are empty on purpose.
  */
-export function isTruncated(/** @type {HarEntry} */ entry) {
+export function isTruncated(/** @type {Pick<HarEntry, 'response'>} */ entry) {
   const { status } = entry.response;
   if (status < 200 || status >= 300 || status === 204 || hasBody(entry)) return false;
   const headers = entry.response.headers ?? [];

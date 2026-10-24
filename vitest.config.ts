@@ -27,7 +27,7 @@ export default defineConfig({
     // No graph credentials for any spec. graph.ts reads them from a file when
     // the environment has none, so on a machine that has that file the specs
     // would query a real graph -- and the specs for an unreachable graph would
-    // never run that path (tools/content-node/hermetic.spec.mjs).
+    // never run that path (tools/content-node/hermetic.spec.ts).
     env: {
       CONTENT_NODE_ENV_FILE: '/nonexistent/content-node.env',
       NEO4J_USER: '',

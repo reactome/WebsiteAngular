@@ -8,7 +8,7 @@
 // that fails the test on any request leaving this machine.
 import { spawn } from 'node:child_process';
 import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
-import { createServer } from 'node:net';
+import { createServer, type AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, expect, it } from 'vitest';
@@ -36,16 +36,16 @@ globalThis.fetch = (input, init) => {
 );
 
 /** The first line the service prints within the time, or what it said on stopping. */
-function start(file, env) {
+function start(file: string, env: Record<string, string>): Promise<string> {
   const link = path.join(dir, `renamed-${path.basename(path.dirname(file))}.mjs`);
   symlinkSync(path.join(ROOT, file), link);
   const child = spawn(process.execPath, ['--import', SPY, link], {
     env: { ...process.env, ...env },
   });
-  return new Promise((resolve) => {
+  return new Promise<string>((resolve) => {
     let out = '';
     let waiting = false;
-    const done = (said) => {
+    const done = (said: string) => {
       clearTimeout(timer);
       child.kill();
       resolve(said);
@@ -69,9 +69,10 @@ function start(file, env) {
  * their defaults, which are the ports the running services use.
  */
 const freePort = () =>
-  new Promise((resolve) => {
+  new Promise<string>((resolve) => {
     const probe = createServer().listen(0, '127.0.0.1', () => {
-      const { port } = probe.address();
+      // Listening on a host and port, so an address and not a pipe's name.
+      const { port } = probe.address() as AddressInfo;
       probe.close(() => resolve(String(port)));
     });
   });

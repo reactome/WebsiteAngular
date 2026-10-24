@@ -64,7 +64,7 @@ jobs:
       # want of it. That is exactly the confusion the suite was split in two to
       # end, so it stops here instead.
       - name: Refuse to run against nothing
-        # Through env, never pasted into the script (tools/workflows.spec.mjs).
+        # Through env, never pasted into the script (tools/workflows.spec.ts).
         env:
           BASE_URL: ${{ inputs.base_url }}
         run: |

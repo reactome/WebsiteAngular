@@ -11,21 +11,24 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 const SCRIPT = fileURLToPath(new URL('../scripts/check-move.mjs', import.meta.url));
 
-const repos = [];
+const repos: string[] = [];
 afterEach(() => {
   for (const repo of repos.splice(0)) rmSync(repo, { recursive: true, force: true });
 });
 
 /** The script's exit code and output: `base` committed, `head` in the tree. */
-function check(base, head) {
+/** File name to its text. */
+type Files = Record<string, string>;
+
+function check(base: Files, head: Files) {
   const repo = mkdtempSync(path.join(tmpdir(), 'move-'));
   repos.push(repo);
   const dir = path.join(repo, 'tools/content-node');
   mkdirSync(dir, { recursive: true });
-  const put = (files) => {
+  const put = (files: Files) => {
     for (const [name, text] of Object.entries(files)) writeFileSync(path.join(dir, name), text);
   };
-  const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: repo, stdio: 'pipe' });
   git('init', '-q');
   put(base);
   git('add', '.');
@@ -65,7 +68,7 @@ export function serve() {
 };
 
 // The split: each family its own module, a registry, and the server.
-const split = (registry) => ({
+const split = (registry: string) => ({
   'a-endpoints.ts': `export const aEndpoints = [{ path: '/a', handler: () => 1 }];\n`,
   'b-endpoints.ts': `export const bEndpoints = [{ path: '/b', handler: () => 2 }];\n`,
   'registry.ts': registry,
@@ -143,7 +146,7 @@ export const endpoints = [...bEndpoints, ...aEndpoints];
 
 describe('check-move, a list from outside the service', () => {
   it('knows it by where it comes from, not by its name', () => {
-    const service = (from) => ({
+    const service = (from: string) => ({
       'service.ts': `import { xEndpoints } from '${from}';
 const endpoints = [...xEndpoints];
 export function serve() {
@@ -151,7 +154,7 @@ export function serve() {
 }
 `,
     });
-    const moved = (from) => ({
+    const moved = (from: string) => ({
       'registry.ts': `import { xEndpoints } from '${from}';
 export const endpoints = [...xEndpoints];
 `,

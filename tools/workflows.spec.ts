@@ -17,21 +17,22 @@ const workflows = readdirSync(DIR).filter((name) => /\.ya?ml$/.test(name));
 // names, event payloads, dispatch inputs. Matched inside each `${{ … }}`
 // whole -- an expression may contain braces itself, format('{0}', …).
 const UNTRUSTED = /github\.(head_ref|ref_name|base_ref|event\.)|\binputs\./;
-const pastes = (line) =>
-  [...line.matchAll(/\$\{\{([\s\S]*?)\}\}/g)].some(([, inner]) => UNTRUSTED.test(inner));
+const pastes = (line: string) =>
+  [...line.matchAll(/\$\{\{([\s\S]*?)\}\}/g)].some(([, inner = '']) => UNTRUSTED.test(inner));
 
 /** The lines of every `run:` script, with their line numbers. */
-function scriptLines(text) {
+function scriptLines(text: string): [number, string][] {
   const lines = text.split('\n');
-  const found = [];
+  const found: [number, string][] = [];
   for (let at = 0; at < lines.length; at += 1) {
     // `run:` scripts, and actions/github-script's `script:`, which is code too.
-    const run = /^(\s*)(- )?(run|script):\s*(.*)$/.exec(lines[at]);
+    const run = /^(\s*)(- )?(run|script):\s*(.*)$/.exec(lines[at] ?? '');
     if (!run) continue;
-    const indent = run[1].length + (run[2] ? 2 : 0);
-    if (run[4] && !/^[|>]/.test(run[4])) found.push([at + 1, run[4]]);
+    const [, leading = '', dash, , inline] = run;
+    const indent = leading.length + (dash ? 2 : 0);
+    if (inline && !/^[|>]/.test(inline)) found.push([at + 1, inline]);
     for (let next = at + 1; next < lines.length; next += 1) {
-      const line = lines[next];
+      const line = lines[next] ?? '';
       if (line.trim() && line.search(/\S/) <= indent) break;
       found.push([next + 1, line]);
     }

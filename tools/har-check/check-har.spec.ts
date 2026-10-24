@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { problems } from '../../scripts/check-har.mjs';
-import { isTruncated } from '../../e2e/support/har-entry.mjs';
+import { isTruncated, type HarEntry } from '../../e2e/support/har-entry.mjs';
 
-const at = (path, response, method = 'GET') => ({
+const at = (path: string, response: HarEntry['response'], method = 'GET'): HarEntry => ({
   request: { method, url: `http://localhost:4330${path}` },
   response,
 });
-const ok = (text) => ({ status: 200, headers: [], content: { text } });
+const ok = (text: string) => ({ status: 200, headers: [], content: { text } });
 const truncated = { status: 200, headers: [{ name: 'Content-Length', value: '812' }], content: {} };
 const cutOff = { status: -1, headers: [], content: {} };
-const har = (...entries) => ({ log: { entries } });
+const har = (...entries: HarEntry[]) => ({ log: { entries } });
 
 describe('a recorded answer cut off after its headers', () => {
   it('is refused when it is the only copy', () => {

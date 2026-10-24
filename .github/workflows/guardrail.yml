@@ -25,7 +25,7 @@ jobs:
       - name: Validate CMS branch changes
         # Through env, never pasted into the script: a branch is named by
         # whoever opens the pull request, and `x$(curl …|sh)` ran as code
-        # (tools/workflows.spec.mjs).
+        # (tools/workflows.spec.ts).
         env:
           BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
           BASE_REF: ${{ github.base_ref || 'main' }}

@@ -59,7 +59,7 @@ const NOWHERE = {
 };
 
 /** What Node says loading `modules`, one child process for all, or '' when all load. */
-function loadUnderNode(files) {
+function loadUnderNode(files: string[]): string[] {
   const script = `
     const failed = [];
     for (const file of ${JSON.stringify(files)}) {
@@ -74,7 +74,9 @@ function loadUnderNode(files) {
     timeout: 60_000,
   });
   const last = run.stdout.trim().split('\n').at(-1) ?? '';
-  return last.startsWith('[') ? JSON.parse(last) : [`no answer: ${run.stderr.slice(0, 500)}`];
+  return last.startsWith('[')
+    ? (JSON.parse(last) as string[])
+    : [`no answer: ${run.stderr.slice(0, 500)}`];
 }
 
 it('loads every service module under Node', () => {
@@ -90,14 +92,15 @@ it('loads every service module under Node', () => {
  * refuses; the rest parsed; and every name it imports, unless marked `type`,
  * looked for among the exports of the module it names, which is loaded.
  */
-function scriptProblems(file) {
+function scriptProblems(file: string): string[] {
   const source = readFileSync(file, 'utf8');
   let code = source;
   if (file.endsWith('.ts'))
     try {
       code = stripTypeScriptTypes(source);
     } catch (error) {
-      return [`${file}: ${error.message.split('\n')[0]}`];
+      const message = error instanceof Error ? error.message : String(error);
+      return [`${file}: ${message.split('\n')[0]}`];
     }
   const scratch = mkdtempSync(path.join(tmpdir(), 'script-'));
   try {
@@ -110,7 +113,12 @@ function scriptProblems(file) {
   }
   const wanted = [];
   for (const statement of ts.createSourceFile(file, source, ts.ScriptTarget.Latest).statements) {
-    if (!ts.isImportDeclaration(statement) || statement.importClause?.isTypeOnly) continue;
+    if (
+      !ts.isImportDeclaration(statement) ||
+      statement.importClause?.phaseModifier === ts.SyntaxKind.TypeKeyword
+    )
+      continue;
+    if (!ts.isStringLiteral(statement.moduleSpecifier)) continue;
     const from = statement.moduleSpecifier.text;
     // This repository's modules; packages are not this check's to doubt.
     if (!from.startsWith('.') && !path.isAbsolute(from)) continue;
@@ -137,7 +145,7 @@ function scriptProblems(file) {
   });
   const last = run.stdout.trim().split('\n').at(-1) ?? '';
   return last.startsWith('[')
-    ? JSON.parse(last).map((m) => `${file}: ${m}`)
+    ? (JSON.parse(last) as string[]).map((m) => `${file}: ${m}`)
     : [`${file}: ${run.stderr.split('\n').find(Boolean)}`];
 }
 
@@ -151,7 +159,7 @@ it('refuses a script with what Node cannot strip, or a type imported as a value'
   const dir = mkdtempSync(path.join(tmpdir(), 'scripts-'));
   try {
     const thing = path.join(ROOT, 'tools/api-types/fixtures/thing.model.ts');
-    const write = (name, text) => {
+    const write = (name: string, text: string) => {
       writeFileSync(path.join(dir, name), text);
       return path.join(dir, name);
     };
