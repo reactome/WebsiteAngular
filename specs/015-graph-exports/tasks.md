@@ -96,7 +96,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   It takes a species file as well as an event's. Show it failing on a changed stoichiometry and a removed xref.
 
 - [ ] T032 The private graph copy (R8), for the release being compared, recreated whenever a comparison needs it and removed afterwards. If beta's graph has moved to a newer release by then, regenerate today's per-event answers (T004) for that release, and compare with that release's download directory.
-- [ ] T033 (`biopax.zip` done for release 97, recorded in `today.md`; the SBML archives when T041 needs them.) Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
+- [ ] T033 (`biopax.zip` and `homo_sapiens.3.1.sbml.tgz` done for release 97, recorded in `today.md`; `all_species.3.1.sbml.tgz` when T041 needs it.) Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
 - [ ] T034 Run the validators on today's files and record the baselines in research.md R5:
   - libSBML 5.21.2's `checkConsistency()` over T004's SBML and a sample of T033's archive, with the units and modelling-practice categories off;
   - the BioPAX validator 6.0.0, on JDK 17, over T004's files and three of `biopax.zip`'s species files, reading its XML reports.
@@ -133,7 +133,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - the website's SBML comes from the exporter.
 
 - [x] T036 [US1] [ext] In `sbml-exporter`: fix the five defects (R9), each with a test that fails without its fix. Add tests for the two queries' row mapping. — sbml-exporter #22, #23, #24 (into its `graph-only` branch)
-- [ ] T037 [US1] Compare the fixed exporter's models with today's relational files over the whole sample (T030), from T032's copy: element by element, order and the timestamp set aside. Done as `sbml-exporter`'s T016; record the result here.
+- [ ] T037 [US1] Compare the fixed exporter's models with today's relational files over the whole sample (T030), from T032's copy: element by element, order and the timestamp set aside. Done as `sbml-exporter`'s T016; record the result here. So far (24 Oct 2026, sbml-exporter #33–#35): every species matches; what still differs is in its `differences.md`, two kinds still to decide.
 - [ ] T038 [US1] [ext] In `sbml-exporter`: the layout from the diagram files. `LayoutConverter`'s algorithm, ported over `diagram/{stId}.json` of the same release (R3), keeping:
   - the same ids, order and glyph sets;
   - the same roles and backbone rules;

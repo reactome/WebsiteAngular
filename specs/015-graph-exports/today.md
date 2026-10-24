@@ -71,4 +71,5 @@ Fetched from release 97's download directory on 24 Oct 2026, one file, kept outs
   | Sus_scrofa.owl                | 177,506,186 |
   | Xenopus_tropicalis.owl        | 128,011,857 |
 
-- **`all_species.3.1.sbml.tgz`** (223,766,394 bytes) and **`homo_sapiens.3.1.sbml.tgz`** (60,770,086 bytes): present, sizes from their headers. Fetched when T041 needs them.
+- **`all_species.3.1.sbml.tgz`** (223,766,394 bytes): present, size from its header. Fetched when T041 needs it.
+- **`homo_sapiens.3.1.sbml.tgz`**: 60,770,086 bytes, sha256 `a14af431e4e6a3e46a1f819e206fdb499461af019cea7d1324ee77e19033bf4f`, fetched 24 Oct 2026. 2,883 entries, one `{stId}.sbml` per human pathway and no reactions. Its files for the 19 sample pathways it holds equal this host's ContentService answers exactly (`sbml-exporter`'s `ci/compare.py`, 0 differences), so those answers are the release's own output.
