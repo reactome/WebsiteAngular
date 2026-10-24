@@ -5,14 +5,16 @@
 // share of their own, and stop when the client is gone. A stand-in graph
 // holds every query open until the test lets it go.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
-import { request as httpRequest } from 'node:http';
+import { request as httpRequest, type IncomingMessage, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 
-const held = [];
+/** The open queries, each a function that lets its query answer. */
+const held: (() => void)[] = [];
 let asked = 0;
 vi.mock('./graph.ts', () => ({
   read: () => {
     asked += 1;
-    return new Promise((resolve) => held.push(() => resolve([])));
+    return new Promise<unknown[]>((resolve) => held.push(() => resolve([])));
   },
   configured: () => true,
   close: async () => {},
@@ -21,18 +23,21 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let server;
-let port;
+let server: Server;
+let port: number;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  port = server.address().port;
+  port = (server.address() as AddressInfo).port;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+
+/** An answer as it came: status, the response for its headers, and the body. */
+type Answer = { status: number | undefined; response: IncomingMessage; body: string };
 
 /** A POST of these accessions: its response, and a way to drop the connection. */
-function post(accessions) {
+function post(accessions: string[]) {
   const sent = httpRequest({
     host: '127.0.0.1',
     port,
@@ -43,10 +48,10 @@ function post(accessions) {
     path: '/ContentService/interactors/static/molecules/details',
     headers: { 'Content-Type': 'text/plain' },
   });
-  const answered = new Promise((resolve, reject) => {
+  const answered = new Promise<Answer>((resolve, reject) => {
     sent.on('response', (response) => {
       let body = '';
-      response.on('data', (chunk) => (body += chunk));
+      response.on('data', (chunk: Buffer) => (body += chunk.toString()));
       response.on('end', () => resolve({ status: response.statusCode, response, body }));
     });
     sent.on('error', reject);
@@ -55,7 +60,7 @@ function post(accessions) {
   return { answered, drop: () => sent.destroy() };
 }
 
-const until = async (condition) => {
+const until = async (condition: () => boolean) => {
   for (let i = 0; i < 200 && !condition(); i += 1) await new Promise((r) => setTimeout(r, 10));
   expect(condition()).toBe(true);
 };
@@ -70,7 +75,9 @@ describe('the molecule details batch', () => {
     const fifth = await post(['P00005']).answered;
     expect(fifth.status).toBe(503);
     expect(fifth.response.headers['retry-after']).toBe('5');
-    expect(JSON.parse(fifth.body).messages).toEqual(['The service is busy; try again shortly']);
+    expect((JSON.parse(fifth.body) as { messages: string[] }).messages).toEqual([
+      'The service is busy; try again shortly',
+    ]);
     release();
     // None found for any is Java's 404, and each batch gives its place back.
     for (const { answered } of running) expect((await answered).status).toBe(404);
@@ -88,7 +95,9 @@ describe('the molecule details batch', () => {
     drop();
     // The server has seen the close before the first lookup returns.
     const open = () =>
-      new Promise((resolve) => server.getConnections((_error, count) => resolve(count)));
+      new Promise<number>((resolve) =>
+        server.getConnections((_error: Error | null, count: number) => resolve(count))
+      );
     let connections = 1;
     for (let i = 0; i < 200 && connections > 0; i += 1) {
       connections = await open();

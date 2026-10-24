@@ -4,6 +4,8 @@
 // answer is written from its rows, the paging parameters, and the checks the
 // POST makes before any query. Every expected value was measured against
 // Java's /interactors/static on 15 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app } from './server.ts';
 import {
@@ -15,32 +17,34 @@ import {
 } from './interactors-endpoints.ts';
 import { springIntegerWithDefault } from './spring.ts';
 
-let base;
-let server;
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const MDM2 = {
+type InteractionRow = Parameters<typeof interactorJson>[0];
+
+const PARTNER: InteractionRow['partners'][number] = {
+  labels: ['ReferenceGeneProduct', 'ReferenceSequence', 'ReferenceEntity', 'DatabaseObject'],
+  identifier: 'Q00987',
+  variantIdentifier: null,
+  url: 'http://purl.uniprot.org/uniprot/Q00987',
+  geneName: ['MDM2', 'other'],
+};
+
+const MDM2: InteractionRow = {
   id: 11148815,
   score: 0.995,
   accession: ['EBI-3892574', 'EBI-34584959'],
   url: 'https://www.ebi.ac.uk/intact/x',
-  partners: [
-    {
-      labels: ['ReferenceGeneProduct', 'ReferenceSequence', 'ReferenceEntity', 'DatabaseObject'],
-      identifier: 'Q00987',
-      variantIdentifier: null,
-      url: 'http://purl.uniprot.org/uniprot/Q00987',
-      geneName: ['MDM2', 'other'],
-    },
-  ],
+  partners: [PARTNER],
 };
 
 describe("interactorJson, the content service's Interactor", () => {
@@ -57,7 +61,7 @@ describe("interactorJson, the content service's Interactor", () => {
       score: 1,
       partners: [
         {
-          ...MDM2.partners[0],
+          ...PARTNER,
           labels: ['ReferenceIsoform', 'ReferenceGeneProduct', 'ReferenceSequence'],
           variantIdentifier: 'Q00987-2',
         },
@@ -74,13 +78,14 @@ describe("interactorJson, the content service's Interactor", () => {
         {
           labels: ['ReferenceMolecule', 'ReferenceEntity'],
           identifier: '15422',
+          variantIdentifier: null,
           url: 'u',
           geneName: ['x'],
         },
       ],
     };
     expect(interactorJson(molecule)).not.toContain('alias');
-    const unnamed = { ...MDM2, partners: [{ ...MDM2.partners[0], geneName: [''] }] };
+    const unnamed = { ...MDM2, partners: [{ ...PARTNER, geneName: [''] }] };
     expect(interactorJson(unnamed)).not.toContain('alias');
   });
 });
@@ -187,11 +192,23 @@ describe('interactionWithEntitiesJson', () => {
 });
 
 describe('the entities’ order, as String.CASE_INSENSITIVE_ORDER has it', () => {
-  const order = (...names) =>
-    JSON.parse(
-      interactionWithEntitiesJson({
-        physicalEntity: names.map((displayName, dbId) => ({ dbId, displayName, schemaClass: 'X' })),
-      })
+  const order = (...names: string[]) =>
+    (
+      JSON.parse(
+        interactionWithEntitiesJson({
+          score: null,
+          accession: 'P04637',
+          accessionURL: null,
+          physicalEntity: names.map((displayName, dbId) => ({
+            dbId,
+            stId: null,
+            displayName,
+            schemaClass: 'X',
+          })),
+          evidences: null,
+          url: null,
+        })
+      ) as { physicalEntity: { displayName: string }[] }
     ).physicalEntity.map((pe) => pe.displayName);
 
   it('takes characters whose upper cases match as equal', () => {
@@ -232,9 +249,11 @@ describe('springIntegerWithDefault, an Integer parameter with a default', () => 
 });
 
 describe('the interactor endpoints, before any query', () => {
-  const at = (path, init) => fetch(`${base}/ContentService/interactors/static${path}`, init);
-  const envelope = async (response) => {
-    const body = await response.json();
+  const at = (path: string, init?: RequestInit) =>
+    fetch(`${base}/ContentService/interactors/static${path}`, init);
+  /** Status, reason and messages: Java's error envelope. */
+  const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+    const body = (await response.json()) as { reason: string; messages: string[] };
     return [response.status, body.reason, body.messages];
   };
 
@@ -247,11 +266,11 @@ describe('the interactor endpoints, before any query', () => {
     ]);
   });
 
-  const post = (body, type = 'text/plain', query = '') =>
+  const post = (body: string | undefined, type = 'text/plain', query = '') =>
     at(`/molecules/details${query}`, {
       method: 'POST',
       headers: type ? { 'Content-Type': type } : {},
-      body,
+      ...(body === undefined ? {} : { body }),
     });
 
   it('checks the content type, then the paging, then the body', async () => {

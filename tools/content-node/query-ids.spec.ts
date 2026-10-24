@@ -6,18 +6,20 @@
 // The expected orders are the JDK's own (11, the version the service runs),
 // computed with graph-core's DatabaseObject.hashCode -- dbId, then stId,
 // then displayName, 31 apart. Java's answers measured 17 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // Three objects the stand-in graph finds, by the id each is asked by.
-const FOUND = {
+const FOUND: Record<string, [number, string]> = {
   'R-HSA-109581': [109581, 'Apoptosis'],
   'R-HSA-1640170': [1640170, 'Cell Cycle'],
   199420: [199420, 'PTEN [cytosol]'],
 };
 let finds = false;
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
-    const known = finds ? FOUND[params?.id] : undefined;
+  read: async (cypher: string, params?: { id?: string }) => {
+    const known = finds && params?.id !== undefined ? FOUND[params.id] : undefined;
     if (!known) return [];
     const [dbId, displayName] = known;
     const labels = ['DatabaseObject', 'Event', 'Pathway'];
@@ -45,7 +47,9 @@ const { app } = await import('./server.ts');
 const { idKeyedMap } = await import('./data-query-endpoints.ts');
 const { databaseObjectSet } = await import('./java-text.ts');
 
-const object = (dbId, stId, displayName) => ({ properties: { dbId, stId, displayName } });
+const object = (dbId: number, stId: string | null, displayName: string | null) => ({
+  properties: { dbId, stId, displayName },
+});
 
 describe('the orders Java writes', () => {
   it("a HashSet of DatabaseObjects, by graph-core's hashCode", () => {
@@ -72,7 +76,7 @@ describe('the orders Java writes', () => {
 
   it('a HashMap of the ids as sent', () => {
     const entries = ['R-HSA-109581', '199420', 'REACT_578', 'R-HSA-1640170', '69620', 'xyz'].map(
-      (id) => [id, id]
+      (id): [string, string] => [id, id]
     );
     expect(idKeyedMap(entries).map(([id]) => id)).toEqual([
       '69620',
@@ -85,21 +89,25 @@ describe('the orders Java writes', () => {
   });
 });
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const post = (path, body, type = 'text/plain') =>
+/** The messages of Java's error envelope. */
+const messages = async (response: Response) =>
+  ((await response.json()) as { messages: string[] }).messages;
+
+const post = (path: string, body: string | undefined, type = 'text/plain') =>
   fetch(`${base}/ContentService/data/query/${path}`, {
     method: 'POST',
     headers: type ? { 'content-type': type } : {},
-    body,
+    ...(body === undefined ? {} : { body }),
   });
 
 describe("Java's answers", () => {
@@ -107,7 +115,9 @@ describe("Java's answers", () => {
     finds = true;
     try {
       const response = await post('ids', 'R-HSA-109581, R-HSA-1640170, 199420, xyz');
-      expect((await response.json()).map((o) => o.dbId)).toEqual([1640170, 109581, 199420]);
+      expect(((await response.json()) as { dbId: number }[]).map((o) => o.dbId)).toEqual([
+        1640170, 109581, 199420,
+      ]);
     } finally {
       finds = false;
     }
@@ -134,7 +144,7 @@ describe("Java's answers", () => {
 describe("Java's errors", () => {
   it('refuses a body that is not text/plain, before anything else', async () => {
     const response = await post('ids', 'x', 'application/json');
-    expect([response.status, (await response.json()).messages]).toEqual([
+    expect([response.status, await messages(response)]).toEqual([
       415,
       ["Content type 'application/json' not supported"],
     ]);
@@ -149,10 +159,10 @@ describe("Java's errors", () => {
       'ids/map',
       'public java.util.Map<java.lang.String, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.QueryObjectController.findByIdsMap(java.lang.String)',
     ],
-  ])
+  ] as const)
     it(`answers a missing body at ${path} with Spring's 422`, async () => {
       const response = await post(path, undefined);
-      expect([response.status, (await response.json()).messages]).toEqual([
+      expect([response.status, await messages(response)]).toEqual([
         422,
         [`Required request body is missing: ${signature}`],
       ]);
@@ -161,7 +171,7 @@ describe("Java's errors", () => {
   it('names the ids it did not find, as a Java list', async () => {
     for (const path of ['ids', 'ids/map']) {
       const response = await post(path, 'xyz,abc');
-      expect([path, response.status, (await response.json()).messages]).toEqual([
+      expect([path, response.status, await messages(response)]).toEqual([
         path,
         404,
         ['Ids: [xyz, abc] have not been found in the System'],
@@ -173,7 +183,7 @@ describe("Java's errors", () => {
     // graph-core's trimId splits on '.', and "." splits to nothing.
     for (const body of ['R-HSA-109581,.', '..', 'x;.']) {
       const response = await post('ids', body);
-      expect([body, response.status, (await response.json()).messages]).toEqual([
+      expect([body, response.status, await messages(response)]).toEqual([
         body,
         500,
         ['Index 0 out of bounds for length 0'],
@@ -183,14 +193,14 @@ describe("Java's errors", () => {
 
   it('fails on the first bad id, in order, as Java looks them up one at a time', async () => {
     const dots = await post('ids', '.,99999999999999999999');
-    expect((await dots.json()).messages).toEqual(['Index 0 out of bounds for length 0']);
+    expect(await messages(dots)).toEqual(['Index 0 out of bounds for length 0']);
     const long = await post('ids', '99999999999999999999,.');
-    expect((await long.json()).messages).toEqual(['For input string: "99999999999999999999"']);
+    expect(await messages(long)).toEqual(['For input string: "99999999999999999999"']);
   });
 
   it("is Java's 500 for a dbId past a long", async () => {
     const response = await post('ids', '99999999999999999999');
-    expect([response.status, (await response.json()).messages]).toEqual([
+    expect([response.status, await messages(response)]).toEqual([
       500,
       ['For input string: "99999999999999999999"'],
     ]);
@@ -199,7 +209,7 @@ describe("Java's errors", () => {
   it('answers a GET as the attribute route of Java does: no object called "ids"', async () => {
     for (const path of ['ids/map', 'ids/']) {
       const response = await fetch(`${base}/ContentService/data/query/${path}`);
-      expect([path, response.status, (await response.json()).messages]).toEqual([
+      expect([path, response.status, await messages(response)]).toEqual([
         path,
         404,
         ['Id: ids has not been found in the System'],
@@ -210,7 +220,7 @@ describe("Java's errors", () => {
   it('takes the trailing slash, as Spring does', async () => {
     for (const path of ['ids/', 'ids/map/']) {
       const response = await post(path, 'xyz');
-      expect([path, response.status, (await response.json()).messages]).toEqual([
+      expect([path, response.status, await messages(response)]).toEqual([
         path,
         404,
         ['Ids: [xyz] have not been found in the System'],

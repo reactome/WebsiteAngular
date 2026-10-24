@@ -4,13 +4,17 @@
 // graph-core's SchemaRepository.getByClass reads them (nodes alone, ordered by
 // displayName), written whole and as DiseasesController's tab-separated list.
 // The diseases here are invented.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const asked = [];
+const asked: string[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher) => {
+  read: async (cypher: string) => {
     asked.push(cypher);
-    const node = (id, props) => ({ n: { id, labels: ['DatabaseObject', 'Disease'], props } });
+    const node = (id: number, props: Record<string, unknown>) => ({
+      n: { id, labels: ['DatabaseObject', 'Disease'], props },
+    });
     return [
       node(1, {
         dbId: 11,
@@ -36,22 +40,24 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
 describe('/data/diseases', () => {
   it("asks for every Disease, alone, in graph-core's order", async () => {
     asked.length = 0;
     const response = await fetch(`${base}/ContentService/data/diseases`);
     expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
-    expect((await response.json()).map((d) => d.dbId)).toEqual([11, 12, 13]);
+    expect(((await response.json()) as { dbId: number }[]).map((d) => d.dbId)).toEqual([
+      11, 12, 13,
+    ]);
     expect(asked[0]).toMatch(/MATCH \(n:Disease\)/);
     expect(asked[0]).toMatch(/ORDER BY n\.displayName/);
     // Nodes alone: no relationship is read.
