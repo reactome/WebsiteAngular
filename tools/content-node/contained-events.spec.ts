@@ -4,11 +4,22 @@
 // through the service, with a stand-in graph: graph-core's query, its records
 // mapped as findAll maps them, and what a getter loads when asked. The events
 // here are invented; Java's answers were measured 18 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { GraphNode } from './graph.ts';
 
-const asked = [];
-let lazy = {};
-const node = (id, labels, props) => ({ id, labels: ['DatabaseObject', 'Event', ...labels], props });
+/** A query's parameters, as the service passes them. */
+type Params = { stId?: unknown; dbId?: unknown; [name: string]: unknown };
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
+/** The lazy loads' rows, by `${type} ${direction} ${dbId}`. */
+let lazy: Record<string, unknown[]> = {};
+const node = (id: number, labels: string[], props: GraphNode['props']): GraphNode => ({
+  id,
+  labels: ['DatabaseObject', 'Event', ...labels],
+  props,
+});
 const P = node(1, ['Pathway'], {
   dbId: 100,
   stId: 'R-HSA-100',
@@ -27,20 +38,21 @@ const B = node(3, ['ReactionLikeEvent', 'Reaction'], {
   displayName: 'B',
   schemaClass: 'Reaction',
 });
-const hasEvent = (id, start, end, order) => ({
+const hasEvent = (id: number, start: number, end: number, order: number) => ({
   id,
   type: 'hasEvent',
   start,
   end,
   props: { order, stoichiometry: 1 },
 });
-let records;
+/** The contained-events query's records, when a test sets its own. */
+let records: unknown[] | undefined;
 const RECORDS = [
   { e: A, 'COLLECT(r)': [[hasEvent(10, 1, 2, 1)]], 'COLLECT(p)': [P] },
   { e: B, 'COLLECT(r)': [[hasEvent(11, 1, 3, 0)]], 'COLLECT(p)': [P] },
 ];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     if (cypher.includes('[r:hasEvent*1..100]'))
       return params.stId === 'R-HSA-100' || params.dbId ? (records ?? RECORDS) : [];
@@ -61,34 +73,46 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/data/pathway/${path}`);
-const messages = async (response) => [response.status, (await response.json()).messages];
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const get = (path: string) => fetch(`${base}/ContentService/data/pathway/${path}`);
+/** Status and the messages of Java's error envelope. */
+const messages = async (response: Response) => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
 
 describe('/data/pathway/{id}/containedEvents', () => {
   it("runs graph-core's query as written, by stable id or dbId, and writes the events", async () => {
     asked.length = 0;
-    const written = await (await get('R-HSA-100/containedEvents')).json();
+    const written = (await (await get('R-HSA-100/containedEvents')).json()) as (
+      number | { dbId: number }
+    )[];
     expect(written.map((event) => (typeof event === 'number' ? event : event.dbId))).toEqual([
       200, 300,
     ]);
-    expect(asked.at(-1)[0]).toBe(
+    expect(last()[0]).toBe(
       'MATCH (p:Pathway)-[r:hasEvent*1..100]->(e:Event) WHERE p.stId = $stId RETURN e, COLLECT(r), COLLECT(p)'
     );
     await get('100/containedEvents');
-    expect(asked.at(-1)[0]).toBe(
+    expect(last()[0]).toBe(
       'MATCH (p:Pathway)-[r:hasEvent*1..100]->(e:Event) WHERE p.dbId = $dbId RETURN e, COLLECT(r), COLLECT(p)'
     );
-    expect(Number(asked.at(-1)[1].dbId)).toBe(100);
+    expect(Number(last()[1].dbId)).toBe(100);
   });
 
   it('is a 404 naming the id for none', async () => {
@@ -120,7 +144,7 @@ describe('/data/pathway/{id}/containedEvents/{attributeName}', () => {
   });
 
   it("loads what findAll did not bring, outgoing relationships too, each event's own", async () => {
-    const compartment = (id, dbId, displayName) => [
+    const compartment = (id: number, dbId: number, displayName: string) => [
       {
         m: {
           id,
