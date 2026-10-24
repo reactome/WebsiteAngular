@@ -5,6 +5,8 @@
 // standard-form GET or HEAD answered 200 is public. The class attributes
 // are answered from a snapshot, so these need no graph; the graph stand-in
 // answers nothing, for the endpoints that would ask it.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 vi.mock('./graph.ts', () => ({
@@ -17,25 +19,32 @@ vi.mock('./graph.ts', () => ({
 const { app } = await import('./server.ts');
 const { CACHEABLE } = await import('./cache-label.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const headers = (response) => [
+const headers = (response: Response) => [
   response.headers.get('cache-control'),
   response.headers.get('x-cache-rule'),
 ];
-const at = (path, init) => fetch(`${base}/ContentService${path}`, init);
-const raw = async (path, method = 'GET', requestHeaders = {}) => {
+const at = (path: string, init?: RequestInit) => fetch(`${base}/ContentService${path}`, init);
+/** Status and the two labels, as sent: over plain HTTP, for what fetch would change. */
+type Labels = [
+  status: number | undefined,
+  cacheControl: string | undefined,
+  rule: string | string[] | undefined,
+];
+
+const raw = async (path: string, method = 'GET', requestHeaders: Record<string, string> = {}) => {
   const { request } = await import('node:http');
   const url = new URL(base);
-  return new Promise((resolve, reject) => {
+  return new Promise<Labels>((resolve, reject) => {
     const call = request(
       { host: url.hostname, port: url.port, path, method, headers: requestHeaders },
       (response) => {
@@ -69,8 +78,10 @@ describe('the labels the service writes', () => {
     await first.arrayBuffer();
     // Over plain HTTP: fetch adds `Cache-Control: no-cache` to a
     // conditional request, after which Express never answers 304.
+    const etag = first.headers.get('etag');
+    if (!etag) throw new Error('the first answer had no ETag');
     const again = await raw('/ContentService/data/schema/Pathway/attributes', 'GET', {
-      'If-None-Match': first.headers.get('etag'),
+      'If-None-Match': etag,
     });
     expect(again).toEqual([304, CACHEABLE, 'standard']);
   });
@@ -128,16 +139,16 @@ describe('an answer that fails as it is written', () => {
     lone.get('/ContentService/data/schema/Pathway/attributes', (request, response) =>
       answer(endpoint, request, response)
     );
-    const server = await new Promise((resolve) => {
+    const server = await new Promise<Server>((resolve) => {
       const listening = lone.listen(0, '127.0.0.1', () => resolve(listening));
     });
     try {
       const response = await fetch(
-        `http://127.0.0.1:${server.address().port}/ContentService/data/schema/Pathway/attributes`
+        `http://127.0.0.1:${(server.address() as AddressInfo).port}/ContentService/data/schema/Pathway/attributes`
       );
       expect([response.status, ...headers(response)]).toEqual([500, 'no-store', 'status']);
     } finally {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise<void>((resolve) => server.close(() => resolve()));
     }
   });
 });
@@ -213,10 +224,17 @@ describe('a trailing slash', () => {
   });
 });
 
-async function redirect(path, method = 'GET') {
+async function redirect(path: string, method = 'GET') {
   const { request } = await import('node:http');
   const url = new URL(base);
-  return new Promise((resolve, reject) => {
+  return new Promise<
+    [
+      status: number | undefined,
+      location: string | undefined,
+      cacheControl: string | undefined,
+      rule: string | string[] | undefined,
+    ]
+  >((resolve, reject) => {
     const call = request({ host: url.hostname, port: url.port, path, method }, (response) => {
       response.resume();
       resolve([

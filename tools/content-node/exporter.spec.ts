@@ -4,25 +4,28 @@
 // service is needed: how the path splits, how the parameters convert, what is
 // refused before anything is resolved, and how a resolution becomes the render
 // request. Java's answers measured on 15 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app } from './server.ts';
 import { diagramExportRequest, figureProblem, splitExportName } from './exporters-endpoints.ts';
 
-let base;
-let server;
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const at = (path) => fetch(`${base}/ContentService/exporter/diagram/${path}`);
-const envelope = async (response) => {
-  const body = await response.json();
+const at = (path: string) => fetch(`${base}/ContentService/exporter/diagram/${path}`);
+/** Status, reason and messages: Java's error envelope, as every answer here is. */
+const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+  const body = (await response.json()) as { reason: string; messages: string[] };
   return [response.status, body.reason, body.messages];
 };
 
@@ -135,9 +138,11 @@ describe('figureProblem, what diagramImage fails on once the id is resolved', ()
   });
 
   it('refuses a quality outside 1-10 with RasterArgs’ message, not as undrawn', () => {
-    expect(figureProblem({ ...values, quality: 11 }, 'svg')?.message).toBe(
-      'quality must be in the range [1-10]'
-    );
+    expect(figureProblem({ ...values, quality: 11 }, 'svg')).toEqual({
+      status: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      message: 'quality must be in the range [1-10]',
+    });
   });
 
   it('is the service’s generic 500 for a blank quality or ehld', () => {
