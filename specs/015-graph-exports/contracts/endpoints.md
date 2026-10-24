@@ -1,6 +1,6 @@
 # Contract: the export endpoints
 
-All are answered by the node content service from the graph database. Their routes are in nginx (`routes.conf`, `local.conf`, `routes-core.conf`) and the dev proxy alike (`routes.spec.ts`), each with its slashed form. None falls back to Java.
+All are answered by the node content service. The bodies come from the `exports` service (research R10), which runs the same exporters the release runs: `sbml-exporter` and `BioPAX3Exporter`. Node writes the headers, the errors and the cache. Their routes are in nginx (`routes.conf`, `local.conf`, `routes-core.conf`) and the dev proxy alike (`routes.spec.ts`), each with its slashed form. None falls back to Java.
 
 ## SBML
 

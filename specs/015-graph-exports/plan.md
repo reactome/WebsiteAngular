@@ -1,84 +1,108 @@
-# Implementation Plan: SBML and BioPAX built from the graph
+# Implementation Plan: SBML and BioPAX from the graph, one exporter each
 
-**Branch**: `spec/015-graph-exports` | **Date**: 2026-10-23 | **Spec**: [spec.md](spec.md)
+**Branch**: `spec/015-graph-exports` | **Date**: 2026-10-23, rewritten 2026-10-24 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `/specs/015-graph-exports/spec.md`
 
 ## Summary
 
-The node content service writes the SBML export (at its two existing URLs) and a BioPAX Level 3 export from the graph database, retiring the two exports that still read the relational release database.
+Each format gets one implementation, reading the graph, used by both the release's bulk files and the website's on-demand downloads.
 
-- **SBML's model** is byte-identical to sbml-exporter's graph-only converter with its four measured defects corrected (research R1). It is written directly in the final form JSBML's tidy writer gives (R2).
-- **SBML's layout** is ported from the relational converter's algorithm, over the diagram JSON the site draws, for the events that have one today. It is exact in structure. Its coordinates are the diagram's own (R3).
-- **BioPAX** reproduces today's converter's classes and values, in a deterministic order, and is compared with today's file by meaning (R4).
-- **Validators** for both formats run in a new CI job (R5).
-- **Meanwhile,** the site's broken BioPAX links are fixed by routing the legacy path to the beta host's own legacy service, which nginx was not routing (R7). The same service is the BioPAX comparison's reference (R4).
+- **SBML is `reactome/sbml-exporter`'s graph-only converter.**
+  - Its five defects are fixed and tested (R1, R9).
+  - It gains a layout drawn from the site's diagram files, ported from the relational converter's algorithm in Java (R3).
+  - Its command line makes the bulk archives with no relational database.
+- **BioPAX Level 3 is `reactome/BioPAX3Exporter`.**
+  - It is built out to the content today's files carry ([data-model.md](data-model.md), R4).
+  - Its modes and `xml:base` are fixed, and it gains a per-reaction export.
+  - It is proven by R4's comparison by meaning, against today's per-event and species files.
+- **The website** serves both from a small `exports` service in this repository's compose, fronted by node at the URLs R6 decided, with no fallback to Java (R10).
+- **This repository keeps the instruments:**
+  - the sample;
+  - the corrected SBML reference;
+  - today's answers;
+  - the comparison tools;
+  - the validator runs.
+
+  They are run against each exporter's output, before either the release or the website switches.
+
+The changes to the two exporters go to their maintainers: an issue first, then pull requests once they agree (FR-010).
 
 ## Technical Context
 
-**Language/Version**: TypeScript, run by Node 24's type stripping (no build), as the rest of `tools/content-node`.
+**Language/Version**:
+
+- `sbml-exporter`: Java (JDK 11 today).
+- `BioPAX3Exporter`: Kotlin 1.7 on JDK 17.
+- The `exports` service: a small JDK 17 HTTP wrapper.
+- This repository's instruments: TypeScript under Node 24, as `tools/`.
 
 **Primary Dependencies**:
 
-- In the service: none new. The XML is written by hand, as the service writes JSON.
-- In CI only: python-libsbml 5.21.2 and the BioPAX validator 6.0.0 on JDK 17.
-- For generating references once: a small Java harness over sbml-exporter 2.2.7 and graph-core.
+- graph-core, aligned to one version for both exporters (R10);
+- JSBML (SBML);
+- Paxtools and the BioPAX validator (BioPAX);
+- in CI only: python-libsbml 5.21.2 and the BioPAX validator 6.0.0 (R5).
 
 **Storage**:
 
-- The graph database, read as the service already reads it.
-- The diagram JSON of the same release (`diagram/{stId}.json`), from the release's download location or a mounted folder.
-- Answers cached per release (spec 011's labels).
+- the graph database;
+- the diagram JSON of the same release (`diagram/{stId}.json`);
+- on-demand answers cached per release (spec 011).
 
 **Testing**:
 
-- vitest specs over recorded graph rows and diagram fixtures, with personal values replaced;
-- the comparison tools ([contracts/checks.md](contracts/checks.md));
-- `routes.spec.ts`;
-- the parity harness for SBML's status, headers and errors;
-- before-and-after on beta.
+- **In each exporter:** unit tests, one failing without each fix.
+- **Here:** the comparison tools ([contracts/checks.md](contracts/checks.md)) over the sample, against the private graph copy (R8); `routes.spec.ts`; the parity harness for the website's status, headers and errors; before and after on beta.
 
-**Target Platform**: the content-node container (Linux). nginx in front, as today.
+**Target Platform**:
 
-**Project Type**: web service (two endpoint groups and a redirect added to an existing service).
+- the release's run, for the bulk files;
+- the `exports` container beside content-node, for the website.
 
-**Performance Goals**: an answer asked for before, in the same release, as fast as today's cached one (0.1 s for 23.5 MB). A first export of the largest sampled top-level pathway within the deep-query limits (SC-006).
+**Project Type**: two libraries with command lines (in other repositories), one small service and its routes (here).
+
+**Performance Goals**:
+
+- An on-demand answer asked for before, in the same release, is as fast as today's (0.1 s for 23.5 MB).
+- A first export of the largest sampled pathway completes within the deep-work limits.
+- The bulk run finishes within the release's time.
 
 **Constraints**:
 
 - byte parity for SBML's model;
-- the 30 s per-query read timeout;
-- the deep shares (SBML's own share of 2, as Java ran one at a time);
-- no module over 1,500 lines (spec 014);
-- the ratchets (no lint rise, no loose values or implicit `any`);
-- no personal data in fixtures or logs;
+- comparison by meaning for SBML's layout and for BioPAX;
+- the deep shares;
+- no personal data in this repository's fixtures, logs or output;
 - light load on the shared graph;
-- **no request to the production site, ever** (decided 23 Oct 2026). Every reference answer, sample and check uses the beta host's own services (the Java ContentService, the legacy BioPAX service, its databases). `reactome.org` appears in the exports only as text, in identifiers and the BioPAX base address.
+- the maintainers' agreement before any change lands in their repositories;
+- **no request to the production site, ever** (decided 23 Oct 2026). Every reference uses the beta host's own services and the private graph copy.
 
 **Scale/Scope**:
 
-- about 3,200 lines of Java (SBML) and 1,900 (BioPAX) of mapping logic, ported;
-- two to three endpoints, one redirect, one CI job;
-- a sample of 30 events.
+- **SBML:** five fixes plus tests, a layout port (`LayoutConverter`, about 500 lines), and a graph-only command line.
+- **BioPAX:** most of Level 3's content to build (data-model.md's table), three mode fixes and a per-reaction export.
+- **Here:** one service, three routes and a redirect, two links, and one CI job.
 
 ## Constitution Check
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 - **I. Verify the instrument.**
-  - The SBML reference was checked against today's output before being chosen. That is how its four defects were found.
-  - The BioPAX comparison is by canonical triples because byte comparison is invalid even Java against Java (R4).
-  - The validators were run on today's files to learn their baseline (R5).
+  - The SBML reference was checked against today's output; that is how its defects were found.
+  - BioPAX is compared by canonical triples, because bytes differ even Java against Java (R4).
+  - The validators' baselines come from today's files (R5).
+  - BioPAX3Exporter's coverage was read, not assumed (R9).
   - **Pass.**
 - **II. Measure in the thing.**
-  - Every claim in research.md comes from the code or a live answer. Today's SBML layout was compared glyph by glyph with the diagram JSON, and the timings are measured.
-  - Unmeasured, and so named as risks: disease diagrams, Neo4j row order across plans.
+  - Every claim in research.md comes from code read or a live answer from this host.
+  - Unmeasured, and so named as risks: graph-core alignment between the two exporters; the bulk run's time from the graph; species files' size from Paxtools.
   - **Pass.**
-- **III. Prove a test fails first.** Each comparison tool and each validator step is shown failing on a deliberately wrong file ([contracts/checks.md](contracts/checks.md)). **Pass.**
-- **IV. No unstable identifiers for the reader.** Downloads are named by stable id. The legacy dbId URL redirects to the new URL. **Pass.**
+- **III. Prove a test fails first.** Each fix in an exporter comes with a test that fails without it. Each comparison tool and validator step is shown failing on a wrong file. **Pass.**
+- **IV. No unstable identifiers for the reader.** Downloads are named by stable id. The legacy dbId URL redirects. **Pass.**
 - **V. Comments carry the failure.** Every recorded difference states why ([contracts/differences.md](contracts/differences.md)). **Pass.**
 
-**Re-check after design: pass.** No violation to justify.
+**Re-check after design: pass.**
 
 ## Project Structure
 
@@ -86,72 +110,66 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 ```text
 specs/015-graph-exports/
-├── spec.md
-├── plan.md
-├── research.md
-├── data-model.md
-├── quickstart.md
-├── contracts/
-│   ├── endpoints.md
-│   ├── checks.md
-│   └── differences.md
-├── checklists/requirements.md
-└── tasks.md             # /speckit-tasks
+├── spec.md, plan.md, research.md (R1–R10), data-model.md, quickstart.md
+├── sample.md, reference-harness.md, today.md        # instruments, done
+├── contracts/ endpoints.md, checks.md, differences.md
+└── tasks.md                                         # links the maintainers' issues once posted
 ```
 
-### Source Code (repository root)
+### Source code
 
 ```text
-tools/content-node/
-├── exporters-endpoints.ts   # + SBML (two URLs), BioPAX, the legacy BioPAX redirect
-├── xml-writer.ts            # escaping and the tidy writer's form (R2)
-├── sbml-model.ts            # the two queries, species, reactions, annotations (R1)
-├── sbml-layout.ts           # the diagram JSON to the layout (R3)
-├── diagram-files.ts         # reads diagram/{stId}.json of the release
-├── biopax-model.ts          # graph to BioPAX individuals (R4, data-model.md)
-├── biopax-rdf.ts            # the RDF/XML writer
-├── parameters.ts            # RECORD entries (cache labels)
-├── settings.ts              # where the diagram files are
-├── sbml-compare.ts          # the SBML comparison tool (contracts/checks.md)
-├── biopax-compare.ts        # the BioPAX canonical comparison
-└── fixtures/                # recorded rows and diagrams, personal values replaced
-deploy/nginx/common/routes.conf, routes-core.conf, deploy/nginx/local.conf, proxy.conf.js
-deploy/nginx/routes.spec.ts
-.github/workflows/tests.yml  # the exports job
-projects/pathway-browser/src/environments/environment.ts            # RESTFUL_API (interim)
-projects/pathway-browser/src/app/details/tabs/download-tab/         # the BioPAX link
-projects/website-angular/src/app/content/detail/detail-download-bar/ # the BioPAX link
+# In reactome/sbml-exporter (through its maintainers)
+converter/ data/          # the five fixes, with tests
+layout/                   # LayoutConverter over the diagram JSON (new)
+Main                      # graph-only bulk run; relational options dropped
+
+# In reactome/BioPAX3Exporter (through its maintainers)
+builders                  # entity references, xrefs, stoichiometry, controllers,
+                          # regulation, components, locations, literature, evidence
+Launcher, WriteBioPAX3    # species mode, orphans, -l, xml:base, per-reaction export
+
+# Here
+deploy/exports/           # the exports service: Dockerfile, wrapper, compose entry
+tools/content-node/exporters-endpoints.ts   # SBML (two URLs), BioPAX, legacy redirect → exports
+tools/exports-compare/    # the SBML and BioPAX comparison tools (instruments)
+deploy/nginx/…, proxy.conf.js, deploy/nginx/routes.spec.ts
+.github/workflows/tests.yml                 # the exports job
+projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 ```
 
-**Structure Decision**: The endpoints join the exporters family. The new modules are leaves: they import only the graph, settings and domain modules, never a family. So `boundaries.spec.ts` holds without a change. Each stays under 1,500 lines, and a port that grows is split further.
+**Structure Decision**:
+
+- **Node answers the URLs**, with R6's headers, errors and caching. The `exports` service writes only the body.
+- **The comparison tools are standalone instruments** under `tools/exports-compare/`. They are not part of content-node, since they compare files from anywhere.
 
 ## Order of work
 
-1. **US3, the interim link:**
-   - nginx and the dev proxy route `/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/` to the host's Tomcat;
-   - an nginx rebuild on beta (standing approval); the site is unchanged.
-2. **The instruments:**
-   - the SBML reference harness and the 30-event sample's references, from a private graph of the same release where possible;
-   - the SBML and BioPAX comparison tools, each shown failing;
-   - the libSBML and BioPAX validator baselines on today's files.
-3. **SBML model:**
-   - the XML writer and the model;
-   - byte-identical to the references over the sample, timestamp aside;
-   - the endpoints implemented and listed as not yet routed.
-4. **SBML layout:**
-   - the diagram reader and the layout;
-   - compared with today's over the sample;
-   - differences recorded.
-5. **SBML switch:**
-   - routes in nginx and the dev proxy, the cache labels, the parity harness entry;
-   - before and after on beta.
-6. **BioPAX:**
-   - the model and the writer;
-   - compared with today's samples, differences recorded;
-   - the endpoint, the redirect and the routes;
-   - the site's two links, and `RESTFUL_API` deleted.
-7. **The `exports` CI job.** It is added when the first export has fixtures, and grows with each.
+1. **Done:**
+   - the sample, the private graph copy, the corrected SBML reference, and today's answers (T001–T004);
+   - the interim BioPAX link (T009, #634).
+2. **The issues.** The two maintainers' issues are drafted outside the repository, read by the user, then posted and linked from tasks.md. Nothing lands in either repository before its maintainers agree.
+3. **The instruments:** the comparison tools, each shown failing; the validator baselines on today's files.
+4. **SBML in `sbml-exporter`:**
+   - the five fixes, with tests;
+   - the comparison over the sample;
+   - the layout port, compared;
+   - the graph-only command line;
+   - a release dry run compared with today's archives.
+5. **The `exports` service and the SBML switch on the website:** routes, cache labels, parity entry, and before and after on beta.
+6. **BioPAX in `BioPAX3Exporter`:**
+   - content, built class by class against data-model.md;
+   - per-event comparisons, then three species' files;
+   - the mode fixes and the per-reaction export;
+   - a release dry run.
+7. **The BioPAX switch:**
+   - the website's endpoint, the legacy redirect replacing #634's route, and the two links;
+   - the release's Level 3 step moved to BioPAX3Exporter;
+   - Level 2's decision recorded.
+8. **The `exports` CI job**, added with the first exporter's fixtures.
 
 ## Complexity Tracking
 
-None.
+| Addition                                | Why needed                                                                              | Simpler alternative rejected because                                                                               |
+| --------------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| An `exports` service (a JVM) in compose | The exporters are Java libraries, and the website must run the same code as the release | Running their command lines per request starts a JVM per download. ContentService is being retired route by route. |

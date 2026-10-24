@@ -1,5 +1,7 @@
 # Research: SBML and BioPAX built from the graph
 
+> **Rewritten direction, 24 Oct 2026.** The spec now makes `sbml-exporter` and `BioPAX3Exporter` the single implementation of each format, for the bulk files and the website ([spec.md](spec.md), "What changed"). R1, R3, R5 and R8 stand as written. R2 (JSBML's bytes, for a TypeScript writer) is no longer needed, since JSBML itself writes them. R4's mapping and comparison stand; its decision to write BioPAX in TypeScript is superseded by R9. R6's routes, headers and errors stand for the website, with the answer now coming from R10's service. R7 is done (#634). R9 and R10 are new.
+
 Measured on 23 Oct 2026 (release 97). Sources: the code of `reactome/sbml-exporter` (main, v2.2.7), `reactome/content-service` (main), `reactome/graph-core` (main), JSBML 1.5 and JTidy r938, `reactome/restfulapi_mini` and `reactome/Pathway-Exchange` (BioPAX); live answers from the Java services on the beta host (ContentService, and the legacy RESTful service, which serves today's BioPAX from the relational database on the same host); a few samples from reactome.org's copy of that service, first, before the local one was found; the diagram JSON for R-HSA-69620.
 
 Personal data: SBML's History (creators) and BioPAX's citations and curation comments carry people's names. They were compared by hash only, are never printed in this research, and no sample containing them is in the repository (R8).
@@ -69,7 +71,9 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
   - content is in the order creators, created, modified, then each CVTerm as its own element, with repeated qualifiers kept separate;
   - numbers: `SBO:%07d`, and stoichiometry is written as an integer.
 
-**Decision.** The node writer emits JTidy's final form directly, from an in-memory tree, following these rules. It does not use a generic XML library and normalise afterwards.
+**Superseded (24 Oct).** No TypeScript writer is needed: the exporter's JSBML and its tidy writer produce these bytes themselves. Kept as the description of the bytes the comparison expects.
+
+**Decision (23 Oct).** The node writer emits JTidy's final form directly, from an in-memory tree, following these rules. It does not use a generic XML library and normalise afterwards.
 
 **Rationale.** The final form is the byte contract. Emulating woodstox and then JTidy would be more code for the same bytes.
 
@@ -125,7 +129,9 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
   - `hasDomain`, absent from every sample.
 - **Unreachable under today's schema:** the Modulation branch and the legacy classes.
 
-**Decision.**
+**Superseded (24 Oct):** the writing moves to BioPAX3Exporter (R9). The mapping, the canonical comparison and the recorded differences below stand, and are what BioPAX3Exporter is built and proven against.
+
+**Decision (23 Oct).**
 
 - Write BioPAX Level 3 in TypeScript, emitting the same classes, properties, values, `rdf:ID` scheme, `xml:base`, namespaces and header, in a **deterministic** order: graph order, then dbId.
 - The comparison with today's file is by meaning. Each file is canonicalised to a multiset of (class, property, target-key) triples, with each `rdf:ID` replaced by a content key: the event's or entity's DB_ID, an xref's db+id, a vocabulary's term, or recursive content for features and steps.
@@ -242,3 +248,96 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 - **Committed fixtures** have personal values replaced: SBML vCard names; BioPAX `bp:author` and the `Authored:`, `Reviewed:` and `Edited:` comments. The comparison tools hash those values and never print them.
 
 **Rationale.** FR-011 and the organisation's rule on personal information.
+
+## R9. The three repositories (measured 24 Oct 2026)
+
+Read on each default branch, cloned shallowly, with nothing run against Reactome's services. None of the three has a licence file or code owners.
+
+**`reactome/sbml-exporter`** (Java, Maven, version 2.2.7; JDK 11 runtime):
+
+- **The command line is the release's SBML step.** Its Jenkinsfile packs the output into `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`; `release-download-directory` has no SBML step.
+  - It requires the relational options and always builds a relational adaptor.
+  - It runs only the relational converter (`SbmlConverterForRel`), over every pathway of a species, one by one, writing `{stId}.sbml` each.
+- **The graph-only `SbmlConverter`** (packages `converter` and `data`) imports nothing relational. It runs per event as a library call, `new SbmlConverter(event, version, ads).convert()`. Its data comes from two Cypher queries in `DataFactory`, through a statically injected service, so a caller needs graph-core's Spring context.
+- **Five defects** are present on `main` and on every other branch:
+  1. catalysts are set from the positive regulators;
+  2. negative regulators are set from the positive regulators;
+  3. positive regulators are never set;
+  4. one `Participant` is reused across the loop;
+  5. `ReactionBaseResult.build` never reads `catalysts`, although the query returns it.
+
+  R1 counted the first four, with the fifth as part of the catalyst fix.
+
+- **The layout** (`LayoutConverter`) reads the relational `PathwayDiagram`, through `DiagramGKBReader` to a `RenderablePathway`, and only in the relational converter.
+- **No tests.** CI lints, builds a Docker image and pushes it. The release run adds a file-size check.
+- **Dependencies:** the parent pom is a SNAPSHOT of `reactome-parent`. graph-core and JSBML come from the Reactome BOM.
+
+**`reactome/BioPAX3Exporter`** (Kotlin 1.7, Maven, JDK 17; graph-core 2.0.9, Paxtools 4.3.1, BioPAX validator 5.1.0):
+
+- **Reads** only the graph, through graph-core's services. It uses no Cypher and nothing relational.
+- **Writes** Level 3 only:
+  - `{dbId}.owl` per pathway (`-t`, `-m`);
+  - `{Species_Name}.owl` per species (`-s`, or every species with no selector).
+
+  Its Jenkinsfile zips them as `biopax.zip`. It has never run in a release, and its run command has a stray quote.
+
+- **As a library:** `WriteBioPAX3(pathway, version).createModel()`. A single reaction cannot be exported.
+- **Content, against today's files and [data-model.md](data-model.md):**
+  - pathways: name, summation and organism, with an empty evidence per element;
+  - reactions: left and right, without stoichiometry;
+  - physical entities: by name only. There are no entity references, cross-references, components or locations;
+  - catalysis: without its controller;
+  - missing entirely: regulation, literature and stable-identifier cross-references.
+- **Other defects:**
+  - species mode writes every pathway of the species as its own component, sub-pathways included;
+  - the events in no pathway are computed but never written;
+  - `-l` writes an empty pathway;
+  - `xml:base` is `https://…/biopax/{version}/species/{dbId}#`, where the release's check expects `http://www.reactome.org/biopax/{release}`;
+  - the base is a static field, so it is not thread-safe.
+- **Tests:** seven unit test files, all on mocks. There is no comparison with the old files.
+
+**`reactome/release-download-directory`** (Java 8 source, JDK 11 image; Paxtools 5.1, Pathway-Exchange built from source):
+
+- **BioPAX.** For each species, Pathway-Exchange's `SpeciesAllPathwaysConverter` (Level 2) and `SpeciesAllPathwaysLevel3Converter` (Level 3) write one `.owl`, zipped as `biopax2.zip` and `biopax.zip`. The validator step is commented out, so the validator archives its README lists are not made.
+- **Its other steps, all relational:**
+  - database dumps;
+  - GSEA `.gmt` and `ReactomeToBioSystems.zip`, both through Pathway-Exchange;
+  - the Protégé ontology files;
+  - `reactome_stable_ids.txt`, which needs the stable-identifier database;
+  - `gene_association.reactome`;
+  - optionally, `pathway2summation.txt` and `humanPathwaysWithDiagrams.txt`.
+
+**Decision.**
+
+- **SBML:** `sbml-exporter`. Fix and test the graph-only converter, add the layout from the diagram files (R3, ported in Java), and make the command line graph-only for the bulk run. The website calls the same library.
+- **BioPAX Level 3:** `BioPAX3Exporter`. Build its content to [data-model.md](data-model.md)'s mapping, fix its modes and `xml:base`, add a per-reaction export, and prove it by R4's comparison against the per-event and species files. The website calls the same library.
+- **Both:** the changes go to each repository's maintainers as issues first, then as pull requests once they agree (FR-010). The comparison tools and the sample stay in this repository, as instruments run against each exporter's output.
+
+**Rationale.** One implementation per format is the user's aim. Both repositories already read the graph, in the languages their release runs use. A third implementation in TypeScript would have left the bulk files on separate code.
+
+**Alternatives considered.**
+
+- _Writing both in TypeScript in the node service_ (23 Oct): rejected, because the bulk files would keep a second implementation.
+- _A new SBML repository_: rejected unless its maintainers prefer it, since the graph-only converter and its history are in `sbml-exporter`.
+- _Porting Pathway-Exchange's converters to the graph_: rejected, because BioPAX3Exporter already reads the graph through Paxtools, which also gives the validator.
+
+## R10. Serving the exporters to the website
+
+**Measured.**
+
+- The render service is the pattern: an image built in this repository's compose, bound to loopback, fronted by nginx and the dev proxy, and not answering the public directly.
+- The two exporters use different graph-core versions (BioPAX3Exporter 2.0.9; `sbml-exporter` takes its version from the BOM), and different JDKs (17 and 11).
+
+**Decision.**
+
+- **An `exports` service in this repository's compose**: a small JDK 17 HTTP wrapper that loads both exporters as libraries and answers one event at a time. It is built from their published artefacts, never from a clone.
+  - It is fronted by the node service. Node answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` with R6's headers and errors, asks the service for the body, and caches it per release under spec 011.
+  - It runs with a share of 2 deep requests and its own memory cap.
+- **The graph-core versions** are aligned in both exporters (part of FR-001 and FR-005). If they cannot be, the exports run as two services, one per exporter.
+
+**Rationale.** It keeps node the only front, so there is no fallback to the Java ContentService. It needs no Tomcat, and it runs the exact code the release runs.
+
+**Alternatives considered.**
+
+- _The Java ContentService calling the exporters_: rejected. ContentService is being retired route by route, and these routes would tie it in.
+- _The exporters' own command lines, run per request_: rejected. That means a JVM start per download, at seconds each.

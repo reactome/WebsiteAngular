@@ -4,7 +4,7 @@ Each check is shown failing on wrong output before it is trusted (constitution I
 
 ## SBML comparison (FR-002, FR-003)
 
-A tool that compares the node service's SBML with a reference file.
+A tool (`tools/exports-compare/sbml-compare.ts`) that compares an exporter's SBML with a reference file, wherever the file came from: the exporter's own run, or the website's answer.
 
 - **The model:** byte for byte, after removing the generation note's timestamp. The reference is the corrected graph-only converter's file (research R1).
 - **The layout:** the glyph sets, ids, roles, order and targets exactly, compared with today's file. Coordinates are compared by meaning: today's equal the diagram's plus one offset, except at the nodes Java resized, which are listed.

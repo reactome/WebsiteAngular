@@ -5,7 +5,7 @@ Run from the repository root. Host-specific settings (database addresses, creden
 ## 1. The unit and route checks
 
 ```sh
-npx vitest run tools/content-node deploy/nginx
+npx vitest run tools/exports-compare tools/content-node deploy/nginx
 ```
 
 Expected:
@@ -21,7 +21,7 @@ The `exports` job in `.github/workflows/tests.yml`: it builds the sample files f
 ## 3. SBML against the reference
 
 1. Generate the reference files once, for the 30-event sample, with the corrected graph-only converter (research R1). Run it against a private graph database of the same release where possible (research R8). The references stay outside the repository: they hold personal names.
-2. Ask the node service for each event's SBML.
+2. Run the fixed `sbml-exporter` over each event, from the private graph copy (or, once switched, ask the website).
 3. Run the SBML comparison tool over the pairs.
 
 Expected: the model is identical apart from the generation note. The layout has the same glyphs, ids, roles and order as today's file. The coordinate differences are only those [differences.md](contracts/differences.md) lists.
@@ -29,7 +29,7 @@ Expected: the model is identical apart from the generation note. The layout has 
 ## 4. BioPAX against today's file
 
 1. For a sample of events, take today's legacy BioPAX once from the beta host's own legacy service (`/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}` on its Tomcat), spaced. The files stay outside the repository: they hold personal names.
-2. Ask the node service for the same events.
+2. Run `BioPAX3Exporter` over the same events, from the private graph copy (or, once switched, ask the website).
 3. Run the BioPAX comparison tool.
 
 Expected: no difference outside [differences.md](contracts/differences.md).

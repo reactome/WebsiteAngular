@@ -31,6 +31,7 @@
 
 ## Notes
 
-- As in specs 010-014, the spec names the services and gates the work concerns (the node content service, nginx and the dev proxy, spec 011's cache labels). It names no code structure and no library choice; the language decision (TypeScript) is the user's, recorded in the Input line, and is the plan's to apply.
-- No clarification markers: where BioPAX is served and how the generation note reads are recorded as assumptions with defaults, for review at `/speckit-plan`.
-- One validation pass; all items pass.
+- As in specs 010-014, the spec names the services and gates the work concerns (the node content service, nginx and the dev proxy, spec 011's cache labels).
+- **Rewritten 24 Oct 2026.** The spec now names the two exporter repositories, because which code is the single implementation is the user's decision and the feature's whole point ("What changed"). It still names no code structure inside them; that is the plan's.
+- No clarification markers. Where BioPAX is served, the generation note, and Level 2's fate are recorded as assumptions or tasks, each with a default.
+- **Revalidated after the rewrite: all items pass.** Naming the repositories is a scope statement, not an implementation detail.

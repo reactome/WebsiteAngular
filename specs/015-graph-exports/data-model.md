@@ -1,6 +1,6 @@
 # Data model: SBML and BioPAX built from the graph
 
-The exports read the graph through the content service's existing mapping (`domain.ts`, `objects.ts`). Names below are graph-core's (`tools/content-node/domain-snapshot.json`).
+What BioPAX3Exporter must write (spec FR-005), and where each value is in the graph. It reads the graph through graph-core's objects, whose names are used below (as in `tools/content-node/domain-snapshot.json`).
 
 ## Entities
 
