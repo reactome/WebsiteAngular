@@ -5,54 +5,74 @@
 // the reactome and target cores) and for the report service a search that
 // finds nothing is reported to. Java's answers measured 16 Oct 2026.
 import { URLSearchParams } from 'node:url';
+import type { RequestListener, Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
+
+/** What the stand-in graph shares with the tests: how often it was read, and whether it is down. */
+const graphState = globalThis as { graphReads?: number; graphDown?: boolean };
 
 vi.mock('./graph.ts', () => ({
   // The release, for the report -- or the graph down, when a test says so.
   read: async () => {
-    globalThis.graphReads = (globalThis.graphReads ?? 0) + 1;
-    if (globalThis.graphDown) throw new Error('graph down');
+    const shared = globalThis as { graphReads?: number; graphDown?: boolean };
+    shared.graphReads = (shared.graphReads ?? 0) + 1;
+    if (shared.graphDown) throw new Error('graph down');
     return [{ version: 97 }];
   },
   configured: () => true,
   close: async () => {},
-  envSetting: (key, fallback = '') => process.env[key] || fallback,
+  envSetting: (key: string, fallback = '') => process.env[key] || fallback,
 }));
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
-let solrServer;
-let reportServer;
-let asked;
-let answer;
-let reports;
+/** A form or query as the service sent it to Solr: name and value, in order. */
+type Sent = [string, string][];
+/** What reached the stand-in report service. */
+type Report = {
+  url: string | undefined;
+  authorization: string | undefined;
+  type: string | undefined;
+  bytes: Buffer;
+  body: string;
+};
+let base: string;
+let server: Server;
+let solrServer: Server;
+let reportServer: Server;
+/** What the stand-in Solr was asked: method and handler, and what it was sent. */
+let asked: [string, Sent][];
+/** The stand-in Solr's answer to a request. */
+let answer: (url: string, sent: Sent) => unknown;
+let reports: Report[];
 let hanging = false;
 
-const listen = async (handler) => {
+const listen = async (handler: RequestListener) => {
   const { createServer } = await import('node:http');
   const listening = createServer(handler);
-  await new Promise((resolve) => listening.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => listening.listen(0, '127.0.0.1', resolve));
   return listening;
 };
+const portOf = (listening: Server) => (listening.address() as AddressInfo).port;
 
 beforeAll(async () => {
   solrServer = await listen((request, response) => {
     let body = '';
-    request.on('data', (chunk) => (body += chunk));
+    request.on('data', (chunk: Buffer) => (body += chunk.toString()));
     request.on('end', () => {
       // A GET carries its parameters in the URL, a POST in its body.
-      const [path, query = ''] = request.url.split('?');
+      const url = request.url ?? '';
+      const [path = '', query = ''] = url.split('?');
       const sent = [...new URLSearchParams(request.method === 'GET' ? query : body)];
-      asked.push([`${request.method} ${path.replace('/solr', '')}`, sent]);
+      asked.push([`${request.method ?? ''} ${path.replace('/solr', '')}`, sent]);
       response.setHeader('Content-Type', 'application/json');
-      response.end(JSON.stringify(answer(request.url, sent)));
+      response.end(JSON.stringify(answer(url, sent)));
     });
   });
   reportServer = await listen((request, response) => {
-    const chunks = [];
-    request.on('data', (chunk) => chunks.push(chunk));
+    const chunks: Buffer[] = [];
+    request.on('data', (chunk: Buffer) => chunks.push(chunk));
     request.on('end', () => {
       reports.push({
         url: request.url,
@@ -65,32 +85,43 @@ beforeAll(async () => {
       if (!hanging) response.end();
     });
   });
-  process.env.SOLR_URL = `http://127.0.0.1:${solrServer.address().port}/solr/reactome`;
-  process.env.REPORT_URL = `http://127.0.0.1:${reportServer.address().port}`;
-  process.env.REPORT_USER = 'reporter';
-  process.env.REPORT_PASSWORD = 'not-a-secret';
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  process.env['SOLR_URL'] = `http://127.0.0.1:${portOf(solrServer)}/solr/reactome`;
+  process.env['REPORT_URL'] = `http://127.0.0.1:${portOf(reportServer)}`;
+  process.env['REPORT_USER'] = 'reporter';
+  process.env['REPORT_PASSWORD'] = 'not-a-secret';
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${portOf(server)}`;
 });
 
 afterAll(async () => {
   for (const name of ['SOLR_URL', 'REPORT_URL', 'REPORT_USER', 'REPORT_PASSWORD'])
     delete process.env[name];
-  await new Promise((resolve) => server.close(resolve));
-  await new Promise((resolve) => solrServer.close(resolve));
-  await new Promise((resolve) => reportServer.close(resolve));
+  for (const closing of [server, solrServer, reportServer])
+    await new Promise<void>((resolve) => closing.close(() => resolve()));
 });
 
-const get = (path, headers = {}) =>
+/** The nth request Solr was asked; one not asked is the test's failure. */
+const request = (at: number) => {
+  const found = asked[at];
+  if (!found) throw new Error(`Solr was not asked a request ${at}`);
+  return found;
+};
+/** The nth report sent; one not sent is the test's failure. */
+const report = (at: number) => {
+  const found = reports[at];
+  if (!found) throw new Error(`no report ${at} was sent`);
+  return found;
+};
+const get = (path: string, headers: Record<string, string> = {}) =>
   fetch(`${base}/ContentService/search/fireworks${path}`, { headers });
-const until = async (ready) => {
+const until = async (ready: () => boolean) => {
   for (let tries = 0; !ready() && tries < 400; tries += 1)
     await new Promise((resolve) => setTimeout(resolve, 5));
   expect(ready()).toBe(true);
 };
-const fqs = (sent) => sent.filter(([name]) => name === 'fq').map(([, value]) => value);
+const fqs = (sent: Sent) => sent.filter(([name]) => name === 'fq').map(([, value]) => value);
 
 describe('/fireworks, the species-wide search', () => {
   it('asks /fireworks for the species and those without, writing entries with their species', async () => {
@@ -157,15 +188,15 @@ describe('/fireworks, the species-wide search', () => {
       ],
     ]);
     await until(() => reports.length === 1);
-    const [report] = reports;
-    expect(report.url).toBe(
+    const sent = report(0);
+    expect(sent.url).toBe(
       '/report/search/notfound?releaseNumber=97&ip=203.0.113.7&agent=a+browser'
     );
-    expect(report.authorization).toBe(
+    expect(sent.authorization).toBe(
       `Basic ${Buffer.from('reporter:not-a-secret').toString('base64')}`
     );
-    expect(report.type).toBe('application/json');
-    expect(report.body).toBe('{"term":"zzz qqq","resource":""}');
+    expect(sent.type).toBe('application/json');
+    expect(sent.body).toBe('{"term":"zzz qqq","resource":""}');
   });
 
   it('names the terms the target core knows, in their HashSet order, and reports the targets', async () => {
@@ -202,10 +233,13 @@ describe('/fireworks, the species-wide search', () => {
         '"messages":["No entries found for query: BRAF VHL"],' +
         '"targets":[{"term":"VHL","resource":"UNIPROT","target":false},{"term":"BRAF","resource":"UNIPROT","target":true}]}'
     );
-    expect(fqs(asked[1][1])).toEqual([]);
+    expect(fqs(request(1)[1])).toEqual([]);
     await until(() => reports.length === 2);
     const byPath = Object.fromEntries(
-      reports.map((report) => [report.url.split('?')[0], report.body])
+      reports.map((report): [string, string] => [
+        (report.url ?? '').split('?')[0] ?? '',
+        report.body,
+      ])
     );
     expect(byPath).toEqual({
       '/report/search/targets': '[{"term":"BRAF","resource":"UNIPROT"}]',
@@ -226,10 +260,10 @@ describe('/fireworks, the species-wide search', () => {
       }).end()
     );
     await until(() => reports.length === 1);
-    expect([...reports[0].bytes]).toEqual([
+    expect([...report(0).bytes]).toEqual([
       ...Buffer.from('{"term":"café ?","resource":""}', 'latin1'),
     ]);
-    expect(reports[0].url).toMatch(/&agent$/);
+    expect(report(0).url).toMatch(/&agent$/);
   });
 
   it('answers without waiting on a report service that never answers', async () => {
@@ -253,10 +287,9 @@ describe('/fireworks, the species-wide search', () => {
         ? { response: { numFound: 1, docs: [{ accessions: ['P1'], resource: 'UNIPROT' }] } }
         : { response: { numFound: 0, docs: [] } };
     const response = await get('?query=x&scope=BOTH');
-    expect([response.status, (await response.json()).messages]).toEqual([
-      500,
-      ['Something unexpected happened and the error has been reported.'],
-    ]);
+    expect([response.status, ((await response.json()) as { messages: string[] }).messages]).toEqual(
+      [500, ['Something unexpected happened and the error has been reported.']]
+    );
     // Reports go in order: once a later search's report has come, one from
     // this search would have come before it.
     answer = () => ({ response: { numFound: 0, docs: [] } });
@@ -270,43 +303,43 @@ describe('/fireworks, the species-wide search', () => {
     answer = () => ({ response: { numFound: 0, docs: [] } });
     await get('?query=a%1Fb', { 'User-Agent': 'x*y~z' });
     await until(() => reports.length === 1);
-    expect(reports[0].url).toMatch(/&agent=x\*y%7Ez$/);
-    expect(reports[0].body).toBe('{"term":"a\\u001Fb","resource":""}');
+    expect(report(0).url).toMatch(/&agent=x\*y%7Ez$/);
+    expect(report(0).body).toBe('{"term":"a\\u001Fb","resource":""}');
     // A backslash of the term's own, before "u001f", is no escape to change.
     reports = [];
     await get('?query=c%5Cu001fd');
     await until(() => reports.length === 1);
-    expect(reports[0].body).toBe('{"term":"c\\\\u001fd","resource":""}');
+    expect(report(0).body).toBe('{"term":"c\\\\u001fd","resource":""}');
   });
 
   it("authenticates with Java's default credentials when none are set", async () => {
     reports = [];
     answer = () => ({ response: { numFound: 0, docs: [] } });
-    delete process.env.REPORT_USER;
-    delete process.env.REPORT_PASSWORD;
+    delete process.env['REPORT_USER'];
+    delete process.env['REPORT_PASSWORD'];
     try {
       await get('?query=zzz');
       await until(() => reports.length === 1);
     } finally {
-      process.env.REPORT_USER = 'reporter';
-      process.env.REPORT_PASSWORD = 'not-a-secret';
+      process.env['REPORT_USER'] = 'reporter';
+      process.env['REPORT_PASSWORD'] = 'not-a-secret';
     }
-    expect(reports[0].authorization).toBe(
+    expect(report(0).authorization).toBe(
       `Basic ${Buffer.from('default:default').toString('base64')}`
     );
   });
 
   it('finds results without the graph: the release is read only to report', async () => {
     answer = () => ({ response: { numFound: 1, docs: [{ dbId: '1' }] } });
-    globalThis.graphDown = true;
-    const reads = globalThis.graphReads ?? 0;
+    graphState.graphDown = true;
+    const reads = graphState.graphReads ?? 0;
     try {
       const response = await get('?query=KNTC1');
       expect(response.status).toBe(200);
       // Not even the cached release is asked for.
-      expect(globalThis.graphReads ?? 0).toBe(reads);
+      expect(graphState.graphReads ?? 0).toBe(reads);
     } finally {
-      globalThis.graphDown = false;
+      graphState.graphDown = false;
     }
   });
 
@@ -317,7 +350,7 @@ describe('/fireworks, the species-wide search', () => {
         : { response: { numFound: 0, docs: [] } };
     const response = await get('?query=x&scope=BOTH');
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual([
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
   });
@@ -338,7 +371,8 @@ describe('/fireworks, the species-wide search', () => {
         : { response: { numFound: 0, docs: [] } };
     await get(`?query=${['AC', 'AR', ...fillers].join('%20')}&scope=BOTH`);
     await until(() => reports.length === 2);
-    const targets = reports.find((report) => report.url.startsWith('/report/search/targets'));
+    const targets = reports.find((report) => report.url?.startsWith('/report/search/targets'));
+    if (!targets) throw new Error('no targets report was sent');
     expect(targets.body).toBe(
       '[{"term":"AR","resource":"UNIPROT"},{"term":"AC","resource":"UNIPROT"}]'
     );
@@ -350,7 +384,7 @@ describe('/fireworks, the species-wide search', () => {
     expect(missing.status).toBe(400);
     const blank = await get('?query=x&includeInteractors=%20');
     expect(blank.status).toBe(500);
-    expect((await blank.json()).messages).toEqual([
+    expect(((await blank.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
     expect(asked).toHaveLength(0);
@@ -367,7 +401,7 @@ describe('/fireworks, the species-wide search', () => {
       )
     ).not.toThrow();
     await until(() => reports.length === 1);
-    expect(reports[0].url).toMatch(/&ip=%3F&/);
-    expect(reports[0].body).toBe('{"term":"x?","resource":""}');
+    expect(report(0).url).toMatch(/&ip=%3F&/);
+    expect(report(0).body).toBe('{"term":"x?","resource":""}');
   });
 });

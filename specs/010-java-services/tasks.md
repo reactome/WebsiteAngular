@@ -45,11 +45,11 @@
   - compare status, a fixed header set and the SHA-256 of the body;
   - per-class normalisers, declared in `tools/java-parity/normalisers.ts`;
   - JSON report of identical, different and both-error counts, with no bodies or token values in the output.
-- [x] T007 Add a self-test to `tools/java-parity/parity.spec.mjs`. Two stub servers that differ in one byte must report a difference; identical stubs must not. Show it failing with the comparison disabled. — #507
+- [x] T007 Add a self-test to `tools/java-parity/parity.spec.ts`. Two stub servers that differ in one byte must report a difference; identical stubs must not. Show it failing with the comparison disabled. — #507
 - [ ] T008 [P] (With the first PDF comparison, T030: it needs `qpdf` in a container.) Add the PDF normaliser to `tools/java-parity/normalisers.ts`:
   - `qpdf --qdf --object-streams=disable --static-id`, run in a throwaway container;
   - mask CreationDate, ModDate and the cover-page date.
-  - Test it in `tools/java-parity/parity.spec.mjs`: two PDFs differing only in those fields compare equal, and a PDF with a changed body does not.
+  - Test it in `tools/java-parity/parity.spec.ts`: two PDFs differing only in those fields compare equal, and a PDF with a changed body does not.
 
 **Checkpoint**: routing tests know three outcomes; the harness detects a one-byte difference.
 
