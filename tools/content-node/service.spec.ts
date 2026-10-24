@@ -11,6 +11,8 @@
 // against Java. What is checkable here is everything that is *not* a query: the
 // endpoint table's own integrity, and the pure functions a declared difference
 // is built from.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { createHash } from 'node:crypto';
 import { app, fingerprintFiles, failureAnswer, writeResult, deepLimit } from './server.ts';
@@ -51,29 +53,42 @@ import {
   writerFor,
 } from './spring.ts';
 
-let base;
-let server;
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+
+/** Java's error envelope, from an answer that must be there. */
+const envelopeOf = (answer: { body: string } | undefined) => {
+  if (!answer) throw new Error('no answer');
+  return JSON.parse(answer.body) as { code: number; reason: string; messages: string[] };
+};
+/** A row as the graph gives it: a property it does not hold is absent, not null. */
+const row = (properties: {
+  dbId: number;
+  schemaClass: string;
+  stId?: string;
+  displayName?: string;
+}) => properties as Parameters<typeof databaseObjectTsv>[0];
 
 describe('/health', () => {
   it('answers, which nothing checked before', async () => {
     const response = await fetch(`${base}/health`);
     expect(response.status).toBe(200);
-    const body = await response.json();
+    const body = (await response.json()) as { ok: boolean; endpoints: unknown[] };
     expect(body.ok).toBe(true);
     expect(body.endpoints.length).toBe(endpoints.length);
   });
 
   it('says which code is running, so a stale container can be spotted', async () => {
-    const body = await (await fetch(`${base}/health`)).json();
+    const body = (await (await fetch(`${base}/health`)).json()) as { build: string };
     expect(body.build).toMatch(/^[0-9a-f]{12}$/);
   });
 });
@@ -111,6 +126,11 @@ describe('the endpoint table', () => {
 
 describe("the person lists' declared difference", () => {
   const person = endpoints.find((e) => e.path.endsWith('/authoredReactions'));
+  /** The declared normalisation; an undeclared one is the test's failure. */
+  const normalise = (java: unknown) => {
+    if (!person?.normalise) throw new Error('/authoredReactions declares no normalise');
+    return person.normalise(java);
+  };
 
   it('keeps the first occurrence and drops later ones', () => {
     // Java returns an event once per authorship edit. The page asks what a
@@ -123,7 +143,7 @@ describe("the person lists' declared difference", () => {
       { dbId: 1, dateTime: '2013-01-01' },
       { dbId: 3, dateTime: '2012-01-01' },
     ];
-    expect(person.normalise(java)).toEqual([
+    expect(normalise(java)).toEqual([
       { dbId: 1, dateTime: '2026-01-01' },
       { dbId: 2, dateTime: '2025-01-01' },
       { dbId: 3, dateTime: '2012-01-01' },
@@ -132,11 +152,11 @@ describe("the person lists' declared difference", () => {
 
   it('leaves a list with no duplicates exactly as it was', () => {
     const java = [{ dbId: 1 }, { dbId: 2 }, { dbId: 3 }];
-    expect(person.normalise(java)).toEqual(java);
+    expect(normalise(java)).toEqual(java);
   });
 
   it('is declared, so the harness reports it rather than hiding it', () => {
-    expect(person.differs?.length, 'the normalisation is declared').toBeGreaterThan(0);
+    expect(person?.differs?.length, 'the normalisation is declared').toBeGreaterThan(0);
   });
 });
 
@@ -157,7 +177,7 @@ describe('the species lists', () => {
     // stayed separate.
     const species = endpoints.filter((e) => e.path.includes('/data/species/'));
     expect(species).toHaveLength(2);
-    expect(species[0].handler).not.toBe(species[1].handler);
+    expect(species[0]?.handler).not.toBe(species[1]?.handler);
   });
 });
 
@@ -174,7 +194,7 @@ describe('what /health says about staleness', () => {
    * the wrong prefix, and nothing else about the response looks wrong.
    */
   it('reports the release it is serving', async () => {
-    const health = await (await fetch(`${base}/health`)).json();
+    const health = (await (await fetch(`${base}/health`)).json()) as object;
     expect(health).toHaveProperty('release');
   });
 
@@ -184,7 +204,7 @@ describe('what /health says about staleness', () => {
     // the name of the process's.
     const response = await fetch(`${base}/health`);
     expect(response.status).toBe(200);
-    expect((await response.json()).ok).toBe(true);
+    expect(((await response.json()) as { ok: boolean }).ok).toBe(true);
   });
 });
 
@@ -244,7 +264,9 @@ describe('an id that is not valid UTF-8', () => {
     const response = await fetch(`${base}/ContentService/data/person/%FF`);
     expect(response.status).toBe(404);
     expect(response.headers.get('content-type')).toContain('application/json');
-    expect((await response.json()).messages).toEqual(['No person found for id: \ufffd']);
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+      'No person found for id: \ufffd',
+    ]);
   });
 
   it('decodes an encoded surrogate as one U+FFFD, as the JDK does', () => {
@@ -255,7 +277,8 @@ describe('an id that is not valid UTF-8', () => {
   it("answers every method and path form as the template's own route would", async () => {
     // HEAD is GET's; a method the template does not take is Java's 405; a
     // trailing slash changes nothing. Each was a 500 from the decode-failure path (review of #480).
-    const at = (path, method = 'GET') => fetch(`${base}/ContentService/data${path}`, { method });
+    const at = (path: string, method = 'GET') =>
+      fetch(`${base}/ContentService/data${path}`, { method });
     expect((await at('/person/%FF', 'HEAD')).status).toBe(404);
     expect((await at('/person/%FF', 'POST')).status).toBe(405);
     expect((await at('/orthologies/ids/species/%FF')).status).toBe(405);
@@ -276,7 +299,9 @@ describe('/pathways/low/entity reads its species as the servlet does', () => {
     const response = await fetch(
       `${base}/ContentService/data/pathways/low/entity/XYZ?species%5Bx%5D=1`
     );
-    expect((await response.json()).messages).toEqual(['No result for XYZ in null']);
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+      'No result for XYZ in null',
+    ]);
   });
 });
 
@@ -324,7 +349,7 @@ describe('a pool with no connection free', () => {
     );
     const answer = timedOut({ originalUrl: '/ContentService/data/query/R-HSA-69620' }, failure);
     expect(answer?.status).toBe(503);
-    expect(JSON.parse(answer.body).messages[0]).toContain('busy');
+    expect(envelopeOf(answer).messages[0]).toContain('busy');
   });
 });
 
@@ -338,7 +363,7 @@ describe('a query past its time limit', () => {
       failure
     );
     expect(answer?.status).toBe(503);
-    expect(JSON.parse(answer.body)).toMatchObject({ code: 503, reason: 'SERVICE_UNAVAILABLE' });
+    expect(envelopeOf(answer)).toMatchObject({ code: 503, reason: 'SERVICE_UNAVAILABLE' });
     expect(timedOut({ originalUrl: '/x' }, new Error('boom'))).toBe(undefined);
   });
 
@@ -372,11 +397,11 @@ describe('a query past its time limit', () => {
 
 describe('the edges of a path, answered as Tomcat and Spring answer them', () => {
   // Each measured against Java, 15 Oct 2026, on every endpoint node serves.
-  const springNotFound = async (path) => {
+  const springNotFound = async (path: string) => {
     const response = await fetch(base + path);
     expect(response.status).toBe(404);
     expect(response.headers.get('content-type')).toMatch(/^application\/json/);
-    const body = await response.json();
+    const body = (await response.json()) as { timestamp: unknown };
     expect(Object.keys(body)).toEqual(['timestamp', 'status', 'error', 'path']);
     expect(body).toMatchObject({ status: 404, error: 'Not Found', path });
     expect(Number.isInteger(body.timestamp)).toBe(true);
@@ -466,7 +491,7 @@ describe('the edges of a path, answered as Tomcat and Spring answer them', () =>
     const request = { originalUrl: '/ContentService/data/query/%2099999999999999999999.3%20' };
     const answer = failureAnswer(request, '/ContentService/data/query/{id}', failure);
     expect(answer?.status).toBe(500);
-    expect(JSON.parse(answer.body)).toMatchObject({
+    expect(envelopeOf(answer)).toMatchObject({
       code: 500,
       reason: 'INTERNAL_SERVER_ERROR',
       messages: ['For input string: "99999999999999999999"'],
@@ -478,9 +503,8 @@ describe('the edges of a path, answered as Tomcat and Spring answer them', () =>
         '/ContentService/data/pathways/low/entity/R-HSA-199420?species=99999999999999999999',
     };
     expect(
-      JSON.parse(
-        failureAnswer(species, '/ContentService/data/pathways/low/entity/{id}', failure).body
-      ).messages
+      envelopeOf(failureAnswer(species, '/ContentService/data/pathways/low/entity/{id}', failure))
+        .messages
     ).toEqual(['For input string: "99999999999999999999"']);
     // Any other failure is not Java's to mirror.
     expect(failureAnswer(request, '/ContentService/data/query/{id}', new Error('boom'))).toBe(
@@ -493,7 +517,9 @@ describe('/query/enhanced/{id} ranks above /query/{id}/{attribute}, as in Spring
   it('reads /query/enhanced/stId as the enhanced object with the id stId', async () => {
     const response = await fetch(`${base}/ContentService/data/query/enhanced/stId`);
     expect(response.status).toBe(404);
-    expect((await response.json()).messages).toEqual(['Id: stId has not been found in the System']);
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+      'Id: stId has not been found in the System',
+    ]);
   });
 });
 
@@ -605,7 +631,8 @@ describe("personWhere, as graph-core's PersonService reads a person's id", () =>
 });
 
 describe("writerFor, Java's view and identity for a request", () => {
-  const writer = (query) => writerFor({ originalUrl: `/ContentService/data/query/1${query}` });
+  const writer = (query: string) =>
+    writerFor({ originalUrl: `/ContentService/data/query/1${query}` });
   // CustomMessageConverter.getObjectWriter, measured against Java 15 Oct 2026.
   for (const [query, view, jsog] of [
     ['', 1, false],
@@ -618,7 +645,7 @@ describe("writerFor, Java's view and identity for a request", () => {
     ['?includeRef=TRUE&view=nested', 2, true],
     ['?includeRef=yes', 1, false],
     ['?includeRef=false&includeRef=true', 1, false],
-  ]) {
+  ] as const) {
     it(`reads ${JSON.stringify(query)} as view ${view}${jsog ? ' with JSOG' : ''}`, () => {
       expect(writer(query)).toEqual([view, { jsog }]);
     });
@@ -640,15 +667,15 @@ describe('databaseObjectTsv, as ControllerUtils.toTSV writes an object', () => {
 
   it('writes the dbId when there is no stable id, or an empty one', () => {
     expect(
-      databaseObjectTsv({ dbId: 48887, displayName: 'Homo sapiens', schemaClass: 'Species' })
+      databaseObjectTsv(row({ dbId: 48887, displayName: 'Homo sapiens', schemaClass: 'Species' }))
     ).toBe('48887\tHomo sapiens\tSpecies');
-    expect(databaseObjectTsv({ dbId: 1, stId: '', displayName: 'x', schemaClass: 'Pathway' })).toBe(
-      '1\tx\tPathway'
-    );
+    expect(
+      databaseObjectTsv(row({ dbId: 1, stId: '', displayName: 'x', schemaClass: 'Pathway' }))
+    ).toBe('1\tx\tPathway');
   });
 
   it('writes a missing name as Java concatenates it: null', () => {
-    expect(databaseObjectTsv({ dbId: 1, stId: 'R-HSA-1', schemaClass: 'Pathway' })).toBe(
+    expect(databaseObjectTsv(row({ dbId: 1, stId: 'R-HSA-1', schemaClass: 'Pathway' }))).toBe(
       'R-HSA-1\tnull\tPathway'
     );
   });
@@ -656,7 +683,7 @@ describe('databaseObjectTsv, as ControllerUtils.toTSV writes an object', () => {
 
 describe('resolveId, as graph-core reads an id', () => {
   // Each form measured against Java's /data/query/{id}/stId, 13 Oct 2026.
-  const cases = [
+  const cases: [raw: string, where: string, id: string][] = [
     ['70486', 'n.dbId = toInteger($id)', '70486'],
     ['0070486', 'n.dbId = toInteger($id)', '0070486'],
     ['70486.3', 'n.dbId = toInteger($id)', '70486'],
@@ -789,8 +816,7 @@ describe('pathwayJson, a Pathway as graph-core serialises it', () => {
   });
 
   it('writes isCanonical where Java declares it, and defaults hasEHLD to false', () => {
-    const withoutEhld = { ...node };
-    delete withoutEhld.hasEHLD;
+    const { hasEHLD: _withoutEhld, ...withoutEhld } = node;
     const keys = Object.keys(pathwayJson({ ...withoutEhld, isCanonical: 'true' }));
     expect(keys.slice(keys.indexOf('hasDiagram'), keys.indexOf('hasDiagram') + 4)).toEqual([
       'hasDiagram',
@@ -798,7 +824,7 @@ describe('pathwayJson, a Pathway as graph-core serialises it', () => {
       'isCanonical',
       'lastUpdatedDate',
     ]);
-    expect(pathwayJson(withoutEhld).hasEHLD).toBe(false);
+    expect(pathwayJson(withoutEhld)['hasEHLD']).toBe(false);
   });
 
   it('puts a definition after stIdVersion, and a doi after speciesName', () => {
@@ -890,15 +916,16 @@ describe('referenceEntityJson, a ReferenceEntity as graph-core serialises it', (
     ).toBe('ReferenceIsoform');
     const dna = ['DatabaseObject', 'ReferenceEntity', 'ReferenceSequence', 'ReferenceDNASequence'];
     const odd = referenceEntityJson({ dbId: 1, schemaClass: '6' }, dna);
-    expect([odd.className, odd.moleculeType, odd.schemaClass]).toEqual([
-      'ReferenceDNASequence',
-      'Entity',
-      '6',
-    ]);
+    expect([
+      odd.className,
+      odd.moleculeType,
+      (odd as { schemaClass?: unknown }).schemaClass,
+    ]).toEqual(['ReferenceDNASequence', 'Entity', '6']);
   });
 
   it('gives each class the moleculeType its constructor sets, and a group none', () => {
-    const type = (leaf) => referenceEntityJson({ dbId: 1 }, ['ReferenceEntity', leaf]).moleculeType;
+    const type = (leaf: string) =>
+      referenceEntityJson({ dbId: 1 }, ['ReferenceEntity', leaf]).moleculeType;
     expect(type('ReferenceMolecule')).toBe('Chemical');
     expect(type('ReferenceTherapeutic')).toBe('ChemicalDrug');
     expect(type('ReferenceRNASequence')).toBe('Entity');
@@ -956,7 +983,7 @@ describe('participantJson, graph-core Participant as Java writes it', () => {
 
   it('writes a missing reference value as the text "null", as the driver\'s asString does', () => {
     const json = participantJson({ ...row, refEntities: [{ ...row.refEntities[0], url: null }] });
-    expect(json.refEntities[0].url).toBe('null');
+    expect(json.refEntities[0]?.url).toBe('null');
   });
 
   it('leaves out a missing participant name or class, as asString(null) does', () => {
@@ -1019,7 +1046,8 @@ describe('physicalEntityJson, an other form as graph-core serialises it', () => 
   });
 
   it('names an EWAS by its reference type, as getClassName does', () => {
-    const name = (referenceType) => physicalEntityJson({ ...ewas, referenceType }).className;
+    const name = (referenceType: string) =>
+      physicalEntityJson({ ...ewas, referenceType }).className;
     expect(name('ReferenceGeneProduct')).toBe('Protein');
     expect(name('ReferenceDNASequence')).toBe('DNA Sequence');
     expect(name('ReferenceRNASequence')).toBe('RNA Sequence');
@@ -1106,15 +1134,38 @@ describe('physicalEntityJson, an other form as graph-core serialises it', () => 
 });
 
 /** A graph-core HierarchyTreeItem row: [stId, displayName, hasDiagram, speciesName, schemaClass, labels, order]. */
+type LocationStep = Parameters<typeof parseHierarchy>[0];
 const item = (
-  stId,
+  stId: string | null,
   schemaClass = 'Pathway',
-  { diagram = false, order = 0, species = 'Homo sapiens' } = {}
-) => [stId, `${stId} name`, diagram, species, schemaClass, ['DatabaseObject'], order];
+  {
+    diagram = false,
+    order = 0,
+    species = 'Homo sapiens',
+  }: { diagram?: boolean; order?: number; species?: string } = {}
+): LocationStep => [stId, `${stId} name`, diagram, species, schemaClass, ['DatabaseObject'], order];
+/** A node's children; none at all is the test's failure, not null. */
+const kids = (node: PathwayBrowserNode) => {
+  if (!node.children) throw new Error(`${node.stId ?? 'the node'} has no children`);
+  return node.children;
+};
+/** A node's parents; none at all is the test's failure, not null. */
+const parentsOf = (node: PathwayBrowserNode) => {
+  if (!node.parent) throw new Error(`${node.stId ?? 'the node'} has no parents`);
+  return node.parent;
+};
+/** The item at a position; a missing one is the test's failure, not undefined. */
+const nth = <T>(list: T[], at: number) => {
+  const found = list[at];
+  if (found === undefined) throw new Error(`nothing at ${at}`);
+  return found;
+};
 
 describe("PathwayBrowserNode children, graph-core's TreeSet", () => {
-  const node = (name, { species = 'Homo sapiens', order } = {}) =>
-    Object.assign(new PathwayBrowserNode(), { stId: name, name, species, order });
+  const node = (
+    name: string,
+    { species = 'Homo sapiens', order }: { species?: string | null; order?: number } = {}
+  ) => Object.assign(new PathwayBrowserNode(), { stId: name, name, species, order });
 
   it('orders by species, then order, then name by UTF-16 unit, as compareTo does', () => {
     const parent = new PathwayBrowserNode();
@@ -1127,7 +1178,7 @@ describe("PathwayBrowserNode children, graph-core's TreeSet", () => {
     ]) {
       parent.addChild(child);
     }
-    expect(parent.children.map((c) => `${c.species}/${c.order ?? 0}/${c.name}`)).toEqual([
+    expect(kids(parent).map((c) => `${c.species}/${c.order ?? 0}/${c.name}`)).toEqual([
       'Homo sapiens/0/B',
       'Homo sapiens/0/b',
       'Homo sapiens/0/c',
@@ -1142,14 +1193,14 @@ describe("PathwayBrowserNode children, graph-core's TreeSet", () => {
     parent.addChild(first);
     parent.addChild(node('same'));
     expect(parent.children).toEqual([first]);
-    expect(parent.children[0]).toBe(first);
+    expect(nth(kids(parent), 0)).toBe(first);
   });
 
   it('sorts a node with no species before one with a species', () => {
     const parent = new PathwayBrowserNode();
     parent.addChild(node('z'));
     parent.addChild(node('y', { species: null }));
-    expect(parent.children.map((c) => c.name)).toEqual(['y', 'z']);
+    expect(kids(parent).map((c) => c.name)).toEqual(['y', 'z']);
   });
 });
 
@@ -1169,20 +1220,20 @@ describe('parseHierarchy, graph-core HierarchyRepository.parseRaw', () => {
       ],
       true
     );
-    expect(tree.children.map((c) => c.stId)).toEqual(['A', 'D']);
-    const [a, d] = tree.children;
+    expect(kids(tree).map((c) => c.stId)).toEqual(['A', 'D']);
+    const [a, d] = [nth(kids(tree), 0), nth(kids(tree), 1)];
     // One node per stId: B is shared, reached from A and from D.
-    expect(a.children[0]).toBe(d.children[0]);
-    expect(a.children[0].children.map((c) => c.stId)).toEqual(['C']);
-    expect(a.children[0].parent.map((p) => p.stId)).toEqual(['A', 'D']);
+    expect(nth(kids(a), 0)).toBe(nth(kids(d), 0));
+    expect(kids(nth(kids(a), 0)).map((c) => c.stId)).toEqual(['C']);
+    expect(parentsOf(nth(kids(a), 0)).map((p) => p.stId)).toEqual(['A', 'D']);
   });
 
   it('keeps the quirk: a longer path is attached to the previous node, whatever it starts with', () => {
     // Java only compares lengths, so a two-step path after a one-step one hangs
     // its last node off the previous path's end.
     const tree = parseHierarchy(root, [[item('A')], [item('C'), item('E')]], true);
-    expect(tree.children.map((c) => c.stId)).toEqual(['A']);
-    expect(tree.children[0].children.map((c) => c.stId)).toEqual(['E']);
+    expect(kids(tree).map((c) => c.stId)).toEqual(['A']);
+    expect(kids(nth(kids(tree), 0)).map((c) => c.stId)).toEqual(['E']);
   });
 
   it('skips what the browser cannot show, unless asked not to', () => {
@@ -1192,9 +1243,9 @@ describe('parseHierarchy, graph-core HierarchyRepository.parseRaw', () => {
       [item('X', 'Reaction'), item(null, 'CatalystActivity'), item('Y')],
     ];
     const omitted = parseHierarchy(root, paths, true);
-    expect(omitted.children[0].children.map((c) => c.stId)).toEqual(['Y']);
+    expect(kids(nth(kids(omitted), 0)).map((c) => c.stId)).toEqual(['Y']);
     const kept = parseHierarchy(root, paths, false);
-    expect(kept.children[0].children.map((c) => c.type)).toEqual(['CatalystActivity']);
+    expect(kids(nth(kids(kept), 0)).map((c) => c.type)).toEqual(['CatalystActivity']);
   });
 
   it('gives the root a species only for an event or entity, and a diagram flag only for a pathway', () => {
@@ -1216,7 +1267,7 @@ describe('parseHierarchy, graph-core HierarchyRepository.parseRaw', () => {
       [[['A', 'A', null, 'Homo sapiens', 'Pathway', [], null]]],
       true
     );
-    expect(tree.children[0]).toMatchObject({ order: 0, diagram: false });
+    expect(nth(kids(tree), 0)).toMatchObject({ order: 0, diagram: false });
   });
 });
 
@@ -1282,9 +1333,10 @@ describe('locationsInPathwayBrowser, PathwayBrowserLocationsUtils', () => {
       parseHierarchy(entity(), [[p], [p, t1], [p, t2]], true)
     );
     expect(trees.map((t) => t.stId)).toEqual(['T1', 'T2']);
-    expect(trees[0].children[0].url).toBe('/PathwayBrowser/#/P');
-    expect(trees[0].children[0].children[0].url).toBe('/PathwayBrowser/#/T1&amp;SEL=E');
-    expect(trees[1].children[0].children[0].url).toBe('/PathwayBrowser/#/T2&amp;SEL=E');
+    const [first, second] = [nth(trees, 0), nth(trees, 1)];
+    expect(nth(kids(first), 0).url).toBe('/PathwayBrowser/#/P');
+    expect(nth(kids(nth(kids(first), 0)), 0).url).toBe('/PathwayBrowser/#/T1&amp;SEL=E');
+    expect(nth(kids(nth(kids(second), 0)), 0).url).toBe('/PathwayBrowser/#/T2&amp;SEL=E');
   });
 
   it('drops branches that end anywhere but a top-level pathway', () => {
@@ -1368,7 +1420,7 @@ describe('/detail/{id}/locationsInPWB without a database', () => {
     );
     expect(response.status).toBe(400);
     expect(response.headers.get('content-type')).toMatch(/^application\/json/);
-    const body = await response.json();
+    const body = (await response.json()) as { messages: string[]; url: string };
     expect(body).toMatchObject({ code: 400, reason: 'BAD_REQUEST', targets: null });
     expect(body.messages).toEqual([
       "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; " +
@@ -1383,13 +1435,17 @@ describe('/detail/{id}/locationsInPWB without a database', () => {
       `${base}/ContentService/data/detail/99999999999999999999.2/locationsInPWB`
     );
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual(['For input string: "99999999999999999999"']);
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+      'For input string: "99999999999999999999"',
+    ]);
   });
 
   it("answers an id that is neither a stable id nor a dbId with Java's 404", async () => {
     const response = await fetch(`${base}/ContentService/data/detail/foo/locationsInPWB`);
     expect(response.status).toBe(404);
-    expect((await response.json()).messages).toEqual(['Reverse sub graph found for id: foo']);
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+      'Reverse sub graph found for id: foo',
+    ]);
   });
 });
 
@@ -1400,7 +1456,7 @@ describe("locationsQuery, graph-core's locations queries", () => {
     'regulatedBy|regulator|physicalEntity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|activeUnit|catalystActivity|repeatedUnit|hasMember|hasCandidate|hasComponent|input|output|hasEvent|proteinMarker|RNAMarker';
   const direct =
     'regulatedBy|regulator|physicalEntity|catalystActivity|requiredInputComponent|diseaseEntity|entityFunctionalStatus|input|output|hasEvent';
-  const cases = [
+  const cases: [byDbId: boolean, directParticipants: boolean, java: string][] = [
     [false, false, `MATCH (n:DatabaseObject{stId:$stId}) OPTIONAL MATCH path=(n)<-[:${all}*]-() `],
     [true, false, `MATCH (n:DatabaseObject{dbId:$dbId}) OPTIONAL MATCH path=(n)<-[:${all}*]-() `],
     [
@@ -1442,7 +1498,7 @@ describe('servletParameter, a query parameter as Tomcat reads it', () => {
     expect(servletParameter('directParticipants=%e2%80', 'directParticipants')).toEqual(['\ufffd']);
     // Java's decoder, not the WHATWG one, where they part: an encoded surrogate
     // (ED A0..BF, then a continuation if present) is one U+FFFD, not one per byte.
-    const decoded = (escapes) => servletParameter(`d=${escapes}`, 'd')[0];
+    const decoded = (escapes: string) => servletParameter(`d=${escapes}`, 'd')[0];
     expect(decoded('%ED%A0%80')).toBe('\ufffd');
     expect(decoded('%ED%BF%BF')).toBe('\ufffd');
     expect(decoded('%ED%A0')).toBe('\ufffd');
@@ -1484,7 +1540,7 @@ describe("springBoolean's second try, Spring's CustomBooleanEditor", () => {
 });
 
 describe('springBoolean with several values', () => {
-  const several = (values) =>
+  const several = (values: string) =>
     "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Boolean'; " +
     `nested exception is java.lang.IllegalArgumentException: Invalid boolean value [${values}]`;
 
@@ -1529,11 +1585,11 @@ describe('locationsInPWB reads its query as the servlet does', () => {
 
 describe('springInteger, an Integer request parameter as Spring converts it', () => {
   // Every case measured against Java's /data/schema/Pathway/min, 14 Oct 2026.
-  const refused = (type, message) =>
+  const refused = (type: string, message: string) =>
     `Failed to convert value of type '${type}' to required type 'java.lang.Integer'; ` +
     `nested exception is java.lang.NumberFormatException: ${message}`;
-  const one = (message) => ({ error: refused('java.lang.String', message) });
-  const several = (message) => ({ error: refused('java.lang.String[]', message) });
+  const one = (message: string) => ({ error: refused('java.lang.String', message) });
+  const several = (message: string) => ({ error: refused('java.lang.String[]', message) });
 
   it('names a missing parameter, and one that is present but empty', () => {
     expect(springInteger([], 'page')).toEqual({
@@ -1548,7 +1604,7 @@ describe('springInteger, an Integer request parameter as Spring converts it', ()
   });
 
   it('reads what NumberUtils.parseNumber reads: signs, hex, any whitespace removed, any digits', () => {
-    const cases = [
+    const cases: [raw: string, value: number][] = [
       ['1', 1],
       ['+1', 1],
       ['01', 1],
@@ -1632,7 +1688,7 @@ describe("schema queries, graph-core SchemaRepository's text", () => {
     'RETURN DISTINCT(n.dbId) as dbId, n.stId as stId, n.displayName as displayName, labels(n) as labels ' +
     'ORDER BY n.displayName SKIP $skip LIMIT $limit';
   it('pages a class, with or without a species', () => {
-    expect(schemaMinQuery('Pathway')).toBe(`MATCH (n:Pathway) ${ret}`);
+    expect(schemaMinQuery('Pathway', undefined)).toBe(`MATCH (n:Pathway) ${ret}`);
     expect(schemaMinQuery('Pathway', 'taxId')).toBe(
       `MATCH (s:Species{taxId:$taxId})<-[:species]-(n:Pathway) ${ret}`
     );
@@ -1715,8 +1771,8 @@ describe('neo4jFailureMessage, a Neo4j client error as Spring reports it', () =>
 });
 
 describe('/schema/{className}/count and /min without a database', () => {
-  const at = (path) => `${base}/ContentService/data/schema/${path}`;
-  const text = async (path) => {
+  const at = (path: string) => `${base}/ContentService/data/schema/${path}`;
+  const text = async (path: string) => {
     const response = await fetch(at(path));
     return {
       status: response.status,
@@ -1724,7 +1780,7 @@ describe('/schema/{className}/count and /min without a database', () => {
       body: await response.text(),
     };
   };
-  const envelope = (code, reason, path, message) =>
+  const envelope = (code: number, reason: string, path: string, message: string) =>
     JSON.stringify({
       code,
       reason,
@@ -1745,7 +1801,7 @@ describe('/schema/{className}/count and /min without a database', () => {
       ['pathway/count', 'pathway/count'],
       ['Pathway%3Bx/count', 'Pathway%3Bx/count'],
       ['Foo/min?page=1&offset=1&species=9606', 'Foo/min'],
-    ]) {
+    ] as const) {
       const answer = await text(path);
       expect(answer.status, path).toBe(500);
       expect(answer.type, path).toMatch(/^application\/json/);
@@ -1794,11 +1850,11 @@ describe('/schema/{className}/count and /min without a database', () => {
       )
     );
     answer = await text('Foo/min?page=1&offset=%zz');
-    expect(JSON.parse(answer.body).messages).toEqual([
+    expect((JSON.parse(answer.body) as { messages: string[] }).messages).toEqual([
       "Required request parameter 'offset' for method parameter type Integer is not present",
     ]);
     answer = await text('Foo/min?page=x&page=1&offset=1');
-    expect(JSON.parse(answer.body).messages).toEqual([
+    expect((JSON.parse(answer.body) as { messages: string[] }).messages).toEqual([
       "Failed to convert value of type 'java.lang.String[]' to required type 'java.lang.Integer'; " +
         'nested exception is java.lang.NumberFormatException: For input string: "x,1"',
     ]);
@@ -1810,11 +1866,12 @@ describe('error bodies, written as Jackson writes them', () => {
   // `\u001F`; JSON.stringify writes `\u001f`. Measured against Java on
   // 14 Oct 2026: /data/query/R-HSA-%1F%0B/stId, /data/pathways/top/%1F%0B and
   // /data/event/R-HSA-%1F/ancestors all answer `\u001F\u000B` in the message.
+  // The three things the answers read from a request: its URL, protocol and host.
   const request = {
     originalUrl: '/ContentService/data/x/%1F%0B?y=1',
     protocol: 'http',
     get: () => 'h',
-  };
+  } as unknown as Parameters<typeof notFound>[0];
 
   // And, like every Java error url, without the query: request.getRequestURL.
   // Measured: /data/pathways/low/entity/foo?species=9606 and
@@ -1847,8 +1904,8 @@ describe('error bodies, written as Jackson writes them', () => {
 });
 
 describe('/schema/{className}/attributes and /referrals without a database', () => {
-  const at = (path) => `${base}/ContentService/data/schema/${path}`;
-  const text = async (path) => {
+  const at = (path: string) => `${base}/ContentService/data/schema/${path}`;
+  const text = async (path: string) => {
     const response = await fetch(at(path));
     return {
       status: response.status,
@@ -1856,8 +1913,8 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
       body: await response.text(),
     };
   };
-  const sha = (body) => createHash('sha256').update(body).digest('hex');
-  const classNotFound = (path) =>
+  const sha = (body: string) => createHash('sha256').update(body).digest('hex');
+  const classNotFound = (path: string) =>
     JSON.stringify({
       code: 500,
       reason: 'INTERNAL_SERVER_ERROR',
@@ -1916,7 +1973,7 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
         1884,
       ],
       ['Person/referrals', 'c9ce7b4c974487467c14a47f4bc184c638178e3234d7096129bdabceabc161cc', 365],
-    ]) {
+    ] as const) {
       const answer = await text(path);
       expect(answer.status, path).toBe(200);
       expect(answer.type, path).toMatch(/^application\/json/);
@@ -1962,7 +2019,7 @@ describe('/schema/{className}/attributes and /referrals without a database', () 
       ['model/attributes', 'model/attributes'],
       ['model/referrals', 'model/referrals'],
       ['%1F%0B/attributes', '%1F%0B/attributes'],
-    ]) {
+    ] as const) {
       const answer = await text(path);
       expect(answer.status, path).toBe(500);
       expect(answer.type, path).toMatch(/^application\/json/);
@@ -1984,7 +2041,7 @@ describe('the order endpoints are registered in', () => {
   // a /x/{id} listed before /x/model answered /x/model as if "model" were an
   // id -- the schema browser's class tree, as a 400 about a missing page.
   // Spring ranks a literal segment above a variable; this keeps node doing so.
-  const pattern = (path) =>
+  const pattern = (path: string) =>
     new RegExp(
       `^${path.replace(/[.*+?^$()|[\]\\]/g, '\\$&').replace(/\\\{[^}]+\\\}|\{[^}]+\}/g, '[^/]+')}$`
     );
@@ -2055,13 +2112,15 @@ describe('fingerprintFiles, what /health hashes', () => {
 
 describe('writeResult, how a handler answer goes on the wire', () => {
   function recorder() {
-    const calls = [];
-    const response = {
-      status: (s) => (calls.push(['status', s]), response),
-      type: (t) => (calls.push(['type', t]), response),
-      send: (b) => (calls.push(['send', b]), response),
-      end: () => (calls.push(['end']), response),
+    const calls: unknown[][] = [];
+    // The four methods writeResult calls on an Express response, recorded.
+    const recording = {
+      status: (s: number) => (calls.push(['status', s]), recording),
+      type: (t: string) => (calls.push(['type', t]), recording),
+      send: (b: unknown) => (calls.push(['send', b]), recording),
+      end: () => (calls.push(['end']), recording),
     };
+    const response = recording as unknown as Parameters<typeof writeResult>[0];
     return { response, calls };
   }
 
@@ -2192,7 +2251,7 @@ describe('a matrix parameter', () => {
       'data/query/ids;x=1',
     ]) {
       const response = await fetch(`${base}/ContentService/${path}`);
-      const body = await response.json();
+      const body = (await response.json()) as { error: string; path: string };
       expect([path, response.status, body.error, body.path]).toEqual([
         path,
         404,
