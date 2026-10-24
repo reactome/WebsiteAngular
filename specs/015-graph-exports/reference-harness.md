@@ -1,6 +1,6 @@
 # The SBML reference harness (T003)
 
-How spec 015's SBML references are made: sbml-exporter's graph-only converter, with four defects fixed, run against a private copy of the release's graph. The harness and its output stay outside the repository; the output holds people's names (SBML creators). Host-specific paths below are placeholders.
+How spec 015's SBML references are made: sbml-exporter's graph-only converter, with its five defects fixed, run against a private copy of the release's graph. The harness and its output stay outside the repository; the output holds people's names (SBML creators). Host-specific paths below are placeholders.
 
 ## What runs
 
@@ -12,7 +12,9 @@ How spec 015's SBML references are made: sbml-exporter's graph-only converter, w
 - **Harness.java** initialises graph-core with `(bolt-uri, user, password, database, GraphNeo4jConfig.class)` and turns on `Helper.setUseIdentifierURL(true)`, as it is inside ContentService. For each id it runs `findById`, then `new SbmlConverter(event, version, ads).convert()`, and writes `toString()` as UTF-8 to `{stId}.sbml`.
 - **The runtime** is JDK 11, with `-Duser.timezone=UTC -Duser.language=en -Duser.country=US -Dfile.encoding=UTF-8`. The classes are compiled with JDK 17's `javac --release 11`.
 
-## The four fixes (research R1)
+## The five fixes (research R1, R9)
+
+The first three are in `DataFactory` (catalysts, negative regulators and positive regulators all taken from the right column), the fourth is the reused `Participant`, and the fifth is `ReactionBaseResult.build` never reading `catalysts`.
 
 In `org/reactome/server/tools/sbml/data/DataFactory.java`:
 
