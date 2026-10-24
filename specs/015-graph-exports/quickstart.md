@@ -1,6 +1,6 @@
 # Quickstart: validating the graph-based exports
 
-Run from the repository root. Host-specific settings (database addresses, credentials, store locations) come from the deployment's environment, never from this repository. Requests against the shared graph are small, sequential and spaced (FR-011).
+Run from the repository root. Host-specific settings (database addresses, credentials, store locations) come from the deployment's environment, never from this repository. Requests against the shared graph are small, sequential and spaced (FR-014). The release's published bulk files are fetched from its download directory, one at a time, and kept outside the repository.
 
 ## 1. The unit and route checks
 
@@ -10,7 +10,7 @@ npx vitest run tools/exports-compare tools/content-node deploy/nginx
 
 Expected:
 
-- the SBML and BioPAX writer specs pass;
+- the routes' specs pass, with the export URLs routed to node;
 - the comparison tools' own specs pass, including the cases that must fail;
 - `routes.spec.ts` shows the new routes to node in the deployed and local tables, with SBGN and the event PDF still in Java.
 
@@ -36,7 +36,7 @@ Expected: no difference outside [differences.md](contracts/differences.md).
 
 ## 5. On beta, before and after switching a route
 
-- Deploy the content service, then ask for a reaction's and a pathway's SBML and BioPAX through nginx.
+- Deploy the content service and spec 010's library service, then ask for a reaction's and a pathway's SBML and BioPAX through nginx. Stop the library service and check both answer 503 in the envelope.
 - **Expected:**
   - 200 with the [contract](contracts/endpoints.md)'s headers;
   - the second ask is served from the cache;

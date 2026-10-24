@@ -1,6 +1,6 @@
 # Research: SBML and BioPAX built from the graph
 
-> **Rewritten direction, 24 Oct 2026.** The spec now makes `sbml-exporter` and `BioPAX3Exporter` the single implementation of each format, for the bulk files and the website ([spec.md](spec.md), "What changed"). R1, R3, R5 and R8 stand as written. R2 (JSBML's bytes, for a TypeScript writer) is no longer needed, since JSBML itself writes them. R4's mapping and comparison stand; its decision to write BioPAX in TypeScript is superseded by R9. R6's routes, headers and errors stand for the website, with the answer now coming from R10's service. R7 is done (#634). R9 and R10 are new.
+> **Rewritten direction, 24 Oct 2026.** The spec now makes `sbml-exporter` and `BioPAX3Exporter` the single implementation of each format, for the bulk files and the website ([spec.md](spec.md), "What changed"). R1, R3 and R8 stand as written. R5's validators and versions stand; its CI decision (exports built here from recorded rows) is superseded, because the exporters are Java libraries that need a graph: each validates in its own CI (R9's decision). R2 (JSBML's bytes, for a TypeScript writer) is no longer needed, since JSBML itself writes them. R4's mapping and comparison stand; its decision to write BioPAX in TypeScript is superseded by R9. R6's routes, headers and errors stand for the website, with the answer now coming from R10's service. R7 is done (#634). R9 and R10 are new.
 
 Measured on 23 Oct 2026 (release 97). Sources: the code of `reactome/sbml-exporter` (main, v2.2.7), `reactome/content-service` (main), `reactome/graph-core` (main), JSBML 1.5 and JTidy r938, `reactome/restfulapi_mini` and `reactome/Pathway-Exchange` (BioPAX); live answers from the Java services on the beta host (ContentService, and the legacy RESTful service, which serves today's BioPAX from the relational database on the same host); a few samples from reactome.org's copy of that service, first, before the local one was found; the diagram JSON for R-HSA-69620.
 
@@ -135,13 +135,13 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 - Write BioPAX Level 3 in TypeScript, emitting the same classes, properties, values, `rdf:ID` scheme, `xml:base`, namespaces and header, in a **deterministic** order: graph order, then dbId.
 - The comparison with today's file is by meaning. Each file is canonicalised to a multiset of (class, property, target-key) triples, with each `rdf:ID` replaced by a content key: the event's or entity's DB_ID, an xref's db+id, a vocabulary's term, or recursive content for features and steps.
-- **Recorded differences:** order and ids; the EC numbers; `chapterAuthors`; the converter's early return on a repeated cross-reference or disease (the port writes all of them); and the answers' headers and errors (R6).
+- **Recorded differences:** order and ids; the EC numbers; `chapterAuthors`; the converter's early return on a repeated cross-reference or disease (the exporter is to write all of them); and the answers' headers and errors (R6).
 
 **Rationale.** Byte parity is impossible even Java against Java, and a deterministic order is strictly better.
 
 **Alternatives considered.**
 
-- _Paxtools on a JVM_: rejected, because there is no runtime JVM.
+- _Paxtools on a JVM_: rejected on 23 Oct, because there was no runtime JVM. Superseded on 24 Oct: R10 serves the exporters from spec 010's Java library service.
 - _The legacy service_: rejected, because it keeps the relational database.
 - _The bulk exporter_: rejected, as out of scope.
 
@@ -204,7 +204,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 - **Routing:**
   - **nginx:** a node location before Java's `exporter/(diagram|document|event)` location, under the render budget. `local.conf` has the same without the budget, `proxy.conf.js` agrees, and `routes.spec.ts` covers them.
   - **Staying in Java:** SBGN and the event PDF. `.sbgn` is added to the spec's list of Java neighbours, so a regex that takes too much fails the test.
-  - **Code** joins `exporters-endpoints.ts`, with leaf modules: an XML writer, the SBML model, the SBML layout, a diagram-file reader, the BioPAX model and the BioPAX writer. Each stays under 1,500 lines.
+  - **Code** (superseded on 24 Oct): the endpoints join `exporters-endpoints.ts`, but the bodies come from the library service (R10). No writer or model module is added here.
 
 **Rationale.** Matching Java where it has an answer, and choosing the clearest answer where it has none (BioPAX).
 
@@ -236,18 +236,18 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Measured for T002 (23 Oct 2026).**
 
-- **Where beta's graph keeps its data.** It runs from the local image `local-test/graphdb:Release97-community` (4.49 GB). Its data is the Docker volume `websiteangular_graphdb-release97-community`; all local volumes together are 4.49 GB.
-- **Disk.** 2.7 GB was free (98% used): not enough for a copy. With the user's approval, Docker's build cache (5.9 GB, cached build layers only) was cleared. That left 8.6 GB free (91%).
+- **Where beta's graph keeps its data.** It runs from a local image of the release (4.49 GB), with its data in a Docker volume.
+- **Disk.** There was not enough free for a copy until Docker's build cache (cached build layers only) was cleared, which left 8.6 GB free.
 
 **Decision (T002).**
 
 - **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host.
 - **The container.** It is started from the same local image on another loopback-only port, with authentication off and a smaller memory setting than beta's, so the host's memory is shared safely. Beta's graph is neither stopped nor restarted; its store is not written after the release load, so a copy taken while it runs is consistent in practice, and Neo4j checks the store when the copy starts.
-- **Afterwards.** The copy is stopped once the references are made (T003, and again for T013 and T016 if needed), and its volume is deleted, giving the disk back.
+- **Afterwards.** The copy is stopped once the references are made (T003), and recreated for each comparison that needs it (T032), and its volume is deleted, giving the disk back.
 - **The fallback** is small, spaced runs against the shared graph. It is used only if the copy fails to start cleanly.
 - **Committed fixtures** have personal values replaced: SBML vCard names; BioPAX `bp:author` and the `Authored:`, `Reviewed:` and `Edited:` comments. The comparison tools hash those values and never print them.
 
-**Rationale.** FR-011 and the organisation's rule on personal information.
+**Rationale.** FR-014 and the organisation's rule on personal information.
 
 ## R9. The three repositories (measured 24 Oct 2026)
 
@@ -279,7 +279,7 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
   - `{dbId}.owl` per pathway (`-t`, `-m`);
   - `{Species_Name}.owl` per species (`-s`, or every species with no selector).
 
-  Its Jenkinsfile zips them as `biopax.zip`. It has never run in a release, and its run command has a stray quote.
+  Its Jenkinsfile zips them as `biopax.zip`. Its run command has a stray quote, so the step as written would fail; whether it has ever run cannot be read from the repository.
 
 - **As a library:** `WriteBioPAX3(pathway, version).createModel()`. A single reaction cannot be exported.
 - **Content, against today's files and [data-model.md](data-model.md):**
@@ -292,13 +292,20 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
   - species mode writes every pathway of the species as its own component, sub-pathways included;
   - the events in no pathway are computed but never written;
   - `-l` writes an empty pathway;
-  - `xml:base` is `https://…/biopax/{version}/species/{dbId}#`, where the release's check expects `http://www.reactome.org/biopax/{release}`;
+  - `xml:base` is `https://…/biopax/{version}/species/{dbId}#`, where the release's check of `biopax.zip` (`release-download-directory`'s Jenkinsfile, after the move) requires every Level 3 file to contain `xml:base="http://www.reactome.org/biopax/{release}`. Today's per-event files (`…/biopax/{release}/{topDbId}#`, data-model.md) begin the same way;
   - the base is a static field, so it is not thread-safe.
 - **Tests:** seven unit test files, all on mocks. There is no comparison with the old files.
 
 **`reactome/release-download-directory`** (Java 8 source, JDK 11 image; Paxtools 5.1, Pathway-Exchange built from source):
 
-- **BioPAX.** For each species, Pathway-Exchange's `SpeciesAllPathwaysConverter` (Level 2) and `SpeciesAllPathwaysLevel3Converter` (Level 3) write one `.owl`, zipped as `biopax2.zip` and `biopax.zip`. The validator step is commented out, so the validator archives its README lists are not made.
+- **BioPAX.** For each species, Pathway-Exchange's `SpeciesAllPathwaysConverter` (Level 2) and `SpeciesAllPathwaysLevel3Converter` (Level 3) write one `.owl`, zipped as `biopax2.zip` and `biopax.zip`.
+- **What release 97 published.** Its `biopax.zip` in the download directory (174 MB, 15 species files) is that converter's output:
+  - `xml:base="http://www.reactome.org/biopax/97/{species dbId}#"` (48887 for human), not BioPAX3Exporter's form;
+  - `rdf:ID`s are class counters;
+  - the content is Pathway-Exchange's. _Plasmodium falciparum_'s file has 658 pathways, 966 reactions, 993 protein references, 17,026 unification xrefs, 5,648 publication xrefs, 2,960 stoichiometries and 689 catalyses.
+
+  So it is a valid reference for BioPAX3Exporter. Read on 24 Oct 2026; the file is kept outside the repository. The validator step is commented out, so the validator archives its README lists are not made.
+
 - **Its other steps, all relational:**
   - database dumps;
   - GSEA `.gmt` and `ReactomeToBioSystems.zip`, both through Pathway-Exchange;
@@ -306,6 +313,14 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
   - `reactome_stable_ids.txt`, which needs the stable-identifier database;
   - `gene_association.reactome`;
   - optionally, `pathway2summation.txt` and `humanPathwaysWithDiagrams.txt`.
+
+**`reactome/data-export`** (Java; graph-core and Cypher only, "the files to be placed in the download section"). Some of those steps already have a graph-based counterpart here, read from its task list on 24 Oct 2026:
+
+- **`pathway2summation` and `humanPathwaysWithDiagrams`:** made by its `PathwaySummationMapping` and `HumanPathwaysWithDiagrams` tasks.
+- **A GSEA-style GMT:** its `GmtExporter` writes `Reactome_GeneName.gmt` from the graph. Whether that is the same set as `release-download-directory`'s `ReactomePathways.gmt.zip`, under another name, is not shown by the code. A file comparison would settle it.
+- **No counterpart** for the database dumps (MySQL by nature), the Protégé ontology files, `reactome_stable_ids.txt`, `gene_association.reactome` or the BioSystems export.
+
+So retiring `release-download-directory` is smaller than its step list suggests. That work remains out of this spec's scope (T058 records it for whoever retires it).
 
 **Decision.**
 
@@ -325,19 +340,23 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
 
 **Measured.**
 
-- The render service is the pattern: an image built in this repository's compose, bound to loopback, fronted by nginx and the dev proxy, and not answering the public directly.
-- The two exporters use different graph-core versions (BioPAX3Exporter 2.0.9; `sbml-exporter` takes its version from the BOM), and different JDKs (17 and 11).
+- **Spec 010 already plans the home.** Its library service (spec 010 research R2) is a small Spring Boot application in its own Reactome repository, licensed AGPL-3.0, reached only over HTTP through node's pass-through. It hosts the operations that stay in Java, the SBML export among them, built from pinned library commits (`deploy/java/PINS.md`). It is not built yet: its repository waits for the organisation's owners (spec 010 T001).
+- **The exporters' licences.** None of the three repositories has a licence file (R9). Bundling them into an image built in this Apache-2.0 repository would need that settled; spec 010's AGPL service is where Reactome's Java libraries are already meant to be combined.
+- **graph-core.** BioPAX3Exporter pins 2.0.9. `sbml-exporter` takes its version from the Reactome BOM. The library service pins one version for all its libraries.
 
 **Decision.**
 
-- **An `exports` service in this repository's compose**: a small JDK 17 HTTP wrapper that loads both exporters as libraries and answers one event at a time. It is built from their published artefacts, never from a clone.
-  - It is fronted by the node service. Node answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` with R6's headers and errors, asks the service for the body, and caches it per release under spec 011.
-  - It runs with a share of 2 deep requests and its own memory cap.
-- **The graph-core versions** are aligned in both exporters (part of FR-001 and FR-005). If they cannot be, the exports run as two services, one per exporter.
+- **The website's exports are operations of spec 010's library service.**
+  - Its SBML operation uses the fixed graph-only converter with the layout from the diagram files, not the relational converter that spec 010 first planned. Its parity with Java is then this spec's comparison, not a byte comparison with Java's relational answer.
+  - It gains a BioPAX Level 3 operation through `WriteBioPAX3`.
+  - Both exporters are built from pinned commits, as spec 010 builds every library. That needs no published artefact.
+- **Node** answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` through spec 010's pass-through, with R6's headers and errors, cached per release under spec 011. When the library service cannot answer, node answers 503 in the envelope, never a fallback.
+- **graph-core** is aligned in both exporters to the library service's pinned version. Each exporter's maintainers are asked to accept it (a task of its own).
 
-**Rationale.** It keeps node the only front, so there is no fallback to the Java ContentService. It needs no Tomcat, and it runs the exact code the release runs.
+**Rationale.** One Java service for what stays in Java, as spec 010 decided. Its licence suits combining Reactome's libraries. The website runs the exact code the release runs. And this repository gains no second JVM.
 
 **Alternatives considered.**
 
-- _The Java ContentService calling the exporters_: rejected. ContentService is being retired route by route, and these routes would tie it in.
-- _The exporters' own command lines, run per request_: rejected. That means a JVM start per download, at seconds each.
+- _A second Java service in this repository's compose_ (this research's first answer, 24 Oct): rejected. It would duplicate spec 010's service, and bundle unlicensed libraries into an Apache-2.0 repository's image.
+- _The Java ContentService calling the exporters_: rejected. ContentService is being retired route by route.
+- _The exporters' command lines, run per request_: rejected. That starts a JVM per download, at seconds each.

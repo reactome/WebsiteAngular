@@ -24,7 +24,7 @@ What BioPAX3Exporter must write (spec FR-005), and where each value is in the gr
 
 ## BioPAX Level 3: what is written, and where it comes from
 
-The relational name is today's converter's source; the graph name is where the port reads it.
+The relational name is today's converter's source; the graph name is where the exporter reads it.
 
 | BioPAX                                                                                                                                                                                                                                                                                                                             | From (relational)                                                                                                                                                                                                                                                                                              | From (graph)                                                                                                                                                                                                                                        |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -53,5 +53,5 @@ The first two are recorded differences.
 
 ## Validation rules (from the requirements)
 
-- **SBML:** byte-identical to the reference apart from the layout, the SBO terms the layout sets, the root's layout namespace and the generation note (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-009).
-- **BioPAX:** the canonical triples equal today's, apart from recorded differences (FR-006). The BioPAX validator reports 0 errors (FR-009).
+- **SBML:** byte-identical to the reference apart from the layout, the SBO terms the layout sets, the root's `layout:required` and layout namespace, and the generation note (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-009).
+- **BioPAX:** the canonical triples equal today's, apart from recorded differences (FR-005). The BioPAX validator reports 0 errors (FR-008).

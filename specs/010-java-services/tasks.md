@@ -76,7 +76,7 @@
 - [ ] T011 [US2] Scaffold the Spring Boot application in `<library repo>`, with Java 11 bytecode, an executable jar, and a health endpoint reporting the pinned library commits
 - [ ] T012 [US2] Copy, unchanged, content-service's PSICQUIC controller and manager, and the `Interactors` JSON models, into `<library repo>`. Each file names its source commit (`7b9eceb`).
 - [ ] T013 [US2] Copy the upload and token controllers, `CustomInteractorManager`, `TupleManager` with its Kryo set-up, and the store's LRU checker into `<library repo>`. Pin interactor-core 1.1.5 and Kryo 5.3.0 and freeze them, with a comment saying why: old tokens stop reading if either changes.
-- [ ] T014 [US2] Copy the SBML, SBGN and event-PDF exporter controllers, `ExportManager` and its cache into `<library repo>`. Exclude Aspose.Slides from diagram-exporter (research R8).
+- [ ] T014 [US2] Copy the SBML, SBGN and event-PDF exporter controllers, `ExportManager` and its cache into `<library repo>`. Exclude Aspose.Slides from diagram-exporter (research R8). **SBML (spec 015, 24 Oct 2026):** the operation uses `sbml-exporter`'s fixed graph-only converter with its layout from the diagram files, not the relational converter, so the service needs no relational database for it. The service also gains a BioPAX Level 3 operation through `BioPAX3Exporter` (spec 015 R10).
 - [ ] T015 [US2] Copy content-service's exception-to-status mapping (its error envelope) into `<library repo>`, so error bodies are Java's
 - [ ] T016 [US2] Read every setting at run time, from system properties or environment, in `<library repo>`. None is baked in; startup fails clearly when one is missing.
 
@@ -122,8 +122,8 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
   - send uploads (tuple content, form, URL; a PSICQUIC URL on loopback) to a reference container and the candidate, each with a throwaway store;
   - compare the bytes, then have each side read the other's files.
 - [ ] T027 [US2] Cut over uploads and tokens (5 operations). Check on the deployed site that a shared overlay link opens, and that a fresh upload's token reads back after a restart.
-- [ ] T028 [P] [US2] Run SBGN and SBML parity: a byte comparison over a sample of pathways and reactions, with the candidate's timezone and locale equal to the reference's
-- [ ] T029 [US2] Cut over SBGN and SBML (2 operations), inside the exporter's rate-limited location. Check on the deployed site that the download buttons return the files through node.
+- [ ] T028 [P] [US2] Run SBGN parity: a byte comparison over a sample of pathways and reactions, with the candidate's timezone and locale equal to the reference's. SBML's proof is spec 015's comparison (its T037 and T039), since its body is no longer Java's relational answer.
+- [ ] T029 [US2] Cut over SBGN (1 operation), inside the exporter's rate-limited location. Check on the deployed site that the download button returns the file through node. SBML is cut over by spec 015 (its T044).
 - [ ] T030 [US2] Run event-PDF parity with the PDF normaliser, including requests with an analysis token
 - [ ] T031 [US2] Cut over the event PDF (1 operation). Check on the deployed site that the PDF download works.
 - [ ] T032 [US2] Fail the Java service on purpose on the deployed site: stop `java-library` and check every cut-over address answers 503 in the envelope while node's own pages are unaffected. Start it again.
