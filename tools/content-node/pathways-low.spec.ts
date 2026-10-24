@@ -7,12 +7,17 @@
 // /low/entity/{id}: a stable id or a dbId, each with or without a species, to
 // graph-core's PathwayRepository query, kept here as written. The pathways
 // here are invented.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const asked = [];
-let rows = [];
+/** A query's parameters, as the service passes them. */
+type Params = { id?: unknown; taxId?: unknown; [name: string]: unknown };
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
+let rows: unknown[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     // speciesTaxId's lookup: 9606 is a species.
     if (/^MATCH \(s:Species/.test(cypher)) return [{ taxId: '9606' }];
@@ -25,38 +30,47 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/data/pathways/low/${path}`);
-const node = (dbId, name) => ({
+/** The messages of Java's error envelope. */
+const messages = async (response: Response) =>
+  ((await response.json()) as { messages: string[] }).messages;
+
+const get = (path: string) => fetch(`${base}/ContentService/data/pathways/low/${path}`);
+const node = (dbId: number, name: string) => ({
   dbId,
   stId: `R-HSA-${dbId}`,
   displayName: name,
   schemaClass: 'Pathway',
 });
-const last = () => asked[asked.length - 1];
-const oneLine = (cypher) => cypher.replace(/\s+/g, ' ').trim();
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const oneLine = (cypher: string) => cypher.replace(/\s+/g, ' ').trim();
 
 describe('the three variants', () => {
   for (const [path, column, start] of [
     ['entity/R-HSA-1/allForms', 'p', 'MATCH (:DatabaseObject{stId: $id})-[:regulator|'],
     ['diagram/entity/R-HSA-1', 'm', 'MATCH (:PhysicalEntity{stId: $id})<-[:regulatedBy|'],
     ['diagram/entity/R-HSA-1/allForms', 'm', 'MATCH (:PhysicalEntity{stId: $id})-[:regulator|'],
-  ])
+  ] as const)
     it(`${path} runs its own query and writes the pathways in the rows' order`, async () => {
       rows = [{ [column]: node(2, 'B') }, { [column]: node(1, 'A') }];
       asked.length = 0;
       const response = await get(path);
       expect(response.status).toBe(200);
-      expect((await response.json()).map((p) => p.dbId)).toEqual([2, 1]);
+      expect(((await response.json()) as { dbId: number }[]).map((p) => p.dbId)).toEqual([2, 1]);
       expect(oneLine(last()[0]).startsWith(start)).toBe(true);
       expect(last()[1].id).toBe('R-HSA-1');
     });
@@ -114,13 +128,9 @@ describe("Java's 404", () => {
       ['diagram/entity/xyz', 'No result for xyz in null'],
       ['diagram/entity/xyz/allForms?species=9606', 'No result for xyz in 9606'],
       ['entity/xyz/allForms?species=Homo%20sapiens', 'No result for xyz in Homo sapiens'],
-    ]) {
+    ] as const) {
       const response = await get(path);
-      expect([path, response.status, (await response.json()).messages]).toEqual([
-        path,
-        404,
-        [message],
-      ]);
+      expect([path, response.status, await messages(response)]).toEqual([path, 404, [message]]);
     }
   });
 });

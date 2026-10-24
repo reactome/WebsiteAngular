@@ -5,6 +5,8 @@
 // the POST's content type, and the 405 Java answers for a method a mapping
 // does not take. Every expected value below was measured against Java's
 // /data/orthology and /data/orthologies on 15 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { app } from './server.ts';
 import { JavaHashMap } from './java-hashmap.ts';
@@ -13,18 +15,22 @@ import { orthologyIds } from './body.ts';
 import { springPathLong } from './spring.ts';
 import { plainText, plainTextProblem } from './body.ts';
 import { JsonMap, mapNodes, VIEW, writeDomain } from './domain.ts';
+import type { GraphNode } from './graph.ts';
 
-let base;
-let server;
+/** A found object, as far as orthologyMap reads one: whether it is there. */
+const node = (id: number | string): GraphNode => ({ id, labels: [], props: {} });
+
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
 describe('springPathLong, a Long path variable as Spring converts it', () => {
   it('reads what Long.valueOf and Long.decode read', () => {
@@ -50,7 +56,7 @@ describe('springPathLong, a Long path variable as Spring converts it', () => {
   });
 
   it("refuses the rest with Java's 400, naming what it could not parse", () => {
-    const refused = (text) =>
+    const refused = (text: string) =>
       `Failed to convert value of type 'java.lang.String' to required type 'java.lang.Long'; ` +
       `nested exception is java.lang.NumberFormatException: For input string: "${text}"`;
     for (const [given, named] of [
@@ -60,7 +66,7 @@ describe('springPathLong, a Long path variable as Spring converts it', () => {
       ['0x', ''],
       ['1.5', '1.5'],
       ['48892.0', '48892.0'],
-    ])
+    ] as const)
       expect(springPathLong(given, 'speciesId'), given).toEqual({
         status: 400,
         error: refused(named),
@@ -77,8 +83,8 @@ describe('springPathLong, a Long path variable as Spring converts it', () => {
 });
 
 describe('JavaHashMap, in the order Java iterates a HashMap', () => {
-  const order = (keys) => {
-    const map = new JavaHashMap();
+  const order = (keys: string[]) => {
+    const map = new JavaHashMap<string, string>();
     for (const key of keys) map.set(key, key);
     return [...map.keys()];
   };
@@ -111,9 +117,9 @@ describe('JavaHashMap, in the order Java iterates a HashMap', () => {
     // 16 buckets hold 12; the 13th key doubles the table, and keys that share
     // a bucket at 16 keep their relative order in each half at 32.
     const keys = Array.from({ length: 13 }, (_, at) => `k${at * 16}`);
-    const map = new JavaHashMap();
+    const map = new JavaHashMap<string, boolean>();
     for (const key of keys) map.set(key, true);
-    const hash = (key) => {
+    const hash = (key: string) => {
       let h = 0;
       for (const unit of key) h = (Math.imul(31, h) + unit.charCodeAt(0)) | 0;
       return (h ^ (h >>> 16)) >>> 0;
@@ -160,13 +166,15 @@ describe('orthologyMap, the two maps getOrthologies builds', () => {
       'R-HSA-69620.9',
       ...Array.from({ length: 11 }, (_, at) => `x${at + 1}`),
     ];
-    const found = new Map(ids.map((id) => [id, id.startsWith('R') ? { id } : null]));
+    const found = new Map<string, GraphNode | null>(
+      ids.map((id) => [id, id.startsWith('R') ? node(id) : null])
+    );
     expect([...orthologyMap(ids, found).keys()]).toEqual(['R-HSA-69620.11', 'R-HSA-69620.9']);
   });
 
   it('drops an id with nothing found', () => {
-    const found = new Map([
-      ['R-HSA-69620', { id: 1 }],
+    const found = new Map<string, GraphNode | undefined>([
+      ['R-HSA-69620', node(1)],
       ['R-ALL-29358', undefined],
     ]);
     expect([...orthologyMap(['R-HSA-69620', 'R-ALL-29358'], found).keys()]).toEqual([
@@ -177,7 +185,7 @@ describe('orthologyMap, the two maps getOrthologies builds', () => {
 
 describe('plainText, the POST body in its charset as the JDK decodes it', () => {
   // Each expected string is the JDK's new String(bytes, charset).
-  const read = (charset, hex) =>
+  const read = (charset: string, hex: string) =>
     plainText(Buffer.from(hex, 'hex'), `text/plain;charset=${charset}`);
 
   it('reads UTF-16 big-endian without a mark, and by its mark with one', () => {
@@ -278,9 +286,11 @@ describe('writeDomain with a map', () => {
 });
 
 describe('the orthology endpoints, before any query', () => {
-  const get = (path, init) => fetch(`${base}/ContentService/data${path}`, init);
-  const envelope = async (response) => {
-    const body = await response.json();
+  const get = (path: string, init?: RequestInit) =>
+    fetch(`${base}/ContentService/data${path}`, init);
+  /** Status, reason and messages: Java's error envelope. */
+  const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+    const body = (await response.json()) as { reason: string; messages: string[] };
     return [response.status, body.reason, body.messages];
   };
 
@@ -311,11 +321,11 @@ describe('the orthology endpoints, before any query', () => {
     ]);
   });
 
-  const post = (species, body, type = 'text/plain') =>
+  const post = (species: string, body: string | undefined, type = 'text/plain') =>
     get(`/orthologies/ids/species/${species}`, {
       method: 'POST',
       headers: type ? { 'Content-Type': type } : {},
-      body,
+      ...(body === undefined ? {} : { body }),
     });
 
   it('checks the content type, then the species, then the body', async () => {
@@ -363,14 +373,18 @@ describe('a method a mapping does not take', () => {
       fetch(`${base}/ContentService/data/orthology/R-HSA-69620/species/48892`, { method: 'PUT' }),
       fetch(`${base}/ContentService/data/orthologies/ids/species/48892`),
     ]);
-    const bodies = await Promise.all(answers.map((response) => response.json()));
+    const bodies = await Promise.all(
+      answers.map(
+        async (response) => (await response.json()) as { reason: string; messages: string[] }
+      )
+    );
     expect(answers.map((response) => response.status)).toEqual([405, 405, 405]);
     expect(bodies.map((body) => body.messages[0])).toEqual([
       "Request method 'POST' not supported",
       "Request method 'PUT' not supported",
       "Request method 'GET' not supported",
     ]);
-    expect(bodies[0].reason).toBe('METHOD_NOT_ALLOWED');
+    expect(bodies[0]?.reason).toBe('METHOD_NOT_ALLOWED');
   });
 });
 
@@ -379,7 +393,7 @@ describe("Spring's guard against a download named by the URL", () => {
   // written for a path whose last segment ends in an extension Spring does not trust is sent as an attachment-proof
   // inline f.txt. Each case measured against Java on 15 Oct 2026, on the
   // species segment, which fails before any query.
-  const disposition = async (last) => {
+  const disposition = async (last: string) => {
     const response = await fetch(`${base}/ContentService/data/orthology/xyz/species/${last}`);
     await response.arrayBuffer();
     return response.headers.get('content-disposition');
@@ -395,7 +409,7 @@ describe("Spring's guard against a download named by the URL", () => {
     '48892.wasm',
     '48892.jsonp',
     '48892.5',
-  ])
+  ] as const)
     it(`marks ${last}`, async () => {
       expect(await disposition(last)).toBe(guarded);
     });
@@ -408,7 +422,7 @@ describe("Spring's guard against a download named by the URL", () => {
     '48892.SVG',
     '48892.',
     '48892.json',
-  ])
+  ] as const)
     it(`leaves ${last} alone`, async () => {
       expect(await disposition(last)).toBe(null);
     });

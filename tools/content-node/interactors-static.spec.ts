@@ -7,12 +7,18 @@
 // InteractionManager over graph-core's InteractorCountRepository and
 // PathwayRepository, their queries kept as written. The counts here are
 // invented; Java's answers were measured 17 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-let answer = () => [];
-const asked = [];
+/** A query's parameters, as the service passes them. */
+type Params = { accs?: string[]; speciesName?: string | null; [name: string]: unknown };
+/** The stand-in graph's rows for a query. */
+let answer: (cypher: string, params: Params) => unknown[] = () => [];
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     return answer(cypher, params);
   },
@@ -23,26 +29,35 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/interactors/static/${path}`);
-const post = (body, type = 'text/plain') =>
+const get = (path: string) => fetch(`${base}/ContentService/interactors/static/${path}`);
+const post = (body: string | undefined, type = 'text/plain') =>
   fetch(`${base}/ContentService/interactors/static/molecules/summary`, {
     method: 'POST',
     headers: type ? { 'content-type': type } : {},
-    body,
+    ...(body === undefined ? {} : { body }),
   });
-const messages = async (response) => [response.status, (await response.json()).messages];
-const last = () => asked[asked.length - 1];
-const oneLine = (cypher) => cypher.replace(/\s+/g, ' ').trim();
+/** Status and the messages of Java's error envelope. */
+const messages = async (response: Response) => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
+/** The last query asked; none at all is the test's failure, not undefined. */
+const last = () => {
+  const query = asked.at(-1);
+  if (!query) throw new Error('the graph was asked nothing');
+  return query;
+};
+const oneLine = (cypher: string) => cypher.replace(/\s+/g, ' ').trim();
 
 const COUNT =
   'MATCH (t:ReferenceEntity)<-[:interactor]-(in:Interaction) WHERE t.variantIdentifier IN $accs OR (t.variantIdentifier IS NULL AND t.identifier IN $accs) RETURN DISTINCT t.identifier AS s, COUNT(DISTINCT in) as t';
@@ -77,10 +92,10 @@ describe('POST /interactors/static/molecules/summary', () => {
     expect(await response.text()).toBe(
       '{"resource":"static","entities":[{"acc":"Q00987","count":78},{"acc":"P04637","count":249}]}'
     );
-    expect([...last()[1].accs].sort()).toEqual(['P04637', 'Q00987', 'xyz']);
+    expect([...(last()[1].accs ?? [])].sort()).toEqual(['P04637', 'Q00987', 'xyz']);
     // Newline and tab separate too.
     await post('P1\nP2\tP3');
-    expect([...last()[1].accs].sort()).toEqual(['P1', 'P2', 'P3']);
+    expect([...(last()[1].accs ?? [])].sort()).toEqual(['P1', 'P2', 'P3']);
   });
 
   it("answers Java's errors: 415, 422, and a 404 naming the body as sent", async () => {
@@ -107,7 +122,7 @@ describe('/interactors/static/molecule/{acc}/pathways', () => {
     answer = () => [{ p: { dbId: 3, stId: 'R-HSA-3', schemaClass: 'Pathway' } }];
     asked.length = 0;
     const response = await get('molecule/P1/pathways?species=Homo%20sapiens');
-    expect((await response.json()).map((p) => p.dbId)).toEqual([3]);
+    expect(((await response.json()) as { dbId: number }[]).map((p) => p.dbId)).toEqual([3]);
     expect(oneLine(last()[0])).toBe(
       'MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity) WHERE a.identifier = $acc OR a.variantIdentifier = $acc MATCH path=(p:Pathway)-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b) WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway)) RETURN DISTINCT p'
     );
@@ -131,7 +146,7 @@ describe('/interactors/static/molecule/{acc}/pathways', () => {
   });
 
   it('is a 404 with no species, which matches nothing', async () => {
-    answer = (cypher, params) => (params.speciesName === null ? [] : [{ p: { dbId: 3 } }]);
+    answer = (_cypher, params) => (params.speciesName === null ? [] : [{ p: { dbId: 3 } }]);
     expect(await messages(await get('molecule/P1/pathways'))).toEqual([
       404,
       ['No pathways found for molecule: P1'],

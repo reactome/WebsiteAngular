@@ -5,11 +5,16 @@
 // ReferralsLinkageRepository.getReferralsTo, by stable id or dbId, and
 // Java's 404 and 500. The answers' shapes are Java's, compared live on 17 Oct
 // 2026; the graph here is invented.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
-const asked = [];
+/** A query's parameters, as the service passes them. */
+type Params = { id?: unknown; taxId?: unknown; [name: string]: unknown };
+/** Each query the stand-in graph was asked, with its parameters. */
+const asked: [string, Params][] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: Params) => {
     asked.push([cypher, params]);
     // findNewStId: REACT_1 became R-HSA-9; REACT_2 became nothing.
     if (cypher.includes('oldStId')) return params.id === 'REACT_1' ? [{ stId: 'R-HSA-9' }] : [];
@@ -56,19 +61,30 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (id) => fetch(`${base}/ContentService/data/instance/${id}/referrers`);
+/** The nth query asked; one not asked is the test's failure, not undefined. */
+const query = (at: number) => {
+  const found = asked[at];
+  if (!found) throw new Error(`the graph was not asked a query ${at}`);
+  return found;
+};
+
+/** The messages of Java's error envelope. */
+const messages = async (response: Response) =>
+  ((await response.json()) as { messages: string[] }).messages;
+
+const get = (id: string) => fetch(`${base}/ContentService/data/instance/${id}/referrers`);
 
 describe('/data/instance/{id}/referrers', () => {
   it('groups what refers to the object by relationship, each a simple object', async () => {
@@ -78,25 +94,25 @@ describe('/data/instance/{id}/referrers', () => {
       '[{"referral":"hasComponent","objects":[{"dbId":7,"stId":"R-HSA-7","displayName":"A complex","schemaClass":"Complex"}]},' +
         '{"referral":"updatedInstance","objects":[{"dbId":8,"displayName":"An update","schemaClass":"UpdateTracker"}]}]'
     );
-    expect(asked[0][0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)<-\[rel\]-\(ref\)/);
+    expect(query(0)[0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)<-\[rel\]-\(ref\)/);
     // graph-core's exclusions, all seven, and no edit history.
-    expect(asked[0][0]).toContain('NOT ref:InstanceEdit');
+    expect(query(0)[0]).toContain('NOT ref:InstanceEdit');
     // The class from the node's own property, as SimpleDatabaseObject.build(Value) reads it.
-    expect(asked[0][0]).toContain('schemaClass: ref.schemaClass');
-    expect(asked[0][0]).toContain(
+    expect(query(0)[0]).toContain('schemaClass: ref.schemaClass');
+    expect(query(0)[0]).toContain(
       'NOT (d)<-[:species|compartment|includedLocation|referenceDatabase|evidenceType|reviewStatus|previousReviewStatus]-(ref)'
     );
     // Groups by relationship, each once, at most 1000.
-    expect(asked[0][0]).toMatch(/RETURN DISTINCT TYPE\(rel\) AS referral,/);
-    expect(asked[0][0]).toMatch(/LIMIT 1000$/);
-    expect(asked[0][1]).toEqual({ id: 'R-HSA-141433' });
+    expect(query(0)[0]).toMatch(/RETURN DISTINCT TYPE\(rel\) AS referral,/);
+    expect(query(0)[0]).toMatch(/LIMIT 1000$/);
+    expect(query(0)[1]).toEqual({ id: 'R-HSA-141433' });
   });
 
   it("is Java's 500 for a dbId past a long's range, as Long.parseLong refuses it", async () => {
     asked.length = 0;
     for (const id of ['99999999999999999999', '99999999999999999999.1']) {
       const response = await get(id);
-      expect([response.status, (await response.json()).messages]).toEqual([
+      expect([response.status, await messages(response)]).toEqual([
         500,
         ['For input string: "99999999999999999999"'],
       ]);
@@ -107,10 +123,10 @@ describe('/data/instance/{id}/referrers', () => {
     const echoed = await fetch(
       `${base}/ContentService/data/instance/%20${encodeURIComponent(arabic)}.1%20/referrers`
     );
-    expect((await echoed.json()).messages).toEqual([`For input string: "${arabic}"`]);
+    expect(await messages(echoed)).toEqual([`For input string: "${arabic}"`]);
     // One past the largest long.
     const past = await get('9223372036854775808');
-    expect((await past.json()).messages).toEqual(['For input string: "9223372036854775808"']);
+    expect(await messages(past)).toEqual(['For input string: "9223372036854775808"']);
     expect(asked).toHaveLength(0);
     const largest = await get('9223372036854775807');
     expect(largest.status).toBe(200);
@@ -124,8 +140,8 @@ describe('/data/instance/{id}/referrers', () => {
   it('reads a dbId as a dbId, version cut, as graph-core does', async () => {
     asked.length = 0;
     await get('141433.2');
-    expect(asked[0][0]).toMatch(/\{dbId:toInteger\(\$id\)\}/);
-    expect(asked[0][1]).toEqual({ id: '141433' });
+    expect(query(0)[0]).toMatch(/\{dbId:toInteger\(\$id\)\}/);
+    expect(query(0)[1]).toEqual({ id: '141433' });
   });
 
   it('is an empty list when nothing refers to it, and the 404 for no identifier', async () => {
@@ -145,7 +161,7 @@ describe('/data/instance/{id}/referrers', () => {
     await get('REACT_1.3');
     expect(asked.map(([, params]) => params.id)).toEqual(['REACT_1', 'R-HSA-9']);
     // Then by the new id as a stable id.
-    expect(asked[1][0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)/);
+    expect(query(1)[0]).toMatch(/\(d:DatabaseObject\{stId:\$id\}\)/);
     asked.length = 0;
     await get('REACT_2');
     expect(asked.map(([, params]) => params.id)).toEqual(['REACT_2', 'REACT_2']);

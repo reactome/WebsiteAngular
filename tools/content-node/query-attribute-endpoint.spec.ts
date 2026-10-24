@@ -4,18 +4,23 @@
 // through the service, with a stand-in graph: the object findById loads, then
 // what LazyFetchAspect would load for a getter whose relationship is empty.
 // The objects here are invented; Java's answers were measured 18 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { GraphNode } from './graph.ts';
 
-let root;
-let lazy = {};
-const asked = [];
+/** The object findById loads; none, for an id the graph does not hold. */
+let root: GraphNode | undefined;
+/** The lazy loads' rows, by `${type} ${direction} ${dbId}`. */
+let lazy: Record<string, unknown[]> = {};
+const asked: string[] = [];
 // The lazy loads by what they ask: `${type} ${direction} ${dbId}`, read from
 // the query and its parameter -- a load in the wrong direction, or of
 // another object, finds nothing. Directions are Java's model's
 // (domain-snapshot.json): an edit's `modified` comes in to the object, and
 // so does the `hasComponent` behind a complex's componentOf.
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
+  read: async (cypher: string, params: { dbId?: unknown }) => {
     asked.push(cypher);
     // /query/{id}/stId's and /query/{id}/normalPathway's own queries.
     if (/n\.stId AS stId, n\.schemaClass AS schemaClass/.test(cypher))
@@ -41,24 +46,28 @@ vi.mock('./graph.ts', () => ({
 
 const { app } = await import('./server.ts');
 
-let base;
-let server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => server.close(resolve)));
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const get = (path) => fetch(`${base}/ContentService/data/${path}`);
-const messages = async (response) => [response.status, (await response.json()).messages];
+const get = (path: string) => fetch(`${base}/ContentService/data/${path}`);
+/** Status and the messages of Java's error envelope. */
+const messages = async (response: Response) => [
+  response.status,
+  ((await response.json()) as { messages: string[] }).messages,
+];
 const pathway = {
   id: 1,
   labels: ['DatabaseObject', 'Event', 'Pathway'],
   props: { dbId: 9, stId: 'R-HSA-9', displayName: 'P', schemaClass: 'Pathway' },
 };
-const loaded = (id, schemaClass, labels, n = null) => ({
+const loaded = (id: number, schemaClass: string, labels: string[], n: number | null = null) => ({
   m: {
     id,
     labels: ['DatabaseObject', ...labels],
@@ -145,7 +154,7 @@ describe('stId and normalPathway in any case', () => {
       ['STID', /n\.stId AS stId, n\.schemaClass AS schemaClass/],
       ['normalpathway', /\[:normalPathway\]/],
       ['NormalPathway', /\[:normalPathway\]/],
-    ]) {
+    ] as const) {
       asked.length = 0;
       await get(`query/R-HSA-9/${spelled}`);
       expect([
@@ -162,11 +171,9 @@ describe("Java's other answers", () => {
     root = pathway;
     for (const path of ['query/abridged/R-HSA-9', 'query/R-HSA-9/more']) {
       const response = await get(path);
-      expect([path, response.status, (await response.json()).error]).toEqual([
-        path,
-        404,
-        'Not Found',
-      ]);
+      expect([path, response.status, ((await response.json()) as { error: string }).error]).toEqual(
+        [path, 404, 'Not Found']
+      );
     }
   });
 
@@ -178,7 +185,10 @@ describe("Java's other answers", () => {
     };
     lazy = {};
     const failed = await get('query/17/simplifiedDatabaseName');
-    expect([failed.status, (await failed.json()).reason]).toEqual([500, 'INTERNAL_SERVER_ERROR']);
+    expect([failed.status, ((await failed.json()) as { reason: string }).reason]).toEqual([
+      500,
+      'INTERNAL_SERVER_ERROR',
+    ]);
     expect(await messages(await get('query/17/xyz'))).toEqual([
       404,
       ["Attribute: 'xyz' has not been found for object: ReferenceGeneProduct"],

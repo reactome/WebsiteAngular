@@ -5,17 +5,23 @@
 // T093); the old /exporter/fireworks/ URL redirects to it. A stand-in graph
 // answers the species lookup, and a stand-in render service records what it
 // is asked for. Java's answers measured on production, 19 Oct 2026.
-import { createServer } from 'node:http';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-const SPECIES = { 9606: '9606', 'Homo sapiens': '9606', 48887: '9606', 'Mus musculus': '10090' };
+const SPECIES: Record<string, string> = {
+  9606: '9606',
+  'Homo sapiens': '9606',
+  48887: '9606',
+  'Mus musculus': '10090',
+};
 vi.mock('./graph.ts', () => ({
-  read: async (cypher, params) => {
-    const taxId = SPECIES[params?.value];
+  read: async (cypher: string, params?: { value?: string }) => {
+    const taxId = params?.value === undefined ? undefined : SPECIES[params.value];
     if (cypher.includes('{taxId: $value}'))
-      return taxId && params.value === taxId ? [{ taxId }] : [];
+      return taxId && params?.value === taxId ? [{ taxId }] : [];
     if (cypher.includes('{dbId: toInteger($value)}'))
-      return params.value === '48887' ? [{ taxId: '9606' }] : [];
+      return params?.value === '48887' ? [{ taxId: '9606' }] : [];
     if (cypher.includes('$value IN s.name')) return taxId ? [{ taxId }] : [];
     return [];
   },
@@ -24,32 +30,35 @@ vi.mock('./graph.ts', () => ({
   envSetting: () => '',
 }));
 
-const asked = [];
-let renderer;
-let base;
-let server;
+/** What the stand-in render service was asked for, by path and query. */
+const asked: (string | undefined)[] = [];
+let renderer: Server;
+let base: string;
+let server: Server;
 beforeAll(async () => {
   renderer = createServer((request, response) => {
     asked.push(request.url);
     response.writeHead(200, { 'Content-Type': 'image/svg+xml' });
     response.end('<svg/>');
   });
-  await new Promise((resolve) => renderer.listen(0, '127.0.0.1', resolve));
-  process.env.RENDER_SERVICE_URL = `http://127.0.0.1:${renderer.address().port}`;
+  await new Promise<void>((resolve) => renderer.listen(0, '127.0.0.1', resolve));
+  process.env['RENDER_SERVICE_URL'] =
+    `http://127.0.0.1:${(renderer.address() as AddressInfo).port}`;
   const { app } = await import('./server.ts');
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 afterAll(async () => {
-  await new Promise((resolve) => server.close(resolve));
-  await new Promise((resolve) => renderer.close(resolve));
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await new Promise<void>((resolve) => renderer.close(() => resolve()));
 });
 
-const at = (path) => fetch(`${base}/ContentService/exporter/voronoi/${path}`);
-const envelope = async (response) => {
-  const body = await response.json();
+const at = (path: string) => fetch(`${base}/ContentService/exporter/voronoi/${path}`);
+/** Status, reason and messages: Java's error envelope. */
+const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+  const body = (await response.json()) as { reason: string; messages: string[] };
   return [response.status, body.reason, body.messages];
 };
 
@@ -158,7 +167,7 @@ describe('the old fireworks URL', () => {
         'fire%77orks/9606.svg?x=/ContentService/exporter/fireworks/',
         '9606.svg?x=/ContentService/exporter/fireworks/',
       ],
-    ]) {
+    ] as const) {
       const response = await fetch(`${base}/ContentService/exporter/${path}`, {
         redirect: 'manual',
       });
