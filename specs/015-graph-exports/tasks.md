@@ -21,6 +21,18 @@
 
 **A task in another repository** (marked **[ext]**) is ticked here with that repository's pull request, once its maintainers have merged it. No change is pushed there without their agreement (FR-010).
 
+**Each exporter's own work is specified in its own repository** (decided with the user, 24 Oct 2026). Each exporter repository adopts Spec Kit (its adoption pull request adds a constitution and a `CLAUDE.md`), and its first spec takes over this file's **[ext]** tasks for that exporter:
+
+- **`BioPAX3Exporter`:** T045–T048, T051 and its half of T061;
+- **`sbml-exporter`:** T036, T038, T040, T042 and its half of T061.
+
+Here they stay as the website's view of that work: each is ticked when the exporter's spec ticks it, with that repository's pull request. This spec keeps what happens in this repository, the comparisons that use its instruments, and the switches.
+
+Both exporters' adoption pull requests found that their own checks do not run yet, and each first spec starts by making them real:
+
+- **`sbml-exporter`:** `main` does not compile (an unpinned snapshot dependency), there are no tests, and its lint uses the wrong rules;
+- **`BioPAX3Exporter`:** `mvn test` compiles none of its tests, and its ktlint check never runs in CI.
+
 **Rules that hold throughout:**
 
 - **No request to reactome.org's services, ever.** Every reference answer, sample and check uses the beta host's own services and the private graph copy (R8). The one exception (24 Oct 2026, with the user): the release's published bulk files in its download directory, `download.reactome.org/{release}/` (`biopax.zip`, `all_species.3.1.sbml.tgz`, `homo_sapiens.3.1.sbml.tgz`), are the bulk references, fetched one at a time when a task needs them and kept outside the repository.
@@ -72,7 +84,7 @@
 
   — #646 (drafted 24 Oct, with the user to read)
 
-- [ ] T028 Post the two issues once the user has read and approved them, and record their links here.
+- [x] T028 Post the two issues once the user has read and approved them, and record their links here: [BioPAX3Exporter#4](https://github.com/reactome/BioPAX3Exporter/issues/4) and [sbml-exporter#14](https://github.com/reactome/sbml-exporter/issues/14), posted on 24 Oct 2026. Spec Kit adoption pull requests: [BioPAX3Exporter#5](https://github.com/reactome/BioPAX3Exporter/pull/5) and [sbml-exporter#15](https://github.com/reactome/sbml-exporter/pull/15). — #648
 - [ ] T029 [ext] Agree graph-core and the JDK with both exporters' maintainers: each works on the graph-core version spec 010's library service pins, on JDK 17 (R10). Record the version here.
 - [ ] T030 [P] Write the SBML comparison tool, `tools/exports-compare/sbml-compare.ts`, with its spec (`contracts/checks.md`):
   - **the model:** byte for byte, the generation note's timestamp set aside, and the layout's changes to the model (FR-002) compared with the layout;
