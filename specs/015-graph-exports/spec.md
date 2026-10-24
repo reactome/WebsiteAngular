@@ -1,152 +1,229 @@
-# Feature Specification: SBML and BioPAX built from the graph
+# Feature Specification: SBML and BioPAX from the graph, one exporter each for the download page and the website
 
 **Feature Branch**: `spec/015-graph-exports`
 
-**Created**: 2026-10-23
+**Created**: 2026-10-23 (rewritten 2026-10-24)
 
 **Status**: Draft
 
-**Input**: User description: "Graph-based exports in TypeScript: SBML and BioPAX built from the Neo4j graph by the node content service, retiring the two exports that still read the relational (MySQL) release database." Issues #632 (SBML) and #631 (BioPAX). Decided on 23 Oct 2026: both exports keep being offered, built from the graph; in the node content service, since neither converter needs anything only Java has (measured, below); one spec for both, SBML first.
+**Input**: User description: "BioPAX and SBML generation moved to the Neo4j graph. They would have their own individual repos, used to generate the bulk files and organised with shared components for the code that generates them on the website on the fly. We want to get rid of release-download-directory at some point. Nothing is set in stone. We would retire old repos when they are no longer being used." Issues #631 (BioPAX) and #632 (SBML).
 
-## Context (measured)
+## What changed on 24 Oct 2026
 
-- **Only two exports still read the relational release database.** Every endpoint the node content service answers, and every other operation Java still answers, reads the graph (with the search index for search, and files for diagrams).
-- **SBML** (`/ContentService/exporter/event/{id}.sbml`) is answered by Java's ContentService through `sbml-exporter`'s relational converter. The controller's own comment says the relational database is used "for the time being ... to export layout information". A graph-only converter exists in `sbml-exporter`; its call is commented out.
-  - The answer is a 200 as `application/sbml+xml;charset=UTF-8` and a download named `{stId}.sbml`. It holds SBML Level 3 Version 1 with the layout package: 3,686 layout elements for R-HSA-69620, Cell Cycle Checkpoints.
-  - It carries annotations: identifiers, creators and dates. Its notes include a generation timestamp, so no two answers are byte-identical. Answers are cached on disk by database version.
-  - `sbml-exporter` (about 3,200 lines) uses its SBML library only to build and write the document. It uses no validation, units, rate laws or network; its terms come from a fixed table; its graph half reads with queries.
-- **BioPAX Level 3 for one pathway or reaction** comes from the legacy RESTful service, which loads the event from the relational database and writes BioPAX as RDF/XML with a generic XML library (about 1,900 lines; no BioPAX library, no validator).
-  - The site links it from two places: the Pathway Browser's download tab and the website's detail download bar.
-  - **On beta the link is broken.** Nothing routes the legacy service's path, so the request falls to the site, which answers its own HTML page with a 200.
-  - The `/data/discover` answer lists SBGN and BioPAX links on the same legacy service. They are Java's text, copied as it is.
-- **A separate, unused BioPAX exporter** (a Kotlin project for the bulk files on the download page) exists. It is not this feature.
+The first version of this spec (23 Oct) had the node content service write both formats in TypeScript, for the website only, with the bulk files on the download page out of scope. That left the bulk files on separate code, reading the relational database, so the two would drift.
+
+This version makes **one exporter per format the single implementation for both**:
+
+- the bulk files the download page offers, made at release time;
+- the files the website makes on demand for one pathway or reaction.
+
+Each exporter reads the graph and lives in its own repository: `reactome/sbml-exporter` for SBML, and `reactome/BioPAX3Exporter` for BioPAX Level 3. Both are Java-based (Java and Kotlin). The website's on-demand exports are served by the Java library service that spec 010 already plans for the operations that stay in Java, SBML among them. It lives in its own repository, licensed AGPL-3.0, and is reached only through the node service.
+
+What the first version produced is kept and used as the instruments for proving the exporters:
+
+- the 30-event sample ([sample.md](sample.md));
+- the corrected SBML reference and its harness ([reference-harness.md](reference-harness.md));
+- today's answers from the beta host ([today.md](today.md));
+- the BioPAX mapping ([data-model.md](data-model.md));
+- the comparison and validator decisions ([research.md](research.md) R1, R3–R5, R8).
+
+## Context (measured; research R1, R4, R9)
+
+- **Two exports still read the relational release database.** Every other export, and every endpoint the node service answers, reads the graph.
+- **SBML.** The bulk files (`all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`) and the website's `/ContentService/exporter/event/{id}.sbml` both come from `sbml-exporter`'s relational converter:
+  - the release run uses the exporter's own command line, which requires the relational database;
+  - the website uses the same converter inside the Java ContentService.
+
+  The exporter also has a graph-only converter, which reads nothing relational, but, as far as the code shows, it has not run in production or in a release. This spec's reference harness has run it. It has five measured defects (R1, R9), and it has no tests. The relational converter's layout is drawn from the relational database's diagram.
+
+- **BioPAX.** Two separate code paths, both relational:
+  - **The bulk files** (`biopax.zip`, Level 3, and `biopax2.zip`, Level 2; one `.owl` per species) are made by `release-download-directory`, through Pathway-Exchange's species converters.
+  - **The website's per-event file** comes from the legacy RESTful service, through Pathway-Exchange's event converter. On beta it is served by that service on the same host (#634).
+
+  `BioPAX3Exporter` reads the graph and writes Level 3. As far as its code shows, it has not made the published files. It covers far less than today's files:
+  - no entity references or cross-references;
+  - no stoichiometry, catalysis controllers, regulation or literature;
+  - no complex components or locations;
+  - evidence objects that are empty.
+
+  Its event-list mode writes an empty pathway, and it cannot export a reaction on its own.
+
+- **`release-download-directory` does more than BioPAX.** Eight other steps also read the relational database:
+  - database dumps;
+  - the GSEA gene sets and the BioSystems export, both through Pathway-Exchange;
+  - the Protégé ontology files;
+  - the stable-identifier mapping;
+  - the GO annotation file;
+  - two optional lists.
+
+  Retiring it means re-homing or dropping each of them, not only BioPAX. Some already have graph-based counterparts in `reactome/data-export`, which makes the download page's mapping files with Cypher (R9).
+
+- **Release 97's published `biopax.zip` is Pathway-Exchange's output** (its `xml:base` and its content are that converter's), so it is the reference BioPAX3Exporter is proven against (R9).
 
 ## User Scenarios & Testing _(mandatory)_
 
-The people served are researchers who download a pathway or a reaction to use in another tool, and the people who deploy the site: the relational database stops being something the website needs.
+The people served are:
 
-### User Story 1 - SBML for a pathway or a reaction, from the graph (Priority: P1)
+- researchers who download a pathway, a reaction or a whole species to use in another tool;
+- the people who run a release;
+- the people who deploy the site.
 
-A researcher on a pathway's or a reaction's page downloads it as SBML and opens it in a modelling tool. The file has the same model as today, the same species, reactions, compartments, identifiers and annotations. It has a layout drawn from the same diagram the website shows. Nothing about it depends on the relational database.
+### User Story 1 - SBML from the graph, one exporter for the download page and the website (Priority: P1)
 
-**Why this priority**: the model part has an exact reference to compare with, the graph-only converter, so it proves the approach cheaply; and it removes the one relational dependency the Java services still had.
+A researcher downloads SBML for one pathway or reaction from the website, or the whole set from the download page. Either way the file comes from the same exporter, reading the graph. It has the same model as today, its species, reactions, compartments, identifiers and annotations, and a layout drawn from the diagram the website shows. Making it needs no relational database.
 
-**Independent Test**: for a sample of pathways and reactions, the new answer's model matches the reference byte for byte, generation timestamp aside. Its layout matches today's by meaning. The file passes the SBML consistency check, and the URL is answered by the node service with no relational database configured.
+**Why this priority**: the model has an exact reference (the corrected graph-only converter, already built), and the exporter already has a graph-only half. It is the smaller of the two proofs, and it retires the relational database from both the release's SBML and the website's.
+
+**Independent Test**:
+
+- **The model.** For the 30-event sample, the exporter's model is byte-identical to the corrected reference, generation note aside.
+- **The layout.** It matches today's by meaning (R3).
+- **The bulk run.** With no relational database configured, it produces the same set of files under the same names as the release's published archives in its download directory (`download.reactome.org/{release}/`), and a sample of its files compares with theirs.
+- **Validity.** Every file passes the SBML consistency check.
+- **On the website.** The site's SBML URL answers from the same exporter.
 
 **Acceptance Scenarios**:
 
-1. **Given** a pathway or a reaction, **When** its SBML is downloaded, **Then** the status, content type and file name are today's, and everything but the layout and the generation note is byte-identical to the graph-only reference's.
-2. **Given** a pathway with a diagram, **When** its SBML is downloaded, **Then** the layout places every species, compartment and reaction that today's layout places, at the diagram's own coordinates, and connects each reaction to the same participants in the same roles.
-3. **Given** an identifier that is no event, or a malformed one, **When** its SBML is asked for, **Then** the answer is the one Java gives today for it, errors included.
-4. **Given** a sample of pathways and reactions, **When** their SBML goes through the format's consistency check, **Then** none has an error.
+1. **Given** a pathway or a reaction, **When** the exporter writes its SBML, **Then** everything but the layout and the generation note is byte-identical to the corrected reference.
+2. **Given** a pathway with its own diagram drawing a reaction, **When** its SBML is written, **Then** the layout places and connects every element today's does, with the same identifiers, roles and order, at the diagram's own coordinates.
+3. **Given** a release, **When** the bulk SBML is made with no relational database, **Then** both archives hold the same file names as that release's published archives, and every file is valid.
+4. **Given** the website's SBML link, **When** it is followed, **Then** the status, content type, file name and errors are today's, and the file is the exporter's.
 
 ---
 
-### User Story 2 - BioPAX for a pathway or a reaction, from the graph, and a link that works (Priority: P2)
+### User Story 2 - BioPAX Level 3 from the graph, one exporter for the download page and the website (Priority: P2)
 
-A researcher downloads a pathway or a reaction as BioPAX Level 3 from either download link on the site and gets a BioPAX file, never the site's own page. It describes the same entities, references, stoichiometry, compartments and literature as the file the legacy service builds today.
+A researcher downloads BioPAX Level 3 for one pathway or reaction from the website, or a species' file from the download page. Both come from the same exporter, reading the graph. They describe what today's files describe: entities and their references, stoichiometry, compartments, controllers, regulation and literature.
 
-**Why this priority**: the link is broken on beta today. But this export has no exact reference: only today's file, built differently, to compare with by meaning. So it comes second, once SBML has proved the approach.
+**Why this priority**: there is no exact reference, only today's files, built differently and compared by meaning. And the exporter needs most of its content built before a comparison can pass.
 
-**Independent Test**: for a sample of pathways and reactions, the new file and today's are compared element by element, and every difference is either none or one this spec's record accepts. The file passes the BioPAX validator. Both download links on the site deliver it.
+**Independent Test**:
+
+- **Per event.** For the sample, the exporter's file and the legacy service's file are compared by meaning, as canonical (class, property, target) triples. Every difference is either none, or one recorded and accepted here.
+- **Per species, the main proof.** The exporter's species files are compared, by the same triples, with the species files of the release's published `biopax.zip`, from the release's download directory (`download.reactome.org/{release}/`), for the same release's graph: first three species, then all of them.
+- **Validity.** Every file passes the BioPAX validator.
 
 **Acceptance Scenarios**:
 
-1. **Given** a pathway or a reaction, **When** its BioPAX is downloaded, **Then** it is BioPAX Level 3, and every pathway, reaction, physical entity, reference, stoichiometry, compartment and citation in today's file is in it, apart from the recorded, accepted differences.
-2. **Given** either download link on the site, **When** it is followed, **Then** it delivers the BioPAX file, not an HTML page.
-3. **Given** the legacy link in the form a person or another site may still hold, **When** it is followed, **Then** it reaches the new file.
-4. **Given** a sample of pathways and reactions, **When** their BioPAX goes through the BioPAX validator, **Then** none has an error.
+1. **Given** a pathway or a reaction, **When** the exporter writes it, **Then** every pathway, reaction, physical entity, entity reference, cross-reference, stoichiometry, compartment, control and citation in today's file is in it, apart from the recorded, accepted differences.
+2. **Given** a species, **When** the exporter writes its bulk file, **Then** it holds each of the species' pathways once, and the events in no pathway as today's file does, under the same file name, with an `xml:base` the release's own check accepts.
+3. **Given** either BioPAX link on the website, **When** it is followed, **Then** it delivers the exporter's file, never an HTML page. The legacy link form leads to it too.
 
 ---
 
-### User Story 3 - The broken BioPAX link fixed now (Priority: P1)
+### User Story 3 - The broken BioPAX link fixed now (Priority: P1) — done
 
-Until User Story 2 is done, a researcher who follows a BioPAX link on beta never receives the site's HTML page under a BioPAX name. They get a working file, or the link is not offered.
+On beta, the BioPAX links deliver BioPAX from the host's own legacy service, routed in #634, until User Story 2 replaces it.
 
-**Why this priority**: it is broken today, and a fix does not need to wait for the export.
+---
 
-**Independent Test**: on beta, both BioPAX links deliver a BioPAX file or are absent, and the legacy path no longer answers the site's page.
+### User Story 4 - The relational database no longer needed for these formats (Priority: P3)
 
-**Acceptance Scenarios**:
+The people who run a release can make the SBML and BioPAX bulk files without the relational database. Once nothing uses the old code paths, their owners can retire them:
 
-1. **Given** beta before User Story 2 ships, **When** either BioPAX link is followed, **Then** it delivers BioPAX or is not offered, never the site's page with a 200.
+- the BioPAX steps in `release-download-directory`;
+- the relational half of `sbml-exporter`;
+- the legacy RESTful service's BioPAX.
+
+**Independent Test**: a release run makes both formats' bulk files from the graph alone, and the website's two exports answer with the relational database unreachable.
 
 ### Edge Cases
 
-- **A pathway with no diagram of its own**, drawn on its parent's diagram, and a reaction. Today their SBML carries no layout at all: the layout is taken only from the event's own diagram, and only when that diagram draws at least one reaction (measured: R-HSA-69481 and R-HSA-69562 have none). The new export does the same.
-- **A diagram element with no counterpart in the model**, such as a compartment drawn but not used, or one entity drawn twice. It is laid out as today's layout lays it out, whether that is once, twice or not at all.
-- **What the layout changes in the model.** Writing the layout also sets each drawn species' SBO term from how it is drawn (a complex drawn is SBO:0000297, where the model alone says SBO:0000253), and adds the layout namespace to the document. These belong to the layout, and are compared with it.
-- **What cannot be reproduced from the diagram files.** Today, before writing the layout, Java resizes some nodes to fit their text using font metrics, and sizes each label the same way. Neither result is stored anywhere. Ten of the 153 nodes of R-HSA-69620 were resized; their boxes, the edges ending on them, and the label sizes differ by that much.
-- **Very large pathways.** A top-level pathway with thousands of reactions is answered within the time today's export takes, without taking more than its share of the graph database. A deep export is limited as the service's other deep queries are.
-- **Disease and inferred events, and events with no stable identifier.** Each is answered as today.
-- **A reaction's model.** Today a reaction's SBML names no pathway ("No parent pathway detected"); the graph-only converter names the reaction's first parent pathway, with its notes and annotations. The graph-only form is kept, and the difference recorded.
-- **An identifier that is not an event.** Java answers 400, but decides it by loading every relationship of the object, which takes tens of seconds for a common small molecule. The new export decides it from the object's class alone.
-- **Characters that need escaping in XML or RDF.** Names with `&`, `<`, quotes or non-Latin characters are written correctly, as validators and today's output require.
-- **The generation timestamp.** It is the one part of the SBML that differs on every answer. It is set aside when comparing, and written in today's form.
-- **Caching.** Both exports are answers that change only with the database. They are cached under spec 011's labels, as the other exports are.
+- **A pathway with no diagram of its own, and a reaction.** Today's SBML gives them no layout. So does the new one (R3).
+- **Elements the diagram draws differently from the model**, such as an entity drawn twice, or a compartment drawn but unused. These are laid out as today's layout lays them out.
+- **Coordinates Java changed with font metrics** (`tightNodes`), and label sizes. They are not stored anywhere, so they differ. Each is recorded and accepted (R3).
+- **A reaction's SBML model.** The graph-only converter names the reaction's first parent pathway, where today's says "no parent pathway". The graph-only form is kept, and the difference recorded.
+- **BioPAX ids and order.** Today's are run counters in an order that cannot be reproduced. The new ones may differ. The comparison is by content (R4).
+- **What the graph does not hold:**
+  - several EC numbers on one molecular function;
+  - a book chapter's authors.
+
+  Each is a recorded difference, unless the graph gains it.
+
+- **Species files and sub-pathways.** Each pathway appears once in a species' file, not once per pathway that contains it. The events in no pathway are included, as today.
+- **Very large exports** (a top-level pathway with thousands of reactions, a species' whole file). The bulk run finishes within the release's time. The website's on-demand export stays within the service's limits for deep work, without failing other requests.
+- **Personal names** (SBML creators, BioPAX authors and curation comments) are in both formats, as today. Nothing in this repository holds them: fixtures replace them and comparisons hash them (R8).
+- **BioPAX Level 2 is no longer produced** (decided with the user, 24 Oct 2026). `biopax2.zip` is not carried forward: the release drops its Level 2 step, and nothing on the site links Level 2.
 
 ## Requirements _(mandatory)_
 
 ### Functional Requirements
 
-**SBML**
+**SBML (`reactome/sbml-exporter`)**
 
-- **FR-001**: The SBML export at its existing URLs (`/exporter/event/{id}.sbml`, and `/exporter/sbml/{id}.xml`, which `/data/discover` links) MUST be answered by the node content service from the graph database. No relational database may be used.
-- **FR-002**: Apart from the layout (with what the layout changes in the model: the drawn species' SBO terms and the layout namespace) and the generation note, its answer MUST be byte-identical to the graph-only reference converter's answer for the same event. That converter has never been run in production and has four measured defects (it keeps one reactant and one product per reaction, writes positive regulators as catalysts and as negative regulators, and never writes positive regulators); the reference is that converter with those four defects corrected, and with identifiers written as ContentService writes them today (research R1). This is compared live, as every ported endpoint is. Its status, content type and download name MUST be today's, and so MUST its error answers.
-- **FR-003**: Its layout MUST be built from the diagram the site draws (the diagram files the site and the SBGN export already read), for the events that have one today and only those. For every event in a sample, it MUST place and connect the same elements, with the same identifiers, in the same roles and order, as today's layout. Coordinates MUST be the diagram's own; where today's differ (a fixed offset, and the nodes Java resized to fit their text), that difference is recorded and accepted. Any other difference MUST be recorded and accepted in this spec before the route is switched.
-- **FR-004**: It MUST be routed to the node service in nginx and the dev proxy alike, slashed form included, with no fallback to Java.
+- **FR-001**: The graph-only converter MUST be corrected: the five defects (R1, R9) fixed, with tests that fail without each fix. With those fixes it is the SBML model for both the bulk files and the website.
+- **FR-002**: Its model MUST be byte-identical to the corrected reference (R1) for every event in the sample, apart from the generation note and what the layout changes in the model: the drawn species' SBO terms, and the root's `layout:required` and layout namespace (R3).
+- **FR-003**: It MUST write the layout from the diagram files the site draws (R3), for the events that have one today and only those. It MUST place and connect the same elements, with the same identifiers, roles and order, as today's layout. Coordinate differences are recorded and accepted (R3).
+- **FR-004**: Its command line MUST make the bulk files with no relational database. The relational options become unnecessary, and the file names and archives stay today's.
 
-**BioPAX**
+**BioPAX (`reactome/BioPAX3Exporter`)**
 
-- **FR-005**: BioPAX Level 3 for a pathway or a reaction MUST be answered by the node content service from the graph database, at a URL it answers.
-- **FR-006**: For every event in a sample, the file MUST describe what today's file describes:
-  - the pathways and reactions;
-  - their participants and the roles they play;
-  - physical entities and their references and cross-references;
-  - stoichiometry, compartments and literature.
+- **FR-005**: It MUST write what today's Level 3 files hold, as [data-model.md](data-model.md) maps them from the graph:
+  - entity references and cross-references;
+  - stoichiometry;
+  - catalysis with its controller, and regulation;
+  - complex components and cellular locations;
+  - literature and evidence.
 
-  Each difference MUST be recorded in this spec, and accepted, before the links are switched. RDF identifiers and element order MAY differ.
+  Each difference MUST be recorded and accepted here.
 
-- **FR-007**: Both download links on the site MUST point to the new export. The legacy link form MUST lead to it too.
-- **FR-008**: Until FR-005 to FR-007 are met, the BioPAX links on beta MUST NOT deliver the site's page. Either they work, or they are not offered.
+- **FR-006**: It MUST export a single pathway or reaction as a library call. Its species mode MUST write each pathway once and include the events in no pathway, as today's species files do. Its event-list mode MUST write the events it was given.
+- **FR-007**: Its species files MUST have the published form: `xml:base="http://www.reactome.org/biopax/{release}/{species dbId}#"`, as release 97's `biopax.zip` has (and the release's check requires), and the names `{Species_Name}.owl` (R9).
 
-**Both**
+**Both exporters**
 
-- **FR-009**: For a sample of events, each export MUST pass its format's own validator in continuous integration: SBML's consistency check, and the BioPAX validator.
-- **FR-010**: Each export MUST be cached and labelled under spec 011's rules, and MUST be limited as the service's other deep queries are.
-- **FR-011**: Verification against the shared graph database MUST be small, sequential and spaced.
+- **FR-008**: Each MUST pass its format's validator over the sample, in its own repository's continuous integration if possible, and otherwise in this repository's.
+- **FR-009**: Each MUST be proven against its reference by the comparison tools of this spec (contracts/checks.md) before either the bulk files or the website switch to it.
+- **FR-010**: Work in another team's repository MUST go to its maintainers first: an issue describing the change, then pull requests once they agree. Nothing is pushed to those repositories without that agreement.
+
+**The website**
+
+- **FR-011**: The website's SBML URL and a BioPAX URL MUST be answered by the exporters, through spec 010's Java library service, fronted by node. They MUST be routed in nginx and the dev proxy alike, with no fallback to the Java ContentService or the legacy service. When the library service cannot answer, node answers 503 in the service's envelope.
+- **FR-012**: The site's two BioPAX links MUST point to the new URL, and the legacy link form MUST lead to it.
+- **FR-013**: Both on-demand exports MUST be cached and labelled under spec 011's rules, and limited as the service's other deep work is.
+- **FR-014**: Verification against the shared graph MUST be small, sequential and spaced. References MUST come from a private copy of the release's graph (R8); only if that copy cannot start may small, spaced runs against the shared graph be used, and the fallback is recorded.
 
 ### Key Entities
 
-- **Event**: a pathway or a reaction, by stable identifier or database id. It is what both exports describe.
-- **Diagram**: the drawing of a pathway, from which the SBML layout is taken: the event's own diagram only. A reaction, or a pathway drawn on another's diagram, has no layout, as today.
-- **Reference answer**: what each export is compared with:
-  - for SBML's model, the graph-only converter's output (exact);
-  - for SBML's layout, today's layout (its elements, identifiers, roles and order exactly; its coordinates by meaning);
-  - for BioPAX, today's file (by meaning).
+- **Exporter**: the one implementation of a format, used by both the bulk run and the website. `sbml-exporter` for SBML, `BioPAX3Exporter` for BioPAX Level 3.
+- **Event**: a pathway or a reaction. It is what one on-demand file describes.
+- **Species file**: one species' whole BioPAX, or the set of per-event SBML files in an archive.
+- **Reference**: what an exporter is compared with:
+  - for SBML's model, the corrected graph-only converter (exact);
+  - for SBML's layout, today's layout (by meaning);
+  - for BioPAX, today's Pathway-Exchange files (by meaning): the release's published `biopax.zip` for the species files, and the legacy service's answer for one event.
 - **Accepted difference**: a recorded way the new output may differ from its reference, with the reason. Nothing switches until every difference found is recorded.
 
 ## Success Criteria _(mandatory)_
 
 ### Measurable Outcomes
 
-- **SC-001**: No export the website offers needs the relational database. Today there are two that do.
-- **SC-002**: For SBML, 100% of a sample of at least 30 events (pathways of several sizes and reactions, including disease and inferred ones) match the reference exactly, apart from the layout and the generation note.
-- **SC-003**: For both formats, every difference from the reference across the sample is recorded and accepted, with no unexplained one left.
+- **SC-001**: The SBML and BioPAX Level 3 bulk files, and the website's two exports, are made without the relational database. Today, all four need it.
+- **SC-002**: For SBML, 100% of the 30-event sample matches the reference exactly, apart from the layout, what the layout changes in the model (FR-002) and the generation note.
+- **SC-003**: For both formats, every difference from the reference across the sample (and, for BioPAX, every species file of the release's published `biopax.zip`) is recorded and accepted, with none unexplained.
 - **SC-004**: Both formats pass their validators with zero errors over the sample.
-- **SC-005**: Both BioPAX links on the site deliver a BioPAX file every time, against an HTML page today.
-- **SC-006**: A download asked for before, in the same release, is answered as fast as today's (which are served from a cache kept per release: 0.1 s for Signal Transduction's 23.5 MB SBML). A first download of the largest top-level pathway in the sample completes within the service's limits for deep queries, without failing any other request.
+- **SC-005**: One implementation per format for what this spec switches: the website's two exports, the release's SBML archives and its Level 3 `biopax.zip` each come from the one exporter. (Level 2, and any copy outside this project's deployments, are outside this measure.)
+- **SC-006**: An on-demand download asked for before, in the same release, is answered as fast as today's (Signal Transduction's 23.5 MB SBML from Java's cache: 0.05 s and 0.14 s in two measurements, today.md and R6). A first download of the largest pathway in the sample completes within the service's limits for deep work.
 
 ## Assumptions
 
-- **Where BioPAX lives.** Java's ContentService has no BioPAX URL. The new export takes one beside the other exporters (`/ContentService/exporter/event/{id}.biopax`, named in the plan). The legacy path redirects to it, so links held elsewhere keep working. The `/data/discover` answer keeps Java's text until Java's own answer changes.
-- **The generation note.** It keeps today's form. It names the generator truthfully, and that difference is recorded.
-- **Order of work.** SBML first: the model, then the layout. Then BioPAX. The broken-link fix (User Story 3) can go first, on its own.
-- **Code that runs in a validator only.** The validators may need a runtime the service does not (a JVM, for one). They run in continuous integration and in verification, never in production.
+- **Repositories.**
+  - SBML stays in `reactome/sbml-exporter`. It already holds the graph-only converter, and a new repository would split its history.
+  - BioPAX Level 3 is `reactome/BioPAX3Exporter`.
+  - Either moves elsewhere only if its maintainers prefer.
+- **One library per format.** Each exporter's repository becomes a library module, which this stack uses, and a thin command line, which the release uses (R10).
+- **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it through spec 010's pass-through, so nothing routes to the Java ContentService for these formats.
+- **BioPAX's URL** is `/ContentService/exporter/event/{id}.biopax`, as the first version decided (R6). The legacy path redirects to it.
+- **Order of work.**
+  1. SBML: the exporter's fixes and tests, then its layout, then the comparisons; then the website and the release switch, each only after the comparisons pass (FR-009).
+  2. BioPAX: the content, then the comparisons; then the website and the release switch, likewise.
+
+  Each exporter's changes go through its maintainers (FR-010).
+
 - **Out of scope:**
   - SBGN, which is already built from the graph and the diagram files;
-  - BioPAX Level 2;
-  - the bulk files on the download page, and the separate exporter for them;
+  - BioPAX Level 2, which is dropped (see Edge Cases);
+  - `release-download-directory`'s other steps. They are listed in R9 for whoever retires it; this spec retires only its BioPAX steps;
   - the analysis exports;
-  - any change to the graph schema or its Java library.
+  - any change to the graph's schema.
 - **This repository is public.** No internal host names, paths or incident detail.

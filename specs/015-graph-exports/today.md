@@ -46,3 +46,29 @@ The files themselves stay outside the repository: they hold people's names (SBML
 | R-HSA-9915356 | 200, 10 KB, 0.10 s     | 200, 49 KB, 0.01 s     |
 | R-HSA-874079  | 200, 8 KB, 0.14 s      | 200, 27 KB, 0.03 s     |
 | R-HSA-8952903 | 200, 11 KB, 0.14 s     | 200, 25 KB, 0.03 s     |
+
+## The release's published bulk files (T033)
+
+Fetched from release 97's download directory on 24 Oct 2026, one file, kept outside the repository (the files hold people's names). Content was read only to identify the generator (research R9).
+
+- **`biopax.zip`**: 173,989,993 bytes, sha256 `efedb0f6bd9fb788056d9f8ac1d5916b5efc25fbcd03606c618a051c46e7a4d7`. Pathway-Exchange's Level 3 output: `xml:base="http://www.reactome.org/biopax/97/{species dbId}#"`. 15 species files, uncompressed sizes in bytes:
+
+  | File                          |        Size |
+  | ----------------------------- | ----------: |
+  | Bos_taurus.owl                | 185,059,283 |
+  | Caenorhabditis_elegans.owl    | 116,833,342 |
+  | Canis_familiaris.owl          | 170,234,598 |
+  | Danio_rerio.owl               | 146,216,093 |
+  | Dictyostelium_discoideum.owl  |  77,041,158 |
+  | Drosophila_melanogaster.owl   | 126,768,250 |
+  | Gallus_gallus.owl             | 161,076,320 |
+  | Homo_sapiens.owl              | 333,253,965 |
+  | Mus_musculus.owl              | 217,675,915 |
+  | Plasmodium_falciparum.owl     |  30,538,668 |
+  | Rattus_norvegicus.owl         | 189,439,804 |
+  | Saccharomyces_cerevisiae.owl  |  46,661,058 |
+  | Schizosaccharomyces_pombe.owl |  43,636,976 |
+  | Sus_scrofa.owl                | 177,506,186 |
+  | Xenopus_tropicalis.owl        | 128,011,857 |
+
+- **`all_species.3.1.sbml.tgz`** (223,766,394 bytes) and **`homo_sapiens.3.1.sbml.tgz`** (60,770,086 bytes): present, sizes from their headers. Fetched when T041 needs them.
