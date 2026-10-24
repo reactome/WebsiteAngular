@@ -17,7 +17,7 @@ What BioPAX3Exporter must write (spec FR-005), and where each value is in the gr
   - **compartments.**
 - **BioPAX document**: one per event. RDF/XML. Individuals carry `rdf:ID="{Class}{n}"` and are written in a deterministic order. `xml:base` is `http://www.reactome.org/biopax/{release}/{topDbId}#`.
 - **Reference answer**: what each export is compared with:
-  - SBML's model: the corrected graph-only converter's file, exactly;
+  - SBML's model: today's relational file of the same release, element by element, order set aside;
   - SBML's layout: today's file (structure exactly, coordinates by meaning);
   - BioPAX: today's file, canonicalised.
 - **Accepted difference**: a way the new output differs from its reference, with the reason, recorded in [contracts/differences.md](contracts/differences.md). An export switches only when every difference found is in that record.
@@ -53,5 +53,5 @@ The first two are recorded differences.
 
 ## Validation rules (from the requirements)
 
-- **SBML:** byte-identical to the reference apart from the layout, the SBO terms the layout sets, the root's `layout:required` and layout namespace, and the generation note (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-008).
+- **SBML:** the model matches today's relational file element by element, apart from element order, the generation note's timestamp and recorded differences (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-008).
 - **BioPAX:** the canonical triples equal today's, apart from recorded differences (FR-005). The BioPAX validator reports 0 errors (FR-008).

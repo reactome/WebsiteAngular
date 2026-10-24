@@ -20,11 +20,11 @@ Each exporter's own CI runs its validator over its output for a small fixture gr
 
 ## 3. SBML against the reference
 
-1. Generate the reference files once, for the 30-event sample, with the corrected graph-only converter (research R1). Run it against a private graph database of the same release where possible (research R8). The references stay outside the repository: they hold personal names.
+1. Get today's relational files for the 30-event sample from a ContentService of the same release that is not production, one event at a time (research R1). They stay outside the repository: they hold personal names.
 2. Run the fixed `sbml-exporter` over each event, from the private graph copy (or, once switched, ask the website).
-3. Run the SBML comparison tool over the pairs.
+3. Run `sbml-exporter`'s `ci/compare.py` over the two folders.
 
-Expected: the model is identical apart from the generation note and what the layout changes in the model (FR-002). The layout has the same glyphs, ids, roles and order as today's file. The coordinate differences are only those [differences.md](contracts/differences.md) lists.
+Expected: the model matches element by element apart from element order, the generation note's timestamp and what the layout changes in the model (FR-002). The layout has the same glyphs, ids, roles and order as today's file. The coordinate differences are only those [differences.md](contracts/differences.md) lists.
 
 ## 4. BioPAX against today's file
 

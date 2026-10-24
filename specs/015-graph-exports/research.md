@@ -38,7 +38,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Decision.**
 
-- **The reference** for FR-002 is the graph-only converter with the four defects corrected (a new `Participant` per row; catalysts read from their own column; positive regulators set; negative regulators set from their own column) and `setUseIdentifierURL(true)`.
+- **The reference** for FR-002 was first the graph-only converter with the defects corrected and `setUseIdentifierURL(true)` (the harness, [reference-harness.md](reference-harness.md)). **Changed 24 Oct 2026:** it is today's relational file of the same release, compared element by element, since the files people use are today's and their order (HashSet order) cannot be reproduced. The harness stays as the record of how the defects were found.
 - **It is run by a harness** of about 40 lines of Java (a throwaway module, depending on sbml-exporter and graph-core): `findById`, then `SbmlConverter(event, version, ads).convert().toString()`, written as UTF-8. It runs on JDK 11 with UTC, en_US and UTF-8.
 - **The fixes are offered upstream**, and recorded as accepted deviations.
 
