@@ -43,7 +43,6 @@ beforeAll(async () => {
 });
 afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-/** The messages of Java's error envelope. */
 /** The nth query asked; one not asked is the test's failure, not undefined. */
 const query = (at: number) => {
   const found = asked[at];
@@ -51,6 +50,7 @@ const query = (at: number) => {
   return found;
 };
 
+/** The messages of Java's error envelope. */
 const messages = async (response: Response) =>
   ((await response.json()) as { messages: string[] }).messages;
 
