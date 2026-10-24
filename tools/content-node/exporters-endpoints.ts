@@ -406,7 +406,7 @@ export const exportersEndpoints: Endpoint[] = [
   {
     path: '/ContentService/exporter/voronoi/{id}',
     // No sample, and none from --ids: Java has no such URL, so the parity
-    // harness has nothing to compare it with. overview-export.spec.mjs holds it.
+    // harness has nothing to compare it with. overview-export.spec.ts holds it.
     samplesOnly: true,
     /**
      * A species' overview, the Voronoi map the site shows (Reacfoam), drawn

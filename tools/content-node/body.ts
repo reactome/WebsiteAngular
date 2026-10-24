@@ -101,7 +101,7 @@ const JAVA_DECODERS = new Map(
 /**
  * How to read a body in a charset named in a Content-Type, lower-cased, or
  * undefined for one this cannot read -- Spring's 415. Latin-1, ASCII and the
- * UTF family are read as the JDK reads them (orthology.spec.mjs holds the
+ * UTF family are read as the JDK reads them (orthology.spec.ts holds the
  * JDK's answers); any other charset by TextDecoder when it knows the name,
  * which for a body of stable ids reads the same. A charset only Java knows
  * (an EBCDIC code page) is refused here and read by Java.
