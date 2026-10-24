@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { compare } from './check-library-update.ts';
 
 const lib = 'node_modules/ngx-reactome-style';
-const pinned = (sha) => ({
+const pinned = (sha: string) => ({
   version: '0.1.0',
   resolved: `git+ssh://git@github.com/reactome/ngx-reactome-base.git#${sha}`,
 });

@@ -1,7 +1,8 @@
 // The server-side services' type check (spec 013, research R4). Node 24 runs
 // these files as they are, stripping the types, so nothing is emitted; the
-// strictness is the site's. Plain .mjs modules are loaded but not checked
-// (checkJs off) until each is converted to .ts.
+// strictness is the site's. Every module and spec under tools/ is .ts (spec
+// 013 T023, held by tools/load.spec.ts); checkJs stays off because the .mjs
+// scripts they import from scripts/ and e2e/ are not part of this check.
 {
   "compilerOptions": {
     "target": "ES2024",
