@@ -8,7 +8,7 @@
  * red-black tree ordered by hash then String.compareTo, whose root is moved
  * to the front and whose later keys are linked in after their parent -- so
  * eleven ids sharing a hash come out in Java's order, not arrival's. Checked
- * against the JDK's own HashMap (orthology.spec.mjs).
+ * against the JDK's own HashMap (orthology.spec.ts).
  */
 /**
  * One key in a bucket. A bucket that becomes a tree gives its nodes the tree

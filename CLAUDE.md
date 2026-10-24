@@ -38,6 +38,13 @@ is how a formatting failure reached CI.
 - **Lint and dead-code counts** are ratcheted: they may go down, never up. So
   are the services' loose values (`tools/loose-baseline.json`, at zero), and
   `tools/tsconfig.json` has `noImplicitAny` on: new service code is typed.
+- **New code under `tools/` is TypeScript** (spec 013). A plain `.mjs` there would
+  be loaded by the type check without being checked, so `tools/load.spec.ts`
+  fails on one.
+- **A new entry point is loaded under Node** by `tools/load.spec.ts`. A module in
+  a service directory is picked up as it is; a new service directory joins its
+  `SERVICES` list; and a script that does its work when loaded (writes files,
+  starts a browser) joins `RUN_ON_LOAD`, so it is checked without being run.
 
 ## The node content service (`tools/content-node`)
 
