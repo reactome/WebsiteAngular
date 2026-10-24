@@ -5,39 +5,47 @@
 // search-core's fallback chain, grouped and plain search, paging, and the
 // report of a search that finds nothing. Java's answers measured 17 Oct 2026.
 import { URLSearchParams } from 'node:url';
+import type { RequestListener, Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
 
 vi.mock('./graph.ts', () => ({
   read: async () => [{ version: 97 }],
   configured: () => true,
   close: async () => {},
-  envSetting: (key, fallback = '') => process.env[key] || fallback,
+  envSetting: (key: string, fallback = '') => process.env[key] || fallback,
 }));
 
 const { app } = await import('./server.ts');
 const { facetQueryParams } = await import('./search-endpoints.ts');
 
-let base;
-let server;
-let solrServer;
-let reportServer;
-let asked;
-let answer;
-let reports;
+/** A form or query as the service sent it to Solr: name and value, in order. */
+type Sent = [string, string][];
+let base: string;
+let server: Server;
+let solrServer: Server;
+let reportServer: Server;
+/** What the stand-in Solr was asked: its handler, and what it was sent. */
+let asked: [string, Sent][];
+/** The stand-in Solr's answer to a request. */
+let answer: (handler: string, sent: Sent) => unknown;
+/** What reached the stand-in report service. */
+let reports: { url: string | undefined; body: string }[];
 
-const listen = async (handler) => {
+const listen = async (handler: RequestListener) => {
   const { createServer } = await import('node:http');
   const listening = createServer(handler);
-  await new Promise((resolve) => listening.listen(0, '127.0.0.1', resolve));
+  await new Promise<void>((resolve) => listening.listen(0, '127.0.0.1', resolve));
   return listening;
 };
+const portOf = (listening: Server) => (listening.address() as AddressInfo).port;
 
 beforeAll(async () => {
   solrServer = await listen((request, response) => {
     let body = '';
-    request.on('data', (chunk) => (body += chunk));
+    request.on('data', (chunk: Buffer) => (body += chunk.toString()));
     request.on('end', () => {
-      const [path, query = ''] = request.url.split('?');
+      const [path = '', query = ''] = (request.url ?? '').split('?');
       const sent = [...new URLSearchParams(request.method === 'GET' ? query : body)];
       const handler = path.replace('/solr', '');
       asked.push([handler, sent]);
@@ -47,38 +55,49 @@ beforeAll(async () => {
   });
   reportServer = await listen((request, response) => {
     let body = '';
-    request.on('data', (chunk) => (body += chunk));
+    request.on('data', (chunk: Buffer) => (body += chunk.toString()));
     request.on('end', () => {
       reports.push({ url: request.url, body });
       response.end();
     });
   });
-  process.env.SOLR_URL = `http://127.0.0.1:${solrServer.address().port}/solr/reactome`;
-  process.env.REPORT_URL = `http://127.0.0.1:${reportServer.address().port}`;
-  await new Promise((resolve) => {
-    server = app().listen(0, '127.0.0.1', resolve);
+  process.env['SOLR_URL'] = `http://127.0.0.1:${portOf(solrServer)}/solr/reactome`;
+  process.env['REPORT_URL'] = `http://127.0.0.1:${portOf(reportServer)}`;
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${server.address().port}`;
+  base = `http://127.0.0.1:${portOf(server)}`;
 });
 
 afterAll(async () => {
   for (const name of ['SOLR_URL', 'REPORT_URL']) delete process.env[name];
-  await new Promise((resolve) => server.close(resolve));
-  await new Promise((resolve) => solrServer.close(resolve));
-  await new Promise((resolve) => reportServer.close(resolve));
+  for (const closing of [server, solrServer, reportServer])
+    await new Promise<void>((resolve) => closing.close(() => resolve()));
 });
 
-const get = (path) => fetch(`${base}/ContentService/search/${path}`);
-const until = async (ready) => {
+/** The nth request Solr was asked; one not asked is the test's failure. */
+const request = (at: number) => {
+  const found = asked[at];
+  if (!found) throw new Error(`Solr was not asked a request ${at}`);
+  return found;
+};
+/** The nth report sent; one not sent is the test's failure. */
+const report = (at: number) => {
+  const found = reports[at];
+  if (!found) throw new Error(`no report ${at} was sent`);
+  return found;
+};
+const get = (path: string) => fetch(`${base}/ContentService/search/${path}`);
+const until = async (ready: () => boolean) => {
   for (let tries = 0; !ready() && tries < 400; tries += 1)
     await new Promise((resolve) => setTimeout(resolve, 5));
   expect(ready()).toBe(true);
 };
-const fqs = (sent) => sent.filter(([name]) => name === 'fq').map(([, value]) => value);
-const value = (sent, name) => sent.find(([key]) => key === name)?.[1];
+const fqs = (sent: Sent) => sent.filter(([name]) => name === 'fq').map(([, value]) => value);
+const value = (sent: Sent, name: string) => sent.find(([key]) => key === name)?.[1];
 
 /** Facets that found `found`, with two types. */
-const facets = (found) => ({
+const facets = (found: number) => ({
   response: { numFound: found },
   facet_counts: {
     facet_fields: {
@@ -89,14 +108,14 @@ const facets = (found) => ({
     },
   },
 });
-const doc = (id, name) => ({
+const doc = (id: string, name: string) => ({
   dbId: id,
   stId: `R-HSA-${id}`,
   name,
   type: 'Protein',
   exactType: 'Protein',
 });
-const grouped = (groups) => ({
+const grouped = (groups: [string | null, object[]][]) => ({
   grouped: {
     type_facet: {
       matches: 8,
@@ -113,7 +132,13 @@ const grouped = (groups) => ({
 describe('facetQueryParams, as the fallback chain changes the query', () => {
   it('asks for the deleted entries, and with another parser', () => {
     expect(
-      facetQueryParams({ query: 'x', scope: 'BOTH', deleted: true, parserType: 'DISMAX' })
+      facetQueryParams({
+        query: 'x',
+        scope: 'BOTH',
+        deleted: true,
+        parserType: 'DISMAX',
+        // The endpoint fills every list; an absent one reads as empty.
+      } as Parameters<typeof facetQueryParams>[0])
     ).toEqual([
       ['fq', 'deleted:true'],
       ['defType', 'dismax'],
@@ -142,7 +167,7 @@ describe('/query', () => {
       '/reactome/facet',
       '/reactome/search/grouped',
     ]);
-    expect(asked[1][1]).toEqual([
+    expect(request(1)[1]).toEqual([
       ['wt', 'json'],
       ['json.nl', 'flat'],
       ['fq', ''],
@@ -214,7 +239,10 @@ describe('/query', () => {
     answer = (handler) =>
       handler.endsWith('/facet') ? facets(0) : { response: { numFound: 0, docs: [] } };
     const response = await get('query?query=zzz&types=Protein&scope=PHYSICAL_ENTITY');
-    expect([response.status, (await response.json()).targets]).toEqual([404, null]);
+    expect([response.status, ((await response.json()) as { targets: unknown }).targets]).toEqual([
+      404,
+      null,
+    ]);
     // As given, then without filters in the default scope, then deleted,
     // then by dismax, then in every scope; then the target core.
     expect(
@@ -234,8 +262,8 @@ describe('/query', () => {
       ['/target/search', '', ''],
     ]);
     await until(() => reports.length === 1);
-    expect(reports[0].url.split('?')[0]).toBe('/report/search/notfound');
-    expect(reports[0].body).toBe('{"term":"zzz","resource":""}');
+    expect((report(0).url ?? '').split('?')[0]).toBe('/report/search/notfound');
+    expect(report(0).body).toBe('{"term":"zzz","resource":""}');
   });
 
   it('with facets but an empty page, names the targets in the 404 and reports them', async () => {
@@ -252,25 +280,25 @@ describe('/query', () => {
       return grouped([]);
     };
     const response = await get('query?query=P15056&scope=BOTH&Start%20row=900');
-    expect([response.status, (await response.json()).targets]).toEqual([
+    expect([response.status, ((await response.json()) as { targets: unknown }).targets]).toEqual([
       404,
       [{ term: 'P15056', resource: 'UNIPROT', target: true }],
     ]);
     await until(() => reports.length === 1);
-    expect(reports[0].url.split('?')[0]).toBe('/report/search/targets');
+    expect((report(0).url ?? '').split('?')[0]).toBe('/report/search/targets');
   });
 
   it('drops a filter the facets did not select from the search too, unless filters are forced', async () => {
     for (const [forced, calls, type] of [
       ['', 2, ''],
       ['&Force%20filters=true', 1, 'type_facet:("Nope")'],
-    ]) {
+    ] as const) {
       asked = [];
       answer = (handler) =>
         handler.endsWith('/facet') ? facets(8) : grouped([['Protein', [doc('1', 'TP53')]]]);
       await get(`query?query=TP53&types=Nope${forced}`);
       expect(asked.filter(([handler]) => handler.endsWith('/facet'))).toHaveLength(calls);
-      expect(fqs(asked.at(-1)[1])[1]).toBe(type);
+      expect(fqs(request(asked.length - 1)[1])[1]).toBe(type);
     }
   });
 
@@ -278,7 +306,7 @@ describe('/query', () => {
     answer = (handler) => (handler.endsWith('/facet') ? facets(8) : grouped([]));
     const blank = await get('query?query=TP53&scope=%20');
     expect(blank.status).toBe(500);
-    expect((await blank.json()).messages).toEqual([
+    expect(((await blank.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
     answer = () => ({ response: { numFound: 0, docs: [] } });
@@ -299,6 +327,7 @@ describe('/query', () => {
     const response = await get('query?query=TP53&species=Nowhere');
     expect(response.status).toBe(404);
     const search = asked.find(([handler]) => handler.endsWith('/search/grouped'));
+    if (!search) throw new Error('the grouped search was not asked');
     expect([value(search[1], 'group.offset'), value(search[1], 'group.limit')]).toEqual(['0', '0']);
     await until(() => reports.length === 1);
   });
@@ -333,9 +362,9 @@ describe('/query', () => {
         };
       return { response: { numFound: 8, docs: [] } };
     };
-    const body = await (
+    const body = (await (
       await get('query?query=%20P04637&cluster=false&Start%20row=900&scope=BOTH')
-    ).json();
+    ).json()) as { targetResults: unknown };
     // In the order Java's HashSet writes them, not merely both present.
     expect(body.targetResults).toEqual([
       { term: 'P04637', resource: 'UNIPROT', target: true },
@@ -348,7 +377,7 @@ describe('/query', () => {
       handler.endsWith('/facet') ? facets(8) : { response: { numFound: 0, docs: [] } };
     const response = await get('query?query=TP53');
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual([
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
   });
@@ -356,8 +385,8 @@ describe('/query', () => {
   it('leaves out the type of a group with none', async () => {
     answer = (handler) =>
       handler.endsWith('/facet') ? facets(8) : grouped([[null, [doc('1', 'TP53')]]]);
-    const body = await (await get('query?query=TP53')).json();
-    expect(Object.keys(body.results[0])).toEqual(['entries', 'entriesCount', 'rowCount']);
+    const body = (await (await get('query?query=TP53')).json()) as { results: object[] };
+    expect(Object.keys(body.results[0] ?? {})).toEqual(['entries', 'entriesCount', 'rowCount']);
   });
 
   it("is Spring's 400s, and Java's 500 for a blank cluster before Solr is asked", async () => {
@@ -365,11 +394,11 @@ describe('/query', () => {
     const missing = await get('query');
     expect(missing.status).toBe(400);
     const parser = await get('query?query=x&parserType=lucene');
-    expect((await parser.json()).messages[0]).toMatch(
+    expect(((await parser.json()) as { messages: string[] }).messages[0]).toMatch(
       /No enum constant org\.reactome\.server\.search\.domain\.ParserType\.lucene$/
     );
     const blank = await get('query?query=x&cluster=%20');
-    expect([blank.status, (await blank.json()).messages]).toEqual([
+    expect([blank.status, ((await blank.json()) as { messages: string[] }).messages]).toEqual([
       500,
       ['Something unexpected happened and the error has been reported.'],
     ]);
@@ -384,7 +413,7 @@ describe('/query/paginated', () => {
       handler.endsWith('/facet') ? facets(8) : grouped([['Protein', [doc('1', 'TP53')]]]);
     await get('query/paginated?query=TP53&page=3&rowCount=10');
     // Two types: five rows each, from the tenth.
-    expect([value(asked[1][1], 'group.offset'), value(asked[1][1], 'group.limit')]).toEqual([
+    expect([value(request(1)[1], 'group.offset'), value(request(1)[1], 'group.limit')]).toEqual([
       '10',
       '5',
     ]);
@@ -411,7 +440,7 @@ describe('/query/paginated', () => {
     };
     const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual([
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
     // This search's own report, not a late one from the test before.
@@ -430,7 +459,7 @@ describe('/query/paginated', () => {
         : grouped([['Protein', [doc('1', 'TP53')]]]);
     const response = await get('query/paginated?query=TP53&page=1&rowCount=10');
     expect(response.status).toBe(500);
-    expect((await response.json()).messages).toEqual([
+    expect(((await response.json()) as { messages: string[] }).messages).toEqual([
       'Something unexpected happened and the error has been reported.',
     ]);
   });
@@ -443,13 +472,13 @@ describe('/query/paginated', () => {
         'rowCount=10',
         "Required request parameter 'page' for method parameter type Integer is not present",
       ],
-    ]) {
+    ] as const) {
       const response = await get(`query/paginated?query=x&${query}`);
-      expect([query, response.status, (await response.json()).messages]).toEqual([
+      expect([
         query,
-        400,
-        [message],
-      ]);
+        response.status,
+        ((await response.json()) as { messages: string[] }).messages,
+      ]).toEqual([query, 400, [message]]);
     }
   });
 });
