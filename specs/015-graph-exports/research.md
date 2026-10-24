@@ -349,7 +349,11 @@ So retiring `release-download-directory` is smaller than its step list suggests.
 - **The website's exports are operations of spec 010's library service.**
   - Its SBML operation uses the fixed graph-only converter with the layout from the diagram files, not the relational converter that spec 010 first planned. Its parity with Java is then this spec's comparison, not a byte comparison with Java's relational answer.
   - It gains a BioPAX Level 3 operation through `WriteBioPAX3`.
-  - Both exporters are built from pinned commits, as spec 010 builds every library. That needs no published artefact.
+  - **Each exporter's repository is organised as a library and a command line** (decided with the user, 24 Oct 2026):
+    - a library module: graph in, model out (`SbmlConverter` with its layout; `WriteBioPAX3`), with its tests, published as a versioned Maven artefact;
+    - a thin command-line module that the release's bulk run uses, depending on that library.
+
+    The library service depends on the same library at a pinned version. So the release and the website run one codebase, and keeping the website current is a version bump. Until a library is published, the service builds it from a pinned commit, as spec 010 builds every library.
 - **Node** answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` through spec 010's pass-through, with R6's headers and errors, cached per release under spec 011. When the library service cannot answer, node answers 503 in the envelope, never a fallback.
 - **graph-core** is aligned in both exporters to the library service's pinned version. Each exporter's maintainers are asked to accept it (a task of its own).
 

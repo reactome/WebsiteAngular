@@ -194,7 +194,8 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 5. **The SBML switch on the website**, once spec 010's service serves it and the comparisons have passed (T044).
 6. **BioPAX in `BioPAX3Exporter`** (T045–T051): the content, the comparisons against `biopax.zip` and the legacy service, validation, and its CI.
 7. **The BioPAX switch on the website** (T052–T054): the endpoint, the legacy redirect and the site's links.
-8. **The release's switches**, each after a full dry run, and the Level 2 decision (T055–T058).
+8. **The release's switches**, each after a full dry run (T055, T057). Level 2 is dropped (T056, decided).
+9. **Throughout:** each exporter is split into a library and a command line, and the library is published (T061), so the release and the website run one codebase.
 
 ## Complexity Tracking
 

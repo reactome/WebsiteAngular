@@ -168,6 +168,7 @@
   - there is a per-reaction export;
   - species files carry `xml:base="http://www.reactome.org/biopax/{release}/{species dbId}#"` as the published ones do (FR-007), held per model rather than statically;
   - the validator is 6.0.0, as the baselines are.
+- [ ] T061 [US2] [ext] In `BioPAX3Exporter`: split it into a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run, and publish the library as a versioned Maven artefact. Do the same in `sbml-exporter` (`SbmlConverter` with its layout, then `Main`). Spec 010's library service depends on both libraries at pinned versions (R10). Done before T044 and T052.
 - [ ] T049 [US2] Compare the exporter's species files with the release's published `biopax.zip` (T033), by T031: three species first, then all of them. Then compare its per-event files with the legacy service's over the sample.
   - Record each difference in `contracts/differences.md`.
   - Expected differences: order and ids, EC numbers, chapter authors, and the early return (R4).
@@ -194,7 +195,7 @@
 ## Phase 6: User Story 4 — The release, without the relational database for these formats (Priority: P3)
 
 - [ ] T055 [US4] [ext] With the release's maintainers: the Level 3 step moves from `release-download-directory`'s Pathway-Exchange converter to `BioPAX3Exporter`, keeping `biopax.zip`'s name and layout, after a full dry run compared as in T049.
-- [ ] T056 [US4] Level 2: find out how often `biopax2.zip` is downloaded, without a request to the production site's services, and record the decision in spec.md before the step is dropped or kept.
+- [x] T056 [US4] Level 2: decided with the user on 24 Oct 2026. `biopax2.zip` is no longer produced, and the decision is recorded in spec.md's edge cases. With the release's maintainers, the Level 2 step is turned off when the Level 3 step moves (T055). — #646
 - [ ] T057 [US4] [ext] With the release's maintainers: `sbml-exporter`'s release run moves to the graph-only command line (T040), after T041.
 - [ ] T058 [US4] Record in research.md R9 what is left for whoever retires `release-download-directory`:
   - its other relational steps, and those `data-export` already makes from the graph;
@@ -218,6 +219,7 @@
 - **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T044 needs T037 and T039 and spec 010's service.
 - **BioPAX (US2):** T035 sets the baseline. T045–T048 can go in any order the maintainers prefer. T049 and T050 need them all. T052 needs T049, T050 and spec 010's service; T053 and T054 follow T052.
 - **US4:** T055 after T049. T057 after T041.
+- **The libraries:** T061 comes before the website's switches (T044, T052).
 
 ## Parallel opportunities
 

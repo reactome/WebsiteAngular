@@ -143,7 +143,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 - **Species files and sub-pathways.** Each pathway appears once in a species' file, not once per pathway that contains it. The events in no pathway are included, as today.
 - **Very large exports** (a top-level pathway with thousands of reactions, a species' whole file). The bulk run finishes within the release's time. The website's on-demand export stays within the service's limits for deep work, without failing other requests.
 - **Personal names** (SBML creators, BioPAX authors and curation comments) are in both formats, as today. Nothing in this repository holds them: fixtures replace them and comparisons hash them (R8).
-- **BioPAX Level 2.** Not carried forward, unless the download figures show it is still fetched. The decision is recorded in this spec before `biopax2.zip` stops.
+- **BioPAX Level 2 is no longer produced** (decided with the user, 24 Oct 2026). `biopax2.zip` is not carried forward: the release drops its Level 2 step, and nothing on the site links Level 2.
 
 ## Requirements _(mandatory)_
 
@@ -211,6 +211,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
   - SBML stays in `reactome/sbml-exporter`. It already holds the graph-only converter, and a new repository would split its history.
   - BioPAX Level 3 is `reactome/BioPAX3Exporter`.
   - Either moves elsewhere only if its maintainers prefer.
+- **One library per format.** Each exporter's repository becomes a library module, which this stack uses, and a thin command line, which the release uses (R10).
 - **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it through spec 010's pass-through, so nothing routes to the Java ContentService for these formats.
 - **BioPAX's URL** is `/ContentService/exporter/event/{id}.biopax`, as the first version decided (R6). The legacy path redirects to it.
 - **Order of work.**
@@ -221,7 +222,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 
 - **Out of scope:**
   - SBGN, which is already built from the graph and the diagram files;
-  - BioPAX Level 2 (see Edge Cases);
+  - BioPAX Level 2, which is dropped (see Edge Cases);
   - `release-download-directory`'s other steps. They are listed in R9 for whoever retires it; this spec retires only its BioPAX steps;
   - the analysis exports;
   - any change to the graph's schema.
