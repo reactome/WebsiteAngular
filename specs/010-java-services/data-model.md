@@ -1,5 +1,12 @@
 # Data model: the Java side
 
+> **Amended by [spec 015](../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
+>
+> - **SBML:** the library service's SBML operation uses `sbml-exporter`'s fixed graph-only converter, with its layout drawn from the diagram files. It needs no relational database, and its body is proven by spec 015's comparison rather than byte-identical to the old server's relational answer. Status, headers and errors are still Java's.
+> - **BioPAX:** the service gains a BioPAX Level 3 operation through `BioPAX3Exporter`.
+> - **Runtime:** the service runs on JDK 17, because BioPAX3Exporter is built for it. Libraries built for Java 11 run there unchanged.
+> - **SBML is cut over by spec 015** (its T044), not here.
+
 The entities this feature works with, the rules on each, and how state moves.
 
 ## Operation

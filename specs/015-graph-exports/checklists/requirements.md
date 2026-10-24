@@ -33,7 +33,7 @@
 
 - As in specs 010-014, the spec names the services and gates the work concerns (the node content service, nginx and the dev proxy, spec 011's cache labels).
 - **Rewritten 24 Oct 2026, with one knowing exception to "no implementation details".** The spec names the two exporter repositories, says they are Java and Kotlin, and places the website's exports in spec 010's Java library service. Which code is the single implementation is the user's decision, and the feature's whole point ("What changed"). It names no code structure inside the exporters; that is the plan's.
-- No clarification markers. Where BioPAX is served, the generation note and Level 2's fate are recorded as assumptions or tasks, each with a default.
+- No clarification markers. Where BioPAX is served and the generation note are recorded as assumptions, each with a default; Level 2's fate is decided (dropped).
 - **Revalidated after the review of the rewrite:**
   - FR-002 and SC-002 have the layout's carve-out back;
   - FR-007 names the form the check requires;

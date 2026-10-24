@@ -53,5 +53,5 @@ The first two are recorded differences.
 
 ## Validation rules (from the requirements)
 
-- **SBML:** byte-identical to the reference apart from the layout, the SBO terms the layout sets, the root's `layout:required` and layout namespace, and the generation note (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-009).
+- **SBML:** byte-identical to the reference apart from the layout, the SBO terms the layout sets, the root's `layout:required` and layout namespace, and the generation note (FR-002). The layout has the same glyphs, ids, roles and order as today's (FR-003). libSBML reports 0 errors (FR-008).
 - **BioPAX:** the canonical triples equal today's, apart from recorded differences (FR-005). The BioPAX validator reports 0 errors (FR-008).

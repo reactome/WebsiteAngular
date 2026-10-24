@@ -34,7 +34,7 @@ What the first version produced is kept and used as the instruments for proving 
   - the release run uses the exporter's own command line, which requires the relational database;
   - the website uses the same converter inside the Java ContentService.
 
-  The exporter also has a graph-only converter, which reads nothing relational, but it has never run in production or in a release; only this spec's reference harness has run it. It has five measured defects (R1, R9), and it has no tests. The relational converter's layout is drawn from the relational database's diagram.
+  The exporter also has a graph-only converter, which reads nothing relational, but, as far as the code shows, it has not run in production or in a release. This spec's reference harness has run it. It has five measured defects (R1, R9), and it has no tests. The relational converter's layout is drawn from the relational database's diagram.
 
 - **BioPAX.** Two separate code paths, both relational:
   - **The bulk files** (`biopax.zip`, Level 3, and `biopax2.zip`, Level 2; one `.owl` per species) are made by `release-download-directory`, through Pathway-Exchange's species converters.
@@ -203,7 +203,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 - **SC-003**: For both formats, every difference from the reference across the sample (and, for BioPAX, every species file of the release's published `biopax.zip`) is recorded and accepted, with none unexplained.
 - **SC-004**: Both formats pass their validators with zero errors over the sample.
 - **SC-005**: One implementation per format for what this spec switches: the website's two exports, the release's SBML archives and its Level 3 `biopax.zip` each come from the one exporter. (Level 2, and any copy outside this project's deployments, are outside this measure.)
-- **SC-006**: An on-demand download asked for before, in the same release, is answered as fast as today's (0.14 s for Signal Transduction's 23.5 MB SBML, measured from Java's cache). A first download of the largest pathway in the sample completes within the service's limits for deep work.
+- **SC-006**: An on-demand download asked for before, in the same release, is answered as fast as today's (Signal Transduction's 23.5 MB SBML from Java's cache: 0.05 s and 0.14 s in two measurements, today.md and R6). A first download of the largest pathway in the sample completes within the service's limits for deep work.
 
 ## Assumptions
 

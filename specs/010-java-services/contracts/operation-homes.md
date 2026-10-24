@@ -1,5 +1,12 @@
 # Contract: where every published operation is answered
 
+> **Amended by [spec 015](../../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
+>
+> - **SBML:** the library service's SBML operation uses `sbml-exporter`'s fixed graph-only converter, with its layout drawn from the diagram files. It needs no relational database, and its body is proven by spec 015's comparison rather than byte-identical to the old server's relational answer. Status, headers and errors are still Java's.
+> - **BioPAX:** the service gains a BioPAX Level 3 operation through `BioPAX3Exporter`.
+> - **Runtime:** the service runs on JDK 17, because BioPAX3Exporter is built for it. Libraries built for Java 11 run there unchanged.
+> - **SBML is cut over by spec 015** (its T044), not here.
+
 The decision record of FR-001 and FR-002. It covers every operation in the two services' published API descriptions, as served on 2026-10-17: 98 for ContentService and 39 for AnalysisService. Paths are relative to each service's root.
 
 **The rule (FR-002).** An operation whose substance is a Java library, or Java numerical work, stays in Java. One that reads the graph, the search index, or logic Reactome writes for the website moves to node. When the rule does not settle a case, the team decides and the decision is added here.

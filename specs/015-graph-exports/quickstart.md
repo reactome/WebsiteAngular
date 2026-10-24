@@ -16,7 +16,7 @@ Expected:
 
 ## 2. The validators (as CI runs them)
 
-The `exports` job in `.github/workflows/tests.yml`: it builds the sample files from the recorded fixtures, then runs libSBML's consistency check and the BioPAX validator over them. Expected: 0 errors from each. libSBML's warnings are allowed.
+Each exporter's own CI runs its validator over its output for a small fixture graph (T042, T051). Here, the validators run over each comparison's output (T034, T041, T050). Expected: 0 errors from each; libSBML's warnings are allowed.
 
 ## 3. SBML against the reference
 
@@ -24,7 +24,7 @@ The `exports` job in `.github/workflows/tests.yml`: it builds the sample files f
 2. Run the fixed `sbml-exporter` over each event, from the private graph copy (or, once switched, ask the website).
 3. Run the SBML comparison tool over the pairs.
 
-Expected: the model is identical apart from the generation note. The layout has the same glyphs, ids, roles and order as today's file. The coordinate differences are only those [differences.md](contracts/differences.md) lists.
+Expected: the model is identical apart from the generation note and what the layout changes in the model (FR-002). The layout has the same glyphs, ids, roles and order as today's file. The coordinate differences are only those [differences.md](contracts/differences.md) lists.
 
 ## 4. BioPAX against today's file
 

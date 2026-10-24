@@ -2,7 +2,7 @@
 
 **Input**:
 
-- [plan.md](plan.md) (order of work 1–8; rewritten 24 Oct 2026)
+- [plan.md](plan.md) (order of work 1–9; rewritten 24 Oct 2026)
 - [spec.md](spec.md)
 - [research.md](research.md) (R1–R10, measured)
 - [data-model.md](data-model.md)
@@ -73,7 +73,7 @@
   — #646 (drafted 24 Oct, with the user to read)
 
 - [ ] T028 Post the two issues once the user has read and approved them, and record their links here.
-- [ ] T029 [ext] Agree graph-core with both exporters' maintainers: each works on the version spec 010's library service pins (R10). Record the version here.
+- [ ] T029 [ext] Agree graph-core and the JDK with both exporters' maintainers: each works on the graph-core version spec 010's library service pins, on JDK 17 (R10). Record the version here.
 - [ ] T030 [P] Write the SBML comparison tool, `tools/exports-compare/sbml-compare.ts`, with its spec (`contracts/checks.md`):
   - **the model:** byte for byte, the generation note's timestamp set aside, and the layout's changes to the model (FR-002) compared with the layout;
   - **the layout:** glyph sets, ids, roles, order and targets exactly; coordinates by meaning, against the diagram plus one offset, with the resized nodes listed;
@@ -89,7 +89,7 @@
   It takes a species file as well as an event's. Show it failing on a changed stoichiometry and a removed xref.
 
 - [ ] T032 The private graph copy (R8), for the release being compared, recreated whenever a comparison needs it and removed afterwards. If beta's graph has moved to a newer release by then, regenerate the SBML references (T003) and today's per-event answers (T004) for that release, and compare with that release's download directory.
-- [ ] T033 Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
+- [ ] T033 (`biopax.zip` done for release 97, recorded in `today.md`; the SBML archives when T041 needs them.) Fetch the release's bulk references from its download directory, `download.reactome.org/{release}/`: `biopax.zip`, `all_species.3.1.sbml.tgz` and `homo_sapiens.3.1.sbml.tgz`. One at a time, kept outside the repository (they hold people's names). Record each file's size, digest and list of entries in `today.md`, never their content.
 - [ ] T034 Run the validators on today's files and record the baselines in research.md R5:
   - libSBML 5.21.2's `checkConsistency()` over T004's SBML and a sample of T033's archive, with the units and modelling-practice categories off;
   - the BioPAX validator 6.0.0, on JDK 17, over T004's files and three of `biopax.zip`'s species files, reading its XML reports.
@@ -97,6 +97,8 @@
   Any error in today's files is recorded as known.
 
 - [ ] T035 Run BioPAX3Exporter as it is today, from T032's copy, over the sample's pathways and the same three species, and compare with T004 and T033 by T031. Record the result in research.md R9: the baseline the BioPAX work is measured from.
+
+- [ ] T061 [ext] Organise each exporter as a library and a command line (R10): in `BioPAX3Exporter`, a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run; in `sbml-exporter`, likewise (`SbmlConverter` with its layout, then `Main`). Each library is published as a versioned Maven artefact; until it is, spec 010's service builds it from a pinned commit. The library modules exist before T044 and T052.
 
 **Checkpoint**: the issues are posted, graph-core is agreed, the references are in hand, and each comparison tool has been shown failing on wrong input.
 
@@ -136,7 +138,12 @@
 - [ ] T040 [US1] [ext] In `sbml-exporter`: a graph-only command line. The relational options are dropped. The graph converter with its layout is used for listed ids, species and `all`, writing every pathway of a species as today. File names stay `{stId}.sbml`, and the archives stay as today.
 - [ ] T041 [US1] A graph-only bulk dry run for one species, from T032's copy, compared with the release's published archive (T033): the same file names, every file valid (libSBML), and a sample of files compared as in T037 and T039. Record the run's time.
 - [ ] T042 [US1] [ext] In `sbml-exporter`'s CI: libSBML's consistency check over the converter's output for a small fixture graph, failing on any error.
-- [x] T043 [US1] Spec 010's library service: its SBML operation uses the fixed graph-only converter with the layout, and its parity is this spec's comparison, not a byte comparison with Java's relational answer (R10). Spec 010's tasks T014, T028 and T029 are amended to say so. — #646
+- [x] T043 [US1] Spec 010 amended for this spec (R10):
+  - a notice at the top of each of its documents: SBML from the graph-only converter, proven by this spec's comparison; a BioPAX operation; the JDK 17 runtime; SBML cut over here;
+  - its tasks T011, T014, T017, T028 and T029, and its plan's runtime line, changed to match.
+
+  — #646
+
 - [ ] T044 [US1] Route the website's SBML through spec 010's library service, once it serves the operation (spec 010 T011–T022) and T037 and T039 have passed:
   - node answers `/ContentService/exporter/event/{id}.sbml` and `/exporter/sbml/{id}.xml`, slashed forms included, with R6's headers and errors, through spec 010's pass-through;
   - it caches per release under spec 011, and answers 503 in the envelope when the service cannot answer;
@@ -168,7 +175,6 @@
   - there is a per-reaction export;
   - species files carry `xml:base="http://www.reactome.org/biopax/{release}/{species dbId}#"` as the published ones do (FR-007), held per model rather than statically;
   - the validator is 6.0.0, as the baselines are.
-- [ ] T061 [US2] [ext] In `BioPAX3Exporter`: split it into a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run, and publish the library as a versioned Maven artefact. Do the same in `sbml-exporter` (`SbmlConverter` with its layout, then `Main`). Spec 010's library service depends on both libraries at pinned versions (R10). Done before T044 and T052.
 - [ ] T049 [US2] Compare the exporter's species files with the release's published `biopax.zip` (T033), by T031: three species first, then all of them. Then compare its per-event files with the legacy service's over the sample.
   - Record each difference in `contracts/differences.md`.
   - Expected differences: order and ids, EC numbers, chapter authors, and the early return (R4).
@@ -213,7 +219,7 @@
 ## Dependencies and execution order
 
 - **Phase 2** blocks the stories.
-  - T028 and T029 come before any **[ext]** task.
+  - T028 comes before any **[ext]** task in an exporter, and T029 before any that depends on graph-core.
   - T030 and T031 come before any comparison.
   - T032 and T033 come before the comparisons that use them.
 - **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T044 needs T037 and T039 and spec 010's service.

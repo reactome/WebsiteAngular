@@ -73,7 +73,7 @@
 
 ### The service (in `<library repo>`)
 
-- [ ] T011 [US2] Scaffold the Spring Boot application in `<library repo>`, with Java 11 bytecode, an executable jar, and a health endpoint reporting the pinned library commits
+- [ ] T011 [US2] Scaffold the Spring Boot application in `<library repo>`, with Java 11 bytecode, an executable jar, and a health endpoint reporting the pinned library commits. It runs on JDK 17 (spec 015 R10).
 - [ ] T012 [US2] Copy, unchanged, content-service's PSICQUIC controller and manager, and the `Interactors` JSON models, into `<library repo>`. Each file names its source commit (`7b9eceb`).
 - [ ] T013 [US2] Copy the upload and token controllers, `CustomInteractorManager`, `TupleManager` with its Kryo set-up, and the store's LRU checker into `<library repo>`. Pin interactor-core 1.1.5 and Kryo 5.3.0 and freeze them, with a comment saying why: old tokens stop reading if either changes.
 - [ ] T014 [US2] Copy the SBML, SBGN and event-PDF exporter controllers, `ExportManager` and its cache into `<library repo>`. Exclude Aspose.Slides from diagram-exporter (research R8). **SBML (spec 015, 24 Oct 2026):** the operation uses `sbml-exporter`'s fixed graph-only converter with its layout from the diagram files, not the relational converter, so the service needs no relational database for it. The service also gains a BioPAX Level 3 operation through `BioPAX3Exporter` (spec 015 R10).
@@ -82,7 +82,7 @@
 
 ### The image and deployment (this repository)
 
-- [ ] T017 [US2] Create `deploy/java-library/Dockerfile`: a multi-stage build that builds each pinned Reactome library from its commit (`deploy/java/PINS.md`) and then the service, on JDK 11 (JDK 17 for event-pdf, targeting 11). Run as a non-root user.
+- [ ] T017 [US2] Create `deploy/java-library/Dockerfile`: a multi-stage build that builds each pinned Reactome library from its commit (`deploy/java/PINS.md`) and then the service. It builds on JDK 17, targeting Java 11 where a library does, and runs on JDK 17 (spec 015 R10). Run as a non-root user.
 - [ ] T018 [US2] Add the `java-library` service to `docker-compose.yml`:
   - loopback only;
   - heap and memory limit from research R3: 1 GiB heap, 1.5 GiB limit;
@@ -249,7 +249,7 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
 
 - T003 alongside T001 and T002.
 - T020 and T021 (pass-through tests) alongside T011–T016 (the service, in another repository).
-- T028 (SBGN/SBML parity) alongside T026 (token parity).
+- T028 (SBGN parity) alongside T026 (token parity).
 - T034–T037 (AnalysisService build and corpus) alongside Phase 4's cutovers.
 - T054 and T055 at any time.
 

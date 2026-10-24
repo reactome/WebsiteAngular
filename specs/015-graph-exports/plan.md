@@ -36,7 +36,7 @@ The changes to the two exporters go to their maintainers: an issue first, then p
 
 - `sbml-exporter`: Java (JDK 11 today).
 - `BioPAX3Exporter`: Kotlin 1.7 on JDK 17.
-- Spec 010's library service: Spring Boot, with Java 11 bytecode.
+- Spec 010's library service: Spring Boot, on a JDK 17 runtime (R10).
 - This repository's instruments: TypeScript under Node 24, as the rest of `tools/`.
 
 **Primary Dependencies**:
@@ -77,7 +77,7 @@ The changes to the two exporters go to their maintainers: an issue first, then p
 
 **Performance Goals**:
 
-- An on-demand answer asked for before, in the same release, is as fast as today's: 0.14 s for 23.5 MB.
+- An on-demand answer asked for before, in the same release, is as fast as today's: 0.05–0.14 s for 23.5 MB, as measured.
 - A first export of the largest sampled pathway completes within the deep-work limits.
 - The bulk run finishes within the release's time.
 
@@ -177,7 +177,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 ## Order of work
 
 1. **Done:**
-   - the sample, the private graph copy, the corrected SBML reference and today's answers (T001–T004);
+   - the sample, the corrected SBML reference made from a private graph copy (since removed; T032 recreates it), and today's answers (T001–T004);
    - the interim BioPAX link (T009, #634);
    - the issue drafts (T027);
    - the amendments to spec 010 (T043).
