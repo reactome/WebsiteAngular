@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const OUT_DIR = path.resolve('test-results/reactome-pathway');
+// The repository's ignored results, wherever the run was started from.
+const OUT_DIR = path.join(import.meta.dirname, '../../test-results/reactome-pathway');
 
 test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   fs.mkdirSync(OUT_DIR, { recursive: true });
 
-  const consoleErrors = [];
+  const consoleErrors: string[] = [];
   page.on('console', (msg) => {
     const text = msg.text();
     if (msg.type() === 'error') consoleErrors.push(text);
@@ -26,14 +27,8 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   // Wait for harness to finish rendering and exporting.
   await page.waitForFunction(
     () => {
-      const s = document.getElementById('status');
-      return (
-        s &&
-        s.textContent &&
-        (s.textContent.startsWith('OK') ||
-          s.textContent.startsWith('ERRORS') ||
-          s.textContent.startsWith('fatal'))
-      );
+      const text = document.getElementById('status')?.textContent ?? '';
+      return ['OK', 'ERRORS', 'fatal'].some((start) => text.startsWith(start));
     },
     { timeout: 60000 }
   );
@@ -48,7 +43,7 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
   await page.locator('#out-svg').screenshot({ path: path.join(OUT_DIR, 'svg-output.png') });
   await page.screenshot({ path: path.join(OUT_DIR, 'all.png'), fullPage: true });
 
-  const svgText = await page.evaluate(() => window.lastSvg);
+  const svgText = await page.evaluate(() => (window as Window & { lastSvg?: string }).lastSvg);
   if (svgText) {
     fs.writeFileSync(path.join(OUT_DIR, 'legend.svg'), svgText);
   }
@@ -59,6 +54,6 @@ test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
       `Console errors during capture (${consoleErrors.length}):\n${consoleErrors.slice(0, 10).join('\n')}`
     );
   }
-  expect(status, status).toMatch(/^OK/);
+  expect(status, status ?? 'no status').toMatch(/^OK/);
   expect(consoleErrors).toEqual([]);
 });

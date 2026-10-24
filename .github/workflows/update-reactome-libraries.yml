@@ -30,7 +30,7 @@ concurrency:
 
 env:
   BRANCH: update/ngx-reactome-base
-  # Also listed in tools/library-update/check-library-update.mjs.
+  # Also listed in tools/library-update/check-library-update.ts.
   LIBRARIES: ngx-reactome-cytoscape-style ngx-reactome-style
 
 jobs:
@@ -54,7 +54,7 @@ jobs:
       - name: Check nothing else moved
         id: check
         run: |
-          node tools/library-update/check-library-update.mjs
+          node tools/library-update/check-library-update.ts
           if git diff --quiet -- package.json package-lock.json; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else

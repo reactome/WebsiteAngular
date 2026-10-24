@@ -14,7 +14,17 @@ import path from 'node:path';
 import { expect, it } from 'vitest';
 
 const ROOT = path.join(import.meta.dirname, '..');
-const SERVICES = ['content-node', 'render', 'analysis-gateway', 'api-types', 'analysis-types'];
+// With the two command-line tools run under Node as they are: the library
+// workflow runs one daily, and nothing else would load it before then.
+const SERVICES = [
+  'content-node',
+  'render',
+  'analysis-gateway',
+  'api-types',
+  'analysis-types',
+  'java-parity',
+  'library-update',
+];
 
 /**
  * Command-line scripts that do their work when loaded (record answers, write

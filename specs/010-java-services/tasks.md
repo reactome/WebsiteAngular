@@ -43,10 +43,10 @@
 - [x] T006 Create the parity harness in `tools/java-parity/`, per research R7: — #507
   - same request to a reference and a candidate, same Host;
   - compare status, a fixed header set and the SHA-256 of the body;
-  - per-class normalisers, declared in `tools/java-parity/normalisers.mjs`;
+  - per-class normalisers, declared in `tools/java-parity/normalisers.ts`;
   - JSON report of identical, different and both-error counts, with no bodies or token values in the output.
 - [x] T007 Add a self-test to `tools/java-parity/parity.spec.mjs`. Two stub servers that differ in one byte must report a difference; identical stubs must not. Show it failing with the comparison disabled. — #507
-- [ ] T008 [P] (With the first PDF comparison, T030: it needs `qpdf` in a container.) Add the PDF normaliser to `tools/java-parity/normalisers.mjs`:
+- [ ] T008 [P] (With the first PDF comparison, T030: it needs `qpdf` in a container.) Add the PDF normaliser to `tools/java-parity/normalisers.ts`:
   - `qpdf --qdf --object-streams=disable --static-id`, run in a throwaway container;
   - mask CreationDate, ModDate and the cover-page date.
   - Test it in `tools/java-parity/parity.spec.mjs`: two PDFs differing only in those fields compare equal, and a PDF with a changed body does not.
@@ -146,7 +146,7 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
   - the request shapes seen in `e2e/har/`: projection, interactors, disease, sort, page size, resource, species comparison, token follow-ups, downloads;
   - no `/identifiers/url` call except to loopback.
   - Show the harness reporting a difference when the candidate is altered, for example a different page size.
-- [ ] T035 [P] [US3] Add the analysis normalisers to `tools/java-parity/normalisers.mjs`: remove `summary.token`, compare `result.json.gz` decompressed, and apply the PDF normaliser plus the token to report PDFs. Test each.
+- [ ] T035 [P] [US3] Add the analysis normalisers to `tools/java-parity/normalisers.ts`: remove `summary.token`, compare `result.json.gz` decompressed, and apply the PDF normaliser plus the token to report PDFs. Test each.
 
 ### Implementation
 
