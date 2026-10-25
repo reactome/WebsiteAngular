@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- Spec 010's library service, started here with SBML as its only operation (spec 015 T063). -->
+    <groupId>org.reactome.server</groupId>
+    <artifactId>java-library</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <name>java-library</name>
+
+    <!-- Built from its commit by the Dockerfile (deploy/java/PINS.md), never from a published snapshot. -->
+    <parent>
+        <groupId>org.reactome.maven</groupId>
+        <artifactId>reactome-parent</artifactId>
+        <version>1.0.5-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <java.version>17</java.version>
+        <maven.compiler.release>17</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- sbml-exporter's graph-only branch, built from its commit by the Dockerfile. Once the library is
+             published, the Dockerfile's build stage goes and this names the published version. -->
+        <sbml-exporter-lib.version>3.0.0-SNAPSHOT</sbml-exporter-lib.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.reactome.server.tools</groupId>
+            <artifactId>sbml-exporter-lib</artifactId>
+            <version>${sbml-exporter-lib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.name}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                        <configuration>
+                            <mainClass>org.reactome.server.library.LibraryApplication</mainClass>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+    <!-- Release repositories only: every Reactome snapshot this needs is built from its commit, so none may come
+         from a repository (a snapshot can be republished under the same version). -->
+    <repositories>
+        <repository>
+            <id>nexus-ebi-repo</id>
+            <name>The EBI repository</name>
+            <url>https://www.ebi.ac.uk/Tools/maven/repos/content/groups/ebi-repo/</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>ebi-repo</id>
+            <name>The EBI repository (JSBML)</name>
+            <url>https://www.ebi.ac.uk/~maven/m2repo</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
+            <id>biojava-legacy-repo</id>
+            <name>BioJava's Git based legacy maven repo</name>
+            <url>https://github.com/biojava/maven-repo/raw/master/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+</project>

@@ -128,6 +128,26 @@ jobs:
       - name: nginx -t, dev, release and production
         run: deploy/nginx/test-config.sh
 
+  java-library:
+    # The library service's image (spec 015 T063): each Reactome library built
+    # from its pinned commit, the service's unit tests, and its answers over
+    # sbml-exporter's fixture graph compared with that commit's expected files.
+    # CI's alone: preflight builds no images.
+    name: Java library service
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: python-libsbml, as sbml-exporter's CI has it
+        run: pip install python-libsbml==5.21.2
+      - name: Build the image
+        run: docker build -f deploy/java-library/Dockerfile -t java-library .
+      - name: Its answers over the fixture graph
+        run: deploy/java-library/check.sh java-library
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news
