@@ -1,5 +1,7 @@
 # Tasks: The Java side of Reactome's services
 
+> **Amended by [spec 015](../015-graph-exports/tasks.md) (25 Oct 2026):** the library service is started in this repository, in `deploy/java-library/`, with SBML as its only operation (spec 015 T062–T067), while its own repository waits for T001. T011, T014, T016–T018 build on it, and it moves there when that repository exists.
+
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md)
 
 **Tests**:

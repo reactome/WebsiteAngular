@@ -360,8 +360,15 @@ So retiring `release-download-directory` is smaller than its step list suggests.
 
 **Rationale.** One Java service for what stays in Java, as spec 010 decided. Its licence suits combining Reactome's libraries. The website runs the exact code the release runs. And this repository gains no second JVM.
 
+**Amended 25 Oct 2026 (decided with the user): SBML is served on beta now, from this repository.** Spec 010's library service waits for its own repository (spec 010 T001), and the website's SBML should not wait for it. So the service is started here, in `deploy/java-library/`, with SBML as its only operation:
+
+- **The library comes from source.** Its Dockerfile builds `sbml-exporter-lib` from the `graph-only` commit pinned in `deploy/java/PINS.md`. The library cannot be published to Maven while it is on a branch. Once it is published, that build stage goes and the service's pom names the published version.
+- **The licences.** This repository holds only the service's own code and a Dockerfile naming the pinned commit, not the libraries. The image is built on the beta host and published nowhere. Settling the libraries' licences stays a condition for publishing the library or the image (sbml-exporter#14).
+- **The diagram files** are fetched on demand from the release's download directory: the same static `diagram/{stId}.json` files the site's browser loads. One file per converted pathway that has a diagram, cached on disk per release. Beta has no local copy of the folder.
+- **Moving later.** When spec 010's repository exists, the service moves there unchanged, and its BioPAX operation joins it there.
+
 **Alternatives considered.**
 
-- _A second Java service in this repository's compose_ (this research's first answer, 24 Oct): rejected. It would duplicate spec 010's service, and bundle unlicensed libraries into an Apache-2.0 repository's image.
+- _A second Java service in this repository's compose_ (this research's first answer, 24 Oct): rejected then. It would duplicate spec 010's service, and bundle unlicensed libraries into an Apache-2.0 repository's image. Taken up on 25 Oct for SBML on beta (above): it is the start of spec 010's service rather than a second one, and nothing is bundled into the repository or published.
 - _The Java ContentService calling the exporters_: rejected. ContentService is being retired route by route.
 - _The exporters' command lines, run per request_: rejected. That starts a JVM per download, at seconds each.
