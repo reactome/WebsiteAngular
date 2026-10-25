@@ -151,12 +151,42 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
   — #646
 
-- [ ] T044 [US1] Route the website's SBML through spec 010's library service, once it serves the operation (spec 010 T011–T022) and T037 and T039 have passed:
+- [ ] ~~T044~~ Superseded by T062–T067 (25 Oct 2026, research R10's amendment): SBML is served on beta from a service started in this repository, not after spec 010's repository exists. Its original text, kept for its list: route the website's SBML through spec 010's library service, once it serves the operation (spec 010 T011–T022) and T037 and T039 have passed:
   - node answers `/ContentService/exporter/event/{id}.sbml` and `/exporter/sbml/{id}.xml`, slashed forms included, with R6's headers and errors, through spec 010's pass-through;
   - it caches per release under spec 011, and answers 503 in the envelope when the service cannot answer;
   - the routes go in nginx and the dev proxy alike, and `routes.spec.ts` follows, with `.sbgn` kept as Java's neighbour;
   - the parity harness compares status, headers and errors with Java's, and T030 compares the body;
   - check before and after on beta.
+
+### SBML on beta, from this repository (research R10, amended 25 Oct 2026)
+
+- [x] T062 [US1] Amend research R10, these tasks and spec 010's notices for SBML served from a service started here (decided 25 Oct 2026). — #657
+- [ ] T063 [US1] The SBML service in `deploy/java-library/` (spec 010's library service, started here with SBML as its only operation):
+  - **The build:** a Spring Boot application on JDK 17, with its own `pom.xml` depending on `sbml-exporter-lib`. `deploy/java-library/Dockerfile` first builds that library from the `graph-only` commit recorded in `deploy/java/PINS.md`, never from a published snapshot, then the service. It runs as a non-root user, in UTC with the `en_US` locale (sbml-exporter's dates).
+  - **Its one operation:** `GET /sbml/{stId}` answers the event's SBML, made by the library. It answers 404 for an id that is not in the graph. Node decides everything else (T065).
+  - **The diagram files:** fetched on demand from a configured base, `{base}/{release}/diagram/{stId}.json`, only for a pathway with a diagram, and kept on disk per release.
+  - **The files:** kept on disk per release, as ContentService does. At most two conversions run at once, and one id is never converted twice at the same time.
+  - **Settings, read at run time:** the graph's address, its credentials file (read literally, as `graph.ts` reads it), the diagram base and the cache folder. Startup fails clearly when one is missing.
+  - **Checked** by unit tests, each seen failing first, and by a CI job that builds the image and runs it over `sbml-exporter`'s fixture graph at the pinned commit. Its answers must compare equal to that commit's `ci/fixture/expected` (`ci/compare.py`).
+- [ ] T064 [US1] The `java-library` service in `docker-compose.yml`:
+  - loopback only;
+  - a 1 GiB heap within a 1.5 GiB limit (spec 010 research R3);
+  - the graph reached as `content-node` reaches it;
+  - the credentials file mounted read-only;
+  - a cache volume;
+  - a health check;
+  - `restart: unless-stopped`.
+- [ ] T065 [US1] Node answers `/ContentService/exporter/event/{id}.sbml` and `/ContentService/exporter/sbml/{id}.xml`, slashed forms included, in `exporters-endpoints.ts`, with the service as its source:
+  - R6's headers, its 404 and 400 decided from the object's labels, and `deep` with a share of 2;
+  - cached per release under spec 011;
+  - 503 in the envelope when the service cannot answer or times out, and never a fallback;
+  - tests seen failing first, against a stub service.
+- [ ] T066 [US1] The routes, in nginx (`routes.conf` under the render budget, before Java's `exporter/(diagram|document|event)` location; `local.conf`) and the dev proxy alike, with `routes.spec.ts` following and `.sbgn` kept as Java's neighbour. Run `nginx -t` for every deployment.
+- [ ] T067 [US1] Check on beta, before and after the switch, over the 30-event sample:
+  - status, headers and errors compared with Java's (the parity harness);
+  - the bodies compared with today's files (T004) by `compare.py`, every difference one of `sbml-exporter`'s recorded ones;
+  - Signal Transduction's time, cold and cached;
+  - the download button on a pathway page.
 
 **Checkpoint**: SBML needs no relational database, for the release or the website.
 
