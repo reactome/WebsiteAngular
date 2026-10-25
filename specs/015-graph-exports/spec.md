@@ -173,7 +173,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
 **Both exporters**
 
 - **FR-008**: Each MUST pass its format's validator over the sample, in its own repository's continuous integration if possible, and otherwise in this repository's.
-- **FR-009**: Each MUST be proven against its reference by the comparison tools of this spec (contracts/checks.md) before either the bulk files or the website switch to it.
+- **FR-009**: Each MUST be proven against its reference by the comparison tools of this spec (contracts/checks.md) before either the bulk files or the website switch to it. On beta, SBML switches once its comparison over the whole sample is complete, every difference recorded and every file valid; the differences still open are settled before the release's files or a production site switch (decided 25 Oct 2026, tasks.md T066).
 - **FR-010**: Work in another team's repository MUST go to its maintainers first: an issue describing the change, then pull requests once they agree. Nothing is pushed to those repositories without that agreement.
 
 **The website**
@@ -212,7 +212,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
   - BioPAX Level 3 is `reactome/BioPAX3Exporter`.
   - Either moves elsewhere only if its maintainers prefer.
 - **One library per format.** Each exporter's repository becomes a library module, which this stack uses, and a thin command line, which the release uses (R10).
-- **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it through spec 010's pass-through, so nothing routes to the Java ContentService for these formats.
+- **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it, so nothing routes to the Java ContentService for these formats. For SBML it is started in this repository for now (research R10, amended 25 Oct 2026).
 - **BioPAX's URL** is `/ContentService/exporter/event/{id}.biopax`, as the first version decided (R6). The legacy path redirects to it.
 - **Order of work.**
   1. SBML: the exporter's fixes and tests, then its layout, then the comparisons; then the website and the release switch, each only after the comparisons pass (FR-009).
