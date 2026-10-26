@@ -1,0 +1,134 @@
+# Data model: One API contract
+
+The shapes the contract holds first, with each field's source and kind. Fields are written as the service writes them (`search-core.ts`, reproducing Java): **a value that is null, empty text or an empty list is left out, but `false` is written**. A field is _required_ in a kind when the indexer always gives that kind a non-empty value and every recorded entry of the kind carries it. Otherwise it is optional. The "required" marks below are from the recordings; each is rechecked against the builder when its kind is written, and becomes optional where the builder can leave it out.
+
+Sources: the indexer's documents (`IndexDocument`, `IconDocument`, `DeletedDocument`, `PersonDocumentBuilder`, `InteractorDocumentBuilder`), through the Solr schema. Recorded counts are distinct entries in `e2e/har/` (see [research.md](research.md) R2).
+
+## Shared scalar aliases
+
+| Alias         | Kind                                               | Why named                                                        |
+| ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
+| `Long`        | integer, `format: int64`, written exactly          | A Java long, which may exceed 2^53 (the replacement ids)         |
+| `EpochMillis` | integer                                            | A date written as milliseconds (a deleted entry's `date`)        |
+| `Highlighted` | text that may carry `<span class="highlighting" >` | Name, summation, reference name and identifier, from a highlight |
+
+## Search entry (`SearchEntry`): a union of six kinds
+
+Fields every kind carries (`EntryBase`):
+
+| Field       | Kind                    | Required | Source                                                   |
+| ----------- | ----------------------- | -------- | -------------------------------------------------------- |
+| `dbId`      | text                    | yes      | `dbId` (a Solr text field; an accession for interactors) |
+| `id`        | text                    | yes      | `stId`, or `dbId` when there is no stId                  |
+| `name`      | `Highlighted`           | yes      | `name`, or its highlight                                 |
+| `type`      | text, narrowed per kind | yes      | `type`                                                   |
+| `exactType` | text                    | yes      | `exactType`                                              |
+
+### Event (`EventEntry`)
+
+`type: "Pathway" | "Reaction"`. A reaction's `exactType` is its category: `"binding" | "transition" | "omitted" | "uncertain" | "dissociation"`. A pathway's is its class.
+
+| Field                                      | Kind          | Required | Notes                               |
+| ------------------------------------------ | ------------- | -------- | ----------------------------------- |
+| `stId`                                     | text          | yes      |                                     |
+| `species`                                  | text[]        | yes      |                                     |
+| `summation`                                | `Highlighted` | yes      | falls back to `inferredSummation`   |
+| `isDisease`, `disease`                     | boolean       | yes      | the same value twice                |
+| `hasReferenceEntity`                       | boolean       | yes      | always `false`                      |
+| `hasEHLD`                                  | boolean       | no       | on every pathway (187 of 187)       |
+| `compartmentNames`, `compartmentAccession` | text[]        | no       | 324 of 450                          |
+| `fireworksSpecies`                         | text[]        | no       | only on the species-overview routes |
+
+### Physical entity (`EntityEntry`)
+
+`type` is one of "Protein", "DNA Sequence", "RNA Sequence", "Chemical Compound", "Drug", "Set", "Genes and Transcripts", or the name of a physical entity or reference entity class that the indexer's mapping passes through ("Complex", "OtherEntity", …). The list is taken from the domain snapshot and checked against it.
+
+| Field                                                 | Kind          | Required | Notes                                    |
+| ----------------------------------------------------- | ------------- | -------- | ---------------------------------------- |
+| `stId`                                                | text          | yes      |                                          |
+| `species`                                             | text[]        | no       |                                          |
+| `summation`                                           | `Highlighted` | no       | 69 of 1,580                              |
+| `isDisease`, `disease`                                | boolean       | no       | 1,546 of 1,580                           |
+| `hasReferenceEntity`                                  | boolean       | no       |                                          |
+| `compartmentNames`, `compartmentAccession`            | text[]        | no       | 1,546                                    |
+| `referenceName`                                       | `Highlighted` | no       | 1,235                                    |
+| `referenceIdentifier`, `databaseName`, `referenceURL` | text          | no       | 1,253; the identifier may be highlighted |
+| `fireworksSpecies`                                    | text[]        | no       | only on the species-overview routes      |
+
+### Icon (`IconEntry`)
+
+`type: "Icon"`, `exactType: "Icon"`, `icon: true`.
+
+| Field                                                                          | Kind                   | Required | Notes                                                               |
+| ------------------------------------------------------------------------------ | ---------------------- | -------- | ------------------------------------------------------------------- |
+| `stId`, `species`, `summation`, `iconName`, `iconCategories`                   | text / text[]          | yes      | `summation` is the icon's description                               |
+| `hasReferenceEntity`, `hasEHLD`                                                | boolean                | yes      | always `false`                                                      |
+| `iconCuratorName`, `iconCuratorOrcidId`, `iconDesignerName`, `iconDesignerUrl` | text                   | no       | on every recorded icon, but the indexer leaves them out when absent |
+| `iconCuratorUrl`, `iconDesignerOrcidId`                                        | text                   | no       | never recorded                                                      |
+| `iconReferences`, `iconEhlds`                                                  | text[]                 | no       | 39 and 37 of 40                                                     |
+| `iconPhysicalEntities`                                                         | `IconPhysicalEntity[]` | no       | 27 of 40                                                            |
+
+`IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional except `displayName`.
+
+### Person (`PersonEntry`)
+
+`type: "Person"`, `exactType: "Person"`. It has no `stId`, so `id` is the dbId. None is recorded, so this kind follows the builder alone.
+
+| Field                                                                            | Kind   | Required |
+| -------------------------------------------------------------------------------- | ------ | -------- |
+| `species`                                                                        | text[] | no       |
+| `orcidId`                                                                        | text   | no       |
+| `authoredPathways`, `authoredReactions`, `reviewedPathways`, `reviewedReactions` | text   | no       |
+
+### Interactor (`InteractorEntry`)
+
+`type: "Interactor"`, `exactType: "Interactor"`. `dbId` is the accession.
+
+| Field                                                                    | Kind          | Required |
+| ------------------------------------------------------------------------ | ------------- | -------- |
+| `stId`, `species`, `referenceIdentifier`, `databaseName`, `referenceURL` | text / text[] | yes      |
+| `referenceName`                                                          | `Highlighted` | no       |
+| `fireworksSpecies`                                                       | text[]        | no       |
+
+### Deleted (`DeletedEntry`)
+
+`deleted: true`. Its `type` and `exactType` are those of the class it was. Every other kind has `deleted?: never`.
+
+| Field              | Kind          | Required | Notes  |
+| ------------------ | ------------- | -------- | ------ |
+| `stId`             | text          | yes      |        |
+| `explanation`      | text          | yes      | 3 of 3 |
+| `date`             | `EpochMillis` | yes      | 3 of 3 |
+| `replacementDbIds` | `Long[]`      | no       | 1 of 3 |
+| `replacementStIds` | text[]        | no       | 1 of 3 |
+
+**Not in the contract** (never written, R2): `regulator`, `regulatedEntity`, `regulatorId`, `regulatedEntityId`, `instanceTypeExplanation`, `reason`.
+
+## Projections
+
+- **`PathwayOfEntry`**: what `/search/pathways/of/{dbId}` answers for `fields=DB_ID,ST_ID,NAME,HAS_EHLD`. It holds `dbId`, `stId`, `id`, `name` and optional `hasEHLD`, with no `type`.
+
+## Answers built on the entry
+
+| Type                                                        | Fields                                                                                 | Routes                                                  |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `ResultGroup<E>`                                            | `typeName`, `entries: E[]`, `entriesCount`, `rowCount`                                 | inside the grouped results                              |
+| `GroupedResult`                                             | `results: ResultGroup<SearchEntry>[]`, `rowCount`, `numberOfMatches`, `numberOfGroups` | `/search/query`                                         |
+| `DiagramResult`                                             | the diagram search's answer, with its `found` lists                                    | `/search/diagram/{id}`, `/search/fireworks`             |
+| `IconResult`                                                | `ResultGroup<IconEntry>` fields                                                        | `/search/icon/query`                                    |
+| `IconEntry`                                                 | one icon                                                                               | `/search/icon/{id}`                                     |
+| `FacetCount`, `Facet`, `FacetResponse`, `IconFacetResponse` | as today (spec 013 #676)                                                               | `/search/facet`, `/search/facet_query`, the icon facets |
+
+Each answer's exact field list comes from the service's writer for it, and is checked against the recorded answers when it moves in (R3).
+
+## Validation rules
+
+- **Exactly one kind.** Every recorded entry matches exactly one kind (FR-004). The ajv check reports an entry that matches none, or more than one.
+- **What the reader may assume about text.** `Highlighted` fields may hold markup, so a reader that shows them as plain text escapes them.
+- **The entity's `type` list is checked.** A test checks it against the domain snapshot's physical entity and reference entity classes, so a new class in a release fails a test, not a page.
+
+## Reader views
+
+- **Site.** `SearchEntry` and `IconEntry` in `projects/website-angular/src/model` become re-exports of the contract's.
+- **Pathway browser.** `Search.Entry` and `Search.Icon.Entry` become re-exports, and the namespace keeps only its value `EMPTY_RESULTS`.
+- **Narrowing.** A reader that needs one kind narrows on the marker (`type`, `deleted`) instead of declaring its own type.
