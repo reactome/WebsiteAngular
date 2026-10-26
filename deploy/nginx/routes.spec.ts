@@ -188,8 +188,8 @@ const NOT_YET_ROUTED: Record<string, string> = {
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
   // Routed on beta alone (dev.conf) until FR-009's open differences are
   // settled: see "SBML, on beta alone" below.
-  '/ContentService/exporter/event/{id}': 'spec 015 FR-009',
-  '/ContentService/exporter/sbml/{id}': 'spec 015 FR-009',
+  '/ContentService/exporter/event/{id}': 'spec 015 T068',
+  '/ContentService/exporter/sbml/{id}': 'spec 015 T068',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
@@ -268,8 +268,10 @@ describe('SBML, on beta alone', () => {
   /** A deployment's own locations before its routes.conf include, then the shared ones. */
   const deployment = (name: string) => {
     const text = readFileSync(join(__dirname, name), 'utf8');
-    const own = text.slice(0, text.indexOf('include /etc/nginx/common/routes.conf;'));
-    return [...parse(own), ...locations];
+    const at = text.indexOf('include /etc/nginx/common/routes.conf;');
+    // Without the include, slicing at -1 would read nearly the whole file.
+    if (at === -1) throw new Error(`${name} does not include routes.conf`);
+    return [...parse(text.slice(0, at)), ...locations];
   };
   for (const url of SBML)
     it(`sends ${url} to node on beta, under the render budget`, () => {
@@ -289,6 +291,16 @@ describe('SBML, on beta alone', () => {
     ])
       expect([url, nginxTarget(url, deployment('dev.conf'))]).toEqual([url, 'tomcat']);
   });
+  // Locally and under ng serve, as on beta: the list above keeps them out of
+  // the shared checks.
+  for (const url of SBML)
+    it(`sends ${url} to node locally and through the dev proxy`, async () => {
+      expect([url, nginxTarget(url, localLocations), await proxySendsToNode(url)]).toEqual([
+        url,
+        'node',
+        true,
+      ]);
+    });
 });
 
 /**

@@ -593,8 +593,8 @@ export const exportersEndpoints: Endpoint[] = [
     samplesOnly: true,
     /**
      * An event's SBML (spec 015 T065), from the SBML service. Routed on beta
-     * alone (dev.conf, T066); elsewhere Java answers it until FR-009's open
-     * differences are settled.
+     * (dev.conf, T066), locally and under ng serve; the release and
+     * production keep Java's until T068.
      */
     handler: (request) => sbmlAnswer(request, 'sbml'),
   },
