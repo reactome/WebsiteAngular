@@ -21,7 +21,8 @@ const kindOf = (statement: ts.Statement) =>
           ? 'an enum'
           : ts.isModuleDeclaration(statement)
             ? 'a namespace'
-            : `a ${ts.SyntaxKind[statement.kind]}`;
+            : article(ts.SyntaxKind[statement.kind]);
+const article = (word: string) => `${/^[AEIOU]/i.test(word) ? 'an' : 'a'} ${word}`;
 
 /** What a contract module declares or imports that it may not, as "module: why". */
 function violations(modules: Record<string, string>): string[] {
@@ -29,8 +30,14 @@ function violations(modules: Record<string, string>): string[] {
   for (const [name, source] of Object.entries(modules)) {
     const say = (why: string) => found.push(`${name}: ${why}`);
     const file = ts.createSourceFile(`${name}.ts`, source, ts.ScriptTarget.Latest, true);
+    // One directory: a path inside it is `./name.ts`, so a module below it
+    // could import nothing here by the rule below, and is not read by readers.
+    if (name.includes('/')) say('a module in a subdirectory: the contract is one directory');
+    // A reference directive pulls a file into the program as an import does.
+    for (const reference of [...file.referencedFiles, ...file.typeReferenceDirectives])
+      say(`refers to ${reference.fileName} by a reference directive`);
     const outside = (specifier: ts.Expression) => {
-      if (!ts.isStringLiteral(specifier)) return 'a computed specifier';
+      if (!ts.isStringLiteralLike(specifier)) return 'a computed specifier';
       const target = specifier.text;
       if (!target.startsWith('./')) return target;
       return path.posix.normalize(target).includes('/') ? target : null;
@@ -66,9 +73,12 @@ function violations(modules: Record<string, string>): string[] {
 }
 
 const DIR = new URL('./', import.meta.url);
+// Every module, a declaration file or one in a subdirectory included: what
+// is not read here is not held.
 const real = Object.fromEntries(
-  readdirSync(DIR)
-    .filter((file) => file.endsWith('.ts') && !/\.(spec|d)\.ts$/.test(file))
+  readdirSync(DIR, { recursive: true, encoding: 'utf8' })
+    .map((file) => file.split(path.sep).join('/'))
+    .filter((file) => file.endsWith('.ts') && !file.endsWith('.spec.ts'))
     .map((file) => [file.replace(/\.ts$/, ''), readFileSync(new URL(file, DIR), 'utf8')])
 );
 
@@ -115,6 +125,30 @@ describe('the contract', () => {
       'search: imports cytoscape, outside the contract',
       'search: re-exports ../website-angular/src/model/search.model.ts, outside the contract',
       'search: refers to ../pathway-browser/src/app/model/search.model.ts, outside the contract',
+    ]);
+  });
+
+  it('refuses a module in a subdirectory, and a reference directive', () => {
+    expect(
+      violations({
+        'sub/extra': 'export interface X { id: string }',
+        search: [
+          '/// <reference path="../website-angular/src/model/search.model.ts" />',
+          '/// <reference types="node" />',
+          'export interface E { id: string }',
+        ].join('\n'),
+      })
+    ).toEqual([
+      'sub/extra: a module in a subdirectory: the contract is one directory',
+      'search: refers to ../website-angular/src/model/search.model.ts by a reference directive',
+      'search: refers to node by a reference directive',
+    ]);
+  });
+
+  it('names a statement it refuses with the right article', () => {
+    expect(violations({ search: 'export = {};\n;' })).toEqual([
+      'search: an ExportAssignment, which is not a type',
+      'search: an EmptyStatement, which is not a type',
     ]);
   });
 
