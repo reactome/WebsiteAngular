@@ -217,7 +217,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - **Failures:** 503 in the envelope when the service cannot answer or times out, and never a fallback.
   - **Tests,** seen failing first, against a stub service.
 - [x] T066 [US1] The routes, in nginx and the dev proxy alike, once T030, T037's whole-sample run, T039 and every file's validity are recorded (beta's condition under FR-009, below). In effect met on 25 Oct 2026: sbml-exporter #57 ran the whole sample, all 30 files valid. T037 stays open for the differences still to decide, which FR-009 settles before the release, not before beta. — #668 (replacing #667). The location is in `dev.conf` alone, before its `routes.conf` include, not in `routes.conf`: the release's files and production keep Java's until FR-009's open differences are settled, and `routes.spec.ts` checks each deployment file. It takes only `event/{id}.sbml` and `sbml/{id}.xml` (anchored, so an id ending `.sbml.sbgn` stays Java's), and content-node's compose names the service (`SBML_SERVICE`).
-  - **nginx:** `routes.conf`, under the render budget, before Java's `exporter/(diagram|document|event)` location, which `routes-core.conf` does not hold; and `local.conf`, without the budget.
+  - **nginx:** `dev.conf` (beta alone, #668), under the render budget, before its `routes.conf` include and so before Java's `exporter/(diagram|document|event)` location there; and `local.conf`, without the budget. Release and production follow in T068.
   - **`routes.spec.ts`** follows, with `.sbgn` kept as Java's neighbour.
   - **`nginx -t`** for every deployment.
 
@@ -228,6 +228,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - the bodies compared with today's files (T004) by `compare.py`, every difference one recorded in `sbml-exporter`'s `differences.md`;
   - Signal Transduction's time, cold and cached, and the service's memory with two such conversions at once (its heap is 1 GiB);
   - the download button on a pathway page.
+- [ ] T068 [US1] SBML for the release and production: move the location from `dev.conf` into `routes.conf` (as #667 had it), so `release.conf` and `production.conf` route it too, once FR-009's open differences are settled and those deployments run the SBML service. `routes.spec.ts` then drops both endpoints from `NOT_YET_ROUTED`, and its "SBML, on beta alone" block becomes every deployment's.
 
 **FR-009 on beta (decided 25 Oct 2026):** beta switches once the comparison over the whole sample is complete, every difference recorded and every file valid. The differences still open there (the cross-references asked in sbml-exporter#36, and the EC numbers in graph-importer#9) are settled before the release's files or a production site switch, not before beta, which is where the team looks at them.
 
