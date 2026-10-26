@@ -11,7 +11,7 @@ export const EXTERNAL_LINKS = {
   elixir: { label: 'elixir', link: 'https://elixir-europe.org/platforms/data/core-data-resources' },
   gcdr: {
     label: 'GCDR',
-    link: 'https://globalbiodata.org/scientific-activities/global-core-biodata-resources/',
+    link: 'https://globalbiodata.org/what-we-do/global-core-biodata-resources',
   },
   coretrustseal: { label: 'CoreTrustSeal', link: 'https://www.coretrustseal.org/' },
   ebi: { label: 'EBI', link: 'http://www.ebi.ac.uk/' },
