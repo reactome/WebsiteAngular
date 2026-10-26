@@ -41,8 +41,12 @@ import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from
 
 // Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
 declare global {
+  /** Text JSON.stringify writes as it is: a number too long for a double, say. */
+  interface RawJson {
+    readonly rawJSON: string;
+  }
   interface JSON {
-    rawJSON(text: string): unknown;
+    rawJSON(text: string): RawJson;
   }
 }
 
