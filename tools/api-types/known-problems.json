@@ -10,7 +10,6 @@
   "GET /data/pathways/top/{taxId} as TopLevelPathway[]": 170,
   "GET /data/person/{id} as Person": 42,
   "GET /data/person/{id} as { displayName?: string }": 15,
-  "GET /data/person/{id}/{list} as SimpleEvent[] | null": 31,
   "GET /data/query/enhanced/v2/{id} as DatabaseObject": 2659,
   "GET /data/query/enhanced/{id} as { summation?: { text?: string }[] }": 61,
   "GET /data/query/{id} as { displayName?: string; name?: string[] }": 221,
