@@ -16,7 +16,6 @@
   "GET /data/query/{id} as { displayName?: string; name?: string[] }": 221,
   "GET /data/species/main as Species[]": 16,
   "GET /exporter/reaction/{id}/diagram as ReactionJson": 704,
-  "GET /interactors/static/molecule/enhanced/{acc}/details as CustomInteraction[]": 89,
   "GET /search/diagram/{id} as Search.Result": 744,
   "GET /search/fireworks as Search.Result": 1315,
   "GET /search/icon/query as IconResult": 200,

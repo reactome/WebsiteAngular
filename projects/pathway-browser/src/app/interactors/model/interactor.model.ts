@@ -38,6 +38,8 @@ export interface CustomInteraction {
   identifier: string;
   score: number;
   evidenceCount: number;
+  /** The partner's own page; the text "null" when the graph has none, as Java writes it. */
+  url: string;
   evidenceURL: string;
   geneName?: string[];
   databaseName: string;

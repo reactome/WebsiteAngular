@@ -18,11 +18,22 @@ export function unexpected(request: Request) {
 }
 
 /**
+ * One member of T for nonEmptyJson: a name T has, with a value of T's type for
+ * it, one left out (null or undefined), or JSON already written.
+ */
+export type JsonMember<T> = {
+  [K in keyof T & string]-?: [name: K, value: T[K] | null | undefined | RawJson, double?: boolean];
+}[keyof T & string];
+
+/**
  * A Java object as the content service's NON_EMPTY mapper writes it: the
  * members in order, any null, empty text or empty list left out. A `double`
  * member is written as Java writes a Double (1.0, not 1).
+ *
+ * Given the type the site reads the object as (spec 013 T019), each member's
+ * name and value are checked against it: a field renamed there fails here.
  */
-export function nonEmptyJson(members: [name: string, value: unknown, double?: boolean][]): string {
+export function nonEmptyJson<T = Record<string, unknown>>(members: JsonMember<T>[]): string {
   const out: string[] = [];
   for (const [name, value, double] of members) {
     if (value === null || value === undefined || value === '') continue;
