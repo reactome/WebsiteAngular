@@ -1,6 +1,6 @@
 # Tasks: The Java side of Reactome's services
 
-> **Amended by [spec 015](../015-graph-exports/tasks.md) (25 Oct 2026):** the library service is started in this repository, in `deploy/java-library/`, with SBML as its only operation (spec 015 T062–T067), while its own repository waits for T001. T011, T014, T016–T018 build on it, and it moves there when that repository exists.
+> **Amended by [spec 015](../015-graph-exports/tasks.md) (25 Oct 2026):** the library service is started in this repository, in `deploy/java-library/`, with SBML as its only operation (spec 015 T062–T067), while its own repository waits for T001. T011, T014, T016–T018 build on it, and it moves there when that repository exists. T012, T013, T015 (copying content-service's classes) and the event PDF stay for that repository, under its AGPL licence.
 
 **Input**: [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [contracts/](contracts/), [quickstart.md](quickstart.md)
 
@@ -125,7 +125,7 @@ Each cutover is one PR. It adds the group's patterns to node's table, one nginx 
   - compare the bytes, then have each side read the other's files.
 - [ ] T027 [US2] Cut over uploads and tokens (5 operations). Check on the deployed site that a shared overlay link opens, and that a fresh upload's token reads back after a restart.
 - [ ] T028 [P] [US2] Run SBGN parity: a byte comparison over a sample of pathways and reactions, with the candidate's timezone and locale equal to the reference's. SBML's proof is spec 015's comparison (its T037 and T039), since its body is no longer Java's relational answer.
-- [ ] T029 [US2] Cut over SBGN (1 operation), inside the exporter's rate-limited location. Check on the deployed site that the download button returns the file through node. SBML is cut over by spec 015 (its T044).
+- [ ] T029 [US2] Cut over SBGN (1 operation), inside the exporter's rate-limited location. Check on the deployed site that the download button returns the file through node. SBML is cut over by spec 015 (its T062–T067).
 - [ ] T030 [US2] Run event-PDF parity with the PDF normaliser, including requests with an analysis token
 - [ ] T031 [US2] Cut over the event PDF (1 operation). Check on the deployed site that the PDF download works.
 - [ ] T032 [US2] Fail the Java service on purpose on the deployed site: stop `java-library` and check every cut-over address answers 503 in the envelope while node's own pages are unaffected. Start it again.

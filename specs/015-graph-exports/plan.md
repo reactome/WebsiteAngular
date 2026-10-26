@@ -157,7 +157,7 @@ builders                  # entity references, xrefs, stoichiometry, controllers
 Launcher, WriteBioPAX3    # species mode, orphans, -l, xml:base, per-reaction export
 CI                        # the BioPAX validator over a fixture graph's output
 
-# In spec 010's library service (its own repository)
+# In spec 010's library service: started here, in deploy/java-library/, for SBML (25 Oct 2026); its own repository later
 the SBML operation        # the graph-only converter (spec 010 T014, amended)
 a BioPAX operation        # WriteBioPAX3 (new)
 
@@ -170,7 +170,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 
 **Structure Decision**:
 
-- **Node answers the URLs**, through spec 010's pass-through, with R6's headers, errors and caching. The library service writes only the body.
+- **Node answers the URLs** with R6's headers, errors and caching. The library service writes only the body. For SBML, node is the service's client (T065); spec 010's pass-through is not needed for it.
 - **The comparison tools are standalone instruments** under `tools/exports-compare/`, comparing files from anywhere.
 
 ## Order of work
@@ -190,7 +190,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
    - the validator baselines;
    - BioPAX3Exporter's baseline.
 4. **SBML in `sbml-exporter`** (T036–T042): the fixes, the comparisons, the layout, the graph-only command line, a dry run against the published archive, and validation in its CI.
-5. **The SBML switch on the website**, once spec 010's service serves it and the comparisons have passed (T044).
+5. **The SBML switch on the website** (T062–T067), from the service started here, once the comparisons are complete and recorded (FR-009 on beta).
 6. **BioPAX in `BioPAX3Exporter`** (T045–T051): the content, the comparisons against `biopax.zip` and the legacy service, validation, and its CI.
 7. **The BioPAX switch on the website** (T052–T054): the endpoint, the legacy redirect and the site's links.
 8. **The release's switches**, each after a full dry run (T055, T057). Level 2 is dropped (T056, decided).
@@ -198,4 +198,6 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 
 ## Complexity Tracking
 
-None in this repository. The Java service is spec 010's, decided there.
+| What                                                      | Why                                                                  | Simpler alternative rejected because                                                                                                            |
+| --------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| A JVM service in this repository (`deploy/java-library/`) | SBML on beta without waiting for spec 010's repository (25 Oct 2026) | Waiting leaves the website on the relational converter for an unknown time; the service moves to spec 010's repository unchanged when it exists |
