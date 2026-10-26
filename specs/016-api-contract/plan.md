@@ -67,7 +67,7 @@ _GATE: must pass before Phase 0 research, and is re-checked after Phase 1 design
 | III. A test fails first                    | Every new check has a named breakage that shows it failing ([contracts/checks.md](contracts/checks.md)).                                                                                                                                                                                                                                                                                                               |
 | IV. Stable identifiers                     | Not affected: no URL or link changes.                                                                                                                                                                                                                                                                                                                                                                                  |
 | V. Comments carry the failure              | Contract comments say why a field is shaped as it is (text `dbId`, highlight markup, exact longs), with measured figures only.                                                                                                                                                                                                                                                                                         |
-| Quality gates                              | Unchanged and all run. `npm test` and the type, lint and dead-code checks cover `projects/contract/` with no configuration change (R1). The ratchets may only fall.                                                                                                                                                                                                                                                    |
+| Quality gates                              | Unchanged and all run. `npm test` and the type, lint and dead-code checks cover `projects/contract/`; the one configuration change is `tools/tsconfig.json`'s `include`, so a contract module no reader imports yet is still type-checked (neither program sees it otherwise). The ratchets may only fall.                                                                                                             |
 | CLAUDE.md: byte-identical, no fallback     | Types only; no answer changes (FR-005).                                                                                                                                                                                                                                                                                                                                                                                |
 | CLAUDE.md: new `tools/` code is TypeScript | The generator script and the specs are `.ts`.                                                                                                                                                                                                                                                                                                                                                                          |
 
@@ -132,7 +132,7 @@ These are the pull requests, in order. Each one is adversarially reviewed, ticks
 1. **The plumbing on the search facets.**
    - Create `projects/contract/` with `scalars.ts` and the facet types (`FacetCount`, `Facet`, `FacetResponse`, `IconFacetResponse`).
    - The site's model files re-export them, and the service imports them from the contract.
-   - Add the boundary checks (types only; service imports leaving `tools/` are type-only).
+   - Add the boundary checks (types only; imports leaving `tools/content-node/` are type-only).
    - Show the rename failing on both sides.
 2. **The search entry.**
    - Write the six kinds, `PathwayOfEntry` and the entity type list (checked against the domain snapshot) in `search.ts`.
@@ -141,7 +141,7 @@ These are the pull requests, in order. Each one is adversarially reviewed, ticks
    - Readers narrow by kind where they read kind-specific fields.
    - Known problems on the search routes fall, measured.
 3. **The search answers.**
-   - The grouped results, the diagram and species-overview results, the icon results and the icon entry (`/search/icon/{id}`, added to `calls.ts`).
+   - The grouped results, the diagram and species-overview results, the icon results and the icon entry (`/search/icon/{id}`: record an answer and remove its `gap` in `calls.ts`).
    - Tick spec 013 T019.
 4. **The description.**
    - `tools/contract/generate.ts`, `routes.ts` and `openapi.json`.

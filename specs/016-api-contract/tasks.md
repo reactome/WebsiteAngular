@@ -29,10 +29,10 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - `tools/content-node/search-core.ts` and `search-endpoints.ts` import them from the contract.
   - Show a rename of `FacetCount.count` failing in the service and the site, then undo it.
 - [ ] T003 Add `projects/contract/contract.spec.ts`. It holds that the contract declares no value and imports nothing outside itself. Show it failing on an `export const` and on an import from `projects/website-angular`.
-- [ ] T004 Extend `tools/content-node/boundaries.spec.ts` so that every import leaving `tools/` is `import type`.
+- [ ] T004 Extend `tools/content-node/boundaries.spec.ts` so that every import leaving `tools/content-node/` is `import type` (the image copies nothing else, so a value import from a sibling `tools/` directory fails there too).
   - It reads the syntax tree; `ts.preProcessFile` cannot tell a type import from a value import.
   - Show it failing on one changed import. This closes the service image's gap (research R1).
-- [ ] T005 Point `tools/api-types/calls.ts` `TYPES` at the contract for the moved types, and extend the `tools/**/*.ts` lint block (type imports; no enum, namespace or class) to `projects/contract/**/*.ts`.
+- [ ] T005 Point `tools/api-types/calls.ts` `TYPES` at the contract for the moved types, extend the `tools/**/*.ts` lint block (type imports; no enum, namespace, `import =` or parameter properties) to `projects/contract/**/*.ts`, and add `../projects/contract/**/*.ts` to `tools/tsconfig.json`'s `include`, so a contract module no reader imports yet is type-checked (show it: a type error in an unimported contract file fails `tsc -p tools/tsconfig.json`).
 
 **Checkpoint**: the contract works on every side, and no answer has changed.
 
@@ -43,13 +43,14 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 **Independent test**: the search routes' known problems fall, and every recorded entry matches exactly one kind ([quickstart.md](quickstart.md) §3).
 
 - [ ] T006 [US2] Write `EntryBase` and the kinds `EventEntry`, `EntityEntry`, `IconEntry`, `PersonEntry`, `InteractorEntry` and `DeletedEntry` in `projects/contract/search.ts`, as in [data-model.md](data-model.md).
-  - Recheck each "required" field against the indexer's builders in the scratch clone of reactome/search-indexer.
+  - Recheck each "required" field against the indexer's builders (reactome/search-indexer at 5cea4d6) and against `searchEntry` itself, which leaves out a name with no snippet and a summation the document lacks.
   - Non-deleted kinds carry `deleted?: never`.
   - Each field's comment names its source, and the comments carry no personal data.
 - [ ] T007 [US2] Write the entity kind's `type` list from the indexer's `getType` and `getReferenceTypes`, plus the classes they pass through, taken from the domain snapshot. Add a spec that reads the snapshot and fails when a class is missing; show it failing by removing one.
 - [ ] T008 [US2] Make `searchEntry` in `tools/content-node/search-core.ts` build a `SearchEntry`, with no `unknown` and no `DraftEntry` index signature.
   - Drop the six never-written fields from what it reads, keeping the field order and output byte-identical: `regulator`, `regulatedEntity`, `regulatorId`, `regulatedEntityId`, `instanceTypeExplanation`, and `reason` (read as `deletedReason`).
   - Leave a comment on `reason` naming the mismatch with the index field.
+  - Exact longs: declare `JSON.rawJSON` in `server.ts` as returning a branded `RawJson`, and write the entry through a writer-side mapping in `answers.ts` in which a `Long` field accepts `RawJson` (research R4).
   - Confirm byte-identity with the search unit specs, the parity comparison and beta.
 - [ ] T009 [US2] Add `PathwayOfEntry`, the projection `/search/pathways/of/{dbId}` answers, to `projects/contract/search.ts`. Point the pathway browser's `selectedResultPathways` at it.
 - [ ] T010 [US2] Make the site's `SearchEntry` and `IconEntry` re-export the contract's, and narrow by kind where `search.component.ts`, `interactor-detail.component.ts`, `icon-lib.component.ts` and `icon-detail.component.ts` read kind-specific fields.
@@ -65,7 +66,7 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 **Independent test**: every search route's known problems are at zero or explained.
 
 - [ ] T013 [US3] Write `ResultGroup<E>`, `GroupedResult` (with `numberOfGroups`), the diagram and species-overview result types and `IconResult` (with `rowCount` and `typeName`) in `projects/contract/search.ts`, and point their writers in `search-endpoints.ts` and `search-diagram-endpoints.ts`, and their readers, at them.
-- [ ] T014 [US3] Add `/search/icon/{id}` to `tools/api-types/calls.ts` as `IconEntry`, recording an answer through the e2e suite if it has none (record rewrites three HARs: check the diff). Type its writer.
+- [ ] T014 [US3] Record an answer for `/search/icon/{id}` (already in `tools/api-types/calls.ts` as `IconEntry`, with a `gap`) through the e2e suite and remove the `gap` (record rewrites three HARs: check the diff). Type its writer.
 - [ ] T015 [US3] Tick spec 013 T019 in `specs/013-server-types/tasks.md` with T002–T014's PR numbers.
 
 ## Phase 5: User Story 1 - A change fails on both sides (P1)
@@ -84,14 +85,14 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 - [ ] T018 [US4] Add ts-json-schema-generator 2.9.0 as a dev dependency (check the lock's diff by name and version at every depth) and write `tools/contract/generate.ts`.
   - It generates the route table's answer types (`discriminatorType: 'open-api'`, `skipTypeCheck: true`) and rewrites the refs to `#/components/schemas/`.
   - It writes `projects/contract/openapi.json`.
-  - `tools/load.spec.ts` lists it under `RUN_ON_LOAD` if it writes when loaded.
+  - `tools/load.spec.ts` gains `'contract'` in `SERVICES`, and lists `generate` under `RUN_ON_LOAD` if it writes when loaded.
 - [ ] T019 [US4] Write `projects/contract/routes.ts`, the route table, as types. `tools/contract/generate.spec.ts` checks it against `tools/content-node/registry.ts` both ways, and marks registry routes not yet in the contract `x-contract: "not yet"`. Show it failing on a row for a route the registry lacks.
 - [ ] T020 [US4] Add the up-to-date check in `tools/contract/generate.spec.ts`: regenerate in memory and compare with the committed file. Show it failing on a contract change made without regenerating.
 - [ ] T021 [US4] Add ajv 8.20.0 as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
   - Use ajv 2020-12, with `discriminator: true` where a type has one, and register the `int64` format.
   - Read exact longs with a JSON.parse reviver.
   - Count one problem per failing value, so a union failure counts once.
-  - Show it failing by removing one entry kind.
+  - Show it failing by removing one entry kind, and by making two kinds overlap (an entry that matches two must fail: `oneOf`).
 
 ## Phase 7: User Story 5 - The rest, family by family (P3)
 

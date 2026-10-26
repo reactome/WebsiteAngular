@@ -6,38 +6,38 @@ Sources: the indexer's documents (`IndexDocument`, `IconDocument`, `DeletedDocum
 
 ## Shared scalar aliases
 
-| Alias         | Kind                                               | Why named                                                        |
-| ------------- | -------------------------------------------------- | ---------------------------------------------------------------- |
-| `Long`        | integer, `format: int64`, written exactly          | A Java long, which may exceed 2^53 (the replacement ids)         |
-| `EpochMillis` | integer                                            | A date written as milliseconds (a deleted entry's `date`)        |
-| `Highlighted` | text that may carry `<span class="highlighting" >` | Name, summation, reference name and identifier, from a highlight |
+| Alias         | Kind                                               | Why named                                                              |
+| ------------- | -------------------------------------------------- | ---------------------------------------------------------------------- |
+| `Long`        | integer, `format: int64`, written exactly          | A Java long, which may exceed 2^53 (the replacement ids)               |
+| `EpochMillis` | integer                                            | A date written as milliseconds (a deleted entry's `date`)              |
+| `Highlighted` | text that may carry `<span class="highlighting" >` | Name, stId, summation, reference name and identifier, from a highlight |
 
 ## Search entry (`SearchEntry`): a union of six kinds
 
 Fields every kind carries (`EntryBase`):
 
-| Field       | Kind                    | Required | Source                                                   |
-| ----------- | ----------------------- | -------- | -------------------------------------------------------- |
-| `dbId`      | text                    | yes      | `dbId` (a Solr text field; an accession for interactors) |
-| `id`        | text                    | yes      | `stId`, or `dbId` when there is no stId                  |
-| `name`      | `Highlighted`           | yes      | `name`, or its highlight                                 |
-| `type`      | text, narrowed per kind | yes      | `type`                                                   |
-| `exactType` | text                    | yes      | `exactType`                                              |
+| Field       | Kind                    | Required | Source                                                              |
+| ----------- | ----------------------- | -------- | ------------------------------------------------------------------- |
+| `dbId`      | text                    | yes      | `dbId` (a Solr text field; an accession for interactors)            |
+| `id`        | text                    | yes      | `stId`, or `dbId` when there is no stId                             |
+| `name`      | `Highlighted`           | no       | `name`, or its highlight; none when a highlight has no name snippet |
+| `type`      | text, narrowed per kind | yes      | `type`                                                              |
+| `exactType` | text                    | yes      | `exactType`                                                         |
 
 ### Event (`EventEntry`)
 
 `type: "Pathway" | "Reaction"`. A reaction's `exactType` is its category: `"binding" | "transition" | "omitted" | "uncertain" | "dissociation"`. A pathway's is its class.
 
-| Field                                      | Kind          | Required | Notes                               |
-| ------------------------------------------ | ------------- | -------- | ----------------------------------- |
-| `stId`                                     | text          | yes      |                                     |
-| `species`                                  | text[]        | yes      |                                     |
-| `summation`                                | `Highlighted` | yes      | falls back to `inferredSummation`   |
-| `isDisease`, `disease`                     | boolean       | yes      | the same value twice                |
-| `hasReferenceEntity`                       | boolean       | yes      | always `false`                      |
-| `hasEHLD`                                  | boolean       | no       | on every pathway (187 of 187)       |
-| `compartmentNames`, `compartmentAccession` | text[]        | no       | 324 of 450                          |
-| `fireworksSpecies`                         | text[]        | no       | only on the species-overview routes |
+| Field                                      | Kind          | Required | Notes                                                                   |
+| ------------------------------------------ | ------------- | -------- | ----------------------------------------------------------------------- |
+| `stId`                                     | `Highlighted` | yes      |                                                                         |
+| `species`                                  | text[]        | yes      |                                                                         |
+| `summation`                                | `Highlighted` | no       | the document's own, which replaces `inferredSummation` even when absent |
+| `isDisease`, `disease`                     | boolean       | yes      | the same value twice                                                    |
+| `hasReferenceEntity`                       | boolean       | yes      | always `false`                                                          |
+| `hasEHLD`                                  | boolean       | no       | on every pathway (187 of 187)                                           |
+| `compartmentNames`, `compartmentAccession` | text[]        | no       | 324 of 450                                                              |
+| `fireworksSpecies`                         | text[]        | no       | only on the species-overview routes                                     |
 
 ### Physical entity (`EntityEntry`)
 
@@ -45,7 +45,7 @@ Fields every kind carries (`EntryBase`):
 
 | Field                                                 | Kind          | Required | Notes                                    |
 | ----------------------------------------------------- | ------------- | -------- | ---------------------------------------- |
-| `stId`                                                | text          | yes      |                                          |
+| `stId`                                                | `Highlighted` | yes      |                                          |
 | `species`                                             | text[]        | no       |                                          |
 | `summation`                                           | `Highlighted` | no       | 69 of 1,580                              |
 | `isDisease`, `disease`                                | boolean       | no       | 1,546 of 1,580                           |
@@ -76,7 +76,7 @@ Fields every kind carries (`EntryBase`):
 
 | Field                                                                            | Kind   | Required |
 | -------------------------------------------------------------------------------- | ------ | -------- |
-| `species`                                                                        | text[] | no       |
+| `species`                                                                        | text[] | yes      |
 | `orcidId`                                                                        | text   | no       |
 | `authoredPathways`, `authoredReactions`, `reviewedPathways`, `reviewedReactions` | text   | no       |
 
@@ -94,13 +94,13 @@ Fields every kind carries (`EntryBase`):
 
 `deleted: true`. Its `type` and `exactType` are those of the class it was. Every other kind has `deleted?: never`.
 
-| Field              | Kind          | Required | Notes  |
-| ------------------ | ------------- | -------- | ------ |
-| `stId`             | text          | yes      |        |
-| `explanation`      | text          | yes      | 3 of 3 |
-| `date`             | `EpochMillis` | yes      | 3 of 3 |
-| `replacementDbIds` | `Long[]`      | no       | 1 of 3 |
-| `replacementStIds` | text[]        | no       | 1 of 3 |
+| Field              | Kind          | Required | Notes                                        |
+| ------------------ | ------------- | -------- | -------------------------------------------- |
+| `stId`             | `Highlighted` | yes      |                                              |
+| `explanation`      | text          | no       | 3 of 3; none when the deletion has no reason |
+| `date`             | `EpochMillis` | yes      | 3 of 3                                       |
+| `replacementDbIds` | `Long[]`      | no       | 1 of 3                                       |
+| `replacementStIds` | text[]        | no       | 1 of 3                                       |
 
 **Not in the contract** (never written, R2): `regulator`, `regulatedEntity`, `regulatorId`, `regulatedEntityId`, `instanceTypeExplanation`, `reason`.
 

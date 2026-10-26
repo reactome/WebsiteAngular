@@ -12,7 +12,7 @@ Measured 26 Oct 2026 from the repository, the recorded answers (`e2e/har/`, read
 - **A rename fails both sides.** Renaming `FacetCount.count` in the probe failed both `tools/content-node/search-core.ts:80` and `projects/website-angular/src/app/search/search.component.ts:339`.
 - **No configuration change.** `projects/**` is already covered by vitest's `include`, eslint, prettier and knip; knip reported an unused export there with no change.
 - **Nothing in Angular changes.** `angular.json` and `tsconfig.app.json` need nothing: `projects/website-angular` and `projects/pathway-browser` are not Angular projects, but folders the `reactome` project reaches by relative import. The contract is the same.
-- **How the service imports the site's types today.** All 14 of `tools/content-node`'s imports from `projects/` are `import type`, by relative path with `.ts` (checked by parsing every module).
+- **How the service imports the site's types today.** All 15 of `tools/content-node`'s imports from `projects/` (14 outside its specs) are `import type`, by relative path with `.ts` (checked by parsing every module).
 
 **Why types only:**
 
@@ -22,7 +22,7 @@ Measured 26 Oct 2026 from the repository, the recorded answers (`e2e/har/`, read
 So the contract holds no values (no enum, no namespace, no constant), and a new boundary check holds two rules:
 
 - The contract imports nothing outside itself.
-- Every service import that leaves `tools/` is `import type`.
+- Every import that leaves `tools/content-node/` is `import type`: the image holds nothing else, so a value import from a sibling `tools/` directory fails there too.
 
 The check needs the syntax tree. `boundaries.spec.ts` uses `ts.preProcessFile`, which cannot tell a type import from a value import, and it ignores imports that leave `tools/content-node`.
 
@@ -48,7 +48,8 @@ The check needs the syntax tree. `boundaries.spec.ts` uses `ts.preProcessFile`, 
 - **The authored and reviewed counts and `orcidId` are text.** They are Solr text fields, written as stored. No person entry is recorded.
 - **`date` is a number** (epoch milliseconds).
 - **`replacementDbIds` is a list of whole numbers** written exactly. Only one is recorded (`192781`), well inside the safe range.
-- **`id` equals `stId`** in all 8,603 entries, and `disease` equals `isDisease`.
+- **`id` equals `stId`** in all 8,603 recorded entries, but not as a rule: `stId` is a highlighted field (`hl.fl` in the indexer's `solrconfig.xml`), taken from the snippets like the name, so a highlighted `stId` carries markup while `id` keeps the plain one (reproduced by calling `searchEntry` on a synthetic document). `disease` equals `isDisease`.
+- **What the converter, not the indexer, leaves out** (reproduced the same way): an entry whose highlight has no name snippet is written with no `name` ("a name with no snippet is none"), and without highlighting, a document's own summation replaces the inferred one even when absent, so a document with only `inferredSummation` is written with no `summation`. So `name` and `summation` are optional in every kind.
 - **Search highlights carry markup** (`<span class="highlighting" >…</span>`). Among distinct entries: name 954, referenceName 517, summation 117, referenceIdentifier 23.
 
 **What tells the kinds apart**, from the builders and confirmed over the recorded entries (no entry matched no kind or two):
@@ -98,7 +99,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
   - It declares neither id, type, hasReferenceEntity, disease, summation nor fireworksSpecies.
 - **The pathway browser's `Search.Icon.Entry`:** it requires `deleted`, `date`, `isDisease` and `disease`, which icons never carry, and declares none of the icon fields.
 
-**Gaps in the recordings:** no person entry, no `/search/icon/{id}` answer (that call is missing from `tools/api-types/calls.ts`), and no replacement id beyond the safe range. The contract's types for these follow the indexer and the converter, and the gaps are recorded where they are measured (T-tasks add recordings where the e2e suite can reach them).
+**Gaps in the recordings:** no person entry, no `/search/icon/{id}` answer (`tools/api-types/calls.ts` lists the call with a `gap`: "the recordings never open one icon"), and no replacement id beyond the safe range. The contract's types for these follow the indexer and the converter, and the gaps are recorded where they are measured (T-tasks add recordings where the e2e suite can reach them).
 
 ## R4. Generating the description
 
@@ -114,8 +115,8 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 
 - **Writer helpers are not generated.** `JsonWritten<T>` and `JsonMember<T>` fail generation (`Unexpected type "undefined"`, `No additional properties`), but they are writer helpers, not answer shapes. They stay in `tools/content-node/answers.ts` and take the contract's types as arguments.
 - **Every type argument is named.** An anonymous argument gets a name with source positions in it (`Relationship.Has<interface--111-414--0-415>`), which would churn the committed description.
-- **The search entry has no single discriminator.** Deleted entries share `type` values with live ones, so the entry is written as a `oneOf` of kinds told apart by their `const`, `enum` and `deleted` constraints, with no OpenAPI `discriminator`. Graph objects (`schemaClass`, `className`) do have one, and use it.
-- **A Java long is the named alias `Long`.** It is tagged `@asType integer` and `@format int64`, which gives `{"type":"integer","format":"int64"}`, the standard OpenAPI way to say a 64-bit integer.
+- **The search entry has no single discriminator.** Deleted entries share `type` values with live ones, so it has no OpenAPI `discriminator`. Without one the generator writes a union as `anyOf` (reproduced), and `anyOf` accepts an entry that matches two kinds: ajv accepted one that matched two overlapping kinds. So `generate.ts` writes the entry union as `oneOf` (a named rewrite of that one definition, checked by the up-to-date spec), and the kinds are told apart by their `const`, `enum` and `deleted` constraints. Graph objects (`schemaClass`, `className`) do have one discriminator, and use it.
+- **A Java long is the named alias `Long`.** It is tagged `@asType integer` and `@format int64`, which gives `{"type":"integer","format":"int64"}`, the standard OpenAPI way to say a 64-bit integer. The writer cannot produce a `number` for it: an exact long is `JSON.rawJSON(...)`, which `server.ts` declares as returning `unknown`. So `server.ts` declares it as returning a branded `RawJson`, and the service writes the entry through a writer-side mapping (in `answers.ts`, beside `JsonWritten`) in which a `Long` field accepts `RawJson`. The contract's type stays what a reader sees.
 
 **Paths**:
 

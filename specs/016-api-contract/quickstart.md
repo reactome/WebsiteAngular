@@ -27,6 +27,8 @@ Prerequisites: Node 24 on the PATH, with the repository's dependencies installed
 4. **Expected:** every recorded entry matches exactly one kind.
 5. Remove one kind from the union and run the schema check again.
 6. **Expected:** that kind's entries fail.
+7. Make two kinds overlap (widen one kind's `type`) and run it again.
+8. **Expected:** the entries both match fail, as matching two kinds.
 
 ## 4. Nothing on the wire changed (FR-005)
 
