@@ -3,10 +3,11 @@
  * diagrams, the species overview and figures drawn by the render service,
  * with the helpers only they use. Moved unchanged from service.ts.
  */
-import type { Endpoint, Request } from './endpoint.ts';
+import { get as httpGet, type IncomingMessage } from 'node:http';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { read } from './graph.ts';
 import { settings } from './settings.ts';
-import { javaError, springNotFound, unexpected } from './answers.ts';
+import { deepShare, javaError, notFound, springNotFound, unexpected } from './answers.ts';
 import {
   pathId,
   queryValues,
@@ -16,7 +17,7 @@ import {
 } from './spring.ts';
 import { present } from './java-text.ts';
 import type { Failure } from './answers.ts';
-import { longPastRange, speciesFilter, speciesTaxId } from './objects.ts';
+import { graphCoreId, longPastRange, speciesFilter, speciesTaxId } from './objects.ts';
 import { diagramResult } from './search-params.ts';
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
@@ -346,6 +347,171 @@ async function renderFigure(request: Request, url: string | URL, ext: string) {
   };
 }
 
+/** An event an SBML file is asked for: its stable id, and whether it is one SBML is made of. */
+export interface SbmlEvent {
+  stId: string | null;
+  isEvent: boolean;
+}
+
+/**
+ * The object an id names, as graph-core's findById reads the id (any version,
+ * a dbId, an old REACT_ id), with whether it is a pathway or a reaction: Java
+ * answers 400 for anything else. Decided from its labels, where Java loaded
+ * every relationship of the object to decide it (about 30 s for ATP).
+ */
+async function sbmlEvent(raw: string): Promise<SbmlEvent | null> {
+  const id = await graphCoreId(raw);
+  if (!id) return null;
+  const [found] = await read<SbmlEvent>(
+    `MATCH (n:DatabaseObject ${id.object}) RETURN n.stId AS stId, (n:Pathway OR n:ReactionLikeEvent) AS isEvent LIMIT 1`,
+    id.params
+  );
+  return found ?? null;
+}
+
+/**
+ * SBML's own share (research R6): Java made one file at a time, and the
+ * service two (its backstop); past it, a 503 with Retry-After, as the deep
+ * pool answers. Separate from the deep pool, so a burst of SBML cannot starve
+ * the queries the pages need.
+ */
+const SBML_SHARE = deepShare(2);
+
+/**
+ * How long the service has to send its headers: under nginx's 300 s, so the
+ * reader gets this envelope rather than nginx's page. Once the body flows it
+ * is not timed: it is a file the service has already written.
+ */
+const SBML_HEADERS_MS = 290_000;
+
+const SBML_TYPE = 'application/sbml+xml;charset=UTF-8';
+
+/**
+ * The service's answer, once its headers are in, or a rejection: 'late' when
+ * none came in time. Node's own client, not fetch: a fetch body converted to
+ * a stream never closes when the connection dies part way -- the failure
+ * escapes as an unhandled rejection -- so the share it held was never given
+ * back. An IncomingMessage closes either way. Plain HTTP: the service is on
+ * loopback.
+ */
+function sbmlResponse(url: string, headersMs: number): Promise<IncomingMessage> {
+  return new Promise((resolve, reject) => {
+    const asking = httpGet(url, (response) => {
+      clearTimeout(late);
+      resolve(response);
+    });
+    const late = setTimeout(() => asking.destroy(new Error('late')), headersMs);
+    asking.once('error', (failure) => {
+      clearTimeout(late);
+      reject(failure);
+    });
+  });
+}
+
+/** A body read whole, for an error's reason; empty if it cannot be read. */
+function bodyText(response: IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    const parts: Buffer[] = [];
+    response.on('data', (part: Buffer) => parts.push(part));
+    response.once('end', () => resolve(Buffer.concat(parts).toString('utf8')));
+    response.once('error', () => resolve(''));
+  });
+}
+
+/**
+ * An event's SBML, as Java's /exporter/event/{id}.sbml answers it -- its 404,
+ * 400, type and download name -- with the body from the SBML service
+ * (deploy/java-library, spec 015 T063), passed on as it arrives. Never made
+ * by another implementation: without the service, a 503.
+ *
+ * The service's reasons name its own paths, so they are logged here and
+ * never passed on.
+ */
+export async function sbmlAnswer(
+  request: Request,
+  ext: 'sbml' | 'xml',
+  find: (raw: string) => Promise<SbmlEvent | null> = sbmlEvent,
+  headersMs = SBML_HEADERS_MS
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  // Another extension on /exporter/event/ is Java's (SBGN, the PDF), which
+  // nginx never sends here.
+  if (name?.ext !== ext) return springNotFound(request);
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!event.isEvent || !event.stId)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a pathway or reaction`
+    );
+  const service = settings.sbmlService();
+  if (!service)
+    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The SBML service is not configured');
+  if (!SBML_SHARE.enter())
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Too many SBML files are being made; try again shortly'
+      ),
+      headers: { 'Retry-After': '5' },
+    };
+  // Held until the body has been passed on, or until no body will be.
+  let streaming = false;
+  try {
+    let response: IncomingMessage;
+    try {
+      response = await sbmlResponse(`${service.replace(/\/$/, '')}/sbml/${event.stId}`, headersMs);
+    } catch (caught) {
+      return javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        (caught as Failure).message === 'late'
+          ? 'The SBML file took too long to make'
+          : 'The SBML service cannot be reached'
+      );
+    }
+    const status = response.statusCode ?? 0;
+    if (status !== 200) {
+      const reason = await bodyText(response);
+      if (status === 404) return notFound(request, `Identifier '${name.identifier}' not found`);
+      console.error(`SBML for ${event.stId}: the service answered ${status} ${reason}`);
+      return status === 503
+        ? {
+            ...javaError(
+              request,
+              503,
+              'SERVICE_UNAVAILABLE',
+              "The pathway's diagram cannot be had just now; try again shortly"
+            ),
+            headers: { 'Retry-After': '30' },
+          }
+        : javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            `The SBML of ${event.stId} cannot be made`
+          );
+    }
+    response.once('close', () => SBML_SHARE.leave());
+    streaming = true;
+    return {
+      status: 200,
+      type: SBML_TYPE,
+      body: response,
+      headers: { 'Content-Disposition': `attachment; filename="${event.stId}.sbml"` },
+    };
+  } finally {
+    if (!streaming) SBML_SHARE.leave();
+  }
+}
+
 export const exportersEndpoints: Endpoint[] = [
   {
     path: '/ContentService/exporter/diagram/{id}',
@@ -402,6 +568,26 @@ export const exportersEndpoints: Endpoint[] = [
         );
       return renderFigure(request, figure, ext);
     },
+  },
+  {
+    path: '/ContentService/exporter/event/{id}',
+    // The error path: the body is compared by sbml-exporter's ci/compare.py
+    // (spec 015 T067), not by the harness. A small object that is no event:
+    // Java loads every relationship to decide it, which is slow for a large one.
+    sample: '9626065.sbml',
+    samplesOnly: true,
+    /**
+     * An event's SBML (spec 015 T065), from the SBML service. Not routed yet
+     * (T066): until then Java answers it.
+     */
+    handler: (request) => sbmlAnswer(request, 'sbml'),
+  },
+  {
+    path: '/ContentService/exporter/sbml/{id}',
+    sample: '9626065.xml',
+    samplesOnly: true,
+    /** The same file at the URL the site's download page used (research R6). */
+    handler: (request) => sbmlAnswer(request, 'xml'),
   },
   {
     path: '/ContentService/exporter/voronoi/{id}',

@@ -94,6 +94,11 @@ export const PATH_KINDS: Record<string, Kind> = {
   // Never stored whatever it is (`cache` below).
   any: () => true,
 };
+// An event's SBML (spec 015): an id as `oid` takes it, and the extension.
+PATH_KINDS['sbml'] = (text) =>
+  text.endsWith('.sbml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -5)));
+PATH_KINDS['sbmlXml'] = (text) =>
+  text.endsWith('.xml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
 
 /**
  * Values that standard form narrows past their declared type, where Java
@@ -398,6 +403,19 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { id: 'any' },
     query: [],
     cache: 'private',
+  },
+  // An event's SBML, the same file for every reader of a release (spec 015).
+  '/ContentService/exporter/event/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file.',
+    path: { id: 'sbml' },
+    query: [],
+  },
+  '/ContentService/exporter/sbml/{id}': {
+    java: null,
+    why: 'Java answers it but does not describe it: the same file as /exporter/event/{identifier}.sbml.',
+    path: { id: 'sbmlXml' },
+    query: [],
   },
   // Both take an analysis token: one person's result.
   '/ContentService/exporter/voronoi/{id}': {
