@@ -1363,17 +1363,28 @@ describe('locationsInPathwayBrowser, PathwayBrowserLocationsUtils', () => {
 
 describe('pathwayBrowserJson, PathwayBrowserNode as Jackson writes it', () => {
   it("writes Java's keys in field order, leaving out what is empty", () => {
+    // A tree's node as treeFromLeaf makes it: `diagram` is never copied there,
+    // so it is never written; a species-less object has no species.
     const node = Object.assign(new PathwayBrowserNode(), {
       type: 'Pathway',
-      diagram: false,
+      url: '/PathwayBrowser/#/R-HSA-1',
       stId: 'R-HSA-1',
       name: 'x',
       order: 3,
       unique: true,
     });
     expect(JSON.stringify(pathwayBrowserJson(node))).toBe(
-      '{"stId":"R-HSA-1","name":"x","type":"Pathway","diagram":false}'
+      '{"stId":"R-HSA-1","name":"x","url":"/PathwayBrowser/#/R-HSA-1","type":"Pathway"}'
     );
+  });
+
+  it('fails on a node without a field the site needs to show it', () => {
+    const node = Object.assign(new PathwayBrowserNode(), {
+      type: 'Pathway',
+      stId: 'R-HSA-1',
+      name: 'x',
+    });
+    expect(() => pathwayBrowserJson(node)).toThrow('a location node with no url');
   });
 });
 
