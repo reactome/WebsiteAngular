@@ -3,13 +3,11 @@
  * graph JSON, illustrated-pathway SVGs, icons, statistics -- served from saved
  * copies in e2e/release-files, the way the backend is served from recordings.
  *
- * They used to be fetched live (the host is in ALLOWED). Then the host began
- * answering some browser requests for one pathway's graph file without
- * Access-Control-Allow-Origin, and only some: which copy a request reached
- * decided it. The browser refused the file, the diagram never drew, and four
- * in-diagram search tests failed and then held a shard to its time limit, on
- * pull requests that had not touched anything near it. A suite whose answer
- * depends on someone else's cache is not testing the code.
+ * They used to be fetched live (the host is in ALLOWED), which made the suite's
+ * answer depend on the host as well as the code: one file that intermittently
+ * failed to load in the browser failed four in-diagram search tests and held a
+ * shard to its time limit, on pull requests that had not touched anything near
+ * it.
  *
  * Only what a page *reads* is saved: requests made with fetch or XHR, which are
  * subject to CORS and carry the data. Images, video and links still go to the
@@ -20,7 +18,7 @@
  * fetches what is missing from the host and saves it instead.
  */
 import type { BrowserContext, TestInfo } from '@playwright/test';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const HOST = /^https:\/\/download\.reactome\.org\//;
@@ -68,7 +66,11 @@ export async function serveReleaseFiles(context: BrowserContext) {
     // and not saved, so a replay aborts it and the test says which file.
     if (response.status() === 200) {
       mkdirSync(path.dirname(file), { recursive: true });
-      writeFileSync(file, await response.body());
+      // Written beside it and renamed: another worker asking for the same file
+      // must never be served half of it, nor an interrupted run leave half.
+      const part = `${file}.part-${process.pid}`;
+      writeFileSync(part, await response.body());
+      renameSync(part, file);
     } else {
       console.warn(`[release files] ${response.status()} for ${request.url()}; not saved`);
     }
@@ -76,8 +78,9 @@ export async function serveReleaseFiles(context: BrowserContext) {
   });
   return {
     check(testInfo: TestInfo) {
-      // Reported even when the test failed: a missing file is usually why.
-      if (!missing.size) return;
+      // Reported even when the test failed: a missing file is usually why. Not
+      // for a test that skipped itself, which has said what it could not do.
+      if (!missing.size || testInfo.status === 'skipped') return;
       throw new Error(
         `${testInfo.title}: no saved copy of ${missing.size} release file${missing.size === 1 ? '' : 's'} (aborted):\n\n` +
           `${[...missing].map((url) => `  ${url}`).join('\n')}\n\n` +
