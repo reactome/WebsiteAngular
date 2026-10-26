@@ -220,7 +220,7 @@ export const personEndpoints: Endpoint[] = [
 
         // Java returns one row per authorship edit, so an event edited twice by
         // the same person appears twice: R-HSA-6803801 comes back for
-        // Orlic-Milacic at both 2015-10-14 and 2013-07-15, making the person
+        // one curator at both 2015-10-14 and 2013-07-15, making the person
         // page show 3,310 authored reactions where /content/contributors counts
         // 3,309 and listing that reaction twice. The page is asking "what did
         // they author", not "when did they edit it", so the event belongs once.
