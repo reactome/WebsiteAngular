@@ -47,3 +47,6 @@ tools/content-node/schema-snapshot.json
 # entry per line by tools/content-node/snapshot-domain.ts so a model change is
 # a readable diff. Generated; reflowing it would undo that.
 tools/content-node/domain-snapshot.json
+
+# Saved from download.reactome.org, not authored (e2e/support/release-files.ts)
+e2e/release-files

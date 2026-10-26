@@ -1,0 +1,131 @@
+{
+  "dbId" : 2206292,
+  "stId" : "R-HSA-2206292",
+  "speciesName" : "Homo sapiens",
+  "nodes" : [ {
+    "dbId" : 2162224,
+    "stId" : "R-ALL-2162224",
+    "displayName" : "GlcA-β1,3-GlcNAc [lysosomal lumen]",
+    "schemaClass" : "SimpleEntity",
+    "speciesId" : 0,
+    "diagramIds" : [ 3998 ],
+    "identifier" : "64024",
+    "standardIdentifier" : "chebi:64024",
+    "referenceType" : "ReferenceMolecule",
+    "parents" : [ 2160866 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2160866,
+    "stId" : "R-ALL-2160866",
+    "displayName" : "(HA)2 [lysosomal lumen]",
+    "schemaClass" : "Polymer",
+    "speciesId" : 0,
+    "diagramIds" : [ 3986 ],
+    "parents" : [ ],
+    "children" : [ 2162224 ]
+  }, {
+    "dbId" : 2318391,
+    "stId" : "R-HSA-2318391",
+    "displayName" : "GUSB S52F [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "P08236",
+    "standardIdentifier" : "uniprot:P08236",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "GUSB" ],
+    "parents" : [ 2318394 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318372,
+    "stId" : "R-HSA-2318372",
+    "displayName" : "GUSB R356* [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "P08236",
+    "standardIdentifier" : "uniprot:P08236",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "GUSB" ],
+    "parents" : [ 2318394 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318394,
+    "stId" : "R-HSA-2318394",
+    "displayName" : "GUSB mutants [lysosomal lumen]",
+    "schemaClass" : "DefinedSet",
+    "speciesId" : 48887,
+    "diagramIds" : [ 92432, 92430 ],
+    "parents" : [ ],
+    "children" : [ 2318382, 2318584, 2318376, 2318372, 2318391 ]
+  }, {
+    "dbId" : 2318376,
+    "stId" : "R-HSA-2318376",
+    "displayName" : "GUSB A354V [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "P08236",
+    "standardIdentifier" : "uniprot:P08236",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "GUSB" ],
+    "parents" : [ 2318394 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318584,
+    "stId" : "R-HSA-2318584",
+    "displayName" : "GUSB R216W [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "P08236",
+    "standardIdentifier" : "uniprot:P08236",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "GUSB" ],
+    "parents" : [ 2318394 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 1605715,
+    "stId" : "R-ALL-1605715",
+    "displayName" : "H2O [lysosomal lumen]",
+    "schemaClass" : "SimpleEntity",
+    "speciesId" : 0,
+    "diagramIds" : [ 4004, 3989, 4075, 3996 ],
+    "identifier" : "15377",
+    "standardIdentifier" : "chebi:15377",
+    "referenceType" : "ReferenceMolecule",
+    "parents" : [ ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318382,
+    "stId" : "R-HSA-2318382",
+    "displayName" : "GUSB R611W [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "P08236",
+    "standardIdentifier" : "uniprot:P08236",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "GUSB" ],
+    "parents" : [ 2318394 ],
+    "children" : [ ]
+  } ],
+  "edges" : [ {
+    "dbId" : 2318373,
+    "stId" : "R-HSA-2318373",
+    "displayName" : "Defective GUSB does not hydrolyse (HA)2",
+    "schemaClass" : "FailedReaction",
+    "speciesId" : 0,
+    "inputs" : [ 1605715, 2160866 ],
+    "catalysts" : [ 2318394 ],
+    "efs" : [ 2318394 ],
+    "diagramIds" : [ 92429 ],
+    "entityFunctionalStatus" : [ 2318394 ]
+  }, {
+    "dbId" : 9036068,
+    "stId" : "R-HSA-9036068",
+    "displayName" : "Defective GUSB does not hydrolyse GlcA-β1,3-GlcNAc",
+    "schemaClass" : "FailedReaction",
+    "speciesId" : 0,
+    "inputs" : [ 1605715, 2162224 ],
+    "catalysts" : [ 2318394 ],
+    "efs" : [ 2318394 ],
+    "diagramIds" : [ 92431 ],
+    "entityFunctionalStatus" : [ 2318394 ]
+  } ]
+}
