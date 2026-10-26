@@ -107,19 +107,29 @@ function violations(modules: Record<string, string>): string[] {
  * (`import { type X }` leaves `import {}` behind, which loads the module),
  * `import()`, `require()`, `import x = require()`, `import.meta.resolve()`,
  * and a file named relative to the module, `new URL('…', import.meta.url)`.
- * An `import()` whose path is not written out is refused: nothing can say
+ * Any of these whose path is not written out is refused: nothing can say
  * where it goes. Imports in type positions are erased; a package (no leading
  * `.`) is the image's to install, not this check's.
+ *
+ * Not read: a path built from the module's own (`fileURLToPath`,
+ * `import.meta.dirname`, `path.join`), `createRequire`, and the working
+ * directory. The service uses the first only for this directory itself, and
+ * a rule against `'..'` in `path.join` would refuse the snapshot scripts,
+ * which never run in the image.
  */
 function valueEscapes(modules: Record<string, string>): string[] {
   const found: string[] = [];
   /** Where a written path goes: outside, or null when it stays here or is a package. */
   const outside = (specifier: ts.Expression | undefined) => {
-    if (!specifier || !ts.isStringLiteralLike(specifier)) return null;
+    if (!specifier) return null;
+    if (!ts.isStringLiteralLike(specifier)) return 'a path not written out';
     const target = specifier.text;
     if (!target.startsWith('.')) return null;
+    // `.` is the directory itself, which normalises without its slash.
     const resolved = path.posix.normalize(path.posix.join('tools', 'content-node', target));
-    return resolved.startsWith('tools/content-node/') ? null : target;
+    return resolved === 'tools/content-node' || resolved.startsWith('tools/content-node/')
+      ? null
+      : target;
   };
   const isImportMeta = (node: ts.Node) =>
     ts.isMetaProperty(node) && node.keywordToken === ts.SyntaxKind.ImportKeyword;
@@ -141,11 +151,8 @@ function valueEscapes(modules: Record<string, string>): string[] {
       } else if (ts.isCallExpression(node)) {
         const callee = node.expression;
         const [first] = node.arguments;
-        if (callee.kind === ts.SyntaxKind.ImportKeyword) {
-          if (first && !ts.isStringLiteralLike(first))
-            found.push(`${name} imports a path not written out`);
-          else check(first);
-        } else if (ts.isIdentifier(callee) && callee.text === 'require') check(first);
+        if (callee.kind === ts.SyntaxKind.ImportKeyword) check(first);
+        else if (ts.isIdentifier(callee) && callee.text === 'require') check(first);
         else if (
           ts.isPropertyAccessExpression(callee) &&
           callee.name.text === 'resolve' &&
@@ -288,6 +295,9 @@ describe('the content service boundaries', () => {
           "const r = require('../render/render.ts');",
           "const u = import.meta.resolve('../render/render.ts');",
           "const d = readFileSync(new URL('../../projects/contract/x.json', import.meta.url));",
+          'const e = require(where);',
+          'const f = import.meta.resolve(where);',
+          'const g = readFileSync(new URL(`../${name}.json`, import.meta.url));',
         ].join('\n'),
       })
     ).toEqual([
@@ -302,6 +312,9 @@ describe('the content service boundaries', () => {
       'search-core imports ../render/render.ts',
       'search-core imports ../render/render.ts',
       'search-core reads ../../projects/contract/x.json',
+      'search-core imports a path not written out',
+      'search-core imports a path not written out',
+      'search-core reads a path not written out',
     ]);
   });
 
@@ -318,6 +331,8 @@ describe('the content service boundaries', () => {
           "const snapshot = readFileSync(new URL('./domain-snapshot.json', import.meta.url));",
           'const render = new URL(`${RENDER_SERVICE}/render/x.png`);',
           "const { endpoints } = await import('./registry.ts');",
+          "const here = readdirSync(new URL('.', import.meta.url));",
+          "const self = import.meta.resolve('.');",
         ].join('\n'),
       })
     ).toEqual([]);
