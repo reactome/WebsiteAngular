@@ -28,7 +28,13 @@ import { caseInsensitive, javaSplit, javaTrim } from './java-text.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 import { psicquicResources, registryServices } from './psicquic.ts';
 import type { Failure, JsonWritten } from './answers.ts';
-import type { PsicquicResource } from '../../projects/pathway-browser/src/app/interactors/model/interactor.model.ts';
+import type {
+  CustomInteraction,
+  Interactor,
+  InteractorEntity,
+  PsicquicResource,
+} from '../../projects/pathway-browser/src/app/interactors/model/interactor.model.ts';
+import type { InteractionWithEntities } from '../../projects/website-angular/src/model/interactor.model.ts';
 import { settings } from './settings.ts';
 import { plainIds, plainText, plainTextProblem } from './body.ts';
 import type { Props } from './objects.ts';
@@ -156,7 +162,7 @@ export function interactorJson(row: InteractionRow) {
   const isoform = partner.labels?.includes('ReferenceIsoform');
   const acc = isoform && partner.variantIdentifier ? partner.variantIdentifier : partner.identifier;
   const alias = partner.labels?.includes('ReferenceSequence') ? partner.geneName?.[0] : undefined;
-  return nonEmptyJson([
+  return nonEmptyJson<Interactor>([
     ['acc', acc],
     ['alias', alias],
     ['id', row.id],
@@ -173,7 +179,7 @@ export function interactorJson(row: InteractionRow) {
  */
 export function interactorsJson(entities: [acc: string, rows: InteractionRow[]][]) {
   const written = entities.map(([acc, rows]) =>
-    nonEmptyJson([
+    nonEmptyJson<InteractorEntity>([
       ['acc', acc],
       ['count', rows.length],
       ['interactors', rows.length ? new RawJson(`[${rows.map(interactorJson).join(',')}]`) : []],
@@ -192,7 +198,7 @@ export function interactorsJson(entities: [acc: string, rows: InteractionRow[]][
 export function customInteractionJson(row: CustomInteractionRow) {
   if ([row.dbId, row.score, row.evidenceCount].some((value) => value === null)) return undefined;
   const text = (value: string | null) => value ?? 'null';
-  return nonEmptyJson([
+  return nonEmptyJson<CustomInteraction>([
     ['dbId', row.dbId],
     ['identifier', text(row.identifier)],
     ['score', row.score, true],
@@ -221,14 +227,14 @@ export function interactionWithEntitiesJson(row: InteractionWithEntitiesRow) {
     // A graph displayName, or 'null' (above): a string either way.
     .sort((a, b) => caseInsensitive(a.displayName as string, b.displayName as string));
   const written = entities.map((pe) =>
-    nonEmptyJson([
+    nonEmptyJson<InteractionWithEntities['physicalEntity'][number]>([
       ['dbId', pe.dbId],
       ['stId', pe.stId],
       ['displayName', pe.displayName],
       ['schemaClass', pe.schemaClass ?? 'null'],
     ])
   );
-  return nonEmptyJson([
+  return nonEmptyJson<InteractionWithEntities>([
     ['score', row.score ?? 0, true],
     ['accession', row.accession],
     ['accessionURL', row.accessionURL],
