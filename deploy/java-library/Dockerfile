@@ -12,7 +12,7 @@
 
 FROM maven:3.9.6-eclipse-temurin-17 AS libraries
 
-# deploy/java/PINS.md, row for row. java-library.spec.ts checks the two agree.
+# deploy/java/PINS.md, row for row. pins.spec.ts checks the two agree.
 ARG REACTOME_PARENT_COMMIT=d93ad5a417724647f04810b476f6c2705a0e3aec
 ARG GRAPH_CORE_COMMIT=62aef35d7a89403b8a8800dc004d8de62f847aee
 ARG SBML_EXPORTER_COMMIT=f7b10342258d1aacd4f77f44bd928a29b516025e

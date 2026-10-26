@@ -170,7 +170,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
     Each commit gets its row in `deploy/java/PINS.md`, with how it was verified:
     - `graph-core` against the deployed ContentService's jar, as PINS.md's other rows are. T037 and T039 ran on that jar, which the pinned commit reproduces, so beta pins it ahead of T029's agreement with the exporters' maintainers;
-    - the parent and its BOM, which are POMs with no classes, by their versions against the published snapshot's;
+    - the parent and its BOM, which are POMs with no classes, against the published snapshot: the BOM equal, the parent differing only in Batik and FOP's versions, which nothing here uses (PINS.md);
     - `sbml-exporter-lib` by `ci/compare.py` (T037, T039), since its body is not Java's relational answer.
 
     Changing that pin means rerunning T067's comparison, not `tools/java-parity`. The pin is a spec 001 commit of `sbml-exporter`: its spec 002 (the layout as the website draws it) changes the layout on purpose, so adopting it needs FR-003 amended and its own comparison.
@@ -212,7 +212,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - **Node is the service's client here,** not spec 010's pass-through (its T020–T022, which are not prerequisites). It writes R6's headers itself and decides the 404 and 400 from the object's labels.
   - **The body is streamed, not buffered:** Signal Transduction's is 23.5 MB.
   - **The service's address** is a setting read at run time, `SBML_SERVICE`, as `RENDER_TARGET` is. Without it, the endpoint answers 503 in the envelope.
-  - **Limits:** `deep`, with a share of 2. The service has 290 s to send its response headers, under nginx's 300 s, so the reader gets node's envelope rather than nginx's. Once the body is streaming, a failure can only abort the connection; the service never caches a truncated file (it writes beside the file and moves it into place).
+  - **Limits:** `deep`, with a share of 2. The service has 290 s to send its response headers, under nginx's 300 s, so the reader gets node's envelope rather than nginx's. Once the body is streaming, a failure can only abort the connection; the service never caches a truncated file (it writes beside the file and moves it into place), nor a diagram file that is not whole and the pathway's. The service's error reasons name its cache paths, so node logs them and never passes them on in its envelope.
   - **Caching:** per release under spec 011.
   - **Failures:** 503 in the envelope when the service cannot answer or times out, and never a fallback.
   - **Tests,** seen failing first, against a stub service.
@@ -226,7 +226,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - [ ] T067 [US1] Check on beta, before and after the switch, over the 30-event sample:
   - status, headers and errors compared with Java's (the parity harness);
   - the bodies compared with today's files (T004) by `compare.py`, every difference one recorded in `sbml-exporter`'s `differences.md`;
-  - Signal Transduction's time, cold and cached;
+  - Signal Transduction's time, cold and cached, and the service's memory with two such conversions at once (its heap is 1 GiB);
   - the download button on a pathway page.
 
 **FR-009 on beta (decided 25 Oct 2026):** beta switches once the comparison over the whole sample is complete, every difference recorded and every file valid. The differences still open there (the cross-references asked in sbml-exporter#36, and the EC numbers in graph-importer#9) are settled before the release's files or a production site switch, not before beta, which is where the team looks at them.
