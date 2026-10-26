@@ -30,11 +30,10 @@ export interface Person {
   publications?: Publication[];
 }
 
-// Returned by /data/person/{id}/{authored,reviewed}{Pathways,Reactions}.
-// Matches Reactome's SimpleEventProjection DTO.
 // As /data/person/{id}/{authored,reviewed}{Pathways,Reactions} writes it,
-// measured over 26 recorded answers (62 events): the edit's date and author
-// and the event's labels are in every one, a DOI in a few (5).
+// measured over the recorded answers (8 distinct requests, 14 events): the
+// edit's date and author and the event's labels are in every one; one had a
+// DOI.
 export interface SimpleEvent {
   dbId: number;
   stId: string;
