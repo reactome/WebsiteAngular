@@ -122,6 +122,8 @@ export class IconLibComponent implements OnInit, OnDestroy {
       next: (data) => {
         const merged = new Map<string, number>();
         for (const c of data.iconCategoriesFacet.available || []) {
+          // A count with no name has no category to list.
+          if (!c.name) continue;
           const name = this.formatCategoryName(c.name);
           merged.set(name, (merged.get(name) || 0) + c.count);
         }

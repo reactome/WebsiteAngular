@@ -6,8 +6,12 @@
  */
 import type { Endpoint, Request } from './endpoint.ts';
 import type { SolrAnswer, SolrGrouping } from './solr.ts';
-import type { Written } from './answers.ts';
 import type { FacetContainer, TargetResult } from './search-core.ts';
+import type {
+  Facet,
+  FacetResponse,
+} from '../../projects/website-angular/src/model/search.model.ts';
+import type { IconFacetResponse } from '../../projects/website-angular/src/model/icon.model.ts';
 import {
   blankBoolean,
   facetContainer,
@@ -59,7 +63,7 @@ export function collations(answer: SolrAnswer | null | undefined) {
  * SolrConverter.getFacetMap's FacetMapping, from Solr's facet fields: the
  * field each facet field fills, in the order Jackson writes them.
  */
-const FACET_FIELDS = new Map([
+const FACET_FIELDS = new Map<string, FacetKey>([
   ['species_facet', 'speciesFacet'],
   ['type_facet', 'typeFacet'],
   ['keywords_facet', 'keywordFacet'],
@@ -79,7 +83,7 @@ const FACET_FIELDS = new Map([
 export function facetMapping(answer: SolrAnswer | null | undefined) {
   const fields: Record<string, unknown[] | null> = answer?.facet_counts?.facet_fields ?? {};
   if (Object.keys(fields).length === 0) return undefined;
-  const lists: Written = {};
+  const lists: Partial<Record<FacetKey, Facet>> = {};
   for (const [field, flat] of Object.entries(fields)) {
     const key = FACET_FIELDS.get(field);
     if (!key) throw new Error(`a facet field search-core does not map: ${field}`);
@@ -91,7 +95,10 @@ export function facetMapping(answer: SolrAnswer | null | undefined) {
     lists[key] = available.length ? { available } : {};
   }
   const mapping: FacetMapping = { totalNumFount: answer?.response?.numFound ?? 0 };
-  for (const key of FACET_FIELDS.values()) if (key in lists) mapping[key] = lists[key];
+  for (const key of FACET_FIELDS.values()) {
+    const list = lists[key];
+    if (list) mapping[key] = list;
+  }
   return mapping;
 }
 
@@ -100,7 +107,7 @@ const QUERY_FILTERS: [
   list: 'species' | 'types' | 'keywords' | 'compartments',
   tag: string,
   field: string,
-  key: string,
+  key: Exclude<FacetKey, 'iconCategoriesFacet'>,
 ][] = [
   ['species', '{!tag=sf}', 'species_facet', 'speciesFacet'],
   ['types', '{!tag=tf}', 'type_facet', 'typeFacet'],
@@ -141,12 +148,15 @@ export function facetQueryParams(query: FacetQuery) {
   return params;
 }
 
-/** search-core's FacetMapping: the count, and a FacetList for each facet Solr counted. */
-type FacetMapping = {
-  totalNumFount: number;
-  [key: string]: unknown;
-  typeFacet?: { selected?: FacetContainer[]; available?: FacetContainer[] };
-};
+/**
+ * search-core's FacetMapping: the count, and a FacetList for each facet Solr
+ * counted. The site reads it as FacetResponse (the search facets) and as
+ * IconFacetResponse (the icon library's), so it is written as both, one
+ * definition (spec 013 T019).
+ */
+type FacetMapping = FacetResponse & Partial<Pick<IconFacetResponse, 'iconCategoriesFacet'>>;
+/** The facets a FacetMapping can hold. */
+type FacetKey = Exclude<keyof FacetMapping, 'totalNumFount'>;
 
 /**
  * SolrConverter.getFacetMap(response, query): each of the four facets split

@@ -1,5 +1,6 @@
+// As with the search facets, a count under an empty name is written without one.
 export interface IconCategory {
-  name: string;
+  name?: string;
   count: number;
 }
 

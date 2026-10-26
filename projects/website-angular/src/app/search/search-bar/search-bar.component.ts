@@ -1,4 +1,4 @@
-import { Facet, FacetCount, FacetResponse, SearchFilters } from '../../../model/search.model';
+import { Facet, FacetResponse, NamedFacetCount, SearchFilters } from '../../../model/search.model';
 import {
   AfterViewInit,
   Component,
@@ -225,9 +225,12 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     });
   }
 
-  getFacetItems(facet: Facet | undefined): FacetCount[] {
+  /** The counts that can be shown and chosen: an unnamed one cannot. */
+  getFacetItems(facet: Facet | undefined): NamedFacetCount[] {
     if (!facet) return [];
-    return [...(facet.selected || []), ...(facet.available || [])];
+    return [...(facet.selected || []), ...(facet.available || [])].filter(
+      (item): item is NamedFacetCount => !!item.name
+    );
   }
 
   isAdvancedFacetSelected(category: string, value: string): boolean {
