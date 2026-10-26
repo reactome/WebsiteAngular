@@ -59,14 +59,15 @@ Fields every kind carries (`EntryBase`):
 
 `type: "Icon"`, `exactType: "Icon"`, `icon: true`.
 
-| Field                                                                          | Kind                   | Required | Notes                                                               |
-| ------------------------------------------------------------------------------ | ---------------------- | -------- | ------------------------------------------------------------------- |
-| `stId`, `species`, `summation`, `iconName`, `iconCategories`                   | text / text[]          | yes      | `summation` is the icon's description                               |
-| `hasReferenceEntity`, `hasEHLD`                                                | boolean                | yes      | always `false`                                                      |
-| `iconCuratorName`, `iconCuratorOrcidId`, `iconDesignerName`, `iconDesignerUrl` | text                   | no       | on every recorded icon, but the indexer leaves them out when absent |
-| `iconCuratorUrl`, `iconDesignerOrcidId`                                        | text                   | no       | never recorded                                                      |
-| `iconReferences`, `iconEhlds`                                                  | text[]                 | no       | 39 and 37 of 40                                                     |
-| `iconPhysicalEntities`                                                         | `IconPhysicalEntity[]` | no       | 27 of 40                                                            |
+| Field                                                                          | Kind                   | Required | Notes                                                                                                    |
+| ------------------------------------------------------------------------------ | ---------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `stId`, `species`, `iconName`, `iconCategories`                                | text / text[]          | yes      |                                                                                                          |
+| `summation`                                                                    | `Highlighted`          | no       | the icon's description; on a highlighted answer, only from a snippet (icons have no `inferredSummation`) |
+| `hasReferenceEntity`, `hasEHLD`                                                | boolean                | yes      | always `false`                                                                                           |
+| `iconCuratorName`, `iconCuratorOrcidId`, `iconDesignerName`, `iconDesignerUrl` | text                   | no       | on every recorded icon, but the indexer leaves them out when absent                                      |
+| `iconCuratorUrl`, `iconDesignerOrcidId`                                        | text                   | no       | never recorded                                                                                           |
+| `iconReferences`, `iconEhlds`                                                  | text[]                 | no       | 39 and 37 of 40                                                                                          |
+| `iconPhysicalEntities`                                                         | `IconPhysicalEntity[]` | no       | 27 of 40                                                                                                 |
 
 `IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional except `displayName`.
 
@@ -92,15 +93,15 @@ Fields every kind carries (`EntryBase`):
 
 ### Deleted (`DeletedEntry`)
 
-`deleted: true`. Its `type` and `exactType` are those of the class it was. Every other kind has `deleted?: never`.
+`deleted: true`. Its `type` and `exactType` are those of the class it was. Every other kind has `deleted?: never`. The generator writes no constraint for a `never` property, so in the schema the live and deleted kinds are kept apart by `additionalProperties: false` (a deleted entry carries `deleted`, which no live kind declares); that setting is load-bearing and stays.
 
-| Field              | Kind          | Required | Notes                                        |
-| ------------------ | ------------- | -------- | -------------------------------------------- |
-| `stId`             | `Highlighted` | yes      |                                              |
-| `explanation`      | text          | no       | 3 of 3; none when the deletion has no reason |
-| `date`             | `EpochMillis` | yes      | 3 of 3                                       |
-| `replacementDbIds` | `Long[]`      | no       | 1 of 3                                       |
-| `replacementStIds` | text[]        | no       | 1 of 3                                       |
+| Field              | Kind          | Required | Notes                                               |
+| ------------------ | ------------- | -------- | --------------------------------------------------- |
+| `stId`             | `Highlighted` | yes      |                                                     |
+| `explanation`      | text          | no       | 3 of 3; none when the deletion has no reason        |
+| `date`             | `EpochMillis` | no       | 3 of 3; none when the deletion has no creation date |
+| `replacementDbIds` | `Long[]`      | no       | 1 of 3                                              |
+| `replacementStIds` | text[]        | no       | 1 of 3                                              |
 
 **Not in the contract** (never written, R2): `regulator`, `regulatedEntity`, `regulatorId`, `regulatedEntityId`, `instanceTypeExplanation`, `reason`.
 

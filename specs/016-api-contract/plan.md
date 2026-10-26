@@ -111,14 +111,14 @@ projects/pathway-browser/src/app/model/
 tools/content-node/
 ├── search-core.ts                      # searchEntry writes SearchEntry, no unknown
 ├── search-endpoints.ts, search-diagram-endpoints.ts, …   # import type from projects/contract
-└── boundaries.spec.ts                  # + imports leaving tools/ are type-only (syntax tree)
+└── boundaries.spec.ts                  # + imports leaving tools/content-node/ are type-only (syntax tree)
 
 tools/contract/                         # NEW
 ├── generate.ts                         # contract → openapi.json (ts-json-schema-generator)
 └── generate.spec.ts                    # up to date; route table vs registry.ts
 
 tools/api-types/
-├── calls.ts                            # TYPES from projects/contract; + /search/icon/{id}
+├── calls.ts                            # TYPES from projects/contract; /search/icon/{id} recorded, gap removed
 ├── schema.spec.ts                      # NEW: ajv over the recorded answers, via openapi.json
 └── known-problems.json                 # falls
 ```
