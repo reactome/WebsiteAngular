@@ -12,7 +12,8 @@ export interface IconFacet {
 
 export interface IconFacetResponse {
   totalNumFount: number;
-  iconCategoriesFacet: IconFacet;
+  // Left out when Solr did not count it, as the search facets are.
+  iconCategoriesFacet?: IconFacet;
 }
 
 export interface IconPhysicalEntity {

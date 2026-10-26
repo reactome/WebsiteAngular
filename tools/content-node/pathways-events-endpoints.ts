@@ -507,24 +507,20 @@ function treeFromLeaf(
  */
 export function pathwayBrowserJson(node: PathwayBrowserNode): LocationNode {
   // As the site reads it (spec 013 T019), in Jackson's order. `diagram` is
-  // never set on a node of these trees, so Java never writes it either; a
-  // node without the fields the site needs to show it is a failure.
+  // never set on a node of these trees, so Java never writes it either.
+  // stId and name are in every measured answer, and the site's type requires
+  // them; a node without one is written without it, as Java writes it, never
+  // turned into a failure -- in that case, never seen, the type overstates.
   const out: JsonWritten<LocationNode> = {
-    stId: written(node.stId, 'stId'),
-    name: written(node.name, 'name'),
+    stId: node.stId as string,
+    name: node.name as string,
     species: node.species ?? undefined,
-    url: written(node.url, 'url'),
-    type: written(node.type, 'type'),
+    url: node.url as string,
+    type: node.type as string,
     children: node.children?.length ? node.children.map(pathwayBrowserJson) : undefined,
   };
   // JSON's step: an undefined field is written as absent.
   return out as LocationNode;
-}
-
-/** A node's field the site requires: present, or a failure (the handler's 500). */
-function written(value: string | null | undefined, field: string): string {
-  if (value === undefined || value === null) throw new Error(`a location node with no ${field}`);
-  return value;
 }
 
 /**

@@ -1378,13 +1378,15 @@ describe('pathwayBrowserJson, PathwayBrowserNode as Jackson writes it', () => {
     );
   });
 
-  it('fails on a node without a field the site needs to show it', () => {
+  it('leaves out a field a node lacks, as Java does, never failing', () => {
     const node = Object.assign(new PathwayBrowserNode(), {
-      type: 'Pathway',
-      stId: 'R-HSA-1',
+      type: 'CatalystActivity',
+      url: '/PathwayBrowser/#/null',
       name: 'x',
     });
-    expect(() => pathwayBrowserJson(node)).toThrow('a location node with no url');
+    expect(JSON.stringify(pathwayBrowserJson(node))).toBe(
+      '{"name":"x","url":"/PathwayBrowser/#/null","type":"CatalystActivity"}'
+    );
   });
 });
 

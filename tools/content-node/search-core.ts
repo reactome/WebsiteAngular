@@ -70,7 +70,6 @@ export async function fromSolr<T>(
   }
 }
 
-/** One FacetContainer, NON_EMPTY: a null or empty name is left out. */
 /**
  * search-core's FacetContainer: a facet's name, absent for an unnamed one,
  * and its count -- the site's FacetCount, one definition (spec 013 T019).
