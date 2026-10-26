@@ -14,6 +14,16 @@ set -euo pipefail
 graph_port=${GRAPH_PORT:-7687}
 files_port=${FILES_PORT:-8097}
 
+# The check's own service takes 4360 on the host's network. One already there
+# (a deployment's) would answer the checks below in its place, over its graph.
+# Any answer refuses, a 503 too (a deployment whose graph is down), and it is
+# refused before the trap below, whose clean-up would remove another run's
+# containers.
+if curl -s -o /dev/null http://127.0.0.1:4360/health; then
+  echo "Something already answers on 127.0.0.1:4360; stop it, or run this elsewhere" >&2
+  exit 1
+fi
+
 root=$(cd "$(dirname "$0")/../.." && pwd)
 image=${1:-}
 work=$(mktemp -d)
@@ -26,13 +36,6 @@ cleanup() {
   rm -rf "$work"
 }
 trap cleanup EXIT
-
-# The check's own service takes 4360 on the host's network. One already there
-# (a deployment's) would answer the checks below in its place, over its graph.
-if curl -fs -o /dev/null http://127.0.0.1:4360/health; then
-  echo "Something already answers on 127.0.0.1:4360; stop it, or run this elsewhere" >&2
-  exit 1
-fi
 
 if [ -z "$image" ]; then
   image=java-library-check
