@@ -1,5 +1,6 @@
 // The search family's answers, as the content service writes them and the
 // site reads them (spec 016).
+import type { EpochMillis, Highlighted, Long } from './scalars.ts';
 
 // A count Solr gives under an empty or null name is written without one, as
 // Java's NON_EMPTY writes it: nothing can be shown or chosen by it.
@@ -44,3 +45,191 @@ export interface IconFacetResponse {
   // Left out when Solr did not count it, as the search facets are.
   iconCategoriesFacet?: IconFacet;
 }
+
+// -- The search entry (data-model.md) --------------------------------------
+//
+// One Solr document as the service writes it (Java's SolrConverter), by
+// kind. A field the indexer can leave out, or the converter can, is
+// optional, however often the recordings carry it: a value that is null,
+// empty text or an empty list is left out, but `false` is written. A field
+// a search highlight can supply (`Highlighted`) is read from the highlight
+// alone when there is one, so it is left out when the highlight has no
+// snippet for it.
+
+/** What every kind carries. `dbId` is text: Solr stores it as a string field. */
+interface EntryBase {
+  dbId: string;
+  /** The stId, or the dbId when there is none; never highlighted. */
+  id: string;
+  name?: Highlighted;
+  exactType: string;
+  /** Only a deleted entry carries it. */
+  deleted?: never;
+}
+
+/** A pathway or a reaction. A reaction's `exactType` is its category (binding, transition, ...). */
+export interface EventEntry extends EntryBase {
+  type: 'Pathway' | 'Reaction';
+  stId: Highlighted;
+  species: string[];
+  summation?: Highlighted;
+  isDisease: boolean;
+  /** `isDisease` again: Java's getter. */
+  disease: boolean;
+  /** Always false: an event has no reference entity. */
+  hasReferenceEntity: boolean;
+  /** A pathway's. */
+  hasEHLD?: boolean;
+  compartmentNames?: string[];
+  compartmentAccession?: string[];
+  /** Only on the species-overview searches. */
+  fireworksSpecies?: string[];
+}
+
+/**
+ * The indexer's types for a physical entity or a reference entity
+ * (`getType`, `getReferenceTypes`); any other class goes by its own name.
+ * The list of those names is checked against the domain snapshot.
+ */
+export type EntityType =
+  | 'Protein'
+  | 'DNA Sequence'
+  | 'RNA Sequence'
+  | 'Chemical Compound'
+  | 'Drug'
+  | 'Set'
+  | 'Genes and Transcripts'
+  | EntityClassName;
+
+/**
+ * The physical-entity classes the indexer names a type by: those neither a
+ * set nor genome-encoded. Every reference-entity class has a type of its
+ * own. entity-types.spec.ts derives the list from the domain snapshot.
+ */
+export type EntityClassName =
+  | 'Cell'
+  | 'ChemicalDrug'
+  | 'Complex'
+  | 'OtherEntity'
+  | 'Polymer'
+  | 'ProteinDrug'
+  | 'RNADrug'
+  | 'SimpleEntity';
+
+/** A physical entity or a reference entity. */
+export interface EntityEntry extends EntryBase {
+  type: EntityType;
+  stId: Highlighted;
+  /** "Entries without species" when it has none. */
+  species: string[];
+  summation?: Highlighted;
+  isDisease?: boolean;
+  disease?: boolean;
+  hasReferenceEntity: boolean;
+  compartmentNames?: string[];
+  compartmentAccession?: string[];
+  referenceName?: Highlighted;
+  referenceIdentifier?: Highlighted;
+  databaseName?: string;
+  referenceURL?: string;
+  fireworksSpecies?: string[];
+}
+
+/** One physical entity an icon draws; an empty part is left out. */
+export interface IconPhysicalEntity {
+  stId?: string;
+  type?: string;
+  name?: string;
+  compartments?: string;
+  displayName?: string;
+}
+
+/** An icon of the icon library. */
+export interface IconEntry extends EntryBase {
+  type: 'Icon';
+  exactType: 'Icon';
+  /** Java's getter: an icon has a name. */
+  icon: true;
+  stId: Highlighted;
+  species?: string[];
+  /** The icon's description. Icons have no inferred one to fall back to. */
+  summation?: Highlighted;
+  iconName?: string;
+  iconCategories?: string[];
+  iconCuratorName?: string;
+  iconCuratorOrcidId?: string;
+  iconCuratorUrl?: string;
+  iconDesignerName?: string;
+  iconDesignerOrcidId?: string;
+  iconDesignerUrl?: string;
+  iconReferences?: string[];
+  iconEhlds?: string[];
+  iconPhysicalEntities?: IconPhysicalEntity[];
+  /** Always false. */
+  hasReferenceEntity: boolean;
+  /** Always false. */
+  hasEHLD: boolean;
+}
+
+/** A person, by name. No stId: `id` is the dbId. The counts are text, as Solr stores them. */
+export interface PersonEntry extends EntryBase {
+  type: 'Person';
+  exactType: 'Person';
+  /** "Entries without species". */
+  species: string[];
+  orcidId?: string;
+  authoredPathways?: string;
+  authoredReactions?: string;
+  reviewedPathways?: string;
+  reviewedReactions?: string;
+}
+
+/** A molecule known only from interaction data; `dbId` and `stId` are its accession. */
+export interface InteractorEntry extends EntryBase {
+  type: 'Interactor';
+  exactType: 'Interactor';
+  stId: Highlighted;
+  species: string[];
+  referenceName?: Highlighted;
+  referenceIdentifier?: Highlighted;
+  databaseName?: string;
+  referenceURL?: string;
+  fireworksSpecies?: string[];
+}
+
+/** An object of an earlier release, deleted since; its type and exactType are those it had. */
+export interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
+  deleted: true;
+  type: string;
+  stId: Highlighted;
+  explanation?: string;
+  date?: EpochMillis;
+  replacementDbIds?: Long[];
+  replacementStIds?: string[];
+}
+
+/** One search result. */
+export type SearchEntry =
+  EventEntry | EntityEntry | IconEntry | PersonEntry | InteractorEntry | DeletedEntry;
+
+/** Every field any kind of entry has. */
+export type SearchEntryField = SearchEntry extends infer E
+  ? E extends unknown
+    ? keyof E
+    : never
+  : never;
+
+/**
+ * An entry before it is known which kind it is: every field of any kind,
+ * each of the kinds it has in any of them, none required. The service builds
+ * this from a Solr document; which kind the document is, is the indexer's.
+ */
+export type SearchEntryFields = {
+  [Field in SearchEntryField]?: SearchEntry extends infer E
+    ? E extends unknown
+      ? Field extends keyof E
+        ? Exclude<E[Field], undefined>
+        : never
+      : never
+    : never;
+};
