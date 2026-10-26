@@ -23,6 +23,7 @@ import { solr } from './solr.ts';
 import { SCOPE_FILTER, pair } from './search-params.ts';
 import type { ReportInfo } from './report.ts';
 import { sendReport } from './report.ts';
+import type { FacetCount } from '../../projects/website-angular/src/model/search.model.ts';
 
 /**
  * The answer `work` makes from Solr, or the one Java makes when Solr cannot
@@ -69,9 +70,11 @@ export async function fromSolr<T>(
   }
 }
 
-/** One FacetContainer, NON_EMPTY: a null or empty name is left out. */
-/** search-core's FacetContainer: a facet's name, absent for an unnamed one, and its count. */
-export type FacetContainer = { name?: string; count: number };
+/**
+ * search-core's FacetContainer: a facet's name, absent for an unnamed one,
+ * and its count -- the site's FacetCount, one definition (spec 013 T019).
+ */
+export type FacetContainer = FacetCount;
 
 export function facetContainer(name: string | null, count: number): FacetContainer {
   return name === null || name === '' ? { count } : { name, count };

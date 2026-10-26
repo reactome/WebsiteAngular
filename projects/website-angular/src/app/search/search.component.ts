@@ -4,7 +4,7 @@ import {
   FacetResponse,
   SearchFilters,
   Facet,
-  FacetCount,
+  NamedFacetCount,
   ResultGroup,
 } from '../../model/search.model';
 import {
@@ -154,7 +154,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // Site-search hit counts by category, populated from the merged Pages
   // results so the sidebar can offer them as a facet group.
-  pageCategoryCounts: FacetCount[] = [];
+  pageCategoryCounts: NamedFacetCount[] = [];
 
   // Protein deduplication: all forms grouped by referenceIdentifier
   proteinForms = new Map<string, SearchEntry[]>();
@@ -627,9 +627,12 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  getFacetItems(facet: Facet | undefined): FacetCount[] {
+  /** The counts that can be shown and chosen: an unnamed one cannot. */
+  getFacetItems(facet: Facet | undefined): NamedFacetCount[] {
     if (!facet) return [];
-    return [...(facet.selected || []), ...(facet.available || [])];
+    return [...(facet.selected || []), ...(facet.available || [])].filter(
+      (item): item is NamedFacetCount => !!item.name
+    );
   }
 
   getActiveFilters(): { category: string; label: string; value: string }[] {

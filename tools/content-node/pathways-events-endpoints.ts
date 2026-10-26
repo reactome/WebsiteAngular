@@ -10,7 +10,8 @@
 import type { Endpoint, Request } from './endpoint.ts';
 import { javaError, notFound, only } from './answers.ts';
 import { asciiDigits, javaNumeric, javaTrim, javaUtf8 } from './java-text.ts';
-import type { Written } from './answers.ts';
+import type { JsonWritten } from './answers.ts';
+import type { PathwayBrowserNode as LocationNode } from '../../projects/website-angular/src/model/locations.model.ts';
 import {
   attributeOf,
   graphCoreId,
@@ -504,17 +505,22 @@ function treeFromLeaf(
  * flags) never, and -- under the service's non_empty -- nothing that is null,
  * and no empty children.
  */
-export function pathwayBrowserJson(node: PathwayBrowserNode) {
-  const out: Written & { children?: Written[] } = only(node, [
-    'stId',
-    'name',
-    'species',
-    'url',
-    'type',
-    'diagram',
-  ]);
-  if (node.children?.length) out.children = node.children.map(pathwayBrowserJson);
-  return out;
+export function pathwayBrowserJson(node: PathwayBrowserNode): LocationNode {
+  // As the site reads it (spec 013 T019), in Jackson's order. `diagram` is
+  // never set on a node of these trees, so Java never writes it either.
+  // stId and name are in every measured answer, and the site's type requires
+  // them; a node without one is written without it, as Java writes it, never
+  // turned into a failure -- in that case, never seen, the type overstates.
+  const out: JsonWritten<LocationNode> = {
+    stId: node.stId as string,
+    name: node.name as string,
+    species: node.species ?? undefined,
+    url: node.url as string,
+    type: node.type as string,
+    children: node.children?.length ? node.children.map(pathwayBrowserJson) : undefined,
+  };
+  // JSON's step: an undefined field is written as absent.
+  return out as LocationNode;
 }
 
 /**

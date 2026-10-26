@@ -20,7 +20,8 @@ import {
 } from './citation.ts';
 import type { Citation } from './citation.ts';
 import { javaError, unexpectedFailure } from './answers.ts';
-import type { Failure } from './answers.ts';
+import type { Failure, JsonWritten } from './answers.ts';
+import type { PathwayCitation } from '../../projects/pathway-browser/src/app/model/citation.model.ts';
 import { hashSetOf } from './java-text.ts';
 import { URLSearchParams } from 'node:url';
 import { settings } from './settings.ts';
@@ -84,14 +85,21 @@ function tomcatHeader(text: string) {
     .join('');
 }
 
-/** The two citations of /citation/pathway/{id}, in the order Java's HashMap writes them. */
-export function pathwayCitations(citation: Citation, date: string) {
-  const texts: Record<string, string> = {
+/**
+ * The two citations of /citation/pathway/{id}, as the site reads them
+ * (PathwayCitation, spec 013 T019), in the order Java's HashMap writes them.
+ * Built as a full literal of the site's type, so a field renamed there fails
+ * here too.
+ */
+export function pathwayCitations(citation: Citation, date: string): PathwayCitation {
+  const texts: JsonWritten<PathwayCitation> = {
     pathwayCitation: eventText(citation, date),
     imageCitation: imageText(citation, date),
   };
-  const body: Record<string, string | undefined> = {};
-  for (const key of hashSetOf(['pathwayCitation', 'imageCitation']).keys()) body[key] = texts[key];
+  // Only the order changes: hashSetOf gives back the keys it was given.
+  const order = [...hashSetOf(Object.keys(texts)).keys()] as (keyof PathwayCitation)[];
+  const body = {} as PathwayCitation;
+  for (const key of order) body[key] = texts[key];
   return body;
 }
 

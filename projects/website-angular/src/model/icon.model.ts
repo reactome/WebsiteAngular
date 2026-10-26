@@ -1,5 +1,6 @@
+// As with the search facets, a count under an empty name is written without one.
 export interface IconCategory {
-  name: string;
+  name?: string;
   count: number;
 }
 
@@ -11,7 +12,8 @@ export interface IconFacet {
 
 export interface IconFacetResponse {
   totalNumFount: number;
-  iconCategoriesFacet: IconFacet;
+  // Left out when Solr did not count it, as the search facets are.
+  iconCategoriesFacet?: IconFacet;
 }
 
 export interface IconPhysicalEntity {

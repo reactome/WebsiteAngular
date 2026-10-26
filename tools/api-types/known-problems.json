@@ -1,5 +1,4 @@
 {
-  "GET /data/detail/{id}/locationsInPWB as PathwayBrowserNode[]": 1111,
   "GET /data/entity/{id}/otherForms as PhysicalEntity[]": 1660,
   "GET /data/event/{id}/ancestors as Pathway[][]": 605,
   "GET /data/event/{id}/ancestors as { stId: string; displayName: string }[][]": 1219,
