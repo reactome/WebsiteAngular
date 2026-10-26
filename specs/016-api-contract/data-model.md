@@ -88,7 +88,8 @@ Fields every kind carries (`EntryBase`):
 
 | Field                                  | Kind          | Required |
 | -------------------------------------- | ------------- | -------- |
-| `stId`, `species`                      | text / text[] | yes      |
+| `stId`                                 | `Highlighted` | yes      |
+| `species`                              | text[]        | yes      |
 | `referenceIdentifier`, `referenceName` | `Highlighted` | no       |
 | `databaseName`, `referenceURL`         | text          | no       |
 | `fireworksSpecies`                     | text[]        | no       |

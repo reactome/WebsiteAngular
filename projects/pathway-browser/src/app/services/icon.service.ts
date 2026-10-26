@@ -9,6 +9,15 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { SchemaClasses } from '../constants/constants';
 
 /**
+ * An icon, of the entries a search answers: its type says so. The indexer
+ * never deletes an icon, but a deleted entry keeps the type it had, so the
+ * mark is checked too: only then is the entry the contract's icon kind.
+ */
+function isIcon(entry: Search.Entry): entry is Search.Entry & Search.Icon.Entry {
+  return entry.type === 'Icon' && !entry.deleted;
+}
+
+/**
  * Where an icon's artwork comes from, given the release the site is serving.
  *
  * The release bucket publishes icons at <version>/icons/svg -- the same place
@@ -259,12 +268,13 @@ export class IconService {
         // No result group at all is no icon, not an error.
         map((response) => {
           const [group] = response.results;
-          return group?.typeName === 'Icon' ? (group.entries[0] ?? null) : null;
+          const [entry] = group?.typeName === 'Icon' ? group.entries : [];
+          return entry && isIcon(entry) ? entry : null;
         }),
         switchMap((entry) => {
           if (entry) {
             this.currentIcon.set(entry);
-            return this.loadIcon(entry.stId);
+            return this.loadIcon(entry.id);
           } else {
             this.currentIcon.set(undefined);
             return of(null);

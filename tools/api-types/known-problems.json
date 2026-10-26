@@ -15,12 +15,8 @@
   "GET /data/query/{id} as { displayName?: string; name?: string[] }": 221,
   "GET /data/species/main as Species[]": 16,
   "GET /exporter/reaction/{id}/diagram as ReactionJson": 704,
-  "GET /search/diagram/{id} as Search.Result": 744,
-  "GET /search/fireworks as Search.Result": 1315,
-  "GET /search/icon/query as IconResult": 200,
-  "GET /search/pathways/of/{dbId} as Search.Entry[]": 90,
-  "GET /search/query as Search.Icon.Result": 144,
-  "GET /search/query as SearchResult": 8959,
+  "GET /search/icon/query as IconResult": 4,
+  "GET /search/query as SearchResult": 12,
   "POST /data/orthologies/ids/species/{dbId} as { [p: string]: SelectableObject }": 3,
   "POST /interactors/psicquic/molecules/{resource}/details as Interactors": 1560
 }

@@ -1,3 +1,5 @@
+import type { IconEntry, PathwayOfEntry, SearchEntryView } from '../../../../contract/search.ts';
+
 export namespace Search {
   export const EMPTY_RESULTS = { found: 0, facets: [], entries: [] } as Search.Result;
 
@@ -14,21 +16,10 @@ export namespace Search {
     rows: number;
   };
 
-  export interface Entry {
-    dbId: string;
-    stId: string;
-    databaseName: string;
-    exactType: string;
-    isDisease: boolean;
-    hasEHLD?: boolean;
-    name: string;
-    referenceIdentifier: string;
-    referenceName: string;
-    referenceURL: string;
-    species: string[];
-    compartmentAccession: string[];
-    compartmentNames: string[];
-  }
+  // One hit, any kind, and one pathway of `/search/pathways/of`: the
+  // contract's (spec 016).
+  export type Entry = SearchEntryView;
+  export type PathwayOf = PathwayOfEntry;
 
   export interface Facet {
     name: string;
@@ -44,25 +35,13 @@ export namespace Search {
 
   // Add a sub-namespace for Icon-specific results
   export namespace Icon {
-    export interface Entry {
-      stId: string;
-      dbId: string;
-      id: string;
-      name: string;
-      type: string;
-      exactType: string;
-      species: string[];
-      summation: string;
-      isDisease: boolean;
-      hasEHLD?: boolean;
-      hasReferenceEntity: boolean;
-      disease: boolean;
-      deleted: boolean;
-      date: number;
-    }
+    // One icon: the contract's (spec 016).
+    export type Entry = IconEntry;
 
+    // A query for icons answers whatever its groups hold: a query matching
+    // no icon answers proteins, compounds and the like, any kind.
     export interface EntryResult {
-      entries: Entry[];
+      entries: Search.Entry[];
       typeName: string;
       entriesCount: number;
       rowCount: number;

@@ -135,7 +135,7 @@ export const CALLS: Call[] = [
   { file: `${PB}/viewport/search/search.component.ts`, method: 'suggestions', http: 'GET', route: '/search/suggest', type: 'string[]' },
   { file: `${PB}/viewport/search/search.component.ts`, method: 'scopes', http: 'GET', route: '/search/diagram/{id}', type: 'Search.Result' },
   { file: `${PB}/viewport/search/search.component.ts`, method: 'scopes', n: 2, http: 'GET', route: '/search/fireworks', type: 'Search.Result' },
-  { file: `${PB}/viewport/search/search.component.ts`, method: 'selectedResultPathways', http: 'GET', route: '/search/pathways/of/{dbId}', type: 'Search.Entry[]' },
+  { file: `${PB}/viewport/search/search.component.ts`, method: 'selectedResultPathways', http: 'GET', route: '/search/pathways/of/{dbId}', type: 'Search.PathwayOf[]' },
 
   // website-angular
   { file: `${WEB}/app/breadcrumb/breadcrumb.component.ts`, method: 'ngOnInit', http: 'GET', route: '/data/person/{id}', type: '{ displayName?: string }' },

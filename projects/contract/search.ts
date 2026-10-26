@@ -148,7 +148,7 @@ interface IconPhysicalEntity {
 }
 
 /** An icon of the icon library. */
-interface IconEntry extends EntryBase {
+export interface IconEntry extends EntryBase {
   type: 'Icon';
   exactType: 'Icon';
   /** Java's getter: an icon has a name. */
@@ -236,3 +236,24 @@ export type SearchEntryFields = {
       : never
     : never;
 };
+
+/**
+ * Any entry, as a reader that shows every kind reads it: what every kind
+ * carries is required, the rest optional with the kinds it has in any of
+ * them. A reader that needs one kind narrows on `type` and `deleted`.
+ */
+export type SearchEntryView = SearchEntryFields &
+  Required<Pick<SearchEntryFields, 'dbId' | 'id' | 'type' | 'exactType'>>;
+
+/**
+ * What `/search/pathways/of/{dbId}` answers: pathways, written with only the
+ * fields the pathway browser asks for (`fields=DB_ID,ST_ID,NAME,HAS_EHLD`), so
+ * no type.
+ */
+export interface PathwayOfEntry {
+  dbId: string;
+  stId: Highlighted;
+  id: string;
+  name?: Highlighted;
+  hasEHLD?: boolean;
+}

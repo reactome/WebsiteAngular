@@ -320,7 +320,7 @@ export class SearchComponent {
   selectedResultPathways = rxResource({
     params: this.selectedResultId,
     stream: ({ params }) =>
-      this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
+      this.http.get<Search.PathwayOf[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
         params: {
           includeInteractors: false,
           directlyInDiagram: true,
@@ -331,8 +331,8 @@ export class SearchComponent {
   });
 
   readonly selectedResultPathwaysStable = linkedSignal<
-    { results: Search.Entry[] | undefined; loading: boolean },
-    Search.Entry[]
+    { results: Search.PathwayOf[] | undefined; loading: boolean },
+    Search.PathwayOf[]
   >({
     source: () => ({
       results: this.selectedResultPathways.value(),

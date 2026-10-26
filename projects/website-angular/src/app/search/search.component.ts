@@ -482,12 +482,13 @@ export class SearchComponent implements OnInit, OnDestroy {
         if (group) allProteins.push(...group.entries);
       }
 
-      // Group by referenceIdentifier
+      // Group by referenceIdentifier, else the entry's own id (its stId, or
+      // its dbId when it has none, so never empty).
       const formsMap = new Map<string, SearchEntry[]>();
       const representativeMap = new Map<string, SearchEntry>();
 
       for (const entry of allProteins) {
-        const key = entry.referenceIdentifier || entry.id || entry.stId;
+        const key = entry.referenceIdentifier || entry.id;
         if (!formsMap.has(key)) {
           formsMap.set(key, []);
           representativeMap.set(key, entry);
@@ -504,12 +505,12 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   toggleForms(entry: SearchEntry): void {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     this.expandedForms[key] = !this.expandedForms[key];
   }
 
   getProteinForms(entry: SearchEntry): SearchEntry[] {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     return this.proteinForms.get(key) || [];
   }
 
@@ -518,7 +519,7 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   isFormsExpanded(entry: SearchEntry): boolean {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     return !!this.expandedForms[key];
   }
 
@@ -530,7 +531,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return this.icons.iconUrl(entry.stId);
+    // `id` is the stId, never highlighted: a search for the id itself wraps
+    // `stId` in markup.
+    return this.icons.iconUrl(entry.id);
   }
 
   /**

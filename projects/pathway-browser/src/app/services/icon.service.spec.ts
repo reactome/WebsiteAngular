@@ -25,6 +25,19 @@ describe('IconService.fetchIcon', () => {
 
   const search = () => http.expectOne((request) => request.url.includes('/search/query'));
 
+  // An icon as the search writes one (projects/contract/search.ts).
+  const iconEntry = (stId: string, name: string) => ({
+    dbId: stId.replace(/\D/g, ''),
+    stId,
+    id: stId,
+    name,
+    type: 'Icon',
+    exactType: 'Icon',
+    icon: true,
+    hasReferenceEntity: false,
+    hasEHLD: false,
+  });
+
   it('gives no icon when the search has no result groups at all', async () => {
     const icon = firstValueFrom(service.fetchIcon('XYZZY1'));
     search().flush({ results: [] });
@@ -41,11 +54,24 @@ describe('IconService.fetchIcon', () => {
   it('loads the first icon found', async () => {
     const icon = firstValueFrom(service.fetchIcon('CSK'));
     search().flush({
-      results: [{ typeName: 'Icon', entries: [{ stId: 'R-ICO-013624', name: 'CSK' }] }],
+      results: [{ typeName: 'Icon', entries: [iconEntry('R-ICO-013624', 'CSK')] }],
     });
     http.expectOne((request) => request.url.includes('R-ICO-013624')).flush('<svg/>');
     await expect(icon).resolves.toBe('<svg/>');
     expect(service.currentIcon()?.stId).toBe('R-ICO-013624');
+  });
+
+  it('gives no icon for a deleted one, though its group is named Icon', async () => {
+    // The indexer never deletes an icon; this holds the check that makes the
+    // entry the contract's icon kind, should a deleted one ever be indexed.
+    const icon = firstValueFrom(service.fetchIcon('CSK'));
+    search().flush({
+      results: [
+        { typeName: 'Icon', entries: [{ ...iconEntry('R-ICO-013624', 'CSK'), deleted: true }] },
+      ],
+    });
+    await expect(icon).resolves.toBeNull();
+    expect(service.currentIcon()).toBeUndefined();
   });
 });
 
