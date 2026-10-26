@@ -2,6 +2,7 @@
 //
 // classify.ts, which the e2e suite uses to find the site's requests that
 // are not in standard form and so never reach the edge cache.
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { classify } from './classify.ts';
 
@@ -74,7 +75,9 @@ describe('classify', () => {
       );
       const out = execFileSync(
         process.execPath,
-        [new URL('./classify.ts', import.meta.url).pathname, file],
+        // A plain path: knip takes `new URL('./classify.ts', import.meta.url)`
+        // for a use of every export the module has.
+        [path.join(import.meta.dirname, 'classify.ts'), file],
         {
           encoding: 'utf8',
         }

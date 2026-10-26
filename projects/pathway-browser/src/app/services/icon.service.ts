@@ -8,6 +8,11 @@ import { isExactlyCellLineagePath, isRLE } from './utils';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { SchemaClasses } from '../constants/constants';
 
+/** An icon, of the entries a search answers: its type says so, and it is not a deleted one. */
+function isIcon(entry: Search.Entry): entry is Search.Entry & Search.Icon.Entry {
+  return entry.type === 'Icon' && !entry.deleted;
+}
+
 /**
  * Where an icon's artwork comes from, given the release the site is serving.
  *
@@ -259,7 +264,8 @@ export class IconService {
         // No result group at all is no icon, not an error.
         map((response) => {
           const [group] = response.results;
-          return group?.typeName === 'Icon' ? (group.entries[0] ?? null) : null;
+          const [entry] = group?.typeName === 'Icon' ? group.entries : [];
+          return entry && isIcon(entry) ? entry : null;
         }),
         switchMap((entry) => {
           if (entry) {
