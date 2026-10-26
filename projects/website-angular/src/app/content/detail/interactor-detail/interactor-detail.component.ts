@@ -125,8 +125,11 @@ export class InteractorDetailComponent implements OnInit {
           .flatMap((group) => group.entries)
           .find((hit) => hit.databaseName && hit.referenceIdentifier);
         if (entry) {
-          const cleanId = (entry.referenceIdentifier ?? acc).replace(/<[^>]*>/g, '');
-          this.displayName.set(`${entry.databaseName}:${cleanId} ${entry.name}`);
+          // The search is highlighted: an identifier or name that matched
+          // the accession arrives wrapped in markup.
+          const plain = (text: string) => text.replace(/<[^>]*>/g, '');
+          const cleanId = plain(entry.referenceIdentifier ?? acc);
+          this.displayName.set(`${entry.databaseName}:${cleanId} ${plain(entry.name ?? '')}`);
           this.interactorType.set(
             `${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`
           );

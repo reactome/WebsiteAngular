@@ -495,9 +495,10 @@ NOTE: This is an automatically generated message.
                                 <div class="entry-reference">
                                   Reference:
                                   <a [href]="entry.referenceURL" target="_blank" rel="noopener"
-                                    ><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> ({{
-                                      entry.referenceIdentifier
-                                    }})</a
+                                    ><span [innerHTML]="entry.referenceName ?? entry.databaseName"></span> (<span
+                                      [innerHTML]="entry.referenceIdentifier"
+                                    ></span
+                                    >)</a
                                   >
                                 </div>
                               }
@@ -536,7 +537,7 @@ NOTE: This is an automatically generated message.
                                 <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
                                 <img
                                   [src]="iconSvgUrl(entry)"
-                                  [alt]="entry.stId"
+                                  [alt]="entry.id"
                                   loading="lazy"
                                   (error)="onImgError($event)"
                                   width="100"
@@ -629,7 +630,10 @@ NOTE: This is an automatically generated message.
                         <div class="entry-reference">
                           Reference:
                           <a [href]="entry.referenceURL" target="_blank" rel="noopener"
-                            ><span [innerHTML]="entry.referenceName"></span> ({{ entry.referenceIdentifier }})</a
+                            ><span [innerHTML]="entry.referenceName"></span> (<span
+                              [innerHTML]="entry.referenceIdentifier"
+                            ></span
+                            >)</a
                           >
                         </div>
                       }
