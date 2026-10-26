@@ -43,14 +43,14 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 **Independent test**: the search routes' known problems fall, and every recorded entry matches exactly one kind ([quickstart.md](quickstart.md) §3).
 
 - [ ] T006 [US2] Write `EntryBase` and the kinds `EventEntry`, `EntityEntry`, `IconEntry`, `PersonEntry`, `InteractorEntry` and `DeletedEntry` in `projects/contract/search.ts`, as in [data-model.md](data-model.md).
-  - Recheck each "required" field against the indexer's builders (reactome/search-indexer at 5cea4d6) and against `searchEntry` itself, which leaves out a name with no snippet and a summation the document lacks.
+  - Recheck each "required" field against the indexer's builders (reactome/search-indexer at 5cea4d6) and against `searchEntry` itself, which leaves out a name or summation with no snippet and a summation the document lacks. Confirm that an entity entry built from a reference entity always carries an `stId`, or make it optional.
   - Non-deleted kinds carry `deleted?: never`.
   - Each field's comment names its source, and the comments carry no personal data.
 - [ ] T007 [US2] Write the entity kind's `type` list from the indexer's `getType` and `getReferenceTypes`, plus the classes they pass through, taken from the domain snapshot. Add a spec that reads the snapshot and fails when a class is missing; show it failing by removing one.
 - [ ] T008 [US2] Make `searchEntry` in `tools/content-node/search-core.ts` build a `SearchEntry`, with no `unknown` and no `DraftEntry` index signature.
   - Drop the six never-written fields from what it reads, keeping the field order and output byte-identical: `regulator`, `regulatedEntity`, `regulatorId`, `regulatedEntityId`, `instanceTypeExplanation`, and `reason` (read as `deletedReason`).
   - Leave a comment on `reason` naming the mismatch with the index field.
-  - Exact longs: declare `JSON.rawJSON` in `server.ts` as returning a branded `RawJson`, and write the entry through a writer-side mapping in `answers.ts` in which a `Long` field accepts `RawJson` (research R4).
+  - Exact longs: declare `JSON.rawJSON` as returning a branded `RawJson`, declared in a shared leaf module (or `declare global`) that `answers.ts` can import under spec 014's layering, never exported from `server.ts`, and write the entry through a writer-side mapping in `answers.ts` in which a `Long` field accepts `RawJson` (research R4).
   - Confirm byte-identity with the search unit specs, the parity comparison and beta.
 - [ ] T009 [US2] Add `PathwayOfEntry`, the projection `/search/pathways/of/{dbId}` answers, to `projects/contract/search.ts`. Point the pathway browser's `selectedResultPathways` at it.
 - [ ] T010 [US2] Make the site's `SearchEntry` and `IconEntry` re-export the contract's, and narrow by kind where `search.component.ts`, `interactor-detail.component.ts`, `icon-lib.component.ts` and `icon-detail.component.ts` read kind-specific fields.
