@@ -41,19 +41,19 @@ Fields every kind carries (`EntryBase`):
 
 ### Physical entity (`EntityEntry`)
 
-`type` is one of "Protein", "DNA Sequence", "RNA Sequence", "Chemical Compound", "Drug", "Set", "Genes and Transcripts", or the name of a physical entity or reference entity class that the indexer's mapping passes through ("Complex", "OtherEntity", …). The list is taken from the domain snapshot and checked against it.
+`type` is one of "Protein", "DNA Sequence", "RNA Sequence", "Chemical Compound", "Drug", "Set", "Genes and Transcripts", or the name of a physical-entity class that is neither a set nor genome-encoded: Cell, ChemicalDrug, Complex, OtherEntity, Polymer, ProteinDrug, RNADrug and SimpleEntity in release 97. Every reference-entity class has a type of its own. `projects/contract/entity-types.spec.ts` derives the list from the domain snapshot.
 
-| Field                                                 | Kind          | Required | Notes                                    |
-| ----------------------------------------------------- | ------------- | -------- | ---------------------------------------- |
-| `stId`                                                | `Highlighted` | yes      |                                          |
-| `species`                                             | text[]        | no       |                                          |
-| `summation`                                           | `Highlighted` | no       | 69 of 1,580                              |
-| `isDisease`, `disease`                                | boolean       | no       | 1,546 of 1,580                           |
-| `hasReferenceEntity`                                  | boolean       | no       |                                          |
-| `compartmentNames`, `compartmentAccession`            | text[]        | no       | 1,546                                    |
-| `referenceName`                                       | `Highlighted` | no       | 1,235                                    |
-| `referenceIdentifier`, `databaseName`, `referenceURL` | text          | no       | 1,253; the identifier may be highlighted |
-| `fireworksSpecies`                                    | text[]        | no       | only on the species-overview routes      |
+| Field                                                 | Kind          | Required | Notes                                      |
+| ----------------------------------------------------- | ------------- | -------- | ------------------------------------------ |
+| `stId`                                                | `Highlighted` | yes      |                                            |
+| `species`                                             | text[]        | yes      | "Entries without species" when it has none |
+| `summation`                                           | `Highlighted` | no       | 69 of 1,580                                |
+| `isDisease`, `disease`                                | boolean       | no       | 1,546 of 1,580                             |
+| `hasReferenceEntity`                                  | boolean       | no       |                                            |
+| `compartmentNames`, `compartmentAccession`            | text[]        | no       | 1,546                                      |
+| `referenceName`                                       | `Highlighted` | no       | 1,235                                      |
+| `referenceIdentifier`, `databaseName`, `referenceURL` | text          | no       | 1,253; the identifier may be highlighted   |
+| `fireworksSpecies`                                    | text[]        | no       | only on the species-overview routes        |
 
 ### Icon (`IconEntry`)
 
@@ -61,7 +61,8 @@ Fields every kind carries (`EntryBase`):
 
 | Field                                                                          | Kind                   | Required | Notes                                                                                                    |
 | ------------------------------------------------------------------------------ | ---------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
-| `stId`, `species`, `iconName`, `iconCategories`                                | text / text[]          | yes      |                                                                                                          |
+| `stId`                                                                         | `Highlighted`          | yes      |                                                                                                          |
+| `species`, `iconName`, `iconCategories`                                        | text / text[]          | no       | the icon's metadata may lack them; an empty name is left out, and still an icon (`icon: true`)           |
 | `summation`                                                                    | `Highlighted`          | no       | the icon's description; on a highlighted answer, only from a snippet (icons have no `inferredSummation`) |
 | `hasReferenceEntity`, `hasEHLD`                                                | boolean                | yes      | always `false`                                                                                           |
 | `iconCuratorName`, `iconCuratorOrcidId`, `iconDesignerName`, `iconDesignerUrl` | text                   | no       | on every recorded icon, but the indexer leaves them out when absent                                      |
@@ -69,7 +70,7 @@ Fields every kind carries (`EntryBase`):
 | `iconReferences`, `iconEhlds`                                                  | text[]                 | no       | 39 and 37 of 40                                                                                          |
 | `iconPhysicalEntities`                                                         | `IconPhysicalEntity[]` | no       | 27 of 40                                                                                                 |
 
-`IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional except `displayName`.
+`IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional, `displayName` too (an empty name with blank compartments).
 
 ### Person (`PersonEntry`)
 
@@ -85,11 +86,12 @@ Fields every kind carries (`EntryBase`):
 
 `type: "Interactor"`, `exactType: "Interactor"`. `dbId` is the accession.
 
-| Field                                                                    | Kind          | Required |
-| ------------------------------------------------------------------------ | ------------- | -------- |
-| `stId`, `species`, `referenceIdentifier`, `databaseName`, `referenceURL` | text / text[] | yes      |
-| `referenceName`                                                          | `Highlighted` | no       |
-| `fireworksSpecies`                                                       | text[]        | no       |
+| Field                                  | Kind          | Required |
+| -------------------------------------- | ------------- | -------- |
+| `stId`, `species`                      | text / text[] | yes      |
+| `referenceIdentifier`, `referenceName` | `Highlighted` | no       |
+| `databaseName`, `referenceURL`         | text          | no       |
+| `fireworksSpecies`                     | text[]        | no       |
 
 ### Deleted (`DeletedEntry`)
 

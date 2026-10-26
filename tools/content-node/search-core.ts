@@ -7,7 +7,7 @@
  * and diagram-search families. Moved unchanged from service.ts.
  */
 import type { Request } from './endpoint.ts';
-import type { Failure, Written } from './answers.ts';
+import type { Failure } from './answers.ts';
 import { javaError } from './answers.ts';
 import type { SolrAnswer, SolrDoc, SolrValue } from './solr.ts';
 import {
@@ -23,7 +23,11 @@ import { solr } from './solr.ts';
 import { SCOPE_FILTER, pair } from './search-params.ts';
 import type { ReportInfo } from './report.ts';
 import { sendReport } from './report.ts';
-import type { FacetCount } from '../../projects/contract/search.ts';
+import type {
+  FacetCount,
+  SearchEntryField,
+  SearchEntryFields,
+} from '../../projects/contract/search.ts';
 
 /**
  * The answer `work` makes from Solr, or the one Java makes when Solr cannot
@@ -132,14 +136,21 @@ function referenceIdentifier(doc: SolrDoc) {
   return values.find((value) => !value.includes(':')) ?? values[0] ?? null;
 }
 
-/** Entry's properties in Jackson's order: its fields as declared. */
+/**
+ * Entry's properties in Jackson's order, its fields as declared, less six no
+ * document can give: `regulator`, `regulatedEntity`, `regulatorId` and
+ * `regulatedEntityId` are in neither the index nor its schema,
+ * `instanceTypeExplanation` is never set, and `reason` is read from
+ * `deletedReason`, as Java reads it, a field the index does not have (its
+ * own is `reason`). Each would be left out as empty, so leaving them out
+ * writes the same.
+ */
 const ENTRY_FIELDS = [
   'dbId',
   'stId',
   'id',
   'name',
   'type',
-  'instanceTypeExplanation',
   'exactType',
   'species',
   'summation',
@@ -152,10 +163,6 @@ const ENTRY_FIELDS = [
   'hasEHLD',
   'databaseName',
   'referenceURL',
-  'regulator',
-  'regulatedEntity',
-  'regulatorId',
-  'regulatedEntityId',
   'authoredPathways',
   'authoredReactions',
   'reviewedPathways',
@@ -174,37 +181,55 @@ const ENTRY_FIELDS = [
   'iconPhysicalEntities',
   'iconEhlds',
   'deleted',
-  'reason',
   'explanation',
   'date',
   'replacementDbIds',
   'replacementStIds',
-];
+] as const satisfies readonly SearchEntryField[];
 
-/** An Entry being built: the fields set after the document's own. */
-type DraftEntry = {
-  [field: string]: unknown;
-  dbId: SolrValue | undefined;
-  isDisease: unknown;
-  referenceIdentifier?: unknown;
-  name?: unknown;
-  summation?: unknown;
-  referenceName?: unknown;
-  regulator?: unknown;
-  regulatedEntity?: unknown;
-  fireworksSpecies?: unknown;
-  iconName?: unknown;
-  iconCategories?: unknown;
-  iconReferences?: unknown;
-  iconEhlds?: unknown;
-  iconPhysicalEntities?: unknown;
-  deleted?: unknown;
-  reason?: unknown;
-  explanation?: unknown;
-  date?: unknown;
-  replacementDbIds?: unknown;
-  replacementStIds?: unknown;
+/**
+ * An entry as written, before it is known which kind it is: the contract's
+ * fields and kinds, but for the replacement dbIds, written exactly as the
+ * longs they are (`JSON.rawJSON`), which the contract reads as `Long`.
+ */
+export type WrittenEntry = {
+  [Field in SearchEntryField]?: Field extends 'replacementDbIds'
+    ? RawJson[]
+    : SearchEntryFields[Field];
 };
+
+/** The entry being built: a field Java leaves null may be null or absent here. */
+type DraftEntry = { [Field in keyof WrittenEntry]?: WrittenEntry[Field] | null };
+
+/** What Java's cast of a field's value does with one of another class. */
+const castFailure = (field: string) =>
+  Object.assign(new Error(`a ${field} that is not of its class`), { unexpected: true });
+
+/** `(String) doc.getFieldValue(field)`: absent is null; anything but text, Java's ClassCastException. */
+function solrText(doc: SolrDoc, field: string): string | null {
+  const value = solrValue(doc, field);
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') throw castFailure(field);
+  return value;
+}
+
+/** `(Boolean) doc.getFieldValue(field)`, as solrText. */
+function solrFlag(doc: SolrDoc, field: string): boolean | null {
+  const value = solrValue(doc, field);
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'boolean') throw castFailure(field);
+  return value;
+}
+
+/** NON_EMPTY: null, empty text and an empty list are left out; false is not. */
+function present<T>(value: T | null | undefined): value is T {
+  return !(
+    value === undefined ||
+    value === null ||
+    value === '' ||
+    (Array.isArray(value) && !value.length)
+  );
+}
 
 /**
  * SolrConverter.buildEntry: a Solr document as search-core's Entry, written
@@ -215,57 +240,51 @@ type DraftEntry = {
  * takes its name, summation and the rest only from the snippets, so a name
  * with no snippet is none; otherwise the summation is the document's own,
  * replacing the inferred one even when absent. Dates are epoch milliseconds.
+ * Which kind of entry it is (contract `SearchEntry`) is the indexer's; the
+ * recorded answers hold it (tools/api-types).
  */
 export function searchEntry(
   doc: SolrDoc,
   highlighting: SolrAnswer['highlighting'] | null,
   { speciesWide = false } = {}
-) {
+): WrittenEntry {
+  const stId = solrText(doc, 'stId');
   const entry: DraftEntry = {
-    dbId: solrValue(doc, 'dbId'),
-    stId: solrValue(doc, 'stId'),
-    id: 'stId' in doc ? solrValue(doc, 'stId') : solrValue(doc, 'dbId'),
-    type: solrValue(doc, 'type'),
-    exactType: solrValue(doc, 'exactType'),
-    isDisease: solrValue(doc, 'isDisease'),
-    hasReferenceEntity: solrValue(doc, 'hasReferenceEntity'),
-    hasEHLD: solrValue(doc, 'hasEHLD'),
-    databaseName: solrValue(doc, 'databaseName'),
-    referenceURL: solrValue(doc, 'referenceURL'),
-    regulatorId: solrValue(doc, 'regulatorId'),
-    regulatedEntityId: solrValue(doc, 'regulatedEntityId'),
-    summation: solrValue(doc, 'inferredSummation'),
-    authoredPathways: solrValue(doc, 'authoredPathways'),
-    authoredReactions: solrValue(doc, 'authoredReactions'),
-    reviewedPathways: solrValue(doc, 'reviewedPathways'),
-    reviewedReactions: solrValue(doc, 'reviewedReactions'),
-    orcidId: solrValue(doc, 'orcidId'),
+    dbId: solrText(doc, 'dbId'),
+    stId,
+    id: 'stId' in doc ? stId : solrText(doc, 'dbId'),
+    type: solrText(doc, 'type'),
+    exactType: solrText(doc, 'exactType'),
+    isDisease: solrFlag(doc, 'isDisease'),
+    hasReferenceEntity: solrFlag(doc, 'hasReferenceEntity'),
+    hasEHLD: solrFlag(doc, 'hasEHLD'),
+    databaseName: solrText(doc, 'databaseName'),
+    referenceURL: solrText(doc, 'referenceURL'),
+    summation: solrText(doc, 'inferredSummation'),
+    authoredPathways: solrText(doc, 'authoredPathways'),
+    authoredReactions: solrText(doc, 'authoredReactions'),
+    reviewedPathways: solrText(doc, 'reviewedPathways'),
+    reviewedReactions: solrText(doc, 'reviewedReactions'),
+    orcidId: solrText(doc, 'orcidId'),
     species: solrStrings(doc, 'species'),
     compartmentNames: solrStrings(doc, 'compartmentName'),
     compartmentAccession: solrStrings(doc, 'compartmentAccession'),
   };
   // An object's key is the dbId as text, whatever its type.
-  const snippets = highlighting?.[String(entry.dbId)];
+  const snippets = highlighting?.[String(solrValue(doc, 'dbId'))];
   if (snippets) {
     const identifiers = snippets['referenceIdentifiers'];
     entry.referenceIdentifier = identifiers?.length
-      ? (identifiers.find((snippet) => snippet.includes('highlighting')) ?? identifiers[0])
+      ? (identifiers.find((snippet) => snippet.includes('highlighting')) ?? identifiers[0] ?? null)
       : referenceIdentifier(doc);
-    for (const field of [
-      'stId',
-      'name',
-      'summation',
-      'referenceName',
-      'regulator',
-      'regulatedEntity',
-    ])
-      if (snippets[field]?.length) entry[field] = snippets[field][0];
+    for (const field of ['stId', 'name', 'summation', 'referenceName'] as const) {
+      const snippet = snippets[field]?.[0];
+      if (snippet !== undefined) entry[field] = snippet;
+    }
   } else {
-    entry.name = solrValue(doc, 'name');
-    entry.summation = solrValue(doc, 'summation');
-    entry.referenceName = solrValue(doc, 'referenceName');
-    entry.regulator = solrValue(doc, 'regulator');
-    entry.regulatedEntity = solrValue(doc, 'regulatedEntity');
+    entry.name = solrText(doc, 'name');
+    entry.summation = solrText(doc, 'summation');
+    entry.referenceName = solrText(doc, 'referenceName');
     entry.referenceIdentifier = referenceIdentifier(doc);
   }
   // SolrConverter.getFireworksResult adds the document's fireworks species.
@@ -279,17 +298,20 @@ export function searchEntry(
     'iconDesignerName',
     'iconDesignerUrl',
     'iconDesignerOrcidId',
-  ])
-    entry[field] = solrValue(doc, field);
+  ] as const)
+    entry[field] = solrText(doc, field);
   entry.iconCategories = solrStrings(doc, 'iconCategories');
   entry.iconReferences = solrStrings(doc, 'iconReferences');
   entry.iconEhlds = solrStrings(doc, 'iconEhlds');
   entry.iconPhysicalEntities = iconPhysicalEntities(doc);
-  entry.deleted = solrValue(doc, 'deleted');
-  entry.reason = solrValue(doc, 'deletedReason');
-  entry.explanation = solrValue(doc, 'explanation');
+  const deleted = solrFlag(doc, 'deleted');
+  // The index holds the flag only on deleted documents, always true
+  // (DeletedDocument's default). Java would write a false as it is; the
+  // recorded answers would show one (tools/api-types).
+  entry.deleted = deleted as true | null;
+  entry.explanation = solrText(doc, 'explanation');
   const date = solrValue(doc, 'date');
-  entry.date = date === undefined || date === null ? date : Date.parse(String(date));
+  entry.date = date === undefined || date === null ? null : Date.parse(String(date));
   // getLongListField: each value cast to String -- anything else is Java's
   // ClassCastException -- and read by Long.parseLong, digits of any script
   // and nothing else; written as the long it is, exactly.
@@ -313,16 +335,17 @@ export function searchEntry(
   });
   entry.replacementStIds = solrStrings(doc, 'replacementStIds');
 
-  const empty = (value: unknown) =>
-    value === undefined ||
-    value === null ||
-    value === '' ||
-    (Array.isArray(value) && !value.length);
-  const out: Written & { icon?: true; disease?: unknown } = {};
-  for (const field of ENTRY_FIELDS) if (!empty(entry[field])) out[field] = entry[field];
+  const out: WrittenEntry = {};
+  const copy = <Field extends keyof WrittenEntry>(field: Field) => {
+    const value = entry[field];
+    // `present` has taken null out; TypeScript cannot follow it through
+    // the field's type, which is generic here.
+    if (present(value)) out[field] = value as WrittenEntry[Field];
+  };
+  for (const field of ENTRY_FIELDS) copy(field);
   // isIcon() is iconName != null: an empty name, left out, is still an icon.
   if (entry.iconName !== undefined && entry.iconName !== null) out.icon = true;
-  if (!empty(entry.isDisease)) out.disease = entry.isDisease;
+  if (present(entry.isDisease)) out.disease = entry.isDisease;
   return out;
 }
 

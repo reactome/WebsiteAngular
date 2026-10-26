@@ -93,6 +93,31 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
     );
   });
 
+  it("fails as Java's cast does on a value of another class", () => {
+    // buildEntry casts each value: (String) for text, (Boolean) for flags.
+    for (const doc of [{ dbId: 5 }, { dbId: '1', name: 3 }, { dbId: '1', isDisease: 'true' }])
+      expect(() => searchEntry(doc, {}), JSON.stringify(doc)).toThrow(
+        expect.objectContaining({ unexpected: true })
+      );
+  });
+
+  it('writes none of the fields no document can give, whatever the document holds', () => {
+    // Java reads these names, but the index's schema has none of them and no
+    // dynamic field (search-indexer 5cea4d6), so Solr can return none: leaving
+    // them unread writes what Java writes for any document Solr can hold.
+    const doc = {
+      dbId: '1',
+      regulator: 'r',
+      regulatedEntity: 'e',
+      regulatorId: 'ri',
+      regulatedEntityId: 'ei',
+      instanceTypeExplanation: 'x',
+      deletedReason: 'gone',
+      reason: 'gone',
+    };
+    expect(searchEntry(doc, {})).toEqual({ dbId: '1', id: '1' });
+  });
+
   it('id is the stId when there is one, else the dbId', () => {
     expect(searchEntry({ dbId: '5' }, {})['id']).toBe('5');
     expect(searchEntry({ dbId: '5', stId: 'R-ICO-5' }, {})['id']).toBe('R-ICO-5');
