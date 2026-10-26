@@ -19,7 +19,7 @@ files_port=${FILES_PORT:-8097}
 # Any answer refuses, a 503 too (a deployment whose graph is down), and it is
 # refused before the trap below, whose clean-up would remove another run's
 # containers.
-if curl -s -o /dev/null http://127.0.0.1:4360/health; then
+if curl -s -m 5 -o /dev/null http://127.0.0.1:4360/health; then
   echo "Something already answers on 127.0.0.1:4360; stop it, or run this elsewhere" >&2
   exit 1
 fi
@@ -27,8 +27,9 @@ fi
 root=$(cd "$(dirname "$0")/../.." && pwd)
 image=${1:-}
 work=$(mktemp -d)
-neo=java-library-check-graph
-service=java-library-check
+# Named for this run, so a run that stops early removes only its own.
+neo=java-library-check-graph-$$
+service=java-library-check-$$
 # shellcheck disable=SC2317 # called by the trap
 cleanup() {
   docker rm -f -v "$neo" "$service" >/dev/null 2>&1 || true
