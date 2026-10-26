@@ -24,6 +24,8 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { setInterval } from 'node:timers';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import { configured, close } from './graph.ts';
 import { settings } from './settings.ts';
@@ -235,7 +237,14 @@ export function writeResult(response: Written, result: Answer) {
   else if (typeof result.body === 'string') response.send(result.body);
   // A figure's bytes, under the type the handler set.
   else if (Buffer.isBuffer(result.body)) response.end(result.body);
-  else if (result.serialised) response.type('application/json').send(result.serialised);
+  // A body passed on as it arrives (SBML, spec 015 T065): a failure part way
+  // ends the connection, so a reader never takes a cut-off file for a whole one.
+  // A reader already gone leaves the body unread, which pipeline does not end:
+  // it is ended here, or what it holds (a share, a connection) is never given back.
+  else if (result.body instanceof Readable) {
+    const body = result.body;
+    pipeline(body, response as express.Response).catch(() => body.destroy());
+  } else if (result.serialised) response.type('application/json').send(result.serialised);
   else response.type('application/json').send(javaJson(result.body));
 }
 
@@ -547,9 +556,13 @@ export async function answer(
     );
     writeResult(response, result);
   };
+  let result: Answer | undefined;
   try {
-    write(await endpoint.handler(request));
+    result = await endpoint.handler(request);
+    write(result);
   } catch (caught) {
+    // A body that will now never be written is ended, as above.
+    if (result?.body instanceof Readable) result.body.destroy();
     const failure = caught as Failure;
     const answer = failureAnswer(request, endpoint.path, failure);
     if (answer) return write(answer);

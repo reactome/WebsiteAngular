@@ -186,6 +186,9 @@ describe('nginx and the dev proxy agree', () => {
 const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
+  // Implemented (T065), routed once the comparison FR-009 asks for is recorded.
+  '/ContentService/exporter/event/{id}': 'spec 015 T066',
+  '/ContentService/exporter/sbml/{id}': 'spec 015 T066',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,

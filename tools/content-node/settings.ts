@@ -21,6 +21,11 @@ export const settings = {
   deepQueryLimit: (): string | undefined => process.env['DEEP_QUERY_LIMIT'],
   /** Where the render service listens: loopback only, never public. */
   renderService: (): string => process.env['RENDER_SERVICE_URL'] || 'http://127.0.0.1:4310',
+  /**
+   * Where the SBML service listens (spec 015, deploy/java-library), read per
+   * request; none set, SBML answers 503 rather than another implementation.
+   */
+  sbmlService: (): string => process.env['SBML_SERVICE'] || '',
 
   /** The Solr core's URL, without credentials (solr.ts refuses one with them). */
   solrUrl: (): string => envSetting('SOLR_URL'),
