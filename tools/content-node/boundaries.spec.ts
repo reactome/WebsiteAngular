@@ -98,44 +98,77 @@ function violations(modules: Record<string, string>): string[] {
 }
 
 /**
- * Every import of a module outside this directory that is not erased when Node
- * strips the types, as "module imports target". The service's image holds
- * only this directory (and tools/package.json), so such an import passes
- * every check here and fails there (spec 016, research R1). `import type` and
- * `export type` are erased; so are imports written in type positions. A
- * package (no leading `.`) is the image's to install, not this check's.
+ * Every reach outside this directory that survives when Node strips the
+ * types, as "module imports target" or "module reads target". The service's
+ * image holds only this directory (and tools/package.json), so such a reach
+ * passes every check here and fails there (spec 016, research R1).
+ *
+ * Read: imports and re-exports that are not `import type` or `export type`
+ * (`import { type X }` leaves `import {}` behind, which loads the module),
+ * `import()`, `require()`, `import x = require()`, `import.meta.resolve()`,
+ * and a file named relative to the module, `new URL('…', import.meta.url)`.
+ * Any of these whose path is not written out is refused: nothing can say
+ * where it goes. Imports in type positions are erased; a package (no leading
+ * `.`) is the image's to install, not this check's.
+ *
+ * Not read: a path built from the module's own (`fileURLToPath`,
+ * `import.meta.dirname`, `path.join`), `createRequire`, and the working
+ * directory. The service uses the first only for this directory itself, and
+ * a rule against `'..'` in `path.join` would refuse the snapshot scripts,
+ * which never run in the image.
  */
 function valueEscapes(modules: Record<string, string>): string[] {
   const found: string[] = [];
-  const leaves = (specifier: ts.Expression | undefined) => {
-    if (!specifier || !ts.isStringLiteral(specifier)) return false;
+  /** Where a written path goes: outside, or null when it stays here or is a package. */
+  const outside = (specifier: ts.Expression | undefined) => {
+    if (!specifier) return null;
+    if (!ts.isStringLiteralLike(specifier)) return 'a path not written out';
     const target = specifier.text;
-    if (!target.startsWith('.')) return false;
+    if (!target.startsWith('.')) return null;
+    // `.` is the directory itself, which normalises without its slash.
     const resolved = path.posix.normalize(path.posix.join('tools', 'content-node', target));
-    return !resolved.startsWith('tools/content-node/');
+    return resolved === 'tools/content-node' || resolved.startsWith('tools/content-node/')
+      ? null
+      : target;
   };
+  const isImportMeta = (node: ts.Node) =>
+    ts.isMetaProperty(node) && node.keywordToken === ts.SyntaxKind.ImportKeyword;
   for (const [name, source] of Object.entries(modules)) {
     const file = ts.createSourceFile(`${name}.ts`, source, ts.ScriptTarget.Latest, true);
-    const say = (specifier: ts.Expression | undefined) =>
-      found.push(`${name} imports ${(specifier as ts.StringLiteral).text}`);
+    const check = (specifier: ts.Expression | undefined, verb = 'imports') => {
+      const target = outside(specifier);
+      if (target) found.push(`${name} ${verb} ${target}`);
+    };
     const visit = (node: ts.Node) => {
-      if (ts.isImportDeclaration(node) && leaves(node.moduleSpecifier)) {
+      if (ts.isImportDeclaration(node)) {
         if (node.importClause?.phaseModifier !== ts.SyntaxKind.TypeKeyword)
-          say(node.moduleSpecifier);
-      } else if (ts.isExportDeclaration(node) && leaves(node.moduleSpecifier)) {
-        if (!node.isTypeOnly) say(node.moduleSpecifier);
+          check(node.moduleSpecifier);
+      } else if (ts.isExportDeclaration(node)) {
+        if (!node.isTypeOnly) check(node.moduleSpecifier);
+      } else if (ts.isImportEqualsDeclaration(node)) {
+        if (ts.isExternalModuleReference(node.moduleReference) && !node.isTypeOnly)
+          check(node.moduleReference.expression);
+      } else if (ts.isCallExpression(node)) {
+        const callee = node.expression;
+        const [first] = node.arguments;
+        if (callee.kind === ts.SyntaxKind.ImportKeyword) check(first);
+        else if (ts.isIdentifier(callee) && callee.text === 'require') check(first);
+        else if (
+          ts.isPropertyAccessExpression(callee) &&
+          callee.name.text === 'resolve' &&
+          isImportMeta(callee.expression)
+        )
+          check(first);
       } else if (
-        ts.isCallExpression(node) &&
-        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-        leaves(node.arguments[0])
+        ts.isNewExpression(node) &&
+        ts.isIdentifier(node.expression) &&
+        node.expression.text === 'URL' &&
+        node.arguments?.[1] &&
+        ts.isPropertyAccessExpression(node.arguments[1]) &&
+        node.arguments[1].name.text === 'url' &&
+        isImportMeta(node.arguments[1].expression)
       ) {
-        say(node.arguments[0]);
-      } else if (
-        ts.isImportEqualsDeclaration(node) &&
-        ts.isExternalModuleReference(node.moduleReference) &&
-        leaves(node.moduleReference.expression)
-      ) {
-        say(node.moduleReference.expression);
+        check(node.arguments[0], 'reads');
       }
       ts.forEachChild(node, visit);
     };
@@ -247,7 +280,7 @@ describe('the content service boundaries', () => {
     expect(valueEscapes(real)).toEqual([]);
   });
 
-  it('refuse a value import from outside this directory, in any form', () => {
+  it('refuse a value import or a read from outside this directory, in any form', () => {
     expect(
       valueEscapes({
         'search-core': [
@@ -257,6 +290,14 @@ describe('the content service boundaries', () => {
           "export { Facet } from '../../projects/contract/search.ts';",
           "const m = await import('../java-parity/parity.ts');",
           "import x = require('../render/render.ts');",
+          'const t = await import(`../java-parity/parity.ts`);',
+          'const c = await import(where);',
+          "const r = require('../render/render.ts');",
+          "const u = import.meta.resolve('../render/render.ts');",
+          "const d = readFileSync(new URL('../../projects/contract/x.json', import.meta.url));",
+          'const e = require(where);',
+          'const f = import.meta.resolve(where);',
+          'const g = readFileSync(new URL(`../${name}.json`, import.meta.url));',
         ].join('\n'),
       })
     ).toEqual([
@@ -266,6 +307,14 @@ describe('the content service boundaries', () => {
       'search-core imports ../../projects/contract/search.ts',
       'search-core imports ../java-parity/parity.ts',
       'search-core imports ../render/render.ts',
+      'search-core imports ../java-parity/parity.ts',
+      'search-core imports a path not written out',
+      'search-core imports ../render/render.ts',
+      'search-core imports ../render/render.ts',
+      'search-core reads ../../projects/contract/x.json',
+      'search-core imports a path not written out',
+      'search-core imports a path not written out',
+      'search-core reads a path not written out',
     ]);
   });
 
@@ -279,6 +328,11 @@ describe('the content service boundaries', () => {
           "import { read } from './graph.ts';",
           "import { read as r } from '../content-node/graph.ts';",
           "import express from 'express';",
+          "const snapshot = readFileSync(new URL('./domain-snapshot.json', import.meta.url));",
+          'const render = new URL(`${RENDER_SERVICE}/render/x.png`);',
+          "const { endpoints } = await import('./registry.ts');",
+          "const here = readdirSync(new URL('.', import.meta.url));",
+          "const self = import.meta.resolve('.');",
         ].join('\n'),
       })
     ).toEqual([]);
