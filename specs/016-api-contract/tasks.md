@@ -29,11 +29,12 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - `tools/content-node/search-core.ts` and `search-endpoints.ts` import them from the contract.
   - Show a rename of `FacetCount.count` failing in the service and the site, then undo it.
   - Done in #684. The site re-exports only the types its readers use (`Facet`, `FacetResponse`, `NamedFacetCount`; `IconCategory`, `IconFacetResponse`); `calls.ts`'s `TYPES` names the contract for the two answers it checks. The rename failed `tools/content-node/search-core.ts:80` (the facet counts' writer), `search-endpoints.ts:96` and the site's `search/search.component.ts:339`, and passed again once undone.
-- [ ] T003 Add `projects/contract/contract.spec.ts`. It holds that the contract declares no value and imports nothing outside itself. Show it failing on an `export const` and on an import from `projects/website-angular`.
-- [ ] T004 Extend `tools/content-node/boundaries.spec.ts` so that every import leaving `tools/content-node/` is `import type` (the image copies nothing else, so a value import from a sibling `tools/` directory fails there too).
+- [x] T003 Add `projects/contract/contract.spec.ts`. It holds that the contract declares no value and imports nothing outside itself. Show it failing on an `export const` and on an import from `projects/website-angular`. — #685. Its cases cover each kind of value (variable, function, class, enum, namespace), a value import, a package, a re-export and an `import()` type from outside; on the real tree, an `export const` and an import of the site's search model appended to `search.ts` failed it, naming both.
+- [x] T004 Extend `tools/content-node/boundaries.spec.ts` so that every import leaving `tools/content-node/` is `import type` (the image copies nothing else, so a value import from a sibling `tools/` directory fails there too).
   - It reads the syntax tree; `ts.preProcessFile` cannot tell a type import from a value import.
   - Show it failing on one changed import. This closes the service image's gap (research R1).
-- [ ] T005 Point `tools/api-types/calls.ts` `TYPES` at the contract for the moved types, extend the `tools/**/*.ts` lint block (type imports; no enum, namespace, `import =` or parameter properties) to `projects/contract/**/*.ts`, and add `../projects/contract/**/*.ts` to `tools/tsconfig.json`'s `include`, so a contract module no reader imports yet is type-checked (show it: a type error in an unimported contract file fails `tsc -p tools/tsconfig.json`).
+  - Done in #685. Every form is read: an import whose clause is not `import type` (`import { type X }` included, which leaves `import {}` behind), a side-effect import, a re-export, `import()` and `import x = require()`; types in type positions and packages pass. Changing `search-core.ts`'s `import type { FacetCount }` to `import` failed it.
+- [x] T005 Point `tools/api-types/calls.ts` `TYPES` at the contract for the moved types, extend the `tools/**/*.ts` lint block (type imports; no enum, namespace, `import =` or parameter properties) to `projects/contract/**/*.ts`, and add `../projects/contract/**/*.ts` to `tools/tsconfig.json`'s `include`, so a contract module no reader imports yet is type-checked (show it: a type error in an unimported contract file fails `tsc -p tools/tsconfig.json`). — `TYPES` in #684; the rest in #685: an unimported `projects/contract/probe.ts` with an unknown name failed `tsc -p tools/tsconfig.json` (TS2304), and with an enum failed lint.
 
 **Checkpoint**: the contract works on every side, and no answer has changed.
 
@@ -43,7 +44,7 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 
 **Independent test**: the search routes' known problems fall, and every recorded entry matches exactly one kind ([quickstart.md](quickstart.md) §3).
 
-- [ ] T006 [US2] Write `EntryBase` and the kinds `EventEntry`, `EntityEntry`, `IconEntry`, `PersonEntry`, `InteractorEntry` and `DeletedEntry` in `projects/contract/search.ts`, as in [data-model.md](data-model.md).
+- [ ] T006 [US2] Write `projects/contract/scalars.ts` (`Long` tagged `@asType integer` `@format int64`, `EpochMillis`, `Highlighted`; T001 left it for its first reader), `EntryBase` and the kinds `EventEntry`, `EntityEntry`, `IconEntry`, `PersonEntry`, `InteractorEntry` and `DeletedEntry` in `projects/contract/search.ts`, as in [data-model.md](data-model.md).
   - Recheck each "required" field against the indexer's builders (reactome/search-indexer at 5cea4d6) and against `searchEntry` itself, which leaves out a name or summation with no snippet and a summation the document lacks. Confirm that an entity entry built from a reference entity always carries an `stId`, or make it optional.
   - Non-deleted kinds carry `deleted?: never`.
   - Each field's comment names its source, and the comments carry no personal data.
