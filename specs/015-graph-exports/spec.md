@@ -17,7 +17,7 @@ This version makes **one exporter per format the single implementation for both*
 - the bulk files the download page offers, made at release time;
 - the files the website makes on demand for one pathway or reaction.
 
-Each exporter reads the graph and lives in its own repository: `reactome/sbml-exporter` for SBML, and `reactome/BioPAX3Exporter` for BioPAX Level 3. Both are Java-based (Java and Kotlin). The website's on-demand exports are served by the Java library service that spec 010 already plans for the operations that stay in Java, SBML among them. It lives in its own repository, licensed AGPL-3.0, and is reached only through the node service.
+Each exporter reads the graph and lives in its own repository: `reactome/sbml-exporter` for SBML, and `reactome/BioPAX3Exporter` for BioPAX Level 3. Both are Java-based (Java and Kotlin). The website's on-demand exports are served by the Java library service that spec 010 already plans for the operations that stay in Java, SBML among them. It is reached only through the node service. For SBML on beta it is started in this repository, in `deploy/java-library/`, and moves to spec 010's own repository once that exists (research R10, amended 25 Oct 2026).
 
 What the first version produced is kept and used as the instruments for proving the exporters:
 
