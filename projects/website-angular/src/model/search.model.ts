@@ -71,31 +71,7 @@ export interface SearchResult {
   numberOfMatches: number;
 }
 
-// A count Solr gives under an empty or null name is written without one, as
-// Java's NON_EMPTY writes it: nothing can be shown or chosen by it.
-export interface FacetCount {
-  name?: string;
-  count: number;
-}
-
-/** A count that can be shown and chosen. */
-export type NamedFacetCount = FacetCount & { name: string };
-
-// Each list is left out when it is empty: `selected` when nothing is chosen,
-// `available` when the query matches nothing.
-export interface Facet {
-  selected?: FacetCount[];
-  available?: FacetCount[];
-}
-
-// A facet Solr did not count is left out, as Java leaves it out.
-export interface FacetResponse {
-  totalNumFount: number;
-  speciesFacet?: Facet;
-  typeFacet?: Facet;
-  keywordFacet?: Facet;
-  compartmentFacet?: Facet;
-}
+export type { Facet, FacetResponse, NamedFacetCount } from '../../../contract/search.ts';
 
 export interface SearchFilters {
   species?: string[];

@@ -1,20 +1,4 @@
-// As with the search facets, a count under an empty name is written without one.
-export interface IconCategory {
-  name?: string;
-  count: number;
-}
-
-// As with the search facets, an empty list is left out.
-export interface IconFacet {
-  selected?: IconCategory[];
-  available?: IconCategory[];
-}
-
-export interface IconFacetResponse {
-  totalNumFount: number;
-  // Left out when Solr did not count it, as the search facets are.
-  iconCategoriesFacet?: IconFacet;
-}
+export type { IconCategory, IconFacetResponse } from '../../../contract/search.ts';
 
 export interface IconPhysicalEntity {
   stId: string;
