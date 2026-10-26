@@ -16,6 +16,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * The SBML files, kept on disk per release as ContentService keeps its exports.
  *
@@ -23,6 +26,9 @@ import java.util.stream.Stream;
  * old one's files, and the old release's files are removed when it is first seen. One id is converted once at a time:
  * a second request for it waits for the first. Node's share of 2 is the limit on conversions (spec 015 T065); the cap
  * here is a backstop.
+ *
+ * <p>Removing files is best effort: a release can change while a conversion of the old one is still writing, and that
+ * must not fail the new release's request. What is left behind goes when the next release is first seen.
  */
 public class SbmlFiles {
 
@@ -66,6 +72,8 @@ public class SbmlFiles {
         }
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(SbmlFiles.class);
+
     private final Graph graph;
     private final Converter converter;
     private final DiagramSource diagrams;
@@ -79,6 +87,8 @@ public class SbmlFiles {
         this.converter = converter;
         this.diagrams = diagrams;
         this.cache = cache;
+        // Work in progress when the service last stopped, which nothing will finish
+        delete(cache.resolve("tmp"));
     }
 
     /**
@@ -157,7 +167,7 @@ public class SbmlFiles {
                         if (!other.getFileName().toString().equals(String.valueOf(release))) delete(other);
                     }
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    logger.warn("Cannot list {}: {}", folder, e.toString());
                 }
             }
             seen = release;
@@ -171,11 +181,11 @@ public class SbmlFiles {
                 try {
                     Files.delete(p);
                 } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                    logger.warn("Cannot remove {}: {}", p, e.toString());
                 }
             });
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (IOException | UncheckedIOException e) {
+            logger.warn("Cannot remove {}: {}", path, e.toString());
         }
     }
 }

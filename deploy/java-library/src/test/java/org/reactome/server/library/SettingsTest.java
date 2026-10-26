@@ -45,4 +45,12 @@ class SettingsTest {
                 () -> Settings.read(Map.of("NEO4J_USER", "reader")));
         assertTrue(e.getMessage().contains("NEO4J_PASSWORD, DIAGRAM_BASE, SBML_CACHE"), e.getMessage());
     }
+
+    @Test
+    void aFileThatCannotBeReadIsNamed() {
+        String name = dir.resolve("not-there.env").toString();
+        IllegalStateException e = assertThrows(IllegalStateException.class,
+                () -> Settings.read(Map.of("LIBRARY_ENV_FILE", name)));
+        assertTrue(e.getMessage().contains(name), e.getMessage());
+    }
 }

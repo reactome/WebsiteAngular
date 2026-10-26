@@ -27,6 +27,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# The check's own service takes 4360 on the host's network. One already there
+# (a deployment's) would answer the checks below in its place, over its graph.
+if curl -fs -o /dev/null http://127.0.0.1:4360/health; then
+  echo "Something already answers on 127.0.0.1:4360; stop it, or run this elsewhere" >&2
+  exit 1
+fi
+
 if [ -z "$image" ]; then
   image=java-library-check
   docker build -q -f "$root/deploy/java-library/Dockerfile" -t "$image" "$root" >/dev/null
@@ -45,7 +52,7 @@ docker run -d --name "$neo" -p "127.0.0.1:$graph_port:7687" \
   -e NEO4J_AUTH=neo4j/fixturepass -e NEO4J_dbms_default__database=graph.db \
   -v "$ci/fixture/fixture.cypher:/fixture.cypher:ro" neo4j:4.4.48-community >/dev/null
 for _ in $(seq 90); do
-  docker exec "$neo" cypher-shell -u neo4j -p fixturepass -d system 'RETURN 1' >/dev/null 2>&1 && break
+  docker exec "$neo" cypher-shell -u neo4j -p fixturepass -d graph.db 'RETURN 1' >/dev/null 2>&1 && break
   sleep 2
 done
 docker exec "$neo" cypher-shell -u neo4j -p fixturepass -d graph.db -f /fixture.cypher >/dev/null

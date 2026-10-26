@@ -66,7 +66,8 @@ public final class Settings {
                 Path.of(merged.get("SBML_CACHE")));
     }
 
-    /** KEY=VALUE lines, read literally; a missing file is no settings, and the check above names what is missing. */
+    /** KEY=VALUE lines, read literally. A file that is named must be readable: a mount the service cannot read is
+     * otherwise reported only as the settings it holds being missing. */
     static Map<String, String> fromFile(String name) {
         Map<String, String> found = new HashMap<>();
         if (name == null || name.isEmpty()) return found;
@@ -74,7 +75,8 @@ public final class Settings {
         try {
             lines = Files.readAllLines(Path.of(name), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            return found;
+            throw new IllegalStateException("LIBRARY_ENV_FILE names " + name + ", which cannot be read ("
+                    + e.getClass().getSimpleName() + ")");
         }
         for (String line : lines) {
             int at = line.indexOf('=');

@@ -100,6 +100,27 @@ class SbmlFilesTest {
     }
 
     @Test
+    void aFailedConversionIsTriedAgain() throws Exception {
+        AtomicInteger attempts = new AtomicInteger();
+        SbmlFiles.Converter once = (stId, rel, d, into) -> {
+            if (attempts.incrementAndGet() == 1) throw new IllegalStateException("the first attempt fails");
+            Files.writeString(into.resolve(stId + ".sbml"), "<sbml/>");
+        };
+        SbmlFiles files = new SbmlFiles(graph, once, diagrams, cache);
+        assertThrows(IllegalStateException.class, () -> files.get("R-HSA-2"));
+        assertEquals("<sbml/>", Files.readString(files.get("R-HSA-2").orElseThrow()));
+        assertEquals(2, attempts.get());
+    }
+
+    @Test
+    void workLeftByAStoppedServiceIsRemoved() throws Exception {
+        Path stale = Files.createDirectories(cache.resolve("tmp/left-by-a-killed-run"));
+        Files.writeString(stale.resolve("R-HSA-2.sbml"), "<sbml");
+        new SbmlFiles(graph, converter, diagrams, cache);
+        assertFalse(Files.exists(cache.resolve("tmp")));
+    }
+
+    @Test
     void aNewReleaseIsNeverAnsweredFromTheOldOnesFiles() throws Exception {
         SbmlFiles files = new SbmlFiles(graph, converter, diagrams, cache);
         files.get("R-HSA-1");
