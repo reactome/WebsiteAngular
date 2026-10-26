@@ -1,0 +1,84 @@
+{
+  "dbId" : 2206280,
+  "stId" : "R-HSA-2206280",
+  "speciesName" : "Homo sapiens",
+  "nodes" : [ {
+    "dbId" : 2160864,
+    "stId" : "R-ALL-2160864",
+    "displayName" : "(HA)50 [lysosomal lumen]",
+    "schemaClass" : "Polymer",
+    "speciesId" : 0,
+    "diagramIds" : [ 3983 ],
+    "parents" : [ ],
+    "children" : [ 2162224 ]
+  }, {
+    "dbId" : 2162224,
+    "stId" : "R-ALL-2162224",
+    "displayName" : "GlcA-β1,3-GlcNAc [lysosomal lumen]",
+    "schemaClass" : "SimpleEntity",
+    "speciesId" : 0,
+    "diagramIds" : [ 3998 ],
+    "identifier" : "64024",
+    "standardIdentifier" : "chebi:64024",
+    "referenceType" : "ReferenceMolecule",
+    "parents" : [ 2160864 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318714,
+    "stId" : "R-HSA-2318714",
+    "displayName" : "HYAL1 V251Ffs*20 [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "Q12794",
+    "standardIdentifier" : "uniprot:Q12794",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "HYAL1", "LUCA1" ],
+    "parents" : [ 9832509 ],
+    "children" : [ ]
+  }, {
+    "dbId" : 9832509,
+    "stId" : "R-HSA-9832509",
+    "displayName" : "HYAL1 mutants [lysosomal lumen]",
+    "schemaClass" : "DefinedSet",
+    "speciesId" : 48887,
+    "diagramIds" : [ 92030 ],
+    "parents" : [ ],
+    "children" : [ 2318589, 2318714 ]
+  }, {
+    "dbId" : 1605715,
+    "stId" : "R-ALL-1605715",
+    "displayName" : "H2O [lysosomal lumen]",
+    "schemaClass" : "SimpleEntity",
+    "speciesId" : 0,
+    "diagramIds" : [ 4004, 3989, 4075, 3996 ],
+    "identifier" : "15377",
+    "standardIdentifier" : "chebi:15377",
+    "referenceType" : "ReferenceMolecule",
+    "parents" : [ ],
+    "children" : [ ]
+  }, {
+    "dbId" : 2318589,
+    "stId" : "R-HSA-2318589",
+    "displayName" : "HYAL1 E268K [lysosomal lumen]",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "speciesId" : 48887,
+    "identifier" : "Q12794",
+    "standardIdentifier" : "uniprot:Q12794",
+    "referenceType" : "ReferenceGeneProduct",
+    "geneNames" : [ "HYAL1", "LUCA1" ],
+    "parents" : [ 9832509 ],
+    "children" : [ ]
+  } ],
+  "edges" : [ {
+    "dbId" : 9036077,
+    "stId" : "R-HSA-9036077",
+    "displayName" : "Defective HYAL1 does not hydrolyse (HA)50",
+    "schemaClass" : "FailedReaction",
+    "speciesId" : 0,
+    "inputs" : [ 1605715, 2160864 ],
+    "catalysts" : [ 9832509 ],
+    "efs" : [ 9832509 ],
+    "diagramIds" : [ 92029 ],
+    "entityFunctionalStatus" : [ 9832509 ]
+  } ]
+}

@@ -1,0 +1,116 @@
+{
+  "dbId" : 10104368,
+  "stableId" : "R-MMU-1640170",
+  "displayName" : "Cell Cycle",
+  "nodes" : [ {
+    "id" : 92705,
+    "reactomeId" : 10105206,
+    "displayName" : "Chromosome Maintenance",
+    "schemaClass" : "Pathway",
+    "renderableClass" : "ProcessNode",
+    "position" : {
+      "x" : 353,
+      "y" : 32
+    },
+    "minX" : 299,
+    "maxX" : 408,
+    "minY" : 1,
+    "maxY" : 63,
+    "prop" : {
+      "x" : 299,
+      "y" : 1,
+      "width" : 109,
+      "height" : 62
+    },
+    "textPosition" : {
+      "x" : 302,
+      "y" : 10
+    },
+    "connectors" : [ ]
+  }, {
+    "id" : 92704,
+    "reactomeId" : 10104366,
+    "displayName" : "Cell Cycle, Mitotic",
+    "schemaClass" : "Pathway",
+    "renderableClass" : "ProcessNode",
+    "position" : {
+      "x" : 74,
+      "y" : 31
+    },
+    "minX" : 0,
+    "maxX" : 149,
+    "minY" : 0,
+    "maxY" : 62,
+    "prop" : {
+      "x" : 0,
+      "y" : 0,
+      "width" : 149,
+      "height" : 62
+    },
+    "textPosition" : {
+      "x" : 13,
+      "y" : 16
+    },
+    "connectors" : [ ]
+  }, {
+    "id" : 92706,
+    "reactomeId" : 10107938,
+    "displayName" : "Meiosis",
+    "schemaClass" : "Pathway",
+    "renderableClass" : "ProcessNode",
+    "position" : {
+      "x" : 486,
+      "y" : 31
+    },
+    "minX" : 430,
+    "maxX" : 542,
+    "minY" : 5,
+    "maxY" : 57,
+    "prop" : {
+      "x" : 430,
+      "y" : 5,
+      "width" : 112,
+      "height" : 52
+    },
+    "textPosition" : {
+      "x" : 455,
+      "y" : 16
+    },
+    "connectors" : [ ]
+  }, {
+    "id" : 92703,
+    "reactomeId" : 10104426,
+    "displayName" : "Cell Cycle Checkpoints",
+    "schemaClass" : "Pathway",
+    "renderableClass" : "ProcessNode",
+    "position" : {
+      "x" : 223,
+      "y" : 32
+    },
+    "minX" : 169,
+    "maxX" : 278,
+    "minY" : 1,
+    "maxY" : 63,
+    "prop" : {
+      "x" : 169,
+      "y" : 1,
+      "width" : 109,
+      "height" : 62
+    },
+    "textPosition" : {
+      "x" : 177,
+      "y" : 10
+    },
+    "connectors" : [ ]
+  } ],
+  "edges" : [ ],
+  "compartments" : [ ],
+  "notes" : [ ],
+  "links" : [ ],
+  "shadows" : [ ],
+  "minX" : 0,
+  "maxX" : 542,
+  "minY" : 0,
+  "maxY" : 63,
+  "disease" : false
+}

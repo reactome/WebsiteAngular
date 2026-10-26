@@ -22,7 +22,9 @@ test('the zoom and pan controls do nothing before the diagram has loaded', async
   const held = new Promise<void>((resolve) => (release = resolve));
   await page.route(/\/diagram\/R-HSA-69620\.json(\?|$)/, async (route) => {
     await held;
-    await route.continue();
+    // fallback(), not continue(): continue() goes straight to the network,
+    // past the fixture's saved copy of the file.
+    await route.fallback();
   });
 
   await page.goto(`/PathwayBrowser/${PATHWAY}`);

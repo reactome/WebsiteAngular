@@ -65,6 +65,7 @@ import {
 import { createHash } from 'node:crypto';
 import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
 import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
+import { serveReleaseFiles } from './release-files';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -117,7 +118,10 @@ const ALLOWED = new Map<string, string>([
   ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
   ['fonts.gstatic.com', 'the font files those stylesheets point at'],
   ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by src/index.html'],
-  ['download.reactome.org', "Reactome's own download host, linked from the download pages"],
+  [
+    'download.reactome.org',
+    "Reactome's own download host: images and links. What a page reads from it is served from saved copies (release-files.ts)",
+  ],
   ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
   ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],
   ['rest.uniprot.org', 'protein records the detail pages resolve'],
@@ -564,6 +568,7 @@ export const test = base.extend({
   context: async ({ context, baseURL }, use, testInfo) => {
     const angular = watchAngularErrors(context);
     const gsa = await answerGsa(context);
+    const releaseFiles = await serveReleaseFiles(context);
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
@@ -585,6 +590,7 @@ export const test = base.extend({
       stubs.write(har);
       await angular.check(testInfo);
       gsa.check(testInfo);
+      releaseFiles.check(testInfo);
       return;
     }
 
@@ -700,6 +706,7 @@ export const test = base.extend({
     await use(context);
     await angular.check(testInfo);
     gsa.check(testInfo);
+    releaseFiles.check(testInfo);
 
     // Only when the test otherwise did what it expected, as the Angular check
     // does: a test that failed or skipped has a better thing to report.

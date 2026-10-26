@@ -1,0 +1,35 @@
+{
+  "dbId" : 10104368,
+  "stId" : "R-MMU-1640170",
+  "speciesName" : "Mus musculus",
+  "nodes" : [ {
+    "dbId" : 10104426,
+    "stId" : "R-MMU-69620",
+    "displayName" : "Cell Cycle Checkpoints",
+    "schemaClass" : "Pathway",
+    "speciesId" : 48892,
+    "diagramIds" : [ 92703 ]
+  }, {
+    "dbId" : 10104366,
+    "stId" : "R-MMU-69278",
+    "displayName" : "Cell Cycle, Mitotic",
+    "schemaClass" : "Pathway",
+    "speciesId" : 48892,
+    "diagramIds" : [ 92704 ]
+  }, {
+    "dbId" : 10107938,
+    "stId" : "R-MMU-1500620",
+    "displayName" : "Meiosis",
+    "schemaClass" : "Pathway",
+    "speciesId" : 48892,
+    "diagramIds" : [ 92706 ]
+  }, {
+    "dbId" : 10105206,
+    "stId" : "R-MMU-73886",
+    "displayName" : "Chromosome Maintenance",
+    "schemaClass" : "Pathway",
+    "speciesId" : 48892,
+    "diagramIds" : [ 92705 ]
+  } ],
+  "edges" : [ ]
+}
