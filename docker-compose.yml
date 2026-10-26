@@ -307,6 +307,44 @@ services:
     # fails to build its lists, and rebuilds on the next request -- which is
     # the behaviour specs/006 D10 asks for -- rather than refusing to start.
 
+  # The library service (spec 015 T063, T064): the website's SBML, made on
+  # demand from the graph by sbml-exporter's library. Spec 010's Java library
+  # service, started here with SBML as its only operation. Node is its only
+  # client (T065); nginx never names it.
+  #
+  # Built here, on this host and in CI, from the commits deploy/java/PINS.md
+  # pins, and never pushed to a registry: no `image:` to pull or push
+  # (research R10's licence reasoning).
+  java-library:
+    build:
+      context: .
+      dockerfile: deploy/java-library/Dockerfile
+    restart: unless-stopped
+    # Host networking, as content-node, for the graph on 127.0.0.1:7687. The
+    # service binds 127.0.0.1:4360 itself (server.address), never 0.0.0.0, so
+    # nothing is published.
+    network_mode: host
+    # The graph's credentials: the same file content-node reads, mounted rather
+    # than parsed, and run as its owner for the same reason (see content-node).
+    volumes:
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+      - java-library-cache:/cache
+    user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
+    environment:
+      - LIBRARY_ENV_FILE=/run/secrets/content-node.env
+      # The release's diagram files, fetched one per converted pathway that has
+      # a diagram and kept per release in the cache (research R10).
+      - DIAGRAM_BASE=https://download.reactome.org/
+      - SBML_CACHE=/cache
+    # A 1 GiB heap (the image's -Xmx1g) within 1.5 GiB (spec 010 research R3).
+    mem_limit: 1536m
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', '-m', '5', '-o', '/dev/null', 'http://127.0.0.1:4360/health']
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
   # The front door. Replaces the hand-created `reactome-nginx` container, which
   # mounted its config from /etc/nginx-reactome -- a *copy* of deploy/nginx that
   # had to be installed with sudo and could drift from the repository without
@@ -356,6 +394,9 @@ volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.
   render-cache:
+  # The library service's SBML and diagram files, per release: kept across a
+  # container replacement, as render's figures are.
+  java-library-cache:
   graphdb-release97:
   graphdb-logs:
   graphdb-unused:

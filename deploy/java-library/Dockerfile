@@ -67,8 +67,11 @@ FROM eclipse-temurin:17-jre
 ENV TZ=UTC \
     JAVA_TOOL_OPTIONS="-Duser.timezone=UTC -Duser.language=en -Duser.country=US -Xmx1g"
 
+# /cache is writable by any user, as /tmp is: compose runs the service as the
+# owner of the graph's credentials file (0600), not as `library`, and a named
+# volume starts with the image's ownership and mode for the folder it mounts.
 RUN useradd --system --uid 10001 --create-home library \
-    && mkdir -p /cache && chown library /cache
+    && mkdir -p /cache && chown library /cache && chmod 1777 /cache
 COPY --from=service /service/target/java-library.jar /app/java-library.jar
 
 USER library
