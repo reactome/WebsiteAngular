@@ -19,8 +19,8 @@ import type { MappedRow } from './domain.ts';
 import { pathId, rawSegment, writerFor } from './spring.ts';
 import { compact, notFound } from './answers.ts';
 import type { GraphNode } from './graph.ts';
-import type { Written } from './answers.ts';
 import { attributeAnswer } from './objects.ts';
+import type { SimpleEvent } from '../../projects/website-angular/src/model/person.model.ts';
 
 /**
  * How graph-core's PersonService reads a person's id, as a match on `n`:
@@ -242,7 +242,7 @@ export const personEndpoints: Endpoint[] = [
           if (seen.has(row.dbId)) continue;
           seen.add(row.dbId);
           body.push(
-            compact<Written>({
+            compact<SimpleEvent>({
               dbId: row.dbId,
               stId: row.stId,
               displayName: row.displayName,
