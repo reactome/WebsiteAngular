@@ -7,11 +7,7 @@
 import type { Endpoint, Request } from './endpoint.ts';
 import type { SolrAnswer, SolrGrouping } from './solr.ts';
 import type { FacetContainer, TargetResult } from './search-core.ts';
-import type {
-  Facet,
-  FacetResponse,
-} from '../../projects/website-angular/src/model/search.model.ts';
-import type { IconFacetResponse } from '../../projects/website-angular/src/model/icon.model.ts';
+import type { Facet, FacetResponse, IconFacetResponse } from '../../projects/contract/search.ts';
 import {
   blankBoolean,
   facetContainer,

@@ -23,7 +23,7 @@ import { solr } from './solr.ts';
 import { SCOPE_FILTER, pair } from './search-params.ts';
 import type { ReportInfo } from './report.ts';
 import { sendReport } from './report.ts';
-import type { FacetCount } from '../../projects/website-angular/src/model/search.model.ts';
+import type { FacetCount } from '../../projects/contract/search.ts';
 
 /**
  * The answer `work` makes from Solr, or the one Java makes when Solr cannot

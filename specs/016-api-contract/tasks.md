@@ -20,14 +20,15 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 
 ## Phase 1: Setup
 
-- [ ] T001 Create `projects/contract/` with `package.json` (`{"type":"module"}`), `README.md` (types only; relative `import type` paths ending in `.ts`; named type arguments; writer helpers stay in `tools/content-node/answers.ts`) and `scalars.ts` (`Long` tagged `@asType integer` `@format int64`, `EpochMillis`, `Highlighted`), and confirm the type, lint, dead-code and test checks see the directory with no configuration change (research R1).
+- [x] T001 Create `projects/contract/` with `package.json` (`{"type":"module"}`), `README.md` (types only; relative `import type` paths ending in `.ts`; named type arguments; writer helpers stay in `tools/content-node/answers.ts`) and `scalars.ts` (`Long` tagged `@asType integer` `@format int64`, `EpochMillis`, `Highlighted`), and confirm the type, lint, dead-code and test checks see the directory with no configuration change (research R1). — #684, with T002. `scalars.ts` waits for its first reader (T006, T008): alone, its types would be unused exports, which the dead-code ratchet counts. The checks see the directory: `check:dead` reported the new module's unused exports with no configuration change (two re-exports nothing read were dropped, leaving 131, the baseline).
 
 ## Phase 2: Foundational (the plumbing, on the facets)
 
-- [ ] T002 Move `FacetCount`, `NamedFacetCount`, `Facet` and `FacetResponse` from `projects/website-angular/src/model/search.model.ts`, and `IconCategory`, `IconFacet` and `IconFacetResponse` from `icon.model.ts`, into `projects/contract/search.ts`.
+- [x] T002 Move `FacetCount`, `NamedFacetCount`, `Facet` and `FacetResponse` from `projects/website-angular/src/model/search.model.ts`, and `IconCategory`, `IconFacet` and `IconFacetResponse` from `icon.model.ts`, into `projects/contract/search.ts`.
   - The site's model files re-export them.
   - `tools/content-node/search-core.ts` and `search-endpoints.ts` import them from the contract.
   - Show a rename of `FacetCount.count` failing in the service and the site, then undo it.
+  - Done in #684. The site re-exports only the types its readers use (`Facet`, `FacetResponse`, `NamedFacetCount`; `IconCategory`, `IconFacetResponse`); `calls.ts`'s `TYPES` names the contract for the two answers it checks. The rename failed `tools/content-node/search-core.ts:80` (the facet counts' writer), `search-endpoints.ts:96` and the site's `search/search.component.ts:339`, and passed again once undone.
 - [ ] T003 Add `projects/contract/contract.spec.ts`. It holds that the contract declares no value and imports nothing outside itself. Show it failing on an `export const` and on an import from `projects/website-angular`.
 - [ ] T004 Extend `tools/content-node/boundaries.spec.ts` so that every import leaving `tools/content-node/` is `import type` (the image copies nothing else, so a value import from a sibling `tools/` directory fails there too).
   - It reads the syntax tree; `ts.preProcessFile` cannot tell a type import from a value import.
