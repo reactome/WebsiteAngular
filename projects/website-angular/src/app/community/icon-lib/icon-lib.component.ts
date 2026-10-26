@@ -67,7 +67,8 @@ export class IconLibComponent implements OnInit, OnDestroy {
   error = false;
 
   // Categories for filtering
-  categories: IconCategory[] = [];
+  /** The library's categories, merged by display name: each has one. */
+  categories: (IconCategory & { name: string })[] = [];
   totalIcons = 0;
 
   // Grid view

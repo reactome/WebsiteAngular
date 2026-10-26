@@ -4,7 +4,6 @@ import {
   FacetResponse,
   SearchFilters,
   Facet,
-  FacetCount,
   NamedFacetCount,
   ResultGroup,
 } from '../../model/search.model';
@@ -155,7 +154,7 @@ export class SearchComponent implements OnInit, OnDestroy {
 
   // Site-search hit counts by category, populated from the merged Pages
   // results so the sidebar can offer them as a facet group.
-  pageCategoryCounts: FacetCount[] = [];
+  pageCategoryCounts: NamedFacetCount[] = [];
 
   // Protein deduplication: all forms grouped by referenceIdentifier
   proteinForms = new Map<string, SearchEntry[]>();
