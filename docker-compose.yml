@@ -294,6 +294,8 @@ services:
       - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
     environment:
       - CONTENT_NODE_ENV_FILE=/run/secrets/content-node.env
+      # The SBML service (java-library, spec 015): node is its only client.
+      - SBML_SERVICE=http://127.0.0.1:4360
     # Runs as the owner of that file, which is 0600 and should stay that way.
     # The image's own `node` user is uid 1000 and cannot read it, so the service
     # started, reported "graph credentials: MISSING", and answered 500 -- a

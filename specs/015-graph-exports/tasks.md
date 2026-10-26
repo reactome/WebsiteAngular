@@ -216,7 +216,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - **Caching:** per release under spec 011.
   - **Failures:** 503 in the envelope when the service cannot answer or times out, and never a fallback.
   - **Tests,** seen failing first, against a stub service.
-- [ ] T066 [US1] The routes, in nginx and the dev proxy alike, once T030, T037's whole-sample run, T039 and every file's validity are recorded (beta's condition under FR-009, below). In effect met on 25 Oct 2026: sbml-exporter #57 ran the whole sample, all 30 files valid. T037 stays open for the differences still to decide, which FR-009 settles before the release, not before beta.
+- [x] T066 [US1] The routes, in nginx and the dev proxy alike, once T030, T037's whole-sample run, T039 and every file's validity are recorded (beta's condition under FR-009, below). In effect met on 25 Oct 2026: sbml-exporter #57 ran the whole sample, all 30 files valid. T037 stays open for the differences still to decide, which FR-009 settles before the release, not before beta. — #667. The location takes only `event/{id}.sbml` and `sbml/{id}.xml` (anchored, so an id ending `.sbml.sbgn` stays Java's), and content-node's compose names the service (`SBML_SERVICE`).
   - **nginx:** `routes.conf`, under the render budget, before Java's `exporter/(diagram|document|event)` location, which `routes-core.conf` does not hold; and `local.conf`, without the budget.
   - **`routes.spec.ts`** follows, with `.sbgn` kept as Java's neighbour.
   - **`nginx -t`** for every deployment.

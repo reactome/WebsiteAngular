@@ -186,9 +186,6 @@ describe('nginx and the dev proxy agree', () => {
 const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
-  // Implemented (T065), routed once the comparison FR-009 asks for is recorded.
-  '/ContentService/exporter/event/{id}': 'spec 015 T066',
-  '/ContentService/exporter/sbml/{id}': 'spec 015 T066',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
@@ -250,6 +247,15 @@ describe('where nginx sends things', () => {
           true,
         ]);
       });
+  // SBML (spec 015 T066), node's, under the same budget.
+  for (const url of [
+    '/ContentService/exporter/event/R-HSA-109581.sbml',
+    '/ContentService/exporter/sbml/R-HSA-109581.xml',
+  ])
+    it(`keeps the render budget on ${url}`, () => {
+      const location = nginxLocation(url);
+      expect([url, /limit_req\s+zone=render_rate/.test(location?.body ?? '')]).toEqual([url, true]);
+    });
 });
 
 /**
@@ -268,6 +274,10 @@ const JAVAS = [
   '/ContentService/data/query/R-HSA-109581/more',
   '/ContentService/interactors/psicquic/resourcesx',
   '/ContentService/search/facet_queryx',
+  // An event's other exports, beside its SBML (spec 015 T066).
+  '/ContentService/exporter/event/R-HSA-109581.sbgn',
+  '/ContentService/exporter/event/R-HSA-109581.sbml.sbgn',
+  '/ContentService/exporter/sbml/R-HSA-109581.sbml',
 ];
 
 describe("Java's neighbours of node routes", () => {
