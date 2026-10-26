@@ -38,6 +38,8 @@
     // to them too. Lint enforces both for tools/, and tools/load.spec.ts loads
     // every entry point under Node, which fails on what they would catch.
   },
-  "include": ["**/*.ts", "**/*.mjs"],
+  // The contract too (spec 016): otherwise a contract module no service or
+  // site file imports yet is checked by neither program.
+  "include": ["**/*.ts", "**/*.mjs", "../projects/contract/**/*.ts"],
   "exclude": ["**/node_modules", "svg-export-harness/harness.bundle.js"]
 }

@@ -245,7 +245,9 @@ module.exports = tseslint.config(
     // property is code Node will not strip, nor is `import x = require()`. Vitest accepts all four, so a
     // service could pass its tests and not start. The type checker cannot hold
     // tools/ to this alone: it would hold the site's model types to it too.
-    files: ['tools/**/*.ts'],
+    // The contract (spec 016) is read by the services as they run, so it is
+    // held to the same.
+    files: ['tools/**/*.ts', 'projects/contract/**/*.ts'],
     rules: {
       '@typescript-eslint/consistent-type-imports': [
         'error',

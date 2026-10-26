@@ -97,6 +97,53 @@ function violations(modules: Record<string, string>): string[] {
   return found;
 }
 
+/**
+ * Every import of a module outside this directory that is not erased when Node
+ * strips the types, as "module imports target". The service's image holds
+ * only this directory (and tools/package.json), so such an import passes
+ * every check here and fails there (spec 016, research R1). `import type` and
+ * `export type` are erased; so are imports written in type positions. A
+ * package (no leading `.`) is the image's to install, not this check's.
+ */
+function valueEscapes(modules: Record<string, string>): string[] {
+  const found: string[] = [];
+  const leaves = (specifier: ts.Expression | undefined) => {
+    if (!specifier || !ts.isStringLiteral(specifier)) return false;
+    const target = specifier.text;
+    if (!target.startsWith('.')) return false;
+    const resolved = path.posix.normalize(path.posix.join('tools', 'content-node', target));
+    return !resolved.startsWith('tools/content-node/');
+  };
+  for (const [name, source] of Object.entries(modules)) {
+    const file = ts.createSourceFile(`${name}.ts`, source, ts.ScriptTarget.Latest, true);
+    const say = (specifier: ts.Expression | undefined) =>
+      found.push(`${name} imports ${(specifier as ts.StringLiteral).text}`);
+    const visit = (node: ts.Node) => {
+      if (ts.isImportDeclaration(node) && leaves(node.moduleSpecifier)) {
+        if (node.importClause?.phaseModifier !== ts.SyntaxKind.TypeKeyword)
+          say(node.moduleSpecifier);
+      } else if (ts.isExportDeclaration(node) && leaves(node.moduleSpecifier)) {
+        if (!node.isTypeOnly) say(node.moduleSpecifier);
+      } else if (
+        ts.isCallExpression(node) &&
+        node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+        leaves(node.arguments[0])
+      ) {
+        say(node.arguments[0]);
+      } else if (
+        ts.isImportEqualsDeclaration(node) &&
+        ts.isExternalModuleReference(node.moduleReference) &&
+        leaves(node.moduleReference.expression)
+      ) {
+        say(node.moduleReference.expression);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(file);
+  }
+  return found;
+}
+
 const DIR = new URL('./', import.meta.url);
 const real = Object.fromEntries(
   readdirSync(DIR)
@@ -192,6 +239,47 @@ describe('the content service boundaries', () => {
       violations({
         'citation-endpoints': "import type { Endpoint } from './endpoint.ts';",
         answers: "import type { Answer, Handler, Request } from './endpoint.ts';",
+      })
+    ).toEqual([]);
+  });
+
+  it('reach outside this directory only for types, which Node erases', () => {
+    expect(valueEscapes(real)).toEqual([]);
+  });
+
+  it('refuse a value import from outside this directory, in any form', () => {
+    expect(
+      valueEscapes({
+        'search-core': [
+          "import { FacetCount } from '../../projects/contract/search.ts';",
+          "import { type Facet } from '../../projects/contract/search.ts';",
+          "import '../../projects/contract/search.ts';",
+          "export { Facet } from '../../projects/contract/search.ts';",
+          "const m = await import('../java-parity/parity.ts');",
+          "import x = require('../render/render.ts');",
+        ].join('\n'),
+      })
+    ).toEqual([
+      'search-core imports ../../projects/contract/search.ts',
+      'search-core imports ../../projects/contract/search.ts',
+      'search-core imports ../../projects/contract/search.ts',
+      'search-core imports ../../projects/contract/search.ts',
+      'search-core imports ../java-parity/parity.ts',
+      'search-core imports ../render/render.ts',
+    ]);
+  });
+
+  it('let a module take types from anywhere, and values from here or a package', () => {
+    expect(
+      valueEscapes({
+        'search-core': [
+          "import type { FacetCount } from '../../projects/contract/search.ts';",
+          "export type { Facet } from '../../projects/contract/search.ts';",
+          "type T = import('../../projects/contract/search.ts').Facet;",
+          "import { read } from './graph.ts';",
+          "import { read as r } from '../content-node/graph.ts';",
+          "import express from 'express';",
+        ].join('\n'),
       })
     ).toEqual([]);
   });
