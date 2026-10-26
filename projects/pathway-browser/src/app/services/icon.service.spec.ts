@@ -62,7 +62,8 @@ describe('IconService.fetchIcon', () => {
   });
 
   it('gives no icon for a deleted one, though its group is named Icon', async () => {
-    // A deleted entry keeps the type it had, so its group can be "Icon".
+    // The indexer never deletes an icon; this holds the check that makes the
+    // entry the contract's icon kind, should a deleted one ever be indexed.
     const icon = firstValueFrom(service.fetchIcon('CSK'));
     search().flush({
       results: [

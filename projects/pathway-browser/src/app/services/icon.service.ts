@@ -8,7 +8,11 @@ import { isExactlyCellLineagePath, isRLE } from './utils';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { SchemaClasses } from '../constants/constants';
 
-/** An icon, of the entries a search answers: its type says so, and it is not a deleted one. */
+/**
+ * An icon, of the entries a search answers: its type says so. The indexer
+ * never deletes an icon, but a deleted entry keeps the type it had, so the
+ * mark is checked too: only then is the entry the contract's icon kind.
+ */
 function isIcon(entry: Search.Entry): entry is Search.Entry & Search.Icon.Entry {
   return entry.type === 'Icon' && !entry.deleted;
 }
@@ -270,7 +274,7 @@ export class IconService {
         switchMap((entry) => {
           if (entry) {
             this.currentIcon.set(entry);
-            return this.loadIcon(entry.stId);
+            return this.loadIcon(entry.id);
           } else {
             this.currentIcon.set(undefined);
             return of(null);

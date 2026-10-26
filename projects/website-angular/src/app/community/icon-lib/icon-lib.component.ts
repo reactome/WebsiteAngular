@@ -201,8 +201,10 @@ export class IconLibComponent implements OnInit, OnDestroy {
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
-    void this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
-    this.iconService.getIcon(icon.stId).subscribe({
+    // `id`, not `stId`: the library's search is highlighted, and a search for
+    // an icon's own id wraps its `stId` in markup.
+    void this.router.navigate(['/community/icon-lib', icon.id], { replaceUrl: false });
+    this.iconService.getIcon(icon.id).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
@@ -252,7 +254,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   }
 
   iconSvgUrl(icon: IconEntry): string {
-    return this.iconService.iconUrl(icon.stId);
+    return this.iconService.iconUrl(icon.id);
   }
 
   formatCategoryName(name: string): string {
