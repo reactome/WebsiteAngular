@@ -208,7 +208,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - a health check;
   - `restart: unless-stopped`;
   - built only on the beta host and in CI, and never pushed to a registry.
-- [x] T065 [US1] Node answers `/ContentService/exporter/event/{id}.sbml` and `/ContentService/exporter/sbml/{id}.xml`, slashed forms included, in `exporters-endpoints.ts`. — #665. Its share of 2 is its own (`deepShare(2)`), apart from the deep pool, so SBML cannot starve the pages' queries. The service is asked with Node's own HTTP client: a fetch body converted to a stream never closed when the connection died part way, and the share it held was never given back. Slashed forms get node's 301 to the unslashed URL (spec 011).
+- [x] T065 [US1] Node answers `/ContentService/exporter/event/{id}.sbml` and `/ContentService/exporter/sbml/{id}.xml`, slashed forms included, in `exporters-endpoints.ts`. — #666. Its share of 2 is its own (`deepShare(2)`), apart from the deep pool, so SBML cannot starve the pages' queries. The service is asked with Node's own HTTP client: a fetch body converted to a stream never closed when the connection died part way, and the share it held was never given back. Slashed forms get node's 301 to the unslashed URL (spec 011).
   - **Node is the service's client here,** not spec 010's pass-through (its T020–T022, which are not prerequisites). It writes R6's headers itself and decides the 404 and 400 from the object's labels.
   - **The body is streamed, not buffered:** Signal Transduction's is 23.5 MB.
   - **The service's address** is a setting read at run time, `SBML_SERVICE`, as `RENDER_TARGET` is. Without it, the endpoint answers 503 in the envelope.
