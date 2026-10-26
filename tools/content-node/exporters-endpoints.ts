@@ -396,7 +396,9 @@ const SBML_TYPE = 'application/sbml+xml;charset=UTF-8';
  */
 function sbmlResponse(url: string, headersMs: number): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
-    const asking = httpGet(url, (response) => {
+    // A connection per file: a kept-alive one the service has since closed
+    // would fail the next file as unreachable.
+    const asking = httpGet(url, { agent: false }, (response) => {
       clearTimeout(late);
       resolve(response);
     });
@@ -408,13 +410,26 @@ function sbmlResponse(url: string, headersMs: number): Promise<IncomingMessage> 
   });
 }
 
-/** A body read whole, for an error's reason; empty if it cannot be read. */
+/**
+ * A body read whole, for an error's reason: empty if it cannot be read, and
+ * given up after ten seconds, so an error that never ends holds no share.
+ */
 function bodyText(response: IncomingMessage): Promise<string> {
   return new Promise((resolve) => {
     const parts: Buffer[] = [];
+    const late = setTimeout(() => response.destroy(), 10_000);
     response.on('data', (part: Buffer) => parts.push(part));
-    response.once('end', () => resolve(Buffer.concat(parts).toString('utf8')));
-    response.once('error', () => resolve(''));
+    // A connection that dies part way is a close, with what was read; an
+    // error without a listener would end the process.
+    response.on('error', () => undefined);
+    response.once('end', () => {
+      clearTimeout(late);
+      resolve(Buffer.concat(parts).toString('utf8'));
+    });
+    response.once('close', () => {
+      clearTimeout(late);
+      resolve(Buffer.concat(parts).toString('utf8'));
+    });
   });
 }
 

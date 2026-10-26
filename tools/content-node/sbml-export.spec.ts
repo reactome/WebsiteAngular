@@ -154,6 +154,43 @@ describe('the file', () => {
   });
 });
 
+describe('a reader who leaves', () => {
+  it('while the service is still making the file gives its place back', async () => {
+    withService();
+    // The service answers only after the reader has gone.
+    behave = (_stId, res) => {
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': 'application/sbml+xml;charset=UTF-8' });
+        res.end('<sbml/>');
+      }, 300);
+    };
+    let done = 0;
+    const front = express()
+      .get('/', async (_req, res) => {
+        writeResult(res, await answers('event/R-HSA-1.sbml'));
+        done += 1;
+      })
+      .listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => front.once('listening', () => resolve()));
+    const url = `http://127.0.0.1:${(front.address() as AddressInfo).port}/`;
+    try {
+      // More times than the share holds, one after another: each reader is gone
+      // before the service answers, and the next comes once that answer is in.
+      for (let time = 1; time <= 3; time += 1) {
+        await expect(fetch(url, { signal: AbortSignal.timeout(100) })).rejects.toThrow();
+        while (done < time) await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      const answer = await answers('event/R-HSA-1.sbml');
+      expect(answer.status).toBe(200);
+      expect((await served(answer)).text).toBe('<sbml/>');
+    } finally {
+      front.closeAllConnections();
+      front.close();
+    }
+  });
+});
+
 describe('when the service cannot answer', () => {
   it('a missing diagram (its 503) is a 503 to try again, without the service’s own reason', async () => {
     withService();
