@@ -62,6 +62,10 @@ public class HttpDiagramSource implements SbmlFiles.DiagramSource {
                 throw new SbmlFiles.DiagramUnavailable(uri + " did not arrive within " + timeout.toSeconds() + " s", e);
             } catch (ExecutionException e) {
                 throw new SbmlFiles.DiagramUnavailable("Cannot fetch " + uri + ": " + e.getCause(), e.getCause());
+            } catch (InterruptedException e) {
+                // Waiting is interrupted, not the transfer: it is stopped here, as on a timeout
+                download.cancel(true);
+                throw e;
             }
             if (response.statusCode() != 200) {
                 throw new SbmlFiles.DiagramUnavailable(uri + " answered " + response.statusCode(), null);

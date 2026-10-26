@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -32,6 +33,8 @@ class HttpDiagramSourceTest {
     private HttpServer server;
     private final List<String> asked = new CopyOnWriteArrayList<>();
     private final CountDownLatch done = new CountDownLatch(1);
+    /** Counted down when the client stops taking the body that never ends. */
+    private final CountDownLatch abandoned = new CountDownLatch(1);
 
     @BeforeEach
     void start() throws Exception {
@@ -46,6 +49,24 @@ class HttpDiagramSourceTest {
                 case "/files/97/diagram/R-HSA-4.json" -> "{\"stableId\":\"R-HSA-1\"}";
                 default -> null;
             };
+            if (path.equals("/files/97/diagram/R-HSA-6.json")) {
+                // A body that keeps coming, a byte at a time, until the client hangs up
+                exchange.sendResponseHeaders(200, 10_000_000);
+                OutputStream out = exchange.getResponseBody();
+                try {
+                    while (done.getCount() > 0) {
+                        out.write('{');
+                        out.flush();
+                        Thread.sleep(50);
+                    }
+                } catch (IOException e) {
+                    abandoned.countDown();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                exchange.close();
+                return;
+            }
             if (path.equals("/files/97/diagram/R-HSA-5.json")) {
                 // The headers and a little of the body, then nothing
                 exchange.sendResponseHeaders(200, 100);
@@ -80,8 +101,12 @@ class HttpDiagramSourceTest {
     }
 
     private HttpDiagramSource source() {
+        return source(Duration.ofSeconds(2));
+    }
+
+    private HttpDiagramSource source(Duration timeout) {
         return new HttpDiagramSource(URI.create("http://127.0.0.1:" + server.getAddress().getPort() + "/files/"),
-                Duration.ofSeconds(2));
+                timeout);
     }
 
     @Test
@@ -129,5 +154,27 @@ class HttpDiagramSourceTest {
         try (var left = Files.list(into)) {
             assertEquals(0, left.count());
         }
+    }
+
+    @Test
+    void aDownloadThatTimesOutIsAbandoned() throws Exception {
+        assertThrows(SbmlFiles.DiagramUnavailable.class, () -> source().fetch("R-HSA-6", 97, into));
+        assertTrue(abandoned.await(10, TimeUnit.SECONDS), "the server was still sending");
+    }
+
+    @Test
+    void anInterruptedDownloadIsAbandoned() throws Exception {
+        Thread fetching = new Thread(() -> {
+            try {
+                source(Duration.ofMinutes(5)).fetch("R-HSA-6", 97, into);
+            } catch (SbmlFiles.DiagramUnavailable expected) {
+                // What an interrupt is reported as
+            }
+        });
+        fetching.start();
+        Thread.sleep(500);
+        fetching.interrupt();
+        fetching.join(5_000);
+        assertTrue(abandoned.await(10, TimeUnit.SECONDS), "the server was still sending");
     }
 }
