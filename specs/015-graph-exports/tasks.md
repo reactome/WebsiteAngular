@@ -223,7 +223,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
   nginx never names `java-library`, since node reaches it, so spec 010 T019's neighbours do not change.
 
-- [ ] T067 [US1] Check on beta, before and after the switch, over the 30-event sample:
+- [x] T067 [US1] Check on beta, before and after the switch, over the 30-event sample: — #671 (replacing #670). Measured 26 Oct 2026 through beta's own nginx, 37 URLs (the sample's 30 ids, Metabolism, which the sample leaves out, both error cases, the `.xml` form, a dbId, a versioned id, and SBGN), one at a time. Statuses, download names and error messages are Java's byte for byte; only the error type is node's usual `application/json; charset=utf-8`; SBGN is still Java's. All 31 files are valid. Against today's files (T004), for the sample's 30, the differences are exactly the recorded ones, at the sample's recorded counts. Signal Transduction took 166 s cold (under the 290 s limit) and 0.1 s cached (Java's, 0.23 s). Two large conversions at once (Signal Transduction and Disease) peaked at 850 MiB of the 1.5 GiB limit, with no restart. The detail page's SBML button saves `R-HSA-69620.sbml` from node. Known limits, from #666's review: a reader who leaves before the service answers keeps its share until the service does; an error body is read for up to 10 s.
   - status, headers and errors compared with Java's (the parity harness);
   - the bodies compared with today's files (T004) by `compare.py`, every difference one recorded in `sbml-exporter`'s `differences.md`;
   - Signal Transduction's time, cold and cached, and the service's memory with two such conversions at once (its heap is 1 GiB);
@@ -303,7 +303,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - T028 comes before any **[ext]** task in an exporter, and T029 before any that depends on graph-core.
   - T030 and T031 come before any comparison.
   - T032 and T033 come before the comparisons that use them.
-- **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T063 → T064 → T065 → T066 → T067; T066 needs T030, T039, T037's whole-sample run and every file's validity (FR-009 on beta).
+- **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T063 → T064 → T065 → T066 → T067 → T068 (once FR-009's open differences are settled); T066 needs T030, T039, T037's whole-sample run and every file's validity (FR-009 on beta).
 - **BioPAX (US2):** T035 sets the baseline. T045–T048 can go in any order the maintainers prefer. T049 and T050 need them all. T052 needs T049, T050 and spec 010's service; T053 and T054 follow T052.
 - **US4:** T055 after T049. T057 after T041.
 - **The libraries:** T061 comes before the website's switches (T066, T052). `sbml-exporter`'s half is done (its T022, sbml-exporter #58–#63); BioPAX3Exporter's is not.
