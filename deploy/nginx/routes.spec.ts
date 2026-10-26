@@ -186,6 +186,10 @@ describe('nginx and the dev proxy agree', () => {
 const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
+  // Routed on beta alone (dev.conf) until FR-009's open differences are
+  // settled: see "SBML, on beta alone" below.
+  '/ContentService/exporter/event/{id}': 'spec 015 FR-009',
+  '/ContentService/exporter/sbml/{id}': 'spec 015 FR-009',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
@@ -247,15 +251,44 @@ describe('where nginx sends things', () => {
           true,
         ]);
       });
-  // SBML (spec 015 T066), node's, under the same budget.
-  for (const url of [
+});
+
+/**
+ * SBML is node's on beta alone (spec 015 T066): dev.conf routes it before
+ * its routes.conf include, so before Java's exporter location there, under
+ * the exporters' budget. The release's files and production keep Java's until
+ * FR-009's open differences are settled; neither runs the SBML service yet.
+ */
+describe('SBML, on beta alone', () => {
+  const SBML = [
     '/ContentService/exporter/event/R-HSA-109581.sbml',
+    '/ContentService/exporter/event/R-HSA-109581.4.sbml/',
     '/ContentService/exporter/sbml/R-HSA-109581.xml',
-  ])
-    it(`keeps the render budget on ${url}`, () => {
-      const location = nginxLocation(url);
-      expect([url, /limit_req\s+zone=render_rate/.test(location?.body ?? '')]).toEqual([url, true]);
+  ];
+  /** A deployment's own locations before its routes.conf include, then the shared ones. */
+  const deployment = (name: string) => {
+    const text = readFileSync(join(__dirname, name), 'utf8');
+    const own = text.slice(0, text.indexOf('include /etc/nginx/common/routes.conf;'));
+    return [...parse(own), ...locations];
+  };
+  for (const url of SBML)
+    it(`sends ${url} to node on beta, under the render budget`, () => {
+      const location = nginxLocation(url, deployment('dev.conf'));
+      const budget = /limit_req\s+zone=render_rate/.test(location?.body ?? '');
+      expect([url, location?.target, budget]).toEqual([url, 'node', true]);
     });
+  for (const name of ['release.conf', 'production.conf'])
+    for (const url of SBML)
+      it(`leaves ${url} to Java in ${name}`, () => {
+        expect([url, nginxTarget(url, deployment(name))]).toEqual([url, 'tomcat']);
+      });
+  it('leaves an event’s SBGN to Java on beta, an id ending .sbml included', () => {
+    for (const url of [
+      '/ContentService/exporter/event/R-HSA-109581.sbgn',
+      '/ContentService/exporter/event/R-HSA-109581.sbml.sbgn',
+    ])
+      expect([url, nginxTarget(url, deployment('dev.conf'))]).toEqual([url, 'tomcat']);
+  });
 });
 
 /**
