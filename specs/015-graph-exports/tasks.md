@@ -200,7 +200,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
     - by a CI job that builds the image and runs it over `sbml-exporter`'s fixture graph at the pinned commit. Its answers must compare equal to that commit's `ci/fixture/expected` by its `ci/compare.py` (both already in `sbml-exporter`'s `ci/`).
 
     The Java build is CI's alone: `scripts/preflight.sh` does not build images. The PR says so.
-- [ ] T064 [US1] The `java-library` service in `docker-compose.yml`:
+- [x] T064 [US1] The `java-library` service in `docker-compose.yml`: — #664. It runs as the credentials file's owner, as `content-node` does, so the image's `/cache` is writable by any user; `deploy/java-library/compose.spec.ts` holds the rest.
   - host networking and `127.0.0.1:4360`, as T063;
   - a 1 GiB heap within a 1.5 GiB limit (spec 010 research R3);
   - the graph credentials file mounted read-only, as `content-node` mounts it;
