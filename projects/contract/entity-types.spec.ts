@@ -6,6 +6,8 @@
 // genome-encoded. A class a release adds would be written with a type the
 // contract does not have, so the list is held to the domain snapshot.
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
@@ -42,7 +44,10 @@ function literals(source: string, alias: string): string[] {
     .sort();
 }
 
-const contract = readFileSync(new URL('./search.ts', import.meta.url), 'utf8');
+// Read by a plain path: knip takes `new URL('./search.ts', import.meta.url)`
+// for a use of every export the module has, which hid its dead ones.
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const contract = readFileSync(path.join(HERE, 'search.ts'), 'utf8');
 
 describe("the entity entry's types", () => {
   it('name by class exactly the classes the indexer names by class', () => {
@@ -54,6 +59,23 @@ describe("the entity entry's types", () => {
       store: [...snapshot.store, ['NewEntity', ['NewEntity', 'PhysicalEntity', 'DatabaseObject']]],
     };
     expect(literals(contract, 'EntityClassName')).not.toEqual(namedByClass(added));
+  });
+
+  it('are needed for no reference entity: getReferenceTypes names each class it reaches', () => {
+    // A reference-entity class outside these would go by its own name too.
+    const mapped = [
+      'ReferenceGeneProduct',
+      'ReferenceDNASequence',
+      'ReferenceRNASequence',
+      'ReferenceMolecule',
+      'ReferenceGroup',
+      'ReferenceTherapeutic',
+    ];
+    const unmapped = snapshot.store
+      .filter(([, ancestors]) => ancestors.includes('ReferenceEntity'))
+      .filter(([, ancestors]) => !mapped.some((name) => ancestors.includes(name)))
+      .map(([name]) => name);
+    expect(unmapped).toEqual([]);
   });
 
   it('leave out sets, genome-encoded entities and the reference entities', () => {

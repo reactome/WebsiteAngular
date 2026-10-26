@@ -55,6 +55,9 @@ export interface IconFacetResponse {
 // a search highlight can supply (`Highlighted`) is read from the highlight
 // alone when there is one, so it is left out when the highlight has no
 // snippet for it.
+//
+// The kinds are exported as their first readers take them (spec 016 T009-
+// T011): an export nothing imports is dead code the ratchet counts.
 
 /** What every kind carries. `dbId` is text: Solr stores it as a string field. */
 interface EntryBase {
@@ -68,7 +71,7 @@ interface EntryBase {
 }
 
 /** A pathway or a reaction. A reaction's `exactType` is its category (binding, transition, ...). */
-export interface EventEntry extends EntryBase {
+interface EventEntry extends EntryBase {
   type: 'Pathway' | 'Reaction';
   stId: Highlighted;
   species: string[];
@@ -91,7 +94,7 @@ export interface EventEntry extends EntryBase {
  * (`getType`, `getReferenceTypes`); any other class goes by its own name.
  * The list of those names is checked against the domain snapshot.
  */
-export type EntityType =
+type EntityType =
   | 'Protein'
   | 'DNA Sequence'
   | 'RNA Sequence'
@@ -106,7 +109,7 @@ export type EntityType =
  * set nor genome-encoded. Every reference-entity class has a type of its
  * own. entity-types.spec.ts derives the list from the domain snapshot.
  */
-export type EntityClassName =
+type EntityClassName =
   | 'Cell'
   | 'ChemicalDrug'
   | 'Complex'
@@ -117,7 +120,7 @@ export type EntityClassName =
   | 'SimpleEntity';
 
 /** A physical entity or a reference entity. */
-export interface EntityEntry extends EntryBase {
+interface EntityEntry extends EntryBase {
   type: EntityType;
   stId: Highlighted;
   /** "Entries without species" when it has none. */
@@ -136,7 +139,7 @@ export interface EntityEntry extends EntryBase {
 }
 
 /** One physical entity an icon draws; an empty part is left out. */
-export interface IconPhysicalEntity {
+interface IconPhysicalEntity {
   stId?: string;
   type?: string;
   name?: string;
@@ -145,7 +148,7 @@ export interface IconPhysicalEntity {
 }
 
 /** An icon of the icon library. */
-export interface IconEntry extends EntryBase {
+interface IconEntry extends EntryBase {
   type: 'Icon';
   exactType: 'Icon';
   /** Java's getter: an icon has a name. */
@@ -172,7 +175,7 @@ export interface IconEntry extends EntryBase {
 }
 
 /** A person, by name. No stId: `id` is the dbId. The counts are text, as Solr stores them. */
-export interface PersonEntry extends EntryBase {
+interface PersonEntry extends EntryBase {
   type: 'Person';
   exactType: 'Person';
   /** "Entries without species". */
@@ -185,7 +188,7 @@ export interface PersonEntry extends EntryBase {
 }
 
 /** A molecule known only from interaction data; `dbId` and `stId` are its accession. */
-export interface InteractorEntry extends EntryBase {
+interface InteractorEntry extends EntryBase {
   type: 'Interactor';
   exactType: 'Interactor';
   stId: Highlighted;
@@ -198,7 +201,7 @@ export interface InteractorEntry extends EntryBase {
 }
 
 /** An object of an earlier release, deleted since; its type and exactType are those it had. */
-export interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
+interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
   deleted: true;
   type: string;
   stId: Highlighted;
@@ -209,7 +212,7 @@ export interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
 }
 
 /** One search result. */
-export type SearchEntry =
+type SearchEntry =
   EventEntry | EntityEntry | IconEntry | PersonEntry | InteractorEntry | DeletedEntry;
 
 /** Every field any kind of entry has. */

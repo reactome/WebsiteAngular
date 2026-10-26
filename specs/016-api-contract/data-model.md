@@ -70,7 +70,7 @@ Fields every kind carries (`EntryBase`):
 | `iconReferences`, `iconEhlds`                                                  | text[]                 | no       | 39 and 37 of 40                                                                                          |
 | `iconPhysicalEntities`                                                         | `IconPhysicalEntity[]` | no       | 27 of 40                                                                                                 |
 
-`IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional except `displayName`.
+`IconPhysicalEntity` holds `stId`, `type`, `name`, `compartments` and `displayName`. Each is written from `stId#type#name#compartments`, and an empty part is left out, so every field is optional, `displayName` too (an empty name with blank compartments).
 
 ### Person (`PersonEntry`)
 
@@ -86,11 +86,12 @@ Fields every kind carries (`EntryBase`):
 
 `type: "Interactor"`, `exactType: "Interactor"`. `dbId` is the accession.
 
-| Field                                                                    | Kind          | Required |
-| ------------------------------------------------------------------------ | ------------- | -------- |
-| `stId`, `species`, `referenceIdentifier`, `databaseName`, `referenceURL` | text / text[] | yes      |
-| `referenceName`                                                          | `Highlighted` | no       |
-| `fireworksSpecies`                                                       | text[]        | no       |
+| Field                                  | Kind          | Required |
+| -------------------------------------- | ------------- | -------- |
+| `stId`, `species`                      | text / text[] | yes      |
+| `referenceIdentifier`, `referenceName` | `Highlighted` | no       |
+| `databaseName`, `referenceURL`         | text          | no       |
+| `fireworksSpecies`                     | text[]        | no       |
 
 ### Deleted (`DeletedEntry`)
 
