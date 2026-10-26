@@ -1,6 +1,7 @@
 package org.reactome.server.library;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,6 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -35,6 +38,8 @@ class HttpDiagramSourceTest {
     private final CountDownLatch done = new CountDownLatch(1);
     /** Counted down when the client stops taking the body that never ends. */
     private final CountDownLatch abandoned = new CountDownLatch(1);
+    /** Counted down once the body that never ends has begun to arrive. */
+    private final CountDownLatch streaming = new CountDownLatch(1);
 
     @BeforeEach
     void start() throws Exception {
@@ -57,6 +62,7 @@ class HttpDiagramSourceTest {
                     while (done.getCount() > 0) {
                         out.write('{');
                         out.flush();
+                        streaming.countDown();
                         Thread.sleep(50);
                     }
                 } catch (IOException e) {
@@ -164,17 +170,25 @@ class HttpDiagramSourceTest {
 
     @Test
     void anInterruptedDownloadIsAbandoned() throws Exception {
+        AtomicReference<Throwable> outcome = new AtomicReference<>();
+        AtomicBoolean stillInterrupted = new AtomicBoolean();
         Thread fetching = new Thread(() -> {
             try {
                 source(Duration.ofMinutes(5)).fetch("R-HSA-6", 97, into);
-            } catch (SbmlFiles.DiagramUnavailable expected) {
-                // What an interrupt is reported as
+            } catch (Throwable t) {
+                outcome.set(t);
             }
+            stillInterrupted.set(Thread.currentThread().isInterrupted());
         });
         fetching.start();
-        Thread.sleep(500);
+        // Interrupted once the transfer is under way, not on a clock: a slow start would otherwise be
+        // interrupted before the request reached the server, and read as the transfer left running
+        assertTrue(streaming.await(30, TimeUnit.SECONDS), "the body never began");
         fetching.interrupt();
-        fetching.join(5_000);
+        fetching.join(10_000);
+        assertFalse(fetching.isAlive(), "the fetch did not return");
+        assertTrue(outcome.get() instanceof SbmlFiles.DiagramUnavailable, String.valueOf(outcome.get()));
+        assertTrue(stillInterrupted.get(), "the interrupt was swallowed");
         assertTrue(abandoned.await(10, TimeUnit.SECONDS), "the server was still sending");
     }
 }
