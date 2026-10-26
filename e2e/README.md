@@ -93,11 +93,25 @@ project, and is not part of `npm run e2e`:
 E2E_BASE_URL=https://<the host under test> npm run e2e:release
 ```
 
+## Release files are saved copies
+
+What a page reads from download.reactome.org with fetch or XHR (diagram and
+graph JSON, illustrated-pathway SVGs, icons, statistics) is served from
+`e2e/release-files/`, laid out as the host's paths. A file with no copy is
+aborted and fails its test, naming the file. To save what a spec needs:
+
+```bash
+E2E_SAVE_RELEASE_FILES=1 E2E_PORT=4330 npm run e2e -- e2e/<spec>.spec.ts
+```
+
+Recording (`npm run e2e:record`) saves them too. Images, video and links on
+that host still go out over the network. See `e2e/support/release-files.ts`.
+
 ## What else is not recorded
 
-- **Hosts other than the three above.** Downloads, the GSA server and the
-  third-party PSICQUIC resources still go out over the network. Worth closing
-  later; the backend was the large share.
+- **Hosts other than the three above.** Images and links on the download host,
+  and the third-party PSICQUIC resources, still go out over the network. Worth
+  closing later; the backend was the large share.
 
 ## Fixtures go stale
 

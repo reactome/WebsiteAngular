@@ -1,0 +1,46 @@
+[
+  {
+    "name": "prot",
+    "value": "11694"
+  },
+  {
+    "name": "netProt",
+    "value": "11469"
+  },
+  {
+    "name": "rxn",
+    "value": "16423"
+  },
+  {
+    "name": "litRef",
+    "value": "43308"
+  },
+  {
+    "name": "chemicals",
+    "value": "2188"
+  },
+  {
+    "name": "EWAS",
+    "value": "240059"
+  },
+  {
+    "name": "DiseaseProt",
+    "value": "381"
+  },
+  {
+    "name": "DiseaseVar",
+    "value": "113"
+  },
+  {
+    "name": "chemDrug",
+    "value": "1000"
+  },
+  {
+    "name": "protDrug",
+    "value": "102"
+  },
+  {
+    "name": "pathway",
+    "value": "2883"
+  }
+]

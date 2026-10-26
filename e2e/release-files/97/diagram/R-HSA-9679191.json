@@ -1,0 +1,9228 @@
+{
+  "dbId" : 9679191,
+  "stableId" : "R-HSA-9679191",
+  "displayName" : "Potential therapeutics for SARS",
+  "nodes" : [ {
+    "id" : 1541,
+    "reactomeId" : 909708,
+    "displayName" : "IFNAR1:TYK2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 2062,
+      "y" : 367
+    },
+    "minX" : 1946,
+    "maxX" : 2100,
+    "minY" : 344,
+    "maxY" : 426,
+    "prop" : {
+      "x" : 2031,
+      "y" : 350,
+      "width" : 63,
+      "height" : 34
+    },
+    "textPosition" : {
+      "x" : 2035,
+      "y" : 349
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2094,
+          "y" : 350
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2094,
+          "y" : 350
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1540,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2028,
+          "y" : 383
+        },
+        "to" : {
+          "x" : 1946,
+          "y" : 426
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 6,
+    "reactomeId" : 9683474,
+    "displayName" : "ACE2",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 98,
+      "y" : 297
+    },
+    "minX" : 78,
+    "maxX" : 125,
+    "minY" : 257,
+    "maxY" : 308,
+    "prop" : {
+      "x" : 78,
+      "y" : 286,
+      "width" : 41,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 78,
+      "y" : 286
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 119,
+          "y" : 286
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 119,
+          "y" : 286
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 5,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 98,
+          "y" : 283
+        },
+        "to" : {
+          "x" : 99,
+          "y" : 257
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1542,
+    "reactomeId" : 9678619,
+    "displayName" : "TYK2 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1848,
+      "y" : 427
+    },
+    "minX" : 1793,
+    "maxX" : 1946,
+    "minY" : 416,
+    "maxY" : 438,
+    "prop" : {
+      "x" : 1793,
+      "y" : 416,
+      "width" : 111,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1799,
+      "y" : 416
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1540,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1910,
+          "y" : 426
+        },
+        "to" : {
+          "x" : 1946,
+          "y" : 426
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 7,
+    "reactomeId" : 9683490,
+    "displayName" : "N-glycan",
+    "schemaClass" : "SimpleEntity",
+    "renderableClass" : "Chemical",
+    "position" : {
+      "x" : 170,
+      "y" : 295
+    },
+    "minX" : 99,
+    "maxX" : 202,
+    "minY" : 257,
+    "maxY" : 310,
+    "prop" : {
+      "x" : 139,
+      "y" : 280,
+      "width" : 62,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 139,
+      "y" : 284
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 196,
+          "y" : 285
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 196,
+          "y" : 285
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 5,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 141,
+          "y" : 277
+        },
+        "to" : {
+          "x" : 99,
+          "y" : 257
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 6,
+        "shape" : {
+          "a" : {
+            "x" : 114,
+            "y" : 261
+          },
+          "b" : {
+            "x" : 126,
+            "y" : 273
+          },
+          "type" : "BOX",
+          "empty" : true,
+          "centre" : {
+            "x" : 120,
+            "y" : 267
+          }
+        }
+      }
+    } ]
+  }, {
+    "id" : 8,
+    "reactomeId" : 9683480,
+    "displayName" : "glycosylated-ACE2",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 100,
+      "y" : 111
+    },
+    "minX" : 40,
+    "maxX" : 166,
+    "minY" : 86,
+    "maxY" : 130,
+    "prop" : {
+      "x" : 40,
+      "y" : 92,
+      "width" : 120,
+      "height" : 38
+    },
+    "innerProp" : {
+      "x" : 40,
+      "y" : 98,
+      "width" : 120,
+      "height" : 32
+    },
+    "textPosition" : {
+      "x" : 55,
+      "y" : 93
+    },
+    "nodeAttachments" : [ {
+      "reactomeId" : 9683475,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 53",
+      "shape" : {
+        "a" : {
+          "x" : 50,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 62,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 56,
+          "y" : 92
+        }
+      }
+    }, {
+      "reactomeId" : 9683483,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 90",
+      "shape" : {
+        "a" : {
+          "x" : 66,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 78,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 72,
+          "y" : 92
+        }
+      }
+    }, {
+      "reactomeId" : 9683464,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 103",
+      "shape" : {
+        "a" : {
+          "x" : 82,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 94,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 88,
+          "y" : 92
+        }
+      }
+    }, {
+      "reactomeId" : 9683465,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 322",
+      "shape" : {
+        "a" : {
+          "x" : 98,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 110,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 104,
+          "y" : 92
+        }
+      }
+    }, {
+      "reactomeId" : 9683470,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 432",
+      "shape" : {
+        "a" : {
+          "x" : 114,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 126,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 120,
+          "y" : 92
+        }
+      }
+    }, {
+      "reactomeId" : 9683471,
+      "label" : "G",
+      "description" : "N4-glycosyl-L-asparagine at 546",
+      "shape" : {
+        "a" : {
+          "x" : 130,
+          "y" : 86
+        },
+        "b" : {
+          "x" : 142,
+          "y" : 98
+        },
+        "s" : "G",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 136,
+          "y" : 92
+        }
+      }
+    } ],
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 160,
+          "y" : 92
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 160,
+          "y" : 92
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 5,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 9,
+    "reactomeId" : 9687974,
+    "displayName" : "CQ",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 163,
+      "y" : 236
+    },
+    "isDisease" : true,
+    "minX" : 108,
+    "maxX" : 186,
+    "minY" : 220,
+    "maxY" : 253,
+    "prop" : {
+      "x" : 140,
+      "y" : 220,
+      "width" : 46,
+      "height" : 33
+    },
+    "textPosition" : {
+      "x" : 150,
+      "y" : 226
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 5,
+      "type" : "INHIBITOR",
+      "segments" : [ {
+        "from" : {
+          "x" : 137,
+          "y" : 236
+        },
+        "to" : {
+          "x" : 108,
+          "y" : 236
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 108,
+          "y" : 240
+        },
+        "b" : {
+          "x" : 108,
+          "y" : 232
+        },
+        "c" : {
+          "x" : 108,
+          "y" : 236
+        },
+        "type" : "STOP",
+        "centre" : {
+          "x" : 108,
+          "y" : 236
+        }
+      }
+    } ]
+  }, {
+    "id" : 1545,
+    "reactomeId" : 9678695,
+    "displayName" : "IFNAR1:TYK2:TYK2 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 2062,
+      "y" : 440
+    },
+    "minX" : 2005,
+    "maxX" : 2126,
+    "minY" : 417,
+    "maxY" : 457,
+    "prop" : {
+      "x" : 2005,
+      "y" : 423,
+      "width" : 115,
+      "height" : 34
+    },
+    "textPosition" : {
+      "x" : 2013,
+      "y" : 422
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2120,
+          "y" : 423
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2120,
+          "y" : 423
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1540,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1550,
+    "reactomeId" : 918193,
+    "displayName" : "IFNAR2:JAK1:STAT2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 2047,
+      "y" : 902
+    },
+    "minX" : 1863,
+    "maxX" : 2098,
+    "minY" : 807,
+    "maxY" : 921,
+    "prop" : {
+      "x" : 2003,
+      "y" : 883,
+      "width" : 89,
+      "height" : 38
+    },
+    "textPosition" : {
+      "x" : 2005,
+      "y" : 886
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2092,
+          "y" : 883
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2092,
+          "y" : 883
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1549,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2010,
+          "y" : 880
+        },
+        "to" : {
+          "x" : 1863,
+          "y" : 807
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 1635,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2060,
+          "y" : 880
+        },
+        "to" : {
+          "x" : 2083,
+          "y" : 850
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1551,
+    "reactomeId" : 9678951,
+    "displayName" : "IFNAR2:JAK1:STAT2:JAK1,2 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1880,
+      "y" : 902
+    },
+    "minX" : 1813,
+    "maxX" : 1953,
+    "minY" : 878,
+    "maxY" : 920,
+    "prop" : {
+      "x" : 1813,
+      "y" : 884,
+      "width" : 134,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1816,
+      "y" : 885
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1947,
+          "y" : 884
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1947,
+          "y" : 884
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1549,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1552,
+    "reactomeId" : 873810,
+    "displayName" : "IFNGR1:JAK1:INFGR2:JAK2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1533,
+      "y" : 903
+    },
+    "minX" : 1489,
+    "maxX" : 1595,
+    "minY" : 824,
+    "maxY" : 921,
+    "prop" : {
+      "x" : 1489,
+      "y" : 885,
+      "width" : 88,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1490,
+      "y" : 886
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1577,
+          "y" : 885
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1577,
+          "y" : 885
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1307,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1547,
+          "y" : 882
+        },
+        "to" : {
+          "x" : 1595,
+          "y" : 824
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1555,
+    "reactomeId" : 4657020,
+    "displayName" : "HDAC1:2-containing complex",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 702,
+      "y" : 330
+    },
+    "minX" : 636,
+    "maxX" : 768,
+    "minY" : 312,
+    "maxY" : 388,
+    "prop" : {
+      "x" : 636,
+      "y" : 312,
+      "width" : 132,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 634,
+      "y" : 312
+    },
+    "connectors" : [ {
+      "edgeId" : 1554,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 720,
+          "y" : 354
+        },
+        "to" : {
+          "x" : 761,
+          "y" : 388
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1556,
+    "reactomeId" : 9679795,
+    "displayName" : "HDAC2 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 695,
+      "y" : 420
+    },
+    "minX" : 635,
+    "maxX" : 761,
+    "minY" : 388,
+    "maxY" : 434,
+    "prop" : {
+      "x" : 635,
+      "y" : 406,
+      "width" : 120,
+      "height" : 28
+    },
+    "textPosition" : {
+      "x" : 639,
+      "y" : 409
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1554,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 723,
+          "y" : 400
+        },
+        "to" : {
+          "x" : 761,
+          "y" : 388
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1301,
+    "reactomeId" : 9678984,
+    "displayName" : "JAK1,2 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1746,
+      "y" : 783
+    },
+    "minX" : 1595,
+    "maxX" : 1863,
+    "minY" : 768,
+    "maxY" : 824,
+    "prop" : {
+      "x" : 1697,
+      "y" : 768,
+      "width" : 98,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1713,
+      "y" : 766
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1549,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1801,
+          "y" : 793
+        },
+        "to" : {
+          "x" : 1863,
+          "y" : 807
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 1307,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1691,
+          "y" : 796
+        },
+        "to" : {
+          "x" : 1595,
+          "y" : 824
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1557,
+    "reactomeId" : 9679831,
+    "displayName" : "HDAC1:2-containing complex:HDAC2 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 892,
+      "y" : 389
+    },
+    "minX" : 826,
+    "maxX" : 964,
+    "minY" : 358,
+    "maxY" : 414,
+    "prop" : {
+      "x" : 826,
+      "y" : 364,
+      "width" : 132,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 824,
+      "y" : 365
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 958,
+          "y" : 364
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 958,
+          "y" : 364
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1554,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 28,
+    "reactomeId" : 9648300,
+    "displayName" : "chlorpromazine",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 325,
+      "y" : 270
+    },
+    "isDisease" : true,
+    "minX" : 275,
+    "maxX" : 393,
+    "minY" : 233,
+    "maxY" : 285,
+    "prop" : {
+      "x" : 275,
+      "y" : 255,
+      "width" : 100,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 277,
+      "y" : 253
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 27,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 352,
+          "y" : 252
+        },
+        "to" : {
+          "x" : 393,
+          "y" : 233
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 29,
+    "reactomeId" : 167712,
+    "displayName" : "AP-2 Complex",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 312,
+      "y" : 202
+    },
+    "minX" : 279,
+    "maxX" : 393,
+    "minY" : 179,
+    "maxY" : 233,
+    "prop" : {
+      "x" : 279,
+      "y" : 185,
+      "width" : 66,
+      "height" : 35
+    },
+    "textPosition" : {
+      "x" : 282,
+      "y" : 185
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 345,
+          "y" : 185
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 345,
+          "y" : 185
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 27,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 348,
+          "y" : 214
+        },
+        "to" : {
+          "x" : 393,
+          "y" : 233
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 30,
+    "reactomeId" : 9681612,
+    "displayName" : "AP2:chlorpromazine",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 501,
+      "y" : 233
+    },
+    "minX" : 440,
+    "maxX" : 569,
+    "minY" : 208,
+    "maxY" : 252,
+    "prop" : {
+      "x" : 440,
+      "y" : 214,
+      "width" : 123,
+      "height" : 38
+    },
+    "textPosition" : {
+      "x" : 450,
+      "y" : 217
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 563,
+          "y" : 214
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 563,
+          "y" : 214
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 27,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1311,
+    "reactomeId" : 9678548,
+    "displayName" : "IFNGR1:JAK1:INFGR2:JAK2:JAK1,2 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1708,
+      "y" : 910
+    },
+    "minX" : 1651,
+    "maxX" : 1771,
+    "minY" : 878,
+    "maxY" : 936,
+    "prop" : {
+      "x" : 1651,
+      "y" : 884,
+      "width" : 114,
+      "height" : 52
+    },
+    "textPosition" : {
+      "x" : 1654,
+      "y" : 887
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1765,
+          "y" : 884
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1765,
+          "y" : 884
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1307,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1567,
+    "reactomeId" : 9606167,
+    "displayName" : "Antigen:p-BCR:p-SYK:p-BLNK:CIN85:GRB2:SOS1:BTK:NCK1:VAV1:PLCG2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 2082,
+      "y" : 132
+    },
+    "minX" : 2021,
+    "maxX" : 2150,
+    "minY" : 94,
+    "maxY" : 204,
+    "prop" : {
+      "x" : 2021,
+      "y" : 100,
+      "width" : 123,
+      "height" : 64
+    },
+    "textPosition" : {
+      "x" : 2022,
+      "y" : 101
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2144,
+          "y" : 100
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2144,
+          "y" : 100
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1566,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2082,
+          "y" : 167
+        },
+        "to" : {
+          "x" : 2082,
+          "y" : 204
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1568,
+    "reactomeId" : 9691420,
+    "displayName" : "BTK inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 2184,
+      "y" : 191
+    },
+    "minX" : 2082,
+    "maxX" : 2235,
+    "minY" : 181,
+    "maxY" : 204,
+    "prop" : {
+      "x" : 2133,
+      "y" : 181,
+      "width" : 102,
+      "height" : 21
+    },
+    "textPosition" : {
+      "x" : 2138,
+      "y" : 181
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1566,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2127,
+          "y" : 197
+        },
+        "to" : {
+          "x" : 2082,
+          "y" : 204
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1313,
+    "reactomeId" : 451893,
+    "displayName" : "JAK3",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1973,
+      "y" : 494
+    },
+    "minX" : 1914,
+    "maxX" : 1998,
+    "minY" : 477,
+    "maxY" : 535,
+    "prop" : {
+      "x" : 1955,
+      "y" : 483,
+      "width" : 37,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1956,
+      "y" : 483
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1992,
+          "y" : 483
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1992,
+          "y" : 483
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1312,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1957,
+          "y" : 508
+        },
+        "to" : {
+          "x" : 1914,
+          "y" : 535
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1569,
+    "reactomeId" : 9691431,
+    "displayName" : "BTK:BTK inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 2081,
+      "y" : 260
+    },
+    "minX" : 2044,
+    "maxX" : 2124,
+    "minY" : 237,
+    "maxY" : 278,
+    "prop" : {
+      "x" : 2044,
+      "y" : 243,
+      "width" : 74,
+      "height" : 35
+    },
+    "textPosition" : {
+      "x" : 2048,
+      "y" : 243
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2118,
+          "y" : 243
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2118,
+          "y" : 243
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1566,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1314,
+    "reactomeId" : 9678772,
+    "displayName" : "JAK3 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1840,
+      "y" : 535
+    },
+    "minX" : 1793,
+    "maxX" : 1914,
+    "minY" : 524,
+    "maxY" : 546,
+    "prop" : {
+      "x" : 1793,
+      "y" : 524,
+      "width" : 95,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1807,
+      "y" : 518
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1312,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1894,
+          "y" : 535
+        },
+        "to" : {
+          "x" : 1914,
+          "y" : 535
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1570,
+    "reactomeId" : 9715042,
+    "displayName" : "IL6R inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 84,
+      "y" : 987
+    },
+    "minX" : 35,
+    "maxX" : 133,
+    "minY" : 935,
+    "maxY" : 998,
+    "prop" : {
+      "x" : 35,
+      "y" : 976,
+      "width" : 98,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 36,
+      "y" : 976
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 340,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 88,
+          "y" : 970
+        },
+        "to" : {
+          "x" : 105,
+          "y" : 935
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1572,
+    "reactomeId" : 9679746,
+    "displayName" : "ponatinib",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 818,
+      "y" : 984
+    },
+    "isDisease" : true,
+    "minX" : 783,
+    "maxX" : 854,
+    "minY" : 935,
+    "maxY" : 999,
+    "prop" : {
+      "x" : 783,
+      "y" : 969,
+      "width" : 71,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 785,
+      "y" : 973
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 381,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 827,
+          "y" : 966
+        },
+        "to" : {
+          "x" : 849,
+          "y" : 935
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1317,
+    "reactomeId" : 9678869,
+    "displayName" : "JAK3:JAK3 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1979,
+      "y" : 580
+    },
+    "minX" : 1938,
+    "maxX" : 2027,
+    "minY" : 554,
+    "maxY" : 601,
+    "prop" : {
+      "x" : 1938,
+      "y" : 560,
+      "width" : 83,
+      "height" : 41
+    },
+    "textPosition" : {
+      "x" : 1945,
+      "y" : 566
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2021,
+          "y" : 560
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2021,
+          "y" : 560
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1312,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 37,
+    "reactomeId" : 9684063,
+    "displayName" : "cardiac glycosides",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 307,
+      "y" : 28
+    },
+    "minX" : 239,
+    "maxX" : 375,
+    "minY" : 16,
+    "maxY" : 77,
+    "prop" : {
+      "x" : 239,
+      "y" : 16,
+      "width" : 136,
+      "height" : 25
+    },
+    "textPosition" : {
+      "x" : 245,
+      "y" : 18
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 36,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 321,
+          "y" : 47
+        },
+        "to" : {
+          "x" : 363,
+          "y" : 77
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1574,
+    "reactomeId" : 2530496,
+    "displayName" : "FNTA:FNTB",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1453,
+      "y" : 657
+    },
+    "minX" : 1425,
+    "maxX" : 1487,
+    "minY" : 633,
+    "maxY" : 739,
+    "prop" : {
+      "x" : 1425,
+      "y" : 639,
+      "width" : 56,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1431,
+      "y" : 640
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1481,
+          "y" : 639
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1481,
+          "y" : 639
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1573,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1447,
+          "y" : 678
+        },
+        "to" : {
+          "x" : 1429,
+          "y" : 739
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1575,
+    "reactomeId" : 9653479,
+    "displayName" : "FNTB inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1552,
+      "y" : 761
+    },
+    "minX" : 1429,
+    "maxX" : 1601,
+    "minY" : 739,
+    "maxY" : 774,
+    "prop" : {
+      "x" : 1503,
+      "y" : 748,
+      "width" : 98,
+      "height" : 26
+    },
+    "textPosition" : {
+      "x" : 1519,
+      "y" : 744
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1573,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1497,
+          "y" : 752
+        },
+        "to" : {
+          "x" : 1429,
+          "y" : 739
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 39,
+    "reactomeId" : 9684072,
+    "displayName" : "ATP1A:ATP1B:FXYD:cardiac glycosides",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 457,
+      "y" : 99
+    },
+    "minX" : 402,
+    "maxX" : 518,
+    "minY" : 69,
+    "maxY" : 123,
+    "prop" : {
+      "x" : 402,
+      "y" : 75,
+      "width" : 110,
+      "height" : 48
+    },
+    "textPosition" : {
+      "x" : 410,
+      "y" : 74
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 512,
+          "y" : 75
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 512,
+          "y" : 75
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 36,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1576,
+    "reactomeId" : 9647944,
+    "displayName" : "FNTA:FNTB:FTase inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1312,
+      "y" : 793
+    },
+    "isDisease" : true,
+    "minX" : 1259,
+    "maxX" : 1372,
+    "minY" : 767,
+    "maxY" : 813,
+    "prop" : {
+      "x" : 1259,
+      "y" : 773,
+      "width" : 107,
+      "height" : 40
+    },
+    "textPosition" : {
+      "x" : 1259,
+      "y" : 778
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1366,
+          "y" : 773
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1366,
+          "y" : 773
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1573,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 46,
+    "reactomeId" : 9680425,
+    "displayName" : "BRD4",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 686,
+      "y" : 191
+    },
+    "minX" : 664,
+    "maxX" : 749,
+    "minY" : 174,
+    "maxY" : 225,
+    "prop" : {
+      "x" : 664,
+      "y" : 180,
+      "width" : 44,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 665,
+      "y" : 180
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 708,
+          "y" : 180
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 708,
+          "y" : 180
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 45,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 706,
+          "y" : 205
+        },
+        "to" : {
+          "x" : 749,
+          "y" : 225
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1583,
+    "reactomeId" : 8932286,
+    "displayName" : "KEAP1:NEDD8-CUL3:RBX1:NFE2L2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 111,
+      "y" : 725
+    },
+    "minX" : 51,
+    "maxX" : 213,
+    "minY" : 701,
+    "maxY" : 765,
+    "prop" : {
+      "x" : 51,
+      "y" : 707,
+      "width" : 121,
+      "height" : 37
+    },
+    "textPosition" : {
+      "x" : 62,
+      "y" : 695
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 172,
+          "y" : 707
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 172,
+          "y" : 707
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1582,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 158,
+          "y" : 747
+        },
+        "to" : {
+          "x" : 213,
+          "y" : 765
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 47,
+    "reactomeId" : 9680406,
+    "displayName" : "fedratinib",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 688,
+      "y" : 257
+    },
+    "isDisease" : true,
+    "minX" : 653,
+    "maxX" : 749,
+    "minY" : 225,
+    "maxY" : 275,
+    "prop" : {
+      "x" : 653,
+      "y" : 240,
+      "width" : 71,
+      "height" : 35
+    },
+    "textPosition" : {
+      "x" : 654,
+      "y" : 247
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 45,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 721,
+          "y" : 237
+        },
+        "to" : {
+          "x" : 749,
+          "y" : 225
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1584,
+    "reactomeId" : 9714134,
+    "displayName" : "NFE2L2 inducers",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 118,
+      "y" : 796
+    },
+    "minX" : 62,
+    "maxX" : 213,
+    "minY" : 765,
+    "maxY" : 808,
+    "prop" : {
+      "x" : 62,
+      "y" : 785,
+      "width" : 113,
+      "height" : 23
+    },
+    "textPosition" : {
+      "x" : 62,
+      "y" : 786
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1582,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 153,
+          "y" : 779
+        },
+        "to" : {
+          "x" : 213,
+          "y" : 765
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 48,
+    "reactomeId" : 9680402,
+    "displayName" : "BRD4:fedratinib",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 850,
+      "y" : 225
+    },
+    "minX" : 789,
+    "maxX" : 918,
+    "minY" : 208,
+    "maxY" : 236,
+    "prop" : {
+      "x" : 789,
+      "y" : 214,
+      "width" : 123,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 798,
+      "y" : 215
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 912,
+          "y" : 214
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 912,
+          "y" : 214
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 45,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1585,
+    "reactomeId" : 9712276,
+    "displayName" : "NFE2L2 inducers:KEAP1:CUL3:RBX1:NFE2L2",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 335,
+      "y" : 770
+    },
+    "minX" : 275,
+    "maxX" : 402,
+    "minY" : 739,
+    "maxY" : 796,
+    "prop" : {
+      "x" : 275,
+      "y" : 745,
+      "width" : 121,
+      "height" : 51
+    },
+    "textPosition" : {
+      "x" : 275,
+      "y" : 747
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 396,
+          "y" : 745
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 396,
+          "y" : 745
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1582,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1354,
+    "reactomeId" : 9682021,
+    "displayName" : "NS5B",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1499,
+      "y" : 363
+    },
+    "minX" : 1478,
+    "maxX" : 1540,
+    "minY" : 346,
+    "maxY" : 393,
+    "prop" : {
+      "x" : 1478,
+      "y" : 352,
+      "width" : 43,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1479,
+      "y" : 352
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1521,
+          "y" : 352
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1521,
+          "y" : 352
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1353,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1514,
+          "y" : 377
+        },
+        "to" : {
+          "x" : 1540,
+          "y" : 393
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "isDisease" : true
+    } ]
+  }, {
+    "id" : 1355,
+    "reactomeId" : 9680963,
+    "displayName" : "RBV",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1495,
+      "y" : 435
+    },
+    "isDisease" : true,
+    "minX" : 1464,
+    "maxX" : 1540,
+    "minY" : 393,
+    "maxY" : 451,
+    "prop" : {
+      "x" : 1464,
+      "y" : 419,
+      "width" : 63,
+      "height" : 32
+    },
+    "textPosition" : {
+      "x" : 1479,
+      "y" : 424
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1353,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1512,
+          "y" : 416
+        },
+        "to" : {
+          "x" : 1540,
+          "y" : 393
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "isDisease" : true
+    } ]
+  }, {
+    "id" : 1356,
+    "reactomeId" : 9680835,
+    "displayName" : "NS5B:ribavirin",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1631,
+      "y" : 395
+    },
+    "minX" : 1584,
+    "maxX" : 1684,
+    "minY" : 378,
+    "maxY" : 406,
+    "prop" : {
+      "x" : 1584,
+      "y" : 384,
+      "width" : 94,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1584,
+      "y" : 385
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1678,
+          "y" : 384
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1678,
+          "y" : 384
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1353,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "isDisease" : true
+    } ]
+  }, {
+    "id" : 341,
+    "reactomeId" : 197824,
+    "displayName" : "IL6R",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 55,
+      "y" : 900
+    },
+    "minX" : 35,
+    "maxX" : 105,
+    "minY" : 883,
+    "maxY" : 935,
+    "prop" : {
+      "x" : 35,
+      "y" : 889,
+      "width" : 40,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 38,
+      "y" : 889
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 75,
+          "y" : 889
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 75,
+          "y" : 889
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 340,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 70,
+          "y" : 914
+        },
+        "to" : {
+          "x" : 105,
+          "y" : 935
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 343,
+    "reactomeId" : 9681293,
+    "displayName" : "IL6R:IL6R inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 184,
+      "y" : 899
+    },
+    "minX" : 120,
+    "maxX" : 255,
+    "minY" : 883,
+    "maxY" : 909,
+    "prop" : {
+      "x" : 120,
+      "y" : 889,
+      "width" : 129,
+      "height" : 20
+    },
+    "textPosition" : {
+      "x" : 122,
+      "y" : 888
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 249,
+          "y" : 889
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 249,
+          "y" : 889
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 340,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1367,
+    "reactomeId" : 9686558,
+    "displayName" : "ROCKi",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1143,
+      "y" : 685
+    },
+    "minX" : 1105,
+    "maxX" : 1182,
+    "minY" : 635,
+    "maxY" : 697,
+    "prop" : {
+      "x" : 1105,
+      "y" : 674,
+      "width" : 76,
+      "height" : 23
+    },
+    "textPosition" : {
+      "x" : 1121,
+      "y" : 675
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1366,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1151,
+          "y" : 668
+        },
+        "to" : {
+          "x" : 1182,
+          "y" : 635
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1368,
+    "reactomeId" : 419057,
+    "displayName" : "ROCK1,ROCK2",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 1108,
+      "y" : 624
+    },
+    "minX" : 1073,
+    "maxX" : 1182,
+    "minY" : 608,
+    "maxY" : 640,
+    "prop" : {
+      "x" : 1073,
+      "y" : 608,
+      "width" : 70,
+      "height" : 32
+    },
+    "textPosition" : {
+      "x" : 1082,
+      "y" : 607
+    },
+    "connectors" : [ {
+      "edgeId" : 1366,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1149,
+          "y" : 629
+        },
+        "to" : {
+          "x" : 1182,
+          "y" : 635
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1369,
+    "reactomeId" : 9680444,
+    "displayName" : "ROCK1,ROCK2:ROCKi",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1277,
+      "y" : 636
+    },
+    "minX" : 1225,
+    "maxX" : 1336,
+    "minY" : 612,
+    "maxY" : 654,
+    "prop" : {
+      "x" : 1225,
+      "y" : 618,
+      "width" : 105,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1229,
+      "y" : 619
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1330,
+          "y" : 618
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1330,
+          "y" : 618
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1366,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1375,
+    "reactomeId" : 9679757,
+    "displayName" : "SIGMAR1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1093,
+      "y" : 466
+    },
+    "minX" : 1059,
+    "maxX" : 1196,
+    "minY" : 415,
+    "maxY" : 505,
+    "prop" : {
+      "x" : 1059,
+      "y" : 454,
+      "width" : 68,
+      "height" : 24
+    },
+    "textPosition" : {
+      "x" : 1062,
+      "y" : 455
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1127,
+          "y" : 454
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1127,
+          "y" : 454
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1374,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1110,
+          "y" : 451
+        },
+        "to" : {
+          "x" : 1166,
+          "y" : 415
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 1378,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1124,
+          "y" : 481
+        },
+        "to" : {
+          "x" : 1196,
+          "y" : 505
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1376,
+    "reactomeId" : 9679830,
+    "displayName" : "DEXM",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1111,
+      "y" : 362
+    },
+    "isDisease" : true,
+    "minX" : 1048,
+    "maxX" : 1174,
+    "minY" : 347,
+    "maxY" : 415,
+    "prop" : {
+      "x" : 1048,
+      "y" : 347,
+      "width" : 126,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1090,
+      "y" : 351
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1374,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1126,
+          "y" : 380
+        },
+        "to" : {
+          "x" : 1166,
+          "y" : 415
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1377,
+    "reactomeId" : 9679763,
+    "displayName" : "SIGMAR1:dextromethorphan",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1278,
+      "y" : 406
+    },
+    "minX" : 1208,
+    "maxX" : 1355,
+    "minY" : 378,
+    "maxY" : 428,
+    "prop" : {
+      "x" : 1208,
+      "y" : 384,
+      "width" : 141,
+      "height" : 44
+    },
+    "textPosition" : {
+      "x" : 1216,
+      "y" : 393
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1349,
+          "y" : 384
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1349,
+          "y" : 384
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1374,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 354,
+    "reactomeId" : 9679737,
+    "displayName" : "natalizumab",
+    "schemaClass" : "ProteinDrug",
+    "renderableClass" : "ProteinDrug",
+    "position" : {
+      "x" : 317,
+      "y" : 983
+    },
+    "isDisease" : true,
+    "minX" : 273,
+    "maxX" : 361,
+    "minY" : 947,
+    "maxY" : 994,
+    "prop" : {
+      "x" : 273,
+      "y" : 972,
+      "width" : 88,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 275,
+      "y" : 972
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 353,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 329,
+          "y" : 969
+        },
+        "to" : {
+          "x" : 358,
+          "y" : 947
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1379,
+    "reactomeId" : 9679783,
+    "displayName" : "fluvoxamine",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1126,
+      "y" : 538
+    },
+    "isDisease" : true,
+    "minX" : 1079,
+    "maxX" : 1196,
+    "minY" : 505,
+    "maxY" : 553,
+    "prop" : {
+      "x" : 1079,
+      "y" : 523,
+      "width" : 94,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1085,
+      "y" : 527
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1378,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1157,
+          "y" : 520
+        },
+        "to" : {
+          "x" : 1196,
+          "y" : 505
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 355,
+    "reactomeId" : 198201,
+    "displayName" : "ITGA4:ITGB1",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 335,
+      "y" : 898
+    },
+    "minX" : 307,
+    "maxX" : 370,
+    "minY" : 875,
+    "maxY" : 947,
+    "prop" : {
+      "x" : 307,
+      "y" : 881,
+      "width" : 57,
+      "height" : 35
+    },
+    "textPosition" : {
+      "x" : 312,
+      "y" : 881
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 364,
+          "y" : 881
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 364,
+          "y" : 881
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 353,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 343,
+          "y" : 919
+        },
+        "to" : {
+          "x" : 358,
+          "y" : 947
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1380,
+    "reactomeId" : 9679768,
+    "displayName" : "SIGMAR1:fluvoxamine",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1287,
+      "y" : 506
+    },
+    "minX" : 1231,
+    "maxX" : 1349,
+    "minY" : 482,
+    "maxY" : 524,
+    "prop" : {
+      "x" : 1231,
+      "y" : 488,
+      "width" : 112,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1246,
+      "y" : 489
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1343,
+          "y" : 488
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1343,
+          "y" : 488
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1378,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1636,
+    "reactomeId" : 9696187,
+    "displayName" : "type 1 interferon analogs",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 2195,
+      "y" : 901
+    },
+    "minX" : 2083,
+    "maxX" : 2250,
+    "minY" : 850,
+    "maxY" : 920,
+    "prop" : {
+      "x" : 2140,
+      "y" : 883,
+      "width" : 110,
+      "height" : 37
+    },
+    "textPosition" : {
+      "x" : 2158,
+      "y" : 877
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1635,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 2154,
+          "y" : 877
+        },
+        "to" : {
+          "x" : 2083,
+          "y" : 850
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 356,
+    "reactomeId" : 9679842,
+    "displayName" : "ITGA4:ITGB1:natalizumab",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 440,
+      "y" : 895
+    },
+    "minX" : 386,
+    "maxX" : 501,
+    "minY" : 865,
+    "maxY" : 919,
+    "prop" : {
+      "x" : 386,
+      "y" : 871,
+      "width" : 109,
+      "height" : 48
+    },
+    "textPosition" : {
+      "x" : 397,
+      "y" : 884
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 495,
+          "y" : 871
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 495,
+          "y" : 871
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 353,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1637,
+    "reactomeId" : 9696161,
+    "displayName" : "IFNAR2:JAK1:STAT2:type 1 interferon analogs",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 2082,
+      "y" : 756
+    },
+    "minX" : 2018,
+    "maxX" : 2153,
+    "minY" : 725,
+    "maxY" : 782,
+    "prop" : {
+      "x" : 2018,
+      "y" : 731,
+      "width" : 129,
+      "height" : 51
+    },
+    "textPosition" : {
+      "x" : 2019,
+      "y" : 733
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 2147,
+          "y" : 731
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 2147,
+          "y" : 731
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1635,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1383,
+    "reactomeId" : 9679801,
+    "displayName" : "amlexanox",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1484,
+      "y" : 550
+    },
+    "isDisease" : true,
+    "minX" : 1443,
+    "maxX" : 1566,
+    "minY" : 529,
+    "maxY" : 565,
+    "prop" : {
+      "x" : 1443,
+      "y" : 535,
+      "width" : 82,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1447,
+      "y" : 539
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1381,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1528,
+          "y" : 539
+        },
+        "to" : {
+          "x" : 1566,
+          "y" : 529
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1384,
+    "reactomeId" : 9679814,
+    "displayName" : "TBK1:amlexanox",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1664,
+      "y" : 531
+    },
+    "minX" : 1613,
+    "maxX" : 1722,
+    "minY" : 506,
+    "maxY" : 551,
+    "prop" : {
+      "x" : 1613,
+      "y" : 512,
+      "width" : 103,
+      "height" : 39
+    },
+    "textPosition" : {
+      "x" : 1627,
+      "y" : 516
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1716,
+          "y" : 512
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1716,
+          "y" : 512
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1381,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 373,
+    "reactomeId" : 9679406,
+    "displayName" : "PDCD1 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 550,
+      "y" : 973
+    },
+    "minX" : 486,
+    "maxX" : 614,
+    "minY" : 933,
+    "maxY" : 988,
+    "prop" : {
+      "x" : 486,
+      "y" : 959,
+      "width" : 128,
+      "height" : 29
+    },
+    "textPosition" : {
+      "x" : 494,
+      "y" : 963
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 372,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 573,
+          "y" : 953
+        },
+        "to" : {
+          "x" : 614,
+          "y" : 933
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 374,
+    "reactomeId" : 197604,
+    "displayName" : "PDCD1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 543,
+      "y" : 902
+    },
+    "minX" : 519,
+    "maxX" : 614,
+    "minY" : 885,
+    "maxY" : 933,
+    "prop" : {
+      "x" : 519,
+      "y" : 891,
+      "width" : 49,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 522,
+      "y" : 885
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 568,
+          "y" : 891
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 568,
+          "y" : 891
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 372,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 571,
+          "y" : 912
+        },
+        "to" : {
+          "x" : 614,
+          "y" : 933
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 375,
+    "reactomeId" : 9679420,
+    "displayName" : "PDCD1:PDCD1 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 677,
+      "y" : 891
+    },
+    "minX" : 634,
+    "maxX" : 727,
+    "minY" : 862,
+    "maxY" : 915,
+    "prop" : {
+      "x" : 634,
+      "y" : 868,
+      "width" : 87,
+      "height" : 47
+    },
+    "textPosition" : {
+      "x" : 644,
+      "y" : 866
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 721,
+          "y" : 868
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 721,
+          "y" : 868
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 372,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 119,
+    "reactomeId" : 379386,
+    "displayName" : "COMT",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 604,
+      "y" : 108
+    },
+    "minX" : 582,
+    "maxX" : 649,
+    "minY" : 70,
+    "maxY" : 119,
+    "prop" : {
+      "x" : 582,
+      "y" : 97,
+      "width" : 45,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 583,
+      "y" : 97
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 627,
+          "y" : 97
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 627,
+          "y" : 97
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 118,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 617,
+          "y" : 94
+        },
+        "to" : {
+          "x" : 649,
+          "y" : 70
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 120,
+    "reactomeId" : 9679778,
+    "displayName" : "COMT inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 601,
+      "y" : 32
+    },
+    "minX" : 550,
+    "maxX" : 653,
+    "minY" : 21,
+    "maxY" : 70,
+    "prop" : {
+      "x" : 550,
+      "y" : 21,
+      "width" : 103,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 568,
+      "y" : 15
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 118,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 614,
+          "y" : 49
+        },
+        "to" : {
+          "x" : 649,
+          "y" : 70
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1401,
+    "reactomeId" : 9020816,
+    "displayName" : "TUBB",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1346,
+      "y" : 263
+    },
+    "minX" : 1327,
+    "maxX" : 1398,
+    "minY" : 246,
+    "maxY" : 280,
+    "prop" : {
+      "x" : 1327,
+      "y" : 252,
+      "width" : 38,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1330,
+      "y" : 246
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1365,
+          "y" : 252
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1365,
+          "y" : 252
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1400,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1368,
+          "y" : 269
+        },
+        "to" : {
+          "x" : 1398,
+          "y" : 280
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 121,
+    "reactomeId" : 9679812,
+    "displayName" : "COMT:COMT inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 728,
+      "y" : 110
+    },
+    "minX" : 679,
+    "maxX" : 784,
+    "minY" : 85,
+    "maxY" : 129,
+    "prop" : {
+      "x" : 679,
+      "y" : 91,
+      "width" : 99,
+      "height" : 38
+    },
+    "textPosition" : {
+      "x" : 686,
+      "y" : 94
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 778,
+          "y" : 91
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 778,
+          "y" : 91
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 118,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1402,
+    "reactomeId" : 9659877,
+    "displayName" : "colchicine",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1346,
+      "y" : 314
+    },
+    "isDisease" : true,
+    "minX" : 1304,
+    "maxX" : 1398,
+    "minY" : 280,
+    "maxY" : 329,
+    "prop" : {
+      "x" : 1304,
+      "y" : 299,
+      "width" : 85,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1311,
+      "y" : 303
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1400,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1368,
+          "y" : 296
+        },
+        "to" : {
+          "x" : 1398,
+          "y" : 280
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1403,
+    "reactomeId" : 9685790,
+    "displayName" : "TUBB:colchicine",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1492,
+      "y" : 281
+    },
+    "minX" : 1449,
+    "maxX" : 1541,
+    "minY" : 259,
+    "maxY" : 298,
+    "prop" : {
+      "x" : 1449,
+      "y" : 265,
+      "width" : 86,
+      "height" : 33
+    },
+    "textPosition" : {
+      "x" : 1457,
+      "y" : 263
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1535,
+          "y" : 265
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1535,
+          "y" : 265
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1400,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 123,
+    "reactomeId" : 416418,
+    "displayName" : "CYSLTR1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 858,
+      "y" : 108
+    },
+    "minX" : 827,
+    "maxX" : 913,
+    "minY" : 62,
+    "maxY" : 119,
+    "prop" : {
+      "x" : 827,
+      "y" : 97,
+      "width" : 62,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 828,
+      "y" : 97
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 889,
+          "y" : 97
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 889,
+          "y" : 97
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 122,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 871,
+          "y" : 94
+        },
+        "to" : {
+          "x" : 913,
+          "y" : 62
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 124,
+    "reactomeId" : 9684615,
+    "displayName" : "CYSLTR1 antagonists",
+    "schemaClass" : "CandidateSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 860,
+      "y" : 18
+    },
+    "minX" : 816,
+    "maxX" : 913,
+    "minY" : 0,
+    "maxY" : 62,
+    "prop" : {
+      "x" : 816,
+      "y" : 0,
+      "width" : 89,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 819,
+      "y" : 0
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 122,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 881,
+          "y" : 42
+        },
+        "to" : {
+          "x" : 913,
+          "y" : 62
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 125,
+    "reactomeId" : 9684595,
+    "displayName" : "CYSLTR1:CYSLTR1 antagonists",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 973,
+      "y" : 106
+    },
+    "minX" : 915,
+    "maxX" : 1037,
+    "minY" : 82,
+    "maxY" : 124,
+    "prop" : {
+      "x" : 915,
+      "y" : 88,
+      "width" : 116,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 913,
+      "y" : 89
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1031,
+          "y" : 88
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1031,
+          "y" : 88
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 122,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 383,
+    "reactomeId" : 937073,
+    "displayName" : "RIPK1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 798,
+      "y" : 900
+    },
+    "minX" : 775,
+    "maxX" : 849,
+    "minY" : 883,
+    "maxY" : 935,
+    "prop" : {
+      "x" : 775,
+      "y" : 889,
+      "width" : 47,
+      "height" : 23
+    },
+    "textPosition" : {
+      "x" : 777,
+      "y" : 890
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 822,
+          "y" : 889
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 822,
+          "y" : 889
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 381,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 814,
+          "y" : 915
+        },
+        "to" : {
+          "x" : 849,
+          "y" : 935
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 384,
+    "reactomeId" : 9679749,
+    "displayName" : "RIPK1:ponatinib",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 943,
+      "y" : 897
+    },
+    "minX" : 880,
+    "maxX" : 1013,
+    "minY" : 879,
+    "maxY" : 909,
+    "prop" : {
+      "x" : 880,
+      "y" : 885,
+      "width" : 127,
+      "height" : 24
+    },
+    "textPosition" : {
+      "x" : 891,
+      "y" : 888
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1007,
+          "y" : 885
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1007,
+          "y" : 885
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 381,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1152,
+    "reactomeId" : 9678719,
+    "displayName" : "IMPDH inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 564,
+      "y" : 810
+    },
+    "minX" : 499,
+    "maxX" : 630,
+    "minY" : 758,
+    "maxY" : 823,
+    "prop" : {
+      "x" : 499,
+      "y" : 797,
+      "width" : 131,
+      "height" : 26
+    },
+    "textPosition" : {
+      "x" : 510,
+      "y" : 799
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1151,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 569,
+          "y" : 791
+        },
+        "to" : {
+          "x" : 587,
+          "y" : 758
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1153,
+    "reactomeId" : 500309,
+    "displayName" : "IMPDH tetramers",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 542,
+      "y" : 713
+    },
+    "minX" : 488,
+    "maxX" : 597,
+    "minY" : 702,
+    "maxY" : 758,
+    "prop" : {
+      "x" : 488,
+      "y" : 702,
+      "width" : 109,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 507,
+      "y" : 696
+    },
+    "connectors" : [ {
+      "edgeId" : 1151,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 553,
+          "y" : 730
+        },
+        "to" : {
+          "x" : 587,
+          "y" : 758
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1154,
+    "reactomeId" : 9679104,
+    "displayName" : "IMPDH tetramers:IMPDH inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 715,
+      "y" : 759
+    },
+    "minX" : 649,
+    "maxX" : 787,
+    "minY" : 733,
+    "maxY" : 779,
+    "prop" : {
+      "x" : 649,
+      "y" : 739,
+      "width" : 132,
+      "height" : 40
+    },
+    "textPosition" : {
+      "x" : 656,
+      "y" : 744
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 781,
+          "y" : 739
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 781,
+          "y" : 739
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1151,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 899,
+    "reactomeId" : 9681237,
+    "displayName" : "IMiDs",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 356,
+      "y" : 425
+    },
+    "minX" : 324,
+    "maxX" : 403,
+    "minY" : 385,
+    "maxY" : 437,
+    "prop" : {
+      "x" : 324,
+      "y" : 413,
+      "width" : 65,
+      "height" : 24
+    },
+    "textPosition" : {
+      "x" : 336,
+      "y" : 414
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 898,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 370,
+          "y" : 407
+        },
+        "to" : {
+          "x" : 403,
+          "y" : 385
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 131,
+    "reactomeId" : 9683560,
+    "displayName" : "FURIN inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1076,
+      "y" : 20
+    },
+    "minX" : 1038,
+    "maxX" : 1140,
+    "minY" : 5,
+    "maxY" : 71,
+    "prop" : {
+      "x" : 1038,
+      "y" : 5,
+      "width" : 77,
+      "height" : 31
+    },
+    "textPosition" : {
+      "x" : 1043,
+      "y" : 3
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 130,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1095,
+          "y" : 42
+        },
+        "to" : {
+          "x" : 1140,
+          "y" : 71
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 900,
+    "reactomeId" : 8863300,
+    "displayName" : "CRBN",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 361,
+      "y" : 350
+    },
+    "minX" : 341,
+    "maxX" : 403,
+    "minY" : 333,
+    "maxY" : 385,
+    "prop" : {
+      "x" : 341,
+      "y" : 339,
+      "width" : 40,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 345,
+      "y" : 333
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 381,
+          "y" : 339
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 381,
+          "y" : 339
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 898,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 374,
+          "y" : 364
+        },
+        "to" : {
+          "x" : 403,
+          "y" : 385
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 132,
+    "reactomeId" : 2159856,
+    "displayName" : "FURIN",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1111,
+      "y" : 105
+    },
+    "minX" : 1089,
+    "maxX" : 1140,
+    "minY" : 71,
+    "maxY" : 116,
+    "prop" : {
+      "x" : 1089,
+      "y" : 94,
+      "width" : 45,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1089,
+      "y" : 94
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1134,
+          "y" : 94
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1134,
+          "y" : 94
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 130,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1120,
+          "y" : 91
+        },
+        "to" : {
+          "x" : 1140,
+          "y" : 71
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 901,
+    "reactomeId" : 9681212,
+    "displayName" : "CRBN:IMiDs",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 482,
+      "y" : 385
+    },
+    "minX" : 450,
+    "maxX" : 520,
+    "minY" : 361,
+    "maxY" : 403,
+    "prop" : {
+      "x" : 450,
+      "y" : 367,
+      "width" : 64,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 459,
+      "y" : 368
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 514,
+          "y" : 367
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 514,
+          "y" : 367
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 898,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 133,
+    "reactomeId" : 9683552,
+    "displayName" : "FURIN:FURIN inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1230,
+      "y" : 105
+    },
+    "minX" : 1186,
+    "maxX" : 1281,
+    "minY" : 80,
+    "maxY" : 125,
+    "prop" : {
+      "x" : 1186,
+      "y" : 86,
+      "width" : 89,
+      "height" : 39
+    },
+    "textPosition" : {
+      "x" : 1186,
+      "y" : 90
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1275,
+          "y" : 86
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1275,
+          "y" : 86
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 130,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 135,
+    "reactomeId" : 9681804,
+    "displayName" : "IL1R1 inhibitors",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1361,
+      "y" : 26
+    },
+    "minX" : 1308,
+    "maxX" : 1432,
+    "minY" : 14,
+    "maxY" : 63,
+    "prop" : {
+      "x" : 1308,
+      "y" : 14,
+      "width" : 107,
+      "height" : 24
+    },
+    "textPosition" : {
+      "x" : 1310,
+      "y" : 15
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 134,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1384,
+          "y" : 44
+        },
+        "to" : {
+          "x" : 1432,
+          "y" : 63
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1415,
+    "reactomeId" : 936770,
+    "displayName" : "ATP1A:ATP1B:FXYD",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 279,
+      "y" : 115
+    },
+    "minX" : 217,
+    "maxX" : 363,
+    "minY" : 77,
+    "maxY" : 126,
+    "prop" : {
+      "x" : 217,
+      "y" : 104,
+      "width" : 124,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 217,
+      "y" : 105
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 341,
+          "y" : 104
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 341,
+          "y" : 104
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 36,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 303,
+          "y" : 101
+        },
+        "to" : {
+          "x" : 363,
+          "y" : 77
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 137,
+    "reactomeId" : 9681780,
+    "displayName" : "IL1R1:IL1R1 inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1536,
+      "y" : 106
+    },
+    "minX" : 1483,
+    "maxX" : 1596,
+    "minY" : 81,
+    "maxY" : 125,
+    "prop" : {
+      "x" : 1483,
+      "y" : 87,
+      "width" : 107,
+      "height" : 38
+    },
+    "textPosition" : {
+      "x" : 1495,
+      "y" : 90
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1590,
+          "y" : 87
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1590,
+          "y" : 87
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 134,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1418,
+    "reactomeId" : 9678687,
+    "displayName" : "sirolimus",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 174,
+      "y" : 468
+    },
+    "isDisease" : true,
+    "minX" : 140,
+    "maxX" : 234,
+    "minY" : 453,
+    "maxY" : 512,
+    "prop" : {
+      "x" : 140,
+      "y" : 453,
+      "width" : 68,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 142,
+      "y" : 457
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 922,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 194,
+          "y" : 486
+        },
+        "to" : {
+          "x" : 234,
+          "y" : 512
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 400,
+    "reactomeId" : 419340,
+    "displayName" : "S1PR1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1050,
+      "y" : 900
+    },
+    "minX" : 1027,
+    "maxX" : 1102,
+    "minY" : 883,
+    "maxY" : 946,
+    "prop" : {
+      "x" : 1027,
+      "y" : 889,
+      "width" : 47,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1030,
+      "y" : 883
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1074,
+          "y" : 889
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1074,
+          "y" : 889
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 399,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1062,
+          "y" : 914
+        },
+        "to" : {
+          "x" : 1102,
+          "y" : 946
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 401,
+    "reactomeId" : 9678899,
+    "displayName" : "S1PR1 agonists",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1043,
+      "y" : 979
+    },
+    "minX" : 982,
+    "maxX" : 1105,
+    "minY" : 946,
+    "maxY" : 990,
+    "prop" : {
+      "x" : 982,
+      "y" : 968,
+      "width" : 123,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 990,
+      "y" : 968
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 399,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1062,
+          "y" : 962
+        },
+        "to" : {
+          "x" : 1102,
+          "y" : 946
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 402,
+    "reactomeId" : 9678686,
+    "displayName" : "S1PR1:S1PR1 agonists",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1173,
+      "y" : 899
+    },
+    "minX" : 1121,
+    "maxX" : 1232,
+    "minY" : 875,
+    "maxY" : 918,
+    "prop" : {
+      "x" : 1121,
+      "y" : 881,
+      "width" : 105,
+      "height" : 37
+    },
+    "textPosition" : {
+      "x" : 1125,
+      "y" : 883
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1226,
+          "y" : 881
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1226,
+          "y" : 881
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 399,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1430,
+    "reactomeId" : 197595,
+    "displayName" : "IL1R1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1373,
+      "y" : 113
+    },
+    "minX" : 1352,
+    "maxX" : 1432,
+    "minY" : 63,
+    "maxY" : 124,
+    "prop" : {
+      "x" : 1352,
+      "y" : 102,
+      "width" : 42,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1352,
+      "y" : 102
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1394,
+          "y" : 102
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1394,
+          "y" : 102
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 134,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1385,
+          "y" : 99
+        },
+        "to" : {
+          "x" : 1432,
+          "y" : 63
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 924,
+    "reactomeId" : 2026007,
+    "displayName" : "FKBP1A",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 152,
+      "y" : 513
+    },
+    "minX" : 126,
+    "maxX" : 234,
+    "minY" : 496,
+    "maxY" : 575,
+    "prop" : {
+      "x" : 126,
+      "y" : 502,
+      "width" : 52,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 129,
+      "y" : 496
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 178,
+          "y" : 502
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 178,
+          "y" : 502
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1475,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 164,
+          "y" : 527
+        },
+        "to" : {
+          "x" : 225,
+          "y" : 575
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 922,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 181,
+          "y" : 512
+        },
+        "to" : {
+          "x" : 234,
+          "y" : 512
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 925,
+    "reactomeId" : 9679098,
+    "displayName" : "FKBP1A:sirolimus",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 341,
+      "y" : 514
+    },
+    "minX" : 290,
+    "maxX" : 399,
+    "minY" : 490,
+    "maxY" : 532,
+    "prop" : {
+      "x" : 290,
+      "y" : 496,
+      "width" : 103,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 310,
+      "y" : 497
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 393,
+          "y" : 496
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 393,
+          "y" : 496
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 922,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1455,
+    "reactomeId" : 9605366,
+    "displayName" : "HSP90:ATP:FKBP4:PTGES3:NR3C1",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1094,
+      "y" : 179
+    },
+    "minX" : 1028,
+    "maxX" : 1166,
+    "minY" : 155,
+    "maxY" : 214,
+    "prop" : {
+      "x" : 1028,
+      "y" : 161,
+      "width" : 132,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1033,
+      "y" : 162
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1160,
+          "y" : 161
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1160,
+          "y" : 161
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1454,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1108,
+          "y" : 200
+        },
+        "to" : {
+          "x" : 1123,
+          "y" : 214
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1456,
+    "reactomeId" : 9678859,
+    "displayName" : "NR3C1 agonists",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1098,
+      "y" : 263
+    },
+    "minX" : 1039,
+    "maxX" : 1157,
+    "minY" : 214,
+    "maxY" : 274,
+    "prop" : {
+      "x" : 1039,
+      "y" : 252,
+      "width" : 118,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1044,
+      "y" : 252
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1454,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1103,
+          "y" : 246
+        },
+        "to" : {
+          "x" : 1123,
+          "y" : 214
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1457,
+    "reactomeId" : 9678833,
+    "displayName" : "HSP90:ATP:FKBP4:PTGES3:NR3C1:NR3C1 agonists",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1238,
+      "y" : 213
+    },
+    "minX" : 1169,
+    "maxX" : 1313,
+    "minY" : 181,
+    "maxY" : 240,
+    "prop" : {
+      "x" : 1169,
+      "y" : 187,
+      "width" : 138,
+      "height" : 53
+    },
+    "textPosition" : {
+      "x" : 1177,
+      "y" : 191
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1307,
+          "y" : 187
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1307,
+          "y" : 187
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1454,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 448,
+    "reactomeId" : 9679456,
+    "displayName" : "VEGFA inhibitors",
+    "schemaClass" : "CandidateSet",
+    "renderableClass" : "EntitySetDrug",
+    "position" : {
+      "x" : 1315,
+      "y" : 1017
+    },
+    "minX" : 1248,
+    "maxX" : 1383,
+    "minY" : 971,
+    "maxY" : 1029,
+    "prop" : {
+      "x" : 1248,
+      "y" : 1005,
+      "width" : 135,
+      "height" : 24
+    },
+    "textPosition" : {
+      "x" : 1260,
+      "y" : 1006
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 447,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1328,
+          "y" : 999
+        },
+        "to" : {
+          "x" : 1368,
+          "y" : 971
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 450,
+    "reactomeId" : 9679453,
+    "displayName" : "VEGFA-165 dimer:VEGFA inhibitors",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1473,
+      "y" : 971
+    },
+    "minX" : 1422,
+    "maxX" : 1530,
+    "minY" : 941,
+    "maxY" : 996,
+    "prop" : {
+      "x" : 1422,
+      "y" : 947,
+      "width" : 102,
+      "height" : 49
+    },
+    "textPosition" : {
+      "x" : 1427,
+      "y" : 947
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1524,
+          "y" : 947
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1524,
+          "y" : 947
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 447,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1476,
+    "reactomeId" : 9678991,
+    "displayName" : "tacrolimus",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 150,
+      "y" : 575
+    },
+    "isDisease" : true,
+    "minX" : 112,
+    "maxX" : 225,
+    "minY" : 560,
+    "maxY" : 590,
+    "prop" : {
+      "x" : 112,
+      "y" : 560,
+      "width" : 76,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 113,
+      "y" : 564
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1475,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 191,
+          "y" : 575
+        },
+        "to" : {
+          "x" : 225,
+          "y" : 575
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1477,
+    "reactomeId" : 2026019,
+    "displayName" : "FKBP1A:tacrolimus",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 333,
+      "y" : 577
+    },
+    "minX" : 288,
+    "maxX" : 384,
+    "minY" : 554,
+    "maxY" : 595,
+    "prop" : {
+      "x" : 288,
+      "y" : 560,
+      "width" : 90,
+      "height" : 35
+    },
+    "textPosition" : {
+      "x" : 296,
+      "y" : 560
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 378,
+          "y" : 560
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 378,
+          "y" : 560
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1475,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1478,
+    "reactomeId" : 1606333,
+    "displayName" : "dsDNA:ZBP1:pS-172-TBK1",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1467,
+      "y" : 498
+    },
+    "isDisease" : true,
+    "minX" : 1405,
+    "maxX" : 1566,
+    "minY" : 474,
+    "maxY" : 529,
+    "prop" : {
+      "x" : 1405,
+      "y" : 480,
+      "width" : 124,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1412,
+      "y" : 481
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1529,
+          "y" : 480
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1529,
+          "y" : 480
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1381,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1524,
+          "y" : 519
+        },
+        "to" : {
+          "x" : 1566,
+          "y" : 529
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1496,
+    "reactomeId" : 1679575,
+    "displayName" : "C-ter TLR7 dimer",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1655,
+      "y" : 142
+    },
+    "minX" : 1599,
+    "maxX" : 1717,
+    "minY" : 125,
+    "maxY" : 177,
+    "prop" : {
+      "x" : 1599,
+      "y" : 131,
+      "width" : 112,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1600,
+      "y" : 132
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1711,
+          "y" : 131
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1711,
+          "y" : 131
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1495,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1669,
+          "y" : 156
+        },
+        "to" : {
+          "x" : 1700,
+          "y" : 177
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1497,
+    "reactomeId" : 9678628,
+    "displayName" : "HCQ",
+    "schemaClass" : "ChemicalDrug",
+    "renderableClass" : "ChemicalDrug",
+    "position" : {
+      "x" : 1579,
+      "y" : 222
+    },
+    "isDisease" : true,
+    "minX" : 1555,
+    "maxX" : 1701,
+    "minY" : 177,
+    "maxY" : 251,
+    "prop" : {
+      "x" : 1555,
+      "y" : 206,
+      "width" : 48,
+      "height" : 32
+    },
+    "textPosition" : {
+      "x" : 1562,
+      "y" : 211
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "connectors" : [ {
+      "edgeId" : 1495,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1606,
+          "y" : 213
+        },
+        "to" : {
+          "x" : 1700,
+          "y" : 177
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 1502,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1606,
+          "y" : 227
+        },
+        "to" : {
+          "x" : 1701,
+          "y" : 251
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1498,
+    "reactomeId" : 9678617,
+    "displayName" : "C-ter TLR7 dimer:HCQ",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1807,
+      "y" : 179
+    },
+    "minX" : 1749,
+    "maxX" : 1871,
+    "minY" : 155,
+    "maxY" : 197,
+    "prop" : {
+      "x" : 1749,
+      "y" : 161,
+      "width" : 116,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1750,
+      "y" : 162
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1865,
+          "y" : 161
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1865,
+          "y" : 161
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1495,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1503,
+    "reactomeId" : 1679581,
+    "displayName" : "C-ter-TLR9 dimer",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1654,
+      "y" : 313
+    },
+    "minX" : 1597,
+    "maxX" : 1718,
+    "minY" : 251,
+    "maxY" : 324,
+    "prop" : {
+      "x" : 1597,
+      "y" : 302,
+      "width" : 115,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1599,
+      "y" : 303
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1712,
+          "y" : 302
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1712,
+          "y" : 302
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1502,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1662,
+          "y" : 299
+        },
+        "to" : {
+          "x" : 1701,
+          "y" : 251
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1504,
+    "reactomeId" : 9678655,
+    "displayName" : "C-ter TLR9 dimer:HCQ",
+    "schemaClass" : "Complex",
+    "renderableClass" : "ComplexDrug",
+    "position" : {
+      "x" : 1810,
+      "y" : 254
+    },
+    "minX" : 1752,
+    "maxX" : 1874,
+    "minY" : 230,
+    "maxY" : 272,
+    "prop" : {
+      "x" : 1752,
+      "y" : 236,
+      "width" : 116,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1753,
+      "y" : 237
+    },
+    "bgColor" : {
+      "r" : 184,
+      "g" : 154,
+      "b" : 230
+    },
+    "fgColor" : {
+      "r" : 161,
+      "g" : 1,
+      "b" : 2
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1868,
+          "y" : 236
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1868,
+          "y" : 236
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 1502,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 1505,
+    "reactomeId" : 4420158,
+    "displayName" : "VEGFA-165 dimer",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1295,
+      "y" : 941
+    },
+    "minX" : 1237,
+    "maxX" : 1368,
+    "minY" : 924,
+    "maxY" : 971,
+    "prop" : {
+      "x" : 1237,
+      "y" : 930,
+      "width" : 116,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 1237,
+      "y" : 931
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1353,
+          "y" : 930
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1353,
+          "y" : 930
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 447,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1321,
+          "y" : 955
+        },
+        "to" : {
+          "x" : 1368,
+          "y" : 971
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  } ],
+  "edges" : [ {
+    "id" : 898,
+    "reactomeId" : 9681169,
+    "displayName" : "CRBN binds IMiDs",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 425,
+      "y" : 385
+    },
+    "minX" : 398,
+    "maxX" : 447,
+    "minY" : 380,
+    "maxY" : 390,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 403,
+        "y" : 385
+      },
+      "to" : {
+        "x" : 425,
+        "y" : 385
+      }
+    }, {
+      "from" : {
+        "x" : 425,
+        "y" : 385
+      },
+      "to" : {
+        "x" : 447,
+        "y" : 385
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 440,
+        "y" : 389
+      },
+      "b" : {
+        "x" : 447,
+        "y" : 385
+      },
+      "c" : {
+        "x" : 440,
+        "y" : 381
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 440,
+        "y" : 381
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 425,
+        "y" : 385
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 425,
+        "y" : 385
+      }
+    },
+    "inputs" : [ {
+      "id" : 899,
+      "points" : [ {
+        "x" : 370,
+        "y" : 407
+      } ]
+    }, {
+      "id" : 900,
+      "points" : [ {
+        "x" : 374,
+        "y" : 364
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 901
+    } ]
+  }, {
+    "id" : 130,
+    "reactomeId" : 9683546,
+    "displayName" : "FURIN binds furin inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1141,
+      "y" : 68
+    },
+    "minX" : 1136,
+    "maxX" : 1183,
+    "minY" : 63,
+    "maxY" : 86,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1140,
+        "y" : 71
+      },
+      "to" : {
+        "x" : 1141,
+        "y" : 68
+      }
+    }, {
+      "from" : {
+        "x" : 1141,
+        "y" : 68
+      },
+      "to" : {
+        "x" : 1183,
+        "y" : 86
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1175,
+        "y" : 87
+      },
+      "b" : {
+        "x" : 1183,
+        "y" : 86
+      },
+      "c" : {
+        "x" : 1178,
+        "y" : 80
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1178,
+        "y" : 80
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1141,
+        "y" : 68
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1141,
+        "y" : 68
+      }
+    },
+    "inputs" : [ {
+      "id" : 131,
+      "points" : [ {
+        "x" : 1095,
+        "y" : 42
+      } ]
+    }, {
+      "id" : 132,
+      "points" : [ {
+        "x" : 1120,
+        "y" : 91
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 133
+    } ]
+  }, {
+    "id" : 1475,
+    "reactomeId" : 9690461,
+    "displayName" : "FKBP1A binds tacrolimus",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 225,
+      "y" : 576
+    },
+    "minX" : 220,
+    "maxX" : 285,
+    "minY" : 571,
+    "maxY" : 581,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 225,
+        "y" : 575
+      },
+      "to" : {
+        "x" : 225,
+        "y" : 576
+      }
+    }, {
+      "from" : {
+        "x" : 225,
+        "y" : 576
+      },
+      "to" : {
+        "x" : 285,
+        "y" : 576
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 278,
+        "y" : 580
+      },
+      "b" : {
+        "x" : 285,
+        "y" : 576
+      },
+      "c" : {
+        "x" : 278,
+        "y" : 572
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 278,
+        "y" : 572
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 225,
+        "y" : 576
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 225,
+        "y" : 576
+      }
+    },
+    "inputs" : [ {
+      "id" : 1476,
+      "points" : [ {
+        "x" : 191,
+        "y" : 575
+      } ]
+    }, {
+      "id" : 924,
+      "points" : [ {
+        "x" : 164,
+        "y" : 527
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1477
+    } ]
+  }, {
+    "id" : 1540,
+    "reactomeId" : 9678737,
+    "displayName" : "IFNAR1:TYK2 binds TYK2 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1946,
+      "y" : 425
+    },
+    "minX" : 1941,
+    "maxX" : 2002,
+    "minY" : 420,
+    "maxY" : 432,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1946,
+        "y" : 426
+      },
+      "to" : {
+        "x" : 1946,
+        "y" : 425
+      }
+    }, {
+      "from" : {
+        "x" : 1946,
+        "y" : 425
+      },
+      "to" : {
+        "x" : 2002,
+        "y" : 432
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1995,
+        "y" : 435
+      },
+      "b" : {
+        "x" : 2002,
+        "y" : 432
+      },
+      "c" : {
+        "x" : 1996,
+        "y" : 427
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1996,
+        "y" : 427
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1946,
+        "y" : 425
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1946,
+        "y" : 425
+      }
+    },
+    "inputs" : [ {
+      "id" : 1541,
+      "points" : [ {
+        "x" : 2028,
+        "y" : 383
+      } ]
+    }, {
+      "id" : 1542,
+      "points" : [ {
+        "x" : 1910,
+        "y" : 426
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1545
+    } ]
+  }, {
+    "id" : 5,
+    "reactomeId" : 9683488,
+    "displayName" : "ACE2 is glycosylated to glycosylated-ACE2",
+    "schemaClass" : "BlackBoxEvent",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 99,
+      "y" : 236
+    },
+    "minX" : 93,
+    "maxX" : 105,
+    "minY" : 133,
+    "maxY" : 257,
+    "reactionType" : "uncertain",
+    "segments" : [ {
+      "from" : {
+        "x" : 99,
+        "y" : 257
+      },
+      "to" : {
+        "x" : 99,
+        "y" : 236
+      }
+    }, {
+      "from" : {
+        "x" : 99,
+        "y" : 236
+      },
+      "to" : {
+        "x" : 99,
+        "y" : 133
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 103,
+        "y" : 140
+      },
+      "b" : {
+        "x" : 99,
+        "y" : 133
+      },
+      "c" : {
+        "x" : 95,
+        "y" : 140
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 95,
+        "y" : 140
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 93,
+        "y" : 230
+      },
+      "b" : {
+        "x" : 105,
+        "y" : 242
+      },
+      "s" : "?",
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 99,
+        "y" : 236
+      }
+    },
+    "inputs" : [ {
+      "id" : 6,
+      "points" : [ {
+        "x" : 98,
+        "y" : 283
+      } ]
+    }, {
+      "id" : 7,
+      "points" : [ {
+        "x" : 141,
+        "y" : 277
+      } ],
+      "stoichiometry" : 6
+    } ],
+    "outputs" : [ {
+      "id" : 8
+    } ],
+    "inhibitors" : [ {
+      "id" : 9,
+      "points" : [ {
+        "x" : 137,
+        "y" : 236
+      } ]
+    } ]
+  }, {
+    "id" : 134,
+    "reactomeId" : 9681763,
+    "displayName" : "IL1R1 binds IL1R1 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1461,
+      "y" : 73
+    },
+    "minX" : 1427,
+    "maxX" : 1490,
+    "minY" : 58,
+    "maxY" : 84,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1432,
+        "y" : 63
+      },
+      "to" : {
+        "x" : 1461,
+        "y" : 73
+      }
+    }, {
+      "from" : {
+        "x" : 1461,
+        "y" : 73
+      },
+      "to" : {
+        "x" : 1490,
+        "y" : 84
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1482,
+        "y" : 85
+      },
+      "b" : {
+        "x" : 1490,
+        "y" : 84
+      },
+      "c" : {
+        "x" : 1485,
+        "y" : 78
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1485,
+        "y" : 78
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1461,
+        "y" : 73
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1461,
+        "y" : 73
+      }
+    },
+    "inputs" : [ {
+      "id" : 1430,
+      "points" : [ {
+        "x" : 1385,
+        "y" : 99
+      } ]
+    }, {
+      "id" : 135,
+      "points" : [ {
+        "x" : 1384,
+        "y" : 44
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 137
+    } ]
+  }, {
+    "id" : 1353,
+    "reactomeId" : 9680836,
+    "displayName" : "NS5B binds ribavirin",
+    "schemaClass" : "BlackBoxEvent",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1541,
+      "y" : 394
+    },
+    "isDisease" : true,
+    "minX" : 1536,
+    "maxX" : 1581,
+    "minY" : 389,
+    "maxY" : 399,
+    "reactionType" : "omitted",
+    "segments" : [ {
+      "from" : {
+        "x" : 1540,
+        "y" : 393
+      },
+      "to" : {
+        "x" : 1541,
+        "y" : 394
+      }
+    }, {
+      "from" : {
+        "x" : 1541,
+        "y" : 394
+      },
+      "to" : {
+        "x" : 1581,
+        "y" : 394
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1574,
+        "y" : 398
+      },
+      "b" : {
+        "x" : 1581,
+        "y" : 394
+      },
+      "c" : {
+        "x" : 1574,
+        "y" : 390
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1574,
+        "y" : 390
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 1535,
+        "y" : 388
+      },
+      "b" : {
+        "x" : 1547,
+        "y" : 400
+      },
+      "s" : "\\\\",
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 1541,
+        "y" : 394
+      }
+    },
+    "inputs" : [ {
+      "id" : 1354,
+      "points" : [ {
+        "x" : 1514,
+        "y" : 377
+      } ]
+    }, {
+      "id" : 1355,
+      "points" : [ {
+        "x" : 1512,
+        "y" : 416
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1356
+    } ]
+  }, {
+    "id" : 1549,
+    "reactomeId" : 9678935,
+    "displayName" : "IFNAR2:JAK1:STAT2 binds JAK1,2 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1863,
+      "y" : 807
+    },
+    "minX" : 1858,
+    "maxX" : 1876,
+    "minY" : 802,
+    "maxY" : 881,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1863,
+        "y" : 807
+      },
+      "to" : {
+        "x" : 1861,
+        "y" : 808
+      }
+    }, {
+      "from" : {
+        "x" : 1861,
+        "y" : 808
+      },
+      "to" : {
+        "x" : 1876,
+        "y" : 881
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1871,
+        "y" : 875
+      },
+      "b" : {
+        "x" : 1876,
+        "y" : 881
+      },
+      "c" : {
+        "x" : 1879,
+        "y" : 873
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1879,
+        "y" : 873
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1863,
+        "y" : 807
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1863,
+        "y" : 807
+      }
+    },
+    "inputs" : [ {
+      "id" : 1550,
+      "points" : [ {
+        "x" : 2010,
+        "y" : 880
+      } ]
+    }, {
+      "id" : 1301,
+      "points" : [ {
+        "x" : 1801,
+        "y" : 793
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1551
+    } ]
+  }, {
+    "id" : 399,
+    "reactomeId" : 9678854,
+    "displayName" : "S1PR1 binds S1PR1 agonists",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1105,
+      "y" : 945
+    },
+    "minX" : 1100,
+    "maxX" : 1145,
+    "minY" : 921,
+    "maxY" : 950,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1102,
+        "y" : 946
+      },
+      "to" : {
+        "x" : 1105,
+        "y" : 945
+      }
+    }, {
+      "from" : {
+        "x" : 1105,
+        "y" : 945
+      },
+      "to" : {
+        "x" : 1145,
+        "y" : 921
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1141,
+        "y" : 928
+      },
+      "b" : {
+        "x" : 1145,
+        "y" : 921
+      },
+      "c" : {
+        "x" : 1137,
+        "y" : 921
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1137,
+        "y" : 921
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1105,
+        "y" : 945
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1105,
+        "y" : 945
+      }
+    },
+    "inputs" : [ {
+      "id" : 400,
+      "points" : [ {
+        "x" : 1062,
+        "y" : 914
+      } ]
+    }, {
+      "id" : 401,
+      "points" : [ {
+        "x" : 1062,
+        "y" : 962
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 402
+    } ]
+  }, {
+    "id" : 1554,
+    "reactomeId" : 9679787,
+    "displayName" : "HDAC1:2-containing complex binds HDAC2 Inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 792,
+      "y" : 388
+    },
+    "minX" : 756,
+    "maxX" : 823,
+    "minY" : 383,
+    "maxY" : 393,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 761,
+        "y" : 388
+      },
+      "to" : {
+        "x" : 792,
+        "y" : 388
+      }
+    }, {
+      "from" : {
+        "x" : 792,
+        "y" : 388
+      },
+      "to" : {
+        "x" : 823,
+        "y" : 388
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 816,
+        "y" : 392
+      },
+      "b" : {
+        "x" : 823,
+        "y" : 388
+      },
+      "c" : {
+        "x" : 816,
+        "y" : 384
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 816,
+        "y" : 384
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 792,
+        "y" : 388
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 792,
+        "y" : 388
+      }
+    },
+    "inputs" : [ {
+      "id" : 1555,
+      "points" : [ {
+        "x" : 720,
+        "y" : 354
+      } ]
+    }, {
+      "id" : 1556,
+      "points" : [ {
+        "x" : 723,
+        "y" : 400
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1557
+    } ]
+  }, {
+    "id" : 340,
+    "reactomeId" : 9681294,
+    "displayName" : "IL6R binds IL6R inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 133,
+      "y" : 923
+    },
+    "minX" : 100,
+    "maxX" : 162,
+    "minY" : 912,
+    "maxY" : 940,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 105,
+        "y" : 935
+      },
+      "to" : {
+        "x" : 133,
+        "y" : 923
+      }
+    }, {
+      "from" : {
+        "x" : 133,
+        "y" : 923
+      },
+      "to" : {
+        "x" : 162,
+        "y" : 912
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 157,
+        "y" : 918
+      },
+      "b" : {
+        "x" : 162,
+        "y" : 912
+      },
+      "c" : {
+        "x" : 154,
+        "y" : 911
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 154,
+        "y" : 911
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 133,
+        "y" : 923
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 133,
+        "y" : 923
+      }
+    },
+    "inputs" : [ {
+      "id" : 341,
+      "points" : [ {
+        "x" : 70,
+        "y" : 914
+      } ]
+    }, {
+      "id" : 1570,
+      "points" : [ {
+        "x" : 88,
+        "y" : 970
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 343
+    } ]
+  }, {
+    "id" : 1366,
+    "reactomeId" : 9680443,
+    "displayName" : "ROCK1,2 bind ROCKi",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1183,
+      "y" : 635
+    },
+    "minX" : 1178,
+    "maxX" : 1222,
+    "minY" : 630,
+    "maxY" : 640,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1182,
+        "y" : 635
+      },
+      "to" : {
+        "x" : 1183,
+        "y" : 635
+      }
+    }, {
+      "from" : {
+        "x" : 1183,
+        "y" : 635
+      },
+      "to" : {
+        "x" : 1222,
+        "y" : 635
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1215,
+        "y" : 639
+      },
+      "b" : {
+        "x" : 1222,
+        "y" : 635
+      },
+      "c" : {
+        "x" : 1215,
+        "y" : 631
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1215,
+        "y" : 631
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1183,
+        "y" : 635
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1183,
+        "y" : 635
+      }
+    },
+    "inputs" : [ {
+      "id" : 1367,
+      "points" : [ {
+        "x" : 1151,
+        "y" : 668
+      } ]
+    }, {
+      "id" : 1368,
+      "points" : [ {
+        "x" : 1149,
+        "y" : 629
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1369
+    } ]
+  }, {
+    "id" : 1495,
+    "reactomeId" : 9679029,
+    "displayName" : "C-ter TLR7 dimer binds HCQ",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1700,
+      "y" : 178
+    },
+    "minX" : 1695,
+    "maxX" : 1746,
+    "minY" : 173,
+    "maxY" : 183,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1700,
+        "y" : 177
+      },
+      "to" : {
+        "x" : 1700,
+        "y" : 178
+      }
+    }, {
+      "from" : {
+        "x" : 1700,
+        "y" : 178
+      },
+      "to" : {
+        "x" : 1746,
+        "y" : 178
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1739,
+        "y" : 182
+      },
+      "b" : {
+        "x" : 1746,
+        "y" : 178
+      },
+      "c" : {
+        "x" : 1739,
+        "y" : 174
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1739,
+        "y" : 174
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1700,
+        "y" : 178
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1700,
+        "y" : 178
+      }
+    },
+    "inputs" : [ {
+      "id" : 1496,
+      "points" : [ {
+        "x" : 1669,
+        "y" : 156
+      } ]
+    }, {
+      "id" : 1497,
+      "points" : [ {
+        "x" : 1606,
+        "y" : 213
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1498
+    } ]
+  }, {
+    "id" : 922,
+    "reactomeId" : 9679044,
+    "displayName" : "FKBP1A binds sirolimus",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 236,
+      "y" : 514
+    },
+    "minX" : 231,
+    "maxX" : 287,
+    "minY" : 509,
+    "maxY" : 519,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 234,
+        "y" : 512
+      },
+      "to" : {
+        "x" : 236,
+        "y" : 514
+      }
+    }, {
+      "from" : {
+        "x" : 236,
+        "y" : 514
+      },
+      "to" : {
+        "x" : 287,
+        "y" : 514
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 280,
+        "y" : 518
+      },
+      "b" : {
+        "x" : 287,
+        "y" : 514
+      },
+      "c" : {
+        "x" : 280,
+        "y" : 510
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 280,
+        "y" : 510
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 236,
+        "y" : 514
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 236,
+        "y" : 514
+      }
+    },
+    "inputs" : [ {
+      "id" : 924,
+      "points" : [ {
+        "x" : 181,
+        "y" : 512
+      } ]
+    }, {
+      "id" : 1418,
+      "points" : [ {
+        "x" : 194,
+        "y" : 486
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 925
+    } ]
+  }, {
+    "id" : 27,
+    "reactomeId" : 9681616,
+    "displayName" : "AP2 binds chlorpromazine",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 394,
+      "y" : 233
+    },
+    "minX" : 389,
+    "maxX" : 437,
+    "minY" : 228,
+    "maxY" : 238,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 393,
+        "y" : 233
+      },
+      "to" : {
+        "x" : 394,
+        "y" : 233
+      }
+    }, {
+      "from" : {
+        "x" : 394,
+        "y" : 233
+      },
+      "to" : {
+        "x" : 437,
+        "y" : 233
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 430,
+        "y" : 237
+      },
+      "b" : {
+        "x" : 437,
+        "y" : 233
+      },
+      "c" : {
+        "x" : 430,
+        "y" : 229
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 430,
+        "y" : 229
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 394,
+        "y" : 233
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 394,
+        "y" : 233
+      }
+    },
+    "inputs" : [ {
+      "id" : 28,
+      "points" : [ {
+        "x" : 352,
+        "y" : 252
+      } ]
+    }, {
+      "id" : 29,
+      "points" : [ {
+        "x" : 348,
+        "y" : 214
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 30
+    } ]
+  }, {
+    "id" : 1307,
+    "reactomeId" : 9678561,
+    "displayName" : "IFNGR1:JAK1:INFGR2:JAK2 binds JAK1,2 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1597,
+      "y" : 823
+    },
+    "minX" : 1592,
+    "maxX" : 1674,
+    "minY" : 818,
+    "maxY" : 881,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1595,
+        "y" : 824
+      },
+      "to" : {
+        "x" : 1597,
+        "y" : 823
+      }
+    }, {
+      "from" : {
+        "x" : 1597,
+        "y" : 823
+      },
+      "to" : {
+        "x" : 1674,
+        "y" : 881
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1666,
+        "y" : 880
+      },
+      "b" : {
+        "x" : 1674,
+        "y" : 881
+      },
+      "c" : {
+        "x" : 1671,
+        "y" : 874
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1671,
+        "y" : 874
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1597,
+        "y" : 823
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1597,
+        "y" : 823
+      }
+    },
+    "inputs" : [ {
+      "id" : 1301,
+      "points" : [ {
+        "x" : 1691,
+        "y" : 796
+      } ]
+    }, {
+      "id" : 1552,
+      "points" : [ {
+        "x" : 1547,
+        "y" : 882
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1311
+    } ]
+  }, {
+    "id" : 1566,
+    "reactomeId" : 9691421,
+    "displayName" : "BTK binds BTK inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 2081,
+      "y" : 222
+    },
+    "minX" : 2077,
+    "maxX" : 2087,
+    "minY" : 199,
+    "maxY" : 240,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 2082,
+        "y" : 204
+      },
+      "to" : {
+        "x" : 2081,
+        "y" : 222
+      }
+    }, {
+      "from" : {
+        "x" : 2081,
+        "y" : 222
+      },
+      "to" : {
+        "x" : 2081,
+        "y" : 240
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 2077,
+        "y" : 233
+      },
+      "b" : {
+        "x" : 2081,
+        "y" : 240
+      },
+      "c" : {
+        "x" : 2085,
+        "y" : 233
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 2085,
+        "y" : 233
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 2081,
+        "y" : 222
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 2081,
+        "y" : 222
+      }
+    },
+    "inputs" : [ {
+      "id" : 1567,
+      "points" : [ {
+        "x" : 2082,
+        "y" : 167
+      } ]
+    }, {
+      "id" : 1568,
+      "points" : [ {
+        "x" : 2127,
+        "y" : 197
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1569
+    } ]
+  }, {
+    "id" : 1502,
+    "reactomeId" : 9679045,
+    "displayName" : "C-ter TLR9 dimer binds HCQ",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1701,
+      "y" : 250
+    },
+    "minX" : 1696,
+    "maxX" : 1749,
+    "minY" : 245,
+    "maxY" : 255,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1701,
+        "y" : 251
+      },
+      "to" : {
+        "x" : 1701,
+        "y" : 250
+      }
+    }, {
+      "from" : {
+        "x" : 1701,
+        "y" : 250
+      },
+      "to" : {
+        "x" : 1749,
+        "y" : 251
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1742,
+        "y" : 255
+      },
+      "b" : {
+        "x" : 1749,
+        "y" : 251
+      },
+      "c" : {
+        "x" : 1742,
+        "y" : 247
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1742,
+        "y" : 247
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1701,
+        "y" : 250
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1701,
+        "y" : 250
+      }
+    },
+    "inputs" : [ {
+      "id" : 1503,
+      "points" : [ {
+        "x" : 1662,
+        "y" : 299
+      } ]
+    }, {
+      "id" : 1497,
+      "points" : [ {
+        "x" : 1606,
+        "y" : 227
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1504
+    } ]
+  }, {
+    "id" : 1374,
+    "reactomeId" : 9679816,
+    "displayName" : "SIGMAR1 binds dextromethorphan",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1166,
+      "y" : 414
+    },
+    "minX" : 1161,
+    "maxX" : 1205,
+    "minY" : 409,
+    "maxY" : 419,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1166,
+        "y" : 415
+      },
+      "to" : {
+        "x" : 1166,
+        "y" : 414
+      }
+    }, {
+      "from" : {
+        "x" : 1166,
+        "y" : 414
+      },
+      "to" : {
+        "x" : 1205,
+        "y" : 411
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1198,
+        "y" : 416
+      },
+      "b" : {
+        "x" : 1205,
+        "y" : 411
+      },
+      "c" : {
+        "x" : 1198,
+        "y" : 408
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1198,
+        "y" : 408
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1166,
+        "y" : 414
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1166,
+        "y" : 414
+      }
+    },
+    "inputs" : [ {
+      "id" : 1375,
+      "points" : [ {
+        "x" : 1110,
+        "y" : 451
+      } ]
+    }, {
+      "id" : 1376,
+      "points" : [ {
+        "x" : 1126,
+        "y" : 380
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1377
+    } ]
+  }, {
+    "id" : 1312,
+    "reactomeId" : 9679028,
+    "displayName" : "JAK3 binds JAK3 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1915,
+      "y" : 535
+    },
+    "minX" : 1910,
+    "maxX" : 1949,
+    "minY" : 530,
+    "maxY" : 557,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1914,
+        "y" : 535
+      },
+      "to" : {
+        "x" : 1915,
+        "y" : 535
+      }
+    }, {
+      "from" : {
+        "x" : 1915,
+        "y" : 535
+      },
+      "to" : {
+        "x" : 1949,
+        "y" : 557
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1941,
+        "y" : 557
+      },
+      "b" : {
+        "x" : 1949,
+        "y" : 557
+      },
+      "c" : {
+        "x" : 1945,
+        "y" : 550
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1945,
+        "y" : 550
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1915,
+        "y" : 535
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1915,
+        "y" : 535
+      }
+    },
+    "inputs" : [ {
+      "id" : 1313,
+      "points" : [ {
+        "x" : 1957,
+        "y" : 508
+      } ]
+    }, {
+      "id" : 1314,
+      "points" : [ {
+        "x" : 1894,
+        "y" : 535
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1317
+    } ]
+  }, {
+    "id" : 353,
+    "reactomeId" : 9679740,
+    "displayName" : "ITGA4:ITGB1 binds natalizumab",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 357,
+      "y" : 948
+    },
+    "minX" : 352,
+    "maxX" : 402,
+    "minY" : 922,
+    "maxY" : 953,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 358,
+        "y" : 947
+      },
+      "to" : {
+        "x" : 357,
+        "y" : 948
+      }
+    }, {
+      "from" : {
+        "x" : 357,
+        "y" : 948
+      },
+      "to" : {
+        "x" : 402,
+        "y" : 922
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 398,
+        "y" : 929
+      },
+      "b" : {
+        "x" : 402,
+        "y" : 922
+      },
+      "c" : {
+        "x" : 394,
+        "y" : 922
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 394,
+        "y" : 922
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 357,
+        "y" : 948
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 357,
+        "y" : 948
+      }
+    },
+    "inputs" : [ {
+      "id" : 354,
+      "points" : [ {
+        "x" : 329,
+        "y" : 969
+      } ]
+    }, {
+      "id" : 355,
+      "points" : [ {
+        "x" : 343,
+        "y" : 919
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 356
+    } ]
+  }, {
+    "id" : 1378,
+    "reactomeId" : 9679780,
+    "displayName" : "SIGMAR1 binds fluvoxamine",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1198,
+      "y" : 505
+    },
+    "minX" : 1193,
+    "maxX" : 1228,
+    "minY" : 500,
+    "maxY" : 510,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1196,
+        "y" : 505
+      },
+      "to" : {
+        "x" : 1198,
+        "y" : 505
+      }
+    }, {
+      "from" : {
+        "x" : 1198,
+        "y" : 505
+      },
+      "to" : {
+        "x" : 1228,
+        "y" : 505
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1221,
+        "y" : 509
+      },
+      "b" : {
+        "x" : 1228,
+        "y" : 505
+      },
+      "c" : {
+        "x" : 1221,
+        "y" : 501
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1221,
+        "y" : 501
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1198,
+        "y" : 505
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1198,
+        "y" : 505
+      }
+    },
+    "inputs" : [ {
+      "id" : 1379,
+      "points" : [ {
+        "x" : 1157,
+        "y" : 520
+      } ]
+    }, {
+      "id" : 1375,
+      "points" : [ {
+        "x" : 1124,
+        "y" : 481
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1380
+    } ]
+  }, {
+    "id" : 1635,
+    "reactomeId" : 9696179,
+    "displayName" : "IFNAR2:JAK1:STAT2 binds type 1 interferon analogs",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 2082,
+      "y" : 817
+    },
+    "minX" : 2078,
+    "maxX" : 2088,
+    "minY" : 785,
+    "maxY" : 855,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 2083,
+        "y" : 850
+      },
+      "to" : {
+        "x" : 2082,
+        "y" : 817
+      }
+    }, {
+      "from" : {
+        "x" : 2082,
+        "y" : 817
+      },
+      "to" : {
+        "x" : 2082,
+        "y" : 785
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 2086,
+        "y" : 792
+      },
+      "b" : {
+        "x" : 2082,
+        "y" : 785
+      },
+      "c" : {
+        "x" : 2078,
+        "y" : 792
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 2078,
+        "y" : 792
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 2082,
+        "y" : 817
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 2082,
+        "y" : 817
+      }
+    },
+    "inputs" : [ {
+      "id" : 1550,
+      "points" : [ {
+        "x" : 2060,
+        "y" : 880
+      } ]
+    }, {
+      "id" : 1636,
+      "points" : [ {
+        "x" : 2154,
+        "y" : 877
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1637
+    } ]
+  }, {
+    "id" : 36,
+    "reactomeId" : 9684068,
+    "displayName" : "ATP1A:ATP1B:FXYD binds cardiac glycosides",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 381,
+      "y" : 81
+    },
+    "minX" : 358,
+    "maxX" : 399,
+    "minY" : 72,
+    "maxY" : 86,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 363,
+        "y" : 77
+      },
+      "to" : {
+        "x" : 381,
+        "y" : 81
+      }
+    }, {
+      "from" : {
+        "x" : 381,
+        "y" : 81
+      },
+      "to" : {
+        "x" : 399,
+        "y" : 86
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 391,
+        "y" : 88
+      },
+      "b" : {
+        "x" : 399,
+        "y" : 86
+      },
+      "c" : {
+        "x" : 393,
+        "y" : 80
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 393,
+        "y" : 80
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 381,
+        "y" : 81
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 381,
+        "y" : 81
+      }
+    },
+    "inputs" : [ {
+      "id" : 37,
+      "points" : [ {
+        "x" : 321,
+        "y" : 47
+      } ]
+    }, {
+      "id" : 1415,
+      "points" : [ {
+        "x" : 303,
+        "y" : 101
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 39
+    } ]
+  }, {
+    "id" : 1381,
+    "reactomeId" : 9679819,
+    "displayName" : "TBK1 binds amlexanox",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1565,
+      "y" : 529
+    },
+    "minX" : 1560,
+    "maxX" : 1610,
+    "minY" : 524,
+    "maxY" : 534,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1566,
+        "y" : 529
+      },
+      "to" : {
+        "x" : 1565,
+        "y" : 529
+      }
+    }, {
+      "from" : {
+        "x" : 1565,
+        "y" : 529
+      },
+      "to" : {
+        "x" : 1610,
+        "y" : 529
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1603,
+        "y" : 533
+      },
+      "b" : {
+        "x" : 1610,
+        "y" : 529
+      },
+      "c" : {
+        "x" : 1603,
+        "y" : 525
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1603,
+        "y" : 525
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1565,
+        "y" : 529
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1565,
+        "y" : 529
+      }
+    },
+    "inputs" : [ {
+      "id" : 1383,
+      "points" : [ {
+        "x" : 1528,
+        "y" : 539
+      } ]
+    }, {
+      "id" : 1478,
+      "points" : [ {
+        "x" : 1524,
+        "y" : 519
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1384
+    } ]
+  }, {
+    "id" : 1573,
+    "reactomeId" : 9647987,
+    "displayName" : "FNTB inhibitors bind FNTA:FNTB",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1428,
+      "y" : 737
+    },
+    "minX" : 1353,
+    "maxX" : 1433,
+    "minY" : 732,
+    "maxY" : 770,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1429,
+        "y" : 739
+      },
+      "to" : {
+        "x" : 1428,
+        "y" : 737
+      }
+    }, {
+      "from" : {
+        "x" : 1428,
+        "y" : 737
+      },
+      "to" : {
+        "x" : 1353,
+        "y" : 770
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1358,
+        "y" : 764
+      },
+      "b" : {
+        "x" : 1353,
+        "y" : 770
+      },
+      "c" : {
+        "x" : 1361,
+        "y" : 771
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1361,
+        "y" : 771
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1428,
+        "y" : 737
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1428,
+        "y" : 737
+      }
+    },
+    "inputs" : [ {
+      "id" : 1574,
+      "points" : [ {
+        "x" : 1447,
+        "y" : 678
+      } ]
+    }, {
+      "id" : 1575,
+      "points" : [ {
+        "x" : 1497,
+        "y" : 752
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1576
+    } ]
+  }, {
+    "id" : 45,
+    "reactomeId" : 9680408,
+    "displayName" : "BRD4 binds fedratinib",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 767,
+      "y" : 225
+    },
+    "minX" : 744,
+    "maxX" : 786,
+    "minY" : 220,
+    "maxY" : 230,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 749,
+        "y" : 225
+      },
+      "to" : {
+        "x" : 767,
+        "y" : 225
+      }
+    }, {
+      "from" : {
+        "x" : 767,
+        "y" : 225
+      },
+      "to" : {
+        "x" : 786,
+        "y" : 225
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 779,
+        "y" : 229
+      },
+      "b" : {
+        "x" : 786,
+        "y" : 225
+      },
+      "c" : {
+        "x" : 779,
+        "y" : 221
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 779,
+        "y" : 221
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 767,
+        "y" : 225
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 767,
+        "y" : 225
+      }
+    },
+    "inputs" : [ {
+      "id" : 46,
+      "points" : [ {
+        "x" : 706,
+        "y" : 205
+      } ]
+    }, {
+      "id" : 47,
+      "points" : [ {
+        "x" : 721,
+        "y" : 237
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 48
+    } ]
+  }, {
+    "id" : 1582,
+    "reactomeId" : 9712274,
+    "displayName" : "NFE2L2 inducers bind to KEAP1:CUL3:RBX1:NFE2L2",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 212,
+      "y" : 767
+    },
+    "minX" : 207,
+    "maxX" : 272,
+    "minY" : 762,
+    "maxY" : 772,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 213,
+        "y" : 765
+      },
+      "to" : {
+        "x" : 212,
+        "y" : 767
+      }
+    }, {
+      "from" : {
+        "x" : 212,
+        "y" : 767
+      },
+      "to" : {
+        "x" : 272,
+        "y" : 768
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 265,
+        "y" : 772
+      },
+      "b" : {
+        "x" : 272,
+        "y" : 768
+      },
+      "c" : {
+        "x" : 265,
+        "y" : 764
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 265,
+        "y" : 764
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 212,
+        "y" : 767
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 212,
+        "y" : 767
+      }
+    },
+    "inputs" : [ {
+      "id" : 1583,
+      "points" : [ {
+        "x" : 158,
+        "y" : 747
+      } ]
+    }, {
+      "id" : 1584,
+      "points" : [ {
+        "x" : 153,
+        "y" : 779
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1585
+    } ]
+  }, {
+    "id" : 1454,
+    "reactomeId" : 9678925,
+    "displayName" : "NR3C1 binds NR3C1 agonists",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1122,
+      "y" : 213
+    },
+    "minX" : 1117,
+    "maxX" : 1166,
+    "minY" : 208,
+    "maxY" : 218,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1123,
+        "y" : 214
+      },
+      "to" : {
+        "x" : 1122,
+        "y" : 213
+      }
+    }, {
+      "from" : {
+        "x" : 1122,
+        "y" : 213
+      },
+      "to" : {
+        "x" : 1166,
+        "y" : 213
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1159,
+        "y" : 217
+      },
+      "b" : {
+        "x" : 1166,
+        "y" : 213
+      },
+      "c" : {
+        "x" : 1159,
+        "y" : 209
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1159,
+        "y" : 209
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1122,
+        "y" : 213
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1122,
+        "y" : 213
+      }
+    },
+    "inputs" : [ {
+      "id" : 1455,
+      "points" : [ {
+        "x" : 1108,
+        "y" : 200
+      } ]
+    }, {
+      "id" : 1456,
+      "points" : [ {
+        "x" : 1103,
+        "y" : 246
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1457
+    } ]
+  }, {
+    "id" : 372,
+    "reactomeId" : 9679421,
+    "displayName" : "PDCD1 binds PDCD1 inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 615,
+      "y" : 933
+    },
+    "minX" : 610,
+    "maxX" : 642,
+    "minY" : 918,
+    "maxY" : 938,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 614,
+        "y" : 933
+      },
+      "to" : {
+        "x" : 615,
+        "y" : 933
+      }
+    }, {
+      "from" : {
+        "x" : 615,
+        "y" : 933
+      },
+      "to" : {
+        "x" : 642,
+        "y" : 918
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 638,
+        "y" : 925
+      },
+      "b" : {
+        "x" : 642,
+        "y" : 918
+      },
+      "c" : {
+        "x" : 634,
+        "y" : 918
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 634,
+        "y" : 918
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 615,
+        "y" : 933
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 615,
+        "y" : 933
+      }
+    },
+    "inputs" : [ {
+      "id" : 373,
+      "points" : [ {
+        "x" : 573,
+        "y" : 953
+      } ]
+    }, {
+      "id" : 374,
+      "points" : [ {
+        "x" : 571,
+        "y" : 912
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 375
+    } ]
+  }, {
+    "id" : 118,
+    "reactomeId" : 9679775,
+    "displayName" : "COMT binds COMT Inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 669,
+      "y" : 79
+    },
+    "minX" : 644,
+    "maxX" : 690,
+    "minY" : 65,
+    "maxY" : 88,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 649,
+        "y" : 70
+      },
+      "to" : {
+        "x" : 669,
+        "y" : 79
+      }
+    }, {
+      "from" : {
+        "x" : 669,
+        "y" : 79
+      },
+      "to" : {
+        "x" : 690,
+        "y" : 88
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 682,
+        "y" : 89
+      },
+      "b" : {
+        "x" : 690,
+        "y" : 88
+      },
+      "c" : {
+        "x" : 685,
+        "y" : 82
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 685,
+        "y" : 82
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 669,
+        "y" : 79
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 669,
+        "y" : 79
+      }
+    },
+    "inputs" : [ {
+      "id" : 119,
+      "points" : [ {
+        "x" : 617,
+        "y" : 94
+      } ]
+    }, {
+      "id" : 120,
+      "points" : [ {
+        "x" : 614,
+        "y" : 49
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 121
+    } ]
+  }, {
+    "id" : 1400,
+    "reactomeId" : 9685830,
+    "displayName" : "TUBB binds colchicine",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1422,
+      "y" : 280
+    },
+    "minX" : 1393,
+    "maxX" : 1446,
+    "minY" : 275,
+    "maxY" : 285,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1398,
+        "y" : 280
+      },
+      "to" : {
+        "x" : 1422,
+        "y" : 280
+      }
+    }, {
+      "from" : {
+        "x" : 1422,
+        "y" : 280
+      },
+      "to" : {
+        "x" : 1446,
+        "y" : 280
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1439,
+        "y" : 284
+      },
+      "b" : {
+        "x" : 1446,
+        "y" : 280
+      },
+      "c" : {
+        "x" : 1439,
+        "y" : 276
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1439,
+        "y" : 276
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1422,
+        "y" : 280
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1422,
+        "y" : 280
+      }
+    },
+    "inputs" : [ {
+      "id" : 1401,
+      "points" : [ {
+        "x" : 1368,
+        "y" : 269
+      } ]
+    }, {
+      "id" : 1402,
+      "points" : [ {
+        "x" : 1368,
+        "y" : 296
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1403
+    } ]
+  }, {
+    "id" : 122,
+    "reactomeId" : 9684627,
+    "displayName" : "CYSLTR1 binds CYSLTR1 antagonists",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 913,
+      "y" : 63
+    },
+    "minX" : 908,
+    "maxX" : 947,
+    "minY" : 58,
+    "maxY" : 85,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 913,
+        "y" : 62
+      },
+      "to" : {
+        "x" : 913,
+        "y" : 63
+      }
+    }, {
+      "from" : {
+        "x" : 913,
+        "y" : 63
+      },
+      "to" : {
+        "x" : 947,
+        "y" : 85
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 939,
+        "y" : 85
+      },
+      "b" : {
+        "x" : 947,
+        "y" : 85
+      },
+      "c" : {
+        "x" : 943,
+        "y" : 78
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 943,
+        "y" : 78
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 913,
+        "y" : 63
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 913,
+        "y" : 63
+      }
+    },
+    "inputs" : [ {
+      "id" : 123,
+      "points" : [ {
+        "x" : 871,
+        "y" : 94
+      } ]
+    }, {
+      "id" : 124,
+      "points" : [ {
+        "x" : 881,
+        "y" : 42
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 125
+    } ]
+  }, {
+    "id" : 381,
+    "reactomeId" : 9679839,
+    "displayName" : "RIPK1 binds ponatinib",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 848,
+      "y" : 933
+    },
+    "minX" : 843,
+    "maxX" : 911,
+    "minY" : 912,
+    "maxY" : 938,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 849,
+        "y" : 935
+      },
+      "to" : {
+        "x" : 848,
+        "y" : 933
+      }
+    }, {
+      "from" : {
+        "x" : 848,
+        "y" : 933
+      },
+      "to" : {
+        "x" : 911,
+        "y" : 912
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 906,
+        "y" : 918
+      },
+      "b" : {
+        "x" : 911,
+        "y" : 912
+      },
+      "c" : {
+        "x" : 903,
+        "y" : 910
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 903,
+        "y" : 910
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 848,
+        "y" : 933
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 848,
+        "y" : 933
+      }
+    },
+    "inputs" : [ {
+      "id" : 383,
+      "points" : [ {
+        "x" : 814,
+        "y" : 915
+      } ]
+    }, {
+      "id" : 1572,
+      "points" : [ {
+        "x" : 827,
+        "y" : 966
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 384
+    } ]
+  }, {
+    "id" : 1151,
+    "reactomeId" : 9678749,
+    "displayName" : "IMPDH tetramers bind IMPDH inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 616,
+      "y" : 758
+    },
+    "minX" : 582,
+    "maxX" : 646,
+    "minY" : 753,
+    "maxY" : 763,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 587,
+        "y" : 758
+      },
+      "to" : {
+        "x" : 616,
+        "y" : 758
+      }
+    }, {
+      "from" : {
+        "x" : 616,
+        "y" : 758
+      },
+      "to" : {
+        "x" : 646,
+        "y" : 758
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 639,
+        "y" : 762
+      },
+      "b" : {
+        "x" : 646,
+        "y" : 758
+      },
+      "c" : {
+        "x" : 639,
+        "y" : 754
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 639,
+        "y" : 754
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 616,
+        "y" : 758
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 616,
+        "y" : 758
+      }
+    },
+    "inputs" : [ {
+      "id" : 1152,
+      "points" : [ {
+        "x" : 569,
+        "y" : 791
+      } ]
+    }, {
+      "id" : 1153,
+      "points" : [ {
+        "x" : 553,
+        "y" : 730
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 1154
+    } ]
+  }, {
+    "id" : 447,
+    "reactomeId" : 9679477,
+    "displayName" : "VEGFA-165 dimer binds VEGFA inhibitors",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1369,
+      "y" : 970
+    },
+    "minX" : 1364,
+    "maxX" : 1419,
+    "minY" : 965,
+    "maxY" : 975,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1368,
+        "y" : 971
+      },
+      "to" : {
+        "x" : 1369,
+        "y" : 970
+      }
+    }, {
+      "from" : {
+        "x" : 1369,
+        "y" : 970
+      },
+      "to" : {
+        "x" : 1419,
+        "y" : 970
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1412,
+        "y" : 974
+      },
+      "b" : {
+        "x" : 1419,
+        "y" : 970
+      },
+      "c" : {
+        "x" : 1412,
+        "y" : 966
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1412,
+        "y" : 966
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1369,
+        "y" : 970
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1369,
+        "y" : 970
+      }
+    },
+    "inputs" : [ {
+      "id" : 448,
+      "points" : [ {
+        "x" : 1328,
+        "y" : 999
+      } ]
+    }, {
+      "id" : 1505,
+      "points" : [ {
+        "x" : 1321,
+        "y" : 955
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 450
+    } ]
+  } ],
+  "compartments" : [ {
+    "id" : 1,
+    "reactomeId" : 70101,
+    "displayName" : "cytosol",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 1042,
+      "y" : 506
+    },
+    "minX" : 0,
+    "maxX" : 2085,
+    "minY" : 106,
+    "maxY" : 906,
+    "prop" : {
+      "x" : 0,
+      "y" : 106,
+      "width" : 2085,
+      "height" : 800
+    },
+    "textPosition" : {
+      "x" : 171,
+      "y" : 145
+    },
+    "insets" : {
+      "x" : 9,
+      "y" : 116,
+      "width" : 2069,
+      "height" : 783
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 3, 4, 8, 27, 28, 29, 30, 39, 119, 121, 123, 125, 132, 133, 898, 899, 900, 901, 922, 924, 925, 1151, 1152, 1153, 1154, 1353, 1354, 1355, 1356, 1366, 1367, 1368, 1369, 1374, 1375, 1376, 1377, 1378, 1379, 1380, 1381, 1383, 1384, 1402, 1415, 1418, 1430, 1454, 1455, 1456, 1457, 1477, 1476, 1475, 1478, 1494, 137, 1400, 1401, 1403, 1497, 1313, 1317, 1545, 1541, 1301, 1312, 1314, 1540, 1542, 1543, 1544, 1567, 1566, 1569, 1575, 1574, 341, 343, 355, 356, 374, 375, 383, 384, 400, 402, 1550, 1551, 1552, 1311, 1307, 1582, 1585, 1583, 1584, 1549, 1576, 1573, 1635, 1637 ]
+  }, {
+    "id" : 3,
+    "reactomeId" : 17957,
+    "displayName" : "endoplasmic reticulum lumen",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 130,
+      "y" : 278
+    },
+    "minX" : 26,
+    "maxX" : 234,
+    "minY" : 205,
+    "maxY" : 352,
+    "prop" : {
+      "x" : 26,
+      "y" : 205,
+      "width" : 208,
+      "height" : 147
+    },
+    "textPosition" : {
+      "x" : 34,
+      "y" : 307
+    },
+    "insets" : {
+      "x" : 36,
+      "y" : 213,
+      "width" : 190,
+      "height" : 130
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 5, 7, 6, 9 ]
+  }, {
+    "id" : 4,
+    "reactomeId" : 7660,
+    "displayName" : "nucleoplasm",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 806,
+      "y" : 404
+    },
+    "minX" : 601,
+    "maxX" : 1011,
+    "minY" : 157,
+    "maxY" : 652,
+    "prop" : {
+      "x" : 601,
+      "y" : 157,
+      "width" : 410,
+      "height" : 495
+    },
+    "textPosition" : {
+      "x" : 846,
+      "y" : 271
+    },
+    "insets" : {
+      "x" : 611,
+      "y" : 166,
+      "width" : 390,
+      "height" : 477
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 46, 47, 48, 45, 1554, 1555, 1556, 1557 ]
+  }, {
+    "id" : 1494,
+    "reactomeId" : 171907,
+    "displayName" : "endosome lumen",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 1735,
+      "y" : 221
+    },
+    "minX" : 1651,
+    "maxX" : 1819,
+    "minY" : 120,
+    "maxY" : 322,
+    "prop" : {
+      "x" : 1651,
+      "y" : 120,
+      "width" : 168,
+      "height" : 202
+    },
+    "textPosition" : {
+      "x" : 1689,
+      "y" : 276
+    },
+    "insets" : {
+      "x" : 1659,
+      "y" : 127,
+      "width" : 152,
+      "height" : 185
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 1495, 1496, 1498, 1504, 1502, 1503 ]
+  } ],
+  "notes" : [ ],
+  "links" : [ {
+    "id" : 1543,
+    "renderableClass" : "EntitySetAndEntitySetLink",
+    "position" : {
+      "x" : 1769,
+      "y" : 536
+    },
+    "minX" : 1747,
+    "maxX" : 1840,
+    "minY" : 444,
+    "maxY" : 762,
+    "segments" : [ {
+      "from" : {
+        "x" : 1840,
+        "y" : 444
+      },
+      "to" : {
+        "x" : 1769,
+        "y" : 536
+      }
+    }, {
+      "from" : {
+        "x" : 1769,
+        "y" : 536
+      },
+      "to" : {
+        "x" : 1747,
+        "y" : 762
+      }
+    } ],
+    "reactionShape" : {
+      "a" : {
+        "x" : 1763,
+        "y" : 530
+      },
+      "b" : {
+        "x" : 1775,
+        "y" : 542
+      },
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 1769,
+        "y" : 536
+      }
+    },
+    "inputs" : [ {
+      "id" : 1542
+    } ],
+    "outputs" : [ {
+      "id" : 1301
+    } ]
+  }, {
+    "id" : 1544,
+    "renderableClass" : "EntitySetAndEntitySetLink",
+    "position" : {
+      "x" : 1843,
+      "y" : 481
+    },
+    "minX" : 1837,
+    "maxX" : 1849,
+    "minY" : 444,
+    "maxY" : 518,
+    "segments" : [ {
+      "from" : {
+        "x" : 1847,
+        "y" : 444
+      },
+      "to" : {
+        "x" : 1840,
+        "y" : 518
+      }
+    } ],
+    "reactionShape" : {
+      "a" : {
+        "x" : 1837,
+        "y" : 475
+      },
+      "b" : {
+        "x" : 1849,
+        "y" : 487
+      },
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 1843,
+        "y" : 481
+      }
+    },
+    "inputs" : [ {
+      "id" : 1542
+    } ],
+    "outputs" : [ {
+      "id" : 1314
+    } ]
+  } ],
+  "shadows" : [ ],
+  "minX" : 0,
+  "maxX" : 2250,
+  "minY" : 0,
+  "maxY" : 1029,
+  "disease" : false
+}

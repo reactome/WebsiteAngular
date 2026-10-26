@@ -1,0 +1,839 @@
+{
+  "dbId" : 9615710,
+  "stableId" : "R-HSA-9615710",
+  "displayName" : "Late endosomal microautophagy",
+  "nodes" : [ {
+    "id" : 40,
+    "reactomeId" : 9631107,
+    "displayName" : "PL:HSPA8:Autophagy substrate",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 609,
+      "y" : 442
+    },
+    "minX" : 543,
+    "maxX" : 682,
+    "minY" : 418,
+    "maxY" : 460,
+    "prop" : {
+      "x" : 543,
+      "y" : 424,
+      "width" : 133,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 570,
+      "y" : 411
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 676,
+          "y" : 424
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 676,
+          "y" : 424
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 24,
+    "reactomeId" : 264476,
+    "displayName" : "HSPA8",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 285,
+      "y" : 231
+    },
+    "minX" : 262,
+    "maxX" : 347,
+    "minY" : 178,
+    "maxY" : 242,
+    "prop" : {
+      "x" : 262,
+      "y" : 220,
+      "width" : 47,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 265,
+      "y" : 214
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 309,
+          "y" : 220
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 309,
+          "y" : 220
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 23,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 297,
+          "y" : 217
+        },
+        "to" : {
+          "x" : 347,
+          "y" : 178
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 25,
+    "reactomeId" : 9615715,
+    "displayName" : "Substrates for chaperone mediated autophagy",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 286,
+      "y" : 110
+    },
+    "minX" : 220,
+    "maxX" : 353,
+    "minY" : 85,
+    "maxY" : 178,
+    "prop" : {
+      "x" : 220,
+      "y" : 85,
+      "width" : 133,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 235,
+      "y" : 79
+    },
+    "connectors" : [ {
+      "edgeId" : 23,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 308,
+          "y" : 141
+        },
+        "to" : {
+          "x" : 347,
+          "y" : 178
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 41,
+    "reactomeId" : 9631182,
+    "displayName" : "ESCRT-III",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 718,
+      "y" : 377
+    },
+    "minX" : 618,
+    "maxX" : 755,
+    "minY" : 354,
+    "maxY" : 388,
+    "prop" : {
+      "x" : 687,
+      "y" : 366,
+      "width" : 62,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 688,
+      "y" : 367
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 749,
+          "y" : 366
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 749,
+          "y" : 366
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "ACTIVATOR",
+      "segments" : [ {
+        "from" : {
+          "x" : 684,
+          "y" : 370
+        },
+        "to" : {
+          "x" : 618,
+          "y" : 357
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 626,
+          "y" : 354
+        },
+        "b" : {
+          "x" : 618,
+          "y" : 357
+        },
+        "c" : {
+          "x" : 624,
+          "y" : 362
+        },
+        "type" : "ARROW",
+        "empty" : true,
+        "centre" : {
+          "x" : 624,
+          "y" : 362
+        }
+      }
+    } ]
+  }, {
+    "id" : 26,
+    "reactomeId" : 9615717,
+    "displayName" : "HSPA8 bound autophagic substrates",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 469,
+      "y" : 179
+    },
+    "minX" : 423,
+    "maxX" : 521,
+    "minY" : 148,
+    "maxY" : 228,
+    "prop" : {
+      "x" : 423,
+      "y" : 154,
+      "width" : 92,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 427,
+      "y" : 141
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 515,
+          "y" : 154
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 515,
+          "y" : 154
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 23,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 28,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 487,
+          "y" : 207
+        },
+        "to" : {
+          "x" : 505,
+          "y" : 228
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 42,
+    "reactomeId" : 184398,
+    "displayName" : "ESCRT-I",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 714,
+      "y" : 333
+    },
+    "minX" : 618,
+    "maxX" : 748,
+    "minY" : 316,
+    "maxY" : 355,
+    "prop" : {
+      "x" : 686,
+      "y" : 322,
+      "width" : 56,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 687,
+      "y" : 323
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 742,
+          "y" : 322
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 742,
+          "y" : 322
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "ACTIVATOR",
+      "segments" : [ {
+        "from" : {
+          "x" : 683,
+          "y" : 338
+        },
+        "to" : {
+          "x" : 618,
+          "y" : 353
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 624,
+          "y" : 348
+        },
+        "b" : {
+          "x" : 618,
+          "y" : 353
+        },
+        "c" : {
+          "x" : 626,
+          "y" : 355
+        },
+        "type" : "ARROW",
+        "empty" : true,
+        "centre" : {
+          "x" : 626,
+          "y" : 355
+        }
+      }
+    } ]
+  }, {
+    "id" : 29,
+    "reactomeId" : 9631069,
+    "displayName" : "PL",
+    "schemaClass" : "SimpleEntity",
+    "renderableClass" : "Chemical",
+    "position" : {
+      "x" : 476,
+      "y" : 273
+    },
+    "minX" : 461,
+    "maxX" : 505,
+    "minY" : 228,
+    "maxY" : 288,
+    "prop" : {
+      "x" : 461,
+      "y" : 258,
+      "width" : 30,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 465,
+      "y" : 262
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 486,
+          "y" : 263
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 486,
+          "y" : 263
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 28,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 485,
+          "y" : 255
+        },
+        "to" : {
+          "x" : 505,
+          "y" : 228
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 30,
+    "reactomeId" : 9631070,
+    "displayName" : "PL:HSPA8:Autophagy substrate",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 610,
+      "y" : 272
+    },
+    "minX" : 544,
+    "maxX" : 683,
+    "minY" : 248,
+    "maxY" : 290,
+    "prop" : {
+      "x" : 544,
+      "y" : 254,
+      "width" : 133,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 571,
+      "y" : 241
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 677,
+          "y" : 254
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 677,
+          "y" : 254
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 28,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  } ],
+  "edges" : [ {
+    "id" : 39,
+    "reactomeId" : 9631065,
+    "displayName" : "Substrate translocates into late endosomal lumen",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 609,
+      "y" : 355
+    },
+    "minX" : 603,
+    "maxX" : 615,
+    "minY" : 293,
+    "maxY" : 421,
+    "reactionType" : "transition",
+    "segments" : [ {
+      "from" : {
+        "x" : 609,
+        "y" : 293
+      },
+      "to" : {
+        "x" : 609,
+        "y" : 355
+      }
+    }, {
+      "from" : {
+        "x" : 609,
+        "y" : 355
+      },
+      "to" : {
+        "x" : 609,
+        "y" : 421
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 605,
+        "y" : 414
+      },
+      "b" : {
+        "x" : 609,
+        "y" : 421
+      },
+      "c" : {
+        "x" : 613,
+        "y" : 414
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 613,
+        "y" : 414
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 603,
+        "y" : 349
+      },
+      "b" : {
+        "x" : 615,
+        "y" : 361
+      },
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 609,
+        "y" : 355
+      }
+    },
+    "inputs" : [ {
+      "id" : 30
+    } ],
+    "outputs" : [ {
+      "id" : 40
+    } ],
+    "activators" : [ {
+      "id" : 41,
+      "points" : [ {
+        "x" : 684,
+        "y" : 370
+      } ]
+    }, {
+      "id" : 42,
+      "points" : [ {
+        "x" : 683,
+        "y" : 338
+      } ]
+    } ]
+  }, {
+    "id" : 23,
+    "reactomeId" : 9615721,
+    "displayName" : "HSPA8 binds substrate",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 380,
+      "y" : 178
+    },
+    "minX" : 347,
+    "maxX" : 420,
+    "minY" : 173,
+    "maxY" : 183,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 347,
+        "y" : 178
+      },
+      "to" : {
+        "x" : 380,
+        "y" : 178
+      }
+    }, {
+      "from" : {
+        "x" : 380,
+        "y" : 178
+      },
+      "to" : {
+        "x" : 420,
+        "y" : 178
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 413,
+        "y" : 182
+      },
+      "b" : {
+        "x" : 420,
+        "y" : 178
+      },
+      "c" : {
+        "x" : 413,
+        "y" : 174
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 413,
+        "y" : 174
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 380,
+        "y" : 178
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 380,
+        "y" : 178
+      }
+    },
+    "inputs" : [ {
+      "id" : 24,
+      "points" : [ {
+        "x" : 297,
+        "y" : 217
+      } ]
+    }, {
+      "id" : 25,
+      "points" : [ {
+        "x" : 308,
+        "y" : 141
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 26
+    } ]
+  }, {
+    "id" : 28,
+    "reactomeId" : 9631068,
+    "displayName" : "HSPA8:substrate binds late endosomal phospholipids",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 567,
+      "y" : 229
+    },
+    "minX" : 505,
+    "maxX" : 592,
+    "minY" : 224,
+    "maxY" : 251,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 505,
+        "y" : 228
+      },
+      "to" : {
+        "x" : 567,
+        "y" : 229
+      }
+    }, {
+      "from" : {
+        "x" : 567,
+        "y" : 229
+      },
+      "to" : {
+        "x" : 592,
+        "y" : 251
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 584,
+        "y" : 249
+      },
+      "b" : {
+        "x" : 592,
+        "y" : 251
+      },
+      "c" : {
+        "x" : 589,
+        "y" : 243
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 589,
+        "y" : 243
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 567,
+        "y" : 229
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 567,
+        "y" : 229
+      }
+    },
+    "inputs" : [ {
+      "id" : 29,
+      "points" : [ {
+        "x" : 485,
+        "y" : 255
+      } ]
+    }, {
+      "id" : 26,
+      "points" : [ {
+        "x" : 487,
+        "y" : 207
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 30
+    } ]
+  } ],
+  "compartments" : [ {
+    "id" : 9,
+    "reactomeId" : 70101,
+    "displayName" : "cytosol",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 538,
+      "y" : 291
+    },
+    "minX" : 0,
+    "maxX" : 1077,
+    "minY" : 0,
+    "maxY" : 583,
+    "prop" : {
+      "x" : 0,
+      "y" : 0,
+      "width" : 1077,
+      "height" : 583
+    },
+    "textPosition" : {
+      "x" : 1003,
+      "y" : 539
+    },
+    "insets" : {
+      "x" : 9,
+      "y" : 9,
+      "width" : 1059,
+      "height" : 566
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 23, 24, 25, 27, 26, 28 ]
+  }, {
+    "id" : 27,
+    "reactomeId" : 173031,
+    "displayName" : "late endosome lumen",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 595,
+      "y" : 395
+    },
+    "minX" : 470,
+    "maxX" : 720,
+    "minY" : 270,
+    "maxY" : 520,
+    "prop" : {
+      "x" : 470,
+      "y" : 270,
+      "width" : 250,
+      "height" : 250
+    },
+    "textPosition" : {
+      "x" : 559,
+      "y" : 473
+    },
+    "insets" : {
+      "x" : 480,
+      "y" : 280,
+      "width" : 230,
+      "height" : 230
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 39, 40, 29, 30, 42, 41 ]
+  } ],
+  "notes" : [ ],
+  "links" : [ ],
+  "shadows" : [ ],
+  "minX" : 0,
+  "maxX" : 1077,
+  "minY" : 0,
+  "maxY" : 583,
+  "disease" : false
+}
