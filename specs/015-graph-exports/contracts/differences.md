@@ -2,7 +2,7 @@
 
 Each way the new exports differ from their reference, with the reason. An export switches only when every difference its sample shows is here. Additions found during the work are recorded with the pull request that finds them.
 
-SBML's model is compared with today's relational file of the same release (decided 24 Oct 2026; there is no separate corrected-converter reference any more). The one list for SBML is `sbml-exporter`'s [`specs/001-graph-only-sbml/differences.md`](https://github.com/reactome/sbml-exporter/blob/graph-only/specs/001-graph-only-sbml/differences.md), which its T016 creates; the rows below move there then. The generation note's timestamp is set aside, as it differs on every answer, today's too.
+SBML's model is compared with today's relational file of the same release (decided 24 Oct 2026; there is no separate corrected-converter reference any more). The one list for SBML is `sbml-exporter`'s [`specs/001-graph-only-sbml/differences.md`](https://github.com/reactome/sbml-exporter/blob/graph-only/specs/001-graph-only-sbml/differences.md) (its T016, and T039 here). The SBML rows below are what this spec first recorded; that list supersedes them, and the layout's are replaced again by its spec 002. The generation note's timestamp is set aside, as it differs on every answer, today's too.
 
 ## SBML, from today's relational file
 
@@ -21,7 +21,7 @@ SBML's model is compared with today's relational file of the same release (decid
 | Difference                                                                 | Reason                                                                                 |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | Element order and `rdf:ID` numbers                                         | Today's come from Java HashMap order, which is not reproducible even Java against Java |
-| One EC number per molecular function                                       | The graph keeps one (research R4)                                                      |
+| One EC number per molecular function                                       | The graph keeps one (research R4); reactome/graph-importer#9 asks to keep them all     |
 | Book chapter authors                                                       | Not in the graph                                                                       |
 | Every cross-reference and disease of an entity is written                  | Today's converter stops at the first one it has already written                        |
 | `application/rdf+xml`, a `{stId}.biopax` download name, 404 and 400 errors | Today's is `text/plain` with no name, and its errors are 200 text bodies               |
