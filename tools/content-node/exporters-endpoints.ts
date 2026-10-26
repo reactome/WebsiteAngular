@@ -592,8 +592,9 @@ export const exportersEndpoints: Endpoint[] = [
     sample: '9626065.sbml',
     samplesOnly: true,
     /**
-     * An event's SBML (spec 015 T065), from the SBML service. Not routed yet
-     * (T066): until then Java answers it.
+     * An event's SBML (spec 015 T065), from the SBML service. Routed on beta
+     * alone (dev.conf, T066); elsewhere Java answers it until FR-009's open
+     * differences are settled.
      */
     handler: (request) => sbmlAnswer(request, 'sbml'),
   },
