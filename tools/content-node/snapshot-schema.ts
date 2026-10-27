@@ -43,7 +43,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AJC_CLOSURE_NAMES, attributeTable, referralsTable, SCHEMA_CLASSES } from './schema.ts';
 import type { SchemaTables } from './schema.ts';
-import type { SchemaAttribute } from '../../projects/website-angular/src/model/content.model.ts';
+import type { SchemaAttribute } from '../../projects/contract/content.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'schema-snapshot.json');

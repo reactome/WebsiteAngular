@@ -4,6 +4,15 @@
 // (tools/contract/generate.ts); a route the registry has and this does not
 // is listed there as not yet in the contract.
 import type {
+  Contributor,
+  DoiPathway,
+  InstanceReferrals,
+  SchemaAttribute,
+  SchemaNode,
+  SimpleDatabaseObject,
+  TocPathway,
+} from './content.ts';
+import type {
   DiagramResult,
   FacetResponse,
   GroupedResult,
@@ -15,6 +24,14 @@ import type {
 } from './search.ts';
 
 export interface Routes {
+  'GET /ContentService/data/content/toc': TocPathway[];
+  'GET /ContentService/data/content/doi': DoiPathway[];
+  'GET /ContentService/data/content/contributors': Contributor[];
+  'GET /ContentService/data/schema/model': SchemaNode;
+  'GET /ContentService/data/schema/{id}/attributes': SchemaAttribute[];
+  'GET /ContentService/data/schema/{id}/referrals': SchemaAttribute[];
+  'GET /ContentService/data/schema/{id}/min': SimpleDatabaseObject[];
+  'GET /ContentService/data/instance/{id}/referrers': InstanceReferrals[];
   'GET /ContentService/search/query': GroupedResult<SearchEntry>;
   'GET /ContentService/search/query/paginated': GroupedResult<SearchEntry>;
   'GET /ContentService/search/facet': FacetResponse;

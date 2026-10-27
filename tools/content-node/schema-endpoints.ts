@@ -20,7 +20,7 @@ import {
 import { javaNumeric } from './java-text.ts';
 import { read } from './graph.ts';
 import neo4j from 'neo4j-driver';
-import type { SimpleDatabaseObject } from '../../projects/website-angular/src/model/content.model.ts';
+import type { SimpleDatabaseObject } from '../../projects/contract/content.ts';
 import type { JsonWritten } from './answers.ts';
 import { isA, mapNodes, writeDomain } from './domain.ts';
 

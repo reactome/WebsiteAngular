@@ -39,10 +39,7 @@ import { cached, javaError, notFound, springNotFound } from './answers.ts';
 import { pathId, queryValues, rawSegment, springPrimitiveBoolean, writerFor } from './spring.ts';
 import { orthologyIds, plainText, plainTextProblem } from './body.ts';
 import { schemaClassOf } from './schema.ts';
-import type {
-  InstanceReferrals,
-  SimpleDatabaseObject,
-} from '../../projects/website-angular/src/model/content.model.ts';
+import type { InstanceReferrals, SimpleDatabaseObject } from '../../projects/contract/content.ts';
 import type { JsonWritten } from './answers.ts';
 
 /**
