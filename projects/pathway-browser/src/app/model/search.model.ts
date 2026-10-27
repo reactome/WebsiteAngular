@@ -1,4 +1,11 @@
-import type { IconEntry, PathwayOfEntry, SearchEntryView } from '../../../../contract/search.ts';
+import type {
+  DiagramResult,
+  FacetCount,
+  GroupedResult,
+  IconEntry,
+  PathwayOfEntry,
+  SearchEntryView,
+} from '../../../../contract/search.ts';
 
 export namespace Search {
   export const EMPTY_RESULTS = { found: 0, facets: [], entries: [] } as Search.Result;
@@ -21,17 +28,9 @@ export namespace Search {
   export type Entry = SearchEntryView;
   export type PathwayOf = PathwayOfEntry;
 
-  export interface Facet {
-    name: string;
-    count: number;
-  }
-
-  // firework and diagram
-  export interface Result {
-    entries: Entry[];
-    facets: Facet[];
-    found: number;
-  }
+  // A diagram's or the species overview's search: the contract's (spec 016).
+  export type Facet = FacetCount;
+  export type Result = DiagramResult<Entry>;
 
   // Add a sub-namespace for Icon-specific results
   export namespace Icon {
@@ -40,18 +39,6 @@ export namespace Search {
 
     // A query for icons answers whatever its groups hold: a query matching
     // no icon answers proteins, compounds and the like, any kind.
-    export interface EntryResult {
-      entries: Search.Entry[];
-      typeName: string;
-      entriesCount: number;
-      rowCount: number;
-    }
-
-    export interface Result {
-      results: EntryResult[];
-      rowCount: number;
-      numberOfGroups: number;
-      numberOfMatches: number;
-    }
+    export type Result = GroupedResult<Search.Entry>;
   }
 }

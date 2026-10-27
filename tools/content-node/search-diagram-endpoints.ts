@@ -10,7 +10,8 @@ import { hashSetOf, javaSplit, javaTrim } from './java-text.ts';
 import { longPastRange, resolveId } from './objects.ts';
 import { read } from './graph.ts';
 import type { SolrAnswer } from './solr.ts';
-import type { FacetContainer } from './search-core.ts';
+import type { FacetContainer, WrittenEntry } from './search-core.ts';
+import type { DiagramResult } from '../../projects/contract/search.ts';
 import {
   OCCURRENCE_READS,
   blankBoolean,
@@ -114,7 +115,10 @@ function typeFacets(answer: SolrAnswer | null | undefined) {
  */
 type EntriesResult = ReturnType<typeof entriesResult>;
 
-function entriesResult(answer: SolrAnswer | null | undefined, options = {}) {
+function entriesResult(
+  answer: SolrAnswer | null | undefined,
+  options = {}
+): DiagramResult<WrittenEntry> {
   const entries = (answer?.response?.docs ?? []).map((doc) => searchEntry(doc, null, options));
   const facets = typeFacets(answer);
   return {

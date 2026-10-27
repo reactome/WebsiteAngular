@@ -6,8 +6,15 @@
  */
 import type { Endpoint, Request } from './endpoint.ts';
 import type { SolrAnswer, SolrGrouping } from './solr.ts';
-import type { FacetContainer, TargetResult } from './search-core.ts';
-import type { Facet, FacetResponse, IconFacetResponse } from '../../projects/contract/search.ts';
+import type { FacetContainer, TargetResult, WrittenEntry } from './search-core.ts';
+import type {
+  Facet,
+  FacetResponse,
+  GroupedResult,
+  IconFacetResponse,
+  ResultGroup,
+  TargetResult as ContractTarget,
+} from '../../projects/contract/search.ts';
 import {
   blankBoolean,
   facetContainer,
@@ -218,7 +225,10 @@ async function facetsOf(query: FacetQuery, forceFilters: boolean, signal: AbortS
  * "Results", with Solr's count and how many came -- NON_EMPTY leaving out no
  * entries. `highlight` is false where Java ignores the highlighting.
  */
-function searchResult(answer: SolrAnswer | null | undefined, highlight: boolean) {
+function searchResult(
+  answer: SolrAnswer | null | undefined,
+  highlight: boolean
+): ResultGroup<WrittenEntry> {
   const docs = answer?.response?.docs ?? [];
   const highlighting = highlight ? (answer?.highlighting ?? {}) : {};
   const entries = docs.map((doc) => searchEntry(doc, highlighting));
@@ -230,14 +240,14 @@ function searchResult(answer: SolrAnswer | null | undefined, highlight: boolean)
   };
 }
 
-/** search-core's GroupedResult: the results, rows written, groups, matches; targets for none. */
-interface SearchResult {
-  results: unknown[];
-  rowCount: number;
-  numberOfGroups: unknown;
-  numberOfMatches: unknown;
+/**
+ * search-core's GroupedResult as it is built: the contract's, but for the
+ * targets, which keep their empty terms and resources until the answer is
+ * written (searchAnswer).
+ */
+type SearchResult = Omit<GroupedResult<WrittenEntry>, 'targetResults'> & {
   targetResults?: TargetResult[];
-}
+};
 
 /**
  * SolrConverter.parseClusteredResponse: the first grouping's groups, each
@@ -250,8 +260,11 @@ function groupedEntries(answer: SolrAnswer | null | undefined): SearchResult | n
   if (!grouping) return null;
   if (grouping.ngroups === undefined || grouping.ngroups === null)
     throw Object.assign(new Error('a grouping without ngroups'), { unexpected: true });
+  // SolrJ reads matches as ngroups is read, unboxed: none is the same failure.
+  if (grouping.matches === undefined)
+    throw Object.assign(new Error('a grouping without matches'), { unexpected: true });
   const highlighting = answer?.highlighting ?? {};
-  const results: unknown[] = [];
+  const results: ResultGroup<WrittenEntry>[] = [];
   let rows = 0;
   for (const group of grouping.groups ?? []) {
     const entries = (group.doclist?.docs ?? []).map((doc) => searchEntry(doc, highlighting));
@@ -410,8 +423,9 @@ function searchAnswer(request: Request, query: string, result: SearchResult | nu
     const { targetResults, ...written } = result;
     // NON_EMPTY, in a 200: a target's null or empty term or resource is
     // left out (a query with a leading space has an empty first term).
-    const kept = (text: unknown) => text !== null && text !== undefined && text !== '';
-    const targets = targetResults?.map(({ term, resource, target }) => ({
+    const kept = <T>(text: T | null | undefined): text is T =>
+      text !== null && text !== undefined && text !== '';
+    const targets = targetResults?.map(({ term, resource, target }): ContractTarget => ({
       ...(kept(term) ? { term } : {}),
       ...(kept(resource) ? { resource } : {}),
       target,
