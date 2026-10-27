@@ -192,7 +192,7 @@ Each of these ticks this file in its own pull request, so they conflict at the s
 rebase the next.
 
 - [ ] T017 [P] Document the graph in `README.md` (the stack's start, the steps, `steps.env`, never `docker image
-    prune -a` on the graph's images, how to set the database's password from the credentials file) and a short
+prune -a` on the graph's images, how to set the database's password from the credentials file) and a short
       section in `CLAUDE.md`; replace `docker-compose.yml`'s comments on the graph (the release procedure, the
       analysis service named as a reader, content-node's note about the graph becoming a container).
 - [ ] T018 [P] Put the release step into the release-day order: `RELEASE-TESTING.md` and
