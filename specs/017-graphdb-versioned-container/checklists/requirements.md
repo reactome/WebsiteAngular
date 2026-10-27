@@ -52,3 +52,10 @@
   - older stores within the major version are handled;
   - ownership is restored on the way back.
 - For the plan: whether the repository's graph entrypoint keeps refusing a user other than `neo4j`, and a password containing `/`, once the password comes from the system database.
+- Revised a third time after #719's review:
+  - the repository's setting is the version to run, and the host's applied configuration (version, plugins, settings) is what runs, with a status reporting the difference (FR-001, FR-010, US3 AS 4);
+  - one-start allowances run on their own and are never restarted, and steps record their progress so an interruption is seen (FR-010a, US4 AS 3, SC-005);
+  - the counts rule is in FR-006, taken from the serving database before it is set aside;
+  - older stores have a scenario (US1 AS 4);
+  - FR-009 names its three rollbacks;
+  - the set-aside database is kept until the next release.
