@@ -57,10 +57,11 @@ export class TocComponent implements OnInit, OnDestroy {
    * `stId` -> DOI, for the subpathways whose DOI the table of contents cannot
    * see on its own.
    *
-   * `/data/content/toc` sends three fields for a child -- `stId`, `displayName`,
-   * `speciesName` -- and no `doi`, measured over all 215 children it returns.
-   * The template has always rendered a DOI link for a child behind
-   * `@if (sub.doi)`, so that link could never appear.
+   * Java's `/data/content/toc` sends three fields for a child -- `stId`,
+   * `displayName`, `speciesName` -- and no `doi`, measured over all 215 children
+   * it returns, so a DOI link for a child could never appear from the answer
+   * alone. (The node port sends a child's `doi` when it has one; `loadData`
+   * tells the two apart.)
    *
    * It is not markup for a case that never existed. Production's own
    * `/content/toc` carries **44 DOIs, of which 41 are subpathways** -- so all
@@ -74,7 +75,7 @@ export class TocComponent implements OnInit, OnDestroy {
    */
   private doiByStId = new Map<string, string>();
 
-  doiFor(pathway: { stId: string; doi?: string | null }): string | null {
+  doiFor(pathway: { stId: string; doi?: string }): string | null {
     return pathway.doi ?? this.doiByStId.get(pathway.stId) ?? null;
   }
 
@@ -124,9 +125,7 @@ export class TocComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
-          this.doiByStId = new Map(
-            rows.filter((row) => row.doi).map((row) => [row.stId, row.doi as string])
-          );
+          this.doiByStId = new Map(rows.map((row) => [row.stId, row.doi]));
           this.cdr.markForCheck();
         },
         error: (err) => {
