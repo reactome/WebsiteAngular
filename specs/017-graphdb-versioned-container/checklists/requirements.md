@@ -38,3 +38,8 @@
   folder, the version a setting, upgrades deliberate, Neo4j 5 separate).
 - Success criteria name times and counts an operator can see (steps, minutes, one Neo4j on the port), not
   internal metrics.
+- Revised after #717's review: a new release's store is set aside rather than overwritten (so rollback has
+  something to return to); the first container version equals the store's (FR-002a); the password in the
+  system database is checked by a login (FR-005); the readers corrected (java-library reads the graph, MCP does
+  not, AnalysisService follows its own file); store upgrade allowed for one start only; the missing-logs
+  setting's limit stated; CI also refuses a different major version.
