@@ -7,9 +7,28 @@ FROM node:24
 
 WORKDIR /content-node
 
-# Only what the service imports. The repository's own lockfile would drag in
-# Angular, Playwright and the CMS to run two endpoints.
-RUN npm install --omit=dev --no-audit --no-fund neo4j-driver@^6.2.0 express@5.2.1
+# Only what the service imports, at the versions the root package.json pins,
+# read from it rather than restated here (as the render service does). The
+# repository's own lockfile would drag in Angular, Playwright and the CMS to
+# run two packages. A pin restated here stayed at express 5.2.1 when
+# Dependabot moved the root to 5.3.0 (it watches only the root), so the image
+# would have run a version nothing here tested.
+COPY package.json ./root-package.json
+RUN node -e " \
+      const root = require('./root-package.json'); \
+      const dependencies = {}; \
+      for (const name of ['express', 'neo4j-driver']) { \
+        const version = (root.dependencies ?? {})[name]; \
+        if (!version) throw new Error(name + ' is not a dependency of the root package'); \
+        dependencies[name] = version; \
+      } \
+      require('node:fs').writeFileSync('package.json', JSON.stringify({ \
+        name: 'reactome-content-node', private: true, dependencies \
+      }, null, 2)); \
+    " \
+    && npm install --omit=dev --no-audit --no-fund \
+    && npm cache clean --force \
+    && rm root-package.json
 
 COPY tools/content-node/ ./tools/content-node/
 # The nearest package.json is what tells Node a .ts module is a module (spec
