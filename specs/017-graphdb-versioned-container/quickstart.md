@@ -18,7 +18,7 @@ loopback port, a test password, and a state folder of its own.
 | --- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `cutover` onto the copy at 4.3.6                                                                       | online, release answered, no file changes owner, `status` consistent                                                             |
 | 2   | `release` with a store delivered without logs                                                          | the allowance run, then standing; release, counts and services checked                                                           |
-| 3   | `release` with a store from a newer Neo4j                                                              | refused before any change, the old store serving (US1 AS 2)                                                                      |
+| 3   | `release` with a store from a newer Neo4j (format) or another major                                    | refused before any change, the old store serving (US1 AS 2)                                                                      |
 | 4   | `release` where a service check fails (a stand-in answering the old release)                           | the old database back, services restarted on it and checked (US1 AS 3)                                                           |
 | 5   | `release` with a store from an older 4.x                                                               | opened with store upgrade for one start (US1 AS 4)                                                                               |
 | 6   | `release` with a store missing most of its nodes, then again with `--shrink-expected`                  | refused by the counts; then accepted and reported (US1 AS 5)                                                                     |
@@ -29,8 +29,15 @@ loopback port, a test password, and a state folder of its own.
 | 11  | A merged `graph.json` change not applied; `docker compose up -d`, `up -d graphdb`, a container restart | still the applied image; `status` reports pending (US4 AS 2, US3 AS 4)                                                           |
 | 12  | `graph.json` set to another major; `apply`                                                             | refused (FR-008)                                                                                                                 |
 | 13  | `rollback-cutover` with a stand-in host service                                                        | the host service back, the owner unchanged                                                                                       |
+| 14  | `cutover` where the check fails, and `cutover` interrupted after its copy                              | `rollback-cutover` runs, or is named by `status`; the host service serves again                                                  |
+| 15  | `rollback-release` where a service still fails on the restored database                                | stops and reports, the restored database serving; no loop                                                                        |
+| 16  | `rollback-apply` interrupted part way, then run again                                                  | completes; 4.3.6 serves                                                                                                          |
+| 17  | Two steps started at once                                                                              | the second refused at once (the lock)                                                                                            |
+| 18  | `rollback-apply` after a later `release`                                                               | refused: rollbacks only for the last step                                                                                        |
+| 19  | A misspelt setting in `graph.json`, applied                                                            | the start fails (strict validation); `rollback-apply` restores                                                                   |
+| 20  | `:previous` removed by hand; `status`                                                                  | reported missing                                                                                                                 |
 
-## On the host (with the user, who runs sudo)
+## On the host (run with sudo by the person who holds it)
 
 1. `status`: before anything, what serves and what the repository says.
 2. `cutover` (4.3.6, the store's version), then `status`; the services each answer the release.

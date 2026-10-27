@@ -22,8 +22,15 @@ and java-library are restarted and each checked (R5). Everything is shown on a p
 failure and interrupted paths, before the host.
 
 Measured on the way: a newer minor version (4.4.48) upgrades the system database irreversibly on its first start
-even with no store upgrade allowed, after which 4.3.6 will not start (R2); and java-library had held release 97
-in memory for 40 hours after the graph went to 98 (R5).
+even with no store upgrade allowed, after which 4.3.6 will not start (R2); and java-library held the previous
+release in memory until restarted (R5).
+
+Revised after the plan's review (#723, research R9): the steps hold a lock, keep a log, refuse rollbacks out of order,
+copy only with Neo4j stopped, give a delivered store the folder's owner, read their settings from the state folder
+(never from `~` under sudo), pass the password only in a container's environment, and refuse a store the server
+cannot read before changing anything (`neo4j-admin store-info`). The wrapper is baked into the applied image and
+lets a step's own starts through. The image is built with the legacy builder (no BuildKit on the host), keeps its
+configuration file writable, and validates settings strictly.
 
 ## Technical Context
 
@@ -31,8 +38,8 @@ in memory for 40 hours after the graph went to 98 (R5).
 TypeScript ~5.9.3 under vitest for the specs.
 
 **Primary Dependencies**: the vendor's `neo4j` Community images (4.3.6 first, by digest); APOC per minor version,
-fetched from its release page and checked by sha256; Docker Compose 2.40; `jq` and `curl` on the host. No npm
-dependency is added.
+fetched on the host with `curl` and checked by sha256; Docker 29 with Compose 2.40 and the legacy builder (no
+buildx); `jq`, `curl` and `flock` on the host. No npm dependency is added.
 
 **Storage**: the host's Neo4j data folder (bind-mounted); a host state folder for the applied configuration, the
 step state, the counts, the set-aside database and the data copies.
@@ -58,7 +65,8 @@ copy), the counts (about 2 s), and the service restarts, of which Tomcat is the 
   logs;
 - no load on the serving graph beyond the checks named in FR-013;
 - every test of Neo4j's behaviour on a private copy, never the serving graph;
-- disk: about 13 GB free against a 3.2 GB data folder, so the steps refuse without room;
+- disk: a data copy, a set-aside database and a delivered store together take about three times the data folder,
+  so each step checks room for what it writes, plus images, plus a margin, and refuses otherwise;
 - the repository is public: no host names, credentials or internal release process.
 
 **Scale/Scope**: one host; one graph of 2.5 GB; four services that read it; eight subcommands.
@@ -80,6 +88,9 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
   `Started.`-but-offline graph, the system database upgraded by a newer minor, the service that kept the old
   release).
 - **Quality gates.** The specs run in `npm test`; nothing touches the site's build or its e2e.
+- **FR-013.** Besides the login, release number, counts and services' answers, the steps read Neo4j's own state on
+  the system database (`SHOW DATABASE`, `dbms.components()`, `dbms.upgradeStatus()`): no load on the graph, which is
+  what FR-013 limits.
 
 No violations. Re-checked after Phase 1: unchanged.
 
@@ -127,15 +138,19 @@ its specs do today. Bash for what runs as root (R6); TypeScript only in the spec
    `graph.spec.ts`, each rule seen failing.
 2. **The applied image and the compose service** (US4): the Dockerfile; compose's `graphdb` in a profile on
    `reactome-graphdb:applied`, bind mount, no volume; `compose.spec.ts` rewritten; the wrapper's refusal while a step
-   is under way. Nothing on the host changes yet.
+   is under way (with the step's own bypass), baked into the image; the stop grace period. Nothing on the host
+   changes yet.
 3. **`graph.sh status` and `apply`** (US2, US3 AS 4), with stubs, then on the test copy: apply 4.3.6, apply 4.4.48
    and back by `rollback-apply`, and an apply interrupted.
 4. **`graph.sh release` and `rollback-release`** (US1), with stubs, then on the test copy: a release without logs,
    a newer store refused, a failing service check, an older store, a shrink, an interruption.
-5. **`cutover` and `rollback-cutover`** (FR-002a, FR-009) on the test copy; then, with the user, on the host.
-6. **`retire`** (FR-011), on the host with the user, once the container has served a while.
-7. **Documentation**: README, RELEASE-TESTING.md and spec 011's release-day order, docker-compose.yml's comments,
-   and the claims about java-library in specs/015 and its source (R5).
+5. **`cutover` and `rollback-cutover`** (FR-002a, FR-009) on the test copy, success, failure and interruption;
+   then on the host, run with sudo by its holder.
+6. **`retire`** (FR-011), on the host, once the container has served a while.
+7. **Documentation**: README (the stack's start, the steps, never `docker image prune -a` on the graph's images),
+   RELEASE-TESTING.md and spec 011's release-day order (the release step before the cache purge and warm-up; a
+   second Tomcat restart if the analysis file arrives later), the major-version migration as separate work (FR-008),
+   docker-compose.yml's comments, and the claims about java-library in specs/015 and its source (R5).
 
 ## Complexity Tracking
 

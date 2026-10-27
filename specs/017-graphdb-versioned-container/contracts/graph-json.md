@@ -22,7 +22,8 @@ report a pending change) and by `graph.spec.ts` (FR-012). Fields and their rules
   ],
   "settings": {
     "dbms.default_database": "graph.db",
-    "dbms.security.procedures.unrestricted": "apoc.*"
+    "dbms.security.procedures.unrestricted": "apoc.*",
+    "dbms.config.strict_validation": "true"
   }
 }
 ```
@@ -32,13 +33,14 @@ The settings shown are illustrative; the first task copies the host installation
 
 ## What CI refuses (each seen failing once)
 
-| Change                                                                | Message names                                 |
-| --------------------------------------------------------------------- | --------------------------------------------- |
-| `neo4j.version` older than `releaseBuild`                             | the server could not open the release's store |
-| `neo4j.version` in another major than `releaseBuild`                  | a migration, not an apply (FR-008)            |
-| `neo4j.image` tag not matching `neo4j.version`                        | the two versions                              |
-| `neo4j.digest` missing or malformed                                   | the field                                     |
-| a plugin without `version`, `url` or `sha256`, or a malformed sha256  | the plugin                                    |
-| a plugin version not for the Neo4j minor version                      | the plugin and both versions                  |
-| `dbms.default_database` not `graph.db`                                | the setting                                   |
-| `dbms.allow_upgrade` or `dbms.recovery.fail_on_missing_files` present | one start of one step only (FR-003)           |
+| Change                                                                                                                                                           | Message names                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `neo4j.version` older than `releaseBuild`                                                                                                                        | the server could not open the release's store |
+| `neo4j.version` in another major than `releaseBuild`                                                                                                             | a migration, not an apply (FR-008)            |
+| `neo4j.image` tag not matching `neo4j.version`                                                                                                                   | the two versions                              |
+| `neo4j.digest` missing or malformed                                                                                                                              | the field                                     |
+| a plugin without `version`, `url` or `sha256`, or a malformed sha256                                                                                             | the plugin                                    |
+| a plugin version not for the Neo4j minor version                                                                                                                 | the plugin and both versions                  |
+| `dbms.default_database` not `graph.db`                                                                                                                           | the setting                                   |
+| a required setting missing: Bolt listen address, heap, page cache, `dbms.security.procedures.unrestricted` for the plugins, `dbms.config.strict_validation=true` | the setting                                   |
+| `dbms.allow_upgrade` or `dbms.recovery.fail_on_missing_files` present                                                                                            | one start of one step only (FR-003)           |

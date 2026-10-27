@@ -83,9 +83,15 @@ never`, in a profile, with no settings of its own. A merged change to `graph.jso
 - **Alternatives:** an env file outside the repository (every compose call must pass it; a bare call would fall
   back to a repo default, the very thing FR-010 forbids); a separate compose project for the graph (no profile
   needed, but "the whole stack" becomes two projects and two sets of documentation).
-- **Interrupted steps** [I, chosen]: the wrapper reads `state.json` (mounted read-only) and refuses to start
-  while a step is recorded under way, naming it; `status` says how to finish or undo it. A stopped container
-  with `unless-stopped` does not come back at boot, so a step that stopped it leaves nothing to start.
+- **Interrupted steps** [I, chosen]: the wrapper, baked into the applied image (so a merged change to it waits
+  for an apply too), reads `state.json` (mounted read-only) and refuses to start while a step is recorded under
+  way, naming it, unless the start is that step's own (the step passes the id it recorded); `status` says how to
+  finish or undo it. Every step stops the standing container before it records anything, and a container stopped
+  by `docker stop` is not brought back at boot by `unless-stopped`; if one is started anyway while a step is
+  recorded, it is refused and retried with backoff until the step finishes, which is intended.
+- **One step at a time** [I, chosen]: every subcommand but `status` holds an exclusive `flock` on the state folder
+  for its whole run, so two steps (from two sessions, say) cannot interleave between reading and writing
+  `state.json`.
 
 ## R4. The counts check
 
@@ -102,8 +108,7 @@ not grow with the graph. `cypher-shell` runs inside the container (the host's co
 | Java AnalysisService (reported, from its own file) | `127.0.0.1:8080/AnalysisService/database/version`     | the same Tomcat                       |
 | java-library                                       | `127.0.0.1:4360/health`, field `release`              | `docker compose restart java-library` |
 
-[M] On 27 Oct java-library answered **97** for about 40 hours after the graph went to 98, until it was
-restarted: it holds the release in memory, despite its documentation (specs/015 tasks.md, `SbmlFiles.java`)
+[M] On 27 Oct java-library answered **97** while the graph answered 98, until it was restarted: it holds the release in memory, despite its documentation (specs/015 tasks.md, `SbmlFiles.java`)
 saying it reads it per request. It is therefore restarted and checked like the others. content-node holds it
 for the life of the process (`answers.ts` `cached()`).
 
@@ -139,18 +144,50 @@ reactome-graphdb:applied` with `pull_policy: never`; no `environment:` settings;
 ## R8. Cut-over and retirement
 
 - The first applied image is 4.3.6 (the store's version, FR-002a), so the cut-over upgrades nothing; it still
-  takes a data copy first. Cut-over: copy, stop and disable the host service, start the container as the folder's
+  takes a data copy first. Cut-over: stop the host service, copy (a copy is only ever taken with Neo4j stopped), disable it, start the container as the folder's
   owner, check. Rollback while the package is installed: stop the container, enable and start the host service,
   check; the owner never changed (R1).
-- Retirement: `apt-mark hold` stays (the package is held today) and the service is disabled and the package
+- Retirement: the service is disabled and the package
   removed with `apt-get remove` (not `purge`, which would offer to delete `/var/lib/neo4j`), keeping the data
   folder. After retirement the cut-over rollback is gone, as FR-009 says.
+
+## R9. From the plan's review (#723)
+
+Checked by the reviewer on empty folders with the vendor's images [M, theirs], or read from the vendor's docs [R]; the
+build tool checked here [M]:
+
+- **The image's configuration file must stay writable** [M, theirs]: run as a non-root `USER`, the vendor entrypoint
+  appends its defaults to `conf/neo4j.conf` on every start and fails (`Permission denied`) if a root-owned, read-only
+  file was copied in. The Dockerfile writes the settings to a file the folder's owner can write, as the vendor ships
+  `conf` (mode 777).
+- **No BuildKit on the host** [M]: `docker buildx` is not installed (Docker 29.1.3), so the image is built with the
+  legacy builder: no `ADD --checksum`, `COPY --chmod` or heredocs. The plugins are fetched on the host with `curl`,
+  checked with `sha256sum`, and copied into the build context.
+- **A misspelt setting is ignored** [M, theirs]: `dbms.config.strict_validation` is false by default. It is set to
+  true in the standing settings, so a misspelt name stops the start, which a check sees.
+- **Turning automatic upgrade off does not keep 4.4 reversible** [M, theirs]: with
+  `dbms.allow_single_automatic_upgrade=false`, 4.4.48 left the system database `REQUIRES_UPGRADE`, and 4.3.6 still
+  refused the folder (its transaction logs were written in 4.4's format). The data copy remains the only way back
+  (R2). Neo4j's message there names an _older_ version wrongly, so the steps never pass its text on as the reason.
+- **Detecting a store the server cannot read, before any change** [R, theirs; to measure]: `neo4j-admin store-info`
+  exists in 4.3.6 and reads a stopped store's format and the version that introduced it. The release step runs it,
+  from the applied image, on the delivered store (mounted read-only), and refuses before changing anything when the
+  format is newer than the server's or from another major. Stores of 4.3 and 4.4 share a format (R2), so within the
+  major it cannot tell them apart, and does not need to.
+- **Steps run under sudo** [R]: `~` in compose's default for the credentials file resolves to root's home under
+  sudo, and the user's exported overrides are lost. The steps take the credentials file and the compose project from
+  their own settings file in the state folder (absolute paths), never from `~` or the caller's environment. The
+  password for a check is read with the wrapper's literal parser and handed to `cypher-shell` in the container's
+  environment (`docker exec -e NEO4J_PASSWORD`), never on a command line, where `ps` would show it.
+- **`docker image prune -a`** [R]: removes images no container uses, so `:previous` always and `:applied` whenever its
+  container is removed. The images carry a label, `status` reports a missing tag, and the documentation says not to
+  prune them; `:applied` is rebuilt from `applied.json` if lost (needs the registry and the plugin downloads).
 
 ## Open, carried into the tasks
 
 - Why `graph.db` was not seen online during the allowance run (R1): measured again in the first task.
 - Restoring a set-aside store older than an upgraded server: the release rollback opens it as the release step
   opens an older store (allowance for one start); shown on the test copy.
-- Disk: about 13 GB free; a data copy (3.2 GB), a set-aside database (2.5 GB) and a new store (2.5 GB) fit, but
-  the steps refuse when free space is below what they will write plus a margin.
-- Hand-made backups of transaction logs beside the data folder's own: removed once the container serves.
+- How long the allowance run takes to write its checkpoint on the host's disk, and Tomcat's restart time (SC-001's
+  10 minutes), measured in the first tasks.
+- Leftover copies of transaction logs beside the data folder's own: removed once the container serves.
