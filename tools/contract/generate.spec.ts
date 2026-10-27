@@ -4,24 +4,25 @@
 // table held to the service's registry, and the committed file current.
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { DESCRIPTION, componentName, generate, servedRoutes, written } from './generate.ts';
-
-/** The contract's route table's keys, as the routes module declares them. */
-function contractRoutes(source: string): string[] {
-  return [...source.matchAll(/^ {2}'((?:GET|POST) [^']+)':/gm)].map((match) => match[1] ?? '');
-}
-
-const ROUTES = readFileSync(new URL('../../projects/contract/routes.ts', import.meta.url), 'utf8');
+import {
+  DESCRIPTION,
+  componentName,
+  components,
+  contractRoutes,
+  generate,
+  servedRoutes,
+  written,
+} from './generate.ts';
 
 describe('the API description', () => {
   it('describes only routes the service serves', () => {
     const served = new Set(servedRoutes());
-    expect(contractRoutes(ROUTES).filter((route) => !served.has(route))).toEqual([]);
+    expect(contractRoutes().filter((route) => !served.has(route))).toEqual([]);
   });
 
   it('lists every served route, the ones the contract lacks marked not yet', () => {
     const document = generate();
-    const described = new Set(contractRoutes(ROUTES));
+    const described = new Set(contractRoutes());
     for (const route of servedRoutes()) {
       const [method = '', where = ''] = route.split(' ');
       const operation = document.paths[where]?.[method.toLowerCase()];
@@ -41,6 +42,20 @@ describe('the API description', () => {
     };
     expect(entry.anyOf).toBeUndefined();
     expect(entry.oneOf).toHaveLength(6);
+  });
+
+  it('declares every templated path variable, as OpenAPI requires', () => {
+    for (const [where, operations] of Object.entries(generate().paths))
+      for (const operation of Object.values(operations)) {
+        const declared = ((operation['parameters'] ?? []) as { name: string }[]).map((p) => p.name);
+        const templated = [...where.matchAll(/\{([^}]+)\}/g)].map(([, name]) => name);
+        expect(declared, where).toEqual(templated);
+      }
+  });
+
+  it('refuses two types whose component names would clash', () => {
+    expect(() => components({ 'A<B, C>': {}, 'A<B_C>': {} })).toThrow(/clash: A_B_C/);
+    expect(Object.keys(components({ 'B<X>': {}, A: {} }))).toEqual(['A', 'B_X']);
   });
 
   it('names a generic instance as OpenAPI allows', () => {

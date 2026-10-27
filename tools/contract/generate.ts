@@ -71,16 +71,51 @@ function contractSchemas() {
   return { table: table.properties, definitions };
 }
 
+/** The route table's routes, as "METHOD /path": what the contract describes. */
+export const contractRoutes = () => Object.keys(contractSchemas().table);
+
+/** Code-unit order, the same in every locale (localeCompare is not). */
+const byCodeUnit = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * A templated path's variables, as OpenAPI requires them declared: text, as
+ * the service reads them (an id may be a stable id or a dbId).
+ */
+const pathParameters = (where: string) =>
+  [...where.matchAll(/\{([^}]+)\}/g)].map(([, name]) => ({
+    name,
+    in: 'path',
+    required: true,
+    schema: { type: 'string' },
+  }));
+
+/**
+ * The definitions as components, by their valid names, in code-unit order.
+ * Two types named alike once made valid (A<B, C> and A<B_C>) would leave one
+ * schema in place of two, and nothing would say so: that fails here.
+ */
+export function components(definitions: Record<string, unknown>): Record<string, unknown> {
+  const named = Object.entries(definitions).map(
+    ([name, schema]) => [componentName(name), rewriteRefs(schema)] as const
+  );
+  const clashes = named.filter(([name], at) => named.findIndex(([other]) => other === name) !== at);
+  if (clashes.length)
+    throw new Error(`component names clash: ${clashes.map(([name]) => name).join(', ')}`);
+  return Object.fromEntries(named.sort(([a], [b]) => byCodeUnit(a, b)));
+}
+
 /** The OpenAPI document, as an object. */
 export function generate() {
   const { table, definitions } = contractSchemas();
   const paths: Record<string, Record<string, Schema>> = {};
   const served = servedRoutes();
-  for (const route of [...new Set([...served, ...Object.keys(table)])].sort()) {
+  for (const route of [...new Set([...served, ...Object.keys(table)])].sort(byCodeUnit)) {
     const [method = '', where = ''] = route.split(' ');
     const answer = table[route];
+    const parameters = pathParameters(where);
     (paths[where] ??= {})[method.toLowerCase()] = answer
       ? {
+          ...(parameters.length ? { parameters } : {}),
           responses: {
             '200': {
               description: 'The answer.',
@@ -90,14 +125,11 @@ export function generate() {
         }
       : {
           'x-contract': 'not yet',
+          ...(parameters.length ? { parameters } : {}),
           responses: { '200': { description: 'Not yet described by the contract.' } },
         };
   }
-  const schemas = Object.fromEntries(
-    Object.entries(definitions)
-      .map(([name, schema]) => [componentName(name), rewriteRefs(schema)] as const)
-      .sort(([a], [b]) => a.localeCompare(b))
-  );
+  const schemas = components(definitions);
   return {
     openapi: '3.1.1',
     info: {

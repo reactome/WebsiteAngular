@@ -19,6 +19,16 @@
     "/ContentService/citation/pathway/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -29,6 +39,16 @@
     "/ContentService/citation/static/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -39,6 +59,16 @@
     "/ContentService/data/complex/{id}/subunits": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -49,6 +79,24 @@
     "/ContentService/data/complexes/{resource}/{identifier}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -109,6 +157,16 @@
     "/ContentService/data/detail/{id}/locationsInPWB": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -119,6 +177,16 @@
     "/ContentService/data/discover/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -149,6 +217,16 @@
     "/ContentService/data/entity/{id}/componentOf": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -159,6 +237,16 @@
     "/ContentService/data/entity/{id}/in-depth": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -169,6 +257,16 @@
     "/ContentService/data/entity/{id}/otherForms": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -179,6 +277,16 @@
     "/ContentService/data/event/{id}/ancestors": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -189,6 +297,16 @@
     "/ContentService/data/event/{id}/in-depth": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -199,6 +317,16 @@
     "/ContentService/data/instance/{id}/referrers": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -209,6 +337,24 @@
     "/ContentService/data/mapping/{resource}/{identifier}/pathways": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -219,6 +365,24 @@
     "/ContentService/data/mapping/{resource}/{identifier}/reactions": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "resource",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -229,6 +393,24 @@
     "/ContentService/data/orthology/{id}/species/{speciesId}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "speciesId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -239,6 +421,16 @@
     "/ContentService/data/participants/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -249,6 +441,16 @@
     "/ContentService/data/participants/{id}/participatingPhysicalEntities": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -259,6 +461,16 @@
     "/ContentService/data/participants/{id}/referenceEntities": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -269,6 +481,16 @@
     "/ContentService/data/pathway/{id}/containedEvents": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -279,6 +501,24 @@
     "/ContentService/data/pathway/{id}/containedEvents/{attribute}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -289,6 +529,16 @@
     "/ContentService/data/pathways/low/diagram/entity/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -299,6 +549,16 @@
     "/ContentService/data/pathways/low/diagram/entity/{id}/allForms": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -309,6 +569,16 @@
     "/ContentService/data/pathways/low/entity/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -319,6 +589,16 @@
     "/ContentService/data/pathways/low/entity/{id}/allForms": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -329,6 +609,16 @@
     "/ContentService/data/pathways/top/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -339,6 +629,16 @@
     "/ContentService/data/person/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -349,6 +649,16 @@
     "/ContentService/data/person/{id}/authoredPathways": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -359,6 +669,16 @@
     "/ContentService/data/person/{id}/authoredReactions": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -369,6 +689,16 @@
     "/ContentService/data/person/{id}/publications": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -379,6 +709,16 @@
     "/ContentService/data/person/{id}/reviewedPathways": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -389,6 +729,16 @@
     "/ContentService/data/person/{id}/reviewedReactions": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -399,6 +749,24 @@
     "/ContentService/data/person/{id}/{attribute}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -409,6 +777,16 @@
     "/ContentService/data/query/enhanced/v2/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -419,6 +797,16 @@
     "/ContentService/data/query/enhanced/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -447,6 +835,16 @@
     "/ContentService/data/query/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -457,6 +855,16 @@
     "/ContentService/data/query/{id}/normalPathway": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -467,6 +875,16 @@
     "/ContentService/data/query/{id}/stId": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -477,6 +895,24 @@
     "/ContentService/data/query/{id}/{attribute}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -497,6 +933,16 @@
     "/ContentService/data/schema/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -507,6 +953,16 @@
     "/ContentService/data/schema/{id}/attributes": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -517,6 +973,16 @@
     "/ContentService/data/schema/{id}/count": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -527,6 +993,16 @@
     "/ContentService/data/schema/{id}/min": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -537,6 +1013,16 @@
     "/ContentService/data/schema/{id}/reference": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -547,6 +1033,16 @@
     "/ContentService/data/schema/{id}/referrals": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -577,6 +1073,16 @@
     "/ContentService/exporter/diagram/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -587,6 +1093,16 @@
     "/ContentService/exporter/event/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -597,6 +1113,16 @@
     "/ContentService/exporter/fireworks/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -607,6 +1133,16 @@
     "/ContentService/exporter/sbml/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -617,6 +1153,16 @@
     "/ContentService/exporter/voronoi/{id}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -637,6 +1183,16 @@
     "/ContentService/interactors/static/molecule/enhanced/{id}/details": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -647,6 +1203,16 @@
     "/ContentService/interactors/static/molecule/{id}/details": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -657,6 +1223,16 @@
     "/ContentService/interactors/static/molecule/{id}/pathways": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -667,6 +1243,16 @@
     "/ContentService/interactors/static/molecule/{id}/summary": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -677,6 +1263,16 @@
     "/ContentService/interactors/static/molecule/{id}/withEntities": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -687,6 +1283,16 @@
     "/ContentService/references/mapping/{identifier}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -697,6 +1303,16 @@
     "/ContentService/references/mapping/{identifier}/xrefs": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -716,6 +1332,16 @@
     },
     "/ContentService/search/diagram/{diagram}": {
       "get": {
+        "parameters": [
+          {
+            "name": "diagram",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The answer.",
@@ -733,6 +1359,24 @@
     "/ContentService/search/diagram/{diagram}/occurrences/{instance}": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "diagram",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "instance",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -743,6 +1387,16 @@
     "/ContentService/search/diagram/{pathwayId}/flag": {
       "get": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "pathwayId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
@@ -842,6 +1496,16 @@
     },
     "/ContentService/search/icon/{identifier}": {
       "get": {
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The answer.",
@@ -858,6 +1522,16 @@
     },
     "/ContentService/search/pathways/of/{dbId}": {
       "get": {
+        "parameters": [
+          {
+            "name": "dbId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "The answer.",
@@ -948,6 +1622,16 @@
     "/ContentService/data/orthologies/ids/species/{speciesId}": {
       "post": {
         "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "speciesId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Not yet described by the contract."
