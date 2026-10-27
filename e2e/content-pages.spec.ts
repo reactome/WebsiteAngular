@@ -143,7 +143,9 @@ test.describe('Content pages render backend data', () => {
     await page.goto('/community/icon-lib/R-ICO-012449');
     await expect(page.locator('.detail-stid')).toHaveText('R-ICO-012449', { timeout: LOAD });
     await expect(page.locator('.detail-summation')).not.toBeEmpty();
-    await expect(page.locator('.detail-preview img')).toBeVisible();
+    // The image's address, not its loading: it comes from the release's
+    // files, which the replay does not serve to an <img>.
+    await expect(page.locator('.detail-preview img')).toHaveAttribute('src', /R-ICO-012449/);
   });
 
   test('a CMS article page renders its body', async ({ page }) => {
