@@ -42,7 +42,9 @@ function parse(text: string): unknown {
  * The description's Long, `{type: integer, format: int64}`, as ajv can check
  * it: ajv's `integer` is a JS number, so an exact long read as a bigint would
  * fail it. Anywhere else a bigint fails, as it should: a field the contract
- * does not call a Long cannot carry one exactly.
+ * does not call a Long cannot carry one exactly. `int64` is registered as no
+ * format: written anywhere but the Long, it is refused (strict mode), so a
+ * long the description spells out in place is not checked as a number.
  */
 const LONG = { type: 'integer', format: 'int64' };
 
@@ -53,10 +55,6 @@ function validator(description: Description): Ajv2020 {
     strict: true,
     allowUnionTypes: true,
     discriminator: true,
-  });
-  ajv.addFormat('int64', {
-    type: 'number',
-    validate: (value: number) => Number.isSafeInteger(value),
   });
   ajv.addKeyword({
     keyword: 'x-long',
@@ -90,6 +88,13 @@ function refsTo(value: unknown): unknown {
 }
 
 /** The routes the description gives an answer's schema: "METHOD /path" to the schema. */
+/** Every route the description lists, described or not yet, as "METHOD /path". */
+function listed(description: Description): string[] {
+  return Object.entries(description.paths).flatMap(([where, operations]) =>
+    Object.keys(operations).map((method) => `${method.toUpperCase()} ${where}`)
+  );
+}
+
 function described(description: Description): Map<string, Schema> {
   const found = new Map<string, Schema>();
   for (const [where, operations] of Object.entries(description.paths))
@@ -127,7 +132,10 @@ function routeOf(routes: string[], method: string, where: string): string | unde
  * ajv's errors as problems, one per failing value. A union's failure counts
  * once, at the union: ajv also lists each branch's errors, at the union's
  * value or within it. And the errors of one value (two required properties
- * missing) are one problem.
+ * missing) are one problem. Which errors came from a branch is told by where
+ * they are, not by their schema path (a branch reached through a `$ref` has
+ * its own), so a failure beside a union, at or within its value, waits until
+ * the union's own is fixed; the answer fails either way.
  */
 function problems(errors: ErrorObject[] | null | undefined): ErrorObject[] {
   const all = errors ?? [];
@@ -152,13 +160,15 @@ const description = JSON.parse(readFileSync(DESCRIPTION, 'utf8')) as Description
 function check(of: Description, answers: RecordedAnswer[]) {
   const ajv = validator(of);
   const schemas = described(of);
-  const routes = [...schemas.keys()];
+  const routes = listed(of);
   const compiled = new Map<string, ValidateFunction>();
-  const counted = new Map<string, number>(routes.map((route) => [route, 0]));
+  const counted = new Map<string, number>([...schemas.keys()].map((route) => [route, 0]));
   const found: string[] = [];
   for (const answer of answers) {
+    // Matched among every route listed, so an answer of a route not yet
+    // described (`/search/diagram/summary`) is never taken for a template's.
     const route = routeOf(routes, answer.method, answer.path);
-    if (!route) continue;
+    if (!route || !schemas.has(route)) continue;
     counted.set(route, (counted.get(route) ?? 0) + 1);
     const validate = compiled.get(route) ?? ajv.compile(refsTo(schemas.get(route)) as Schema);
     compiled.set(route, validate);
@@ -174,7 +184,7 @@ describe('recorded answers against the API description', () => {
   /** Described routes with no recorded answer, and why. */
   const UNRECORDED: Record<string, string> = {
     'GET /ContentService/search/facet':
-      'a gap in calls.ts: the recordings always search with a query',
+      'not in the recordings, which always search with a query (calls.ts names the gap)',
     'GET /ContentService/search/query/paginated': 'no call of the site reads it',
   };
 
@@ -266,6 +276,27 @@ describe('the schema check', () => {
       ],
     };
     expect(run(tiny({}, union), '{"c":1}')).toHaveLength(1);
+    // Within the union's value: an entry of an array whose branches fail
+    // deeper down is still one problem, at the entry.
+    const deep = {
+      oneOf: [
+        {
+          type: 'object',
+          required: ['a'],
+          properties: { a: { type: 'string' }, b: { $ref: '#/components/schemas/C' } },
+        },
+        { type: 'object', required: ['z'], properties: { z: {} } },
+      ],
+    };
+    const entries = run(
+      tiny(
+        { C: { type: 'object', properties: { c: { type: 'string' } } } },
+        { type: 'array', items: deep }
+      ),
+      '[{"a":1,"b":{"c":2}}, {"z":0}]'
+    );
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toContain(' /0: must match exactly one schema');
     expect(run(tiny({}, union), '{"a":"x","b":"y"}')).toHaveLength(1);
     const two = { type: 'object', required: ['a', 'b'], properties: { a: {}, b: {} } };
     expect(run(tiny({}, two), '{}')).toHaveLength(1);
@@ -278,6 +309,21 @@ describe('the schema check', () => {
     expect(routeOf(routes, 'GET', '/s/R-HSA-1/')).toBe('GET /ContentService/s/{id}');
     expect(routeOf(routes, 'GET', '/s/a/b')).toBeUndefined();
     expect(routeOf(routes, 'POST', '/s/query')).toBeUndefined();
+  });
+
+  it('never checks the answer of a route not yet described against a template', () => {
+    const of = tiny({}, { type: 'integer' });
+    of.paths['/ContentService/{id}'] = of.paths['/ContentService/x'] ?? {};
+    of.paths['/ContentService/summary'] = { get: { 'x-contract': 'not yet', responses: {} } };
+    const answer = { method: 'GET', query: new URLSearchParams(), source: 't', body: '"text"' };
+    expect(check(of, [{ ...answer, path: '/summary' }]).found).toEqual([]);
+    expect(check(of, [{ ...answer, path: '/R-HSA-1' }]).found).toHaveLength(1);
+  });
+
+  it('refuses int64 anywhere but the Long', () => {
+    expect(() => run(tiny({}, { type: 'integer', format: 'int64' }), '1')).toThrow(
+      /unknown format/
+    );
   });
 
   it('refuses a description whose Long is not what it reads', () => {
