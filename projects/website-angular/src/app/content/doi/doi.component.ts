@@ -104,7 +104,7 @@ export class DoiComponent implements OnInit, OnDestroy {
         (p) =>
           p.displayName.toLowerCase().includes(q) ||
           p.species.toLowerCase().includes(q) ||
-          p.doi?.toLowerCase().includes(q) ||
+          p.doi.toLowerCase().includes(q) ||
           this.personsMatch(p.authors, q) ||
           this.personsMatch(p.reviewers, q) ||
           this.personsMatch(p.editors, q)

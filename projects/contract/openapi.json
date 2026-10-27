@@ -106,30 +106,57 @@
     },
     "/ContentService/data/content/contributors": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Contributor"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/ContentService/data/content/doi": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoiPathway"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/ContentService/data/content/toc": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TocPathway"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -316,7 +343,6 @@
     },
     "/ContentService/data/instance/{id}/referrers": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -329,7 +355,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstanceReferrals"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -922,10 +958,16 @@
     },
     "/ContentService/data/schema/model": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchemaNode"
+                }
+              }
+            }
           }
         }
       }
@@ -952,7 +994,6 @@
     },
     "/ContentService/data/schema/{id}/attributes": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -965,7 +1006,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SchemaAttribute"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -992,7 +1043,6 @@
     },
     "/ContentService/data/schema/{id}/min": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1005,7 +1055,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleDatabaseObject"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1032,7 +1092,6 @@
     },
     "/ContentService/data/schema/{id}/referrals": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1045,7 +1104,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SchemaAttribute"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1682,6 +1751,34 @@
   },
   "components": {
     "schemas": {
+      "Contributor": {
+        "type": "object",
+        "properties": {
+          "person": {
+            "$ref": "#/components/schemas/SimplePerson"
+          },
+          "authoredPathways": {
+            "type": "number"
+          },
+          "reviewedPathways": {
+            "type": "number"
+          },
+          "authoredReactions": {
+            "type": "number"
+          },
+          "reviewedReactions": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "person",
+          "authoredPathways",
+          "reviewedPathways",
+          "authoredReactions",
+          "reviewedReactions"
+        ],
+        "additionalProperties": false
+      },
       "DiagramResult_SearchEntry": {
         "type": "object",
         "properties": {
@@ -1708,6 +1805,59 @@
         ],
         "additionalProperties": false,
         "description": "`/search/diagram/{id}` and `/search/fireworks`: the entries, their type facets, Solr's count."
+      },
+      "DoiPathway": {
+        "type": "object",
+        "properties": {
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "doi": {
+            "type": "string"
+          },
+          "species": {
+            "type": "string"
+          },
+          "releaseDate": {
+            "type": "string"
+          },
+          "reviseDate": {
+            "type": "string",
+            "description": "Like the TOC's, omitted when there is none. Measured over the 669 pathways `/data/content/doi` returns: `reviseDate` absent in 564, `releaseStatus` in 608, and the people lists in a few -- `authors` 3, `reviewers` 11, `editors` 12."
+          },
+          "releaseStatus": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            }
+          },
+          "reviewers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            }
+          },
+          "editors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            }
+          }
+        },
+        "required": [
+          "stId",
+          "displayName",
+          "doi",
+          "species",
+          "releaseDate"
+        ],
+        "additionalProperties": false
       },
       "EpochMillis": {
         "type": "number",
@@ -1986,6 +2136,25 @@
         "$ref": "#/components/schemas/ResultGroup_IconEntry",
         "description": "`/search/icon/query`: the icon library's page, one ungrouped group of icons."
       },
+      "InstanceReferrals": {
+        "type": "object",
+        "properties": {
+          "referral": {
+            "type": "string"
+          },
+          "objects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimpleDatabaseObject"
+            }
+          }
+        },
+        "required": [
+          "referral",
+          "objects"
+        ],
+        "additionalProperties": false
+      },
       "Long": {
         "type": "integer",
         "description": "A Java long, written exactly (`JSON.rawJSON`): it may exceed 2^53, beyond which a JavaScript number reads it rounded.",
@@ -2077,6 +2246,72 @@
         ],
         "additionalProperties": false,
         "description": "One group of results: a type's, or \"Results\" for a search not grouped."
+      },
+      "SchemaAttribute": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "cardinality": {
+            "type": "string"
+          },
+          "valueTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaValueType"
+            }
+          },
+          "origin": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "cardinality",
+          "valueTypes",
+          "origin"
+        ],
+        "additionalProperties": false
+      },
+      "SchemaNode": {
+        "type": "object",
+        "properties": {
+          "className": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchemaNode"
+            },
+            "description": "Left out on a class with no subclasses (74 of the 106)."
+          }
+        },
+        "required": [
+          "className",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "SchemaValueType": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "databaseObject": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "databaseObject"
+        ],
+        "additionalProperties": false
       },
       "SearchEntry": {
         "description": "One search result.",
@@ -2468,6 +2703,55 @@
           }
         ]
       },
+      "SimpleDatabaseObject": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "schemaClass": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dbId"
+        ],
+        "additionalProperties": false,
+        "description": "graph-core's SimpleDatabaseObject as the content service writes it: on /schema/{class}/min by simpleObjectJson (tools/content-node/schema-endpoints.ts), on /instance/{id}/referrers by its own mapping (data-query-endpoints.ts). An object of a class without a stable id -- an InstanceEdit, a Species -- has no `stId`, and non_empty leaves it out; an empty displayName is left out the same way, and a missing one is written as the text \"null\". schemaClass is the class the labels name on /schema/{class}/min, always there; on /instance/{id}/referrers it is the object's property, \"null\" when missing and left out when empty."
+      },
+      "SimplePerson": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "surname": {
+            "type": "string"
+          },
+          "firstname": {
+            "type": "string"
+          },
+          "orcidId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dbId",
+          "displayName",
+          "surname"
+        ],
+        "additionalProperties": false,
+        "description": "The five fields Java's SimplePerson carries -- three of which are not always there.\n\n`spring.jackson.default-property-inclusion=non_empty` in the content service means a null or empty field is omitted from the JSON rather than sent as null, so an absent value arrives as `undefined` and never as `null`. Measured over all 9,503 person entries the three content endpoints return: `dbId`, `displayName` and `surname` are always present; `firstname` is missing on 619 of them and `orcidId` on 3,961, and neither is ever null.\n\nThe declaration used to say otherwise, and three separate call sites had already worked around it -- `p.firstname?.toLowerCase()` in the contributors, contents and DOI searches, where `?.` on a required `string` is dead syntax that quietly says the author knew better than the type."
+      },
       "TargetResult": {
         "type": "object",
         "properties": {
@@ -2490,6 +2774,89 @@
         ],
         "additionalProperties": false,
         "description": "A term the search found nothing for, and whether it names a resource; an empty term or resource is left out."
+      },
+      "TocPathway": {
+        "type": "object",
+        "properties": {
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "doi": {
+            "type": "string",
+            "description": "Omitted rather than sent null when there is none. Measured over the 34 top-level pathways `/data/content/toc` returns: `doi` absent in 29, `reviseDate` in 30, `releaseStatus` in 19. Declaring them required let `pathway.doi !== null` read as true for a field that is not there."
+          },
+          "species": {
+            "type": "string"
+          },
+          "releaseDate": {
+            "type": "string"
+          },
+          "reviseDate": {
+            "type": "string"
+          },
+          "releaseStatus": {
+            "type": "string"
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            },
+            "description": "Present on all 34 today, but the service leaves out an empty list rather than sending [] -- /data/content/doi omits each of the people lists for a few pathways -- so a top-level pathway without reviewers, or without subpathways, would come without the field."
+          },
+          "reviewers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            }
+          },
+          "editors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SimplePerson"
+            }
+          },
+          "subpathways": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TocSubpathway"
+            }
+          }
+        },
+        "required": [
+          "stId",
+          "displayName",
+          "species",
+          "releaseDate"
+        ],
+        "additionalProperties": false
+      },
+      "TocSubpathway": {
+        "type": "object",
+        "properties": {
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "doi": {
+            "type": "string",
+            "description": "Sent when the child has a DOI. Java never sends it (its TocSubpathway is built with a null DOI); the node service does, a difference it declares (`differs` on /data/content/toc). In five of the six recorded answers, 107 of the 215 subpathways carry one; the sixth, an older recording, carries none."
+          },
+          "speciesName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "stId",
+          "displayName",
+          "speciesName"
+        ],
+        "additionalProperties": false
       }
     }
   }

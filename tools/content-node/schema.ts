@@ -52,10 +52,7 @@
  *     reflection too, and refuses to write if its classes are not these.
  */
 import { readFileSync } from 'node:fs';
-import type {
-  SchemaAttribute,
-  SchemaNode,
-} from '../../projects/website-angular/src/model/content.model.ts';
+import type { SchemaAttribute, SchemaNode } from '../../projects/contract/content.ts';
 
 /**
  * Every class in graph-core's domain.model package, and the model classes it

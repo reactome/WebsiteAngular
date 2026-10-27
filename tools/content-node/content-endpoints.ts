@@ -12,13 +12,13 @@ import type {
   SimplePerson,
   TocPathway,
   TocSubpathway,
-} from '../../projects/website-angular/src/model/content.model.ts';
+} from '../../projects/contract/content.ts';
 import type { JsonWritten } from './answers.ts';
 import { cached, compact } from './answers.ts';
 
 /**
  * A Person's properties: dbId, displayName and surname always there --
- * measured over all 9,503 people the content endpoints return (content.model's
+ * measured over all 9,503 people the content endpoints return (the contract's
  * SimplePerson) -- firstname and orcidId often not.
  */
 type PersonProps = Props & { dbId: number; displayName: string; surname: string };
