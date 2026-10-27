@@ -125,6 +125,7 @@
     "@types/express": "5.0.6",
     "@types/lodash": "^4.17.26",
     "@types/node": "24.19.2",
+    "ajv": "8.18.0",
     "angular-eslint": "^21.4.0",
     "concat": "^1.0.3",
     "eslint": "^10.13.0",
