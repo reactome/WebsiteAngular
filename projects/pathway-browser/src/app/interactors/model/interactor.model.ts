@@ -4,8 +4,14 @@ import type { Interactor, InteractorEntity } from '../../../../../contract/inter
 
 export type { CustomInteraction, PsicquicResource } from '../../../../../contract/interactors.ts';
 
-/** An interactor as the pathway browser draws it: the answer's, with the diagram's nodes it is drawn on. */
-export interface DrawnInteractor extends Interactor {
+/**
+ * An interactor as the pathway browser draws it: the answer's, with the diagram's
+ * nodes it is drawn on. A custom upload's interactors are built here from pairs of
+ * accessions, with no evidence, so the evidence the service always sends is optional.
+ */
+export interface DrawnInteractor extends Omit<Interactor, 'evidences' | 'evidencesURL'> {
+  evidences?: number;
+  evidencesURL?: string;
   existingNodes?: cytoscape.NodeCollection;
 }
 

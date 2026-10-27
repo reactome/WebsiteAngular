@@ -145,6 +145,7 @@ description: 'Tasks for spec 016: one API contract for the content service and t
     - `PsicquicResource.name` renamed fails the node writer's and the pathway browser's type checks.
     - `CustomInteraction.evidenceCount` renamed fails only the writer: the pathway browser reads it in a Material table cell, whose row Angular types as `any`. That is a limit of the table, recorded here, not fixed.
   - **Shown failing:** `PsicquicResource.active` retyped as a string fails every recorded PSICQUIC services answer.
+  - From #715's review, in #716: a custom upload's interactors are built in the pathway browser from pairs of accessions, with no evidence, and a cast to `DrawnInteractorEntity[]` hid that they lacked the contract's required `evidences` and `evidencesURL`. `DrawnInteractor` makes those two optional (every reader already allows for them missing), and the cast is gone. `CustomInteraction`'s comment now names every field written as the text "null".
 - [ ] T024 [P] [US5] Person events (`SimpleEvent`), locations (`PathwayBrowserNode`), flags (`DiagramFlagResult`, `SpeciesOverviewFlagResult`) and the citation (`PathwayCitation`) into their contract modules.
 - [ ] T025 [US5] The enhanced query (2,659 known problems): graph objects as a union on `className`/`schemaClass` with an OpenAPI discriminator, starting from the classes the site reads.
 - [ ] T026 [US5] An entity's other forms (1,660), then the interactors' details (1,560), then the remaining families by known problems.

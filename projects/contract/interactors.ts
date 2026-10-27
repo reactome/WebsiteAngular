@@ -27,7 +27,11 @@ export interface Interactor {
   type?: string;
 }
 
-/** One interaction of /interactors/static/molecule/enhanced/{id}/details, with more about the partner. */
+/**
+ * One interaction of /interactors/static/molecule/enhanced/{id}/details, with more
+ * about the partner. The identifier, URLs, database and display name are written as
+ * the text "null" when the graph has none, as Java writes them.
+ */
 export interface CustomInteraction {
   dbId: number;
   identifier: string;
