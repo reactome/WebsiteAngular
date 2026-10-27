@@ -30,19 +30,13 @@ export interface TocSubpathway {
   stId: string;
   displayName: string;
   /**
-   * Never sent, as far as anything here can tell.
-   *
-   * `/data/content/toc` returns `stId`, `displayName` and `speciesName` for a
-   * child and nothing else -- measured over 215 nested subpathways, none of
-   * which carried a `doi`. `toc.component.html:161` renders a DOI link behind
-   * `@if (sub.doi)`, so that markup cannot fire today.
-   *
-   * Left optional rather than deleted because it is not clear which side is
-   * wrong: the endpoint's child projection may be missing a field it should
-   * send, or the link may be markup for a case that never existed. Deleting the
-   * field would settle that question by forgetting it.
+   * Sent when the child has a DOI. Java never sends it (its TocSubpathway is
+   * built with a null DOI); the node service does, a difference it declares
+   * (`differs` on /data/content/toc). In five of the six recorded answers,
+   * 107 of the 215 subpathways carry one; the sixth, an older recording,
+   * carries none.
    */
-  doi?: string | null;
+  doi?: string;
   speciesName: string;
 }
 
@@ -55,11 +49,11 @@ export interface TocPathway {
    * `reviseDate` in 30, `releaseStatus` in 19. Declaring them required let
    * `pathway.doi !== null` read as true for a field that is not there.
    */
-  doi?: string | null;
+  doi?: string;
   species: string;
   releaseDate: string;
   reviseDate?: string;
-  releaseStatus?: string | null;
+  releaseStatus?: string;
   /**
    * Present on all 34 today, but the service leaves out an empty list rather
    * than sending [] -- /data/content/doi omits each of the people lists for a
@@ -75,7 +69,7 @@ export interface TocPathway {
 export interface DoiPathway {
   stId: string;
   displayName: string;
-  doi: string | null;
+  doi: string;
   species: string;
   releaseDate: string;
   /**
@@ -85,7 +79,7 @@ export interface DoiPathway {
    * `editors` 12.
    */
   reviseDate?: string;
-  releaseStatus?: string | null;
+  releaseStatus?: string;
   authors?: SimplePerson[];
   reviewers?: SimplePerson[];
   editors?: SimplePerson[];
@@ -119,9 +113,10 @@ export interface SchemaAttribute {
 }
 
 /**
- * graph-core's SimpleDatabaseObject as the content service writes it
- * (simpleObjectJson, in tools/content-node/schema-endpoints.ts, which
- * /instance/{id}/referrers writes with too). An object of a class without a stable id --
+ * graph-core's SimpleDatabaseObject as the content service writes it: on
+ * /schema/{class}/min by simpleObjectJson (tools/content-node/schema-endpoints.ts),
+ * on /instance/{id}/referrers by its own mapping (data-query-endpoints.ts).
+ * An object of a class without a stable id --
  * an InstanceEdit, a Species -- has no `stId`, and non_empty leaves it
  * out; an empty displayName is left out the same way, and a missing one is
  * written as the text "null". schemaClass is the class the labels name on
