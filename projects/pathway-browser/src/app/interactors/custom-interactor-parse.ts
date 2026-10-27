@@ -159,7 +159,7 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
       count: interactors.length,
       interactors,
     })
-  ) as DrawnInteractorEntity[];
+  );
 
   if (entities.length === 0) {
     return {
