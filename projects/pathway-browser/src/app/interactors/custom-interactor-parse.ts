@@ -22,7 +22,7 @@
  *   - without the header, the first pair is read as the header and dropped,
  *     which the service reports as a warning rather than an error
  */
-import { InteractorEntity, Interactors } from './model/interactor.model';
+import { DrawnInteractorEntity, Interactors } from './model/interactor.model';
 
 /** What the service gives an interaction it was told nothing about. */
 const ASSUMED_SCORE = 1;
@@ -33,7 +33,7 @@ const UNIPROT = 'http://www.uniprot.org/uniprot/';
 export interface ParsedInteractions {
   /** Drawable, in the shape the overlay already consumes. */
   // Built here, so always with its entities.
-  interactors: Interactors & { entities: InteractorEntity[] };
+  interactors: Interactors & { entities: DrawnInteractorEntity[] };
   /** Accepted, but the reader should know. */
   warnings: string[];
   /** Nothing usable was found, and why. */
@@ -153,11 +153,13 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     );
   }
 
-  const entities: InteractorEntity[] = [...byAccession.entries()].map(([acc, interactors]) => ({
-    acc,
-    count: interactors.length,
-    interactors,
-  })) as InteractorEntity[];
+  const entities: DrawnInteractorEntity[] = [...byAccession.entries()].map(
+    ([acc, interactors]) => ({
+      acc,
+      count: interactors.length,
+      interactors,
+    })
+  ) as DrawnInteractorEntity[];
 
   if (entities.length === 0) {
     return {

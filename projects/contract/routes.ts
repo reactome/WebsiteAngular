@@ -13,6 +13,11 @@ import type {
   TocPathway,
 } from './content.ts';
 import type {
+  CustomInteraction,
+  InteractionWithEntities,
+  PsicquicResource,
+} from './interactors.ts';
+import type {
   DiagramResult,
   FacetResponse,
   GroupedResult,
@@ -32,6 +37,9 @@ export interface Routes {
   'GET /ContentService/data/schema/{id}/referrals': SchemaAttribute[];
   'GET /ContentService/data/schema/{id}/min': SimpleDatabaseObject[];
   'GET /ContentService/data/instance/{id}/referrers': InstanceReferrals[];
+  'GET /ContentService/interactors/psicquic/resources': PsicquicResource[];
+  'GET /ContentService/interactors/static/molecule/enhanced/{id}/details': CustomInteraction[];
+  'GET /ContentService/interactors/static/molecule/{id}/withEntities': InteractionWithEntities[];
   'GET /ContentService/search/query': GroupedResult<SearchEntry>;
   'GET /ContentService/search/query/paginated': GroupedResult<SearchEntry>;
   'GET /ContentService/search/facet': FacetResponse;

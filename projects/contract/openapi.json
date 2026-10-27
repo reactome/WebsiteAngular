@@ -1241,17 +1241,25 @@
     },
     "/ContentService/interactors/psicquic/resources": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PsicquicResource"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/ContentService/interactors/static/molecule/enhanced/{id}/details": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1264,7 +1272,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomInteraction"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1331,7 +1349,6 @@
     },
     "/ContentService/interactors/static/molecule/{id}/withEntities": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1344,7 +1361,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InteractionWithEntities"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1779,6 +1806,66 @@
         ],
         "additionalProperties": false
       },
+      "CustomInteraction": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "evidenceCount": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string",
+            "description": "The partner's own page; the text \"null\" when the graph has none, as Java writes it."
+          },
+          "evidenceURL": {
+            "type": "string"
+          },
+          "geneName": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "databaseName": {
+            "type": "string"
+          },
+          "entitiesCount": {
+            "type": "number"
+          },
+          "speciesName": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "variantIdentifier": {
+            "type": "string",
+            "description": "An isoform's or a chain's own identifier, such as Q99IB8-PRO_0000045603."
+          }
+        },
+        "required": [
+          "dbId",
+          "identifier",
+          "score",
+          "evidenceCount",
+          "url",
+          "evidenceURL",
+          "databaseName",
+          "entitiesCount",
+          "speciesName",
+          "displayName"
+        ],
+        "additionalProperties": false,
+        "description": "One interaction of /interactors/static/molecule/enhanced/{id}/details, with more about the partner."
+      },
       "DiagramResult_SearchEntry": {
         "type": "object",
         "properties": {
@@ -2155,6 +2242,64 @@
         ],
         "additionalProperties": false
       },
+      "InteractionWithEntities": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "number"
+          },
+          "accession": {
+            "type": "string"
+          },
+          "accessionURL": {
+            "type": "string"
+          },
+          "physicalEntity": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dbId": {
+                  "type": "number"
+                },
+                "stId": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                },
+                "schemaClass": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "dbId",
+                "stId",
+                "displayName",
+                "schemaClass"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Never empty: the endpoint returns only the interactors that have entities."
+          },
+          "evidences": {
+            "type": "number"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "score",
+          "accession",
+          "accessionURL",
+          "physicalEntity",
+          "evidences",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "One interaction of /interactors/static/molecule/{id}/withEntities: the partner with its Reactome physical entities joined in."
+      },
       "Long": {
         "type": "integer",
         "description": "A Java long, written exactly (`JSON.rawJSON`): it may exceed 2^53, beyond which a JavaScript number reads it rounded.",
@@ -2186,6 +2331,29 @@
         ],
         "additionalProperties": false,
         "description": "What `/search/pathways/of/{dbId}` answers: pathways, written with only the fields the pathway browser asks for (`fields=DB_ID,ST_ID,NAME,HAS_EHLD`), so no type."
+      },
+      "PsicquicResource": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "soapURL": {
+            "type": "string"
+          },
+          "restURL": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "active"
+        ],
+        "additionalProperties": false,
+        "description": "A PSICQUIC service as /interactors/psicquic/resources writes it: a URL the registry does not give is left out (non_empty), so either may be absent."
       },
       "ResultGroup_IconEntry": {
         "type": "object",

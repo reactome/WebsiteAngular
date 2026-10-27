@@ -1,5 +1,5 @@
 import { NodeSingular } from 'cytoscape';
-import { Interactor } from '../model/interactor.model';
+import { DrawnInteractor } from '../model/interactor.model';
 
 export interface Position {
   x: number;
@@ -36,7 +36,7 @@ class InteractorsLayout {
   constructor() {}
 
   // Read from a node's untyped data, which an entity without interactors lacks.
-  public static getNumberOfInteractorsToDraw(interactors: Interactor[] | null | undefined) {
+  public static getNumberOfInteractorsToDraw(interactors: DrawnInteractor[] | null | undefined) {
     if (interactors == null) return 0;
     return Math.min(interactors.length, InteractorsLayout.MAX_INTERACTORS);
   }

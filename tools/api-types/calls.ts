@@ -68,8 +68,8 @@ export const TYPES: Record<string, string> = {
   Search: `${PB}/model/search.model`,
   EventsHierarchy: `${PB}/model/events-hierarchy.model`,
   Interactors: `${PB}/interactors/model/interactor.model`,
-  CustomInteraction: `${PB}/interactors/model/interactor.model`,
-  PsicquicResource: `${PB}/interactors/model/interactor.model`,
+  CustomInteraction: 'projects/contract/interactors',
+  PsicquicResource: 'projects/contract/interactors',
   InteractorToken: `${PB}/interactors/model/interactor.model`,
   SearchResult: `${WEB}/model/search.model`,
   FacetResponse: 'projects/contract/search',
@@ -86,7 +86,7 @@ export const TYPES: Record<string, string> = {
   Person: `${WEB}/model/person.model`,
   SimpleEvent: `${WEB}/model/person.model`,
   PathwayBrowserNode: `${WEB}/model/locations.model`,
-  InteractionWithEntities: `${WEB}/model/interactor.model`,
+  InteractionWithEntities: 'projects/contract/interactors',
 };
 
 const UPLOAD = 'an upload is stored for good, so none is recorded';
