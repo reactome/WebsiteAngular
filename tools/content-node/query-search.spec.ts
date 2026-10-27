@@ -382,6 +382,23 @@ describe('/query', () => {
     ]);
   });
 
+  it("is Java's 500 for a grouping without its count of groups or of matches", async () => {
+    // SolrJ unboxes both; a missing one is its NullPointerException.
+    for (const missing of ['ngroups', 'matches']) {
+      answer = (handler) => {
+        if (handler.endsWith('/facet')) return facets(8);
+        const solr = grouped([['Protein', [doc('1', 'TP53')]]]);
+        delete (solr.grouped.type_facet as Record<string, unknown>)[missing];
+        return solr;
+      };
+      const response = await get('query?query=TP53');
+      expect(response.status, missing).toBe(500);
+      expect(((await response.json()) as { messages: string[] }).messages).toEqual([
+        'Something unexpected happened and the error has been reported.',
+      ]);
+    }
+  });
+
   it('leaves out the type of a group with none', async () => {
     answer = (handler) =>
       handler.endsWith('/facet') ? facets(8) : grouped([[null, [doc('1', 'TP53')]]]);

@@ -5,7 +5,8 @@ import {
   SearchFilters,
   Facet,
   NamedFacetCount,
-  ResultGroup,
+  ShownGroup,
+  ShownResult,
 } from '../../model/search.model';
 import {
   Component,
@@ -108,7 +109,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
   suggestedTerms: string[] = [];
-  results: SearchResult | null = null;
+  results: ShownResult | null = null;
   facets: FacetResponse | null = null;
   loading = false;
   error = '';
@@ -310,7 +311,15 @@ export class SearchComponent implements OnInit, OnDestroy {
           this.hasNoResults = false;
         } else {
           // Successful API response - check if we have results
-          const res = results as SearchResult;
+          const answer = results as SearchResult;
+          const res: ShownResult = {
+            ...answer,
+            results: answer.results.map((group) => ({
+              ...group,
+              entries: group.entries ?? [],
+              typeName: group.typeName ?? '',
+            })),
+          };
           // Solr's true total across the whole result set; per-group
           // pagination chops each `group.entries` down to ~30, so we
           // must NOT recompute this from entries.length later.
@@ -391,7 +400,7 @@ export class SearchComponent implements OnInit, OnDestroy {
                 typeName: 'Pages',
                 entries: pageEntries,
                 entriesCount: pageEntries.length,
-              } as ResultGroup,
+              } as ShownGroup,
             ];
           }
           // Keep Solr's biology total; add Pages count (when shown); zero
@@ -445,6 +454,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       return of({
         results: [],
         rowCount: 0,
+        numberOfGroups: 0,
         numberOfMatches: 0,
       });
     }
@@ -479,7 +489,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       for (const result of results) {
         if (!result?.results.length) continue;
         const group = result.results.find((g) => g.typeName === 'Protein');
-        if (group) allProteins.push(...group.entries);
+        if (group) allProteins.push(...(group.entries ?? []));
       }
 
       // Group by referenceIdentifier, else the entry's own id (its stId, or
@@ -700,18 +710,18 @@ export class SearchComponent implements OnInit, OnDestroy {
   }
 
   // Per-group pagination
-  getGroupPage(group: ResultGroup): number {
+  getGroupPage(group: ShownGroup): number {
     return this.groupPages[group.typeName] || 0;
   }
 
-  getGroupTotalPages(group: ResultGroup): number {
+  getGroupTotalPages(group: ShownGroup): number {
     if (group.typeName === 'Protein') {
       return Math.ceil(this.uniqueProteins.length / this.groupPageSize) || 1;
     }
     return Math.ceil(group.entriesCount / this.groupPageSize);
   }
 
-  getGroupPageEntries(group: ResultGroup): SearchEntry[] {
+  getGroupPageEntries(group: ShownGroup): SearchEntry[] {
     if (group.typeName === 'Protein') {
       // While still loading all proteins, show nothing (loading message is displayed)
       if (this.proteinLoading) return [];
@@ -726,7 +736,7 @@ export class SearchComponent implements OnInit, OnDestroy {
     return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
-  goToGroupPage(group: ResultGroup, page: number): void {
+  goToGroupPage(group: ShownGroup, page: number): void {
     const total = this.getGroupTotalPages(group);
     if (page < 0 || page >= total) return;
 
@@ -760,7 +770,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       });
   }
 
-  getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
+  getGroupPageNumbers(group: ShownGroup): (number | '...')[] {
     return this.buildPageNumbers(this.getGroupPage(group), this.getGroupTotalPages(group));
   }
 

@@ -396,7 +396,13 @@ export class SearchComponent {
 // TODO find a way to avoid the break in scroll when loading a new page
 export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   private readonly _result = signal<Search.Result | undefined>(undefined);
-  readonly facets = computed(() => this._result()?.facets || []);
+  // A count Solr gives under no name is written without one: nothing to show
+  // or filter by, as on the site's search page.
+  readonly facets = computed(() =>
+    (this._result()?.facets || []).filter(
+      (facet): facet is Search.Facet & { name: string } => !!facet.name
+    )
+  );
   readonly found = computed(() => this._result()?.found || 0);
   readonly isLoading = signal<boolean>(false);
   /** Pages that could not be loaded, until asked for again. */
@@ -484,7 +490,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
           if (!current()) return;
           this._result.set(result);
           if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
-          this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
+          this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...(result.entries ?? []));
           this.dataStream.next(this.cachedEntries);
           markFailed(false);
           this.isLoading.set(false);
