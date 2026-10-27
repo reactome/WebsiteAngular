@@ -81,8 +81,11 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 
 **Goal**: the guarantee is shown, not assumed, for everything in the contract so far.
 
-- [ ] T016 [US1] Add a spec that fails when a contract answer is also declared in `projects/website-angular/src/model` or `projects/pathway-browser` (the "no second description" check). Show it failing on a re-added local `interface SearchEntry`.
-- [ ] T017 [US1] Record in this file, with the commands, a rename of one field per moved family failing the writer and every reader ([quickstart.md](quickstart.md) §1).
+- [x] T016 [US1] Add a spec that fails when a contract answer is also declared in `projects/website-angular/src/model` or `projects/pathway-browser` (the "no second description" check). Show it failing on a re-added local `interface SearchEntry`. — #705. `projects/contract/one-description.spec.ts` takes the contract's exported names and the names the readers re-export them as (the site's `SearchEntry` is the contract's `SearchEntryView`), and refuses an interface or an object type under any of them in the site's or the pathway browser's code, anywhere (a namespace's too); an alias of the contract's type is a name, not a description. A re-added `interface SearchEntry` in the site's search model failed it, naming the file.
+- [x] T017 [US1] Record in this file, with the commands, a rename of one field per moved family failing the writer and every reader ([quickstart.md](quickstart.md) §1). — #705. The search family, by its three moves, each a field renamed in `projects/contract/search.ts` and the two programs checked (`npx tsc -p tools/tsconfig.json --noEmit`, `npx tsc -p tsconfig.app.json --noEmit`), then undone:
+  - the facets (#684): `FacetCount.count` failed `tools/content-node/search-core.ts:80`, `search-endpoints.ts:96` and the site's `search/search.component.ts:339`;
+  - the entry (#689): `exactType` failed the writer, `search-core.ts:257`, and the site's `search.component.ts:672` (the pathway browser reads it in its templates, which the site's production build checks);
+  - the answers (#703): `GroupedResult.numberOfMatches` failed the writers, `search-endpoints.ts:287` and `:298`, and the site's `search.component.ts:326`, `:408`, `:415` and `:454`.
 
 ## Phase 6: User Story 4 - The description, generated (P2)
 
