@@ -19,7 +19,8 @@
     "tools/analysis-types/record.ts",
     "tools/svg-export-harness/{harness,harness.check,playwright.config}.ts",
     "tools/java-parity/parity.ts",
-    "tools/library-update/check-library-update.ts"
+    "tools/library-update/check-library-update.ts",
+    "projects/contract/routes.ts"
   ],
   "project": [
     "src/**/*.ts",

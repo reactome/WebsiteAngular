@@ -93,12 +93,15 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 
 **Independent test**: [quickstart.md](quickstart.md) §5.
 
-- [ ] T018 [US4] Add ts-json-schema-generator 2.9.0 as a dev dependency (check the lock's diff by name and version at every depth) and write `tools/contract/generate.ts`.
+- [x] T018 [US4] Add ts-json-schema-generator 2.9.0 as a dev dependency (check the lock's diff by name and version at every depth) and write `tools/contract/generate.ts`.
   - It generates the route table's answer types (`discriminatorType: 'open-api'`, `skipTypeCheck: true`) and rewrites the refs to `#/components/schemas/`.
   - It writes `projects/contract/openapi.json`.
   - `tools/load.spec.ts` gains `'contract'` in `SERVICES`, and lists `generate` under `RUN_ON_LOAD` if it writes when loaded.
-- [ ] T019 [US4] Write `projects/contract/routes.ts`, the route table, as types. `tools/contract/generate.spec.ts` checks it against `tools/content-node/registry.ts` both ways, and marks registry routes not yet in the contract `x-contract: "not yet"`. Show it failing on a row for a route the registry lacks.
-- [ ] T020 [US4] Add the up-to-date check in `tools/contract/generate.spec.ts`: regenerate in memory and compare with the committed file. Show it failing on a contract change made without regenerating.
+  - Done in #708, with T019 and T020 (the generator reads the route table). The lock gains the generator, `commander`, `safe-stable-stringify` and a hoisted `glob`, whose copy of `brace-expansion` resolves to 5.0.12 where the two nested copies had 5.0.9 (in its range). It writes only when run as a script (`import.meta.main`), so loading it does nothing and it is not in `RUN_ON_LOAD`. A generic instance's name (`GroupedResult<SearchEntry>`) becomes an OpenAPI component name (`GroupedResult_SearchEntry`); the search entry's union is written as `oneOf` of its six kinds (research R4); `Long` is `integer`, `int64`. In 1.7 s, the same bytes on every run. Prettier leaves the file alone (`.prettierignore`); the up-to-date check holds it.
+- [x] T019 [US4] Write `projects/contract/routes.ts`, the route table, as types. `tools/contract/generate.spec.ts` checks it against `tools/content-node/registry.ts` both ways, and marks registry routes not yet in the contract `x-contract: "not yet"`. Show it failing on a row for a route the registry lacks.
+  - Done in #708. `projects/contract/routes.ts` is the interface `Routes`, each `"METHOD /path"` as the registry has it to its 200 answer: twelve search routes. The description lists all 91 routes the service serves (90 paths; one is both GET and POST), 79 marked `x-contract: "not yet"`, each templated path's variables declared as OpenAPI requires (from #707's review; Redocly's spec rules then pass). Component names that would clash once made valid fail the generator; the order is by code unit, the same in every locale. A row for a route the registry lacks failed the check.
+- [x] T020 [US4] Add the up-to-date check in `tools/contract/generate.spec.ts`: regenerate in memory and compare with the committed file. Show it failing on a contract change made without regenerating.
+  - Done in #708. A contract field renamed without regenerating failed it.
 - [ ] T021 [US4] Add ajv 8.20.0 as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
   - Use ajv 2020-12, with `discriminator: true` where a type has one, and register the `int64` format.
   - Read exact longs with a JSON.parse reviver.

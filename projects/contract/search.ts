@@ -212,7 +212,7 @@ interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
 }
 
 /** One search result. */
-type SearchEntry =
+export type SearchEntry =
   EventEntry | EntityEntry | IconEntry | PersonEntry | InteractorEntry | DeletedEntry;
 
 /** Every field any kind of entry has. */
