@@ -63,8 +63,8 @@ open and see the step stop with the reason and the previous graph serving again.
    Java ContentService and the java-library service each answer the same number. The Java
    AnalysisService's number is reported beside them; it follows its own file, not the graph.
 2. **Given** a store the serving version cannot open (written by a newer Neo4j, or another major
-   version), **When** the operator runs the step, **Then** it stops, says the store is newer than the server, and the graph
-   that served before serves again.
+   version), **When** the operator runs the step, **Then** it stops, says why the server cannot open the store (newer, or of
+   another major version), and the graph that served before serves again.
 3. **Given** the graph comes up but a service fails its check after being restarted, **When** the step
    sees it, **Then** it puts the previous database back, restarts the services again, and checks that
    each answers the previous release.
@@ -222,9 +222,10 @@ second Neo4j and no change to the one serving.
   unless the operator says the shrink is expected. A store older than the serving version, within its major version,
   is opened with store upgrade allowed for that start only. The set-aside database is kept until the next release
   step replaces it, so a problem found later still has one way back (FR-009).
-- **FR-007**: A documented, scripted step MUST upgrade the Neo4j version within a major version: copy the data folder
-  first, start the new version with store upgrade allowed for that start only, check, and on failure restore the copy
-  and the old version.
+- **FR-007**: A documented, scripted step MUST apply the repository's graph configuration (its version, plugins and
+  settings) and so upgrade the Neo4j version within a major version: copy the data folder first, start with store
+  upgrade allowed for that start only when the version changes, check, and on failure restore the copy and the
+  previous applied configuration. It is the step the status names for any pending change (FR-010).
 - **FR-008**: The upgrade step MUST refuse a change of major version, and the documentation MUST describe that
   migration as separate work.
 - **FR-009**: Documented, scripted rollbacks MUST exist for: a release (to the set-aside database, with the services
@@ -236,8 +237,8 @@ second Neo4j and no change to the one serving.
   A status command, and every step, MUST report when the applied and the repository's configurations differ, and
   when a step was interrupted.
 - **FR-010a**: A start that needs a one-start allowance (store upgrade, or no transaction logs) MUST be a run of its
-  own that is never restarted, and each step MUST record its progress before each change it cannot undo, so that an
-  interrupted step is seen and the graph is not started on a half-changed folder.
+  own that is never restarted, and each step MUST record its progress before each change to the data folder or the applied
+  configuration, so that an interrupted step is seen and the graph is not started on a half-changed folder.
 - **FR-011**: The host installation MUST be retired once the container serves, by a documented step that keeps the
   data folder.
 - **FR-012**: A check in CI MUST fail when the version setting is older than the recorded version releases are built
@@ -255,8 +256,8 @@ second Neo4j and no change to the one serving.
   recorded beside it.
 - **Data folder**: the host folder holding the graph's databases and transaction logs; where a release's store is copied.
 - **Data copy**: a copy of the data folder taken before an upgrade or the cut-over, the way back from it.
-- **Set-aside database**: the store and transaction logs that served before a new release's, kept until the new one is
-  checked.
+- **Set-aside database**: the store and transaction logs that served before a new release's, kept until the next release
+  step replaces it (FR-006).
 - **Applied configuration**: on the host, the graph configuration (version, plugins, settings) a step last applied, and
   the progress of any step under way; what the graph starts as, and what only the steps change.
 - **Graph configuration**: the settings and pinned plugins the graph starts with.
@@ -267,8 +268,8 @@ second Neo4j and no change to the one serving.
 
 - **SC-001**: Bringing a new release's copied store into service, with every service answering the new release,
   takes one documented step and under 10 minutes, with no hand edits.
-- **SC-002**: Upgrading the Neo4j version within a major version takes a one-line reviewed change and one documented
-  step, and a failed upgrade is back to the previous state in under 10 minutes.
+- **SC-002**: Upgrading the Neo4j version within a major version takes one reviewed change (the version, and the plugin
+  versions that go with it) and one documented step, and a failed upgrade is back to the previous state in under 10 minutes.
 - **SC-003**: Every setting and plugin the running graph uses can be read in the repository, or is reported as a
   pending change by the status (FR-010); and CI fails on each disagreement listed in FR-012, each seen failing once.
 - **SC-004**: After any documented step or a reboot, exactly one Neo4j holds the graph's port.

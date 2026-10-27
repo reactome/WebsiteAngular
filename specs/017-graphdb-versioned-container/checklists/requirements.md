@@ -59,3 +59,8 @@
   - older stores have a scenario (US1 AS 4);
   - FR-009 names its three rollbacks;
   - the set-aside database is kept until the next release.
+- From #720's review, after its merge: the set-aside database's lifetime agrees with FR-006; US1 AS 2 gives the
+  reason a store cannot open; FR-007 is the step that applies any configuration change; progress is recorded before
+  each change to the data folder; SC-002 counts the plugin versions an upgrade brings. Open questions for the plan:
+  restoring a set-aside store older than an upgraded server; the counts check with no serving database (the first
+  run); and how an interruption is simulated on the test copy.
