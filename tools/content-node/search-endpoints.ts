@@ -256,13 +256,14 @@ type SearchResult = Omit<GroupedResult<WrittenEntry>, 'targetResults'> & {
  */
 function groupedEntries(answer: SolrAnswer | null | undefined): SearchResult | null {
   const grouped: Record<string, SolrGrouping> = answer?.grouped ?? {};
-  const grouping = Object.values(grouped)[0];
+  // SolrJ (QueryResponse.extractGroupedInfo) skips a grouping without
+  // matches; the converter reads the first it kept, and none is no result.
+  const grouping = Object.values(grouped).find(
+    (each): each is SolrGrouping & { matches: number } => each.matches !== undefined
+  );
   if (!grouping) return null;
   if (grouping.ngroups === undefined || grouping.ngroups === null)
     throw Object.assign(new Error('a grouping without ngroups'), { unexpected: true });
-  // SolrJ reads matches as ngroups is read, unboxed: none is the same failure.
-  if (grouping.matches === undefined)
-    throw Object.assign(new Error('a grouping without matches'), { unexpected: true });
   const highlighting = answer?.highlighting ?? {};
   const results: ResultGroup<WrittenEntry>[] = [];
   let rows = 0;
