@@ -24,6 +24,7 @@ const SERVICES = [
   'analysis-types',
   'java-parity',
   'library-update',
+  'contract',
 ];
 
 /**

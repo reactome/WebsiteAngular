@@ -1,0 +1,1812 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Reactome Content Service",
+    "version": "contract",
+    "description": "Generated from the shared contract (projects/contract). A route marked x-contract \"not yet\" is answered by the service but not yet described here."
+  },
+  "paths": {
+    "/ContentService/citation/export": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/citation/pathway/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/citation/static/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/complex/{id}/subunits": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/complexes/{resource}/{identifier}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/content/contributors": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/content/doi": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/content/toc": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/database/name": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/database/version": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/detail/{id}/locationsInPWB": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/discover/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/diseases": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/diseases/doid": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/entity/{id}/componentOf": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/entity/{id}/in-depth": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/entity/{id}/otherForms": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/event/{id}/ancestors": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/event/{id}/in-depth": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/instance/{id}/referrers": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/mapping/{resource}/{identifier}/pathways": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/mapping/{resource}/{identifier}/reactions": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/orthology/{id}/species/{speciesId}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/participants/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/participants/{id}/participatingPhysicalEntities": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/participants/{id}/referenceEntities": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathway/{id}/containedEvents": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathway/{id}/containedEvents/{attribute}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathways/low/diagram/entity/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathways/low/diagram/entity/{id}/allForms": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathways/low/entity/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathways/low/entity/{id}/allForms": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/pathways/top/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/authoredPathways": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/authoredReactions": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/publications": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/reviewedPathways": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/reviewedReactions": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/person/{id}/{attribute}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/enhanced/v2/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/enhanced/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/ids/map": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      },
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/{id}/normalPathway": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/{id}/stId": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/{id}/{attribute}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/model": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}/attributes": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}/count": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}/min": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}/reference": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/schema/{id}/referrals": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/species/all": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/species/main": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/exporter/diagram/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/exporter/event/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/exporter/fireworks/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/exporter/sbml/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/exporter/voronoi/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/psicquic/resources": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecule/enhanced/{id}/details": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecule/{id}/details": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecule/{id}/pathways": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecule/{id}/summary": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecule/{id}/withEntities": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/references/mapping/{identifier}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/references/mapping/{identifier}/xrefs": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/search/diagram/summary": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/search/diagram/{diagram}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramResult_SearchEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/diagram/{diagram}/occurrences/{instance}": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/search/diagram/{pathwayId}/flag": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/search/facet": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/facet_query": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FacetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/fireworks": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramResult_SearchEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/fireworks/flag": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/search/icon/facet": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IconFacetResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/icon/query": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IconResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/icon/{identifier}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IconEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/pathways/of/{dbId}": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PathwayOfEntry"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/query": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupedResult_SearchEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/query/paginated": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupedResult_SearchEntry"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/spellcheck": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/search/suggest": {
+      "get": {
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/data/orthologies/ids/species/{speciesId}": {
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/ids": {
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecules/details": {
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/interactors/static/molecules/summary": {
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/references/mapping/xrefs": {
+      "post": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DiagramResult_SearchEntry": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchEntry"
+            },
+            "description": "Left out when there are none."
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            },
+            "description": "Left out when there are none."
+          },
+          "found": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "found"
+        ],
+        "additionalProperties": false,
+        "description": "`/search/diagram/{id}` and `/search/fireworks`: the entries, their type facets, Solr's count."
+      },
+      "EpochMillis": {
+        "type": "number",
+        "description": "A date written as milliseconds since the epoch."
+      },
+      "Facet": {
+        "type": "object",
+        "properties": {
+          "selected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            }
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FacetCount"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "FacetCount": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "FacetResponse": {
+        "type": "object",
+        "properties": {
+          "totalNumFount": {
+            "type": "number"
+          },
+          "speciesFacet": {
+            "$ref": "#/components/schemas/Facet"
+          },
+          "typeFacet": {
+            "$ref": "#/components/schemas/Facet"
+          },
+          "keywordFacet": {
+            "$ref": "#/components/schemas/Facet"
+          },
+          "compartmentFacet": {
+            "$ref": "#/components/schemas/Facet"
+          }
+        },
+        "required": [
+          "totalNumFount"
+        ],
+        "additionalProperties": false
+      },
+      "GroupedResult_SearchEntry": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ResultGroup_SearchEntry"
+            }
+          },
+          "rowCount": {
+            "type": "number"
+          },
+          "numberOfGroups": {
+            "type": "number"
+          },
+          "numberOfMatches": {
+            "type": "number"
+          },
+          "targetResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TargetResult"
+            },
+            "description": "For a search that found nothing: the terms, and whether each is a target."
+          }
+        },
+        "required": [
+          "results",
+          "rowCount",
+          "numberOfGroups",
+          "numberOfMatches"
+        ],
+        "additionalProperties": false,
+        "description": "`/search/query`: the groups, the rows written, the groups and matches Solr counted."
+      },
+      "Highlighted": {
+        "type": "string",
+        "description": "Text Solr may have highlighted: a match is wrapped in `<span class=\"highlighting\" >…</span>`, so a reader showing it as plain text escapes it."
+      },
+      "IconCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "IconEntry": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "description": "The stId, or the dbId when there is none; never highlighted."
+          },
+          "name": {
+            "$ref": "#/components/schemas/Highlighted"
+          },
+          "exactType": {
+            "type": "string",
+            "const": "Icon"
+          },
+          "type": {
+            "type": "string",
+            "const": "Icon"
+          },
+          "icon": {
+            "type": "boolean",
+            "const": true,
+            "description": "Java's getter: an icon has a name."
+          },
+          "stId": {
+            "$ref": "#/components/schemas/Highlighted"
+          },
+          "species": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "summation": {
+            "$ref": "#/components/schemas/Highlighted",
+            "description": "The icon's description. Icons have no inferred one to fall back to."
+          },
+          "iconName": {
+            "type": "string"
+          },
+          "iconCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "iconCuratorName": {
+            "type": "string"
+          },
+          "iconCuratorOrcidId": {
+            "type": "string"
+          },
+          "iconCuratorUrl": {
+            "type": "string"
+          },
+          "iconDesignerName": {
+            "type": "string"
+          },
+          "iconDesignerOrcidId": {
+            "type": "string"
+          },
+          "iconDesignerUrl": {
+            "type": "string"
+          },
+          "iconReferences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "iconEhlds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "iconPhysicalEntities": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "stId": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "compartments": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false,
+              "description": "One physical entity an icon draws; an empty part is left out."
+            }
+          },
+          "hasReferenceEntity": {
+            "type": "boolean",
+            "description": "Always false."
+          },
+          "hasEHLD": {
+            "type": "boolean",
+            "description": "Always false."
+          }
+        },
+        "required": [
+          "dbId",
+          "exactType",
+          "hasEHLD",
+          "hasReferenceEntity",
+          "icon",
+          "id",
+          "stId",
+          "type"
+        ],
+        "additionalProperties": false,
+        "description": "An icon of the icon library."
+      },
+      "IconFacet": {
+        "type": "object",
+        "properties": {
+          "selected": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IconCategory"
+            }
+          },
+          "available": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IconCategory"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "IconFacetResponse": {
+        "type": "object",
+        "properties": {
+          "totalNumFount": {
+            "type": "number"
+          },
+          "iconCategoriesFacet": {
+            "$ref": "#/components/schemas/IconFacet"
+          }
+        },
+        "required": [
+          "totalNumFount"
+        ],
+        "additionalProperties": false
+      },
+      "IconResult": {
+        "$ref": "#/components/schemas/ResultGroup_IconEntry",
+        "description": "`/search/icon/query`: the icon library's page, one ungrouped group of icons."
+      },
+      "Long": {
+        "type": "integer",
+        "description": "A Java long, written exactly (`JSON.rawJSON`): it may exceed 2^53, beyond which a JavaScript number reads it rounded.",
+        "format": "int64"
+      },
+      "PathwayOfEntry": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "string"
+          },
+          "stId": {
+            "$ref": "#/components/schemas/Highlighted"
+          },
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "$ref": "#/components/schemas/Highlighted"
+          },
+          "hasEHLD": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "id"
+        ],
+        "additionalProperties": false,
+        "description": "What `/search/pathways/of/{dbId}` answers: pathways, written with only the fields the pathway browser asks for (`fields=DB_ID,ST_ID,NAME,HAS_EHLD`), so no type."
+      },
+      "ResultGroup_IconEntry": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IconEntry"
+            },
+            "description": "Left out when the group has none (an ungrouped search that found none)."
+          },
+          "typeName": {
+            "type": "string",
+            "description": "Left out for a group Solr names with nothing."
+          },
+          "entriesCount": {
+            "type": "number",
+            "description": "How many Solr found."
+          },
+          "rowCount": {
+            "type": "number",
+            "description": "How many are written here."
+          }
+        },
+        "required": [
+          "entriesCount",
+          "rowCount"
+        ],
+        "additionalProperties": false,
+        "description": "One group of results: a type's, or \"Results\" for a search not grouped."
+      },
+      "ResultGroup_SearchEntry": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchEntry"
+            },
+            "description": "Left out when the group has none (an ungrouped search that found none)."
+          },
+          "typeName": {
+            "type": "string",
+            "description": "Left out for a group Solr names with nothing."
+          },
+          "entriesCount": {
+            "type": "number",
+            "description": "How many Solr found."
+          },
+          "rowCount": {
+            "type": "number",
+            "description": "How many are written here."
+          }
+        },
+        "required": [
+          "entriesCount",
+          "rowCount"
+        ],
+        "additionalProperties": false,
+        "description": "One group of results: a type's, or \"Results\" for a search not grouped."
+      },
+      "SearchEntry": {
+        "description": "One search result.",
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "dbId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "The stId, or the dbId when there is none; never highlighted."
+              },
+              "name": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "exactType": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Pathway",
+                  "Reaction"
+                ]
+              },
+              "stId": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "species": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "summation": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "isDisease": {
+                "type": "boolean"
+              },
+              "disease": {
+                "type": "boolean",
+                "description": "`isDisease` again: Java's getter."
+              },
+              "hasReferenceEntity": {
+                "type": "boolean",
+                "description": "Always false: an event has no reference entity."
+              },
+              "hasEHLD": {
+                "type": "boolean",
+                "description": "A pathway's."
+              },
+              "compartmentNames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "compartmentAccession": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "fireworksSpecies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Only on the species-overview searches."
+              }
+            },
+            "required": [
+              "dbId",
+              "disease",
+              "exactType",
+              "hasReferenceEntity",
+              "id",
+              "isDisease",
+              "species",
+              "stId",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "A pathway or a reaction. A reaction's `exactType` is its category (binding, transition, ...)."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "dbId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "The stId, or the dbId when there is none; never highlighted."
+              },
+              "name": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "exactType": {
+                "type": "string"
+              },
+              "type": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "const": "Protein"
+                  },
+                  {
+                    "type": "string",
+                    "const": "DNA Sequence"
+                  },
+                  {
+                    "type": "string",
+                    "const": "RNA Sequence"
+                  },
+                  {
+                    "type": "string",
+                    "const": "Chemical Compound"
+                  },
+                  {
+                    "type": "string",
+                    "const": "Drug"
+                  },
+                  {
+                    "type": "string",
+                    "const": "Set"
+                  },
+                  {
+                    "type": "string",
+                    "const": "Genes and Transcripts"
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "Cell",
+                      "ChemicalDrug",
+                      "Complex",
+                      "OtherEntity",
+                      "Polymer",
+                      "ProteinDrug",
+                      "RNADrug",
+                      "SimpleEntity"
+                    ],
+                    "description": "The physical-entity classes the indexer names a type by: those neither a set nor genome-encoded. Every reference-entity class has a type of its own. entity-types.spec.ts derives the list from the domain snapshot."
+                  }
+                ],
+                "description": "The indexer's types for a physical entity or a reference entity (`getType`, `getReferenceTypes`); any other class goes by its own name. The list of those names is checked against the domain snapshot."
+              },
+              "stId": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "species": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "\"Entries without species\" when it has none."
+              },
+              "summation": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "isDisease": {
+                "type": "boolean"
+              },
+              "disease": {
+                "type": "boolean"
+              },
+              "hasReferenceEntity": {
+                "type": "boolean"
+              },
+              "compartmentNames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "compartmentAccession": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "referenceName": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "referenceIdentifier": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "databaseName": {
+                "type": "string"
+              },
+              "referenceURL": {
+                "type": "string"
+              },
+              "fireworksSpecies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "dbId",
+              "exactType",
+              "hasReferenceEntity",
+              "id",
+              "species",
+              "stId",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "A physical entity or a reference entity."
+          },
+          {
+            "$ref": "#/components/schemas/IconEntry"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "dbId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "The stId, or the dbId when there is none; never highlighted."
+              },
+              "name": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "exactType": {
+                "type": "string",
+                "const": "Person"
+              },
+              "type": {
+                "type": "string",
+                "const": "Person"
+              },
+              "species": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "\"Entries without species\"."
+              },
+              "orcidId": {
+                "type": "string"
+              },
+              "authoredPathways": {
+                "type": "string"
+              },
+              "authoredReactions": {
+                "type": "string"
+              },
+              "reviewedPathways": {
+                "type": "string"
+              },
+              "reviewedReactions": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "dbId",
+              "exactType",
+              "id",
+              "species",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "A person, by name. No stId: `id` is the dbId. The counts are text, as Solr stores them."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "dbId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "The stId, or the dbId when there is none; never highlighted."
+              },
+              "name": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "exactType": {
+                "type": "string",
+                "const": "Interactor"
+              },
+              "type": {
+                "type": "string",
+                "const": "Interactor"
+              },
+              "stId": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "species": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "referenceName": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "referenceIdentifier": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "databaseName": {
+                "type": "string"
+              },
+              "referenceURL": {
+                "type": "string"
+              },
+              "fireworksSpecies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "dbId",
+              "exactType",
+              "id",
+              "species",
+              "stId",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "A molecule known only from interaction data; `dbId` and `stId` are its accession."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "dbId": {
+                "type": "string"
+              },
+              "id": {
+                "type": "string",
+                "description": "The stId, or the dbId when there is none; never highlighted."
+              },
+              "name": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "exactType": {
+                "type": "string"
+              },
+              "deleted": {
+                "type": "boolean",
+                "const": true
+              },
+              "type": {
+                "type": "string"
+              },
+              "stId": {
+                "$ref": "#/components/schemas/Highlighted"
+              },
+              "explanation": {
+                "type": "string"
+              },
+              "date": {
+                "$ref": "#/components/schemas/EpochMillis"
+              },
+              "replacementDbIds": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Long"
+                }
+              },
+              "replacementStIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "dbId",
+              "deleted",
+              "exactType",
+              "id",
+              "stId",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "An object of an earlier release, deleted since; its type and exactType are those it had."
+          }
+        ]
+      },
+      "TargetResult": {
+        "type": "object",
+        "properties": {
+          "term": {
+            "type": "string"
+          },
+          "resource": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "target": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "target"
+        ],
+        "additionalProperties": false,
+        "description": "A term the search found nothing for, and whether it names a resource; an empty term or resource is left out."
+      }
+    }
+  }
+}
