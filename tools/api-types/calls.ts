@@ -166,7 +166,7 @@ export const CALLS: Call[] = [
   { file: `${WEB}/services/detail-data.service.ts`, method: 'fetchEnhancedData', http: 'GET', route: '/data/query/enhanced/v2/{id}', type: 'DatabaseObject', reads: 'T' },
   { file: `${WEB}/services/icon.service.ts`, method: 'getFacets', http: 'GET', route: '/search/icon/facet', type: 'IconFacetResponse' },
   { file: `${WEB}/services/icon.service.ts`, method: 'queryIcons', http: 'GET', route: '/search/icon/query', type: 'IconResult' },
-  { file: `${WEB}/services/icon.service.ts`, method: 'getIcon', http: 'GET', route: '/search/icon/{id}', type: 'IconEntry', gap: 'the recordings never open one icon' },
+  { file: `${WEB}/services/icon.service.ts`, method: 'getIcon', http: 'GET', route: '/search/icon/{id}', type: 'IconEntry' },
   { file: `${WEB}/services/search.service.ts`, method: 'search', http: 'GET', route: '/search/query', type: 'SearchResult' },
   { file: `${WEB}/services/search.service.ts`, method: 'getFacets', http: 'GET', route: '/search/facet_query', type: 'FacetResponse' },
   { file: `${WEB}/services/search.service.ts`, method: 'getAllFacets', http: 'GET', route: '/search/facet', type: 'FacetResponse', gap: 'the recordings always search with a query' },

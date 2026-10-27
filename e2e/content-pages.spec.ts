@@ -138,6 +138,14 @@ test.describe('Content pages render backend data', () => {
     await expect(page.locator('body')).not.toContainText('Loading', { timeout: LOAD });
   });
 
+  test("an icon's own page shows that icon, by its id", async ({ page }) => {
+    // /search/icon/{id}: the one icon, as a link to it opens it.
+    await page.goto('/community/icon-lib/R-ICO-012449');
+    await expect(page.locator('.detail-stid')).toHaveText('R-ICO-012449', { timeout: LOAD });
+    await expect(page.locator('.detail-summation')).not.toBeEmpty();
+    await expect(page.locator('.detail-preview img')).toBeVisible();
+  });
+
   test('a CMS article page renders its body', async ({ page }) => {
     // page.component.ts fetches the compiled content JSON and renders markdown.
     await page.goto('/documentation/userguide');
