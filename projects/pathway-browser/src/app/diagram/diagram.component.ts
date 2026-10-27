@@ -62,7 +62,7 @@ import {
 } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
-import { Interactor } from '../interactors/model/interactor.model';
+import { DrawnInteractor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -1581,7 +1581,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
             cy.nodes('.InteractorOccurrences').forEach((occurence) => {
               if (includeInteractors) {
-                const interactors: Interactor[] = occurence.data('interactors');
+                const interactors: DrawnInteractor[] = occurence.data('interactors');
                 const exps = interactors.map((i) => analysisEntityMap.get(i.acc)).filter(isDefined);
                 if (exps.length > 0) {
                   occurence.data('exp', [average(exps)]);

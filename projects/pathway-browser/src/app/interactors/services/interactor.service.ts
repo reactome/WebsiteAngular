@@ -4,7 +4,7 @@ import cytoscape, { NodeCollection, NodeSingular } from 'cytoscape';
 import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import {
   CustomInteraction,
-  Interactor,
+  DrawnInteractor,
   Interactors,
   InteractorToken,
   PsicquicResource,
@@ -721,7 +721,7 @@ export class InteractorService {
       cy,
       numberToAdd
     );
-    const allNodes: Interactor[] = [...dynamicInteractors, ...existingInteractors];
+    const allNodes: DrawnInteractor[] = [...dynamicInteractors, ...existingInteractors];
     cy.batch(() => {
       const nodes = this.createInteractorNodes(
         dynamicInteractors,
@@ -738,10 +738,10 @@ export class InteractorService {
   }
 
   public getAllInteractors(
-    interactorsData: Interactor[],
+    interactorsData: DrawnInteractor[],
     cy: cytoscape.Core,
     numberToAdd: number
-  ): [drawn: Interactor[], existing: Interactor[]] {
+  ): [drawn: DrawnInteractor[], existing: DrawnInteractor[]] {
     const dynamicInteractors = [];
     const existingInteractors = [];
     // Best supported first, so that the cap keeps the interactions worth keeping.
@@ -778,7 +778,7 @@ export class InteractorService {
   }
 
   public createInteractorNodes(
-    interactorsData: Interactor[],
+    interactorsData: DrawnInteractor[],
     targetNode: NodeSingular,
     cy: cytoscape.Core,
     numberToAdd: number,
@@ -787,7 +787,7 @@ export class InteractorService {
     const interactorNodes: cytoscape.NodeDefinition[] = [];
     const interactorLayout = new InteractorsLayout();
 
-    interactorsData.forEach((interactor: Interactor, index: number) => {
+    interactorsData.forEach((interactor: DrawnInteractor, index: number) => {
       const position = interactorLayout.getPosition(targetNode, index, numberToAdd);
       const displayName = interactor.alias ? interactor.alias : interactor.acc;
       const defaultType = ['Protein', 'PhysicalEntity']; // Default interactor type for custom resource when there is no type data provided
@@ -843,7 +843,7 @@ export class InteractorService {
   }
 
   public createInteractorEdges(
-    interactorsData: Interactor[],
+    interactorsData: DrawnInteractor[],
     occurrenceNode: NodeSingular,
     cy: cytoscape.Core | undefined,
     resource: string
@@ -854,7 +854,7 @@ export class InteractorService {
       resource === ResourceType.DISGENET ? ['Interactor', 'disease'] : ['Interactor'];
 
     const interactorEdges: cytoscape.EdgeDefinition[] = [];
-    interactorsData.forEach((interactor: Interactor) => {
+    interactorsData.forEach((interactor: DrawnInteractor) => {
       const entity = occurrenceNode.data('entity');
       const targetNodes = interactor.existingNodes
         ? interactor.existingNodes

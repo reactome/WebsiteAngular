@@ -1,67 +1,22 @@
 import cytoscape from 'cytoscape';
 
-/*
- * Interactors come from four places: Reactome's own (static), DisGeNET,
- * PSICQUIC registries and custom uploads. Measured from the static set (388
- * interactors of four entities, #344); the others are not served where they can
- * be measured, so a field only the static set always sends stays optional.
- */
+import type { Interactor, InteractorEntity } from '../../../../../contract/interactors.ts';
 
-export interface InteractorEntity {
-  acc: string;
-  count: number;
-  /** Left out when there are none. */
-  interactors?: Interactor[] | null;
-}
+export type { CustomInteraction, PsicquicResource } from '../../../../../contract/interactors.ts';
 
-export interface Interactor {
-  acc: string;
-  accURL: string;
-  /** Left out for some (5 of 388 static). */
-  alias?: string;
-  evidences: number;
-  evidencesURL: string;
-  id: number;
-  score?: number;
-  /** Not sent by the static set at all. */
-  type?: string;
+/** An interactor as the pathway browser draws it: the answer's, with the diagram's nodes it is drawn on. */
+export interface DrawnInteractor extends Interactor {
   existingNodes?: cytoscape.NodeCollection;
 }
 
+/** An entity's interactors as the pathway browser draws them. */
+export interface DrawnInteractorEntity extends Omit<InteractorEntity, 'interactors'> {
+  interactors?: DrawnInteractor[] | null;
+}
+
 export interface Interactors {
-  entities?: InteractorEntity[];
+  entities?: DrawnInteractorEntity[];
   resource: string; //STATIC, DisGeNet PSICQUIC resource (e.g. IntAct, MINT, etc) or Custom resource
-}
-
-export interface CustomInteraction {
-  dbId: number;
-  identifier: string;
-  score: number;
-  evidenceCount: number;
-  /** The partner's own page; the text "null" when the graph has none, as Java writes it. */
-  url: string;
-  evidenceURL: string;
-  geneName?: string[];
-  databaseName: string;
-  entitiesCount: number;
-  speciesName: string;
-  displayName: string;
-  variantIdentifier?: string; //Q99IB8-PRO_0000045603
-
-  // Additional properties
-  finalGeneName?: string;
-  formattedIdentifier?: string;
-}
-
-/**
- * A PSICQUIC service as /interactors/psicquic/resources writes it: a URL the
- * registry does not give is left out (non_empty), so either may be absent.
- */
-export interface PsicquicResource {
-  name: string;
-  soapURL?: string;
-  restURL?: string;
-  active: boolean;
 }
 
 export interface InteractorToken {

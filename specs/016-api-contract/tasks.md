@@ -134,7 +134,17 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - From #713's review, in #714: the contents page's DOI lookup no longer filters and casts for a null that `DoiPathway.doi` cannot hold, and its comment says which service leaves a child's DOI out.
   - **Renames fail both sides.** `SimplePerson.surname` renamed fails the type check on the service's writer and on the contents, DOI and contributors pages. `Contributor.authoredPathways` renamed fails the service's type check and the site's build (its template). The contributors page used to sort through `(a as any)[key]`, which would have let the renamed count through. Its sort keys are now the contract's own count fields.
   - The two re-exports nothing on the site reads (`TocSubpathway`, `SchemaValueType`) are left out, so the dead-code count stays at 130.
-- [ ] T023 [US5] Interactors. First split the pathway browser's `Interactor` into the answer type and a client extension (`existingNodes`); the file's enum and class stay. Then move `CustomInteraction`, `Interactor`, `InteractorEntity`, `PsicquicResource` and the site's `InteractionWithEntities` into `projects/contract/interactors.ts`.
+- [x] T023 [US5] Interactors. First split the pathway browser's `Interactor` into the answer type and a client extension (`existingNodes`); the file's enum and class stay. Then move `CustomInteraction`, `Interactor`, `InteractorEntity`, `PsicquicResource` and the site's `InteractionWithEntities` into `projects/contract/interactors.ts`.
+  - Done in #715. `projects/contract/interactors.ts` holds `InteractorEntity`, `Interactor`, `CustomInteraction`, `PsicquicResource` and `InteractionWithEntities`, with their measured comments.
+  - **Client extensions get their own names,** as one-description requires:
+    - The pathway browser's `existingNodes` moves to `DrawnInteractor` (the contract's `Interactor` and the diagram nodes it is drawn on), with `DrawnInteractorEntity` holding them. Its own `Interactors` holds the drawn entities; it stays in the pathway browser, since its PSICQUIC route's 1,560 known problems are a later task.
+    - The pathway browser's two computed `CustomInteraction` fields (`finalGeneName`, `formattedIdentifier`) leave the type. The table adds them by a spread whose type is inferred.
+    - The site's own `CustomInteraction` in the interactor page was a view model built from `InteractionWithEntities`, not an answer. It is renamed `InteractionRow`.
+  - **The route table** gains the PSICQUIC services, the enhanced interactions and the interactions with entities. The schema check passes their 218, 8 and 1 recorded answers.
+  - **A rename:**
+    - `PsicquicResource.name` renamed fails the node writer's and the pathway browser's type checks.
+    - `CustomInteraction.evidenceCount` renamed fails only the writer: the pathway browser reads it in a Material table cell, whose row Angular types as `any`. That is a limit of the table, recorded here, not fixed.
+  - **Shown failing:** `PsicquicResource.active` retyped as a string fails every recorded PSICQUIC services answer.
 - [ ] T024 [P] [US5] Person events (`SimpleEvent`), locations (`PathwayBrowserNode`), flags (`DiagramFlagResult`, `SpeciesOverviewFlagResult`) and the citation (`PathwayCitation`) into their contract modules.
 - [ ] T025 [US5] The enhanced query (2,659 known problems): graph objects as a union on `className`/`schemaClass` with an OpenAPI discriminator, starting from the classes the site reads.
 - [ ] T026 [US5] An entity's other forms (1,660), then the interactors' details (1,560), then the remaining families by known problems.

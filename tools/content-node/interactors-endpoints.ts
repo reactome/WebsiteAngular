@@ -30,11 +30,11 @@ import { psicquicResources, registryServices } from './psicquic.ts';
 import type { Failure, JsonWritten } from './answers.ts';
 import type {
   CustomInteraction,
+  InteractionWithEntities,
   Interactor,
   InteractorEntity,
   PsicquicResource,
-} from '../../projects/pathway-browser/src/app/interactors/model/interactor.model.ts';
-import type { InteractionWithEntities } from '../../projects/website-angular/src/model/interactor.model.ts';
+} from '../../projects/contract/interactors.ts';
 import { settings } from './settings.ts';
 import { plainIds, plainText, plainTextProblem } from './body.ts';
 import type { Props } from './objects.ts';

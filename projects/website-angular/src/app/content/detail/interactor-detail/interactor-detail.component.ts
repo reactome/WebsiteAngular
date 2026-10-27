@@ -13,7 +13,7 @@ import { InteractionWithEntities } from '../../../../model/interactor.model';
 // The search's own types: its type filter is not applied, so the first hit can
 // be an Icon, which has no reference identifier, URL or database.
 
-export interface CustomInteraction {
+export interface InteractionRow {
   identifier: string;
   score: number;
   evidenceCount: number;
@@ -48,7 +48,7 @@ export class InteractorDetailComponent implements OnInit {
   private http = inject(HttpClient);
 
   readonly acc = signal('');
-  readonly interactions = signal<CustomInteraction[]>([]);
+  readonly interactions = signal<InteractionRow[]>([]);
   readonly loading = signal(true);
   // A 404 means Reactome has no interactions for the accession, and a 400 that
   // the address is no accession at all; any other failure says nothing about it.
@@ -97,9 +97,9 @@ export class InteractorDetailComponent implements OnInit {
         .pipe(catchError(() => of(null))),
     }).subscribe({
       next: ({ interactions, search, uniprot }) => {
-        // Project the backend rows into the template's CustomInteraction
+        // Project the backend rows into the template's InteractionRow
         // shape and build the entityMap inline.
-        const projected: CustomInteraction[] = [];
+        const projected: InteractionRow[] = [];
         const entityMap: Record<string, ReactomeEntity[]> = {};
         for (const row of interactions) {
           projected.push({
