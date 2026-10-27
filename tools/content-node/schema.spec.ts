@@ -6,7 +6,7 @@
 // Java's answers, and by reflection over the graph-core jar the deployed
 // ContentService runs -- on 14 Oct 2026, Release 97.
 import { describe, expect, it } from 'vitest';
-import type { SchemaNode } from '../../projects/website-angular/src/model/content.model.ts';
+import type { SchemaNode } from '../../projects/contract/content.ts';
 import {
   AJC_CLOSURE_NAMES,
   attributeTable,
