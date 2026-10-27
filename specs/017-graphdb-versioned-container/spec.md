@@ -1,6 +1,6 @@
 # Feature Specification: The graph database in a container, its version a setting
 
-**Feature Branch**: `spec017/graphdb-container`
+**Feature Branch**: `spec017/graphdb-container-3`
 
 **Created**: 2026-10-27
 
@@ -24,12 +24,11 @@ which is delivered with the release apart from the graph.) Measured on 27 Oct 20
   with (4.3.6 Community for release 98). A server can open a store from its own version or an
   earlier one in the same major version, upgrading it, which cannot be undone; it cannot open
   a newer store.
-- **What serves today.** The compose service `graphdb` (the project's own 4.4 image, with release
-  97's store in a named volume whose name moves with the image tag, a pairing the repository's
-  compose check enforces) is stopped. This specification replaces that design and its check. A Neo4j 4.3.6 installed on the host from the vendor's package
-  repository serves release 98. It was set up by a script outside this repository, so its
-  version, plugins and settings are recorded nowhere a reviewer can see, and changing its
-  version means package-repository work by hand.
+- **What serves today.** The repository's compose service `graphdb` is the project's own 4.4
+  image, with a release's store in a named volume whose name moves with the image tag, a pairing
+  the repository's compose check enforces. This specification replaces that design and its check.
+  Where Neo4j is instead installed on the host as a package, its version, plugins and settings are
+  recorded nowhere a reviewer can see, and changing its version is package work by hand.
 - **The password lives in the data.** Over an existing data folder, Neo4j keeps its users in its
   own system database; a password given to the container is ignored once that database exists.
 
@@ -41,11 +40,13 @@ not only today's release brought up.
 ### User Story 1 - A new release's graph comes up (Priority: P1)
 
 An operator has a new release's graph store, delivered as a folder. They run one documented step,
-naming that folder. The step sets the serving store aside (it is not overwritten), puts the new one
-in its place, brings the graph up on it, checks that the graph answers the new release number, and
-restarts the services that hold the release in memory (the node content service and Tomcat),
-checking each answers the new number. If the graph does not come up, nothing is left half-switched:
-the operator is told why, and the store that served before is put back and serves again.
+naming that folder. The step sets the serving database aside, its store and its transaction logs
+together (neither is overwritten), puts the new store in its place, brings the graph up on it,
+checks that the graph answers the new release number and that its sizes are sane, and restarts the
+services that hold the release in memory (the node content service and Tomcat), checking each
+answers the new number. If any check fails, nothing is left half-switched: the operator is told
+why, the database that served before is put back, and the services are restarted on it and
+checked again.
 
 **Why this priority**: it happens every release, and a required setting and two service restarts
 are easy to miss by hand.
@@ -63,7 +64,10 @@ open and see the step stop with the reason and the previous graph serving again.
 2. **Given** a store the configured version cannot open (written by a newer Neo4j), **When** the
    operator runs the step, **Then** it stops, says the store is newer than the server, and the graph
    that served before serves again.
-3. **Given** the step has run, **When** a page that shows the release is loaded, **Then** it shows the
+3. **Given** the graph comes up but a service fails its check after being restarted, **When** the step
+   sees it, **Then** it puts the previous database back, restarts the services again, and checks that
+   each answers the previous release.
+4. **Given** the step has run, **When** a page that shows the release is loaded, **Then** it shows the
    new release without any further restart.
 
 ---
@@ -79,16 +83,16 @@ fails, it puts back the copy and the old version.
 **Why this priority**: the reason for this specification. Today a version change means
 package-repository work on the host by hand, outside every review.
 
-**Independent Test**: on a test copy, upgrade from 4.3.6 to a 4.4 version and see the store upgrade
-and the services answer; then simulate a failed start and see the copy and the old version restored
+**Independent Test**: on a test copy, upgrade from 4.3.6 to a 4.4 version and see the server report
+the new version with its databases current (Neo4j's own upgrade status) and the services answer; then simulate a failed start and see the copy and the old version restored
 and answering as before.
 
 **Acceptance Scenarios**:
 
 1. **Given** the version setting changed within a major version, **When** the operator runs the upgrade
    step, **Then** a copy of the data folder is taken before anything changes, the new version starts with
-   store upgrade allowed for that start only, upgrades the store, and the graph and the services answer;
-   store upgrade is not left allowed afterwards.
+   store upgrade allowed for that start only, upgrades what needs upgrading, and the graph reports the new
+   version with its databases current, and the services answer; store upgrade is not left allowed afterwards.
 2. **Given** the new version fails to start or to answer, **When** the step sees it, **Then** it restores the
    copy, starts the old version, and reports what failed.
 3. **Given** a change of major version (for example to 5.x), **When** someone looks for how to do it,
@@ -107,8 +111,9 @@ the recorded version the releases are built with.
 **Why this priority**: the host installation is configured by hand; the next person cannot see or review
 it.
 
-**Independent Test**: change the version setting without changing the recorded release-build version, and
-see CI fail; change a required setting (the missing-logs one) and see CI fail.
+**Independent Test**: set the version older than the recorded release-build version, or in another major
+version, and see CI fail; leave store upgrade or the missing-logs setting allowed in the standing
+configuration, and see CI fail.
 
 **Acceptance Scenarios**:
 
@@ -118,15 +123,15 @@ see CI fail; change a required setting (the missing-logs one) and see CI fail.
 2. **Given** a version setting older than the recorded release-build version, or in a different major
    version, **When** CI runs, **Then** it fails, saying the server could not open (or would migrate) the
    release's store.
-3. **Given** the setting that lets a copied store start without its transaction logs removed, **When** CI runs,
-   **Then** it fails.
+3. **Given** the standing configuration allows store upgrade or a start without transaction logs (each is for one
+   start of one step), **When** CI runs, **Then** it fails.
 
 ---
 
 ### User Story 4 - One graph at a time (Priority: P2)
 
-Starting the stack never starts a second Neo4j competing for the graph's port, and the host installation is
-retired once the container serves.
+Starting the stack never starts a second Neo4j competing for the graph's port, never changes the version that
+serves, and the host installation is retired once the container serves.
 
 **Why this priority**: as the repository stands, a plain start of the whole stack starts the old container
 beside the host installation, both wanting port 7687.
@@ -138,7 +143,10 @@ second Neo4j and no change to the one serving.
 
 1. **Given** the graph serving, **When** the operator starts the whole stack as documented, **Then** exactly one
    Neo4j holds port 7687 afterwards.
-2. **Given** the container serving the release, **When** the host installation is retired as documented, **Then**
+2. **Given** a new version setting merged but the upgrade step not yet run on the host, **When** the stack (or any
+   one service of it) is started or the host reboots, **Then** the graph comes back at the version recorded as
+   serving on the host, not the new setting.
+3. **Given** the container serving the release, **When** the host installation is retired as documented, **Then**
    it no longer starts at boot and its package is removed or held off, and the data folder stays.
 
 ---
@@ -149,18 +157,22 @@ second Neo4j and no change to the one serving.
   graph restored (User Story 1).
 - The copied store is incomplete or corrupt: when the graph does not answer, the step restores the previous store
   and says so. Starting without transaction logs makes Neo4j create empty ones, so a damaged store can start and
-  answer the release number; the step therefore also compares a few counts (events, physical entities, species)
-  with the ones delivered beside the store, or, where none are delivered, reports them for the operator. This is a
-  known limit, not a guarantee.
+  answer the release number. The step therefore also counts a few things (events, physical entities, species) and
+  fails when any is zero or below 90% of the previous store's count, unless the operator says the shrink is
+  expected. This catches gross damage only: a known limit, not a guarantee.
+- The store is older than the server, within its major version: the step opens it with store upgrade allowed for
+  that start, the set-aside database being its way back; a store from another major version is refused.
 - The disk lacks room to set the serving store aside: the step refuses before changing anything.
 - The data folder is owned by the host installation's user: the container must be able to read and write it, and
-  the host installation, if still present, must not be able to start on it at the same time.
+  the host installation, if still present, must not be able to start on it at the same time. Going back from the
+  container to the host installation (FR-009) restores the owner it had.
 - The disk lacks room for the copy before an upgrade: the upgrade step refuses before changing anything.
 - The password file is missing or holds no password: the graph refuses to start rather than starting without
   authentication (as the container does today).
 - The credentials file and the user the data folder's system database holds disagree: the step says so, by a
   login with the file's credentials, rather than the services failing later.
-- A reboot during any step: the graph that comes back is the one recorded as serving, never two.
+- A reboot during any step: the graph that comes back is the one recorded as serving, at its version and with the
+  standing configuration (no upgrade or missing-logs start allowed), never two.
 - The services keep answering the old release after the step (they cache it): the step restarts them and checks
   each, rather than trusting the graph's answer alone.
 
@@ -175,31 +187,36 @@ second Neo4j and no change to the one serving.
   the host installation MUST take a data copy first and be covered by the rollback of FR-009, so that the first
   start upgrades nothing.
 - **FR-003**: The graph's configuration MUST be in the repository: Bolt reachable from the host's loopback interface
-  only; memory;
-  the default database `graph.db`; starting a store without its transaction logs; the plugins and their procedures.
+  only; memory; the default database `graph.db`; the plugins and their procedures. Starting a store without its
+  transaction logs, and store upgrade, MUST each be allowed only for the one start of the step that needs it, never in
+  the standing configuration.
 - **FR-004**: The plugins MUST be pinned by version and checksum, and fetched or installed only from those.
 - **FR-005**: The graph MUST take its user and password from the credentials file the services already use, read
   literally, and MUST refuse to start without them. Since the data folder's system database holds the user once it
   exists, each step MUST check that the file's credentials log in, and the documentation MUST say how to set the
   database's password from the file when they do not.
 - **FR-006**: A documented, scripted step MUST bring a new release's store up from the folder it is delivered in: set
-  the serving store aside, put the new one in place, start the graph on it, check it answers the release number,
-  restart the services that hold the release in memory, check each answers it, and on failure put the set-aside store
-  back and bring it up again.
+  the serving database aside (its store and its transaction logs), put the new store in place, start the graph on it,
+  check it answers the release number and its counts pass (edge cases), restart the services that hold the release in
+  memory, check each answers it, and on any failure put the set-aside database back, restart the services on it and
+  check each answers the previous release.
 - **FR-007**: A documented, scripted step MUST upgrade the Neo4j version within a major version: copy the data folder
   first, start the new version with store upgrade allowed for that start only, check, and on failure restore the copy
   and the old version.
 - **FR-008**: The upgrade step MUST refuse a change of major version, and the documentation MUST describe that
   migration as separate work.
 - **FR-009**: A documented, scripted step MUST roll back to the previous version and data copy.
-- **FR-010**: Starting the whole stack MUST NOT start a second Neo4j or change the one serving.
+- **FR-010**: Starting the whole stack, or any service of it, or rebooting MUST NOT start a second Neo4j or change the
+  one serving. The graph MUST run at the version recorded as serving on the host, which only the upgrade and rollback
+  steps change, so that merging a new version setting changes nothing until the upgrade step runs.
 - **FR-011**: The host installation MUST be retired once the container serves, by a documented step that keeps the
   data folder.
 - **FR-012**: A check in CI MUST fail when the version setting is older than the recorded version releases are built
-  with or in a different major version, when the required settings (FR-003) are missing, when store upgrade is left
-  allowed, or when a plugin is unpinned.
-- **FR-013**: The steps' only load on the graph MUST be the checks they name (the login, the release number, the few
-  counts, and each service's release answer) and the services' own startup; the work is configuration.
+  with or in a different major version, when the required settings (FR-003) are missing, when store upgrade or a start
+  without transaction logs is allowed in the standing configuration, or when a plugin is unpinned.
+- **FR-013**: Beyond the graph's own start (and store upgrade, where a step allows it), the steps' only load on the graph
+  MUST be the checks they name: the login, the release number, the few counts, and each service's release answer
+  with the services' own startup.
 - **FR-014**: Nothing in the repository may name a host, a credential, or internal release-process detail; the
   credentials file stays outside it.
 
@@ -209,7 +226,10 @@ second Neo4j and no change to the one serving.
   recorded beside it.
 - **Data folder**: the host folder holding the graph's databases and transaction logs; where a release's store is copied.
 - **Data copy**: a copy of the data folder taken before an upgrade or the cut-over, the way back from it.
-- **Set-aside store**: the store that served before a new release's, kept until the new one is checked.
+- **Set-aside database**: the store and transaction logs that served before a new release's, kept until the new one is
+  checked.
+- **Serving record**: on the host, the version and database recorded as serving; what the graph starts as, and what
+  only the steps change.
 - **Graph configuration**: the settings and pinned plugins the graph starts with.
 
 ## Success Criteria _(mandatory)_

@@ -43,3 +43,12 @@
   system database is checked by a login (FR-005); the readers corrected (java-library reads the graph, MCP does
   not, AnalysisService follows its own file); store upgrade allowed for one start only; the missing-logs
   setting's limit stated; CI also refuses a different major version.
+- Revised again after #718's review:
+  - the database is set aside together with its transaction logs;
+  - the missing-logs start and store upgrade are each allowed for one start of one step only;
+  - a serving record on the host means a merged version setting changes nothing until the upgrade step runs (US4 AS 2);
+  - a release step that fails after the services restart also restarts them on the restored database;
+  - the counts check has a threshold;
+  - older stores within the major version are handled;
+  - ownership is restored on the way back.
+- For the plan: whether the repository's graph entrypoint keeps refusing a user other than `neo4j`, and a password containing `/`, once the password comes from the system database.
