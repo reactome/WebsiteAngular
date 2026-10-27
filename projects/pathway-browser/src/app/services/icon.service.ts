@@ -268,7 +268,7 @@ export class IconService {
         // No result group at all is no icon, not an error.
         map((response) => {
           const [group] = response.results;
-          const [entry] = group?.typeName === 'Icon' ? group.entries : [];
+          const [entry] = group?.typeName === 'Icon' ? (group.entries ?? []) : [];
           return entry && isIcon(entry) ? entry : null;
         }),
         switchMap((entry) => {

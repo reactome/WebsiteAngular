@@ -257,3 +257,49 @@ export interface PathwayOfEntry {
   name?: Highlighted;
   hasEHLD?: boolean;
 }
+
+// -- The search answers -------------------------------------------------------
+//
+// Each takes its entry type as an argument: the service writes them with the
+// entries it builds, a reader reads them with the view it needs.
+
+/** One group of results: a type's, or "Results" for a search not grouped. */
+export interface ResultGroup<Entry> {
+  /** Left out when the group has none (an ungrouped search that found none). */
+  entries?: Entry[];
+  /** Left out for a group Solr names with nothing. */
+  typeName?: string;
+  /** How many Solr found. */
+  entriesCount: number;
+  /** How many are written here. */
+  rowCount: number;
+}
+
+/** A term the search found nothing for, and whether it names a resource; an empty term or resource is left out. */
+export interface TargetResult {
+  term?: string;
+  resource?: string | number | boolean;
+  target: boolean;
+}
+
+/** `/search/query`: the groups, the rows written, the groups and matches Solr counted. */
+export interface GroupedResult<Entry> {
+  results: ResultGroup<Entry>[];
+  rowCount: number;
+  numberOfGroups: number;
+  numberOfMatches: number;
+  /** For a search that found nothing: the terms, and whether each is a target. */
+  targetResults?: TargetResult[];
+}
+
+/** `/search/diagram/{id}` and `/search/fireworks`: the entries, their type facets, Solr's count. */
+export interface DiagramResult<Entry> {
+  /** Left out when there are none. */
+  entries?: Entry[];
+  /** Left out when there are none. */
+  facets?: FacetCount[];
+  found: number;
+}
+
+/** `/search/icon/query`: the icon library's page, one ungrouped group of icons. */
+export type IconResult = ResultGroup<IconEntry>;

@@ -122,7 +122,7 @@ export class InteractorDetailComponent implements OnInit {
         // The first hit that is a reference: when nothing matches as an
         // interactor the search answers unfiltered, and an Icon can lead.
         const entry = search?.results
-          .flatMap((group) => group.entries)
+          .flatMap((group) => group.entries ?? [])
           .find((hit) => hit.databaseName && hit.referenceIdentifier);
         if (entry) {
           // The search is highlighted: an identifier or name that matched
