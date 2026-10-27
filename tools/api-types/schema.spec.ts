@@ -87,7 +87,6 @@ function refsTo(value: unknown): unknown {
   );
 }
 
-/** The routes the description gives an answer's schema: "METHOD /path" to the schema. */
 /** Every route the description lists, described or not yet, as "METHOD /path". */
 function listed(description: Description): string[] {
   return Object.entries(description.paths).flatMap(([where, operations]) =>
@@ -95,6 +94,7 @@ function listed(description: Description): string[] {
   );
 }
 
+/** The routes the description gives an answer's schema: "METHOD /path" to the schema. */
 function described(description: Description): Map<string, Schema> {
   const found = new Map<string, Schema>();
   for (const [where, operations] of Object.entries(description.paths))
@@ -108,7 +108,7 @@ function described(description: Description): Map<string, Schema> {
 }
 
 /**
- * The described route a recorded answer is the answer of: a path written out
+ * The route, of those given, a recorded answer is the answer of: a path written out
  * in full before a templated one (`/search/icon/query` before
  * `/search/icon/{identifier}`), as Spring prefers it; a trailing slash taken.
  */
