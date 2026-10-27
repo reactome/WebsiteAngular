@@ -102,11 +102,17 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - Done in #708. `projects/contract/routes.ts` is the interface `Routes`, each `"METHOD /path"` as the registry has it to its 200 answer: twelve search routes. The description lists all 91 routes the service serves (90 paths; one is both GET and POST), 79 marked `x-contract: "not yet"`, each templated path's variables declared as OpenAPI requires (from #707's review; Redocly's spec rules then pass). Component names that would clash once made valid fail the generator; the order is by code unit, the same in every locale. A row for a route the registry lacks failed the check.
 - [x] T020 [US4] Add the up-to-date check in `tools/contract/generate.spec.ts`: regenerate in memory and compare with the committed file. Show it failing on a contract change made without regenerating.
   - Done in #708. A contract field renamed without regenerating failed it.
-- [ ] T021 [US4] Add ajv 8.20.0 as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
+- [x] T021 [US4] Add ajv 8.20.0 as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
   - Use ajv 2020-12, with `discriminator: true` where a type has one, and register the `int64` format.
   - Read exact longs with a JSON.parse reviver.
   - Count one problem per failing value, so a union failure counts once.
   - Show it failing by removing one entry kind, and by making two kinds overlap (an entry that matches two must fail: `oneOf`).
+  - Done in #709. **ajv 8.18.0, not 8.20.0:** a root 8.20.0 is hoisted over the 8.18.0 that `@angular-devkit/core` pins exactly, so ajv-formats, ng-packagr and the MCP SDK would move to 8.20.0 while the devkit kept 8.18.0. Pinning the 8.18.0 already in the tree leaves every lock entry as it was and only adds the root dependency.
+  - 195 recorded answers of 10 described routes are checked, with no problem. `/search/facet` and `/search/query/paginated` have no recording: the first is a gap in `calls.ts` (the recordings always search with a query), and no call of the site reads the second. The test lists both, both ways.
+  - No type in the description has a discriminator yet, so `discriminator: true` does nothing for now. `int64` is registered as a format. The description's `Long` is checked as a keyword that also takes a bigint, since ajv's `integer` is a JS number. A bigint fails anywhere else, and a description whose `Long` is not `{type: integer, format: int64}` is refused.
+  - Removing a kind fails the recorded entries of every kind but PersonEntry, which no recording has. Deleted entries are recorded. Adding a copy of a kind fails the entries it now describes twice.
+  - Shown failing: the reviver taken out (bigint tests), branch errors counted (both union tests), a templated path matched before a full one, every error of a value counted, nothing validated.
+  - The recorded-answer tests take up to about 4.4 s each, near vitest's 5 s default, which once timed one out. They have 60 s.
 
 ## Phase 7: User Story 5 - The rest, family by family (P3)
 
