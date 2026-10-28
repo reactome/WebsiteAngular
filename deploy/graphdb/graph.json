@@ -1,0 +1,30 @@
+{
+  "neo4j": {
+    "version": "4.3.6",
+    "image": "neo4j:4.3.6-community",
+    "digest": "sha256:cda7786843922909655ef8c7b8771d192ea3fa3557eecfe24add193d4c916e48"
+  },
+  "releaseBuild": "4.3.6",
+  "plugins": [
+    {
+      "name": "apoc",
+      "version": "4.3.0.12",
+      "url": "https://github.com/neo4j-contrib/neo4j-apoc-procedures/releases/download/4.3.0.12/apoc-4.3.0.12-all.jar",
+      "sha256": "a59fc3376e2c78716203fc72f00cdaa95c2e3f55fd13a5a774eb00097d4d2d1b"
+    }
+  ],
+  "settings": {
+    "dbms.default_database": "graph.db",
+    "dbms.default_listen_address": "0.0.0.0",
+    "dbms.memory.heap.initial_size": "3g",
+    "dbms.memory.heap.max_size": "3g",
+    "dbms.memory.pagecache.size": "2g",
+    "dbms.connector.bolt.thread_pool_min_size": "20",
+    "dbms.connector.bolt.thread_pool_max_size": "100",
+    "dbms.connector.bolt.thread_pool_keep_alive": "10m",
+    "dbms.security.procedures.unrestricted": "apoc.*",
+    "dbms.tx_log.rotation.retention_policy": "1 days",
+    "dbms.tx_state.memory_allocation": "ON_HEAP",
+    "dbms.config.strict_validation": "true"
+  }
+}

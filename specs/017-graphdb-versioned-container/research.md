@@ -203,7 +203,11 @@ port; removed afterwards.
   on how it was copied.
 - **The allowance run's stop condition** (decided): `Started.` in its log and files under `transactions/graph.db`;
   then a graceful stop (`docker stop -t 120`), the run's log kept, and the standing start checked (online, release,
-  every index `ONLINE`, counts). The run's own database status is never the test.
+  every index `ONLINE`, counts). The run's own database status is never the test. Files under
+  `transactions/graph.db` appear a moment before the recovery checkpoint is written (`checkpoint.0` is a 64-byte
+  header until `Checkpoint triggered by "Recovery completed."`, #729's review); waiting for `Started.` covers that,
+  since it is logged after the database's start has finished or failed. `Started.` with no logs written is a
+  failure, refused at once rather than waited on.
 - **`neo4j-admin store-info`** [M]:
   - on a sound store it prints `Store format version: AF4.3.0`, `Store format introduced in: 4.3.0` and `Store needs
 recovery: true` (no logs), and exits 0;
@@ -213,15 +217,17 @@ recovery: true` (no logs), and exits 0;
   - it creates an empty `transactions/graph.db` beside the store's `databases/` folder.
     So the release step runs it with the image's entrypoint bypassed, as the folder's owner, in a scratch data root
     with the delivered store bind-mounted at `databases/graph.db`: the lock file it writes is in the store (empty, and
-    replaced at start), and the empty folder it makes is in scratch. A non-zero exit, or an "introduced in" version
-    newer than the server or of another major, is refused with the step's own reason.
+    replaced at start), and the empty folder it makes is in scratch (the mount points Docker creates there are owned by
+    root, so the step removes the scratch root as root). A non-zero exit, or an "introduced in" version newer than
+    the server or of another major, is refused with the step's own reason. Every other file of the store is left
+    byte-identical (#729's review hashed them).
 - **The host installation's settings** [M], for `graph.json` (T002): Bolt thread pool 20 to 100, keep-alive 10 min;
   default database `graph.db`; listen on loopback (in the container: all interfaces, published on loopback only);
   heap 3 GB initial and maximum; page cache 2 GB; `dbms.security.procedures.unrestricted=algo.*,apoc.*`; transaction
   logs kept one day; transaction state on heap. Directory and JVM settings are the package's own defaults, which the
   image has its own of. Two are allowances, not settings: `dbms.recovery.fail_on_missing_files=false` (R1) and
-  `unsupported.dbms.tx_log.fail_on_corrupted_log_files=false`, which starts a database over corrupted logs; both are
-  for one start of a step, never the standing configuration (T002 refuses both).
+  `unsupported.dbms.tx_log.fail_on_corrupted_log_files=false`, which starts a database over corrupted logs. The first is
+  for one start of a step; the second no step uses. Both are refused in the standing configuration (T002).
 
 ## Open, carried into the tasks
 

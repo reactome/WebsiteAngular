@@ -43,4 +43,4 @@ The settings shown are illustrative; the first task copies the host installation
 | a plugin version not for the Neo4j minor version                                                                                                                 | the plugin and both versions                  |
 | `dbms.default_database` not `graph.db`                                                                                                                           | the setting                                   |
 | a required setting missing: Bolt listen address, heap, page cache, `dbms.security.procedures.unrestricted` for the plugins, `dbms.config.strict_validation=true` | the setting                                   |
-| `dbms.allow_upgrade`, `dbms.recovery.fail_on_missing_files` or `unsupported.dbms.tx_log.fail_on_corrupted_log_files` present                                     | one start of one step only (FR-003)           |
+| `dbms.allow_upgrade`, `dbms.recovery.fail_on_missing_files` or `unsupported.dbms.tx_log.fail_on_corrupted_log_files` present                                     | never in the standing configuration (FR-003)  |
