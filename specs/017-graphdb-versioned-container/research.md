@@ -130,9 +130,11 @@ checks they need at run time (same major, not older than the store), with a test
 - [R] `deploy/**/*.spec.ts` run in `npm test`, so in CI's unit job and in preflight.
 - **`deploy/graphdb/graph.json`** holds: the Neo4j version, image and digest; the recorded release-build version;
   the plugins (name, version, url, sha256); the settings. **`graph.spec.ts`** fails on: a version older than the
-  release-build version or in another major; a required setting missing (default database, Bolt address, memory,
-  procedures); `dbms.allow_upgrade` or `dbms.recovery.fail_on_missing_files` in the settings; a plugin without
-  version, url or sha256; a plugin whose version is not for the image's minor version.
+  release-build version or in another major; a required setting missing or wrong (default database, Bolt address,
+  memory, procedures for each plugin, `dbms.config.strict_validation=true`); a setting name not in Neo4j's lower case,
+  or an empty value; `dbms.allow_upgrade`, `dbms.recovery.fail_on_missing_files` or
+  `unsupported.dbms.tx_log.fail_on_corrupted_log_files` in the settings; a plugin without name, version, url or
+  sha256, with a version that is not a plain version, or not for the image's minor version; APOC missing.
 - **`compose.spec.ts` is rewritten:** loopback-only ports (its parser kept); the profile; `image:
 reactome-graphdb:applied` with `pull_policy: never`; no `environment:` settings; a bind mount of the data folder,
   not a volume; no service with `depends_on: graphdb`. The tag/volume pairing goes with the volume.
@@ -206,7 +208,8 @@ port; removed afterwards.
   every index `ONLINE`, counts). The run's own database status is never the test. Files under
   `transactions/graph.db` appear a moment before the recovery checkpoint is written (`checkpoint.0` is a 64-byte
   header until `Checkpoint triggered by "Recovery completed."`, #729's review); waiting for `Started.` covers that,
-  since it is logged after the database's start has finished or failed. `Started.` with no logs written is a
+  since the recovery checkpoint ends recovery, which comes before `Started.`; whether the database then came online
+  is not shown by `Started.` (in T001's run it failed just after), and is what the standing start checks. `Started.` with no logs written is a
   failure, refused at once rather than waited on.
 - **`neo4j-admin store-info`** [M]:
   - on a sound store it prints `Store format version: AF4.3.0`, `Store format introduced in: 4.3.0` and `Store needs

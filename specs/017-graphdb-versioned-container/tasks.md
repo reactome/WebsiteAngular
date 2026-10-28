@@ -41,14 +41,18 @@ description: 'Tasks for spec 017: the graph database in a container, its version
       4.3.0.12 (url and sha256, R2), and the settings from T001 that matter, each with its reason in the pull request,
       plus `dbms.config.strict_validation=true` (R9). Add `deploy/graphdb/graph.spec.ts` for every refusal in
       [contracts/graph-json.md](contracts/graph-json.md), each shown failing on a one-line change of the real file. Add
-      `strict_validation` to research R7's list. — #730. The settings are the host installation's (research R10) less its
+      `strict_validation` to research R7's list. — #731 (replacing #730). The settings are the host installation's (research R10) less its
       allowances and defaults: listen on all interfaces inside the container (Bolt is published on loopback only);
-      procedures `apoc.*` alone (no `algo` plugin is installed). Each refusal is a test on a one-line change of the real
-      file (15, plus a newer version of the same major allowed and a missing section named); edits of the real
-      `graph.json` (an older release build, an allowance added, APOC 4.4, a damaged digest) each failed it, and two rules
-      disabled in the check failed their four tests. From #729's review: R10 now says why `Started.` covers the
-      checkpoint, that `Started.` with no logs is refused, how the step clears `store-info`'s scratch root, and that the
-      corrupted-logs setting is refused but used by no step.
+      procedures `apoc.*` alone (no `algo` plugin is installed). Each refusal is a test made from the file's current
+      values, so a reviewed version change does not break it (a real edit to 4.4.48 with APOC 4.4.0.40 passes all 26);
+      23 refusals, a missing section named, a newer minor allowed. Edits of the real `graph.json` (an older release build,
+      an allowance added, APOC 4.4, a damaged digest, a suffixed plugin version) each failed it, and rules disabled in the
+      check failed their tests. From #730's review: a plugin version must be a plain version, plugins need names, APOC is
+      required, the procedures setting must allow each plugin, the listen address must be `0.0.0.0`, setting names must be
+      lower case and values non-empty; research R7 lists the refusals as built. From #729's review: R10 says why
+      `Started.` covers the checkpoint (and that it does not show the database online), that `Started.` with no logs is
+      refused, how the step clears `store-info`'s scratch root, and that the corrupted-logs setting is refused but used by
+      no step.
 
 ## Phase 2: Foundational
 

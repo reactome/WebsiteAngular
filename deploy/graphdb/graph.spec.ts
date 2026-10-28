@@ -42,12 +42,21 @@ const ALLOWANCES = [
 /** The settings it must hold, with the value each must have where one is required. */
 const REQUIRED: Record<string, string | undefined> = {
   'dbms.default_database': 'graph.db',
-  'dbms.default_listen_address': undefined,
+  // Inside the container; compose publishes Bolt on loopback only. Loopback here
+  // would leave the published port answering nothing.
+  'dbms.default_listen_address': '0.0.0.0',
   'dbms.memory.heap.max_size': undefined,
   'dbms.memory.pagecache.size': undefined,
   'dbms.security.procedures.unrestricted': undefined,
   'dbms.config.strict_validation': 'true',
 };
+
+/**
+ * The plugins it must have. The host installation has always run APOC, and the
+ * services' queries were written against it; dropping it is a change to this
+ * check, not to the file alone.
+ */
+const REQUIRED_PLUGINS = ['apoc'];
 
 const HEX64 = /^[0-9a-f]{64}$/;
 
@@ -85,21 +94,37 @@ function problems(g: Graph): string[] {
   if (!/^sha256:[0-9a-f]{64}$/.test(g.neo4j?.digest ?? ''))
     found.push('neo4j.digest is missing or not a sha256 digest');
 
-  for (const p of g.plugins ?? []) {
-    const name = p.name || '(unnamed plugin)';
-    if (!p.version || !p.url || !p.sha256)
-      found.push(`plugin ${name} needs version, url and sha256`);
-    else if (!HEX64.test(p.sha256)) found.push(`plugin ${name}'s sha256 is not 64 hex characters`);
-    if (p.version && !p.url?.includes(p.version))
+  const settings = g.settings ?? {};
+  const plugins = Array.isArray(g.plugins) ? g.plugins : [];
+  for (const required of REQUIRED_PLUGINS)
+    if (!plugins.some((p) => (p as Plugin | null)?.name === required))
+      found.push(`plugin ${required} is missing`);
+  for (const p of plugins as (Plugin | null)[]) {
+    const name = p?.name || '(unnamed plugin)';
+    if (!p?.name || !p.version || !p.url || !p.sha256) {
+      found.push(`plugin ${name} needs name, version, url and sha256`);
+      continue;
+    }
+    if (!HEX64.test(p.sha256)) found.push(`plugin ${name}'s sha256 is not 64 hex characters`);
+    if (!p.url.includes(p.version))
       found.push(`plugin ${name}'s url does not name its version ${p.version}`);
-    const pv = parse(p.version ?? '');
-    if (version && pv && (pv[0] !== version[0] || pv[1] !== version[1]))
+    const pv = parse(p.version);
+    if (!pv) found.push(`plugin ${name}'s version "${p.version}" is not a version`);
+    else if (version && (pv[0] !== version[0] || pv[1] !== version[1]))
       found.push(
         `plugin ${name} ${p.version} is not for Neo4j ${version[0]}.${version[1]} (neo4j.version ${g.neo4j?.version})`
       );
+    const unrestricted = (settings['dbms.security.procedures.unrestricted'] ?? '').split(',');
+    if (!unrestricted.map((x) => x.trim()).includes(`${p.name}.*`))
+      found.push(`setting dbms.security.procedures.unrestricted does not allow ${p.name}.*`);
   }
 
-  const settings = g.settings ?? {};
+  for (const [key, value] of Object.entries(settings)) {
+    // Neo4j's names are lower case; strict validation refuses another case only
+    // when the server starts, so a misnamed allowance would pass here unseen.
+    if (!/^[a-z0-9_.]+$/.test(key)) found.push(`setting ${key} is not a Neo4j setting name`);
+    if (typeof value !== 'string' || value.trim() === '') found.push(`setting ${key} has no value`);
+  }
   for (const [key, value] of Object.entries(REQUIRED)) {
     if (!(key in settings)) found.push(`setting ${key} is missing`);
     else if (value !== undefined && settings[key] !== value)
@@ -133,46 +158,77 @@ describe('the graph configuration', () => {
     expect(problems(graph)).toEqual([]);
   });
 
-  // Each refusal in contracts/graph-json.md, on a one-line change of the real file.
+  // Each refusal in contracts/graph-json.md, as an edit of the real file, made
+  // from its current values so a reviewed version change does not break them.
+  const [major, minor, patch] = (parse(graph.neo4j?.version ?? '') ?? [0, 0, 0]) as number[];
+  const apoc = (g: Full) => g.plugins.find((p) => p.name === 'apoc') as Required<Plugin>;
   const refusals: [string, (g: Full) => void, RegExp][] = [
     [
       'a version older than the release build',
-      (g) => {
-        g.neo4j.version = '4.3.5';
-        g.neo4j.image = 'neo4j:4.3.5-community';
-      },
+      (g) => (g.releaseBuild = `${major}.${minor}.${patch + 1}`),
       /older than releaseBuild/,
     ],
     [
       'a version in another major',
       (g) => {
-        g.neo4j.version = '5.26.0';
-        g.neo4j.image = 'neo4j:5.26.0-community';
+        g.neo4j.version = `${major + 1}.0.0`;
+        g.neo4j.image = `neo4j:${major + 1}.0.0-community`;
       },
       /another major/,
     ],
     [
       'an image that names another version',
-      (g) => (g.neo4j.image = 'neo4j:4.4.48-community'),
+      (g) => (g.neo4j.image = `neo4j:${major}.${minor}.${patch + 1}-community`),
+      /does not name/,
+    ],
+    [
+      'an enterprise image',
+      (g) => (g.neo4j.image = g.neo4j.image.replace('community', 'enterprise')),
       /does not name/,
     ],
     ['a missing digest', (g) => (g.neo4j.digest = ''), /digest/],
     ['a malformed digest', (g) => (g.neo4j.digest = 'sha256:abc'), /digest/],
     [
       'a plugin without a sha256',
-      (g) => (g.plugins[0].sha256 = ''),
-      /needs version, url and sha256/,
+      (g) => (apoc(g).sha256 = ''),
+      /needs name, version, url and sha256/,
     ],
-    ['a plugin with a short sha256', (g) => (g.plugins[0].sha256 = 'a59fc337'), /64 hex/],
+    [
+      'a plugin with a short sha256',
+      (g) => (apoc(g).sha256 = apoc(g).sha256.slice(0, 8)),
+      /64 hex/,
+    ],
     [
       'a plugin url for another version',
-      (g) => (g.plugins[0].url = g.plugins[0].url.replaceAll('4.3.0.12', '4.3.0.11')),
+      (g) => (apoc(g).url = apoc(g).url.replaceAll(apoc(g).version, 'x.y')),
       /does not name its version/,
     ],
     [
       'a plugin for another minor',
-      (g) => (g.plugins[0].version = '4.4.0.40'),
-      /not for Neo4j 4\.3/,
+      (g) => {
+        apoc(g).version = `${major}.${minor + 1}.0.1`;
+        apoc(g).url = `https://example.org/${major}.${minor + 1}.0.1/apoc.jar`;
+      },
+      /is not for Neo4j/,
+    ],
+    [
+      'a plugin version with a suffix',
+      (g) => {
+        apoc(g).version = `${apoc(g).version}-1`;
+        apoc(g).url = `${apoc(g).url}?v=${apoc(g).version}`;
+      },
+      /is not a version/,
+    ],
+    [
+      'an unnamed plugin',
+      (g) => g.plugins.push({ ...apoc(g), name: '' }),
+      /\(unnamed plugin\) needs name/,
+    ],
+    ['no APOC', (g) => (g.plugins = []), /plugin apoc is missing/],
+    [
+      'a plugin its procedures are not allowed for',
+      (g) => (g.settings['dbms.security.procedures.unrestricted'] = 'other.*'),
+      /does not allow apoc/,
     ],
     [
       'another default database',
@@ -180,9 +236,19 @@ describe('the graph configuration', () => {
       /must be graph\.db/,
     ],
     [
+      'a container listening on loopback only',
+      (g) => (g.settings['dbms.default_listen_address'] = '127.0.0.1'),
+      /must be 0\.0\.0\.0/,
+    ],
+    [
       'no page cache',
       (g) => delete g.settings['dbms.memory.pagecache.size'],
       /pagecache\.size is missing/,
+    ],
+    [
+      'an empty value',
+      (g) => (g.settings['dbms.memory.heap.max_size'] = ''),
+      /heap\.max_size has no value/,
     ],
     [
       'strict validation off',
@@ -193,6 +259,11 @@ describe('the graph configuration', () => {
       'store upgrade standing',
       (g) => (g.settings['dbms.allow_upgrade'] = 'true'),
       /allow_upgrade is never in the standing/,
+    ],
+    [
+      'store upgrade standing under another case',
+      (g) => (g.settings['dbms.Allow_Upgrade'] = 'true'),
+      /dbms\.Allow_Upgrade is not a Neo4j setting name/,
     ],
     [
       'missing logs tolerated standing',
@@ -209,6 +280,8 @@ describe('the graph configuration', () => {
     const found = problems(changed((g) => Reflect.deleteProperty(g, 'neo4j'))).join('\n');
     expect(found).toMatch(/neo4j\.version "undefined" is not a version/);
     expect(found).toMatch(/digest is missing/);
+    const noPlugins = problems(changed((g) => Reflect.deleteProperty(g, 'plugins'))).join('\n');
+    expect(noPlugins).toMatch(/plugin apoc is missing/);
   });
 
   for (const [what, edit, says] of refusals)
@@ -217,14 +290,15 @@ describe('the graph configuration', () => {
       expect(found.join('\n')).toMatch(says);
     });
 
-  it('allows a newer version of the same major', () => {
+  it('allows a newer version of the same major, its plugins moved with it', () => {
+    const next = `${major}.${minor + 1}.0`;
     expect(
       problems(
         changed((g) => {
-          g.neo4j.version = '4.4.48';
-          g.neo4j.image = 'neo4j:4.4.48-community';
-          g.plugins[0].version = '4.4.0.40';
-          g.plugins[0].url = g.plugins[0].url.replaceAll('4.3.0.12', '4.4.0.40');
+          g.neo4j.version = next;
+          g.neo4j.image = `neo4j:${next}-community`;
+          apoc(g).version = `${major}.${minor + 1}.0.1`;
+          apoc(g).url = `https://example.org/${major}.${minor + 1}.0.1/apoc.jar`;
         })
       )
     ).toEqual([]);

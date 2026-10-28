@@ -33,14 +33,19 @@ The settings shown are illustrative; the first task copies the host installation
 
 ## What CI refuses (each seen failing once)
 
-| Change                                                                                                                                                           | Message names                                 |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
-| `neo4j.version` older than `releaseBuild`                                                                                                                        | the server could not open the release's store |
-| `neo4j.version` in another major than `releaseBuild`                                                                                                             | a migration, not an apply (FR-008)            |
-| `neo4j.image` tag not matching `neo4j.version`                                                                                                                   | the two versions                              |
-| `neo4j.digest` missing or malformed                                                                                                                              | the field                                     |
-| a plugin without `version`, `url` or `sha256`, or a malformed sha256                                                                                             | the plugin                                    |
-| a plugin version not for the Neo4j minor version                                                                                                                 | the plugin and both versions                  |
-| `dbms.default_database` not `graph.db`                                                                                                                           | the setting                                   |
-| a required setting missing: Bolt listen address, heap, page cache, `dbms.security.procedures.unrestricted` for the plugins, `dbms.config.strict_validation=true` | the setting                                   |
-| `dbms.allow_upgrade`, `dbms.recovery.fail_on_missing_files` or `unsupported.dbms.tx_log.fail_on_corrupted_log_files` present                                     | never in the standing configuration (FR-003)  |
+| Change                                                                                                                                        | Message names                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `neo4j.version` older than `releaseBuild`                                                                                                     | the server could not open the release's store |
+| `neo4j.version` in another major than `releaseBuild`                                                                                          | a migration, not an apply (FR-008)            |
+| `neo4j.image` not `neo4j:<neo4j.version>-community`                                                                                           | the two versions                              |
+| `neo4j.digest` missing or malformed                                                                                                           | the field                                     |
+| a plugin without `name`, `version`, `url` or `sha256`, or a malformed sha256                                                                  | the plugin                                    |
+| a plugin version that is not a plain version (e.g. a suffix)                                                                                  | the plugin and its version                    |
+| a plugin version not for the Neo4j minor version                                                                                              | the plugin and both versions                  |
+| a plugin url that does not name its version                                                                                                   | the plugin                                    |
+| APOC missing (the host has always run it; dropping it changes the check)                                                                      | the plugin                                    |
+| `dbms.security.procedures.unrestricted` not allowing `<plugin>.*` for each plugin                                                             | the setting and the plugin                    |
+| `dbms.default_database` not `graph.db`; `dbms.default_listen_address` not `0.0.0.0` (inside the container; the port is published on loopback) | the setting                                   |
+| a required setting missing: heap, page cache, `dbms.config.strict_validation=true`                                                            | the setting                                   |
+| a setting name not in Neo4j's lower case, or an empty value                                                                                   | the setting                                   |
+| `dbms.allow_upgrade`, `dbms.recovery.fail_on_missing_files` or `unsupported.dbms.tx_log.fail_on_corrupted_log_files` present                  | never in the standing configuration (FR-003)  |
