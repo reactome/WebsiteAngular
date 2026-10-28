@@ -352,16 +352,16 @@ describe('the release switch', () => {
     }
   });
 
-  it('starts the graph that served again when the host database does not come back', () => {
+  it('starts the graph container again, and disables the host database, when that does not come back', () => {
     const { calls, stdout } = run('switch', {
       STUB_CN: '97',
       STUB_HOST_START_FAIL: '1',
       STUB_PORT: '0',
     });
-    expect(stdout).toMatch(/starting the graph that served again/);
-    expect(at(calls, /^docker compose start graphdb/)).toBeGreaterThan(
-      at(calls, /^systemctl start neo4j/)
-    );
+    expect(stdout).toMatch(/starting the graph container again \(release 98,/);
+    const start = at(calls, /^systemctl start neo4j/);
+    expect(at(calls.slice(start), /^systemctl disable neo4j/)).toBeGreaterThan(0);
+    expect(at(calls, /^docker compose start graphdb/)).toBeGreaterThan(start);
   });
 
   it('takes no shortcut for a release image on a volume whose name only starts the same', () => {

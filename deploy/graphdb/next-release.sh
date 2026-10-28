@@ -207,9 +207,13 @@ rollback_to_host() {
   if port_listening; then
     note "host database listening on 7687"
   else
-    # Stopped first, and the host database did not come: the graph that served is
-    # started again rather than leaving the port empty.
-    note "nothing listening on 7687 after 300s: starting the graph that served again"
+    # The graph was stopped first, and the host database did not come back. The
+    # container is the release being switched to, which failed a check: better that
+    # than an empty port, and said as such. The host database is disabled again, or
+    # both would want the port at the next boot.
+    note "nothing listening on 7687 after 300s: starting the graph container again (release $release,"
+    note "the one being switched to), since the host database would not start"
+    systemctl disable neo4j >/dev/null 2>&1 || true
     dc start graphdb >/dev/null 2>&1 || note "it could not be started either: nothing serves 7687"
   fi
 }
