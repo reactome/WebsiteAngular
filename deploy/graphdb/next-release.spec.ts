@@ -6,6 +6,8 @@ import {
   openSync,
   readFileSync,
   rmSync,
+  existsSync,
+  linkSync,
   statSync,
   symlinkSync,
   writeFileSync,
@@ -296,6 +298,7 @@ describe('the release switch', () => {
         )
     );
     expect(stdout).toMatch(/moved to/);
+    expect(existsSync(join(scratch, 'old-state'))).toBe(false);
     // Taken in, the record says the host database served: with it inactive and an
     // earlier release's image serving, the switch is refused as stale -- the record,
     // not the junk line, is what it read.
@@ -310,6 +313,38 @@ describe('the release switch', () => {
     });
     expect(stdout).not.toMatch(/moved to/);
     expect(state).toBe('host_neo4j=active');
+  });
+
+  it('leaves alone a record in the shared place with another link to it', () => {
+    const { stdout } = run('switch', {}, undefined, false, () => {
+      writeFileSync(join(scratch, 'elsewhere'), 'previous_release=96\n');
+      linkSync(join(scratch, 'elsewhere'), join(scratch, 'old-state'));
+    });
+    expect(stdout).not.toMatch(/moved to/);
+  });
+
+  it('keeps an old file that holds no record, rather than taking in nothing', () => {
+    const { stdout, state } = run('switch', {}, undefined, false, () =>
+      writeFileSync(join(scratch, 'old-state'), 'not a record\n')
+    );
+    expect(stdout).toMatch(/holds no record; left as it is/);
+    expect(existsSync(join(scratch, 'old-state'))).toBe(true);
+    expect(state).toBe('host_neo4j=active');
+  });
+
+  it('shows the record still in its old place', () => {
+    const { status, stdout } = run('check', {}, undefined, false, () =>
+      writeFileSync(join(scratch, 'old-state'), 'host_neo4j=active\n')
+    );
+    expect(status).toBe(0);
+    expect(stdout).toMatch(/moved on the next switch, rollback or cleanup\): host_neo4j=active/);
+  });
+
+  it('refuses a state directory someone else owns', () => {
+    const { status, stderr, calls } = run('switch', { NEXT_RELEASE_STATE: '/usr/state' });
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/\/usr is not yours alone/);
+    expect(calls).toEqual([]);
   });
 
   it('refuses a state directory others can write to, and changes nothing', () => {
