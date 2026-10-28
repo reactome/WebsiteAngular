@@ -38,7 +38,7 @@ const stubs: Record<string, string> = {
   ss: '[ "${STUB_PORT:-1}" = 1 ] && echo "LISTEN 0 4096 127.0.0.1:7687" || true',
   find: 'true',
   df: 'case "$*" in *-k*) printf "Avail\\n%s\\n" "${STUB_FREE_KB:-9000000}";; *) printf "Avail\\n9G\\n";; esac',
-  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_INT_ON_TOMCAT:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; "stop neo4j") [ "\${STUB_INT_ON_STOP:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_STOP_FAIL:-0}" != 1 ];; "start neo4j") [ "\${STUB_INT_ON_START:-0}" = 1 ] && kill -INT $PPID; true;; *) true;; esac`,
+  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_INT_ON_TOMCAT:-0}" = 1 ] && kill -INT $PPID; [ -n "\${STUB_NEW_TOMCAT_LINE:-}" ] && echo "$STUB_NEW_TOMCAT_LINE" >> "${scratch}/tomcat/catalina.out"; [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; "stop neo4j") [ "\${STUB_INT_ON_STOP:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_STOP_FAIL:-0}" != 1 ];; "start neo4j") [ "\${STUB_INT_ON_START:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_HOST_START_FAIL:-0}" != 1 ];; *) true;; esac`,
   curl: `url="\${@: -1}"
 case "$url" in
   *4400*) printf '{"release":"%s"}' "\${STUB_CN:-98}";;
@@ -47,7 +47,7 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) if [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ]; then echo false; else echo "\${STUB_GRAPH_RUNNING:-true}"; fi;; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98}";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) if [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ]; then echo false; else echo "\${STUB_GRAPH_RUNNING:-true}"; fi;; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
   logs) case "$*" in *--since*) [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ] && { echo starting; exit 0; }; [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
   run) case "$*" in *"test -f"*) [ "\${STUB_MARKER_ERROR:-0}" = 1 ] && exit 125; [ "\${STUB_FILLED:-1}" = 1 ] && echo yes || echo no;; *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
   compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) touch "${scratch}/prevup"; [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
@@ -78,6 +78,9 @@ function run(
   rmSync(join(scratch, 'state.release97.yml'), { recursive: true, force: true });
   rmSync(join(scratch, 'removed'), { force: true });
   rmSync(join(scratch, 'elsewhere'), { force: true });
+  rmSync(join(scratch, 'state.new'), { recursive: true, force: true });
+  rmSync(join(scratch, 'tomcat'), { recursive: true, force: true });
+  mkdirSync(join(scratch, 'tomcat'));
   if (before !== undefined) writeFileSync(join(scratch, 'state'), before);
   setup?.();
   const result = spawnSync('bash', [join(__dirname, 'next-release.sh'), command], {
@@ -87,6 +90,7 @@ function run(
       CONTENT_NODE_ENV_FILE: credentials,
       NEXT_RELEASE_STATE: join(scratch, 'state'),
       NEXT_RELEASE_OLD_STATE: join(scratch, 'old-state'),
+      TOMCAT_LOGS: join(scratch, 'tomcat'),
       GRAPH_WAIT: '10',
       SERVICE_WAIT: '10',
       ...env,
@@ -338,6 +342,65 @@ describe('the release switch', () => {
     );
     expect(status).toBe(0);
     expect(stdout).toMatch(/moved on the next switch, rollback or cleanup\): host_neo4j=active/);
+  });
+
+  it('goes back when java-library or Tomcat still answers the previous release', () => {
+    for (const env of [{ STUB_JL: '97' }, { STUB_CS: '97' }]) {
+      const { status, calls, stdout } = run('switch', env);
+      expect(status, stdout).toBe(1);
+      at(calls, /^systemctl start neo4j/);
+    }
+  });
+
+  it('starts the graph container again, and disables the host database, when that does not come back', () => {
+    const { calls, stdout } = run('switch', {
+      STUB_CN: '97',
+      STUB_HOST_START_FAIL: '1',
+      STUB_PORT: '0',
+    });
+    expect(stdout).toMatch(/starting the graph container again \(release 98,/);
+    const start = at(calls, /^systemctl start neo4j/);
+    expect(at(calls.slice(start), /^systemctl disable neo4j/)).toBeGreaterThan(0);
+    expect(at(calls, /^docker compose start graphdb/)).toBeGreaterThan(start);
+  });
+
+  it('takes no shortcut for a release image on a volume whose name only starts the same', () => {
+    const { status, calls } = run('switch', {
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release98',
+      STUB_MOUNTS: 'websiteangular_graphdb-release98-community',
+    });
+    expect(status).toBe(0);
+    at(calls, /^docker compose up -d graphdb/);
+  });
+
+  it('warns of writes Tomcat logs after its restart, not of old lines in its logs', () => {
+    const old = run('switch', {}, undefined, false, () =>
+      writeFileSync(
+        join(scratch, 'tomcat', 'catalina.out'),
+        'last week: Server at localhost:7687 no longer accepts writes\n'
+      )
+    );
+    expect(old.status).toBe(0);
+    expect(old.stdout).not.toMatch(/WARNING: a web application tried to write/);
+    const now = run(
+      'switch',
+      { STUB_NEW_TOMCAT_LINE: 'Server at localhost:7687 no longer accepts writes' },
+      undefined,
+      false,
+      () => writeFileSync(join(scratch, 'tomcat', 'catalina.out'), 'an older line\n')
+    );
+    expect(now.stdout).toMatch(/WARNING: a web application tried to write/);
+  });
+
+  it('says it could not write the record, and keeps the old one, when the new place is taken', () => {
+    const { status, stderr } = run('switch', {}, undefined, false, () => {
+      writeFileSync(join(scratch, 'old-state'), 'host_neo4j=active\n');
+      mkdirSync(join(scratch, 'state.new'));
+    });
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/could not write .*; the record stays in/);
+    expect(existsSync(join(scratch, 'old-state'))).toBe(true);
   });
 
   it('refuses a state directory someone else owns', () => {
