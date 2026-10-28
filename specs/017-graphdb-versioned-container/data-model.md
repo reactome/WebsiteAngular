@@ -16,6 +16,8 @@ installation runs with (read from it in the first task).
 
 ## The applied configuration (on the host, written only by the steps)
 
+The image name below is the default; it is one of the steps' settings, so a test copy has its own.
+
 - **`reactome-graphdb:applied`**, a local image built from `graph.json` at a commit: the base image by digest, the
   plugins checked, the settings (in a file the image's user can write), the wrapper, `USER` set to the data folder's
   owner (so the image is specific to its host), and a label naming it as this graph's. **`reactome-graphdb:previous`** is the one

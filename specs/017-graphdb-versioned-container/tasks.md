@@ -96,14 +96,17 @@ their frame. The host is unchanged.
 **Independent test**: on a test copy with a stand-in host service, the cut-over and its rollback.
 
 - [ ] T007 [US4] Implement `cutover` and `rollback-cutover` in `deploy/graphdb/graph.sh` and
-      `deploy/graphdb/graph-sh.spec.ts` (FR-002a, FR-009). `cutover` is the first apply: it builds the first
-      `:applied` (the image must be the store's version), writes the first `applied.json` and `history.json`, checks
+      `deploy/graphdb/graph-sh.spec.ts` (FR-002a, FR-009). `cutover` is the first apply: it implements the image build that
+      `apply` (T011) reuses (each plugin fetched with `curl` into the build context and checked by sha256, then the
+      legacy build of T003) and builds the first `:applied` (the image must be the store's version), writes the first `applied.json` and `history.json`, checks
       the login against the host installation, stops the host service, copies, disables it, starts the container as
       the folder's owner, checks, restarts and checks the services; on failure, `rollback-cutover`. It is also how a
-      test copy is first brought up (with a stand-in host service), so every later task's test-copy runs start from
-      it. **Decide (C1, first half)** the cut-over rollback's window: until `retire` (the spec), or only while the
-      cut-over is the last step (the contract's order rule), and amend the spec or the contract to match. Test-copy
-      runs 1, 13 and 14, a `rollback-cutover` that fails and one interrupted.
+      test copy is first brought up, so every later task's test-copy runs start from it. The stand-in host service
+      is the vendor's 4.3.6 image serving the copy on its test port, started and stopped by a stubbed `systemctl`, so
+      the login and the checks are real. **Decide (C1, first half)** the cut-over rollback's window: until `retire` (the spec), or only while the
+      cut-over is the last step (the contract's order rule), and amend the spec or the contract to match; the decision's test lands with T009
+      or T011, once a later step exists. Test-copy runs 1, 13 and 14, a `rollback-cutover` that fails and one
+      interrupted.
 
 ## Phase 4: User Story 3 - What runs is what the repository says (P2)
 
@@ -115,7 +118,8 @@ their frame. The host is unchanged.
       rollback; the last completed step; `graph.db`'s status and release; each service's release (content-node,
       Tomcat ContentService, java-library; AnalysisService reported); one Neo4j on the port; the copy's `:applied` and
       `:previous` images present. Read-only, no lock. Every other subcommand prints the pending line first. Shown on
-      a test copy after T007's cut-over (a pending change, a step under way); `:previous` and run 20 come with T012,
+      a test copy after T007's cut-over (a pending change, a step under way); straight after the cut-over there is no `:previous` (nothing applied since), which `status` reports as
+      normal, unlike a `:previous` missing after an apply (run 20); `:previous` and run 20 come with T012,
       run 11's status half with T012.
 
 ## Phase 5: User Story 1 - A new release's graph comes up (P1)
@@ -137,14 +141,14 @@ their frame. The host is unchanged.
     `steps.env`) and java-library, and check each; AnalysisService reported;
   - on a failure after the stop, `rollback-release`, and the delivered store moved back to its folder, with a note
     that it has had an allowance run (B4).
-    Test-copy runs 2, 3, 4, 5, 6, a store delivered with its logs, a login mismatch, a room refusal (stubs), and run
+    Test-copy runs 2, 3, 6, a store delivered with its logs, a login mismatch, a room refusal (stubs), and run
     17 (two steps at once, refused by the lock). Time the whole step on the copy against SC-001's 10 minutes.
 - [ ] T010 [US1] Implement `rollback-release` in `deploy/graphdb/graph.sh` and `deploy/graphdb/graph-sh.spec.ts`:
       the set-aside database back (an older store, after an upgrade, opened as `release` opens one); the services
       restarted and checked; if that fails too, stop and report, the restored database serving, no loop. **Decide (C1,
       second half)** whether it stays allowed after a later apply (the spec keeps the set-aside database "so a problem
-      found later still has one way back"; the order rule says no), and amend the spec or the contract. Test-copy runs
-      7, 15, and an interrupted `rollback-release`.
+      found later still has one way back"; the order rule says no), and amend the spec or the contract; the decision's test lands with T012 (a release
+      rollback after an apply). Test-copy runs 4 (a release whose service check fails, rolled back), 7, 15, and an interrupted `rollback-release`.
 
 ## Phase 6: User Story 2 - The Neo4j version is upgraded deliberately (P1)
 
@@ -160,10 +164,12 @@ their frame. The host is unchanged.
       `dbms.allow_upgrade=true` (stop condition from T001); standing start; checks (`dbms.components()`,
       `dbms.upgradeStatus()`, release, login); restart and check the services; `applied.json` last. A plugin-only or
       setting-only change applies the same way. Decide whether `:applied` can be rebuilt from `applied.json` (a
-      subcommand) or the claim is dropped from research R9. Test-copy runs 8, 12 and 19.
+      subcommand) or the claim is dropped from research R9. Test-copy runs 8 and 12, and run 5: a release (T009) of
+      a 4.3.6 store onto the copy now serving 4.4.48, opened with store upgrade for one start (US1 AS 4).
 - [ ] T012 [US2] Implement `rollback-apply` in `deploy/graphdb/graph.sh` and `deploy/graphdb/graph-sh.spec.ts`:
       allowed when the last step (completed or interrupted) is an apply; stop; restore the copy and `:previous` as
-      `:applied`; start; checks; services. Test-copy runs 9, 10, 16, a `rollback-apply` that fails, run 18 (refused
+      `:applied`; start; checks; services. Test-copy runs 9, 10, 16, 19 (a misspelt setting applied, then
+      rolled back), a `rollback-apply` that fails, run 18 (refused
       after a later release), run 20 (`:previous` removed, reported by `status`), and run 11 with a real `docker`
       daemon restart (US4 AS 2). Measure SC-002: a failed upgrade back to serving in under 10 minutes.
 
@@ -215,7 +221,8 @@ prune -a` on the graph's images, how to set the database's password from the cre
   T014 → T015 → T016.
 - T017–T020 follow T013 (T017 documents `retire`); T021 follows T014.
 - The cut-over comes first among the steps because it is how a test copy gets its first applied state; the release
-  comes before the upgrade because it is needed every release and needs only the cut-over's image and checks.
+  comes before the upgrade because it is needed every release and needs only the cut-over's image and checks;
+  its run with an older store (run 5) waits for the upgrade, which is what makes an older store.
 
 ## Parallel opportunities
 

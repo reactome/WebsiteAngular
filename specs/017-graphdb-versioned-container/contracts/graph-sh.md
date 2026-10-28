@@ -5,8 +5,9 @@ Run with sudo from an up-to-date checkout of the repository: `sudo bash deploy/g
 ## What every subcommand does
 
 - **Settings** come from `steps.env` in the state folder (default `/var/lib/reactome-graphdb`): the data folder, the
-  credentials file and the compose project directory as absolute paths, the services' release URLs, and the command
-  that restarts Tomcat. Never from `~` or the caller's environment, which sudo changes (research R9).
+  credentials file and the compose project directory as absolute paths, the services' release URLs, the command
+  that restarts Tomcat, and the image name, Bolt port and compose project name (defaults `reactome-graphdb`, 7687 and
+  the stack's own project; a test copy sets its own, so it never meets the serving graph's port or image). Never from `~` or the caller's environment, which sudo changes (research R9).
 - **One at a time:** all but `status` take an exclusive `flock` on the state folder for the whole run; a second step
   is refused at once (exit 2).
 - **Pending configuration** (FR-010): each prints first whether the applied configuration differs from `graph.json`
