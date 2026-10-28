@@ -1,0 +1,8 @@
+# The release's graph image, read-only: as reactome/reactome_neo4j_env's
+# Dockerfile_readonly makes its "readonly container for production", from the
+# image the release published. Nothing here writes to the graph -- custom
+# interactor uploads are files, not graph data -- so a write can only be a
+# mistake or an attack, and this refuses it ("no longer accepts writes").
+ARG GRAPHDB_IMAGE
+FROM ${GRAPHDB_IMAGE}
+RUN echo 'dbms.databases.default_to_read_only=true' >> /var/lib/neo4j/conf/neo4j.conf

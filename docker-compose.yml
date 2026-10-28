@@ -176,17 +176,25 @@ services:
       # public can reach.
 
   # Reactome's graph database, as the project publishes it for each release
-  # (developer docs: documentation/dev/graph-database). Replaces the Neo4j
-  # installed on the host, so the database is a pinned image like everything
-  # else here rather than a system package nobody upgrades in step with a
-  # release. To move to a new release, change the tag and `up -d graphdb`, then
-  # RESTART content-node (`docker compose restart content-node`): it holds the
-  # release number and the cached lists in memory, and the release number keys
-  # every diagram, figure and icon URL, so a missed restart sends them all to the
-  # previous release's files without an error. Check with `curl
-  # 127.0.0.1:4400/health`: its "release" must be the new one.
+  # (developer docs: documentation/dev/graph-database), made read-only on top
+  # (deploy/graphdb/Dockerfile.readonly). Replaces the Neo4j installed on the
+  # host, so the database is a pinned image like everything else here rather
+  # than a system package nobody upgrades in step with a release.
+  #
+  # To move to a new release, change the release in the three places
+  # compose.spec.ts holds together (the build's GRAPHDB_IMAGE, this image's tag
+  # and the volume's name), `docker compose up -d --build graphdb`, then restart
+  # everything that holds the release in memory or in a cache:
+  # deploy/graphdb/next-release.sh does it in order and checks each. A missed
+  # restart of content-node sends every diagram, figure and icon URL to the
+  # previous release's files without an error.
   graphdb:
-    image: public.ecr.aws/reactome/graphdb:Release97
+    build:
+      context: ./deploy/graphdb
+      dockerfile: Dockerfile.readonly
+      args:
+        GRAPHDB_IMAGE: public.ecr.aws/reactome/graphdb:Release98
+    image: reactome/graphdb_readonly:Release98
     restart: unless-stopped
     # Bolt on loopback only, on the port the host database used, so everything
     # that reads it -- content-node, the Java ContentService, the analysis
@@ -221,7 +229,7 @@ services:
       #
       # The password is set when the volume is first filled. Changing it later
       # needs the volume recreated, or ALTER USER in the database.
-      - graphdb-release97:/var/lib/neo4j/data
+      - graphdb-release98:/var/lib/neo4j/data
       # The image declares both as volumes; named, so a recreate does not leave
       # another anonymous pair behind each time.
       - graphdb-logs:/logs
@@ -399,6 +407,6 @@ volumes:
   # The library service's SBML and diagram files, per release: kept across a
   # container replacement, as render's figures are.
   java-library-cache:
-  graphdb-release97:
+  graphdb-release98:
   graphdb-logs:
   graphdb-unused:

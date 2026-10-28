@@ -4,7 +4,9 @@
 
 **Created**: 2026-10-27
 
-**Status**: Draft
+**Status**: Withdrawn (28 Oct 2026). The graph runs from the image the release publishes, made read-only
+(`deploy/graphdb/Dockerfile.readonly`, as reactome_neo4j_env's `Dockerfile_readonly`), and a release is moved to by
+`deploy/graphdb/next-release.sh`. Nothing below is to be built; T001's measurements (research R10) stand.
 
 **Input**: User description: "The graph database (Neo4j) as a container over the host's data folder, with its version a setting, so the database version can be upgraded deliberately in future." Agreed with the project lead on 27 Oct 2026.
 
