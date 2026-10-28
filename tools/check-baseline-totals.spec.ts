@@ -9,6 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
+// Inside a worktree's pre-push hook git exports GIT_DIR and the like, and the
+// throwaway repositories below then acted on the worktree instead ("this operation
+// must be run in a work tree"). They are this process's to lose.
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 const SCRIPT = fileURLToPath(new URL('../scripts/check-baseline-totals.mjs', import.meta.url));
 const LINT = { rules: { 'no-unused-vars': 3 } };
 const DEAD = { total: 5 };

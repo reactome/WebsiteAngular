@@ -9,6 +9,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it } from 'vitest';
 
+// Inside a worktree's pre-push hook git exports GIT_DIR and the like, and the
+// throwaway repositories below then acted on the worktree instead ("this operation
+// must be run in a work tree"). They are this process's to lose.
+for (const key of Object.keys(process.env)) if (key.startsWith('GIT_')) delete process.env[key];
+
 const SCRIPT = fileURLToPath(new URL('../scripts/check-move.mjs', import.meta.url));
 
 const repos: string[] = [];
@@ -136,6 +141,7 @@ export const endpoints = [...aEndpoints, ...bEndpoints];
       SERVICE,
       split(`import { aEndpoints } from './a-endpoints.ts';
 import { bEndpoints } from './b-endpoints.ts';
+
 export const endpoints = [...bEndpoints, ...aEndpoints];
 `)
     );

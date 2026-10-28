@@ -124,7 +124,7 @@ status() {
   if [ -f "$STATE" ]; then
     note "before the last switch: $(tr '\n' ' ' < "$STATE")"
   elif [ -f "$OLD_STATE" ]; then
-    note "before the last switch (moved on the next sudo run): $(tr '\n' ' ' < "$OLD_STATE")"
+    note "before the last switch (moved on the next switch, rollback or cleanup): $(tr '\n' ' ' < "$OLD_STATE")"
   elif [ -d "$(dirname "$STATE")" ] && [ ! -r "$(dirname "$STATE")" ]; then
     note "the record of what served before is root's: run check with sudo to see it"
   fi
@@ -250,15 +250,25 @@ state_dir() {
   local dir owner mode
   dir="$(dirname "$STATE")"
   [ -d "$dir" ] || mkdir -m 700 -p "$dir" || die "could not make $dir"
-  owner="$(stat -c %u "$dir")"
-  mode="$(stat -c %a "$dir")"
+  owner="$(stat -c %u "$dir")" || die "could not read $dir"
+  mode="$(stat -c %a "$dir")" || die "could not read $dir"
   [ "$owner" = "$EUID" ] && [ $((8#$mode & 8#022)) = 0 ] ||
     die "$dir is not yours alone (owner $owner, mode $mode): choose another NEXT_RELEASE_STATE"
   if [ -f "$OLD_STATE" ] && [ ! -L "$OLD_STATE" ] && [ ! -f "$STATE" ] &&
     [ "$(stat -c '%u:%h' "$OLD_STATE")" = "$EUID:1" ]; then
-    grep -E '^(host_neo4j=(active|inactive)|previous_release=[0-9]+)$' "$OLD_STATE" > "$STATE" || true
-    rm -f "$OLD_STATE"
-    note "the record of what served before moved to $STATE"
+    # The old file goes only once its record is safely in place: kept if nothing in it
+    # was a record, or the write failed (a full disk lost it).
+    local record
+    record="$(grep -E '^(host_neo4j=(active|inactive)|previous_release=[0-9]+)$' "$OLD_STATE" || true)"
+    if [ -z "$record" ]; then
+      note "$OLD_STATE holds no record; left as it is"
+    elif printf '%s\n' "$record" > "$STATE.new" && mv "$STATE.new" "$STATE"; then
+      rm -f "$OLD_STATE"
+      note "the record of what served before moved to $STATE"
+    else
+      rm -f "$STATE.new"
+      die "could not write $STATE; the record stays in $OLD_STATE"
+    fi
   fi
 }
 
