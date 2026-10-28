@@ -17,6 +17,10 @@
 # these was a step done by hand before, and a missed restart served the previous release
 # with no error.
 #
+# Run it inside tmux or screen: a dropped connection during the graph's start would
+# otherwise end it there. (It goes back if interrupted before the graph has started,
+# and says where it stopped after.)
+#
 # Last, by hand: purge the edge cache and warm it (printed at the end).
 set -euo pipefail
 
@@ -162,8 +166,10 @@ do_rollback() {
     waited=$((waited + 5))
   done
   port_listening && note "host database listening on 7687" || note "nothing listening on 7687 after 300s"
-  # The services read the release at start: restart them on the graph that serves now.
+  # The services read the release at start: restart them on the graph that serves now,
+  # and drop figures made from the release being left.
   dc restart content-node java-library >/dev/null 2>&1
+  restart_with_cleared_cache render render-cache
   systemctl restart tomcat9
   sleep 30
   status
@@ -178,6 +184,18 @@ do_switch() {
     local free_kb
     free_kb="$(df --output=avail -k / | tail -1 | tr -d ' ')"
     [ "$free_kb" -gt $((5 * 1024 * 1024)) ] || die "under 5 GB free: the new graph's volume needs 3.2 GB (run cleanup, or free space)"
+  fi
+
+  # Already done (a second run, or one interrupted after the graph started): the
+  # services are restarted and checked again, and nothing else is touched. Without
+  # this, an unchanged container is left running by up -d, logs no new Started., and
+  # the wait gave up and rolled back to the host database.
+  if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$release true" ] && ! host_neo4j_active; then
+    note "the graph already serves release $release"
+    restart_services || { note "a service did not come up on release $release; nothing was changed in the graph"; exit 1; }
+    say "Done: release $release"
+    status
+    return 0
   fi
 
   # The host database's record is what rollback goes back to. Once a release's image
@@ -197,7 +215,11 @@ do_switch() {
     # serving graph keeps running while the release's 3.2 GB store is copied in.
     docker volume create --label com.docker.compose.project=websiteangular \
       --label "com.docker.compose.volume=graphdb-release$release" "$volume" >/dev/null
-    docker run --rm --entrypoint true -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release"
+    # A volume left half-filled would be skipped by the next run and opened as it is.
+    docker run --rm --entrypoint true -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" || {
+      docker volume rm "$volume" >/dev/null 2>&1 || true
+      die "could not fill $volume; it is removed, and nothing else was changed"
+    }
     note "filled $volume"
   fi
 
@@ -206,7 +228,8 @@ do_switch() {
   # first one's record, so rollback still knows where it came from.
   if host_neo4j_active; then
     printf 'host_neo4j=active\n' > "$STATE"
-    systemctl stop neo4j
+    trap 'note "interrupted before the graph started"; do_rollback; exit 130' INT TERM HUP
+    systemctl stop neo4j || { note "the host database did not stop cleanly"; do_rollback; exit 1; }
     systemctl disable neo4j >/dev/null 2>&1 || true
     note "host Neo4j stopped and disabled (its package stays: rollback starts it again)"
   elif [ ! -f "$STATE" ]; then
@@ -214,6 +237,7 @@ do_switch() {
   fi
 
   # From here, any failure goes back: each step says so itself.
+  trap 'note "interrupted before the graph started"; do_rollback; exit 130' INT TERM HUP
   say "Starting the graph on release $release"
   local since
   since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -231,6 +255,8 @@ do_switch() {
     waited=$((waited + 5))
   done
   note "started after ${waited}s"
+  # The graph serves now: an interruption leaves it serving, and a second run finishes.
+  trap 'note "interrupted: the graph serves release $release; run switch again to finish, or rollback"; exit 130' INT TERM HUP
 
   if ! restart_services; then
     note "a service did not come up on release $release"
@@ -238,6 +264,7 @@ do_switch() {
     exit 1
   fi
 
+  trap - INT TERM HUP
   say "Done: release $release"
   status
   local listeners

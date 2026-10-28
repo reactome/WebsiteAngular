@@ -26,7 +26,7 @@ const stubs: Record<string, string> = {
   ss: '[ "${STUB_PORT:-1}" = 1 ] && echo "LISTEN 0 4096 127.0.0.1:7687" || true',
   find: 'true',
   df: 'case "$*" in *-k*) printf "Avail\\n%s\\n" "${STUB_FREE_KB:-9000000}";; *) printf "Avail\\n9G\\n";; esac',
-  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; *) true;; esac`,
+  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; "stop neo4j") [ "\${STUB_STOP_FAIL:-0}" != 1 ];; *) true;; esac`,
   curl: `url="\${@: -1}"
 case "$url" in
   *4400*) printf '{"release":"%s"}' "\${STUB_CN:-98}";;
@@ -35,10 +35,10 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  inspect) case "$*" in *Config.Image*State.Running*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}";; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
   logs) case "$*" in *--since*) [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
   run) case "$*" in *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
-  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"up -d graphdb"*) [ "\${STUB_UP_FAIL:-0}" = 1 ] && exit 1 || true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
+  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) [ "\${STUB_UP_FAIL:-0}" = 1 ] && exit 1 || true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
   volume) case "$2" in inspect) [ "\${STUB_VOLUME:-0}" = 1 ];; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   images) echo public.ecr.aws/reactome/graphdb:Release98; echo local-test/graphdb:Release97-community;;
   *) true;;
@@ -133,15 +133,39 @@ describe('the release switch', () => {
     at(calls, /^systemctl restart tomcat9/);
   });
 
-  it('goes back once, even when the rollback itself cannot reach Docker', () => {
-    const { status, calls } = run('switch', { STUB_UP_FAIL: '1' });
+  it('goes back once, even when the rollback itself cannot reach the graph container', () => {
+    const { status, calls } = run('switch', { STUB_UP_FAIL: '1', STUB_GRAPH_STOP_FAIL: '1' });
     expect(status).toBe(1);
     expect(calls.filter((call) => /^systemctl start neo4j/.test(call))).toHaveLength(1);
-    const docker = run('switch', { STUB_COMPOSE_FAIL: '1' });
-    expect(docker.status).not.toBe(0);
-    expect(
-      docker.calls.filter((call) => /^systemctl start neo4j/.test(call)).length
-    ).toBeLessThanOrEqual(1);
+    expect(calls.filter((call) => /stop graphdb/.test(call))).toHaveLength(1);
+  });
+
+  it('goes back when the host database does not stop cleanly', () => {
+    const { status, calls } = run('switch', { STUB_STOP_FAIL: '1' });
+    expect(status).toBe(1);
+    at(calls, /^systemctl start neo4j/);
+    expect(calls.some((call) => /up -d graphdb/.test(call))).toBe(false);
+  });
+
+  it('removes a volume it could not fill, so a second run fills it again', () => {
+    const { status, calls, stderr } = run('switch', { STUB_FILL_FAIL: '1' });
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/could not fill websiteangular_graphdb-release98; it is removed/);
+    at(calls, /^docker volume rm websiteangular_graphdb-release98/);
+    expect(calls.some((call) => /^systemctl stop neo4j/.test(call))).toBe(false);
+  });
+
+  it('on a second run, restarts and checks the services without touching the graph', () => {
+    const { status, calls, stdout } = run(
+      'switch',
+      { STUB_NEO4J_ACTIVE: '0', STUB_SERVING: 'reactome/graphdb_readonly:Release98' },
+      'host_neo4j=active\n'
+    );
+    expect(status, stdout).toBe(0);
+    expect(stdout).toMatch(/the graph already serves release 98/);
+    at(calls, /^docker compose restart content-node/);
+    at(calls, /^systemctl restart tomcat9/);
+    expect(calls.some((call) => /graphdb|neo4j/.test(call))).toBe(false);
   });
 
   it('goes back when Tomcat or content-node cannot be restarted', () => {
@@ -157,6 +181,10 @@ describe('the release switch', () => {
     const start = at(calls, /^systemctl start neo4j/);
     expect(
       at(calls.slice(start), /^docker compose restart content-node java-library/)
+    ).toBeGreaterThan(0);
+    // Figures made from the release being left are dropped too.
+    expect(
+      at(calls.slice(start), /^docker run .*websiteangular_render-cache:\/cache/)
     ).toBeGreaterThan(0);
     expect(stdout).toMatch(/host database listening on 7687/);
     const deaf = run('switch', { STUB_CN: '97', STUB_PORT: '0' });
@@ -178,12 +206,6 @@ describe('the release switch', () => {
     expect(stale.status).toBe(2);
     expect(stale.stderr).toMatch(/run cleanup first/);
     expect(stale.calls).toEqual([]);
-  });
-
-  it('stops before touching the serving graph when the new volume cannot be filled', () => {
-    const { status, calls } = run('switch', { STUB_FILL_FAIL: '1' });
-    expect(status).not.toBe(0);
-    expect(calls.some((call) => /^systemctl stop neo4j/.test(call))).toBe(false);
   });
 
   it('goes back when a cache cannot be cleared', () => {
@@ -223,7 +245,6 @@ describe('the release switch', () => {
     expect(status).toBe(1);
     expect(stdout).toMatch(/content_node answers 97, not 98/);
     at(calls, /^systemctl start neo4j/);
-    expect(calls.some((call) => /render-cache/.test(call))).toBe(false);
   });
 
   it('says how to go back when the host database was not what served', () => {
