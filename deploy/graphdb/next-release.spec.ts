@@ -1,5 +1,15 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  openSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -35,13 +45,13 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
-  logs) case "$*" in *--since*) [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
-  run) case "$*" in *"test -f"*) [ "\${STUB_FILLED:-1}" = 1 ];; *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
-  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
+  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) if [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ]; then echo false; else echo "\${STUB_GRAPH_RUNNING:-true}"; fi;; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  logs) case "$*" in *--since*) [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ] && { echo starting; exit 0; }; [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
+  run) case "$*" in *"test -f"*) [ "\${STUB_MARKER_ERROR:-0}" = 1 ] && exit 125; [ "\${STUB_FILLED:-1}" = 1 ] && echo yes || echo no;; *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
+  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) touch "${scratch}/prevup"; [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
   volume) case "$2" in rm) touch "${scratch}/removed";; inspect) case "$3" in *release98) [ "\${STUB_VOLUME:-0}" = 1 ] && [ ! -f "${scratch}/removed" ];; *) [ "\${STUB_PREV_VOLUME:-1}" = 1 ];; esac;; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   image) [ "\${STUB_PREV_IMAGE:-1}" = 1 ];;
-  ps) case "$*" in *com.docker.compose.service=graphdb*) [ -n "\${STUB_VOLUME_USERS:-}" ] && echo "\$STUB_VOLUME_USERS";; esac; true;;
+  ps) case "$*" in *com.docker.compose.service=graphdb*) [ -n "\${STUB_VOLUME_USERS:-}" ] && echo "$STUB_VOLUME_USERS";; esac; true;;
   images) echo public.ecr.aws/reactome/graphdb:Release98; echo local-test/graphdb:Release97-community;;
   *) true;;
 esac`,
@@ -55,19 +65,26 @@ function run(
   command: string,
   env: Record<string, string> = {},
   before?: string,
-  deadTerminal = false
+  deadTerminal = false,
+  setup?: () => void
 ) {
   writeFileSync(log, '');
   rmSync(join(scratch, 'state'), { force: true });
   rmSync(join(scratch, 'replaced'), { force: true });
+  rmSync(join(scratch, 'old-state'), { force: true });
+  rmSync(join(scratch, 'prevup'), { force: true });
+  rmSync(join(scratch, 'state.release97.yml'), { recursive: true, force: true });
   rmSync(join(scratch, 'removed'), { force: true });
+  rmSync(join(scratch, 'elsewhere'), { force: true });
   if (before !== undefined) writeFileSync(join(scratch, 'state'), before);
+  setup?.();
   const result = spawnSync('bash', [join(__dirname, 'next-release.sh'), command], {
     env: {
       PATH: `${bin}:/usr/bin:/bin`,
       SUDO_USER: 'user',
       CONTENT_NODE_ENV_FILE: credentials,
       NEXT_RELEASE_STATE: join(scratch, 'state'),
+      NEXT_RELEASE_OLD_STATE: join(scratch, 'old-state'),
       GRAPH_WAIT: '10',
       SERVICE_WAIT: '10',
       ...env,
@@ -87,7 +104,7 @@ function run(
   } catch {
     // no record written
   }
-  return { ...result, calls, state };
+  return { ...result, calls, state, raw: readFileSync(log, 'utf8') };
 }
 
 /** The position of the first call matching `pattern`, failing the test if there is none. */
@@ -264,6 +281,86 @@ describe('the release switch', () => {
       STUB_GRAPH_RUNNING: 'false',
     });
     expect(state).toBe('host_neo4j=inactive');
+  });
+
+  it('takes in a record an earlier version left in the shared place, its well-formed lines only', () => {
+    const { status, state, stdout } = run(
+      'switch',
+      { STUB_NEO4J_ACTIVE: '0' },
+      undefined,
+      false,
+      () =>
+        writeFileSync(
+          join(scratch, 'old-state'),
+          'host_neo4j=active\nrm -rf /\nprevious_release=96\n'
+        )
+    );
+    expect(stdout).toMatch(/moved to/);
+    // Taken in, the record says the host database served: with it inactive and an
+    // earlier release's image serving, the switch is refused as stale -- the record,
+    // not the junk line, is what it read.
+    expect(status).toBe(2);
+    expect(state).toBe('host_neo4j=active\nprevious_release=96');
+  });
+
+  it('leaves alone a record in the shared place that is a link', () => {
+    const { stdout, state } = run('switch', {}, undefined, false, () => {
+      writeFileSync(join(scratch, 'elsewhere'), 'previous_release=96\n');
+      symlinkSync(join(scratch, 'elsewhere'), join(scratch, 'old-state'));
+    });
+    expect(stdout).not.toMatch(/moved to/);
+    expect(state).toBe('host_neo4j=active');
+  });
+
+  it('refuses a state directory others can write to, and changes nothing', () => {
+    const shared = join(scratch, 'shared');
+    mkdirSync(shared, { recursive: true });
+    chmodSync(shared, 0o777);
+    const { status, stderr, calls } = run('switch', { NEXT_RELEASE_STATE: join(shared, 'state') });
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/is not yours alone/);
+    expect(calls).toEqual([]);
+    expect(statSync(shared).mode & 0o777).toBe(0o777);
+  });
+
+  it('stops, rather than removing the volume, when it cannot look inside it', () => {
+    const { status, calls, stderr } = run('switch', { STUB_VOLUME: '1', STUB_MARKER_ERROR: '1' });
+    expect(status).toBe(2);
+    expect(stderr).toMatch(/could not look inside websiteangular_graphdb-release98/);
+    expect(calls.some((call) => /^docker volume rm/.test(call))).toBe(false);
+  });
+
+  it('gives up at once when the previous release stops again while starting', () => {
+    const { status, stdout, raw } = run('switch', {
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release97',
+      STUB_MOUNTS: 'websiteangular_graphdb-release97',
+      STUB_UP_FAIL: '1',
+      STUB_PREV_DIES: '1',
+      GRAPH_WAIT: '1000',
+    });
+    expect(status).toBe(1);
+    expect(stdout).toMatch(/release 97 did not start again/);
+    expect(raw.split('\n').filter((line) => /^docker logs --since/.test(line)).length).toBeLessThan(
+      5
+    );
+  });
+
+  it('says so when it cannot write the override for the previous release', () => {
+    // Its own state directory, where a directory stands in the override's place.
+    const own = join(scratch, 'unwritable');
+    rmSync(own, { recursive: true, force: true });
+    mkdirSync(join(own, 'state.release97.yml'), { recursive: true, mode: 0o700 });
+    chmodSync(own, 0o700);
+    const { status, stdout } = run('switch', {
+      NEXT_RELEASE_STATE: join(own, 'state'),
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release97',
+      STUB_MOUNTS: 'websiteangular_graphdb-release97',
+      STUB_UP_FAIL: '1',
+    });
+    expect(status).toBe(1);
+    expect(stdout).toMatch(/could not write .*state\.release97\.yml/);
   });
 
   it('refuses a new release while the record of what served is from an earlier switch', () => {

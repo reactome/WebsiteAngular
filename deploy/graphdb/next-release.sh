@@ -39,7 +39,7 @@ SERVICE_WAIT="${SERVICE_WAIT:-600}"
 # What served before the switch, for rollback, with the override rollback writes: in a
 # directory only root can write to, outside the checkout.
 STATE="${NEXT_RELEASE_STATE:-/var/lib/reactome-next-release/state}"
-OLD_STATE=/var/tmp/reactome-next-release.state
+OLD_STATE="${NEXT_RELEASE_OLD_STATE:-/var/tmp/reactome-next-release.state}"
 
 # Writing never stops the script: after a dropped connection every write fails, and
 # under set -e the first one ended it wherever it was, a rollback included.
@@ -121,7 +121,13 @@ status() {
   note "listening on 7687: $(ss -Hltnp 'sport = :7687' 2>/dev/null | sed -nE 's/.*users:\(\("([^"]+)".*/\1/p' | sort -u | tr '\n' ' ')"
   note "content-node: $(content_node)   java-library: $(java_library)   ContentService: $(contentservice)   AnalysisService: $(analysis)"
   note "free on /: $(df -h --output=avail / | tail -1 | tr -d ' ')"
-  [ -f "$STATE" ] && note "before the last switch: $(cat "$STATE")"
+  if [ -f "$STATE" ]; then
+    note "before the last switch: $(tr '\n' ' ' < "$STATE")"
+  elif [ -f "$OLD_STATE" ]; then
+    note "before the last switch (moved on the next sudo run): $(tr '\n' ' ' < "$OLD_STATE")"
+  elif [ -d "$(dirname "$STATE")" ] && [ ! -r "$(dirname "$STATE")" ]; then
+    note "the record of what served before is root's: run check with sudo to see it"
+  fi
   return 0
 }
 
@@ -236,14 +242,23 @@ rollback_to_previous_release() {
   note "revert that change before anything runs docker compose up (override kept: $override)"
 }
 
-# The state's directory, root's alone; a record written by an earlier version of this
-# script, in a shared directory, is moved into it.
+# The state's directory: made private if new, and refused if anyone else could write
+# to it -- never chmod-ed, which run as root on a chosen /tmp would have locked the host
+# out of it. A record an earlier version of this script left in a shared directory is
+# taken in only if it is a plain file this user owns, and only its well-formed lines.
 state_dir() {
-  local dir
+  local dir owner mode
   dir="$(dirname "$STATE")"
-  mkdir -p "$dir" && chmod 700 "$dir" || die "could not make $dir"
-  if [ -z "${NEXT_RELEASE_STATE:-}" ] && [ -f "$OLD_STATE" ] && [ ! -f "$STATE" ]; then
-    mv "$OLD_STATE" "$STATE" || die "could not move $OLD_STATE to $STATE"
+  [ -d "$dir" ] || mkdir -m 700 -p "$dir" || die "could not make $dir"
+  owner="$(stat -c %u "$dir")"
+  mode="$(stat -c %a "$dir")"
+  [ "$owner" = "$EUID" ] && [ $((8#$mode & 8#022)) = 0 ] ||
+    die "$dir is not yours alone (owner $owner, mode $mode): choose another NEXT_RELEASE_STATE"
+  if [ -f "$OLD_STATE" ] && [ ! -L "$OLD_STATE" ] && [ ! -f "$STATE" ] &&
+    [ "$(stat -c '%u:%h' "$OLD_STATE")" = "$EUID:1" ]; then
+    grep -E '^(host_neo4j=(active|inactive)|previous_release=[0-9]+)$' "$OLD_STATE" > "$STATE" || true
+    rm -f "$OLD_STATE"
+    note "the record of what served before moved to $STATE"
   fi
 }
 
@@ -293,8 +308,18 @@ do_switch() {
   dc build --pull graphdb
   local volume="websiteangular_graphdb-release$release"
   local filled=/var/lib/neo4j/data/.next-release-filled
-  if docker volume inspect "$volume" >/dev/null 2>&1 &&
-    ! docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "test -f $filled"; then
+  local marked=''
+  if docker volume inspect "$volume" >/dev/null 2>&1; then
+    # Asked for an answer, so a Docker error is not taken for "not filled", which would
+    # remove the volume.
+    marked="$(docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" \
+      -c "if test -f $filled; then echo yes; else echo no; fi" 2>/dev/null || true)"
+    case "$marked" in
+      yes | no) ;;
+      *) die "could not look inside $volume (docker run failed); nothing was changed" ;;
+    esac
+  fi
+  if [ "$marked" = no ]; then
     # Not marked filled. The graph's own container was given it filled by Docker; any
     # other (a filler of ours killed part way) proves nothing.
     if [ -n "$(docker ps -aq --filter "volume=$volume" --filter label=com.docker.compose.service=graphdb)" ]; then
