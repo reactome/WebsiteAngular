@@ -36,8 +36,10 @@ user_home="$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)"
 export CONTENT_NODE_ENV_FILE="${CONTENT_NODE_ENV_FILE:-$user_home/.content-node.env}"
 GRAPH_WAIT="${GRAPH_WAIT:-600}"
 SERVICE_WAIT="${SERVICE_WAIT:-600}"
-# What served before the switch, for rollback; outside the checkout.
-STATE="${NEXT_RELEASE_STATE:-/var/tmp/reactome-next-release.state}"
+# What served before the switch, for rollback, with the override rollback writes: in a
+# directory only root can write to, outside the checkout.
+STATE="${NEXT_RELEASE_STATE:-/var/lib/reactome-next-release/state}"
+OLD_STATE=/var/tmp/reactome-next-release.state
 
 # Writing never stops the script: after a dropped connection every write fails, and
 # under set -e the first one ended it wherever it was, a rollback included.
@@ -193,7 +195,7 @@ rollback_to_host() {
 # compose manages. docker-compose.yml still names the new release afterwards.
 rollback_to_previous_release() {
   local previous
-  previous="$(sed -nE 's/^previous_release=([0-9]+)$/\1/p' "$STATE" 2>/dev/null | head -1)"
+  previous="$(sed -nE 's/^previous_release=([0-9]+)$/\1/p' "$STATE" 2>/dev/null | head -1 || true)"
   [ -n "$previous" ] || return 1
   docker image inspect "reactome/graphdb_readonly:Release$previous" >/dev/null 2>&1 || return 1
   docker volume inspect "websiteangular_graphdb-release$previous" >/dev/null 2>&1 || return 1
@@ -208,7 +210,14 @@ rollback_to_previous_release() {
     '    volumes:' \
     "      - graphdb-release$previous:/var/lib/neo4j/data" \
     'volumes:' \
-    "  graphdb-release$previous: {}" > "$override"
+    "  graphdb-release$previous: {}" > "$override" || {
+    note "could not write $override"
+    return 1
+  }
+  if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$previous true" ]; then
+    note "release $previous already serves"
+    return 0
+  fi
   local since waited=0
   since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   dc -f docker-compose.yml -f "$override" up -d --no-build graphdb >/dev/null 2>&1 || {
@@ -216,7 +225,10 @@ rollback_to_previous_release() {
     return 1
   }
   until docker logs --since "$since" websiteangular-graphdb-1 2>&1 | grep 'Started\.$' >/dev/null; do
-    [ "$waited" -ge "$GRAPH_WAIT" ] && { note "release $previous did not start again"; return 1; }
+    if [ "$(docker inspect -f '{{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" != true ] || [ "$waited" -ge "$GRAPH_WAIT" ]; then
+      note "release $previous did not start again"
+      return 1
+    fi
     sleep 5
     waited=$((waited + 5))
   done
@@ -224,8 +236,20 @@ rollback_to_previous_release() {
   note "revert that change before anything runs docker compose up (override kept: $override)"
 }
 
+# The state's directory, root's alone; a record written by an earlier version of this
+# script, in a shared directory, is moved into it.
+state_dir() {
+  local dir
+  dir="$(dirname "$STATE")"
+  mkdir -p "$dir" && chmod 700 "$dir" || die "could not make $dir"
+  if [ -z "${NEXT_RELEASE_STATE:-}" ] && [ -f "$OLD_STATE" ] && [ ! -f "$STATE" ]; then
+    mv "$OLD_STATE" "$STATE" || die "could not move $OLD_STATE to $STATE"
+  fi
+}
+
 do_switch() {
   [ "$(id -u)" = 0 ] || die "run with sudo"
+  state_dir
   [ -f "$CONTENT_NODE_ENV_FILE" ] || die "no credentials file at $CONTENT_NODE_ENV_FILE (set CONTENT_NODE_ENV_FILE)"
   status
   if ! docker volume inspect "websiteangular_graphdb-release$release" >/dev/null 2>&1; then
@@ -254,9 +278,14 @@ do_switch() {
 
   # The record is what rollback goes back to: kept from an earlier switch, it would send
   # a failed switch back to a release older than the one serving.
-  local serving
+  # After a rollback to the recorded previous release, the record is current, and a
+  # second attempt at this release is allowed.
+  local serving recorded
   serving="$(docker inspect -f '{{.Config.Image}}' websiteangular-graphdb-1 2>/dev/null || true)"
-  if [ -f "$STATE" ] && ! host_neo4j_active && [ "$serving" != "reactome/graphdb_readonly:Release$release" ]; then
+  recorded="$(sed -nE 's/^previous_release=([0-9]+)$/\1/p' "$STATE" 2>/dev/null | head -1 || true)"
+  if [ -f "$STATE" ] && ! host_neo4j_active &&
+    [ "$serving" != "reactome/graphdb_readonly:Release$release" ] &&
+    { [ -z "$recorded" ] || [ "$serving" != "reactome/graphdb_readonly:Release$recorded" ]; }; then
     die "the record of what served before ($STATE) is from an earlier switch: run cleanup first"
   fi
 
@@ -266,9 +295,9 @@ do_switch() {
   local filled=/var/lib/neo4j/data/.next-release-filled
   if docker volume inspect "$volume" >/dev/null 2>&1 &&
     ! docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "test -f $filled"; then
-    # Not marked filled. A container that has used it was filled by Docker before it
-    # started; one no container has used is a fill of ours that did not finish.
-    if [ -n "$(docker ps -aq --filter "volume=$volume")" ]; then
+    # Not marked filled. The graph's own container was given it filled by Docker; any
+    # other (a filler of ours killed part way) proves nothing.
+    if [ -n "$(docker ps -aq --filter "volume=$volume" --filter label=com.docker.compose.service=graphdb)" ]; then
       docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "touch $filled"
     else
       docker volume rm "$volume" >/dev/null || die "$volume is not marked filled and could not be removed"
@@ -307,6 +336,7 @@ do_switch() {
     {
       printf 'host_neo4j=inactive\n'
       case "$serving" in
+        "reactome/graphdb_readonly:Release$release") ;;
         reactome/graphdb_readonly:Release[0-9]*) printf 'previous_release=%s\n' "${serving##*:Release}" ;;
       esac
     } > "$STATE"
@@ -359,6 +389,7 @@ EOF
 
 do_cleanup() {
   [ "$(id -u)" = 0 ] || die "run with sudo"
+  state_dir
   [ "$(docker inspect -f '{{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = true ] || die "the graph container is not running"
   [ "$(content_node)" = "$release" ] || die "content-node does not answer $release: not removing anything"
   say "Removing the previous releases' graphs"
@@ -379,7 +410,7 @@ do_cleanup() {
 case "${1:-}" in
   check) status ;;
   switch) do_switch ;;
-  rollback) [ "$(id -u)" = 0 ] || die "run with sudo"; do_rollback ;;
+  rollback) [ "$(id -u)" = 0 ] || die "run with sudo"; state_dir; do_rollback ;;
   cleanup) do_cleanup ;;
   *) echo "usage: sudo bash $0 check|switch|rollback|cleanup" >&2; exit 2 ;;
 esac

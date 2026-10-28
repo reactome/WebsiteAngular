@@ -35,13 +35,13 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}";; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
   logs) case "$*" in *--since*) [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
   run) case "$*" in *"test -f"*) [ "\${STUB_FILLED:-1}" = 1 ];; *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
-  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) [ "\${STUB_UP_FAIL:-0}" = 1 ] && exit 1 || true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
-  volume) case "$2" in inspect) case "$3" in *release98) [ "\${STUB_VOLUME:-0}" = 1 ];; *) [ "\${STUB_PREV_VOLUME:-1}" = 1 ];; esac;; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
+  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
+  volume) case "$2" in rm) touch "${scratch}/removed";; inspect) case "$3" in *release98) [ "\${STUB_VOLUME:-0}" = 1 ] && [ ! -f "${scratch}/removed" ];; *) [ "\${STUB_PREV_VOLUME:-1}" = 1 ];; esac;; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   image) [ "\${STUB_PREV_IMAGE:-1}" = 1 ];;
-  ps) [ -n "\${STUB_VOLUME_USERS:-}" ] && echo "\$STUB_VOLUME_USERS"; true;;
+  ps) case "$*" in *com.docker.compose.service=graphdb*) [ -n "\${STUB_VOLUME_USERS:-}" ] && echo "\$STUB_VOLUME_USERS";; esac; true;;
   images) echo public.ecr.aws/reactome/graphdb:Release98; echo local-test/graphdb:Release97-community;;
   *) true;;
 esac`,
@@ -59,6 +59,8 @@ function run(
 ) {
   writeFileSync(log, '');
   rmSync(join(scratch, 'state'), { force: true });
+  rmSync(join(scratch, 'replaced'), { force: true });
+  rmSync(join(scratch, 'removed'), { force: true });
   if (before !== undefined) writeFileSync(join(scratch, 'state'), before);
   const result = spawnSync('bash', [join(__dirname, 'next-release.sh'), command], {
     env: {
@@ -228,6 +230,42 @@ describe('the release switch', () => {
     expect(calls.some((call) => / -f docker-compose\.yml -f /.test(call))).toBe(false);
   });
 
+  it('leaves the previous release running when the failed switch never replaced it', () => {
+    const { status, calls, stdout } = run('switch', {
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release97',
+      STUB_MOUNTS: 'websiteangular_graphdb-release97',
+      STUB_UP_FAIL: '1',
+      STUB_UP_REPLACES: '0',
+    });
+    expect(status).toBe(1);
+    expect(stdout).toMatch(/release 97 already serves/);
+    expect(calls.some((call) => / -f docker-compose\.yml -f /.test(call))).toBe(false);
+    at(calls, /^docker compose restart content-node java-library/);
+  });
+
+  it('allows another attempt at a release after rolling back to the recorded previous one', () => {
+    const { status } = run(
+      'switch',
+      {
+        STUB_NEO4J_ACTIVE: '0',
+        STUB_SERVING: 'reactome/graphdb_readonly:Release97',
+        STUB_MOUNTS: 'websiteangular_graphdb-release97',
+      },
+      'host_neo4j=inactive\nprevious_release=97\n'
+    );
+    expect(status).toBe(0);
+  });
+
+  it('never records the release being switched to as the one to go back to', () => {
+    const { state } = run('switch', {
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release98',
+      STUB_GRAPH_RUNNING: 'false',
+    });
+    expect(state).toBe('host_neo4j=inactive');
+  });
+
   it('refuses a new release while the record of what served is from an earlier switch', () => {
     const { status, stderr, calls } = run(
       'switch',
@@ -256,7 +294,9 @@ describe('the release switch', () => {
     const { status, calls } = run('switch', { STUB_VOLUME: '1', STUB_FILLED: '0' });
     expect(status).toBe(0);
     const removed = at(calls, /^docker volume rm websiteangular_graphdb-release98/);
-    expect(at(calls, /^docker compose up -d graphdb/)).toBeGreaterThan(removed);
+    const refilled = at(calls, /^docker volume create .*websiteangular_graphdb-release98/);
+    expect(refilled).toBeGreaterThan(removed);
+    expect(at(calls, /^docker compose up -d graphdb/)).toBeGreaterThan(refilled);
   });
 
   it('marks, and keeps, an unmarked volume a container has already used', () => {
