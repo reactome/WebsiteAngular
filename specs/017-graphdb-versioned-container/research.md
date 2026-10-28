@@ -134,9 +134,12 @@ checks they need at run time (same major, not older than the store), with a test
   procedures); `dbms.allow_upgrade` or `dbms.recovery.fail_on_missing_files` in the settings; a plugin without
   version, url or sha256; a plugin whose version is not for the image's minor version.
 - **`compose.spec.ts` is rewritten:** loopback-only ports (its parser kept); the profile; `image:
-reactome-graphdb:applied` with `pull_policy: never`; no `environment:` settings; a bind mount of the data folder, The image name and the Bolt port are
-  compose variables defaulting to `reactome-graphdb` and 7687, so a test copy uses its own; the spec checks the defaults.
+reactome-graphdb:applied` with `pull_policy: never`; no `environment:` settings; a bind mount of the data folder,
   not a volume; no service with `depends_on: graphdb`. The tag/volume pairing goes with the volume.
+- **A test copy's own names:** the image name and the Bolt port are compose variables defaulting to
+  `reactome-graphdb` and 7687, and the compose project is chosen by the steps (default: the stack's, named by the
+  repository's directory); a test copy sets all three, so it never meets the serving graph's port, image or
+  containers. `compose.spec.ts` checks the defaults.
 - **The wrapper's refusals** stay for a first start on an empty folder (where `NEO4J_AUTH` still applies): no
   credentials, the default password, a user other than `neo4j`, `/` in the password. Over an existing system
   database they guard nothing, and are kept rather than relaxed: the steps' login check (R1) is what holds there.

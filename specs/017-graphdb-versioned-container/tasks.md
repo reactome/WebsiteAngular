@@ -105,7 +105,7 @@ their frame. The host is unchanged.
       is the vendor's 4.3.6 image serving the copy on its test port, started and stopped by a stubbed `systemctl`, so
       the login and the checks are real. **Decide (C1, first half)** the cut-over rollback's window: until `retire` (the spec), or only while the
       cut-over is the last step (the contract's order rule), and amend the spec or the contract to match; the decision's test lands with T009
-      or T011, once a later step exists. Test-copy runs 1, 13 and 14, a `rollback-cutover` that fails and one
+      (a `rollback-cutover` after a release), once a later step exists. Test-copy runs 1, 13 and 14, a `rollback-cutover` that fails and one
       interrupted.
 
 ## Phase 4: User Story 3 - What runs is what the repository says (P2)
@@ -141,7 +141,8 @@ their frame. The host is unchanged.
     `steps.env`) and java-library, and check each; AnalysisService reported;
   - on a failure after the stop, `rollback-release`, and the delivered store moved back to its folder, with a note
     that it has had an allowance run (B4).
-    Test-copy runs 2, 3, 6, a store delivered with its logs, a login mismatch, a room refusal (stubs), and run
+    Test-copy runs 2, 3, 6, a store delivered with its logs, a login mismatch, a room refusal (stubs), a `rollback-cutover` after this
+    release (T007's C1 decision, either refused or allowed as decided), and run
     17 (two steps at once, refused by the lock). Time the whole step on the copy against SC-001's 10 minutes.
 - [ ] T010 [US1] Implement `rollback-release` in `deploy/graphdb/graph.sh` and `deploy/graphdb/graph-sh.spec.ts`:
       the set-aside database back (an older store, after an upgrade, opened as `release` opens one); the services
@@ -155,9 +156,9 @@ their frame. The host is unchanged.
 **Goal**: a reviewed change to `graph.json`, applied by one step, with the way back.
 **Independent test**: on a test copy, 4.3.6 → 4.4.48 and back.
 
-- [ ] T011 [US2] Implement `apply` in `deploy/graphdb/graph.sh` and `deploy/graphdb/graph-sh.spec.ts`: fetch each
-      plugin with `curl` into the build context and check its sha256; build the copy's `:applied` image (its name a
-      setting, so a test copy never retags the serving graph's) with the data folder's owner as `USER`; refuse another
+- [ ] T011 [US2] Implement `apply` in `deploy/graphdb/graph.sh` and `deploy/graphdb/graph-sh.spec.ts`: build the
+      copy's `:applied` image with T007's build (plugins fetched and checked by sha256; its name a setting, so a test
+      copy never retags the serving graph's), the data folder's owner as `USER`; refuse another
       major (FR-008); room; login; stop gracefully; **decide** whether the previous data copy is removed before the
       new one (room) or only after this step succeeds, and what a failure then leaves; take the copy (`cp -a`,
       stopped); retag the old image `:previous`; if the version changed, one allowance run with
@@ -170,7 +171,8 @@ their frame. The host is unchanged.
       allowed when the last step (completed or interrupted) is an apply; stop; restore the copy and `:previous` as
       `:applied`; start; checks; services. Test-copy runs 9, 10, 16, 19 (a misspelt setting applied, then
       rolled back), a `rollback-apply` that fails, run 18 (refused
-      after a later release), run 20 (`:previous` removed, reported by `status`), and run 11 with a real `docker`
+      after a later release), a `rollback-release` after an apply (T010's C1 decision, either refused or allowed as
+      decided), run 20 (`:previous` removed, reported by `status`), and run 11 with a real `docker`
       daemon restart (US4 AS 2). Measure SC-002: a failed upgrade back to serving in under 10 minutes.
 
 ## Phase 7: User Story 4, part two - retirement and the host
@@ -222,7 +224,8 @@ prune -a` on the graph's images, how to set the database's password from the cre
 - T017–T020 follow T013 (T017 documents `retire`); T021 follows T014.
 - The cut-over comes first among the steps because it is how a test copy gets its first applied state; the release
   comes before the upgrade because it is needed every release and needs only the cut-over's image and checks;
-  its run with an older store (run 5) waits for the upgrade, which is what makes an older store.
+  its run with an older store (run 5) waits for the upgrade, which is what makes the serving version newer than
+  the store.
 
 ## Parallel opportunities
 
