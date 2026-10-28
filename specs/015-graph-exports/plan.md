@@ -162,7 +162,7 @@ the SBML operation        # the graph-only converter (spec 010 T014, amended)
 a BioPAX operation        # WriteBioPAX3 (new)
 
 # Here
-tools/exports-compare/    # the SBML and BioPAX comparison tools (instruments)
+# (the SBML comparison tool is sbml-exporter's ci/compare.py, T030; BioPAX's is T031, not written yet)
 tools/content-node/exporters-endpoints.ts   # SBML (two URLs), BioPAX, legacy redirect → the library service
 deploy/nginx/…, proxy.conf.js, deploy/nginx/routes.spec.ts
 projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
@@ -171,7 +171,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 **Structure Decision**:
 
 - **Node answers the URLs** with R6's headers, errors and caching. The library service writes only the body. For SBML, node is the service's client (T065); spec 010's pass-through is not needed for it.
-- **The comparison tools are standalone instruments** under `tools/exports-compare/`, comparing files from anywhere.
+- **The comparison tools are standalone instruments**, comparing files from anywhere. The SBML one turned out to be `sbml-exporter`'s `ci/compare.py` (T030), not a tool here; BioPAX's (T031) is not written yet, so `tools/exports-compare/` does not exist.
 
 ## Order of work
 

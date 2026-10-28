@@ -40,12 +40,12 @@ In `org/reactome/server/tools/sbml/data/result/ReactionBaseResult.java` (`build`
 
 ## The private graph (research R8, T002)
 
-Copy beta's release volume read-only into a new volume, then start the same local image bound to loopback only, without the compose wrapper or beta's settings, and with smaller memory settings:
+Copy the release's graph volume read-only into a new volume, then start the same local image bound to loopback only, without the compose wrapper or beta's settings, and with smaller memory settings:
 
 ```sh
 docker volume create graphdb-ref97
 docker run --rm --entrypoint sh \
-  -v <beta's release volume>:/from:ro -v graphdb-ref97:/to <release image> -c 'cp -a /from/. /to/'
+  -v <the release's graph volume>:/from:ro -v graphdb-ref97:/to <release image> -c 'cp -a /from/. /to/'
 docker run -d --name graphdb-ref97 -p 127.0.0.1:<port>:7687 -v graphdb-ref97:/var/lib/neo4j/data \
   -e NEO4J_dbms_default__database=graph.db \
   -e NEO4J_dbms_memory_heap_max__size=1g -e NEO4J_dbms_memory_pagecache_size=1500m \
