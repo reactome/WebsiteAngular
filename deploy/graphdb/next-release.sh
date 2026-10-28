@@ -5,7 +5,8 @@
 #
 #   sudo bash deploy/graphdb/next-release.sh check      what serves now; changes nothing
 #   sudo bash deploy/graphdb/next-release.sh switch     move to the new release
-#   sudo bash deploy/graphdb/next-release.sh rollback   back to the host database, if it served before
+#   sudo bash deploy/graphdb/next-release.sh rollback   back to what served before: the host database,
+#                                                       or the previous release's image and volume
 #   sudo bash deploy/graphdb/next-release.sh cleanup    once the new release is checked:
 #                                                       remove the previous releases' graphs
 #
@@ -23,6 +24,9 @@
 #
 # Last, by hand: purge the edge cache and warm it (printed at the end).
 set -euo pipefail
+# Run as `... | tee log` and the session lost, a write into the dead pipe killed the
+# script outright (SIGPIPE), a rollback included; ignored, the write just fails.
+trap '' PIPE
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
@@ -144,22 +148,33 @@ restart_services() {
 
 rolled_back=''
 do_rollback() {
+  # Not to be cut short, and first, before anything else can be interrupted: a second
+  # Ctrl-C here stopped the graph and never started what served before.
+  trap '' INT TERM HUP
   # Once only: a rollback that itself fails must not start another.
   [ -z "$rolled_back" ] || return 1
   rolled_back=yes
-  # Not to be cut short: a second Ctrl-C here stopped the graph and never started the
-  # host database.
-  trap '' INT TERM HUP
   set +e
   say "Rolling back"
-  if ! grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null; then
-    # Nothing to go back to on this host: leave whatever serves now running.
-    note "the host database did not serve before the last switch, so there is nothing here to go back to;"
-    note "to return to a previous release, check out its docker-compose.yml and run switch again"
-    note "(its volume is kept until cleanup)"
+  if grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null; then
+    rollback_to_host
+  elif ! rollback_to_previous_release; then
+    note "nothing here to go back to: neither the host database nor a previous release's"
+    note "image and volume; to return to one, check out its docker-compose.yml and run switch again"
     status
     return 1
   fi
+  # The services read the release at start: restart them on the graph that serves now,
+  # and drop figures made from the release being left.
+  dc restart content-node java-library >/dev/null 2>&1
+  restart_with_cleared_cache render render-cache
+  systemctl restart tomcat9
+  sleep 30
+  status
+  return 0
+}
+
+rollback_to_host() {
   dc stop graphdb >/dev/null 2>&1
   systemctl enable neo4j >/dev/null 2>&1
   if ! systemctl start neo4j; then
@@ -171,14 +186,42 @@ do_rollback() {
     waited=$((waited + 5))
   done
   port_listening && note "host database listening on 7687" || note "nothing listening on 7687 after 300s"
-  # The services read the release at start: restart them on the graph that serves now,
-  # and drop figures made from the release being left.
-  dc restart content-node java-library >/dev/null 2>&1
-  restart_with_cleared_cache render render-cache
-  systemctl restart tomcat9
-  sleep 30
-  status
-  return 0
+}
+
+# The release that served before this switch, from its own image and volume (kept until
+# cleanup), through compose with an override naming them, so the container is the one
+# compose manages. docker-compose.yml still names the new release afterwards.
+rollback_to_previous_release() {
+  local previous
+  previous="$(sed -nE 's/^previous_release=([0-9]+)$/\1/p' "$STATE" 2>/dev/null | head -1)"
+  [ -n "$previous" ] || return 1
+  docker image inspect "reactome/graphdb_readonly:Release$previous" >/dev/null 2>&1 || return 1
+  docker volume inspect "websiteangular_graphdb-release$previous" >/dev/null 2>&1 || return 1
+  local override="$STATE.release$previous.yml"
+  printf '%s\n' \
+    'services:' \
+    '  graphdb:' \
+    "    image: reactome/graphdb_readonly:Release$previous" \
+    '    build:' \
+    '      args:' \
+    "        GRAPHDB_IMAGE: public.ecr.aws/reactome/graphdb:Release$previous" \
+    '    volumes:' \
+    "      - graphdb-release$previous:/var/lib/neo4j/data" \
+    'volumes:' \
+    "  graphdb-release$previous: {}" > "$override"
+  local since waited=0
+  since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  dc -f docker-compose.yml -f "$override" up -d --no-build graphdb >/dev/null 2>&1 || {
+    note "release $previous could not be started again"
+    return 1
+  }
+  until docker logs --since "$since" websiteangular-graphdb-1 2>&1 | grep 'Started\.$' >/dev/null; do
+    [ "$waited" -ge "$GRAPH_WAIT" ] && { note "release $previous did not start again"; return 1; }
+    sleep 5
+    waited=$((waited + 5))
+  done
+  note "release $previous serves again; docker-compose.yml still names $release:"
+  note "revert that change before anything runs docker compose up (override kept: $override)"
 }
 
 do_switch() {
@@ -209,18 +252,29 @@ do_switch() {
     return 0
   fi
 
-  # The host database's record is what rollback goes back to. Once a release's image
-  # serves, that record would send a failed switch back to an older release.
-  if grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null && ! host_neo4j_active; then
-    local serving
-    serving="$(docker inspect -f '{{.Config.Image}}' websiteangular-graphdb-1 2>/dev/null || true)"
-    [ "$serving" = "reactome/graphdb_readonly:Release$release" ] ||
-      die "the record of the host database ($STATE) is from an earlier switch: run cleanup first"
+  # The record is what rollback goes back to: kept from an earlier switch, it would send
+  # a failed switch back to a release older than the one serving.
+  local serving
+  serving="$(docker inspect -f '{{.Config.Image}}' websiteangular-graphdb-1 2>/dev/null || true)"
+  if [ -f "$STATE" ] && ! host_neo4j_active && [ "$serving" != "reactome/graphdb_readonly:Release$release" ]; then
+    die "the record of what served before ($STATE) is from an earlier switch: run cleanup first"
   fi
 
   say "Building the read-only image on the release's, and filling its volume"
   dc build --pull graphdb
   local volume="websiteangular_graphdb-release$release"
+  local filled=/var/lib/neo4j/data/.next-release-filled
+  if docker volume inspect "$volume" >/dev/null 2>&1 &&
+    ! docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "test -f $filled"; then
+    # Not marked filled. A container that has used it was filled by Docker before it
+    # started; one no container has used is a fill of ours that did not finish.
+    if [ -n "$(docker ps -aq --filter "volume=$volume")" ]; then
+      docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "touch $filled"
+    else
+      docker volume rm "$volume" >/dev/null || die "$volume is not marked filled and could not be removed"
+      note "removed $volume, which an earlier run did not finish filling"
+    fi
+  fi
   if ! docker volume inspect "$volume" >/dev/null 2>&1; then
     # Filled by a container of its own, labelled as compose labels its volumes: the
     # serving graph keeps running while the release's 3.2 GB store is copied in.
@@ -229,9 +283,11 @@ do_switch() {
     # A volume left half-filled would be skipped by the next run and opened as it is:
     # failed or interrupted, it is removed.
     trap 'set +e; docker volume rm "$volume" >/dev/null 2>&1; exit 130' INT TERM HUP
-    docker run --rm --entrypoint true -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" || {
-      docker volume rm "$volume" >/dev/null 2>&1 || true
-      die "could not fill $volume; it is removed, and nothing else was changed"
+    # Marked once the copy is done, so an interrupted fill is recognised next time
+    # even if removing it failed.
+    docker run --rm --entrypoint sh -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" -c "touch $filled" || {
+      docker volume rm "$volume" >/dev/null 2>&1 && die "could not fill $volume; it is removed, and nothing else was changed"
+      die "could not fill $volume, nor remove it; nothing else was changed (the next run removes it)"
     }
     trap - INT TERM HUP
     note "filled $volume"
@@ -247,7 +303,13 @@ do_switch() {
     systemctl disable neo4j >/dev/null 2>&1 || true
     note "host Neo4j stopped and disabled (its package stays: rollback starts it again)"
   elif [ ! -f "$STATE" ]; then
-    printf 'host_neo4j=inactive\n' > "$STATE"
+    # From one release's image to the next: the one serving is what rollback restores.
+    {
+      printf 'host_neo4j=inactive\n'
+      case "$serving" in
+        reactome/graphdb_readonly:Release[0-9]*) printf 'previous_release=%s\n' "${serving##*:Release}" ;;
+      esac
+    } > "$STATE"
   fi
 
   # From here, any failure goes back: each step says so itself.
