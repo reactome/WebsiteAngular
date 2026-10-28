@@ -3,13 +3,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 /**
- * The graph database's image tag and its store's volume name the same release.
+ * The graph database's base image, its read-only image and its store's volume
+ * name the same release.
  *
  * The store lives in a volume so a restart does not copy it again, and a volume
  * outlives the image: change only the tag and the new release's container
  * serves the previous release's data, with nothing to say so. Naming the
  * volume for the release makes a tag change without a volume change a failure
- * here instead.
+ * here instead. The same holds for the base the read-only image is built on:
+ * a new tag over the old base would build the previous release under the new
+ * name, and deploy/graphdb/next-release.sh reads the release from that name.
  */
 const compose = readFileSync(join(__dirname, '../../docker-compose.yml'), 'utf8');
 const service = compose.slice(
@@ -18,12 +21,25 @@ const service = compose.slice(
 );
 
 describe('the graph database service', () => {
-  it('stores each release in a volume named for it', () => {
-    const tag = /image:\s*public\.ecr\.aws\/reactome\/graphdb:Release(\d+)\s/.exec(service)?.[1];
+  it('builds, names and stores one release', () => {
+    const base = /GRAPHDB_IMAGE:\s*public\.ecr\.aws\/reactome\/graphdb:Release(\d+)\s/.exec(
+      service
+    )?.[1];
+    const tag = /image:\s*reactome\/graphdb_readonly:Release(\d+)\s/.exec(service)?.[1];
     const volume = /-\s*graphdb-release(\d+):\/var\/lib\/neo4j\/data\b/.exec(service)?.[1];
-    expect(tag, 'no Release tag on the graphdb image').toBeDefined();
-    expect(volume, 'no release volume mounted on the store').toBe(tag);
-    expect(compose).toMatch(new RegExp(`^  graphdb-release${tag}:`, 'm'));
+    expect(base, "no Release tag on the release's image").toBeDefined();
+    expect(tag, 'the read-only image names another release').toBe(base);
+    expect(volume, 'no release volume mounted on the store').toBe(base);
+    expect(compose).toMatch(new RegExp(`^  graphdb-release${base}:`, 'm'));
+  });
+
+  it('runs the release read-only', () => {
+    expect(service).toMatch(/dockerfile:\s*Dockerfile\.readonly\s/);
+    const dockerfile = readFileSync(join(__dirname, 'Dockerfile.readonly'), 'utf8');
+    expect(dockerfile).toMatch(/^FROM \$\{GRAPHDB_IMAGE\}$/m);
+    expect(dockerfile).toMatch(
+      /dbms\.databases\.default_to_read_only=true' >> \/var\/lib\/neo4j\/conf\/neo4j\.conf$/m
+    );
   });
 
   it('publishes bolt on loopback only', () => {
