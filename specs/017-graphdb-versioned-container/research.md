@@ -187,11 +187,45 @@ build tool checked here [M]:
   container is removed. The images carry a label, `status` reports a missing tag, and the documentation says not to
   prune them; `:applied` is rebuilt from `applied.json` if lost (needs the registry and the plugin downloads).
 
+## R10. Re-measured in T001 (28 Oct 2026)
+
+A fresh private copy of release 98's store, the pinned 4.3.6 image, run as the folder's owner on a spare loopback
+port; removed afterwards.
+
+- **Why `graph.db` stayed offline in the allowance run** (R1's open item) [M]: the copy was read from a running
+  server, so its index files were mid-cleanup (`GB+Tree … generation:61/64`). On the forced-recovery path Neo4j
+  4.3.6 writes the logs (about 10 s in), logs `Started.` (about 11 s), then fails the database in its index service:
+  `Index clean jobs can't be added after collector start`. A graceful stop took 6 s; the standing start that followed
+  was online in 12 s, at release 98, all 36 indexes `ONLINE`, the counts unchanged (119,718 events, 412,186 physical
+  entities, 97 species).
+- **A store from a clean shutdown** [M]: the same copy, stopped gracefully and its logs removed, came online in the
+  allowance run itself (11 s, release 98). So a delivered store may or may not come online during that run, depending
+  on how it was copied.
+- **The allowance run's stop condition** (decided): `Started.` in its log and files under `transactions/graph.db`;
+  then a graceful stop (`docker stop -t 120`), the run's log kept, and the standing start checked (online, release,
+  every index `ONLINE`, counts). The run's own database status is never the test.
+- **`neo4j-admin store-info`** [M]:
+  - on a sound store it prints `Store format version: AF4.3.0`, `Store format introduced in: 4.3.0` and `Store needs
+recovery: true` (no logs), and exits 0;
+  - on a store whose `neostore` records are overwritten it exits 1 (`Uninitialized version field in …/neostore`); on
+    a folder with no store, exit 1 too;
+  - it cannot run on a read-only mount: it takes the store's lock file (`Could not write to: …/database_lock`);
+  - it creates an empty `transactions/graph.db` beside the store's `databases/` folder.
+    So the release step runs it with the image's entrypoint bypassed, as the folder's owner, in a scratch data root
+    with the delivered store bind-mounted at `databases/graph.db`: the lock file it writes is in the store (empty, and
+    replaced at start), and the empty folder it makes is in scratch. A non-zero exit, or an "introduced in" version
+    newer than the server or of another major, is refused with the step's own reason.
+- **The host installation's settings** [M], for `graph.json` (T002): Bolt thread pool 20 to 100, keep-alive 10 min;
+  default database `graph.db`; listen on loopback (in the container: all interfaces, published on loopback only);
+  heap 3 GB initial and maximum; page cache 2 GB; `dbms.security.procedures.unrestricted=algo.*,apoc.*`; transaction
+  logs kept one day; transaction state on heap. Directory and JVM settings are the package's own defaults, which the
+  image has its own of. Two are allowances, not settings: `dbms.recovery.fail_on_missing_files=false` (R1) and
+  `unsupported.dbms.tx_log.fail_on_corrupted_log_files=false`, which starts a database over corrupted logs; both are
+  for one start of a step, never the standing configuration (T002 refuses both).
+
 ## Open, carried into the tasks
 
-- Why `graph.db` was not seen online during the allowance run (R1): measured again in the first task.
 - Restoring a set-aside store older than an upgraded server: the release rollback opens it as the release step
   opens an older store (allowance for one start); shown on the test copy.
-- How long the allowance run takes to write its checkpoint on the host's disk, and Tomcat's restart time (SC-001's
-  10 minutes), measured in the first tasks.
+- Tomcat's restart time on the host (SC-001's 10 minutes), measured at the first host release (T015).
 - Leftover copies of transaction logs beside the data folder's own: removed once the container serves.

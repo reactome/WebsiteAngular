@@ -23,7 +23,7 @@ description: 'Tasks for spec 017: the graph database in a container, its version
 
 ## Phase 1: Setup
 
-- [ ] T001 Re-measure, on a private copy of the serving release's store, what research R1 and R9 left open, and record
+- [x] T001 Re-measure, on a private copy of the serving release's store, what research R1 and R9 left open, and record
       it in `specs/017-graphdb-versioned-container/research.md` (its Open items):
   - the `graph.db` status during the missing-logs allowance run, polled throughout, and when its checkpoint is
     written; from these, the concrete stop condition for an allowance run (for example: `Started.` logged, files
@@ -32,7 +32,11 @@ description: 'Tasks for spec 017: the graph database in a container, its version
     store it cannot read (a corrupted `neostore` header stands in for a newer format);
   - how long the allowance run and a standing start take on this host's disk.
     Also read the host installation's `dbms.*` settings (names and values only, no credentials) for T002, and correct
-    plan.md's header branch.
+    plan.md's header branch. — #729. Research R10: the allowance run's database fails in its index
+    service when the store was copied from a running server, and comes online itself after a clean shutdown; the stop
+    condition is `Started.` and logs written, then a graceful stop and a checked standing start. `store-info` needs a
+    writable mount and a scratch data root. The host's settings listed for T002, two of them allowances.
+
 - [ ] T002 Create `deploy/graphdb/graph.json` at Neo4j 4.3.6 (tag and digest, research R2), `releaseBuild` 4.3.6, APOC
       4.3.0.12 (url and sha256, R2), and the settings from T001 that matter, each with its reason in the pull request,
       plus `dbms.config.strict_validation=true` (R9). Add `deploy/graphdb/graph.spec.ts` for every refusal in
