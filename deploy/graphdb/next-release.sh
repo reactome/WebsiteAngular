@@ -35,9 +35,11 @@ SERVICE_WAIT="${SERVICE_WAIT:-600}"
 # What served before the switch, for rollback; outside the checkout.
 STATE="${NEXT_RELEASE_STATE:-/var/tmp/reactome-next-release.state}"
 
-say() { printf '\n== %s\n' "$*"; }
-note() { printf '  %s\n' "$*"; }
-die() { printf 'STOPPED: %s\n' "$*" >&2; exit 2; }
+# Writing never stops the script: after a dropped connection every write fails, and
+# under set -e the first one ended it wherever it was, a rollback included.
+say() { printf '\n== %s\n' "$*" || true; }
+note() { printf '  %s\n' "$*" || true; }
+die() { printf 'STOPPED: %s\n' "$*" >&2 || true; exit 2; }
 
 release="$(sed -nE 's/^ *image: reactome\/graphdb_readonly:Release([0-9]+) *$/\1/p' "$compose_file")"
 [ -n "$release" ] || die "docker-compose.yml names no reactome/graphdb_readonly:ReleaseNN"
@@ -145,6 +147,9 @@ do_rollback() {
   # Once only: a rollback that itself fails must not start another.
   [ -z "$rolled_back" ] || return 1
   rolled_back=yes
+  # Not to be cut short: a second Ctrl-C here stopped the graph and never started the
+  # host database.
+  trap '' INT TERM HUP
   set +e
   say "Rolling back"
   if ! grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null; then
@@ -190,9 +195,15 @@ do_switch() {
   # services are restarted and checked again, and nothing else is touched. Without
   # this, an unchanged container is left running by up -d, logs no new Started., and
   # the wait gave up and rolled back to the host database.
-  if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$release true" ] && ! host_neo4j_active; then
+  if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$release true" ] &&
+    docker inspect -f '{{range .Mounts}}{{.Name}} {{end}}' websiteangular-graphdb-1 2>/dev/null | grep -qw "websiteangular_graphdb-release$release" &&
+    ! host_neo4j_active; then
     note "the graph already serves release $release"
-    restart_services || { note "a service did not come up on release $release; nothing was changed in the graph"; exit 1; }
+    restart_services || {
+      note "a service did not come up on release $release; nothing was changed in the graph"
+      note "run switch again, or rollback"
+      exit 1
+    }
     say "Done: release $release"
     status
     return 0
@@ -215,11 +226,14 @@ do_switch() {
     # serving graph keeps running while the release's 3.2 GB store is copied in.
     docker volume create --label com.docker.compose.project=websiteangular \
       --label "com.docker.compose.volume=graphdb-release$release" "$volume" >/dev/null
-    # A volume left half-filled would be skipped by the next run and opened as it is.
+    # A volume left half-filled would be skipped by the next run and opened as it is:
+    # failed or interrupted, it is removed.
+    trap 'set +e; docker volume rm "$volume" >/dev/null 2>&1; exit 130' INT TERM HUP
     docker run --rm --entrypoint true -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release" || {
       docker volume rm "$volume" >/dev/null 2>&1 || true
       die "could not fill $volume; it is removed, and nothing else was changed"
     }
+    trap - INT TERM HUP
     note "filled $volume"
   fi
 
@@ -228,7 +242,7 @@ do_switch() {
   # first one's record, so rollback still knows where it came from.
   if host_neo4j_active; then
     printf 'host_neo4j=active\n' > "$STATE"
-    trap 'note "interrupted before the graph started"; do_rollback; exit 130' INT TERM HUP
+    trap 'set +e; do_rollback; note "interrupted before the graph started"; exit 130' INT TERM HUP
     systemctl stop neo4j || { note "the host database did not stop cleanly"; do_rollback; exit 1; }
     systemctl disable neo4j >/dev/null 2>&1 || true
     note "host Neo4j stopped and disabled (its package stays: rollback starts it again)"
@@ -237,7 +251,9 @@ do_switch() {
   fi
 
   # From here, any failure goes back: each step says so itself.
-  trap 'note "interrupted before the graph started"; do_rollback; exit 130' INT TERM HUP
+  # Rollback first and with set -e off: after a hang-up the terminal is gone, and a
+  # note written to it first failed and ended the script before the rollback.
+  trap 'set +e; do_rollback; note "interrupted before the graph started"; exit 130' INT TERM HUP
   say "Starting the graph on release $release"
   local since
   since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -256,7 +272,7 @@ do_switch() {
   done
   note "started after ${waited}s"
   # The graph serves now: an interruption leaves it serving, and a second run finishes.
-  trap 'note "interrupted: the graph serves release $release; run switch again to finish, or rollback"; exit 130' INT TERM HUP
+  trap 'set +e; note "interrupted: the graph serves release $release; run switch again to finish, or rollback"; exit 130' INT TERM HUP
 
   if ! restart_services; then
     note "a service did not come up on release $release"
@@ -270,7 +286,7 @@ do_switch() {
   local listeners
   listeners="$(ss -Hltn 'sport = :7687' 2>/dev/null | wc -l)"
   [ "$listeners" -le 1 ] || note "WARNING: $listeners listeners on 7687"
-  cat <<EOF
+  cat <<EOF || true
 
 Last, by hand, once the site looks right:
   1. Purge the edge cache by prefix /ContentService/ (Cloudflare dashboard).

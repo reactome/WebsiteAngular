@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
@@ -26,7 +26,7 @@ const stubs: Record<string, string> = {
   ss: '[ "${STUB_PORT:-1}" = 1 ] && echo "LISTEN 0 4096 127.0.0.1:7687" || true',
   find: 'true',
   df: 'case "$*" in *-k*) printf "Avail\\n%s\\n" "${STUB_FREE_KB:-9000000}";; *) printf "Avail\\n9G\\n";; esac',
-  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; "stop neo4j") [ "\${STUB_STOP_FAIL:-0}" != 1 ];; *) true;; esac`,
+  systemctl: `case "$1 $2" in "is-active "*) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; "restart tomcat9") [ "\${STUB_TOMCAT_FAIL:-0}" != 1 ];; "stop neo4j") [ "\${STUB_STOP_FAIL:-0}" != 1 ];; "start neo4j") [ "\${STUB_INT_ON_START:-0}" = 1 ] && kill -INT $PPID; true;; *) true;; esac`,
   curl: `url="\${@: -1}"
 case "$url" in
   *4400*) printf '{"release":"%s"}' "\${STUB_CN:-98}";;
@@ -35,9 +35,9 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *Config.Image*State.Running*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}";; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
-  logs) case "$*" in *--since*) [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
-  run) case "$*" in *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
+  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98} ";; *Config.Image*State.Running*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}";; *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  logs) case "$*" in *--since*) [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
+  run) case "$*" in *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
   compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) [ "\${STUB_UP_FAIL:-0}" = 1 ] && exit 1 || true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
   volume) case "$2" in inspect) [ "\${STUB_VOLUME:-0}" = 1 ];; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   images) echo public.ecr.aws/reactome/graphdb:Release98; echo local-test/graphdb:Release97-community;;
@@ -49,7 +49,12 @@ for (const [name, body] of Object.entries(stubs))
     mode: 0o755,
   });
 
-function run(command: string, env: Record<string, string> = {}, before?: string) {
+function run(
+  command: string,
+  env: Record<string, string> = {},
+  before?: string,
+  deadTerminal = false
+) {
   writeFileSync(log, '');
   rmSync(join(scratch, 'state'), { force: true });
   if (before !== undefined) writeFileSync(join(scratch, 'state'), before);
@@ -64,6 +69,8 @@ function run(command: string, env: Record<string, string> = {}, before?: string)
       ...env,
     },
     encoding: 'utf8',
+    // A dropped connection: every write to the terminal fails.
+    ...(deadTerminal ? { stdio: ['ignore', openSync('/dev/full', 'w'), 'pipe'] } : {}),
   });
   const calls = readFileSync(log, 'utf8')
     .split('\n')
@@ -131,6 +138,47 @@ describe('the release switch', () => {
     expect(status).toBe(1);
     expect(at(calls, /^systemctl start neo4j/)).toBeGreaterThan(at(calls, /^systemctl stop neo4j/));
     at(calls, /^systemctl restart tomcat9/);
+  });
+
+  it('finishes a rollback that a second Ctrl-C arrives in', () => {
+    const { status, calls } = run('switch', { STUB_UP_FAIL: '1', STUB_INT_ON_START: '1' });
+    expect(status).toBe(1);
+    const start = at(calls, /^systemctl start neo4j/);
+    expect(
+      at(calls.slice(start), /^docker compose restart content-node java-library/)
+    ).toBeGreaterThan(0);
+    expect(at(calls.slice(start), /^systemctl restart tomcat9/)).toBeGreaterThan(0);
+  });
+
+  it('goes back on a hang-up while the graph starts, even with the terminal gone', () => {
+    const { status, calls } = run('switch', { STUB_HUP_ON_WAIT: '1' }, undefined, true);
+    expect(status).toBe(130);
+    expect(at(calls, /^systemctl start neo4j/)).toBeGreaterThan(at(calls, /^systemctl stop neo4j/));
+  });
+
+  it('removes the new volume when interrupted while filling it, before anything is stopped', () => {
+    const { status, calls } = run('switch', { STUB_INT_ON_FILL: '1' });
+    expect(status).toBe(130);
+    at(calls, /^docker volume rm websiteangular_graphdb-release98/);
+    expect(calls.some((call) => /^systemctl stop neo4j/.test(call))).toBe(false);
+  });
+
+  it('switches as usual when the release image runs but the host database also serves', () => {
+    const { status, calls } = run('switch', {
+      STUB_SERVING: 'reactome/graphdb_readonly:Release98',
+    });
+    expect(status).toBe(0);
+    at(calls, /^systemctl stop neo4j/);
+  });
+
+  it("switches as usual when the release image runs on another release's volume", () => {
+    const { status, calls } = run('switch', {
+      STUB_NEO4J_ACTIVE: '0',
+      STUB_SERVING: 'reactome/graphdb_readonly:Release98',
+      STUB_MOUNTS: 'websiteangular_graphdb-release97',
+    });
+    expect(status).toBe(0);
+    at(calls, /^docker compose up -d graphdb/);
   });
 
   it('goes back once, even when the rollback itself cannot reach the graph container', () => {
