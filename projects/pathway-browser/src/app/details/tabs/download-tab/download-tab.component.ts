@@ -56,6 +56,8 @@ type PathwayItem = {
   url: Signal<string>;
   fileName?: Signal<string> | undefined;
   icon?: Icon;
+  /** Shown only once this is true; without it, always. */
+  ready?: Signal<boolean>;
 };
 
 type AnaLysisItem = {
@@ -232,6 +234,8 @@ export class DownloadTabComponent {
       name: 'BioPAX',
       url: computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.biopaxId()}`),
       fileName: computed(() => `${this.biopaxId()}.owl`),
+      // The dbId arrives with the pathway; until then the link read Level3/undefined.
+      ready: computed(() => this.biopaxId() !== undefined),
     },
     {
       name: 'PDF',
