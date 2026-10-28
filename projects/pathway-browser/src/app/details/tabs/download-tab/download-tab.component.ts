@@ -133,7 +133,16 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  readonly biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
+  // The event's own dbId. The stId's number is the human event's: for a mouse or
+  // a fly pathway, R-MMU-1640170's number named the human pathway, and that is
+  // what the download held.
+  readonly biopaxId = computed(() => {
+    const pathway = this.dataState.currentPathway();
+    const selected = this.selectedElement();
+    if (this.pathwayId()) return pathway?.dbId;
+    if (selected && isPathway(selected)) return selected.dbId;
+    return undefined;
+  });
 
   readonly finalPathwayName = computed(() => {
     const pathway = this.dataState.currentPathway();

@@ -18,7 +18,7 @@
  * fetches what is missing from the host and saves it instead.
  */
 import type { BrowserContext, TestInfo } from '@playwright/test';
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 const HOST = /^https:\/\/download\.reactome\.org\//;
@@ -33,8 +33,11 @@ const TYPES: Record<string, string> = {
 
 /** Where a request's copy lives: the host's path, under DIR. */
 export function copyOf(url: string): string {
-  // URL() has already resolved any `..`, so the path cannot leave DIR.
-  return path.join(DIR, decodeURIComponent(new URL(url).pathname));
+  // URL() resolves a written `..`, but an encoded one ("..%2F") is decoded after
+  // it, and the joined path then left DIR: saved, it was written outside.
+  const file = path.join(DIR, decodeURIComponent(new URL(url).pathname));
+  if (!file.startsWith(DIR + path.sep)) throw new Error(`not a release file: ${url}`);
+  return file;
 }
 
 export async function serveReleaseFiles(context: BrowserContext) {
@@ -46,7 +49,8 @@ export async function serveReleaseFiles(context: BrowserContext) {
       return route.fallback();
     }
     const file = copyOf(request.url());
-    if (existsSync(file)) {
+    // A folder (an address ending in /) is no saved copy.
+    if (existsSync(file) && statSync(file).isFile()) {
       return route.fulfill({
         status: 200,
         headers: {
@@ -85,7 +89,8 @@ export async function serveReleaseFiles(context: BrowserContext) {
         `${testInfo.title}: no saved copy of ${missing.size} release file${missing.size === 1 ? '' : 's'} (aborted):\n\n` +
           `${[...missing].map((url) => `  ${url}`).join('\n')}\n\n` +
           'Save them from the host, once, and commit e2e/release-files:\n\n' +
-          `  E2E_SAVE_RELEASE_FILES=1 npm run e2e -- ${path.relative(process.cwd(), testInfo.file)}`
+          // The working tree's port: without it the suite tests beta's live build.
+          `  E2E_PORT=4330 E2E_SAVE_RELEASE_FILES=1 npm run e2e -- ${path.relative(process.cwd(), testInfo.file)}`
       );
     },
   };

@@ -223,6 +223,22 @@ describe('when the service cannot answer', () => {
     expect(String(answer.body)).not.toContain('/cache');
   });
 
+  it('a failure whose connection dies part way is still a 500, and gives its place back', async () => {
+    withService();
+    behave = (_stId, res) => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      // Part of the reason, then the connection goes: no end, only a close.
+      res.write('{"error":"R-HSA-1 cannot', () => res.destroy());
+    };
+    // Each answered, and each slot given back: a third is not refused as too many.
+    for (let i = 0; i < 3; i++)
+      expect(envelope(await answers('event/R-HSA-1.sbml'))).toEqual([
+        500,
+        'INTERNAL_SERVER_ERROR',
+        ['The SBML of R-HSA-1 cannot be made'],
+      ]);
+  });
+
   it('a service that cannot be reached is a 503', async () => {
     process.env['SBML_SERVICE'] = 'http://127.0.0.1:9';
     expect(envelope(await answers('event/R-HSA-1.sbml'))).toEqual([
