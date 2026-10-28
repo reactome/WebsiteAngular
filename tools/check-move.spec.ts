@@ -141,7 +141,6 @@ export const endpoints = [...aEndpoints, ...bEndpoints];
       SERVICE,
       split(`import { aEndpoints } from './a-endpoints.ts';
 import { bEndpoints } from './b-endpoints.ts';
-
 export const endpoints = [...bEndpoints, ...aEndpoints];
 `)
     );

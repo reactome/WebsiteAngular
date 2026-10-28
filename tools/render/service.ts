@@ -171,12 +171,17 @@ const messageOf = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 /**
- * What a failed render tells the caller: the message's first line. A
- * failure inside the page arrives from Playwright with the page's stack
- * appended -- bundle file names and the address the service reaches the
- * site on -- which belongs in the log, not in a public answer.
+ * What a failed render tells the caller: the message's first line, with any
+ * address taken out. A failure inside the page arrives from Playwright with the
+ * page's stack appended -- bundle file names and the address the service
+ * reaches the site on -- and a failed navigation names that address, query and
+ * analysis token included, on the first line itself ("net::ERR_CONNECTION_REFUSED
+ * at http://..."): content-node passes this text on in a public answer.
  */
-export const publicMessage = (error: unknown): string => messageOf(error).split('\n')[0] ?? '';
+export const publicMessage = (error: unknown): string =>
+  (messageOf(error).split('\n')[0] ?? '')
+    .replace(/\s+at\s+[a-z][a-z0-9+.-]*:\/\/\S+/gi, '')
+    .replace(/[a-z][a-z0-9+.-]*:\/\/\S+/gi, '(an address)');
 
 // ---- queue ---------------------------------------------------------------
 let active = 0;

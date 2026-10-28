@@ -192,6 +192,18 @@ describe('publicMessage, what a failed render tells the caller', () => {
     expect(publicMessage(httpError(404, 'no such pathway: X'))).toBe('no such pathway: X');
     expect(publicMessage('a string')).toBe('a string');
   });
+
+  it('names no address, query or token when the site cannot be reached', () => {
+    // As Playwright reports a failed navigation: the address on the first line.
+    const failure = new Error(
+      'page.goto: net::ERR_CONNECTION_REFUSED at http://internal-host:4200/render?pathway=R-HSA-1&token=SECRET\n' +
+        'Call log:\n  - navigating to "http://internal-host:4200/render?..."'
+    );
+    expect(publicMessage(failure)).toBe('page.goto: net::ERR_CONNECTION_REFUSED');
+    expect(
+      publicMessage(new Error('could not load http://internal-host:4200/x?token=SECRET'))
+    ).toBe('could not load (an address)');
+  });
 });
 
 describe('statusOf, what a failed render answers with', () => {
