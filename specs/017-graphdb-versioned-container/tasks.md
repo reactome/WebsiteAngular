@@ -5,7 +5,7 @@ description: 'Tasks for spec 017: the graph database in a container, its version
 # Tasks: The graph database in a container, its version a setting
 
 > **Withdrawn (28 Oct 2026)** with the spec: only T001 was done. The graph runs from the release's published image,
-> read-only, moved to by `deploy/graphdb/next-release.sh` (#732).
+> read-only, moved to by `deploy/graphdb/next-release.sh` (#733).
 
 **Input**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md), [data-model.md](data-model.md),
 [contracts/](contracts/), [quickstart.md](quickstart.md)

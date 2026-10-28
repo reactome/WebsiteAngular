@@ -22,7 +22,8 @@ const stubs: Record<string, string> = {
   getent: `echo "user:x:1000:1000::${scratch}:/bin/bash"`,
   sleep: 'true',
   journalctl: 'true',
-  ss: 'true',
+  ss: '[ "${STUB_PORT:-1}" = 1 ] && echo "LISTEN 0 4096 127.0.0.1:7687" || true',
+  find: 'true',
   df: 'case "$*" in *-k*) printf "Avail\\n%s\\n" "${STUB_FREE_KB:-9000000}";; *) printf "Avail\\n9G\\n";; esac',
   systemctl: `case "$1" in is-active) [ "\${STUB_NEO4J_ACTIVE:-1}" = 1 ];; *) true;; esac`,
   curl: `url="\${@: -1}"
@@ -33,8 +34,10 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
-  logs) [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";;
+  inspect) case "$*" in *State.Running*) echo "\${STUB_GRAPH_RUNNING:-true}";; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  logs) case "$*" in *--since*) [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
+  run) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;;
+  compose) case "$*" in *"up -d graphdb"*) [ "\${STUB_UP_FAIL:-0}" = 1 ] && exit 1 || true;; *) true;; esac;;
   volume) case "$2" in inspect) [ "\${STUB_VOLUME:-0}" = 1 ];; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   images) echo public.ecr.aws/reactome/graphdb:Release98; echo local-test/graphdb:Release97-community;;
   *) true;;
@@ -45,8 +48,10 @@ for (const [name, body] of Object.entries(stubs))
     mode: 0o755,
   });
 
-function run(command: string, env: Record<string, string> = {}) {
+function run(command: string, env: Record<string, string> = {}, before?: string) {
   writeFileSync(log, '');
+  rmSync(join(scratch, 'state'), { force: true });
+  if (before !== undefined) writeFileSync(join(scratch, 'state'), before);
   const result = spawnSync('bash', [join(__dirname, 'next-release.sh'), command], {
     env: {
       PATH: `${bin}:/usr/bin:/bin`,
@@ -64,7 +69,13 @@ function run(command: string, env: Record<string, string> = {}) {
     .filter(
       (line) => /^(docker|systemctl) /.test(line) && !/ (inspect|logs|is-active) /.test(line)
     );
-  return { ...result, calls };
+  let state = '';
+  try {
+    state = readFileSync(join(scratch, 'state'), 'utf8').trim();
+  } catch {
+    // no record written
+  }
+  return { ...result, calls, state };
 }
 
 /** The position of the first call matching `pattern`, failing the test if there is none. */
@@ -82,6 +93,7 @@ describe('the release switch', () => {
     expect(status, stdout).toBe(0);
     const order = [
       /^docker compose build --pull graphdb/,
+      /^docker compose up --no-start graphdb/,
       /^systemctl stop neo4j/,
       /^systemctl disable neo4j/,
       /^docker compose up -d graphdb/,
@@ -112,6 +124,41 @@ describe('the release switch', () => {
     expect(calls.some((call) => /tomcat9/.test(call) && /restart/.test(call))).toBe(true);
   });
 
+  it('goes back when the graph cannot even be started, after the host database stopped', () => {
+    const { status, calls } = run('switch', { STUB_UP_FAIL: '1' });
+    expect(status).toBe(1);
+    expect(at(calls, /^systemctl start neo4j/)).toBeGreaterThan(at(calls, /^systemctl stop neo4j/));
+    at(calls, /^systemctl restart tomcat9/);
+  });
+
+  it('goes back when a cache cannot be cleared', () => {
+    const { status, stdout, calls } = run('switch', { STUB_RUN_FAIL: '1' });
+    expect(status).toBe(1);
+    expect(stdout).toMatch(/could not clear websiteangular_java-library-cache/);
+    at(calls, /^systemctl start neo4j/);
+  });
+
+  it('goes back when render does not come back healthy', () => {
+    const { status, stdout } = run('switch', { STUB_HEALTH: 'unhealthy' });
+    expect(status).toBe(1);
+    expect(stdout).toMatch(/render is unhealthy, not healthy/);
+  });
+
+  it("keeps the first switch's record on a second switch, so rollback still reaches the host", () => {
+    const { status, state } = run('switch', { STUB_NEO4J_ACTIVE: '0' }, 'host_neo4j=active\n');
+    expect(status).toBe(0);
+    expect(state).toBe('host_neo4j=active');
+  });
+
+  it('leaves the graph running when there is no host database to go back to', () => {
+    for (const before of ['host_neo4j=inactive\n', undefined]) {
+      const { status, calls, stdout } = run('rollback', {}, before);
+      expect(status).toBe(1);
+      expect(stdout).toMatch(/nothing here to go back to/);
+      expect(calls).toEqual([]);
+    }
+  });
+
   it('goes back when content-node still answers the previous release', () => {
     const { status, calls, stdout } = run('switch', { STUB_CN: '97' });
     expect(status).toBe(1);
@@ -123,7 +170,7 @@ describe('the release switch', () => {
   it('says how to go back when the host database was not what served', () => {
     const { status, stdout } = run('switch', { STUB_NEO4J_ACTIVE: '0', STUB_CN: '97' });
     expect(status).toBe(1);
-    expect(stdout).toMatch(/check out the\s+previous release's docker-compose\.yml/);
+    expect(stdout).toMatch(/check out its docker-compose\.yml and run switch again/);
   });
 
   it('changes nothing without root', () => {
