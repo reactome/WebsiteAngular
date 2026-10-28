@@ -10,8 +10,8 @@
 #                                                       remove the previous releases' graphs
 #
 # `switch` builds the release's read-only image (on the image the release published) and
-# fills its volume while the current graph still serves, then stops that graph, starts
-# the new one, and restarts each service that holds the release in memory --
+# fills its volume while the current graph still serves (from a container of its own,
+# so the serving one is not touched), then stops that graph, starts the new one, and restarts each service that holds the release in memory --
 # content-node, java-library, Tomcat -- clearing the figure and file caches, and checks
 # each. If anything fails once the old graph is stopped, it goes back by itself. Each of
 # these was a step done by hand before, and a missed restart served the previous release
@@ -19,9 +19,6 @@
 #
 # Last, by hand: purge the edge cache and warm it (printed at the end).
 set -euo pipefail
-# The rollback trap set in do_switch must fire for a failure inside a function too
-# (dc, above all): without errtrace, set -e exited there and left nothing serving.
-set -o errtrace
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo="$(cd "$here/../.." && pwd)"
@@ -139,7 +136,11 @@ restart_services() {
   fi
 }
 
+rolled_back=''
 do_rollback() {
+  # Once only: a rollback that itself fails must not start another.
+  [ -z "$rolled_back" ] || return 1
+  rolled_back=yes
   set +e
   say "Rolling back"
   if ! grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null; then
@@ -179,12 +180,26 @@ do_switch() {
     [ "$free_kb" -gt $((5 * 1024 * 1024)) ] || die "under 5 GB free: the new graph's volume needs 3.2 GB (run cleanup, or free space)"
   fi
 
+  # The host database's record is what rollback goes back to. Once a release's image
+  # serves, that record would send a failed switch back to an older release.
+  if grep -qx 'host_neo4j=active' "$STATE" 2>/dev/null && ! host_neo4j_active; then
+    local serving
+    serving="$(docker inspect -f '{{.Config.Image}}' websiteangular-graphdb-1 2>/dev/null || true)"
+    [ "$serving" = "reactome/graphdb_readonly:Release$release" ] ||
+      die "the record of the host database ($STATE) is from an earlier switch: run cleanup first"
+  fi
+
   say "Building the read-only image on the release's, and filling its volume"
   dc build --pull graphdb
-  # Created, not started: Docker copies the release's 3.2 GB store into the new
-  # volume now, while the current graph still serves, rather than after it stops.
-  dc up --no-start graphdb
-  note "the graph is ready to start"
+  local volume="websiteangular_graphdb-release$release"
+  if ! docker volume inspect "$volume" >/dev/null 2>&1; then
+    # Filled by a container of its own, labelled as compose labels its volumes: the
+    # serving graph keeps running while the release's 3.2 GB store is copied in.
+    docker volume create --label com.docker.compose.project=websiteangular \
+      --label "com.docker.compose.volume=graphdb-release$release" "$volume" >/dev/null
+    docker run --rm --entrypoint true -v "$volume:/var/lib/neo4j/data" "reactome/graphdb_readonly:Release$release"
+    note "filled $volume"
+  fi
 
   say "Stopping what serves the graph's port"
   # Only a switch away from the host database records it; a second switch keeps the
@@ -198,20 +213,17 @@ do_switch() {
     printf 'host_neo4j=inactive\n' > "$STATE"
   fi
 
-  # From here, any failure goes back.
-  trap 'note "failed at line $LINENO"; do_rollback; exit 1' ERR
-
+  # From here, any failure goes back: each step says so itself.
   say "Starting the graph on release $release"
   local since
   since="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
-  dc up -d graphdb
+  dc up -d graphdb || { note "the graph could not be started"; do_rollback; exit 1; }
   local waited=0
   # This start's log only: an earlier start of the same container logged Started. too.
   until docker logs --since "$since" websiteangular-graphdb-1 2>&1 | grep 'Started\.$' >/dev/null; do
-    if [ "$(docker inspect -f '{{.State.Running}}' websiteangular-graphdb-1)" != true ] || [ "$waited" -ge "$GRAPH_WAIT" ]; then
+    if [ "$(docker inspect -f '{{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" != true ] || [ "$waited" -ge "$GRAPH_WAIT" ]; then
       note "the graph did not start; its last lines:"
       docker logs --tail 15 websiteangular-graphdb-1 2>&1 | grep -viE 'password|auth' | sed 's/^/    /' || true
-      trap - ERR
       do_rollback
       exit 1
     fi
@@ -220,7 +232,6 @@ do_switch() {
   done
   note "started after ${waited}s"
 
-  trap - ERR
   if ! restart_services; then
     note "a service did not come up on release $release"
     do_rollback
