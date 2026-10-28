@@ -1,6 +1,6 @@
 # Implementation Plan: The graph database in a container, its version a setting
 
-**Branch**: `spec017/plan` | **Date**: 2026-10-27 | **Spec**: [spec.md](spec.md)
+**Branch**: `spec017/plan-2` | **Date**: 2026-10-27 | **Spec**: [spec.md](spec.md)
 
 **Input**: Feature specification from `specs/017-graphdb-versioned-container/spec.md`
 
