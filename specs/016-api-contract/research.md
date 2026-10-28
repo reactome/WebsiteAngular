@@ -138,7 +138,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 
 ## R5. Checking answers in tests
 
-**Decision**: keep spec 012's compile-based check as the backstop (FR-011), and add an ajv 8.20.0 (draft 2020-12) check driven by the generated description. It runs only in tests (FR-010).
+**Decision**: keep spec 012's compile-based check as the backstop (FR-011), and add an ajv 8.18.0 (as T021 shipped it; draft 2020-12) check driven by the generated description. It runs only in tests (FR-010).
 
 **Rationale**:
 
@@ -147,7 +147,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 - **Its counts agree.** It gives the same count as the compile check on 21 of 24 route and type pairs, including the main search's 8,959. It differs only in how failures inside a union are counted (ajv lists one error per failed branch).
 - **It checks the published document**, so it catches what the compile check cannot see. One example is `additionalProperties: {anyOf: [{not: {}}, …]}` from an index signature intersected with named fields.
 - **Union rule.** The ajv check counts one problem per failing value, with `discriminator: true` where the type has one. A failure inside a union is counted once, at the union.
-- **Exact longs.** The validator reads them with a JSON.parse reviver that keeps unsafe integers exact. On Node 24, `(k, v, ctx) => Number.isSafeInteger(v) ? v : BigInt(ctx.source)` returned `9007199254740993n`. `int64` is registered as a format.
+- **Exact longs.** The validator reads them with a JSON.parse reviver that keeps unsafe integers exact. On Node 24, `(k, v, ctx) => Number.isSafeInteger(v) ? v : BigInt(ctx.source)` returned `9007199254740993n`. `int64` is not registered as a format (T021): the only `int64` in the description is the `Long`, which the check reads its own way, so a registered format would never run, and unregistered, an `int64` anywhere else is refused in strict mode.
 
 **Alternatives considered**:
 

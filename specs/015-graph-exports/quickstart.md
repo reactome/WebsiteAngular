@@ -5,7 +5,7 @@ Run from the repository root. Host-specific settings (database addresses, creden
 ## 1. The unit and route checks
 
 ```sh
-npx vitest run tools/exports-compare tools/content-node deploy/nginx
+npx vitest run tools/content-node deploy/nginx   # tools/exports-compare once T031 adds it
 ```
 
 Expected:
