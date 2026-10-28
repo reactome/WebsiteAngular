@@ -228,7 +228,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 ## R8. Load on the shared graph, and fixtures
 
-**Measured.** The Java converters make many small queries, plus one query that loads all relationships for the top event. One probe for this research (a non-event id) caused two 30-second reads on beta's shared graph.
+**Measured.** The Java converters make many small queries, plus one query that loads all relationships for the top event. One probe for this research (a non-event id) caused long reads on the shared graph.
 
 **Decision.**
 
@@ -236,8 +236,8 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Measured for T002 (23 Oct 2026).**
 
-- **Where beta's graph keeps its data.** It runs from a local image of the release (4.49 GB), with its data in a Docker volume.
-- **Disk.** There was not enough free for a copy until Docker's build cache (cached build layers only) was cleared, which left 8.6 GB free.
+- **Where the graph keeps its data.** In a Docker volume, from an image of the release (4.49 GB).
+- **Disk.** A private copy needs room for a second volume of that size; check before making one.
 
 **Decision (T002).**
 

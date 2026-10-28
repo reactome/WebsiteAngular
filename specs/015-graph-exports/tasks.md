@@ -56,7 +56,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - [x] T002 Measure the host's free disk and the size of release 97's published graph database (from its published dump), and decide where references are generated. Record the measurement and the decision in research.md R8:
   - a private graph database of release 97, started apart from beta's, if it fits with a safe margin;
   - otherwise small, spaced runs against the shared one. — #637
-- [x] T003 Write the SBML reference harness (research R1), as a throwaway Maven module kept outside the repository (its instructions in `specs/015-graph-exports/reference-harness.md`). It runs sbml-exporter 2.2.7's graph-only `SbmlConverter` with the four named fixes:
+- [x] T003 Write the SBML reference harness (research R1), as a throwaway Maven module kept outside the repository (its instructions in `specs/015-graph-exports/reference-harness.md`). It runs sbml-exporter 2.2.7's graph-only `SbmlConverter` with the named fixes (four listed here; a fifth, `ReactionBaseResult.build` reading `catalysts`, was found later and is in research R1, FR-001 and sbml-exporter #23):
   1. a new `Participant` per row;
   2. catalysts read from their own column;
   3. positive regulators set;
@@ -300,13 +300,13 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 ## Dependencies and execution order
 
 - **Phase 2** blocks the stories.
-  - T028 comes before any **[ext]** task in an exporter, and T029 before any that depends on graph-core.
+  - T028 comes before any **[ext]** task in an exporter, and T029 before any that depends on graph-core. In the event graph-core was pinned ahead of T029, by commit, for the library service (T063 says why), and T036, T038 and T042 ran on that pin; T029 still records the agreement.
   - T030 and T031 come before any comparison.
   - T032 and T033 come before the comparisons that use them.
 - **SBML (US1):** T036 → T037 → T038 → T039 → T040 → T041. T042 follows T036. T063 → T064 → T065 → T066 → T067 → T068 (once FR-009's open differences are settled); T066 needs T030, T039, T037's whole-sample run and every file's validity (FR-009 on beta).
 - **BioPAX (US2):** T035 sets the baseline. T045–T048 can go in any order the maintainers prefer. T049 and T050 need them all. T052 needs T049, T050 and spec 010's service; T053 and T054 follow T052.
 - **US4:** T055 after T049. T057 after T041.
-- **The libraries:** T061 comes before the website's switches (T066, T052). `sbml-exporter`'s half is done (its T022, sbml-exporter #58–#63); BioPAX3Exporter's is not.
+- **The libraries:** T061 comes before the website's switches (T066, T052). `sbml-exporter`'s half is done (its T022, sbml-exporter #58–#63), and T066 went ahead on it, on beta only; BioPAX3Exporter's is not, and T052 waits for it.
 
 ## Parallel opportunities
 

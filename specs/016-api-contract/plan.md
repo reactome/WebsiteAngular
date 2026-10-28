@@ -21,7 +21,7 @@ The wire does not change.
 
 **Language/Version**: TypeScript ~5.9.3. Node 24.22.1 runs the service's `.ts` with type stripping and no build (spec 013); the site and the pathway browser go through the Angular build.
 
-**Primary Dependencies**: ts-json-schema-generator 2.9.0 and ajv 8.20.0 (ajv 2020-12), both new and both dev-only. No runtime dependency is added.
+**Primary Dependencies**: ts-json-schema-generator 2.9.0 and ajv 8.18.0 (ajv 2020-12; 8.18.0, the version already in the tree, as T021 records), both new and both dev-only. No runtime dependency is added.
 
 **Storage**: N/A. The generated description is a committed file.
 

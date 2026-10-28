@@ -110,8 +110,9 @@ that host still go out over the network. See `e2e/support/release-files.ts`.
 ## What else is not recorded
 
 - **Hosts other than the three above.** Images and links on the download host,
-  and the third-party PSICQUIC resources, still go out over the network. Worth
-  closing later; the backend was the large share.
+  the third-party PSICQUIC resources, and the pathway browser's icon host (its
+  `ICON_HOST`, used until the release version has resolved) still go out over
+  the network. Worth closing later; the backend was the large share.
 
 ## Fixtures go stale
 
