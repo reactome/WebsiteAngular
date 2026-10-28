@@ -37,4 +37,4 @@ A tool that canonicalises two BioPAX files to multisets of (class, property, tar
 
 - the node endpoints route to node in each table that serves them, and the dev proxy agrees (SBML: `dev.conf` and `local.conf` only, in `NOT_YET_ROUTED` for the deployed table until T068);
 - SBGN and the event PDF stay in Java, and are listed among Java's neighbours;
-- the render budget covers `.sbml` and `.biopax` wherever they are routed: `.sbml` in `dev.conf` today, the deployed table once T068 and T052 route them there.
+- the render budget covers SBML and BioPAX wherever node serves them in a deployment: beta's `dev.conf` today (`.sbml` and the `.xml` form), release and production at T068 and T052. Until then the deployed table's `/exporter/event/` location already budgets Java's `.sbml` and `.biopax`; the `/exporter/sbml/{id}.xml` form is not budgeted there. `local.conf` has no budget zone.
