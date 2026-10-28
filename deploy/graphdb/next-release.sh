@@ -36,6 +36,7 @@ user_home="$(getent passwd "${SUDO_USER:-root}" | cut -d: -f6)"
 export CONTENT_NODE_ENV_FILE="${CONTENT_NODE_ENV_FILE:-$user_home/.content-node.env}"
 GRAPH_WAIT="${GRAPH_WAIT:-600}"
 SERVICE_WAIT="${SERVICE_WAIT:-600}"
+TOMCAT_LOGS="${TOMCAT_LOGS:-/var/log/tomcat9}"
 # What served before the switch, for rollback, with the override rollback writes: in a
 # directory only root can write to, outside the checkout.
 STATE="${NEXT_RELEASE_STATE:-/var/lib/reactome-next-release/state}"
@@ -142,13 +143,23 @@ restart_services() {
   # would be served for the new release until cleared.
   restart_with_cleared_cache render render-cache || return 1
   wait_healthy render "$SERVICE_WAIT" || return 1
+  # Only what Tomcat writes from this restart on: read whole, catalina.out's old
+  # lines raised the warning on every switch.
+  local since file
+  local -A size=()
+  since="$(date '+%Y-%m-%d %H:%M:%S')"
+  for file in "$TOMCAT_LOGS"/*; do
+    [ -f "$file" ] && size[$file]="$(stat -c %s "$file")"
+  done
   systemctl restart tomcat9 || return 1
   wait_for contentservice "$SERVICE_WAIT" || return 1
   note "AnalysisService answers $(analysis) (from its own analysis file, not the graph)"
-  local since
-  since="$(date -d '-15 min' '+%Y-%m-%d %H:%M:%S')"
   if { journalctl -u tomcat9 --since "$since" 2>/dev/null
-    find /var/log/tomcat9 -type f -newermt "$since" -exec cat {} + 2>/dev/null; } |
+    for file in "$TOMCAT_LOGS"/*; do
+      [ -f "$file" ] && tail -c "+$((${size[$file]:-0} + 1))" "$file" 2>/dev/null
+    done
+    # Under pipefail the loop's last test would otherwise decide, not grep.
+    true; } |
     grep 'no longer accepts writes' >/dev/null; then
     note "WARNING: a web application tried to write to the read-only graph (journalctl -u tomcat9, /var/log/tomcat9)"
   fi
@@ -193,7 +204,18 @@ rollback_to_host() {
     sleep 5
     waited=$((waited + 5))
   done
-  port_listening && note "host database listening on 7687" || note "nothing listening on 7687 after 300s"
+  if port_listening; then
+    note "host database listening on 7687"
+  else
+    # The graph was stopped first, and the host database did not come back. The
+    # container is the release being switched to, which failed a check: better that
+    # than an empty port, and said as such. The host database is disabled again, or
+    # both would want the port at the next boot.
+    note "nothing listening on 7687 after 300s: starting the graph container again (release $release,"
+    note "the one being switched to), since the host database would not start"
+    systemctl disable neo4j >/dev/null 2>&1 || true
+    dc start graphdb >/dev/null 2>&1 || note "it could not be started either: nothing serves 7687"
+  fi
 }
 
 # The release that served before this switch, from its own image and volume (kept until
@@ -266,7 +288,7 @@ state_dir() {
       rm -f "$OLD_STATE"
       note "the record of what served before moved to $STATE"
     else
-      rm -f "$STATE.new"
+      rm -f "$STATE.new" 2>/dev/null || true
       die "could not write $STATE; the record stays in $OLD_STATE"
     fi
   fi
@@ -288,7 +310,7 @@ do_switch() {
   # this, an unchanged container is left running by up -d, logs no new Started., and
   # the wait gave up and rolled back to the host database.
   if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$release true" ] &&
-    docker inspect -f '{{range .Mounts}}{{.Name}} {{end}}' websiteangular-graphdb-1 2>/dev/null | grep -qw "websiteangular_graphdb-release$release" &&
+    docker inspect -f '{{range .Mounts}}{{println .Name}}{{end}}' websiteangular-graphdb-1 2>/dev/null | grep -qx "websiteangular_graphdb-release$release" &&
     ! host_neo4j_active; then
     note "the graph already serves release $release"
     restart_services || {

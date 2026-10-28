@@ -84,13 +84,15 @@
     <h3 class="category">Pathway Format</h3>
     <div class="container pathway">
       @for (item of pathwayItems; track item) {
-        <cr-download-button
-          [url]="item.url()"
-          [download]="item.fileName ? item.fileName() : true"
-          [label]="item.name"
-          [icon]="item.icon"
-        >
-        </cr-download-button>
+        @if (!item.ready || item.ready()) {
+          <cr-download-button
+            [url]="item.url()"
+            [download]="item.fileName ? item.fileName() : true"
+            [label]="item.name"
+            [icon]="item.icon"
+          >
+          </cr-download-button>
+        }
       }
     </div>
   }
