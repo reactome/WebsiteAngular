@@ -12,7 +12,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 - **Today's export is the relational converter** (`SbmlConverterForRel`), run by `SbxxExporterController` on `/exporter/event/{id}.sbml` and on a hidden `/exporter/sbml/{id}.xml`. `/data/discover` links the second form.
 - The graph-only `SbmlConverter`'s call is commented out, and, as far as the code shows, **it has not run in production**.
-- **It has four data defects** (sbml-exporter `DataFactory`, since July 2021). Each reaction keeps only the last row of each participant list, because one `Participant` is reused. Catalysts are filled from the positive regulators. Negative regulators are also filled from the positive regulators. Positive regulators are never set. Today's relational answer is correct on all four. A fifth, `ReactionBaseResult.build` never reading `catalysts`, was counted here within the catalyst fix and is listed on its own in R9 (fixed in sbml-exporter #23), so FR-001 names five.
+- **It has four data defects** (sbml-exporter `DataFactory`, since July 2021). Each reaction keeps only the last row of each participant list, because one `Participant` is reused. Catalysts are filled from the positive regulators. Negative regulators are also filled from the positive regulators. Positive regulators are never set. Today's relational answer is correct on all four. A fifth, `ReactionBaseResult.build` never reading `catalysts`, was counted here within the catalyst fix and is listed on its own in R9 (fixed on `graph-only` in sbml-exporter #23), so FR-001 names five.
 - `Helper.setUseIdentifierURL(true)` is static. Inside ContentService it is on once any relational conversion has run, and it rewrites URLs to identifiers.org forms (`url2identifier.txt`). A standalone graph-only run leaves it off.
 - **What the graph-only converter writes, in document order:**
   - the declaration, then the root;
@@ -259,7 +259,7 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
   - It requires the relational options and always builds a relational adaptor.
   - It runs only the relational converter (`SbmlConverterForRel`), over every pathway of a species, one by one, writing `{stId}.sbml` each.
 - **The graph-only `SbmlConverter`** (packages `converter` and `data`) imports nothing relational. It runs per event as a library call, `new SbmlConverter(event, version, ads).convert()`. Its data comes from two Cypher queries in `DataFactory`, through a statically injected service, so a caller needs graph-core's Spring context.
-- **Five defects** are present on `main` and on every other branch:
+- **Five defects** were present on `main` and on every other branch when this was read (since fixed on `graph-only`: sbml-exporter #24 for 1–3, #22 for 4, #23 for 5):
   1. catalysts are set from the positive regulators;
   2. negative regulators are set from the positive regulators;
   3. positive regulators are never set;
