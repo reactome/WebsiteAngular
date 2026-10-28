@@ -102,7 +102,7 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - Done in #708. `projects/contract/routes.ts` is the interface `Routes`, each `"METHOD /path"` as the registry has it to its 200 answer: twelve search routes. The description lists all 91 routes the service serves (90 paths; one is both GET and POST), 79 marked `x-contract: "not yet"`, each templated path's variables declared as OpenAPI requires (from #707's review; Redocly's spec rules then pass). Component names that would clash once made valid fail the generator; the order is by code unit, the same in every locale. A row for a route the registry lacks failed the check.
 - [x] T020 [US4] Add the up-to-date check in `tools/contract/generate.spec.ts`: regenerate in memory and compare with the committed file. Show it failing on a contract change made without regenerating.
   - Done in #708. A contract field renamed without regenerating failed it.
-- [x] T021 [US4] Add ajv 8.20.0 as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
+- [x] T021 [US4] Add ajv 8.18.0 (the version already in the tree; planned as 8.20.0) as a dev dependency and `tools/api-types/schema.spec.ts`, which validates the recorded answers of contract routes against `openapi.json`.
   - Use ajv 2020-12, with `discriminator: true` where a type has one, and register the `int64` format.
   - Read exact longs with a JSON.parse reviver.
   - Count one problem per failing value, so a union failure counts once.
