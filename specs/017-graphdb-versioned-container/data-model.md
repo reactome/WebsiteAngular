@@ -16,6 +16,9 @@ installation runs with (read from it in the first task).
 
 ## The applied configuration (on the host, written only by the steps)
 
+The image name below is the default. It is one of the steps' settings, with the Bolt port (default 7687) and the
+compose project (default: the stack's), so a test copy has its own of each.
+
 - **`reactome-graphdb:applied`**, a local image built from `graph.json` at a commit: the base image by digest, the
   plugins checked, the settings (in a file the image's user can write), the wrapper, `USER` set to the data folder's
   owner (so the image is specific to its host), and a label naming it as this graph's. **`reactome-graphdb:previous`** is the one
