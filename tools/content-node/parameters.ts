@@ -94,9 +94,11 @@ export const PATH_KINDS: Record<string, Kind> = {
   // Never stored whatever it is (`cache` below).
   any: () => true,
 };
-// An event's SBML (spec 015): an id as `oid` takes it, and the extension.
-PATH_KINDS['sbml'] = (text) =>
-  text.endsWith('.sbml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -5)));
+// An event's SBML or BioPAX (spec 015): an id as `oid` takes it, and the extension.
+PATH_KINDS['eventExport'] = (text) => {
+  const ext = /\.(sbml|biopax)$/.exec(text);
+  return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
+};
 PATH_KINDS['sbmlXml'] = (text) =>
   text.endsWith('.xml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
 
@@ -404,11 +406,11 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'private',
   },
-  // An event's SBML, the same file for every reader of a release (spec 015).
+  // An event's SBML or BioPAX, the same file for every reader of a release (spec 015).
   '/ContentService/exporter/event/{id}': {
     java: null,
-    why: 'Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file.',
-    path: { id: 'sbml' },
+    why: "Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file. The .biopax form is no URL of Java's (spec 015 research R6).",
+    path: { id: 'eventExport' },
     query: [],
   },
   '/ContentService/exporter/sbml/{id}': {
