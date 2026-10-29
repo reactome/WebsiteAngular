@@ -354,7 +354,7 @@ So retiring `release-download-directory` is smaller than its step list suggests.
     - a thin command-line module that the release's bulk run uses, depending on that library.
 
     The library service depends on the same library at a pinned version. So the release and the website run one codebase, and keeping the website current is a version bump. Until a library is published, the service builds it from a pinned commit, as spec 010 builds every library.
-- **Node** answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` with R6's headers (BioPAX through spec 010's pass-through; SBML with node as the service's client, as amended on 25 Oct below) and errors, cached per release under spec 011. When the library service cannot answer, node answers 503 in the envelope, never a fallback.
+- **Node** answers `/ContentService/exporter/event/{id}.sbml`, `/exporter/sbml/{id}.xml` and `/exporter/event/{id}.biopax` with R6's headers (each with node as the service's client: SBML as amended on 25 Oct, BioPAX on 29 Oct, below) and errors, cached per release under spec 011. When the library service cannot answer, node answers 503 in the envelope, never a fallback.
 - **The runtime is JDK 17.** BioPAX3Exporter is built for JDK 17, so a Java 11 runtime cannot load it. The libraries built for Java 11 run on 17 unchanged, so spec 010's service runs on JDK 17. Its bytecode stays Java 11 where its libraries need that. Spec 010's T011 and T017 are amended. Kryo and interactor-core's behaviour on 17 is checked by spec 010's token parity (its T026).
 - **graph-core** is aligned in both exporters to the version spec 010's service pins. BioPAX3Exporter moves up from 2.0.9, and `sbml-exporter` follows from the BOM. The pinned version is the one the deployed ContentService runs, unless spec 010 records otherwise. Each exporter's maintainers are asked to accept it (T029).
 
@@ -365,7 +365,14 @@ So retiring `release-download-directory` is smaller than its step list suggests.
 - **The library comes from source.** Its Dockerfile builds `sbml-exporter-lib` from the `graph-only` commit pinned in `deploy/java/PINS.md`. The library is not published while it is on a branch. Once it is published, that build stage goes and the service's pom names the published version.
 - **The licences.** This repository holds only the service's own code and a Dockerfile naming the pinned commit, not the libraries. The image is built only on the beta host and in CI, and never pushed to a registry. The service's own code here is this repository's; the AGPL-dependent parts of spec 010's plan (copying content-service's classes, its T012, T013 and T015; the event PDF) do not happen here. Settling the libraries' licences stays a condition for publishing the library or the image (sbml-exporter#14).
 - **The diagram files** are fetched on demand from the release's download directory: the same static `diagram/{stId}.json` files the site's browser loads. One file per converted pathway that has a diagram, cached on disk per release. Beta has no local copy of the folder.
-- **Moving later.** When spec 010's repository exists, the service moves there unchanged, and its BioPAX operation joins it there.
+- **Moving later.** When spec 010's repository exists, the service moves there unchanged.
+
+**Amended 29 Oct 2026 (decided with the user): BioPAX joins the service here.** `BioPAX3Exporter`'s own spec 001 has since made the exporter. Its library module converts one event or a species. Its species files compare with release 98's `biopax.zip` by meaning, and each of a 30-event sample's files is contained in its species' file. So the website's per-event BioPAX need not wait for spec 010's repository either. It joins the service in `deploy/java-library/` as a second operation, on the terms SBML set:
+
+- **The library comes from source,** built from a commit of `BioPAX3Exporter`'s `main` pinned in `deploy/java/PINS.md`, and proven by its own comparison, not by `tools/java-parity`.
+- **No release files are read:** BioPAX needs only the graph.
+- **Node is the service's client,** as for SBML (T065), not spec 010's pass-through.
+- **The legacy service's per-event answer is the reference** for the website: the sample's per-event files are compared with it by meaning before beta routes the endpoint.
 
 **Alternatives considered.**
 

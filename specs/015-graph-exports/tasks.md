@@ -88,7 +88,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - [ ] T029 [ext] Agree graph-core and the JDK with both exporters' maintainers: each works on the graph-core version spec 010's library service pins, on JDK 17 (R10). Record the version here.
 - [x] T030 [P] [ext] The SBML comparison tool is `sbml-exporter`'s `ci/compare.py` (its spec 001, T016 for the model, T021 for the layout), not a tool here (decided 24 Oct 2026). It compares element by element with today's relational file of the same release, order and the timestamp set aside; it is shown failing on a removed species reference, a changed sboTerm and, for the layout, a moved glyph. Tick this when its T021 has merged. — sbml-exporter #32 (the model), #47, #51, #52 (the layout, each key proven by its test files)
 
-- [ ] T031 [P] Write the BioPAX comparison tool, `tools/exports-compare/biopax-compare.ts`, with its spec:
+- [x] T031 [P] **Withdrawn, 29 Oct 2026:** the BioPAX comparison tool is `BioPAX3Exporter`'s `ci/compare.py` (its spec 001 T005, [BioPAX3Exporter#20](https://github.com/reactome/BioPAX3Exporter/pull/20)), with `ci/contained.py` for an event against its species file (its T021, [BioPAX3Exporter#81](https://github.com/reactome/BioPAX3Exporter/pull/81)), as T030 decided for SBML. What this task asked of it, as first written:
   - each file canonicalised to (class, property, target-key) triples, with `rdf:ID`s replaced by content keys (R4);
   - accepted differences read from `contracts/differences.md`;
   - authors and curation comments hashed.
@@ -105,7 +105,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 
 - [ ] T035 Run BioPAX3Exporter as it is today, from T032's copy, over the sample's pathways and the same three species, and compare with T004 and T033 by T031. Record the result in research.md R9: the baseline the BioPAX work is measured from.
 
-- [ ] T061 [ext] Organise each exporter as a library and a command line (R10): in `BioPAX3Exporter`, a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run; in `sbml-exporter`, likewise (`SbmlConverter` with its layout, then `Main`). Each library is published as a versioned Maven artefact; until it is, spec 010's service builds it from a pinned commit. The library modules exist before T063 and T052.
+- [ ] T061 [ext] (`BioPAX3Exporter`'s half done: its spec 001 T009, [BioPAX3Exporter#31](https://github.com/reactome/BioPAX3Exporter/pull/31).) Organise each exporter as a library and a command line (R10): in `BioPAX3Exporter`, a library module (`WriteBioPAX3` and the builders, with their tests) and a thin command-line module for the bulk run; in `sbml-exporter`, likewise (`SbmlConverter` with its layout, then `Main`). Each library is published as a versioned Maven artefact; until it is, spec 010's service builds it from a pinned commit. The library modules exist before T063 and T052.
 
 **Checkpoint**: the issues are posted, graph-core is agreed, the references are in hand, and each comparison tool has been shown failing on wrong input.
 
@@ -247,25 +247,46 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - every difference is recorded;
 - every file is valid.
 
-- [ ] T045 [US2] [ext] In `BioPAX3Exporter`: physical entities with their entity references and cross-references (UniProt, ChEBI and the rest, data-model.md), complex components and cellular locations. Unit tests for each.
-- [ ] T046 [US2] [ext] In `BioPAX3Exporter`: reactions with stoichiometry, catalysis with its controller, and regulation (positive and negative, as data-model.md maps them).
-- [ ] T047 [US2] [ext] In `BioPAX3Exporter`: literature, evidence, provenance and stable-identifier cross-references.
-- [ ] T048 [US2] [ext] In `BioPAX3Exporter`, the modes and the output:
+**Done in `BioPAX3Exporter`'s own spec 001** (`specs/001-biopax-from-graph`), task by task, each proven against release 98's published files. T045–T048 and T051 are ticked with its pull requests; T049 and T050 keep what is left for the website.
+
+- [x] T045 [US2] [ext] In `BioPAX3Exporter`: physical entities with their entity references and cross-references (UniProt, ChEBI and the rest, data-model.md), complex components and cellular locations. Unit tests for each. — its T011 ([BioPAX3Exporter#38](https://github.com/reactome/BioPAX3Exporter/pull/38)) and T017, the sets ([BioPAX3Exporter#71](https://github.com/reactome/BioPAX3Exporter/pull/71)).
+- [x] T046 [US2] [ext] In `BioPAX3Exporter`: reactions with stoichiometry, catalysis with its controller, and regulation (positive and negative, as data-model.md maps them). — its T012 ([BioPAX3Exporter#43](https://github.com/reactome/BioPAX3Exporter/pull/43)) and T013 ([BioPAX3Exporter#58](https://github.com/reactome/BioPAX3Exporter/pull/58)).
+- [x] T047 [US2] [ext] In `BioPAX3Exporter`: literature, evidence, provenance and stable-identifier cross-references. — its T014 ([BioPAX3Exporter#60](https://github.com/reactome/BioPAX3Exporter/pull/60)) and T016 ([BioPAX3Exporter#69](https://github.com/reactome/BioPAX3Exporter/pull/69)).
+- [x] T048 [US2] [ext] In `BioPAX3Exporter`, the modes and the output: — its T019, one event alone in any mode ([BioPAX3Exporter#75](https://github.com/reactome/BioPAX3Exporter/pull/75)); T018, `xml:base` per model ([BioPAX3Exporter#73](https://github.com/reactome/BioPAX3Exporter/pull/73)); T023, the species the release names ([BioPAX3Exporter#86](https://github.com/reactome/BioPAX3Exporter/pull/86)); the validator 6.0.0 (its T004, [BioPAX3Exporter#15](https://github.com/reactome/BioPAX3Exporter/pull/15)).
   - the species mode writes each pathway once and includes the events in no pathway;
   - `-l` writes the events it was given;
   - there is a per-reaction export;
   - species files carry `xml:base="http://www.reactome.org/biopax/{release}/{species dbId}#"` as the published ones do (FR-007), held per model rather than statically;
   - the validator is 6.0.0, as the baselines are.
-- [ ] T049 [US2] Compare the exporter's species files with the release's published `biopax.zip` (T033), by T031: three species first, then all of them. Then compare its per-event files with the legacy service's over the sample.
+- [ ] T049 [US2] (The species files are done: all 15 against release 98's `biopax.zip`, every difference recorded in its `differences.md`, its T020, [BioPAX3Exporter#78](https://github.com/reactome/BioPAX3Exporter/pull/78). Each of a 30-event sample's files is contained in its species file, its T021, [BioPAX3Exporter#81](https://github.com/reactome/BioPAX3Exporter/pull/81).) What is left: compare the library's per-event files with the legacy service's (`biopaxExporter/Level3/{dbId}` on beta's Tomcat, one request at a time) over this spec's sample, by `ci/compare.py`.
   - Record each difference in `contracts/differences.md`.
   - Expected differences: order and ids, EC numbers, chapter authors, and the early return (R4).
   - Anything else goes back to T045–T048.
-- [ ] T050 [US2] Validate the exporter's files over the sample and the three species with the BioPAX validator, against T034's baseline.
-- [ ] T051 [US2] [ext] In `BioPAX3Exporter`'s CI: the validator over its output for a small fixture graph, failing on any error in the reports.
-- [ ] T052 [US2] Serve the website's BioPAX through spec 010's library service, once it serves the operation and T049 and T050 have passed:
-  - node answers `/ContentService/exporter/event/{id}.biopax` as R6 decided (`application/rdf+xml`, named by stable id, 404 and 400 in the envelope, 503 when the service cannot answer);
-  - it caches per release;
-  - it is routed in nginx and the dev proxy alike.
+- [ ] T050 [US2] (The species files are done: the validator gives no error a published file lacks, its T020, [BioPAX3Exporter#78](https://github.com/reactome/BioPAX3Exporter/pull/78).) What is left: validate the sample's per-event files from the library, and the legacy service's, and record any error the library's has that the legacy's lacks.
+- [x] T051 [US2] [ext] In `BioPAX3Exporter`'s CI: the validator over its output for a small fixture graph, failing on any error in the reports. — its T004 ([BioPAX3Exporter#15](https://github.com/reactome/BioPAX3Exporter/pull/15)) and T007 ([BioPAX3Exporter#27](https://github.com/reactome/BioPAX3Exporter/pull/27)).
+- [ ] T052 [US2] Serve the website's BioPAX through the library service in `deploy/java-library/`, as R10's amendment of 29 Oct 2026 decided: T069–T072, in that order. T071 waits for T049 and T050.
+- [ ] T069 [US2] The BioPAX operation in the library service, on T063's terms:
+  - **The library from source:** the Dockerfile builds `biopax3-exporter-lib` from a pinned commit of `BioPAX3Exporter`'s `main`, with its row in `deploy/java/PINS.md` and `pins.spec.ts` following. Its graph-core must be the build already pinned, or the PR says why not.
+  - **Its operation:** `GET /biopax/{stId}` answers the library's one-event conversion, with the release's per-event `xml:base`, and 404 for an id that is not a pathway or reaction in the graph.
+  - **The files** are kept on disk per release, written beside and moved into place. One id is never converted twice at the same time.
+  - **Memory:** the largest pathway's conversion (Signal Transduction or Metabolism, measured) runs within T064's heap, or the heap and limit are raised with the measurement in the PR.
+  - **Health** reports the new pin.
+  - **Checked:** unit tests, each seen failing first; and the CI job runs the image over `BioPAX3Exporter`'s fixture graph at the pinned commit, each answer contained in that commit's expected species file by its `ci/contained.py`.
+- [ ] T070 [US2] Node answers `/ContentService/exporter/event/{id}.biopax`, slashed form included, in `exporters-endpoints.ts`, as T065 does SBML:
+  - R6's headers: `application/rdf+xml`, the download named by stable id;
+  - 404 and 400 in the envelope, decided from the object's labels;
+  - the body streamed;
+  - its own share of 2, apart from SBML's and the deep pool;
+  - 503 in the envelope when the service cannot answer, and never a fallback;
+  - cached per release under spec 011.
+
+  Tests against a stub service, each seen failing first.
+
+- [ ] T071 [US2] The route, in nginx (`dev.conf` before its `routes.conf` include, and `local.conf`) and the dev proxy alike, as T066, once T049 and T050 are recorded. `routes.spec.ts` follows; `nginx -t` for every deployment. The release's and production's files follow when `BioPAX3Exporter` is the release's (T055), as T068 does for SBML.
+- [ ] T072 [US2] Check on beta, before and after the switch, over the sample, as T067:
+  - statuses, headers and errors compared with the legacy service's;
+  - the bodies compared with the legacy service's by `ci/compare.py`, every difference one recorded;
+  - the largest pathway's time, cold and cached, and the service's memory.
 - [ ] T053 [US2] Replace #634's Tomcat location for the legacy path with node's 301, resolving the dbId and redirecting to the stable-id URL (`/ContentService/exporter/event/{stId}.biopax`):
   - in `deploy/nginx/dev.conf`, `routes-core.conf` and the dev proxy, with `routes.spec.ts` and `serve-prod.spec.ts` following;
   - rebuild beta's nginx and check both link forms.
