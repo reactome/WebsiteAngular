@@ -241,7 +241,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Decision (T002).**
 
-- **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host.
+- **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host. (Since beta moved to release 98, its release-97 volume and image are gone; a copy at 97 now needs that release's image pulled from its registry: tasks T032.)
 - **The container.** It is started from the same local image, bound to loopback only, with a smaller memory setting than beta's, so the host's memory is shared safely. Beta's graph is neither stopped nor restarted; its store is not written after the release load, so a copy taken while it runs is consistent in practice, and Neo4j checks the store when the copy starts.
 - **Afterwards.** The copy is stopped once the references are made (T003), and recreated for each comparison that needs it (T032), and its volume is deleted, giving the disk back.
 - **The fallback** is small, spaced runs against the shared graph. It is used only if the copy fails to start cleanly.
