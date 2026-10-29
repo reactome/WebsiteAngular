@@ -20,17 +20,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The SBML files, kept on disk per release as ContentService keeps its exports.
+ * One export's files (SBML, BioPAX), kept on disk per release as ContentService keeps its exports.
  *
  * <p>The release is the graph's, read for every request, so a graph moved to a new release is never answered from the
  * old one's files, and the old release's files are removed when it is first seen. One id is converted once at a time:
- * a second request for it waits for the first. Node's share of 2 is the limit on conversions (spec 015 T065); the cap
- * here is a backstop.
+ * a second request for it waits for the first. Node gives each export a share of 2 (spec 015 T065, T070); the
+ * conversions' cap is shared by every export in the service, so the heap holds at most that many at once whatever
+ * node sends (T069).
  *
  * <p>Removing files is best effort: a release can change while a conversion of the old one is still writing, and that
  * must not fail the new release's request. What is left behind goes when the next release is first seen.
  */
-public class SbmlFiles {
+public class ExportFiles {
 
     /** What the service needs from the graph. */
     public interface Graph {
@@ -42,7 +43,7 @@ public class SbmlFiles {
 
     /** An event, as far as the diagram files are concerned. */
     public static final class Event {
-        /** A pathway the graph says has a diagram of its own: its layout needs the diagram file. */
+        /** A pathway the graph says has a diagram of its own: its SBML layout needs the diagram file. */
         public final boolean hasDiagram;
 
         public Event(boolean hasDiagram) {
@@ -50,7 +51,7 @@ public class SbmlFiles {
         }
     }
 
-    /** sbml-exporter's library, writing {@code {stId}.sbml} into a folder. */
+    /** An exporter's library, writing {@code {stId}{extension}} into a folder. */
     public interface Converter {
         void convert(String stId, int release, Path diagrams, Path into) throws Exception;
     }
@@ -72,34 +73,50 @@ public class SbmlFiles {
         }
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(SbmlFiles.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExportFiles.class);
 
+    private final String kind;
+    private final String extension;
     private final Graph graph;
     private final Converter converter;
     private final DiagramSource diagrams;
     private final Path cache;
-    private final Semaphore conversions = new Semaphore(2);
+    private final Semaphore conversions;
     private final Map<String, CompletableFuture<Path>> running = new ConcurrentHashMap<>();
     private volatile int seen = -1;
 
-    public SbmlFiles(Graph graph, Converter converter, DiagramSource diagrams, Path cache) {
+    /**
+     * @param kind        the export's folder in the cache, {@code sbml} or {@code biopax}
+     * @param extension   what the converter names its file, {@code .sbml} or {@code .owl}
+     * @param diagrams    where a pathway's diagram file comes from, or null for an export that needs none
+     * @param conversions the cap on conversions at once, shared by the service's exports
+     */
+    public ExportFiles(String kind, String extension, Graph graph, Converter converter, DiagramSource diagrams,
+                       Path cache, Semaphore conversions) {
+        this.kind = kind;
+        this.extension = extension;
         this.graph = graph;
         this.converter = converter;
         this.diagrams = diagrams;
         this.cache = cache;
+        this.conversions = conversions;
         // Work in progress when the service last stopped, which nothing will finish
-        delete(cache.resolve("tmp"));
+        delete(work());
+    }
+
+    private Path work() {
+        return cache.resolve("tmp").resolve(kind);
     }
 
     /**
-     * The event's SBML file, or empty when the graph has no such event.
+     * The event's file, or empty when the graph has no such event.
      *
      * @throws DiagramUnavailable when its diagram file cannot be had
      */
     public Optional<Path> get(String stId) throws DiagramUnavailable, InterruptedException {
         int release = graph.release();
         forgetOtherReleases(release);
-        Path file = cache.resolve("sbml").resolve(String.valueOf(release)).resolve(stId + ".sbml");
+        Path file = cache.resolve(kind).resolve(String.valueOf(release)).resolve(stId + extension);
         if (Files.isRegularFile(file)) return Optional.of(file);
 
         Optional<Event> event = graph.event(stId);
@@ -124,13 +141,13 @@ public class SbmlFiles {
         conversions.acquire();
         try {
             Path diagramFolder = Files.createDirectories(cache.resolve("diagram").resolve(String.valueOf(release)));
-            if (event.hasDiagram && !Files.isRegularFile(diagramFolder.resolve(stId + ".json"))) {
+            if (diagrams != null && event.hasDiagram && !Files.isRegularFile(diagramFolder.resolve(stId + ".json"))) {
                 diagrams.fetch(stId, release, diagramFolder);
             }
-            Path work = Files.createDirectories(cache.resolve("tmp").resolve(UUID.randomUUID().toString()));
+            Path work = Files.createDirectories(work().resolve(UUID.randomUUID().toString()));
             try {
                 converter.convert(stId, release, diagramFolder, work);
-                Path written = work.resolve(stId + ".sbml");
+                Path written = work.resolve(stId + extension);
                 if (!Files.isRegularFile(written)) throw new IllegalStateException("The converter wrote no " + written);
                 Files.createDirectories(file.getParent());
                 return Files.move(written, file, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
@@ -159,8 +176,8 @@ public class SbmlFiles {
         if (seen == release) return;
         synchronized (this) {
             if (seen == release) return;
-            for (String kind : new String[]{"sbml", "diagram"}) {
-                Path folder = cache.resolve(kind);
+            for (String folderName : new String[]{kind, "diagram"}) {
+                Path folder = cache.resolve(folderName);
                 if (!Files.isDirectory(folder)) continue;
                 try (DirectoryStream<Path> releases = Files.newDirectoryStream(folder)) {
                     for (Path other : releases) {

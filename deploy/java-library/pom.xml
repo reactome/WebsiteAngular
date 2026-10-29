@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Spec 010's library service, started here with SBML as its only operation (spec 015 T063). -->
+    <!-- Spec 010's library service, started here with SBML (spec 015 T063) and BioPAX Level 3 (T069). -->
     <groupId>org.reactome.server</groupId>
     <artifactId>java-library</artifactId>
     <version>0.1.0</version>
@@ -26,6 +26,12 @@
         <!-- sbml-exporter's graph-only branch, built from its commit by the Dockerfile. Once the library is
              published, the Dockerfile's build stage goes and this names the published version. -->
         <sbml-exporter-lib.version>3.0.0-SNAPSHOT</sbml-exporter-lib.version>
+        <!-- BioPAX3Exporter's main, built from its commit by the Dockerfile, likewise. -->
+        <biopax3-exporter-lib.version>0.0.1-SNAPSHOT</biopax3-exporter-lib.version>
+        <!-- The BioPAX library's Kotlin (its pom's kotlin.version). Spring Boot 2.7's dependency management, which
+             the parent brings, would otherwise give its standard library as 1.6.21 under a library compiled with
+             2.4; the Dockerfile checks the jar carries this one. -->
+        <kotlin.version>2.4.21</kotlin.version>
     </properties>
 
     <dependencies>
@@ -33,6 +39,11 @@
             <groupId>org.reactome.server.tools</groupId>
             <artifactId>sbml-exporter-lib</artifactId>
             <version>${sbml-exporter-lib.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.reactome.server.tools</groupId>
+            <artifactId>biopax3-exporter-lib</artifactId>
+            <version>${biopax3-exporter-lib.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

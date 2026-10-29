@@ -17,6 +17,7 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
 | reactome-parent 1.0.5-SNAPSHOT (and its BOM) | `reactome/reactome-parent`    | `d93ad5a` (branch `feature/new-pwb`)                         | the BOM equal to the published snapshot; the parent differs only in Batik and FOP's versions (published 1.18 and 2.10, here 1.16 and 2.8), which nothing built on it here uses: the published snapshot matches no pushed commit                                    | 17               |
 | graph-core 3.0.0-SNAPSHOT                    | `reactome/graph-core`         | `62aef35`                                                    | the deployed ContentService's jar is the published snapshot of 25 Sep 2025, byte for byte; rebuilt here, 172/377 classes identical, 203 identical by `javap`, 2 differ only in order (a method's place; which of three identical handlers each exception jumps to) | 17               |
 | sbml-exporter-lib 3.0.0-SNAPSHOT             | `reactome/sbml-exporter`      | `f7b1034` (branch `graph-only`)                              | not Java's relational answer, so no byte comparison: proven by `ci/compare.py` against today's files (spec 015 T037, T039)                                                                                                                                         | 17               |
+| biopax3-exporter-lib 0.0.1-SNAPSHOT          | `reactome/BioPAX3Exporter`    | `64c716a` (`main`)                                           | not Java's relational answer, so no byte comparison: proven by its own `ci/compare.py` and `ci/contained.py` against release 98's published files (its spec 001 T020, T021), and here by spec 015 T049 against the legacy service                                  | 17               |
 
 ## Frozen on purpose
 
@@ -27,9 +28,9 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
   - **What uses it:** only diagram-exporter's PPTX path, which no Java-homed operation uses, and it runs unlicensed today (research R8).
   - **To use it again:** a licence, and an operation that needs it.
 
-## The library service (spec 015 T063)
+## The library service (spec 015 T063, T069)
 
-`deploy/java-library/Dockerfile` builds the last three rows from these commits, and checks that its jar carries the libraries it built, byte for byte. `deploy/java-library/pins.spec.ts` checks that the Dockerfile's commits are this table's. Changing `sbml-exporter-lib`'s pin means rerunning spec 015 T067's comparison, not `tools/java-parity`: its body is not Java's.
+`deploy/java-library/Dockerfile` builds the last four rows from these commits, and checks that its jar carries the libraries it built, byte for byte. `deploy/java-library/pins.spec.ts` checks that the Dockerfile's commits are this table's. Changing `sbml-exporter-lib`'s pin means rerunning spec 015 T067's comparison, not `tools/java-parity`: its body is not Java's. Changing `biopax3-exporter-lib`'s likewise means rerunning spec 015 T049's comparison and T072's check.
 
 ## Changing a pin
 

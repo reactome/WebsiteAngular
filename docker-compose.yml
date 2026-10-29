@@ -317,10 +317,11 @@ services:
     # fails to build its lists, and rebuilds on the next request -- which is
     # the behaviour specs/006 D10 asks for -- rather than refusing to start.
 
-  # The library service (spec 015 T063, T064): the website's SBML, made on
-  # demand from the graph by sbml-exporter's library. Spec 010's Java library
-  # service, started here with SBML as its only operation. Node is its only
-  # client (T065); nginx never names it.
+  # The library service (spec 015 T063, T064, T069): the website's SBML and
+  # BioPAX Level 3, made on demand from the graph by sbml-exporter's and
+  # BioPAX3Exporter's libraries. Spec 010's Java library service, started here
+  # with those two operations. Node is its only client (T065, T070); nginx
+  # never names it.
   #
   # Built here, on this host and in CI, from the commits deploy/java/PINS.md
   # pins, and never pushed to a registry: no `image:` to pull or push
@@ -404,7 +405,7 @@ volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.
   render-cache:
-  # The library service's SBML and diagram files, per release: kept across a
+  # The library service's SBML, BioPAX and diagram files, per release: kept across a
   # container replacement, as render's figures are.
   java-library-cache:
   graphdb-release98:
