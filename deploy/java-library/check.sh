@@ -10,22 +10,24 @@
 #   ci/contained.py, with the release's per-event xml:base.
 #
 # Usage: deploy/java-library/check.sh [image]
-# GRAPH_PORT (7687) and FILES_PORT (8097) move the fixture graph and the files
-# off ports a host already uses; the service keeps its own, 4360.
+# GRAPH_PORT (7687), FILES_PORT (8097) and SERVICE_PORT (4360) move the fixture
+# graph, the files and the service off ports a host already uses (a deployment's
+# own service is on 4360).
 # Without an image, it builds one. Needs docker, curl and python3 with
 # python-libsbml 5.21.2 (pip install python-libsbml==5.21.2).
 set -euo pipefail
 
 graph_port=${GRAPH_PORT:-7687}
 files_port=${FILES_PORT:-8097}
+service_port=${SERVICE_PORT:-4360}
 
-# The check's own service takes 4360 on the host's network. One already there
+# The check's own service takes its port on the host's network. One already there
 # (a deployment's) would answer the checks below in its place, over its graph.
 # Any answer refuses, a 503 too (a deployment whose graph is down), and it is
 # refused before the trap below, whose clean-up would remove another run's
 # containers.
-if curl -s -m 5 -o /dev/null http://127.0.0.1:4360/health; then
-  echo "Something already answers on 127.0.0.1:4360; stop it, or run this elsewhere" >&2
+if curl -s -m 5 -o /dev/null http://127.0.0.1:$service_port/health; then
+  echo "Something already answers on 127.0.0.1:$service_port; stop it, or set SERVICE_PORT" >&2
   exit 1
 fi
 
@@ -74,12 +76,13 @@ start_graph() {
 start_service() {
   docker run -d --name "$1" --network host \
     -e NEO4J_URI="bolt://127.0.0.1:$graph_port" -e NEO4J_USER=neo4j -e NEO4J_PASSWORD=fixturepass \
-    -e DIAGRAM_BASE="http://127.0.0.1:$files_port/" -e SBML_CACHE=/cache "$image" >/dev/null
+    -e DIAGRAM_BASE="http://127.0.0.1:$files_port/" -e SBML_CACHE=/cache \
+    -e SERVER_PORT="$service_port" "$image" >/dev/null
   for _ in $(seq 90); do
-    curl -fs http://127.0.0.1:4360/health >/dev/null && break
+    curl -fs http://127.0.0.1:$service_port/health >/dev/null && break
     sleep 2
   done
-  if ! curl -fsS http://127.0.0.1:4360/health; then
+  if ! curl -fsS http://127.0.0.1:$service_port/health; then
     echo "The service did not answer its health check. Its log:" >&2
     docker logs "$1" 2>&1 | tail -60 >&2
     exit 1
@@ -97,7 +100,7 @@ server=$!
 
 start_service "$service"
 
-status() { curl -s -o "$2" -w '%{http_code}' "http://127.0.0.1:4360/sbml/$1"; }
+status() { curl -s -o "$2" -w '%{http_code}' "http://127.0.0.1:$service_port/sbml/$1"; }
 fail=0
 mkdir "$work/out"
 for id in $(find "$ci/fixture/expected" -name 'R-*.sbml' -exec basename {} .sbml \; | sort); do
@@ -124,20 +127,26 @@ bci="$work/BioPAX3Exporter/ci"
 start_graph "$neo2" "$bci/fixture/fixture.cypher"
 start_service "$service2"
 
-# Events of each kind and both species, chosen by the graph: the first of each by
-# database id. Each line: stId, dbId, species.
-events=$(docker exec "$neo2" cypher-shell -u neo4j -p fixturepass -d graph.db --format plain '
+# Events of each kind and both species: of the graph's, by database id, the
+# first of each kind that its species' expected file holds (the fixture has
+# events beyond those files, such as an inferred event's source). Each line:
+# stId, dbId, species.
+candidates=$(docker exec "$neo2" cypher-shell -u neo4j -p fixturepass -d graph.db --format plain '
   CALL {
-    MATCH (e:TopLevelPathway {speciesName: "Homo sapiens"}) RETURN e ORDER BY e.dbId LIMIT 1
-    UNION ALL MATCH (e:Reaction {speciesName: "Homo sapiens"}) RETURN e ORDER BY e.dbId LIMIT 1
-    UNION ALL MATCH (e:BlackBoxEvent {speciesName: "Homo sapiens"}) RETURN e ORDER BY e.dbId LIMIT 1
-    UNION ALL MATCH (e:ReactionLikeEvent {dbId: 174731}) RETURN e
-    UNION ALL MATCH (e:Pathway {speciesName: "Plasmodium falciparum"}) RETURN e ORDER BY e.dbId LIMIT 1
+    MATCH (e:TopLevelPathway {speciesName: "Homo sapiens"}) RETURN "pathway" AS kind, e
+    UNION ALL MATCH (e:Reaction {speciesName: "Homo sapiens"}) RETURN "reaction" AS kind, e
+    UNION ALL MATCH (e:BlackBoxEvent {speciesName: "Homo sapiens"}) RETURN "blackbox" AS kind, e
+    UNION ALL MATCH (e:ReactionLikeEvent {dbId: 174731}) RETURN "degradation" AS kind, e
+    UNION ALL MATCH (e:Pathway {speciesName: "Plasmodium falciparum"}) RETURN "falciparum" AS kind, e
   }
-  RETURN e.stId + " " + e.dbId + " " + replace(e.speciesName, " ", "_")' | tail -n +2 | tr -d '"')
-[ "$(printf '%s\n' "$events" | wc -l)" -eq 5 ] || { echo "Expected five events in the fixture, got: $events" >&2; exit 1; }
+  RETURN kind + " " + e.stId + " " + e.dbId + " " + replace(e.speciesName, " ", "_")
+  ORDER BY kind, e.dbId' | tail -n +2 | tr -d '"')
+events=$(while read -r kind id dbid species; do
+  grep -q ">$dbid</bp:id>" "$bci/fixture/expected/$species.owl" && echo "$kind $id $dbid $species"
+done <<<"$candidates" | sort -u -k1,1 | cut -d' ' -f2-)
+[ "$(printf '%s\n' "$events" | wc -l)" -eq 5 ] || { echo "Expected one event of each of five kinds in the fixture's files, got: $events" >&2; exit 1; }
 
-bstatus() { curl -s -o "$2" -w '%{http_code}' "http://127.0.0.1:4360/biopax/$1"; }
+bstatus() { curl -s -o "$2" -w '%{http_code}' "http://127.0.0.1:$service_port/biopax/$1"; }
 mkdir -p "$work/owl/Homo_sapiens" "$work/owl/Plasmodium_falciparum"
 while read -r id dbid species; do
   file="$work/owl/$species/$id.owl"
