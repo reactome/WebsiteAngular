@@ -142,7 +142,12 @@ candidates=$(docker exec "$neo2" cypher-shell -u neo4j -p fixturepass -d graph.d
   RETURN kind + " " + e.stId + " " + e.dbId + " " + replace(e.speciesName, " ", "_")
   ORDER BY kind, e.dbId' | tail -n +2 | tr -d '"')
 events=$(while read -r kind id dbid species; do
-  grep -q ">$dbid</bp:id>" "$bci/fixture/expected/$species.owl" && echo "$kind $id $dbid $species"
+  # The event's own database-id xref, whose comment ends with its id: not any
+  # numeric id (a PubMed id) that happens to match. An if, not &&: under
+  # pipefail a last candidate not in its file would end the script silently.
+  if grep -q "&amp;ID=$dbid</bp:comment>" "$bci/fixture/expected/$species.owl"; then
+    echo "$kind $id $dbid $species"
+  fi
 done <<<"$candidates" | sort -u -k1,1 | cut -d' ' -f2-)
 [ "$(printf '%s\n' "$events" | wc -l)" -eq 5 ] || { echo "Expected one event of each of five kinds in the fixture's files, got: $events" >&2; exit 1; }
 
