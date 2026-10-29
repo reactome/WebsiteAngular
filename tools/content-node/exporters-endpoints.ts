@@ -370,11 +370,12 @@ async function exportEvent(raw: string): Promise<ExportEvent | null> {
 }
 
 /**
- * Each export's own share (research R6): Java made one file at a time, and the
- * service two at once across its exports (its backstop, spec 015 T069); past
- * a share, a 503 with Retry-After, as the deep pool answers. Separate from the
- * deep pool and from each other, so a burst of one cannot starve the queries
- * the pages need, or the other export.
+ * Each export's own share (research R6): Java made one file at a time; past a
+ * share, a 503 with Retry-After, as the deep pool answers. Separate from the
+ * deep pool, so a burst of exports cannot starve the queries the pages need,
+ * and from each other, so one export cannot take the other's places here. The
+ * service converts two at once across both (spec 015 T069), for its heap: a
+ * BioPAX file may wait there behind two SBML ones, within the headers' time.
  */
 const SBML_SHARE = deepShare(2);
 const BIOPAX_SHARE = deepShare(2);
