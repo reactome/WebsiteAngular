@@ -372,7 +372,8 @@ So retiring `release-download-directory` is smaller than its step list suggests.
 - **The library comes from source,** built from a commit of `BioPAX3Exporter`'s `main` pinned in `deploy/java/PINS.md`, and proven by its own comparison, not by `tools/java-parity`.
 - **No release files are read:** BioPAX needs only the graph.
 - **Node is the service's client,** as for SBML (T065), not spec 010's pass-through.
-- **The legacy service's per-event answer is the reference** for the website: the sample's per-event files are compared with it by meaning before beta routes the endpoint.
+- **The legacy service's per-event answer is the reference** for the website: this spec's sample (T001) is compared with it by meaning before beta routes the endpoint.
+- **The licences:** as for SBML, settling the library's licence stays a condition for publishing the library or the image; `BioPAX3Exporter` has no licence file either.
 
 **Alternatives considered.**
 

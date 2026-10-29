@@ -18,7 +18,7 @@ Each format gets one implementation, reading the graph, used by both the release
   - It is proven by R4's comparison by meaning:
     - against the release's published `biopax.zip`, which is Pathway-Exchange's output (R9). This is the main proof;
     - against the legacy service's per-event files.
-- **The website** gets both from spec 010's Java library service, fronted by node at the URLs R6 decided, with no fallback (R10). That service is spec 010's to build; this spec changes its SBML operation and adds BioPAX.
+- **The website** gets both from spec 010's Java library service, fronted by node at the URLs R6 decided, with no fallback (R10). That service is spec 010's to build; this spec changes its SBML operation and adds BioPAX. Both are started in this repository's `deploy/java-library/` for beta until spec 010's repository exists (R10, amended 25 and 29 Oct 2026).
 - **This repository keeps the instruments:**
   - the sample;
   - today's answers, and the release's published bulk files;
@@ -105,7 +105,7 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
   - BioPAX is compared by canonical triples, because bytes differ even Java against Java (R4).
   - The bulk reference's generator was checked, not assumed: release 97's `biopax.zip` carries Pathway-Exchange's form and content (R9).
   - The validators' baselines come from today's files (T034).
-  - BioPAX3Exporter's coverage was read (R9), and is measured before any work starts (T035).
+  - BioPAX3Exporter's coverage was read (R9), and measured class by class in its own spec 001 (T035 withdrawn).
   - **Pass.**
 - **II. Measure in the thing.**
   - research.md's claims come from code read or from live answers.
@@ -170,7 +170,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 
 **Structure Decision**:
 
-- **Node answers the URLs** with R6's headers, errors and caching. The library service writes only the body. For SBML, node is the service's client (T065); spec 010's pass-through is not needed for it.
+- **Node answers the URLs** with R6's headers, errors and caching. The library service writes only the body. For SBML and BioPAX, node is the service's client (T065, T070); spec 010's pass-through is not needed for them.
 - **The comparison tools are standalone instruments**, comparing files from anywhere. The SBML one turned out to be `sbml-exporter`'s `ci/compare.py` (T030), not a tool here; BioPAX's (T031) is not written yet, so `tools/exports-compare/` does not exist.
 
 ## Order of work
@@ -192,7 +192,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
 4. **SBML in `sbml-exporter`** (T036–T042): the fixes, the comparisons, the layout, the graph-only command line, a dry run against the published archive, and validation in its CI.
 5. **The SBML switch on the website** (T062–T067), from the service started here, once the comparisons are complete and recorded (FR-009 on beta).
 6. **BioPAX in `BioPAX3Exporter`** (T045–T051): the content, the comparisons against `biopax.zip` and the legacy service, validation, and its CI.
-7. **The BioPAX switch on the website** (T052–T054): the endpoint, the legacy redirect and the site's links.
+7. **The BioPAX switch on the website** (T052, as T069–T072, then T053–T054): the service's operation, the endpoint, the route, the check, the legacy redirect and the site's links.
 8. **The release's switches**, each after a full dry run (T055, T057). Level 2 is dropped (T056, decided).
 9. **Throughout:** each exporter is split into a library and a command line, and the library is published (T061), so the release and the website run one codebase.
 
