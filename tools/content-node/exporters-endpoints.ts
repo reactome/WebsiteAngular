@@ -375,7 +375,9 @@ async function exportEvent(raw: string): Promise<ExportEvent | null> {
  * deep pool, so a burst of exports cannot starve the queries the pages need,
  * and from each other, so one export cannot take the other's places here. The
  * service converts two at once across both (spec 015 T069), for its heap: a
- * BioPAX file may wait there behind two SBML ones, within the headers' time.
+ * BioPAX file may wait there behind two SBML ones, and past the headers' time
+ * at the worst (T069 measured 300–310 s): the reader then gets the 503 below,
+ * and the service, finishing, keeps the file for the next request.
  */
 const SBML_SHARE = deepShare(2);
 const BIOPAX_SHARE = deepShare(2);

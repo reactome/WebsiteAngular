@@ -59,10 +59,13 @@ public class LibraryApplication {
         };
     }
 
-    /** The conversions at once, across every export: two, within the heap (spec 015 T069). */
+    /**
+     * The conversions at once, across every export: two, within the heap (spec 015 T069). Fair, so a request
+     * waiting for a place is not overtaken by later ones of the other export.
+     */
     @Bean
     public Semaphore conversions() {
-        return new Semaphore(2);
+        return new Semaphore(2, true);
     }
 
     @Bean

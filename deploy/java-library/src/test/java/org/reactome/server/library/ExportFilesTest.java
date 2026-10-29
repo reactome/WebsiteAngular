@@ -195,6 +195,16 @@ class ExportFilesTest {
     }
 
     @Test
+    void workLeftInTheLayoutBeforeExportsHadFoldersIsRemoved() throws Exception {
+        Path old = Files.createDirectories(cache.resolve("tmp/0f8fad5b-d9cb-469f-a165-70867728950e"));
+        Files.writeString(old.resolve("R-HSA-2.sbml"), "<sbml");
+        Path others = Files.createDirectories(cache.resolve("tmp/biopax"));
+        sbml(converter, diagrams);
+        assertFalse(Files.exists(old));
+        assertTrue(Files.exists(others));
+    }
+
+    @Test
     void aNewReleaseIsNeverAnsweredFromTheOldOnesFiles() throws Exception {
         ExportFiles files = sbml(converter, diagrams);
         files.get("R-HSA-1");

@@ -74,6 +74,8 @@ public class ExportFiles {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ExportFiles.class);
+    private static final java.util.regex.Pattern OLD_WORK =
+            java.util.regex.Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}");
 
     private final String kind;
     private final String extension;
@@ -100,8 +102,16 @@ public class ExportFiles {
         this.diagrams = diagrams;
         this.cache = cache;
         this.conversions = conversions;
-        // Work in progress when the service last stopped, which nothing will finish
+        // Work in progress when the service last stopped, which nothing will finish: this export's, and any left
+        // in the layout before exports had a folder each (cache/tmp/{uuid})
         delete(work());
+        try (DirectoryStream<Path> left = Files.newDirectoryStream(cache.resolve("tmp"))) {
+            for (Path old : left) {
+                if (OLD_WORK.matcher(old.getFileName().toString()).matches()) delete(old);
+            }
+        } catch (IOException e) {
+            // No tmp folder yet, or none readable: nothing to clear
+        }
     }
 
     private Path work() {
