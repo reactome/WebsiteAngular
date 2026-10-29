@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * per converted pathway that has a diagram; the caller keeps it per release, so a file is kept only once it is
  * whole and is the pathway's: the converter would refuse anything else on every request until the next release.
  */
-public class HttpDiagramSource implements SbmlFiles.DiagramSource {
+public class HttpDiagramSource implements ExportFiles.DiagramSource {
 
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -45,7 +45,7 @@ public class HttpDiagramSource implements SbmlFiles.DiagramSource {
     }
 
     @Override
-    public void fetch(String stId, int release, Path into) throws SbmlFiles.DiagramUnavailable {
+    public void fetch(String stId, int release, Path into) throws ExportFiles.DiagramUnavailable {
         URI uri = base.resolve(release + "/diagram/" + stId + ".json");
         Path part = into.resolve(stId + ".json.part");
         try {
@@ -59,27 +59,27 @@ public class HttpDiagramSource implements SbmlFiles.DiagramSource {
                 response = download.get(timeout.toMillis(), TimeUnit.MILLISECONDS);
             } catch (TimeoutException e) {
                 download.cancel(true);
-                throw new SbmlFiles.DiagramUnavailable(uri + " did not arrive within " + timeout.toSeconds() + " s", e);
+                throw new ExportFiles.DiagramUnavailable(uri + " did not arrive within " + timeout.toSeconds() + " s", e);
             } catch (ExecutionException e) {
-                throw new SbmlFiles.DiagramUnavailable("Cannot fetch " + uri + ": " + e.getCause(), e.getCause());
+                throw new ExportFiles.DiagramUnavailable("Cannot fetch " + uri + ": " + e.getCause(), e.getCause());
             } catch (InterruptedException e) {
                 // Waiting is interrupted, not the transfer: it is stopped here, as on a timeout
                 download.cancel(true);
                 throw e;
             }
             if (response.statusCode() != 200) {
-                throw new SbmlFiles.DiagramUnavailable(uri + " answered " + response.statusCode(), null);
+                throw new ExportFiles.DiagramUnavailable(uri + " answered " + response.statusCode(), null);
             }
             if (!isTheDiagramOf(stId, part)) {
-                throw new SbmlFiles.DiagramUnavailable(uri + " is not " + stId + "'s diagram", null);
+                throw new ExportFiles.DiagramUnavailable(uri + " is not " + stId + "'s diagram", null);
             }
             Files.move(part, into.resolve(stId + ".json"), StandardCopyOption.ATOMIC_MOVE,
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new SbmlFiles.DiagramUnavailable("Cannot fetch " + uri + ": " + e.getMessage(), e);
+            throw new ExportFiles.DiagramUnavailable("Cannot fetch " + uri + ": " + e.getMessage(), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new SbmlFiles.DiagramUnavailable("Interrupted fetching " + uri, e);
+            throw new ExportFiles.DiagramUnavailable("Interrupted fetching " + uri, e);
         } finally {
             try {
                 Files.deleteIfExists(part);

@@ -15,7 +15,7 @@ const pins = readFileSync(join(__dirname, '../java/PINS.md'), 'utf8');
 /** The Dockerfile's ARG <NAME>_COMMIT=<sha> lines, by name, each stage's. */
 function commitArgs(text: string) {
   const found = new Map<string, Set<string>>();
-  for (const [, name = '', sha = ''] of text.matchAll(/^ARG ([A-Z_]+)_COMMIT=([0-9a-f]{40})$/gm))
+  for (const [, name = '', sha = ''] of text.matchAll(/^ARG ([A-Z0-9_]+)_COMMIT=([0-9a-f]{40})$/gm))
     found.set(name, (found.get(name) ?? new Set()).add(sha));
   return found;
 }
@@ -30,6 +30,7 @@ const REPOSITORIES: Record<string, string> = {
   REACTOME_PARENT: 'reactome-parent',
   GRAPH_CORE: 'graph-core',
   SBML_EXPORTER: 'sbml-exporter',
+  BIOPAX3_EXPORTER: 'BioPAX3Exporter',
 };
 
 describe('the library service pins', () => {

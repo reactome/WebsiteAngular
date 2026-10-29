@@ -105,15 +105,15 @@ describe('the file', () => {
       res.writeHead(200, { 'Content-Type': 'application/rdf+xml;charset=UTF-8' });
       res.end('<rdf:RDF/>');
     };
-    for (const form of ['R-HSA-1', 'R-HSA-1.4', '1']) {
-      const answer = await answers(`event/${form}.biopax`);
+    for (const path of ['R-HSA-1.biopax', 'R-HSA-1.4.biopax', '1.biopax', 'R-HSA-1.biopax/']) {
+      const answer = await answers(`event/${path}`);
       expect(answer.status).toBe(200);
       expect(answer.type).toBe('application/rdf+xml;charset=UTF-8');
       expect(answer.headers?.['Content-Disposition']).toBe('attachment; filename="R-HSA-1.biopax"');
       expect(await text(answer)).toBe('<rdf:RDF/>');
     }
     // The service is asked for BioPAX, by the bare stable id
-    expect(asked).toEqual(['/biopax/R-HSA-1', '/biopax/R-HSA-1', '/biopax/R-HSA-1']);
+    expect(asked).toEqual(Array(4).fill('/biopax/R-HSA-1'));
   });
 
   it('the service’s 404 is a 404, and its failure a 500 without its own reason', async () => {
@@ -131,6 +131,27 @@ describe('the file', () => {
       500,
       'INTERNAL_SERVER_ERROR',
       ['The BioPAX of R-HSA-1 cannot be made'],
+    ]);
+  });
+
+  it('the service’s 503 is a 503 to try again, and a service not there is a 503, in BioPAX’s words', async () => {
+    withService();
+    behave = (_path, res) => {
+      res.writeHead(503, { 'Content-Type': 'application/json' });
+      res.end('{"error":"/cache busy"}');
+    };
+    const busy = await answers('event/R-HSA-1.biopax');
+    expect(envelope(busy)).toEqual([
+      503,
+      'SERVICE_UNAVAILABLE',
+      ['The BioPAX file cannot be made just now; try again shortly'],
+    ]);
+    expect(busy.headers?.['Retry-After']).toBe('30');
+    process.env['SBML_SERVICE'] = 'http://127.0.0.1:9';
+    expect(envelope(await answers('event/R-HSA-1.biopax'))).toEqual([
+      503,
+      'SERVICE_UNAVAILABLE',
+      ['The BioPAX service cannot be reached'],
     ]);
   });
 

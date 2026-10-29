@@ -124,7 +124,7 @@ class HttpDiagramSourceTest {
 
     @Test
     void aMissingFileIsUnavailableAndLeavesNothing() throws Exception {
-        SbmlFiles.DiagramUnavailable e = assertThrows(SbmlFiles.DiagramUnavailable.class,
+        ExportFiles.DiagramUnavailable e = assertThrows(ExportFiles.DiagramUnavailable.class,
                 () -> source().fetch("R-HSA-2", 97, into));
         assertTrue(e.getMessage().contains("answered 404"), e.getMessage());
         try (var left = Files.list(into)) {
@@ -134,7 +134,7 @@ class HttpDiagramSourceTest {
 
     @Test
     void aPageInPlaceOfTheFileIsUnavailableAndNotKept() throws Exception {
-        SbmlFiles.DiagramUnavailable e = assertThrows(SbmlFiles.DiagramUnavailable.class,
+        ExportFiles.DiagramUnavailable e = assertThrows(ExportFiles.DiagramUnavailable.class,
                 () -> source().fetch("R-HSA-3", 97, into));
         assertTrue(e.getMessage().contains("not R-HSA-3's diagram"), e.getMessage());
         try (var left = Files.list(into)) {
@@ -144,7 +144,7 @@ class HttpDiagramSourceTest {
 
     @Test
     void anotherPathwaysDiagramIsUnavailableAndNotKept() throws Exception {
-        SbmlFiles.DiagramUnavailable e = assertThrows(SbmlFiles.DiagramUnavailable.class,
+        ExportFiles.DiagramUnavailable e = assertThrows(ExportFiles.DiagramUnavailable.class,
                 () -> source().fetch("R-HSA-4", 97, into));
         assertTrue(e.getMessage().contains("not R-HSA-4's diagram"), e.getMessage());
         try (var left = Files.list(into)) {
@@ -156,7 +156,7 @@ class HttpDiagramSourceTest {
     void aBodyThatStallsIsUnavailableWithinTheTimeout() throws Exception {
         // The request's own timeout covers only the wait for the headers
         assertTimeoutPreemptively(Duration.ofSeconds(15),
-                () -> assertThrows(SbmlFiles.DiagramUnavailable.class, () -> source().fetch("R-HSA-5", 97, into)));
+                () -> assertThrows(ExportFiles.DiagramUnavailable.class, () -> source().fetch("R-HSA-5", 97, into)));
         try (var left = Files.list(into)) {
             assertEquals(0, left.count());
         }
@@ -164,7 +164,7 @@ class HttpDiagramSourceTest {
 
     @Test
     void aDownloadThatTimesOutIsAbandoned() throws Exception {
-        assertThrows(SbmlFiles.DiagramUnavailable.class, () -> source().fetch("R-HSA-6", 97, into));
+        assertThrows(ExportFiles.DiagramUnavailable.class, () -> source().fetch("R-HSA-6", 97, into));
         assertTrue(abandoned.await(10, TimeUnit.SECONDS), "the server was still sending");
     }
 
@@ -187,7 +187,7 @@ class HttpDiagramSourceTest {
         fetching.interrupt();
         fetching.join(10_000);
         assertFalse(fetching.isAlive(), "the fetch did not return");
-        assertTrue(outcome.get() instanceof SbmlFiles.DiagramUnavailable, String.valueOf(outcome.get()));
+        assertTrue(outcome.get() instanceof ExportFiles.DiagramUnavailable, String.valueOf(outcome.get()));
         assertTrue(stillInterrupted.get(), "the interrupt was swallowed");
         assertTrue(abandoned.await(10, TimeUnit.SECONDS), "the server was still sending");
     }
