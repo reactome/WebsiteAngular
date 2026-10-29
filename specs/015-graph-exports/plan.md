@@ -191,7 +191,7 @@ projects/…/download-tab/, …/detail-download-bar/  # the BioPAX links
    - BioPAX3Exporter's baseline.
 4. **SBML in `sbml-exporter`** (T036–T042): the fixes, the comparisons, the layout, the graph-only command line, a dry run against the published archive, and validation in its CI.
 5. **The SBML switch on the website** (T062–T067), from the service started here, once the comparisons are complete and recorded (FR-009 on beta).
-6. **BioPAX in `BioPAX3Exporter`** (T045–T051): the content, the comparisons against `biopax.zip` and the legacy service, validation, and its CI.
+6. **BioPAX in `BioPAX3Exporter`** (T045–T048, T051): the content, the comparison against `biopax.zip`, validation, and its CI. The comparison with the legacy service and the per-event validation (T049, T050) need the service of step 7.
 7. **The BioPAX switch on the website** (T052, as T069–T072, then T053–T054): the service's operation, the endpoint, the route, the check, the legacy redirect and the site's links.
 8. **The release's switches**, each after a full dry run (T055, T057). Level 2 is dropped (T056, decided).
 9. **Throughout:** each exporter is split into a library and a command line, and the library is published (T061), so the release and the website run one codebase.

@@ -212,7 +212,7 @@ The people who run a release can make the SBML and BioPAX bulk files without the
   - BioPAX Level 3 is `reactome/BioPAX3Exporter`.
   - Either moves elsewhere only if its maintainers prefer.
 - **One library per format.** Each exporter's repository becomes a library module, which this stack uses, and a thin command line, which the release uses (R10).
-- **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it, so nothing routes to the Java ContentService for these formats. For SBML, and since 29 Oct BioPAX, it is started in this repository for now (research R10, amended 25 Oct 2026).
+- **The website's service** is spec 010's Java library service (R10). Its SBML operation moves from the relational converter to the graph-only one, and it gains BioPAX Level 3. It pins one graph-core version, so both exporters must work with that version. Node fronts it, so nothing routes to the Java ContentService for these formats. For SBML, and since 29 Oct BioPAX, it is started in this repository for now (research R10, amended 25 Oct and 29 Oct 2026).
 - **BioPAX's URL** is `/ContentService/exporter/event/{id}.biopax`, as the first version decided (R6). The legacy path redirects to it.
 - **Order of work.**
   1. SBML: the exporter's fixes and tests, then its layout, then the comparisons; then the website and the release switch, each only after the comparisons pass (FR-009).
