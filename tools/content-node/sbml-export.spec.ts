@@ -9,12 +9,12 @@ import { createServer, type Server, type ServerResponse } from 'node:http';
 import express from 'express';
 import type { AddressInfo } from 'node:net';
 import { describe, expect, it, beforeAll, afterAll, afterEach } from 'vitest';
-import { sbmlAnswer, type SbmlEvent } from './exporters-endpoints.ts';
+import { sbmlAnswer, type ExportEvent } from './exporters-endpoints.ts';
 import { writeResult } from './server.ts';
 import type { Answer, Request } from './endpoint.ts';
 
 /** The graph as these cases need it: one pathway, one object that is no event. */
-const find = async (raw: string): Promise<SbmlEvent | null> => {
+const find = async (raw: string): Promise<ExportEvent | null> => {
   const id = raw.split('.')[0];
   if (id === 'R-HSA-1' || id === '1') return { stId: 'R-HSA-1', isEvent: true };
   if (id === '9626065') return { stId: null, isEvent: false };

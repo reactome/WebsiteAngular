@@ -347,8 +347,8 @@ async function renderFigure(request: Request, url: string | URL, ext: string) {
   };
 }
 
-/** An event an SBML file is asked for: its stable id, and whether it is one SBML is made of. */
-export interface SbmlEvent {
+/** An event an export is asked for: its stable id, and whether it is one an export is made of. */
+export interface ExportEvent {
   stId: string | null;
   isEvent: boolean;
 }
@@ -359,10 +359,10 @@ export interface SbmlEvent {
  * answers 400 for anything else. Decided from its labels, where Java loaded
  * every relationship of the object to decide it (about 30 s for ATP).
  */
-async function sbmlEvent(raw: string): Promise<SbmlEvent | null> {
+async function exportEvent(raw: string): Promise<ExportEvent | null> {
   const id = await graphCoreId(raw);
   if (!id) return null;
-  const [found] = await read<SbmlEvent>(
+  const [found] = await read<ExportEvent>(
     `MATCH (n:DatabaseObject ${id.object}) RETURN n.stId AS stId, (n:Pathway OR n:ReactionLikeEvent) AS isEvent LIMIT 1`,
     id.params
   );
@@ -370,21 +370,56 @@ async function sbmlEvent(raw: string): Promise<SbmlEvent | null> {
 }
 
 /**
- * SBML's own share (research R6): Java made one file at a time, and the
- * service two (its backstop); past it, a 503 with Retry-After, as the deep
- * pool answers. Separate from the deep pool, so a burst of SBML cannot starve
- * the queries the pages need.
+ * Each export's own share (research R6): Java made one file at a time, and the
+ * service two at once across its exports (its backstop, spec 015 T069); past
+ * a share, a 503 with Retry-After, as the deep pool answers. Separate from the
+ * deep pool and from each other, so a burst of one cannot starve the queries
+ * the pages need, or the other export.
  */
 const SBML_SHARE = deepShare(2);
+const BIOPAX_SHARE = deepShare(2);
 
 /**
  * How long the service has to send its headers: under nginx's 300 s, so the
  * reader gets this envelope rather than nginx's page. Once the body flows it
  * is not timed: it is a file the service has already written.
  */
-const SBML_HEADERS_MS = 290_000;
+const EXPORT_HEADERS_MS = 290_000;
 
-const SBML_TYPE = 'application/sbml+xml;charset=UTF-8';
+/** What differs between the library service's exports: the rest is one answer. */
+interface ExportFormat {
+  /** As the service's path and the messages name it. */
+  path: 'sbml' | 'biopax';
+  label: 'SBML' | 'BioPAX';
+  type: string;
+  /** The download's extension. */
+  download: string;
+  share: ReturnType<typeof deepShare>;
+  /** The reader's message for the service's 503: SBML's is a diagram file it could not have. */
+  unavailable: string;
+}
+
+const SBML: ExportFormat = {
+  path: 'sbml',
+  label: 'SBML',
+  type: 'application/sbml+xml;charset=UTF-8',
+  download: 'sbml',
+  share: SBML_SHARE,
+  unavailable: "The pathway's diagram cannot be had just now; try again shortly",
+};
+
+/**
+ * BioPAX Level 3 (research R6): `application/rdf+xml`, named `{stId}.biopax`.
+ * No URL of Java's, so no download guard to imitate: the name is the server's.
+ */
+const BIOPAX: ExportFormat = {
+  path: 'biopax',
+  label: 'BioPAX',
+  type: 'application/rdf+xml;charset=UTF-8',
+  download: 'biopax',
+  share: BIOPAX_SHARE,
+  unavailable: 'The BioPAX file cannot be made just now; try again shortly',
+};
 
 /**
  * The service's answer, once its headers are in, or a rejection: 'late' when
@@ -394,7 +429,7 @@ const SBML_TYPE = 'application/sbml+xml;charset=UTF-8';
  * back. An IncomingMessage closes either way. Plain HTTP: the service is on
  * loopback.
  */
-function sbmlResponse(url: string, headersMs: number): Promise<IncomingMessage> {
+function exportResponse(url: string, headersMs: number): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
     // A connection per file: a kept-alive one the service has since closed
     // would fail the next file as unreachable.
@@ -435,18 +470,54 @@ function bodyText(response: IncomingMessage): Promise<string> {
 
 /**
  * An event's SBML, as Java's /exporter/event/{id}.sbml answers it -- its 404,
- * 400, type and download name -- with the body from the SBML service
+ * 400, type and download name -- with the body from the library service
  * (deploy/java-library, spec 015 T063), passed on as it arrives. Never made
  * by another implementation: without the service, a 503.
- *
- * The service's reasons name its own paths, so they are logged here and
- * never passed on.
  */
-export async function sbmlAnswer(
+export function sbmlAnswer(
   request: Request,
   ext: 'sbml' | 'xml',
-  find: (raw: string) => Promise<SbmlEvent | null> = sbmlEvent,
-  headersMs = SBML_HEADERS_MS
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS
+): Promise<Answer> {
+  return exportAnswer(request, ext, SBML, find, headersMs);
+}
+
+/**
+ * An event's BioPAX Level 3 at /exporter/event/{id}.biopax (spec 015 T070),
+ * from the library service (T069), answered as SBML is: the same 404 and 400,
+ * R6's type and a `{stId}.biopax` download.
+ */
+export function biopaxAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS
+): Promise<Answer> {
+  return exportAnswer(request, 'biopax', BIOPAX, find, headersMs);
+}
+
+/** /exporter/event/{id}: BioPAX for `.biopax`, SBML for the rest (whose other extensions are Java's). */
+export function eventExportAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS
+): Promise<Answer> {
+  return splitExportName(pathId(rawSegment(request, 4)))?.ext === 'biopax'
+    ? biopaxAnswer(request, find, headersMs)
+    : sbmlAnswer(request, 'sbml', find, headersMs);
+}
+
+/**
+ * The library service's file for an event, answered as Java's SBML export is.
+ * The service's reasons name its own paths, so they are logged here and never
+ * passed on.
+ */
+async function exportAnswer(
+  request: Request,
+  ext: string,
+  format: ExportFormat,
+  find: (raw: string) => Promise<ExportEvent | null>,
+  headersMs: number
 ): Promise<Answer> {
   const name = splitExportName(pathId(rawSegment(request, 4)));
   // Another extension on /exporter/event/ is Java's (SBGN, the PDF), which
@@ -463,16 +534,22 @@ export async function sbmlAnswer(
       'BAD_REQUEST',
       `The identifier '${name.identifier}' does not correspond to a pathway or reaction`
     );
+  // The library service's address: SBML_SERVICE names it, for both its exports.
   const service = settings.sbmlService();
   if (!service)
-    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The SBML service is not configured');
-  if (!SBML_SHARE.enter())
+    return javaError(
+      request,
+      503,
+      'SERVICE_UNAVAILABLE',
+      `The ${format.label} service is not configured`
+    );
+  if (!format.share.enter())
     return {
       ...javaError(
         request,
         503,
         'SERVICE_UNAVAILABLE',
-        'Too many SBML files are being made; try again shortly'
+        `Too many ${format.label} files are being made; try again shortly`
       ),
       headers: { 'Retry-After': '5' },
     };
@@ -481,49 +558,49 @@ export async function sbmlAnswer(
   try {
     let response: IncomingMessage;
     try {
-      response = await sbmlResponse(`${service.replace(/\/$/, '')}/sbml/${event.stId}`, headersMs);
+      response = await exportResponse(
+        `${service.replace(/\/$/, '')}/${format.path}/${event.stId}`,
+        headersMs
+      );
     } catch (caught) {
       return javaError(
         request,
         503,
         'SERVICE_UNAVAILABLE',
         (caught as Failure).message === 'late'
-          ? 'The SBML file took too long to make'
-          : 'The SBML service cannot be reached'
+          ? `The ${format.label} file took too long to make`
+          : `The ${format.label} service cannot be reached`
       );
     }
     const status = response.statusCode ?? 0;
     if (status !== 200) {
       const reason = await bodyText(response);
       if (status === 404) return notFound(request, `Identifier '${name.identifier}' not found`);
-      console.error(`SBML for ${event.stId}: the service answered ${status} ${reason}`);
+      console.error(`${format.label} for ${event.stId}: the service answered ${status} ${reason}`);
       return status === 503
         ? {
-            ...javaError(
-              request,
-              503,
-              'SERVICE_UNAVAILABLE',
-              "The pathway's diagram cannot be had just now; try again shortly"
-            ),
+            ...javaError(request, 503, 'SERVICE_UNAVAILABLE', format.unavailable),
             headers: { 'Retry-After': '30' },
           }
         : javaError(
             request,
             500,
             'INTERNAL_SERVER_ERROR',
-            `The SBML of ${event.stId} cannot be made`
+            `The ${format.label} of ${event.stId} cannot be made`
           );
     }
-    response.once('close', () => SBML_SHARE.leave());
+    response.once('close', () => format.share.leave());
     streaming = true;
     return {
       status: 200,
-      type: SBML_TYPE,
+      type: format.type,
       body: response,
-      headers: { 'Content-Disposition': `attachment; filename="${event.stId}.sbml"` },
+      headers: {
+        'Content-Disposition': `attachment; filename="${event.stId}.${format.download}"`,
+      },
     };
   } finally {
-    if (!streaming) SBML_SHARE.leave();
+    if (!streaming) format.share.leave();
   }
 }
 
@@ -592,11 +669,12 @@ export const exportersEndpoints: Endpoint[] = [
     sample: '9626065.sbml',
     samplesOnly: true,
     /**
-     * An event's SBML (spec 015 T065), from the SBML service. Routed on beta
-     * (dev.conf, T066), locally and under ng serve; the release and
-     * production keep Java's until T068.
+     * An event's SBML (spec 015 T065) or BioPAX Level 3 (T070), from the
+     * library service. SBML is routed on beta (dev.conf, T066), locally and
+     * under ng serve; the release and production keep Java's until T068.
+     * BioPAX is routed by T071, and Java has no BioPAX here.
      */
-    handler: (request) => sbmlAnswer(request, 'sbml'),
+    handler: (request) => eventExportAnswer(request),
   },
   {
     path: '/ContentService/exporter/sbml/{id}',
