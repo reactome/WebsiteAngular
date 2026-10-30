@@ -206,9 +206,38 @@
             entity, all values appear as a gradient. The pathway diagram remains interactive beside this panel.
           </p>
 
+          <details class="column-help">
+            <summary>What do these columns mean?</summary>
+            <dl>
+              <dt>Activity</dt>
+              <dd>
+                The entity's predicted activity once the network settles, on the same scale as the input: 1× is normal,
+                0 is none, and higher is more active.
+              </dd>
+              <dt>Change</dt>
+              <dd>
+                Predicted activity minus the entity's own normal (baseline) activity: below zero it falls, above zero it
+                rises. The diagram's colours show this.
+              </dd>
+              <dt>Influence</dt>
+              <dd>
+                How strongly the reactions this entity takes part in respond to a small change in it, at the predicted
+                state. Higher means it matters more to the result; it is a ranking, not a unit.
+              </dd>
+            </dl>
+            <p>
+              Rows are sorted by the size of the change; a highlighted row is one you perturbed. Where one entity is
+              several nodes of the logic network, its row shows their average activity and change and their largest
+              influence.
+            </p>
+          </details>
+
           <div class="result-table" role="table" aria-label="DeltaSignal predictions">
             <div class="result-row header" role="row">
-              <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
+              <span role="columnheader">Entity</span>
+              <span role="columnheader">Activity (× normal)</span>
+              <span role="columnheader">Change vs baseline</span>
+              <span role="columnheader">Influence</span>
             </div>
             @for (row of visibleRows(); track row.uuid) {
               <div class="result-row" role="row" [class.perturbed]="row.perturbed">
