@@ -1,10 +1,10 @@
 /**
  * DeltaSignal is offered only where a deployment asks for it.
  *
- * It is a research feature that depends on a DeltaSignal backend, and `/api` is
- * routed only by proxy.conf.js -- the dev server's proxy, which does not exist in
- * a built artifact. A deployment without that backend must not offer a button
- * whose every call fails, so the profile decides, and absent means off.
+ * It is a research feature that depends on a DeltaSignal backend, reached at
+ * `/api` through proxy.conf.js under the dev server and through nginx on beta. A
+ * deployment without that route must not offer a button whose every call fails,
+ * so the profile decides, and absent means off.
  *
  * Both states are checked against one build by setting `window.__APP_ENV` before
  * the app's scripts run, which is the runtime profile override the config already
@@ -54,6 +54,8 @@ test.describe('The DeltaSignal toggle', () => {
     await expect(page.locator('cr-deltasignal-panel')).toHaveCount(0);
   });
 
+  // One "on" case: its title keys its recorded backend, and which profiles have
+  // the flag (development and beta) is pinned by environments.spec.ts.
   test('offers it on a deployment that does', async ({ page }) => {
     await openWithProfile(page, 'development');
     await expect(perturb(page)).toHaveCount(1);

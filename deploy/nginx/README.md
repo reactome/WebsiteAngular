@@ -90,11 +90,15 @@ The shared routes name `site`, `content`, `analysis`, `content_node`,
 absorbs both: node in this repository taking over most of what Tomcat serves, and
 the site being startable locally, where they become compose service names.
 
-`/api/` for DeltaSignal exists in none of the Apache configuration, which is why
-DeltaSignal cannot work on beta today — the Angular side calls it as a bare
-relative path, routed only by the dev server's proxy, which does not exist in a
-built artifact. Note the port on the dev box: **8090**, not the 8080 DeltaSignal's
-own compose binds, because 8080 there is Tomcat.
+`/api/` is DeltaSignal's: the Angular side calls `/api/pathways`, `/api/parse` and
+`/api/solve` as bare relative paths, which `common/routes.conf` sends to the
+`deltasignal` upstream (the dev server's proxy does the same under `ng serve`).
+Beta's site profile turns the Perturb button on because of this route; only a
+deployment with this route may turn `deltaSignal` on. The DeltaSignal service is not part of
+this repository's compose: it runs from DeltaSignal's own repository on the same
+host, published on loopback only, at **8090**, not the 8080 DeltaSignal's own
+compose binds, because 8080 there is Tomcat. If it stops, the button's calls fail;
+`/api/pathways` answering a list confirms it is up.
 
 ## Connections, which is a reason this is worth doing
 
