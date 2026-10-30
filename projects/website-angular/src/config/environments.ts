@@ -52,9 +52,9 @@ export interface SiteProfile {
    * `specs/005-search-page-answers/research.md`, D1 and D3.
    *
    * Absent means off, like `deltaSignal`, so a deployment opts in rather than
-   * inherits. Only `development` has it today: the endpoint is not deployed on
-   * beta yet, and no keypair has been exchanged, so every other profile would
-   * offer a button whose calls fail.
+   * inherits. `development` and `beta` have it: beta's route is served by
+   * serve-prod.js, which holds the signing key (see the beta profile); any other
+   * profile would offer a button whose calls fail.
    */
   searchAnswerEndpoint?: string;
   /**
