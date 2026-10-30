@@ -392,12 +392,15 @@ export const dataQueryEndpoints: Endpoint[] = [
      * content pages and the IDG panel read it.
      *
      * Kept byte for byte as Java answers it, so it keeps a trap: an object is
-     * written in full only once, later as its bare dbId, and since graph-core
-     * bb5e0ca0 (Aug 2025) an event's parent pathways (`eventOf`) come before its
-     * own lists. A reference its parent also cites is therefore a bare number
-     * in the event's `literatureReference`, and a reader that keeps only
-     * objects loses it, which is #760 on production. Read an event's lists
-     * from /query/enhanced/v2 (full objects), as the details pages do.
+     * written in full only once, later as its bare dbId, and an event's
+     * neighbours come before its own lists: its preceding and following events,
+     * and since graph-core bb5e0ca0 (Aug 2025) its parent pathways (`eventOf`).
+     * A reference one of them also cites is therefore a bare number in the
+     * event's `literatureReference`, and a reader that keeps only objects loses
+     * it, which is #760 on production. Read an event's lists from
+     * /query/enhanced/v2 through the site's JSOGDeserializer, as the details
+     * pages do: v2 writes each object once too, with `@id`, and points back to
+     * it with `{"@ref": …}`, which the deserializer resolves.
      *
      * Its relationships go both ways unless QueryObjectController's
      * needsIncomingRelationship says not (needsIncoming). The id is read as
