@@ -16,12 +16,13 @@ import { GO_BiologicalProcess } from '../go-term/go-biological-process.model';
  * of 15 sampled pathways one had authors, reviewers or a review status, and
  * three of 15 reactions (#344).
  *
- * In that answer (not /enhanced/v2) a list such as `literatureReference` can
- * hold bare dbIds where the object was written earlier in the answer, often in
- * the parent pathway (`eventOf`) or a preceding or following event; the types
- * here do not say so. Dropping them loses references, as production's browser
- * does (#760). Take an event's lists from /enhanced/v2 through JSOGDeserializer,
- * which resolves v2's own back-references (`@ref`) to the objects they name.
+ * Asked without `includeRef=true` (either version), a list such as
+ * `literatureReference` can hold bare dbIds where the object was written
+ * earlier in the answer, often in the parent pathway (`eventOf`) or a preceding
+ * or following event; the types here do not say so. Dropping them loses
+ * references, as production's browser does (#760). Ask with `includeRef=true`
+ * and read through JSOGDeserializer, which resolves its back-references
+ * (`@ref`) to the objects they name, as the details pages do.
  */
 export interface Event extends DatabaseObject, InDepth, HasFigure {
   stId: string;
