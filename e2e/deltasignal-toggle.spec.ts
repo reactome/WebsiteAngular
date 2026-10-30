@@ -54,10 +54,10 @@ test.describe('The DeltaSignal toggle', () => {
     await expect(page.locator('cr-deltasignal-panel')).toHaveCount(0);
   });
 
-  for (const profile of ['development', 'beta']) {
-    test(`offers it on a deployment that does: ${profile}`, async ({ page }) => {
-      await openWithProfile(page, profile);
-      await expect(perturb(page)).toHaveCount(1);
-    });
-  }
+  // One "on" case: its title keys its recorded backend, and which profiles have
+  // the flag (development and beta) is pinned by environments.spec.ts.
+  test('offers it on a deployment that does', async ({ page }) => {
+    await openWithProfile(page, 'development');
+    await expect(perturb(page)).toHaveCount(1);
+  });
 });

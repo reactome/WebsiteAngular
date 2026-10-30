@@ -93,12 +93,12 @@ the site being startable locally, where they become compose service names.
 `/api/` is DeltaSignal's: the Angular side calls `/api/pathways`, `/api/parse` and
 `/api/solve` as bare relative paths, which `common/routes.conf` sends to the
 `deltasignal` upstream (the dev server's proxy does the same under `ng serve`).
-Beta's site profile turns the Perturb button on because of this route; a deployment
-without it must leave `deltaSignal` off. The DeltaSignal service is not part of
+Beta's site profile turns the Perturb button on because of this route; only a
+deployment with this route may turn `deltaSignal` on. The DeltaSignal service is not part of
 this repository's compose: it runs from DeltaSignal's own repository on the same
 host, published on loopback only, at **8090**, not the 8080 DeltaSignal's own
-compose binds, because 8080 there is Tomcat. If it stops, the button's calls fail,
-so it is checked with the rest of beta (`/api/pathways` answers a list).
+compose binds, because 8080 there is Tomcat. If it stops, the button's calls fail;
+`/api/pathways` answering a list confirms it is up.
 
 ## Connections, which is a reason this is worth doing
 
