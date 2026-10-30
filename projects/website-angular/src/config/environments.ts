@@ -182,6 +182,10 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     searchAnswerEndpoint: '/search-answer',
     analysisSummaryEndpoint: '/analysis-summary',
     chatHandoffEndpoint: '/chat-handoff',
+    // Beta's nginx routes /api/ to the DeltaSignal service on this host
+    // (deploy/nginx/common/routes.conf), so the Perturb button's calls are
+    // answered here as they are under the dev server's proxy.
+    deltaSignal: true,
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,
@@ -196,10 +200,10 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
 
   development: {
     variant: 'main',
-    // The only deployment that can reach a DeltaSignal backend: proxy.conf.js
-    // routes /api to DELTASIGNAL_BACKEND, which is a dev-server proxy and does
-    // not exist in a built artifact. Turning this on elsewhere would offer a
-    // button whose every call fails, so the other profiles leave it absent.
+    // proxy.conf.js routes /api to DELTASIGNAL_BACKEND under the dev server;
+    // beta's nginx routes it the same way. Turning this on where neither
+    // proxies /api would offer a button whose every call fails, so the other
+    // profiles leave it absent.
     deltaSignal: true,
     // Same reasoning, and note the path: `/api` above already belongs to the
     // DeltaSignal backend, so the answer proxy cannot live under it.

@@ -121,13 +121,13 @@ describe('site profiles', () => {
   });
 
   it('offers DeltaSignal only where a DeltaSignal backend can be reached', () => {
-    // /api is routed by proxy.conf.js, which is the dev server's proxy: it does
-    // not exist in a built artifact, and nothing in deploy.yml or the Apache
-    // config provides it. A deployment that turned this on would offer a button
-    // whose every call fails, so only `development` may have it until there is a
-    // deployed backend to point at.
+    // /api is routed by proxy.conf.js under the dev server, and by beta's nginx
+    // (deploy/nginx/common/routes.conf) to the DeltaSignal service on the same
+    // host. A deployment that turned this on without either would offer a
+    // button whose every call fails, so only those two may have it.
+    const reachable = ['development', 'beta'];
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
-      expect(profile.deltaSignal === true, `${name}.deltaSignal`).toBe(name === 'development');
+      expect(profile.deltaSignal === true, `${name}.deltaSignal`).toBe(reachable.includes(name));
     }
   });
 
