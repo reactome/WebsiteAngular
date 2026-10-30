@@ -206,21 +206,53 @@
             entity, all values appear as a gradient. The pathway diagram remains interactive beside this panel.
           </p>
 
+          <details class="column-help">
+            <summary>What do these columns mean?</summary>
+            <dl>
+              <dt>Activity</dt>
+              <dd>
+                The entity's predicted activity once the network settles, on the same scale as the input: 1× is normal,
+                0 is none, and higher is more active.
+              </dd>
+              <dt>Change</dt>
+              <dd>
+                Predicted activity minus the entity's own normal (baseline) activity, on the same scale: below zero it
+                falls, above zero it rises. A fall can reach −1 (switched off); a rise can reach +99, so large rises
+                sort above every fall. The diagram's colours show this.
+              </dd>
+              <dt>Influence</dt>
+              <dd>
+                How strongly everything this entity feeds directly in the logic network (the reactions it is an input
+                to, catalyses or regulates, a set it belongs to, and so on; the “Logic nodes &amp; edges” view shows
+                these links) responds to a small change in it, at the predicted state. It ranks direct, local effect,
+                not effect on the whole pathway, and has no unit; an entity that feeds nothing scores 0.
+              </dd>
+            </dl>
+            <p>
+              Rows are sorted by the size of the change; a highlighted row is one you perturbed. Where one entity is
+              several nodes of the logic network, its row shows their average activity and change and their largest
+              influence.
+            </p>
+          </details>
+
           <div class="result-table" role="table" aria-label="DeltaSignal predictions">
             <div class="result-row header" role="row">
-              <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
+              <span role="columnheader">Entity</span>
+              <span role="columnheader">Activity</span>
+              <span role="columnheader">Change vs baseline</span>
+              <span role="columnheader">Influence</span>
             </div>
             @for (row of visibleRows(); track row.uuid) {
               <div class="result-row" role="row" [class.perturbed]="row.perturbed">
-                <span class="entity">
+                <span class="entity" role="cell">
                   <strong>{{ row.name }}</strong>
                   <small>{{ row.reactomeId }}</small>
                 </span>
-                <span>{{ row.activity | number: '1.1-1' }}×</span>
-                <span [class.positive]="row.change > 0" [class.negative]="row.change < 0">
+                <span role="cell">{{ row.activity | number: '1.1-1' }}×</span>
+                <span role="cell" [class.positive]="row.change > 0" [class.negative]="row.change < 0">
                   {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
                 </span>
-                <span>{{ row.influence | number: '1.2-2' }}</span>
+                <span role="cell">{{ row.influence | number: '1.2-2' }}</span>
               </div>
             }
           </div>
