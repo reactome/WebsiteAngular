@@ -222,9 +222,10 @@
               </dd>
               <dt>Influence</dt>
               <dd>
-                How strongly the reactions this entity feeds (as a substrate, catalyst, activator or inhibitor) respond
-                to a small change in it, at the predicted state. It ranks the entity's direct, local effect, not its
-                effect on the whole pathway, and has no unit; an entity that feeds no reaction scores 0.
+                How strongly everything this entity feeds directly in the logic network (the reactions it takes in,
+                catalyses or regulates, a set it belongs to, and so on; the “Logic nodes &amp; edges” view shows these
+                links) responds to a small change in it, at the predicted state. It ranks direct, local effect, not
+                effect on the whole pathway, and has no unit; an entity that feeds nothing scores 0.
               </dd>
             </dl>
             <p>
@@ -237,7 +238,7 @@
           <div class="result-table" role="table" aria-label="DeltaSignal predictions">
             <div class="result-row header" role="row">
               <span role="columnheader">Entity</span>
-              <span role="columnheader">Activity (× normal)</span>
+              <span role="columnheader">Activity</span>
               <span role="columnheader">Change vs baseline</span>
               <span role="columnheader">Influence</span>
             </div>
