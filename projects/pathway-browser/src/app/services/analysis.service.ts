@@ -114,8 +114,13 @@ const isNotFound = (error: unknown) =>
  * are removed at a release -- and for one it never held, which is the case for
  * a result another Reactome server produced. 404 means the same to a reader.
  */
+/** Whether a result failed to load because it is not on this server: removed, or never here. */
+export function isGone(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410);
+}
+
 export function describeLoadFailure(error: unknown): string {
-  if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410)) {
+  if (isGone(error)) {
     return (
       'This analysis result is not available on this server. Results are removed when ' +
       'Reactome releases new data, and a result produced elsewhere cannot be opened here. ' +
@@ -373,6 +378,9 @@ export class AnalysisService {
   private readonly _loadFailure = signal<string | null>(null);
   /** Why the last result the reader asked for could not be shown, if it could not. */
   readonly loadFailure = this._loadFailure.asReadonly();
+  private readonly _loadFailureGone = signal(false);
+  /** Whether that failure was a result not on this server (see `isGone`). */
+  readonly loadFailureGone = this._loadFailureGone.asReadonly();
 
   dismissLoadFailure(): void {
     this._loadFailure.set(null);
@@ -415,6 +423,22 @@ export class AnalysisService {
   readonly isLoading = linkedSignal(
     () => decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis())
   );
+
+  /**
+   * Whether the result on show is the one the address will settle on: no
+   * token, or the token's result loaded for the resource it will stay on.
+   *
+   * Loaded is not enough. A result holding one resource besides TOTAL is shown
+   * for that resource, which the effect below sets only once the first result
+   * has said what it holds, so a second load follows the first -- and `result`
+   * keeps the first while it runs. A figure captured in between is coloured for
+   * TOTAL, not for what the browser shows (the render page waits on this).
+   */
+  readonly settled = computed(() => {
+    if (!this.state.analysis()) return true;
+    if (this.resultResource.isLoading() || this.isLoading() || !this.result()) return false;
+    return this.state.resourceFilter() !== null || defaultResource(this.resourceOptions()) === null;
+  });
 
   readonly pathwayStIdToData = computed(
     () => new Map<string, Analysis.Pathway>(this.result()?.pathways.map((p) => [p.stId, p]))
@@ -526,6 +550,7 @@ export class AnalysisService {
       if (!error) return;
       console.warn('Analysis result could not be loaded', error);
       this._loadFailure.set(describeLoadFailure(error));
+      this._loadFailureGone.set(isGone(error));
       this.state.analysis.set(null);
     });
     // Any new result supersedes the message about the last one.

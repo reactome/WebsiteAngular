@@ -203,6 +203,19 @@ export class ReacfoamComponent implements OnDestroy {
     });
   }
 
+  /**
+   * Whether the tree on screen is the one last fetched for the current token
+   * and resource. The tree is fetched with both, and handed to FoamTree in an
+   * effect, so until then the overview shows the last one's colouring (the
+   * render page waits on this).
+   */
+  showsCurrentData(): boolean {
+    if (this.reacfoam.eventsHierarchyData.isLoading()) return false;
+    const shown: unknown = untracked(this.foamTree).get('dataObject');
+    const groups = (shown as { groups?: unknown } | undefined)?.groups;
+    return !!groups && groups === this.reacfoam.data();
+  }
+
   /** The last download request this view took up (see the download effect). */
   private handled = 0;
 

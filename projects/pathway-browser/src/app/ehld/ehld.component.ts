@@ -18,6 +18,7 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { UrlStateService } from '../services/url-state.service';
 import SvgPanZoom from 'svg-pan-zoom';
 import { AnalysisService } from '../services/analysis.service';
+import type { Analysis } from '../model/analysis.model';
 import { isDefined } from '../services/utils';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -58,6 +59,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   readonly ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
   readonly hovering = signal(false);
+  /**
+   * The analysis result last coloured on the illustration: undefined for none,
+   * null before it has been drawn at all. The render page waits until it is the
+   * result on show, so a figure is not captured before its colouring.
+   */
+  readonly appliedAnalysis = signal<Analysis.Result | undefined | null>(null);
   /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
   readonly drawError = signal<string | null>(null);
   /** The illustration is on screen, for its pathway id. */
@@ -361,6 +368,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.ehldService.showAnalysisInfo(regionElement, pathwayData);
       });
     }
+    this.appliedAnalysis.set(this.analysis.result());
   }
 
   private handleResize() {
