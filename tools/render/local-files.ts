@@ -9,9 +9,10 @@
  * until the release is published. So when a folder is given, every request the
  * page makes to the download site is answered from it, laid out as the site is
  * (`<folder>/98/diagram/R-HSA-69620.json`), and a file the folder lacks is a
- * 404 -- never a request to the site.
+ * 404 -- never a request to the site. A link inside the folder is followed only
+ * if it stays inside it.
  */
-import { readFile } from 'node:fs/promises';
+import { readFile, realpath } from 'node:fs/promises';
 import path from 'node:path';
 
 /** The download site, as the site's profiles name it (environments.ts, `S3`). */
@@ -37,7 +38,12 @@ export async function localAnswer(
   url: URL
 ): Promise<{ status: number; contentType: string; body: Buffer | string }> {
   const missing = { status: 404, contentType: 'text/plain', body: 'not in the local files' };
-  const base = path.resolve(root);
+  let base: string;
+  try {
+    base = await realpath(root);
+  } catch {
+    return missing;
+  }
   let relative: string;
   try {
     relative = decodeURIComponent(url.pathname);
@@ -47,6 +53,8 @@ export async function localAnswer(
   const file = path.resolve(base, `.${relative}`);
   if (!file.startsWith(base + path.sep)) return missing;
   try {
+    // Where the file really is: a link out of the folder is no file of it.
+    if (!(await realpath(file)).startsWith(base + path.sep)) return missing;
     const body = await readFile(file);
     const contentType = TYPES[path.extname(file).toLowerCase()] ?? 'application/octet-stream';
     return { status: 200, contentType, body };

@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -12,6 +12,11 @@ beforeAll(async () => {
   await writeFile(path.join(root, '98', 'diagram', 'R-HSA-1.json'), '{"nodes":[]}');
   await writeFile(path.join(root, '98', 'ehld', 'R-HSA-2.svg'), '<svg/>');
   await writeFile(path.join(root, 'outside.txt'), 'not under 98');
+  // A sibling whose name starts with the folder's: `98x` is not inside `98`.
+  await mkdir(path.join(root, '98x'));
+  await writeFile(path.join(root, '98x', 'f.txt'), 'a sibling');
+  // A link inside the folder to a file outside it.
+  await symlink(path.join(root, 'outside.txt'), path.join(root, '98', 'link.txt'));
 });
 afterAll(() => rm(root, { recursive: true, force: true }));
 
@@ -47,6 +52,8 @@ describe('the download site from a local folder', () => {
       // An encoded slash survives the URL's own normalising and decodes to a
       // step out of the folder, to a file that exists.
       '/%2e%2e%2foutside.txt',
+      '/%2e%2e%2f98x%2ff.txt',
+      '/link.txt',
       '/%E0%A4%A',
     ]) {
       expect((await localAnswer(path.join(root, '98'), at(escape))).status, escape).toBe(404);

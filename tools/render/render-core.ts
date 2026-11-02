@@ -186,12 +186,12 @@ export async function render(
   };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
-  const fromFiles = async (route: Route) => {
-    if (!files) return route.continue();
-    const { status, contentType, body } = await localAnswer(files, new URL(route.request().url()));
+  const fromFiles = async (route: Route, root: string) => {
+    const { status, contentType, body } = await localAnswer(root, new URL(route.request().url()));
     return route.fulfill({ status, contentType, body });
   };
-  if (files) await page.route(isDownload, fromFiles);
+  const handler = files ? (route: Route) => fromFiles(route, files) : undefined;
+  if (handler) await page.route(isDownload, handler);
 
   try {
     await page.goto(
@@ -270,7 +270,7 @@ export async function render(
   } finally {
     page.off('pageerror', onPageError);
     page.off('console', onConsole);
-    if (files) await page.unroute(isDownload, fromFiles);
+    if (handler) await page.unroute(isDownload, handler);
   }
 }
 

@@ -273,7 +273,17 @@ docker run ... -v /path/to/release-files:/files:ro -e RENDER_FILES=/files websit
 
 A file missing from the folder is not reported as such by the page: the render
 waits out `RENDER_TIMEOUT`. So check the folder holds every file before a bulk
-run. `/health` says which source is in use (`files`).
+run. The service refuses to start if `RENDER_FILES` is not a directory, and
+`/health` says which source is in use (`files`). A link inside the folder is
+followed only if it stays inside it.
+
+Only requests to the download site are answered from the folder; a deployment
+whose profile takes its assets from the site's own host (`assetsFromHost`,
+`downloadBase`) is not redirected. The page also asks the download site for
+icons and structure films, which the render page does not draw; from a folder
+without them they are 404s. Figures cached from the download site and from a
+folder have different cache keys, so switching `RENDER_FILES` on or off never
+serves one for the other.
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache
