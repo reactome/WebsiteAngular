@@ -5,8 +5,9 @@
  * "wait for the page, ask it for the artefact" -- the whole point of this work
  * is not having two renderers, and that argument applies to its callers too.
  */
-import type { ConsoleMessage, Page } from '@playwright/test';
+import type { ConsoleMessage, Page, Route } from '@playwright/test';
 import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
+import { isDownload, localAnswer } from './local-files.ts';
 import { pptx } from './pptx.ts';
 
 /** Formats the render page can produce. */
@@ -118,6 +119,11 @@ export interface RenderOptions {
   delay?: number;
   maxSize?: number;
   timeout?: number;
+  /**
+   * A folder laid out as the download site, answering the page's requests to it
+   * (local-files.ts). Unset, the page fetches from the site as a browser does.
+   */
+  files?: string;
 }
 
 /** What the export adds to the page's report: the shapes, the picture, the frames. */
@@ -166,6 +172,7 @@ export async function render(
     delay = DEFAULT_DELAY,
     maxSize = MAX_SIZE,
     timeout = 120_000,
+    files,
   }: RenderOptions
 ): Promise<{ bytes: Buffer; state: RenderReport; problems: string[] }> {
   if (!isFormat(format)) {
@@ -179,6 +186,12 @@ export async function render(
   };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
+  const fromFiles = async (route: Route) => {
+    if (!files) return route.continue();
+    const { status, contentType, body } = await localAnswer(files, new URL(route.request().url()));
+    return route.fulfill({ status, contentType, body });
+  };
+  if (files) await page.route(isDownload, fromFiles);
 
   try {
     await page.goto(
@@ -257,6 +270,7 @@ export async function render(
   } finally {
     page.off('pageerror', onPageError);
     page.off('console', onConsole);
+    if (files) await page.unroute(isDownload, fromFiles);
   }
 }
 

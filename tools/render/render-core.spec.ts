@@ -75,3 +75,42 @@ describe('a figure of another species', () => {
     ).rejects.toThrow('asked for species 10090, the page drew 9606');
   });
 });
+
+describe("the release's files", () => {
+  // A stand-in page that records its routes and stops at the first navigation.
+  function routed() {
+    const routes: { matcher: unknown; handler: unknown }[] = [];
+    const page = {
+      on() {},
+      off() {},
+      async route(matcher: unknown, handler: unknown) {
+        routes.push({ matcher, handler });
+      },
+      async unroute(matcher: unknown, handler: unknown) {
+        const i = routes.findIndex((r) => r.matcher === matcher && r.handler === handler);
+        if (i >= 0) routes.splice(i, 1);
+      },
+      async goto() {
+        seen = routes.length;
+        throw new Error('stop here');
+      },
+    };
+    let seen = 0;
+    return { page, routes, seen: () => seen };
+  }
+
+  it('are read from the folder while the page draws, and the route removed after', async () => {
+    const { page, routes, seen } = routed();
+    await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', files: '/files' }).catch(
+      () => undefined
+    );
+    expect(seen()).toBe(1);
+    expect(routes).toHaveLength(0);
+  });
+
+  it('are left to the download site when no folder is given', async () => {
+    const { page, seen } = routed();
+    await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1' }).catch(() => undefined);
+    expect(seen()).toBe(0);
+  });
+});

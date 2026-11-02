@@ -104,6 +104,10 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // result settles on, before it is ready: a figure with a token cached under v11
 // may be uncoloured, or coloured for TOTAL where the browser shows another.
 const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v12';
+// The release's diagram and illustration files, laid out as the download site,
+// for the page to read instead of the site (local-files.ts). Unset, it fetches
+// them from the site, as a reader's browser does.
+const FILES = process.env['RENDER_FILES'] || undefined;
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
@@ -434,6 +438,7 @@ async function renderCached(params: RenderParams) {
       const { bytes, state, problems } = await render(page, {
         base: BASE,
         timeout: RENDER_TIMEOUT,
+        ...(FILES ? { files: FILES } : {}),
         ...params,
       });
       await toCache(key, params.format, bytes);
@@ -518,6 +523,7 @@ app.get('/health', (_req, res) => {
     base: BASE,
     cache: CACHE,
     cacheKey: CACHE_KEY,
+    files: FILES ? 'local' : 'download site',
     active,
     waiting: waiting.length,
     ...stats,

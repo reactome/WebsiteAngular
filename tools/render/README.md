@@ -254,6 +254,26 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                       |
 | `RENDER_QUEUE`       | 8                     | pending renders before 503                                                 |
 | `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                            |
+| `RENDER_FILES`       | unset                 | a folder laid out as the download site; see below                          |
+
+**The release's files.** The render page fetches a diagram's layout
+(`{release}/diagram/{id}.json`, `.graph.json`) and an illustration
+(`{release}/ehld/{id}.svg`) from the download site, as a reader's browser does.
+With `RENDER_FILES` set (`--files` for the CLI), every request the page makes to
+the download site is answered from that folder instead, laid out as the site is
+(`<folder>/98/diagram/R-HSA-73857.json`), and a file the folder lacks is a 404,
+never a request to the site. Set it for any bulk run, and for a release's own
+figures, whose files are not on the download site until the release is
+published. In a container, mount the folder read-only and point the variable at
+it:
+
+```sh
+docker run ... -v /path/to/release-files:/files:ro -e RENDER_FILES=/files websiteangular-render
+```
+
+A file missing from the folder is not reported as such by the page: the render
+waits out `RENDER_TIMEOUT`. So check the folder holds every file before a bulk
+run. `/health` says which source is in use (`files`).
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache
