@@ -17,7 +17,8 @@ import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
 import { ActivatedRoute } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
-import { AnalysisService, isGone } from '../services/analysis.service';
+import { AnalysisService, isNotFound } from '../services/analysis.service';
+import { failureMessage } from './failure-message';
 import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
 import { SpeciesService } from '../services/species.service';
@@ -234,18 +235,9 @@ export class RenderComponent {
       // undefined, so a 404 surfaces here rather than through an error signal.
       // Without this the wait died silently and the caller paid a full timeout
       // to learn nothing.
-      // A failed request's message names the URL it asked, and the host in
-      // it is the address the render service reaches the site on, which the
-      // service's answer would pass on: the path is kept, the host is not.
-      // Nor an analysis token, which a failed request carries in its query
-      // (the overview's tree) or its path (the analysis service's own).
       const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
-        `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          message
-            .replace(/\bhttps?:\/\/[^/\s]+/g, '')
-            .replace(/([?&;](?:token|analysis)=)[^&;:\s]+/gi, '$1…')
-            .replace(/(\/token\/)[^/?;:\s]+/gi, '$1…')
+        `could not render ${pathway ?? 'the genome-wide view'}: ${failureMessage(message)}`
       );
       this.publish();
     }
@@ -337,7 +329,7 @@ export class RenderComponent {
     // as one that could not be read just now, so the two are told apart.
     const error = this.analysis.resultResource.error();
     if (error !== undefined || this.analysis.loadFailure() !== null) {
-      return (error !== undefined ? isGone(error) : this.analysis.loadFailureGone())
+      return (error !== undefined ? isNotFound(error) : this.analysis.loadFailureGone())
         ? 'the analysis result is gone: a release removed it, or it was never on this server'
         : 'the analysis result could not be read';
     }
@@ -347,6 +339,8 @@ export class RenderComponent {
 
   /** The analysis the figure is to carry, or null with none. */
   private coloured(): { token: string; resource: Analysis.Resource } | null {
+    // The reaction's own layout is never coloured, so it carries none.
+    if (this.reactionView) return null;
     const token = this.state.analysis();
     return token ? { token, resource: this.state.resourceFilter() ?? 'TOTAL' } : null;
   }

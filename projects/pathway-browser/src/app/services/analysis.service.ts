@@ -101,26 +101,18 @@ export function defaultResource(
 
 /**
  * The Analysis Service's "not here": 404 for a pathway the analysis did not
- * hit, 404 or 410 for a result it does not hold, which the result's own load
- * reports to the reader.
+ * hit, and 404 or 410 for a result it does not hold. It answers 410 for a
+ * result it no longer holds -- results are removed at a release -- and for one
+ * it never held, which is the case for a result another Reactome server
+ * produced. 404 means the same to a reader.
  */
-const isNotFound = (error: unknown) =>
-  error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410);
-
-/**
- * What to tell the reader when an analysis result cannot be loaded.
- *
- * The Analysis Service answers 410 for a result it no longer holds -- results
- * are removed at a release -- and for one it never held, which is the case for
- * a result another Reactome server produced. 404 means the same to a reader.
- */
-/** Whether a result failed to load because it is not on this server: removed, or never here. */
-export function isGone(error: unknown): boolean {
+export function isNotFound(error: unknown): boolean {
   return error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410);
 }
 
+/** What to tell the reader when an analysis result cannot be loaded. */
 export function describeLoadFailure(error: unknown): string {
-  if (isGone(error)) {
+  if (isNotFound(error)) {
     return (
       'This analysis result is not available on this server. Results are removed when ' +
       'Reactome releases new data, and a result produced elsewhere cannot be opened here. ' +
@@ -379,7 +371,7 @@ export class AnalysisService {
   /** Why the last result the reader asked for could not be shown, if it could not. */
   readonly loadFailure = this._loadFailure.asReadonly();
   private readonly _loadFailureGone = signal(false);
-  /** Whether that failure was a result not on this server (see `isGone`). */
+  /** Whether that failure was a result not on this server (see `isNotFound`). */
   readonly loadFailureGone = this._loadFailureGone.asReadonly();
 
   dismissLoadFailure(): void {
@@ -550,7 +542,7 @@ export class AnalysisService {
       if (!error) return;
       console.warn('Analysis result could not be loaded', error);
       this._loadFailure.set(describeLoadFailure(error));
-      this._loadFailureGone.set(isGone(error));
+      this._loadFailureGone.set(isNotFound(error));
       this.state.analysis.set(null);
     });
     // Any new result supersedes the message about the last one.
