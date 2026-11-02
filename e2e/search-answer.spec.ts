@@ -42,7 +42,7 @@ function stream(frames: string[]): string {
 }
 
 const ANSWERED = stream([
-  'event: start\ndata: {"release": 97, "answered": true}',
+  'event: start\ndata: {"release": 98, "answered": true}',
   'event: token\ndata: {"text": "## CDK5\\n\\nCDK5 bound to p25 "}',
   'event: token\ndata: {"text": "phosphorylates tau."}',
   // No trailing Sources list here, because the answer endpoint no longer sends
@@ -54,7 +54,7 @@ const ANSWERED = stream([
 ]);
 
 const NOTHING_FOUND = stream([
-  'event: start\ndata: {"release": 97, "answered": false}',
+  'event: start\ndata: {"release": 98, "answered": false}',
   'event: done\ndata: {"state": "nothing_found", "seconds": 4.5}',
 ]);
 
@@ -174,7 +174,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "CDK5 phosphorylates tau."}',
         'event: token\ndata: {"text": "\\n\\n### Sources\\n- Something"}',
         'event: done\ndata: {"state": "answered", "seconds": 1.0}',
@@ -206,7 +206,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "Open the pathway browser from the toolbar."}',
         'event: done\ndata: {"state": "answered", "seconds": 3.3}',
       ])
@@ -274,7 +274,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "CDK5 bound to p25 "}',
       ])
     );

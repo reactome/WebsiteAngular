@@ -503,7 +503,7 @@ test.describe('Quantitative analysis: adding a dataset', () => {
       route.fulfill({
         contentType: 'application/json',
         body: JSON.stringify({
-          release: '97',
+          release: '98',
           method_name: 'Camera',
           results: [],
           reactome_links: [],

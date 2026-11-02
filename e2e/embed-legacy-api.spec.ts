@@ -19,7 +19,7 @@ const LOAD = 90_000;
 const ENTITY = 'R-HSA-182558';
 const FLAG = 'CHEK1';
 // An existing result, read only: nothing is submitted.
-const TOKEN = 'MjAyNjA5MjUxNDM3NThfMTM=';
+const TOKEN = 'MjAyNjExMDIxNDQwMTVfOQ==';
 
 type Widget = Record<string, (...args: unknown[]) => void>;
 type LegacyGlobals = {

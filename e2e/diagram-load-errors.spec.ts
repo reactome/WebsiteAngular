@@ -14,7 +14,7 @@ const LOAD = 60_000;
 const PATHWAY = 'R-HSA-69620';
 // An existing result, read only: nothing is submitted. It finds entities in
 // R-HSA-69620.
-const TOKEN = 'MjAyNjA5MjUxNDM3NThfMTM=';
+const TOKEN = 'MjAyNjExMDIxNDQwMTVfOQ==';
 // CHEK1 occurs in Cell Cycle Checkpoints.
 const FLAG = 'CHEK1';
 

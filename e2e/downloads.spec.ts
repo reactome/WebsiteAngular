@@ -1,6 +1,7 @@
 import { renderServiceAvailable } from './fixtures/serves';
 import { type Page, type Download } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { copyOf } from './support/release-files';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
@@ -315,14 +316,26 @@ test.describe('Diagram downloads', () => {
   });
 
   test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
-    // Circadian clock builds six of its shapes out of <foreignObject>, which is
+    // Circadian clock built six of its shapes out of <foreignObject>, which is
     // how a design tool exports a conic gradient. Chromium taints a canvas the
-    // moment one is drawn onto it and refuses toDataURL, so this illustration
-    // cannot be turned into a picture in any browser.
+    // moment one is drawn onto it and refuses toDataURL, so such an
+    // illustration cannot be turned into a picture in any browser.
     //
     // That part is not fixable here. What was fixable: the click produced no
     // file, no message and no sign it had registered, because every client-side
     // exporter reported failure with console.error and nothing else.
+    //
+    // Release 98's copy was redrawn without them, so the test puts one back.
+    await page.route(/\/ehld\/R-HSA-9909396\.svg$/, (route) =>
+      route.fulfill({
+        contentType: 'image/svg+xml',
+        headers: { 'access-control-allow-origin': '*' },
+        body: readFileSync(copyOf(route.request().url()), 'utf8').replace(
+          '</svg>',
+          '<foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml"></div></foreignObject></svg>'
+        ),
+      })
+    );
     await openDownloadTab(page, 'R-HSA-9909396');
     await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
 
@@ -861,5 +874,25 @@ test.describe('The render page, without the render service', () => {
     });
     await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
     await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
+
+  // The reaction's own layout is never coloured, so the figure it draws
+  // carries no analysis, whatever the address asked for.
+  test('says the reaction view carries no analysis', async ({ page, request }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
+    await holdAnalysisForUniprot(page);
+    await page.goto(`/PathwayBrowser/render/${REACTION}?layout=reaction&analysis=${TOKEN}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const state = await page.evaluate(
+      () =>
+        (window as unknown as { __renderState: { view: string; analysis: unknown } }).__renderState
+    );
+    expect(state.view).toBe('reaction');
+    expect(state.analysis).toBeNull();
   });
 });

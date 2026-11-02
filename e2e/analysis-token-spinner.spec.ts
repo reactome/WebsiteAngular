@@ -10,7 +10,7 @@ import { test, expect } from './support/backend';
  */
 
 // An existing result, read only: nothing is submitted. It ends in "=".
-const TOKEN = 'MjAyNjA5MjUxNDM3NThfMTM=';
+const TOKEN = 'MjAyNjExMDIxNDQwMTVfOQ==';
 const LOAD = 60_000;
 
 test('the Analyze button stops spinning once a linked result is shown', async ({ page }) => {

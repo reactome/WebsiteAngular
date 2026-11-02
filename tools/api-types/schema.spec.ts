@@ -216,7 +216,10 @@ describe('recorded answers against the API description', () => {
     check(of, answers).found.filter((p) => p.includes('must match exactly one schema'));
 
   // The kinds in the union's order (search.ts). No recorded answer has a
-  // person's entry, so removing that kind fails nothing.
+  // person's entry, so removing that kind fails nothing. Nor, since the
+  // recordings moved to release 98, a deleted object's: release 97's search
+  // offered two for TP53, and release 98's offers none for anything the
+  // tests ask.
   const KINDS = [
     'EventEntry',
     'EntityEntry',
@@ -225,7 +228,7 @@ describe('recorded answers against the API description', () => {
     'InteractorEntry',
     'DeletedEntry',
   ];
-  const RECORDED = KINDS.filter((kind) => kind !== 'PersonEntry');
+  const RECORDED = KINDS.filter((kind) => kind !== 'PersonEntry' && kind !== 'DeletedEntry');
 
   it('fails the entries of a kind the description lacks', () => {
     expect(entry.oneOf).toHaveLength(KINDS.length);

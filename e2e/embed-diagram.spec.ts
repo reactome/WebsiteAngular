@@ -689,7 +689,7 @@ test.describe('the embeddable diagram, told what to show', () => {
   const FLAG = 'CHEK1';
   // An existing result, read only: nothing is submitted. It finds entities in
   // R-HSA-69620.
-  const TOKEN = 'MjAyNjA5MjUxNDM3NThfMTM=';
+  const TOKEN = 'MjAyNjExMDIxNDQwMTVfOQ==';
   // Drawn in the R-HSA-69620 diagram: CDKN1A,CDKN1B, a DefinedSet.
   const ENTITY = 'R-HSA-182558';
 

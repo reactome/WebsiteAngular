@@ -16,6 +16,15 @@ describe('stubbed answers in a recording', () => {
     );
   });
 
+  it('keys the same parameters alike in any order, and different values apart', () => {
+    const key = (query: string) => harKey('GET', `http://h/ContentService/data/x${query}`);
+    expect(key('?b=2&a=1&c=%3D')).toBe(key('?a=1&c=%3D&b=2'));
+    expect(key('?a=1&b=2')).not.toBe(key('?a=1&b=3'));
+    expect(key('?a=1&a=2')).not.toBe(key('?a=1'));
+    expect(key('')).toBe('GET /ContentService/data/x');
+    expect(key('?')).toBe('GET /ContentService/data/x');
+  });
+
   it('names the note beside its recording', () => {
     expect(stubsFile('/r/e2e/har/person-errors--x-abc123.har')).toBe(
       '/r/e2e/har/person-errors--x-abc123.stubs'
