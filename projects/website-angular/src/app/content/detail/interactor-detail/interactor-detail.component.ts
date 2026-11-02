@@ -62,6 +62,9 @@ export class InteractorDetailComponent implements OnInit {
   readonly synonyms = signal<string[]>([]);
   readonly referenceURL = signal('');
 
+  // The species UniProt names, for when the search names none.
+  private readonly uniprotSpecies = signal('');
+
   // Reactome entity mapping: interactor identifier -> ReactomeEntity[]
   readonly entityMap = signal<Record<string, ReactomeEntity[]>>({});
 
@@ -90,13 +93,8 @@ export class InteractorDetailComponent implements OnInit {
           params: { query: acc, types: 'Interactor', cluster: 'true' },
         })
         .pipe(catchError(() => of(null))),
-      uniprot: this.http
-        .get<UniProtResponse>(
-          `https://rest.uniprot.org/uniprotkb/${encodeURIComponent(baseAcc)}.json`
-        )
-        .pipe(catchError(() => of(null))),
     }).subscribe({
-      next: ({ interactions, search, uniprot }) => {
+      next: ({ interactions, search }) => {
         // Project the backend rows into the template's InteractionRow
         // shape and build the entityMap inline.
         const projected: InteractionRow[] = [];
@@ -133,7 +131,7 @@ export class InteractorDetailComponent implements OnInit {
           this.interactorType.set(
             `${entry.type}${entry.exactType && entry.exactType !== entry.type ? ' (' + entry.exactType + ')' : ''}`
           );
-          this.species.set(entry.species?.[0] ?? '');
+          this.species.set(entry.species?.[0] || this.uniprotSpecies());
           this.referenceURL.set(
             entry.referenceURL ?? `https://www.uniprot.org/uniprotkb/${acc}/entry`
           );
@@ -141,24 +139,6 @@ export class InteractorDetailComponent implements OnInit {
           this.displayName.set(`UniProt:${acc}`);
           this.interactorType.set('Interactor');
           this.referenceURL.set(`https://www.uniprot.org/uniprotkb/${acc}/entry`);
-        }
-
-        // Extract synonyms from UniProt
-        if (uniprot) {
-          const syns: string[] = [];
-          for (const gene of uniprot.genes ?? []) {
-            for (const syn of gene.synonyms ?? []) {
-              if (syn.value) syns.push(syn.value);
-            }
-          }
-          const protDesc = uniprot.proteinDescription;
-          for (const alt of protDesc?.alternativeNames ?? []) {
-            if (alt.fullName?.value) syns.push(alt.fullName.value);
-          }
-          if (!this.species()) {
-            this.species.set(uniprot.organism?.scientificName ?? '');
-          }
-          this.synonyms.set(syns);
         }
 
         this.loading.set(false);
@@ -170,5 +150,29 @@ export class InteractorDetailComponent implements OnInit {
         this.loading.set(false);
       },
     });
+
+    // Synonyms come from UniProt, a third party, and are extra: the page does
+    // not wait for them. In the same forkJoin, a UniProt that never answered
+    // left the page on its spinner with the interactions already in hand.
+    this.http
+      .get<UniProtResponse>(
+        `https://rest.uniprot.org/uniprotkb/${encodeURIComponent(baseAcc)}.json`
+      )
+      .pipe(catchError(() => of(null)))
+      .subscribe((uniprot) => {
+        if (!uniprot) return;
+        const syns: string[] = [];
+        for (const gene of uniprot.genes ?? []) {
+          for (const syn of gene.synonyms ?? []) {
+            if (syn.value) syns.push(syn.value);
+          }
+        }
+        for (const alt of uniprot.proteinDescription?.alternativeNames ?? []) {
+          if (alt.fullName?.value) syns.push(alt.fullName.value);
+        }
+        this.synonyms.set(syns);
+        this.uniprotSpecies.set(uniprot.organism?.scientificName ?? '');
+        if (!this.species()) this.species.set(this.uniprotSpecies());
+      });
   }
 }
