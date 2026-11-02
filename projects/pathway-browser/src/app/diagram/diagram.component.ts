@@ -273,7 +273,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       { debugName: 'diagram selecting' }
     );
     effect(() => {
-      const result = this.state.analysis(); // Not in one line to make sure to trigger the update
+      // Both read here, not left to whatever loadAnalysis happens to read: a new
+      // token or a new resource each reload the colouring.
+      const result = this.state.analysis();
+      this.state.resourceFilter();
       this.avoidSideEffect(() => this.loadAnalysis(result));
     });
     effect(() => {
@@ -1548,16 +1551,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // What foundEntities and pathwaysResults read when given no resource.
+    // Read once and given to both loads, so the colouring and appliedAnalysis
+    // name the same resource.
     const resource = this.state.resourceFilter() ?? 'TOTAL';
     const load$ = forkJoin({
       entities: this.analysis.foundEntities(
         this.data.currentPathway()?.normalPathway?.stId || diagramId,
-        token
+        token,
+        resource
       ),
       pathways: this.analysis.pathwaysResults(
         this.cy?.nodes('.Pathway').map((p) => p.data('reactomeId')) || [],
-        token
+        token,
+        resource
       ),
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
     }).pipe(

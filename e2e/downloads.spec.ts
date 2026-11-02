@@ -847,4 +847,19 @@ test.describe('The render page, without the render service', () => {
     await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
     await expect(render).not.toHaveAttribute('data-render-ready', 'true');
   });
+
+  // A result the service holds but cannot answer for is not one a release
+  // removed: a retry may mend it, so the caller is not told it is gone.
+  test('says an analysis it could not read is unread, not gone', async ({ page }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 500, json: { code: 500, reason: 'Internal Server Error' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`);
+    const render = page.locator('cr-render');
+    await expect(render).toHaveAttribute('data-render-error', /analysis result could not be read/, {
+      timeout: 120_000,
+    });
+    await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
 });
