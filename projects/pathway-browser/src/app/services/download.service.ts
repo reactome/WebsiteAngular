@@ -94,10 +94,10 @@ export class DownloadService {
    * button that does nothing: no file, no message, and no reason to think the
    * click had registered.
    *
-   * Found on the one illustration a browser refuses to rasterise -- Circadian
-   * clock embeds HTML in a `<foreignObject>`, which taints the canvas -- where
-   * the reason was known, specific and useful, and went to a console nobody
-   * had open.
+   * Found on an illustration a browser refused to rasterise -- Circadian
+   * clock, until Release 98, embedded HTML in a `<foreignObject>`, which
+   * taints the canvas -- where the reason was known, specific and useful, and
+   * went to a console nobody had open.
    */
   readonly failure = signal<string | null>(null);
 

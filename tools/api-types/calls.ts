@@ -99,7 +99,7 @@ export const CALLS: Call[] = [
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', type: 'any' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', n: 2, http: 'GET', route: '/data/query/{id}', type: 'any' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'annotated', http: 'GET', route: '/data/participants/{id}/referenceEntities', type: 'ReferenceEntityIds[]' },
-  { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'pathways', http: 'GET', route: '/data/pathways/low/entity/{id}', type: '{ stId: string; displayName: string; speciesName: string; hasDiagram?: boolean }[]' },
+  { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'pathways', http: 'GET', route: '/data/pathways/low/entity/{id}', type: '{ stId: string; displayName: string; speciesName: string; hasDiagram?: boolean; releaseStatus?: string }[]' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'interactors', http: 'GET', route: '/interactors/static/molecule/{acc}/details', type: 'any', gap: 'the recordings never open an interactor popup' },
   { file: `${PB}/interactors/services/interactor.service.ts`, method: 'fetchInteractorData', http: 'POST', route: ['/interactors/static/molecules/details', '/interactors/psicquic/molecules/{resource}/details'], type: 'Interactors' },
   { file: `${PB}/interactors/services/interactor.service.ts`, method: 'getCustomInteractorsByAcc', http: 'GET', route: '/interactors/static/molecule/enhanced/{acc}/details', type: 'CustomInteraction[]' },

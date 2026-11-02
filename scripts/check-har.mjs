@@ -35,19 +35,15 @@ const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
 const ABANDONED = [
   {
     recording: /^legacy-links--legacy-pathway-links-/,
+    // The pathways these tests open, by dbId or stable id, and the hierarchy.
     request:
-      /\/data\/(query\/enhanced\/v2\/|event\/[^/]+\/ancestors|detail\/[^/]+\/locationsInPWB|eventsHierarchy\/9606\?)/,
+      /\/data\/(query\/enhanced\/v2\/(R-HSA-)?(1280218|202733)\?|event\/(R-HSA-)?(1280218|202733)\/ancestors|detail\/R-HSA-(1280218|202733)\/locationsInPWB|eventsHierarchy\/9606\?)/,
     why: 'each test backs out of the pathway browser while the pathway is still loading, and a dbId is swapped for its stable id mid-load',
   },
   {
     recording: /^legacy-links--legacy-fragments-that-are-only-settings-diagram-dbid-/,
     request: /\/data\/query\/enhanced\/v2\/9006934\?/,
     why: 'the page swaps the dbId for its stable id mid-load',
-  },
-  {
-    recording: /^analysis-results--a-result-that-cannot-be-loaded-/,
-    request: /\/data\/query\/enhanced\/v2\/R-HSA-109582\?/,
-    why: 'a result that is gone takes analysis= off the address, which reloads the details',
   },
   {
     recording:
