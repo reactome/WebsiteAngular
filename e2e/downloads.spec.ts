@@ -671,14 +671,19 @@ const TOKEN = 'MADE-UP-RENDER-TOKEN';
 /**
  * Answer a made-up analysis holding one resource besides TOTAL, so the page
  * loads it for TOTAL and then again for UNIPROT, as the browser shows it.
- * Every load for UNIPROT is held back three seconds, and each load says
- * whether the page was already ready when it arrived.
+ * Every load for UNIPROT is held back: the result three seconds, and what a
+ * view reads for its own colouring (a diagram's found entities and pathways,
+ * the overview's tree) six, so a page ready on the result alone is caught as
+ * well as one ready before it. Each load says whether the page was already
+ * ready when it arrived.
  */
 async function holdAnalysisForUniprot(page: Page) {
   const loads: { url: string; resource: string; readyBefore: boolean }[] = [];
   const arrive = async (url: URL) => {
     const resource = url.searchParams.get('resource') ?? 'TOTAL';
-    if (resource === 'UNIPROT') await new Promise((resolve) => setTimeout(resolve, 3_000));
+    const result = url.pathname.endsWith(`/token/${TOKEN}`);
+    if (resource === 'UNIPROT')
+      await new Promise((resolve) => setTimeout(resolve, result ? 3_000 : 6_000));
     const ready = await page
       .locator('cr-render[data-render-ready="true"]')
       .count()
@@ -783,13 +788,20 @@ test.describe('The render page, without the render service', () => {
   // colouring arrived -- and, for a result holding one resource besides TOTAL,
   // before the second load that colours it for that resource. The render
   // service then cached the uncoloured figure under the token. The analysis
-  // here is made up and answered in the test; the figures are recorded ones.
-  for (const [view, path] of [
-    ['a diagram', `/PathwayBrowser/render/${DIAGRAM}`],
-    ['an illustration', `/PathwayBrowser/render/${ILLUSTRATION}`],
-    ['the genome-wide view', '/PathwayBrowser/render?species=9606'],
+  // here is made up and answered in the test, and finds nothing, so these say
+  // when the page is ready and what it says it carries, not what colour it is;
+  // the figures are recorded ones. The illustration colours itself as its
+  // result arrives, so its own wait is not one these can tell apart.
+  // Each view waits for the load its own colouring comes from: a page ready on
+  // the result alone was ready before the diagram even asked for its entities.
+  for (const [view, path, own] of [
+    ['a diagram', `/PathwayBrowser/render/${DIAGRAM}`, '/found/all/'],
+    ['an illustration', `/PathwayBrowser/render/${ILLUSTRATION}`, `/token/${TOKEN}`],
+    ['the genome-wide view', '/PathwayBrowser/render?species=9606', '/eventsHierarchy/'],
   ] as const) {
-    test(`is not ready until ${view} is coloured, for the result’s resource`, async ({ page }) => {
+    test(`is not ready until ${view} has its analysis, for the result’s resource`, async ({
+      page,
+    }) => {
       const loads = await holdAnalysisForUniprot(page);
       const at = `${path}${path.includes('?') ? '&' : '?'}analysis=${TOKEN}`;
       await page.goto(at);
@@ -806,10 +818,11 @@ test.describe('The render page, without the render service', () => {
       // Waited for rather than read: a page ready too early would be read
       // before the held-back loads even arrived.
       await expect
-        .poll(() => loads.filter((load) => load.resource === 'UNIPROT').length, {
-          message: 'the page read the analysis for UNIPROT',
-          timeout: 15_000,
-        })
+        .poll(
+          () =>
+            loads.filter((load) => load.resource === 'UNIPROT' && load.url.includes(own)).length,
+          { message: `the page read ${own} for UNIPROT`, timeout: 20_000 }
+        )
         .toBeGreaterThan(0);
       expect(
         loads.filter((load) => load.readyBefore),

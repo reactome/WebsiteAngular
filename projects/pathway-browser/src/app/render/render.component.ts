@@ -237,10 +237,13 @@ export class RenderComponent {
       // A failed request's message names the URL it asked, and the host in
       // it is the address the render service reaches the site on, which the
       // service's answer would pass on: the path is kept, the host is not.
+      // Nor an analysis token, which a failed overview tree's URL carries.
       const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
         `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          message.replace(/\bhttps?:\/\/[^/\s]+/g, '')
+          message
+            .replace(/\bhttps?:\/\/[^/\s]+/g, '')
+            .replace(/([?&](?:token|analysis)=)[^&\s]+/g, '$1…')
       );
       this.publish();
     }
@@ -323,7 +326,13 @@ export class RenderComponent {
 
   /** Why the analysis cannot be coloured, if it cannot. */
   private analysisFailure(): string | null {
-    if (this.analysis.loadFailure()) return 'the analysis result could not be read';
+    // The reaction's own layout is never coloured, so its analysis is not its
+    // business.
+    if (this.reactionView) return null;
+    // The service's own reason: a result a release removed is not the same
+    // failure as one that could not be read just now.
+    const failure = this.analysis.loadFailure();
+    if (failure) return `the analysis result could not be read: ${failure}`;
     if (this.diagram()?.analysisFailed()) return 'the analysis could not be read for this diagram';
     return null;
   }
@@ -344,17 +353,18 @@ export class RenderComponent {
    */
   private analysisShown(view: Drawn['view']): boolean {
     const wanted = this.coloured();
-    if (!wanted) return true;
+    // The reaction's own layout is never coloured.
+    if (!wanted || view === 'reaction') return true;
     if (!this.analysis.settled()) return false;
     switch (view) {
-      case 'reaction':
-        // The reaction's own layout is never coloured.
-        return true;
       case 'diagram': {
         const applied = this.diagram()?.appliedAnalysis();
         return applied?.token === wanted.token && applied.resource === wanted.resource;
       }
       case 'ehld':
+        // The illustration colours itself in an effect that runs with the
+        // result's arrival, so this is rarely seen to wait; it is here so a
+        // capture between the two cannot happen, not because one was seen.
         return this.ehld()?.appliedAnalysis() === this.analysis.result();
       case 'reacfoam':
         return this.reacfoam()?.showsCurrentData() ?? false;

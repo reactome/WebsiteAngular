@@ -1526,17 +1526,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   private analysisLoad?: Subscription;
 
-  /**
-   * The analysis now coloured on the diagram: its token and the resource its
-   * entities were read for. Null while a load is in flight, or with none. The
-   * render page waits on it: the diagram is drawn before its colouring arrives,
-   * and a figure captured in between is a 200 nobody can tell from a coloured one.
-   */
-  readonly appliedAnalysis = signal<{ token: string; resource: Analysis.Resource } | null>(null);
-
   private loadAnalysis(token: string | null, force = false) {
     if (!force && this.deltaSignal.hasOverlay()) return;
-    this.appliedAnalysis.set(null);
     // A load for an earlier token or diagram must neither colour this one nor
     // report its failure here. The notice is left until this load settles, so
     // loading the same failing token again does not announce it twice.
@@ -1548,8 +1539,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    // What foundEntities and pathwaysResults read when given no resource.
-    const resource = this.state.resourceFilter() ?? 'TOTAL';
     const load$ = forkJoin({
       entities: this.analysis.foundEntities(
         this.data.currentPathway()?.normalPathway?.stId || diagramId,
@@ -1643,7 +1632,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       };
 
       this._loadAnalysisFn(this.analysis.sampleIndex());
-      this.appliedAnalysis.set({ token, resource });
     });
   }
 
