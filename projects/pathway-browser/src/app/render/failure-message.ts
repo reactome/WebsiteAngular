@@ -9,7 +9,7 @@
  */
 export function failureMessage(message: string): string {
   return message
-    .replace(/\bhttps?:\/\/[^/\s]+/g, '')
+    .replace(/\bhttps?:\/\/[^/\s]+/gi, '')
     .replace(/([?&;](?:token|analysis)=)[^&;:\s]+/gi, '$1…')
     .replace(/(\/token\/)[^/?;:\s]+/gi, '$1…');
 }

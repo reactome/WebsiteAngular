@@ -173,6 +173,10 @@ test.describe('Analysis results', () => {
   // arrays changed in place, so the selection never counted as made, and the
   // stepper would not move on to the analysis.
   test('a dragged tissue counts as chosen', async ({ page }) => {
+    // Reaching the last step submits the analysis. Held unanswered: this is
+    // about the stepper, and an answered submission moves the form past the
+    // step this looks for.
+    await page.route('**/AnalysisService/identifiers/url**', () => {});
     await page.goto('/PathwayBrowser?analysisTab=tissue');
     const [available, selected] = [
       page.locator('.tissue-list').nth(0),
@@ -214,7 +218,7 @@ test.describe('Analysis summary', () => {
         status: 200,
         contentType: 'text/event-stream',
         body:
-          'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+          'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
           `event: token\ndata: {"text": "Summary number ${asked}."}\n\n` +
           'event: done\ndata: {"state": "summarised"}\n\n',
       });
@@ -279,7 +283,7 @@ test.describe('Continuing a summary in the chat', () => {
         status: 200,
         contentType: 'text/event-stream',
         body:
-          'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+          'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
           'event: token\ndata: {"text": "A summary to continue."}\n\n' +
           'event: done\ndata: {"state": "summarised"}\n\n',
       });
@@ -327,7 +331,7 @@ test.describe('Continuing a summary after the person-check lapsed', () => {
             status: 200,
             contentType: 'text/event-stream',
             body:
-              'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+              'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
               'event: token\ndata: {"text": "A summary to continue."}\n\n' +
               'event: done\ndata: {"state": "summarised"}\n\n',
           })

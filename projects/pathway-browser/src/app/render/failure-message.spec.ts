@@ -10,6 +10,12 @@ describe('failureMessage', () => {
     ).toBe('Http failure response for /ContentService/data/query/R-HSA-1: 404 Not Found');
   });
 
+  it('drops the host whatever its case', () => {
+    expect(failureMessage('for HTTP://LOCALHOST:4200/ContentService/x: 500')).toBe(
+      'for /ContentService/x: 500'
+    );
+  });
+
   it('hides a token in the path', () => {
     expect(
       failureMessage(

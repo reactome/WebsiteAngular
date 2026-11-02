@@ -15,13 +15,20 @@
 
 /**
  * A request as replay keys it: method, path and query; the origin varies by run.
+ *
+ * The query's parameters are put in order, as written: the services read them
+ * by name, and the site asks for one pathway's details with the same
+ * parameters in two orders from two services. Which of the two a test makes
+ * depends on timing, so a recording held one and replay was asked for the
+ * other, which it aborted.
  * @param {string} method
  * @param {string} url
  * @returns {string}
  */
 export function harKey(method, url) {
   const u = new URL(url);
-  return `${method.toUpperCase()} ${u.pathname}${u.search}`;
+  const query = u.search.slice(1).split('&').filter(Boolean).sort().join('&');
+  return `${method.toUpperCase()} ${u.pathname}${query ? `?${query}` : ''}`;
 }
 
 /**

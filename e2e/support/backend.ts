@@ -755,10 +755,19 @@ export const test = base.extend({
       'har',
       `${recordingName(testInfo)}.api.json`
     );
+    // Keyed again as `key` keys a request now: a file written before the
+    // query's parameters were put in order holds them as the request wrote them.
     const recorded: Record<string, ApiRecording> = RECORD
       ? {}
       : existsSync(sidecar)
-        ? (JSON.parse(readFileSync(sidecar, 'utf8')) as Record<string, ApiRecording>)
+        ? Object.fromEntries(
+            Object.entries(
+              JSON.parse(readFileSync(sidecar, 'utf8')) as Record<string, ApiRecording>
+            ).map(([asked, rec]) => {
+              const [method = '', where = ''] = asked.split(' ', 2);
+              return [key(method, `http://recorded${where}`), rec];
+            })
+          )
         : {};
 
     const absolute = (url: string) => new URL(url, baseURL ?? 'http://localhost:4200').toString();

@@ -19,6 +19,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { isEntry } from './is-entry.mjs';
+import { harKey } from '../e2e/support/har-stubs.mjs';
 import { BACKEND, isCutOff, isTruncated, isUsable } from '../e2e/support/har-entry.mjs';
 
 const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
@@ -33,14 +34,15 @@ const HAR_DIR = path.join(import.meta.dirname, '..', 'e2e', 'har');
  */
 const ABANDONED = [
   {
-    recording: /^legacy-links--legacy-pathway-links-a-dbid-fragment-as-links-in-the-wild-/,
-    request: /\/data\/query\/enhanced\/v2\/1280218\?/,
-    why: 'the page swaps the dbId for its stable id mid-load',
+    recording: /^legacy-links--legacy-pathway-links-/,
+    request:
+      /\/data\/(query\/enhanced\/v2\/|event\/[^/]+\/ancestors|detail\/[^/]+\/locationsInPWB|eventsHierarchy\/9606\?)/,
+    why: 'each test backs out of the pathway browser while the pathway is still loading, and a dbId is swapped for its stable id mid-load',
   },
   {
-    recording: /^legacy-links--legacy-pathway-links-a-direct-stable-id-for-comparison-/,
-    request: /\/data\/eventsHierarchy\/9606\?/,
-    why: 'the test backs out of the pathway browser while its hierarchy is still loading',
+    recording: /^legacy-links--legacy-fragments-that-are-only-settings-diagram-dbid-/,
+    request: /\/data\/query\/enhanced\/v2\/9006934\?/,
+    why: 'the page swaps the dbId for its stable id mid-load',
   },
   {
     recording: /^analysis-results--a-result-that-cannot-be-loaded-/,
@@ -59,10 +61,7 @@ const abandoned = (recording, request) =>
   ABANDONED.some((a) => a.recording.test(recording) && a.request.test(request));
 
 /** `METHOD /path?query`, as the harness keys a request. */
-function key(entry) {
-  const u = new URL(entry.request.url);
-  return `${entry.request.method.toUpperCase()} ${u.pathname}${u.search}`;
-}
+const key = (entry) => harKey(entry.request.method, entry.request.url);
 
 /**
  * The backend requests in one recording that a replay cannot answer truly.
