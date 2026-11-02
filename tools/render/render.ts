@@ -23,6 +23,7 @@
  *   --species   genome-wide only: whose overview, by taxId (default: the site's)
  *   --layout    reaction, to draw a reaction's own layout rather than a diagram
  *   --highlight comma-separated events to mark on the whole diagram, nothing framed
+ *   --files     a folder laid out as the download site, read instead of it (local-files.ts)
  *
  * GIF animates one frame per sample of an expression analysis, so it wants a
  * --token; without one it is a single frame. PPTX is drawn as shapes, one per
@@ -68,6 +69,7 @@ const KNOWN = [
   'layout',
   'highlight',
   'species',
+  'files',
 ];
 const unknown = args.filter((arg) => arg.startsWith('--') && !KNOWN.includes(arg.slice(2)));
 if (unknown.length) {
@@ -124,6 +126,7 @@ try {
     layout: flag('layout', ''),
     highlight: flag('highlight', ''),
     species: flag('species', ''),
+    ...(flag('files', '') ? { files: flag('files', '') } : {}),
   });
 
   await writeFile(out, bytes);
