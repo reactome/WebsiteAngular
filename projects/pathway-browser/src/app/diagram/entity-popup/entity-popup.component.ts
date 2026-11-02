@@ -424,13 +424,21 @@ export class EntityPopupComponent {
       .map(([label, rows]) => ({ label, rows }));
   }
 
+  // Each answer is a pathway; one new or updated in this release says which
+  // (releaseStatus, as Event has it), which the popup does not show.
   private readonly pathways = rxResource({
     params: () => (this.tab() === 'pathways' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
         ? this.http
             .get<
-              { stId: string; displayName: string; speciesName: string; hasDiagram?: boolean }[]
+              {
+                stId: string;
+                displayName: string;
+                speciesName: string;
+                hasDiagram?: boolean;
+                releaseStatus?: string;
+              }[]
             >(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
             .pipe(
               map((items): PopupGroup[] => [

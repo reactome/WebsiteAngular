@@ -545,11 +545,12 @@ export class EhldService {
     // then throws a SecurityError, several frames away from the cause, and the
     // render service answered a bare "Tainted canvases may not be exported".
     //
-    // One illustration does this: Circadian clock (R-HSA-9909396) carries six,
-    // each a div with a conic-gradient, which is how a drawing tool exports a
-    // gradient SVG has no primitive for. The other 217 have none. There is no
-    // way to rasterise it in a browser -- so this says which file and why,
-    // rather than leaving a stack trace to be traced back.
+    // Circadian clock (R-HSA-9909396) carried six until Release 97, each a div
+    // with a conic-gradient, which is how a drawing tool exports a gradient SVG
+    // has no primitive for; Release 98's copy was redrawn without them. Artwork
+    // exported that way again cannot be rasterised in a browser, so this says
+    // which file and why, rather than leaving a stack trace to be traced back.
+    // The e2e test plants one to keep this path tested.
     if (markup.includes('<foreignObject')) {
       throw new Error(
         'this illustration embeds HTML in a <foreignObject>, which a browser refuses to ' +
