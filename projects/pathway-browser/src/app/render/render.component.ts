@@ -17,7 +17,7 @@ import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
 import { ActivatedRoute } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
-import { AnalysisService } from '../services/analysis.service';
+import { AnalysisService, isGone } from '../services/analysis.service';
 import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
 import { SpeciesService } from '../services/species.service';
@@ -237,13 +237,15 @@ export class RenderComponent {
       // A failed request's message names the URL it asked, and the host in
       // it is the address the render service reaches the site on, which the
       // service's answer would pass on: the path is kept, the host is not.
-      // Nor an analysis token, which a failed overview tree's URL carries.
+      // Nor an analysis token, which a failed request carries in its query
+      // (the overview's tree) or its path (the analysis service's own).
       const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
         `could not render ${pathway ?? 'the genome-wide view'}: ` +
           message
             .replace(/\bhttps?:\/\/[^/\s]+/g, '')
-            .replace(/([?&](?:token|analysis)=)[^&\s]+/g, '$1…')
+            .replace(/([?&;](?:token|analysis)=)[^&;:\s]+/gi, '$1…')
+            .replace(/(\/token\/)[^/?;:\s]+/gi, '$1…')
       );
       this.publish();
     }
@@ -329,10 +331,16 @@ export class RenderComponent {
     // The reaction's own layout is never coloured, so its analysis is not its
     // business.
     if (this.reactionView) return null;
-    // The service's own reason: a result a release removed is not the same
-    // failure as one that could not be read just now.
-    const failure = this.analysis.loadFailure();
-    if (failure) return `the analysis result could not be read: ${failure}`;
+    // Read from the resource first: the analysis service records the failure
+    // in an effect, and reading the result before then throws its error, URL
+    // and token included. A result a release removed is not the same failure
+    // as one that could not be read just now, so the two are told apart.
+    const error = this.analysis.resultResource.error();
+    if (error !== undefined || this.analysis.loadFailure() !== null) {
+      return (error !== undefined ? isGone(error) : this.analysis.loadFailureGone())
+        ? 'the analysis result is gone: a release removed it, or it was never on this server'
+        : 'the analysis result could not be read';
+    }
     if (this.diagram()?.analysisFailed()) return 'the analysis could not be read for this diagram';
     return null;
   }

@@ -26,11 +26,16 @@ export type Published = {
   pathway: string | null;
   /** For a caller labelling the figure: an stId is not a caption. */
   name: string | null;
+  /**
+   * The analysis coloured on the figure, and the resource it is coloured for:
+   * the result's default, as the pathway browser shows it. Null with none.
+   */
+  analysis: { token: string; resource: string } | null;
 } & Drawn;
 
 /** `window.__renderState`: whether the page is ready, and what it drew if it has. */
 export type RenderState = { ready: boolean; error: string | null } & (
-  Published | { view?: undefined; pathway?: undefined; name?: undefined }
+  Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined }
 );
 
 /** `window.__renderExport`: the artefacts the page can hand over. */

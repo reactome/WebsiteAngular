@@ -840,7 +840,11 @@ test.describe('The render page, without the render service', () => {
     );
     await page.goto(`/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`);
     const render = page.locator('cr-render');
-    await expect(render).toHaveAttribute('data-render-error', /analysis/, { timeout: 120_000 });
+    // Gone, not merely unread: a release removed it, which a retry will not mend.
+    await expect(render).toHaveAttribute('data-render-error', /analysis result is gone/, {
+      timeout: 120_000,
+    });
+    await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
     await expect(render).not.toHaveAttribute('data-render-ready', 'true');
   });
 });
