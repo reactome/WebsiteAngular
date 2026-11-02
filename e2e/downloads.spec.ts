@@ -665,6 +665,79 @@ test.describe('Logo downloads', () => {
   });
 });
 
+/** A made-up analysis token, answered by `holdAnalysisForUniprot`. */
+const TOKEN = 'MADE-UP-RENDER-TOKEN';
+
+/**
+ * Answer a made-up analysis holding one resource besides TOTAL, so the page
+ * loads it for TOTAL and then again for UNIPROT, as the browser shows it.
+ * Every load for UNIPROT is held back three seconds, and each load says
+ * whether the page was already ready when it arrived.
+ */
+async function holdAnalysisForUniprot(page: Page) {
+  const loads: { url: string; resource: string; readyBefore: boolean }[] = [];
+  const arrive = async (url: URL) => {
+    const resource = url.searchParams.get('resource') ?? 'TOTAL';
+    if (resource === 'UNIPROT') await new Promise((resolve) => setTimeout(resolve, 3_000));
+    const ready = await page
+      .locator('cr-render[data-render-ready="true"]')
+      .count()
+      .catch(() => 0);
+    loads.push({ url: url.pathname, resource, readyBefore: ready > 0 });
+  };
+  const result = {
+    summary: {
+      token: TOKEN,
+      type: 'OVERREPRESENTATION',
+      sampleName: 'made up',
+      text: true,
+      projection: false,
+      interactors: false,
+      includeDisease: true,
+    },
+    expression: { columnNames: [] },
+    identifiersNotFound: 0,
+    pathwaysFound: 0,
+    pathways: [],
+    resourceSummary: [
+      { resource: 'TOTAL', pathways: 1, filtered: 1 },
+      { resource: 'UNIPROT', pathways: 1, filtered: 1 },
+    ],
+    speciesSummary: [],
+  };
+  await page.route(`**/AnalysisService/token/${TOKEN}**`, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/notFound')) return route.fulfill({ json: [] });
+    await arrive(url);
+    if (url.pathname.endsWith(`/token/${TOKEN}`)) return route.fulfill({ json: result });
+    if (url.pathname.endsWith('/filter/pathways')) return route.fulfill({ json: [] });
+    if (url.pathname.includes('/found/all/')) {
+      return route.fulfill({
+        json: {
+          pathway: url.pathname.split('/').at(-1),
+          foundEntities: 0,
+          foundInteractors: 0,
+          expNames: [],
+          resources: [url.searchParams.get('resource') ?? 'TOTAL'],
+          entities: [],
+          interactors: [],
+        },
+      });
+    }
+    return route.fulfill({ status: 404, json: { code: 404 } });
+  });
+  // The overview's tree is fetched with the token, which the content service
+  // cannot read: it is answered with the recorded tree without one.
+  await page.route('**/ContentService/data/eventsHierarchy/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('token') !== TOKEN) return route.fallback();
+    await arrive(url);
+    for (const name of ['token', 'resource', 'interactors']) url.searchParams.delete(name);
+    return route.fallback({ url: url.toString() });
+  });
+  return loads;
+}
+
 test.describe('The render page, without the render service', () => {
   // The slide's grouping (#299) was checked only inside the PPTX download
   // test, which needs the render service and so never runs in CI. What makes
@@ -704,5 +777,57 @@ test.describe('The render page, without the render service', () => {
       );
       expect([...names], `group ${group} has one name`).toHaveLength(1);
     }
+  });
+
+  // The page drew a figure and said it was ready before its analysis
+  // colouring arrived -- and, for a result holding one resource besides TOTAL,
+  // before the second load that colours it for that resource. The render
+  // service then cached the uncoloured figure under the token. The analysis
+  // here is made up and answered in the test; the figures are recorded ones.
+  for (const [view, path] of [
+    ['a diagram', `/PathwayBrowser/render/${DIAGRAM}`],
+    ['an illustration', `/PathwayBrowser/render/${ILLUSTRATION}`],
+    ['the genome-wide view', '/PathwayBrowser/render?species=9606'],
+  ] as const) {
+    test(`is not ready until ${view} is coloured, for the result’s resource`, async ({ page }) => {
+      const loads = await holdAnalysisForUniprot(page);
+      const at = `${path}${path.includes('?') ? '&' : '?'}analysis=${TOKEN}`;
+      await page.goto(at);
+      await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      const state = await page.evaluate(
+        () => (window as unknown as { __renderState: { analysis: unknown } }).__renderState
+      );
+      expect(state.analysis, 'coloured for the one resource besides TOTAL').toEqual({
+        token: TOKEN,
+        resource: 'UNIPROT',
+      });
+      // Waited for rather than read: a page ready too early would be read
+      // before the held-back loads even arrived.
+      await expect
+        .poll(() => loads.filter((load) => load.resource === 'UNIPROT').length, {
+          message: 'the page read the analysis for UNIPROT',
+          timeout: 15_000,
+        })
+        .toBeGreaterThan(0);
+      expect(
+        loads.filter((load) => load.readyBefore),
+        'no colouring arrived after the page said it was ready'
+      ).toEqual([]);
+    });
+  }
+
+  // A token whose result cannot be read -- one a release has removed -- is
+  // dropped by the analysis service, and the page then drew the figure with no
+  // colouring at all and said it was ready.
+  test('fails, rather than draw uncoloured, when the analysis cannot be read', async ({ page }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 410, json: { code: 410, reason: 'Gone' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`);
+    const render = page.locator('cr-render');
+    await expect(render).toHaveAttribute('data-render-error', /analysis/, { timeout: 120_000 });
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
   });
 });

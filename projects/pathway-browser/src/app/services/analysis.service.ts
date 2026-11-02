@@ -416,6 +416,22 @@ export class AnalysisService {
     () => decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis())
   );
 
+  /**
+   * Whether the result on show is the one the address will settle on: no
+   * token, or the token's result loaded for the resource it will stay on.
+   *
+   * Loaded is not enough. A result holding one resource besides TOTAL is shown
+   * for that resource, which the effect below sets only once the first result
+   * has said what it holds, so a second load follows the first -- and `result`
+   * keeps the first while it runs. A figure captured in between is coloured for
+   * TOTAL, not for what the browser shows (the render page waits on this).
+   */
+  readonly settled = computed(() => {
+    if (!this.state.analysis()) return true;
+    if (this.resultResource.isLoading() || this.isLoading() || !this.result()) return false;
+    return this.state.resourceFilter() !== null || defaultResource(this.resourceOptions()) === null;
+  });
+
   readonly pathwayStIdToData = computed(
     () => new Map<string, Analysis.Pathway>(this.result()?.pathways.map((p) => [p.stId, p]))
   );

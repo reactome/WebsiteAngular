@@ -33,6 +33,7 @@ import type {
 } from './render-shapes.model';
 import { gatherGroups } from './render-shapes.model';
 import type { Drawn, Published, RenderExport, RenderState } from './render-api.model';
+import type { Analysis } from '../model/analysis.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is
@@ -161,6 +162,7 @@ export class RenderComponent {
   readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
 
   private readonly diagram = viewChild(DiagramComponent);
+  private readonly ehld = viewChild(EhldComponent);
   private readonly reacfoam = viewChild(ReacfoamComponent);
   private readonly reaction = viewChild(ReactionDiagramComponent);
 
@@ -258,6 +260,15 @@ export class RenderComponent {
     const giveUpOnMissing = started + 3_000;
 
     while (Date.now() < deadline) {
+      // A token whose result cannot be read is dropped by the analysis service,
+      // which would leave a figure with no colouring at all -- drawn, ready, and
+      // wrong. It is the caller's failure to hear about, not a figure.
+      const failed = this.analysisFailure();
+      if (failed) {
+        this.error.set(failed);
+        this.publish();
+        return;
+      }
       const drawn = this.drawn();
 
       if (
@@ -287,6 +298,7 @@ export class RenderComponent {
           // it. An stId is not a caption.
           name:
             this.dataState.currentPathway()?.displayName || this.reaction()?.figureName() || null,
+          analysis: this.coloured(),
           ...drawn,
         });
         // Set before publishing, not after: publish() copies the signal's value
@@ -301,16 +313,67 @@ export class RenderComponent {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    this.error.set(`nothing drawn for ${pathway ?? 'the genome-wide view'} within 60s`);
+    this.error.set(
+      this.drawn(true)
+        ? `the analysis was not coloured on ${pathway ?? 'the genome-wide view'} within 60s`
+        : `nothing drawn for ${pathway ?? 'the genome-wide view'} within 60s`
+    );
     this.publish();
+  }
+
+  /** Why the analysis cannot be coloured, if it cannot. */
+  private analysisFailure(): string | null {
+    if (this.analysis.loadFailure()) return 'the analysis result could not be read';
+    if (this.diagram()?.analysisFailed()) return 'the analysis could not be read for this diagram';
+    return null;
+  }
+
+  /** The analysis the figure is to carry, or null with none. */
+  private coloured(): { token: string; resource: Analysis.Resource } | null {
+    const token = this.state.analysis();
+    return token ? { token, resource: this.state.resourceFilter() ?? 'TOTAL' } : null;
+  }
+
+  /**
+   * Whether the view on screen carries the analysis the address will settle
+   * on. Each view colours itself after it has drawn -- a diagram fetches what
+   * the analysis found in it, Reacfoam reloads its tree with the token -- and
+   * the result can itself be reloaded for its default resource after the
+   * first load. A figure taken before then is drawn, ready, and uncoloured or
+   * coloured for the wrong resource, and the render service caches it.
+   */
+  private analysisShown(view: Drawn['view']): boolean {
+    const wanted = this.coloured();
+    if (!wanted) return true;
+    if (!this.analysis.settled()) return false;
+    switch (view) {
+      case 'reaction':
+        // The reaction's own layout is never coloured.
+        return true;
+      case 'diagram': {
+        const applied = this.diagram()?.appliedAnalysis();
+        return applied?.token === wanted.token && applied.resource === wanted.resource;
+      }
+      case 'ehld':
+        return this.ehld()?.appliedAnalysis() === this.analysis.result();
+      case 'reacfoam':
+        return this.reacfoam()?.showsCurrentData() ?? false;
+    }
   }
 
   /**
    * Whether something is actually on screen, and what. Each view reports
    * differently: a diagram has a cytoscape instance with elements, an
-   * illustration is an inlined svg, and Reacfoam draws to a canvas.
+   * illustration is an inlined svg, and Reacfoam draws to a canvas. Not until
+   * it carries its analysis, if it has one; `uncoloured` asks only whether it
+   * is drawn.
    */
-  private drawn(): Drawn | null {
+  private drawn(uncoloured = false): Drawn | null {
+    const drawn = this.drawnView();
+    return drawn && (uncoloured || this.analysisShown(drawn.view)) ? drawn : null;
+  }
+
+  private drawnView(): Drawn | null {
     const host = document.querySelector('cr-render');
     if (!host) return null;
 

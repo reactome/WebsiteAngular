@@ -100,7 +100,10 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // not drag apart.
 // v11: the genome-wide view exports a PNG (#639), so a genome-wide .pptx
 // cached under v10 has no fallback picture beside its SVG.
-const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v11';
+// v12: the page waits for a token's analysis colouring, for the resource the
+// result settles on, before it is ready: a figure with a token cached under v11
+// may be uncoloured, or coloured for TOTAL where the browser shows another.
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v12';
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.

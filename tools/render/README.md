@@ -197,7 +197,8 @@ cytoscape themselves.
 
 Readiness is a signal, not a delay, because a diagram fetches its layout, its
 overlays and its fonts and no fixed wait is both correct and quick. Two things
-made that harder than expected and are worth knowing if you touch it:
+made that harder than expected, and a third was found late, and all are worth
+knowing if you touch it:
 
 - The diagram component draws the **legend** as a second cytoscape instance,
   which appears well before the pathway. Any check that accepts "a canvas exists
@@ -205,6 +206,13 @@ made that harder than expected and are worth knowing if you touch it:
 - The diagram will not load at all until something calls
   `EventService.setDiagramPathway`, which only the viewport used to do. Without
   it the page renders the legend and nothing else.
+- With a token, every view is drawn **before** its analysis colouring arrives,
+  and a result holding one resource besides TOTAL is loaded a second time for
+  that resource, as the pathway browser shows it. Until v12 the page was ready
+  as soon as something was drawn, so a figure could be cached uncoloured or
+  coloured for TOTAL. It now waits until the view carries the result it settles
+  on, and says which in `__renderState.analysis`; a token whose result cannot be
+  read is an error, not an uncoloured figure.
 
 ## Two traps in the genome-wide view
 
@@ -242,7 +250,7 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work        |
 | `RENDER_BASE`        | http://localhost:4200 | site to render against                                                     |
 | `RENDER_CACHE`       | `.render-cache`       |                                                                            |
-| `RENDER_CACHE_KEY`   | the code's (`v10`)    | override only to invalidate by hand; the code bumps it when output changes |
+| `RENDER_CACHE_KEY`   | the code's (`v12`)    | override only to invalidate by hand; the code bumps it when output changes |
 | `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                       |
 | `RENDER_QUEUE`       | 8                     | pending renders before 503                                                 |
 | `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                            |
