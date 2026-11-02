@@ -1,4 +1,7 @@
-import type { Page } from '@playwright/test';
+import type { Page, Route } from '@playwright/test';
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { render } from './render-core.ts';
 
@@ -79,11 +82,13 @@ describe('a figure of another species', () => {
 describe("the release's files", () => {
   // A stand-in page that records its routes and stops at the first navigation.
   function routed() {
-    const routes: { matcher: unknown; handler: unknown }[] = [];
+    const routes: { matcher: (url: URL) => boolean; handler: (route: Route) => Promise<void> }[] =
+      [];
+    let seen: typeof routes = [];
     const page = {
       on() {},
       off() {},
-      async route(matcher: unknown, handler: unknown) {
+      async route(matcher: (url: URL) => boolean, handler: (route: Route) => Promise<void>) {
         routes.push({ matcher, handler });
       },
       async unroute(matcher: unknown, handler: unknown) {
@@ -91,26 +96,53 @@ describe("the release's files", () => {
         if (i >= 0) routes.splice(i, 1);
       },
       async goto() {
-        seen = routes.length;
+        seen = [...routes];
         throw new Error('stop here');
       },
     };
-    let seen = 0;
     return { page, routes, seen: () => seen };
   }
 
   it('are read from the folder while the page draws, and the route removed after', async () => {
-    const { page, routes, seen } = routed();
-    await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', files: '/files' }).catch(
-      () => undefined
-    );
-    expect(seen()).toBe(1);
-    expect(routes).toHaveLength(0);
+    const root = await mkdtemp(path.join(tmpdir(), 'render-core-files-'));
+    try {
+      await mkdir(path.join(root, '98', 'diagram'), { recursive: true });
+      await writeFile(path.join(root, '98', 'diagram', 'R-HSA-1.json'), '{"x":1}');
+      const { page, routes, seen } = routed();
+      await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', files: root }).catch(
+        () => undefined
+      );
+      const [only] = seen();
+      expect(seen()).toHaveLength(1);
+      expect(only?.matcher(new URL('https://download.reactome.org/98/diagram/R-HSA-1.json'))).toBe(
+        true
+      );
+      expect(only?.matcher(new URL('http://site/ContentService/data/database/version'))).toBe(
+        false
+      );
+      const fulfilled: unknown[] = [];
+      const route = (url: string) =>
+        ({
+          request: () => ({ url: () => url }),
+          fulfill: async (answer: unknown) => void fulfilled.push(answer),
+          continue: async () => void fulfilled.push('continued'),
+        }) as unknown as Route;
+      await only?.handler(route('https://download.reactome.org/98/diagram/R-HSA-1.json'));
+      await only?.handler(route('https://download.reactome.org/98/diagram/R-HSA-2.json'));
+      expect(fulfilled).toMatchObject([
+        { status: 200, contentType: 'application/json' },
+        { status: 404 },
+      ]);
+      expect(String((fulfilled[0] as { body: Buffer }).body)).toBe('{"x":1}');
+      expect(routes).toHaveLength(0);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it('are left to the download site when no folder is given', async () => {
     const { page, seen } = routed();
     await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1' }).catch(() => undefined);
-    expect(seen()).toBe(0);
+    expect(seen()).toHaveLength(0);
   });
 });

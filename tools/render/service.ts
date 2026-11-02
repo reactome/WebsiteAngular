@@ -33,6 +33,9 @@
  *   RENDER_CONCURRENCY  simultaneous renders, default 2
  *   RENDER_QUEUE        pending renders before 503, default 8
  *   RENDER_CACHE_MAX    bytes of cache to keep, default 2 GB (0 disables)
+ *   RENDER_TIMEOUT      ms before a render is abandoned, default 45000
+ *   RENDER_FILES        a folder laid out as the download site, read instead of it
+ *                       (local-files.ts); unset, the page fetches from the site
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
  * highlight=<stId>,<stId>...,
@@ -54,7 +57,7 @@ import {
 } from './params.ts';
 import { chromium, type Browser } from '@playwright/test';
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import {
   mkdir,
@@ -108,6 +111,12 @@ const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v12';
 // for the page to read instead of the site (local-files.ts). Unset, it fetches
 // them from the site, as a reader's browser does.
 const FILES = process.env['RENDER_FILES'] || undefined;
+// A mistyped folder would otherwise fail every render after the full timeout,
+// with /health saying the files are local.
+if (FILES && !statSync(FILES, { throwIfNoEntry: false })?.isDirectory()) {
+  console.error(`RENDER_FILES is not a directory: ${FILES}`);
+  process.exit(2);
+}
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
@@ -278,6 +287,10 @@ function cacheKey({
         highlight,
         // Only when set, so every figure cached before it keeps its key.
         ...(species ? [species] : []),
+        // Where the page's files came from: a figure drawn from the download
+        // site is not served as one drawn from a release's own files, nor the
+        // reverse. Only when set, as above.
+        ...(FILES ? ['files'] : []),
       ])
     )
     .digest('hex');
