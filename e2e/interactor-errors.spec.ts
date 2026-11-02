@@ -24,7 +24,11 @@ const interactions = (acc: string) =>
   new RegExp(`/interactors/static/molecule/${acc}/withEntities(\\?|$)`);
 
 test.describe('The interactor page', () => {
+  // UniProt is a third party the page asks only for synonyms. Held here so it
+  // never answers: the page waited for it, and when UniProt was slow the
+  // partners never showed.
   test('shows the partners of an interactor', async ({ page }) => {
+    await page.route(/rest\.uniprot\.org/, () => {});
     await page.goto(`/content/detail/interactor/${KNOWN}`);
     await expect(page.locator('.interactions-table tbody tr').first()).toBeVisible({
       timeout: LOAD,
