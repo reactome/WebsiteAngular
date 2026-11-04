@@ -15,6 +15,8 @@ checked by R4's prototype and R5's comparison before it is built on.
 - **Recreating the component:** a route reuse strategy for the two render routes
   (`render` and `render/:pathwayId`) never reuses their component. Every navigation
   destroys the old `RenderComponent` and constructs a new one.
+  Only a navigation that `__renderNavigate` started recreates it: the page's own
+  address rewrites after drawing keep the component, as on a fresh page (R4 result).
 - **Why that works:** the new component reads `route.snapshot` in its field
   initialisers, exactly as on a fresh page. None of its reads changes, so each of its
   parameters needs nothing new to prove.
@@ -122,9 +124,11 @@ requests in an order that would show it.
 - **Replaced** (closed, and its context with it) when:
   - the figure failed, timed out, or reported a browser problem (FR-005);
   - it has drawn `RENDER_REUSE_MAX` figures (FR-006; default from R4);
-  - its JavaScript heap, read through the DevTools protocol's
-    `Performance.getMetrics` after each figure, is over `RENDER_REUSE_HEAP_MB` (FR-006;
-    default from R4);
+  - the service's container, read from its own cgroup (`memory.current` against
+    `memory.max`) after each figure, is over `RENDER_REUSE_MEMORY` of its limit (FR-006;
+    default from R4). Not the page's JavaScript heap: R4 found that flat while the
+    renderer grew. With no limit to read (the CLI, or no container), only the count
+    applies;
   - the site's build differs from the build the page loaded (FR-008). Nothing reports
     the site's build today: `/health`'s `build` is a hash of the service's own modules
     (`buildId()` in `service.ts`). So the render page reports its own build as the name
@@ -156,8 +160,8 @@ Before building, a prototype measures reuse on the service itself:
   - 40 highlights in an ancestor's diagram;
   - 20 illustrations;
   - 5 species overviews.
-- **Also:** the JavaScript heap and `body`'s children after each figure, over 2,000
-  figures on one page, to choose `RENDER_REUSE_MAX` and `RENDER_REUSE_HEAP_MB`.
+- **Also:** the JavaScript heap and `body`'s children after each figure, over many
+  figures on one page, to choose `RENDER_REUSE_MAX` and the memory bound.
 - **Go:** reactions on reused pages take at most half their fresh median (SC-002), and
   the projected release 98 run is under 2 h 54 min. Otherwise the plan stops and records
   why.
@@ -207,3 +211,78 @@ Before building, a prototype measures reuse on the service itself:
   - the container's peak memory.
 - **The figures themselves** are compared with T031's folder by bytes. A difference is
   explained, by a build change between the two runs, or it is a failure.
+
+## R4 result (T001, 4 Nov 2026): go
+
+The prototype (branch `spec018/t001-prototype`, never merged) on release 98: a scratch
+`production,beta` site build served on the host's bridge address, and a loopback
+render service with `RENDER_FILES`, `RENDER_CONCURRENCY=4`, a 3 GB container and a
+180 s timeout. The sample was 200 SVGs (99 reactions, 40 diagrams, 40 highlights in an
+ancestor's diagram, 20 illustrations, the human overview) in one fixed shuffled order,
+four at a time, each service started with an empty cache.
+
+| Kind         | Fresh median | Reused median | Reused mean |
+| ------------ | ------------ | ------------- | ----------- |
+| reaction     | 3.05 s       | 0.49 s        | 1.37 s      |
+| illustration | 3.36 s       | 0.91 s        | 1.49 s      |
+| highlight    | 5.22 s       | 4.82 s        | 4.20 s      |
+| diagram      | 5.26 s       | 3.70 s        | 4.33 s      |
+| all 200      | 213 s wall   | 130 s wall    |             |
+
+Fresh: none failed, peak 2,014 MiB. Reused, with the memory rule at 0.5: none failed,
+peak 2,272 MiB, 116 of 200 figures on a held page.
+
+**Go:** reused reactions take a sixth of their fresh median (SC-002 asks for half).
+
+**Projection for release 98:** reactions are 16,187 of 19,076 figures. From the means
+above, the figures step comes to about half of T031's 5 h 47 min, close to the 2 h 54
+min of SC-001. T010's real run decides it. A reaction-heavy run should close fewer
+pages than this mixed sample, which is the reason the reused mean is above the median.
+
+**What the prototype found, each now part of the plan:**
+
+1. **The page rewrites its own address.** After drawing, the render page navigates
+   (a reaction's id becomes its pathway with `?select=`). A reuse strategy that
+   recreates the component on every render-route navigation also recreated it on that
+   rewrite: the new figure's component, with its navigation id, was replaced by one
+   without it, and 84 of 200 figures timed out. The strategy recreates only during a
+   navigation that `__renderNavigate` started (R1).
+2. **An element handle pins a figure.** `page.waitForSelector` returns a handle to the
+   ready host, and an undisposed handle keeps that host and its whole tree alive. On a
+   fresh page closing the page frees it. On a held page every figure stayed. Measured
+   on one page over 35 diagrams: 330,000 DOM nodes and a 153 MB heap before, 11,000
+   nodes and 43 MB after disposing it. Once disposed, the heap was flat over 60
+   reactions and 35 diagrams, exports included, and `body` kept 11 children.
+3. **The heap is the wrong bound.** With the leak gone, held pages still crashed
+   ("Target crashed", 14 to 19 of 200) because the container reached its limit. Each
+   renderer process held 600 to 1,100 MB while its heap was about 50 MB. A renderer's
+   memory stays at the high-water mark of the largest figure it drew, so four held
+   pages plus one large diagram passed 3 GB. A count did not help: 10 and 25 figures
+   per page still crashed (8 and 16 failures). Closing a finished page whenever the
+   container is above half its limit gave none. Hence `RENDER_REUSE_MEMORY` (0.5) in
+   place of `RENDER_REUSE_HEAP_MB`, and `RENDER_REUSE_MAX` (200) kept only as a
+   backstop that was not tuned.
+4. **Fresh pages are not deterministic** (R7), so R5's byte comparison cannot yet be
+   run as written.
+
+Not done as R4 planned: the 2,000-figure run on one page. The memory rule bounds what a
+page can hold whatever the count, and the heap was flat over the figures measured.
+
+## R7. Fresh renders vary (found by T001)
+
+Two runs of the same 200 SVGs, each on fresh pages, differed in 49 files, all
+reactions:
+
+- **Order (42):** the same elements in a different drawing order.
+- **Label size (7):** some labels fitted at a smaller font size in one run (8.43 px
+  against 12 px). That points to a race with the web font: a label measured before
+  Roboto loads is fitted with another font's widths.
+
+Reused against fresh differed in 78 of 181 and 88 of 183 (two runs), from the same causes and perhaps
+others. R5 cannot tell a leak from this until fresh renders are repeatable, so making
+them repeatable comes first (tasks.md T011): the drawing order fixed, and readiness
+waiting for the fonts the figure uses.
+
+Also seen, on fresh pages and separate from reuse: a species overview for a species
+other than human failed with "asked for species 7955, the page drew 9606". It is
+recorded here for its own fix.

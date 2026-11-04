@@ -9,7 +9,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 ## Phase 1: Measure first (go or no-go)
 
-- [ ] T001 Prototype and measure (research R4), on a branch that is not merged.
+- [x] T001 Prototype and measure (research R4), on a branch that is not merged (#791).
   - **On the render page:** add `__renderNavigate` and the never-reuse strategy for the
     render routes in `projects/pathway-browser/src/app/render/render-navigation.ts`.
   - **In the service:** add a held page per slot in `tools/render/service.ts`, without
@@ -17,13 +17,21 @@ first (constitution III). The PR that completes a task ticks it here with its nu
   - **Measure:** time each kind fresh against reused at concurrency 4, through a
     loopback service with `RENDER_FILES` and a scratch site build. Count each page's
     heap and `body`'s children over 2,000 figures.
+  - **Done** (research.md R4 result: go). Its findings changed T003, T005 and T007, and
+    added T011.
   - **Record:** the result in research.md R4 (go or no-go), with
-    `RENDER_REUSE_MAX` and `RENDER_REUSE_HEAP_MB` chosen.
+    `RENDER_REUSE_MAX` and the memory bound chosen.
   - **If no-go:** stop, and record why.
 
 **Checkpoint**: go: reused reactions take at most half their fresh median.
 
 ## Phase 2: The comparison first (US2, P1)
+
+- [ ] T011 [US2] Fresh renders repeatable (research R7), in the render page.
+  - **Fix:** a fixed drawing order for a reaction's elements, and readiness that waits
+    for the fonts the figure uses.
+  - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
+    failing before the fix.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **What it does:** draws the sample through two services, three orders, and compares
@@ -39,7 +47,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     `app-routing.module.ts`; `nav` and `build` in `__renderState` and `data-render-nav`
     in `render.component.ts`.
   - **Tests:** a second navigation recreates the component, and its readiness carries
-    the new `nav`. A non-render address is refused.
+    the new `nav`. A non-render address is refused. The page's own address rewrite
+    after drawing keeps the component (R4 result, 1).
 - [ ] T004 [US2] The state of research R2's table, each row settled. A leak found is
       fixed in the render page:
   - the readiness wait cancelled on destroy, its queries scoped to its own host, and
@@ -61,6 +70,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
   - Behind `RENDER_REUSE` (off is today).
   - The comment above `getBrowser()` that warns against reuse is rewritten to say what
     reuse rests on (research R2).
+  - The readiness handle is disposed (R4 result, 2).
   - **Tests in `tools/render/pages.spec.ts`:**
     - no more pages than `RENDER_CONCURRENCY`;
     - no page shared by two figures;
@@ -69,7 +79,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       restart (data-model Replacement).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
     failed request's answer is today's.
-- [ ] T007 [US4] Replacement by count, by heap and by build, with the defaults from T001.
+- [ ] T007 [US4] Replacement by count, by the container's memory and by build, with the
+      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5).
       The site's build is read from the render page's HTML at `RENDER_BASE`, at most once a
       minute (research R3).
   - **Tests:** each rule, seen failing with it removed.
@@ -93,6 +104,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 ## Dependencies
 
 - T001 gates everything.
+- T011 comes before T002's run on a real sample.
 - T002 comes before T003–T008, so each is checked by it.
 - T003 → T004.
 - T005 → T006 → T007 → T008.
