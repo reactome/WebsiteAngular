@@ -56,6 +56,13 @@ anything global on the page, keep their state from one figure to the next:
 | `document.fonts`, the icon registry         | loaded fonts and icons                                        | loaded once                                            | harmless, and part of what reuse saves                                                                                                                                                 |
 | DOM left behind (`document.body` SVG hosts) | the exporter appends a measuring `svg` to `body`              | removed after use (to check)                           | R4 counts `body`'s children after each figure                                                                                                                                          |
 
+**The service's own warning:** `service.ts` says, above `getBrowser()`, that reusing a page
+"leaks state between renders -- a stale analysis token being the obvious one", and it
+opens a fresh page for that reason. That warning is about reusing a page as it is. This
+plan recreates the component on every figure and proves the rest by R5's comparison. The
+comment is rewritten with T005 to say what the reuse rests on, and that `RENDER_REUSE=off`
+is today's behaviour.
+
 The table is from reading. R5's comparison is what decides: each row's risk is a pair of
 requests in an order that would show it.
 
@@ -77,9 +84,16 @@ requests in an order that would show it.
   - its JavaScript heap, read through the DevTools protocol's
     `Performance.getMetrics` after each figure, is over `RENDER_REUSE_HEAP_MB` (FR-006;
     default from R4);
-  - the site's build differs from the build the page loaded (FR-008). The page records
-    the build from the render page's `__renderState`, and the service compares it with
-    the build its health answer reports today.
+  - the site's build differs from the build the page loaded (FR-008). Nothing reports
+    the site's build today: `/health`'s `build` is a hash of the service's own modules
+    (`buildId()` in `service.ts`). So the render page reports its own build as the name
+    of its main script, which the production build already content-hashes
+    (`main-{hash}.js`), in `__renderState.build`. The service learns the site's current
+    build by reading the same name from the render page's HTML at `RENDER_BASE`. It does
+    that at most once a minute, and before a held page is reused after a minute idle.
+    It is one small request, never a figure. A page whose build is not the current one
+    is replaced. Measured in T001: the request's time, and whether a deploy is seen
+    within the minute.
 - **`RENDER_REUSE`:** `off` gives today's behaviour, a fresh page and context per figure
   (FR-010). The default is on once SC-003 passes.
 - **Health:** today's fields stay. It adds `pages` (held), `reused` (figures drawn on

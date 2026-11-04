@@ -2,12 +2,13 @@
 
 Every field `/health` answers today stays as it is. With `RENDER_REUSE` on, it adds:
 
-| Field      | Type                                                 | Meaning                                          |
-| ---------- | ---------------------------------------------------- | ------------------------------------------------ |
-| `reuse`    | `boolean`                                            | whether held pages are used                      |
-| `pages`    | `number`                                             | pages held now                                   |
-| `reused`   | `number`                                             | figures drawn on a held page since start         |
-| `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model) |
+| Field      | Type                                                 | Meaning                                                   |
+| ---------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| `reuse`    | `boolean`                                            | whether held pages are used                               |
+| `pages`    | `number`                                             | pages held now                                            |
+| `reused`   | `number`                                             | figures drawn on a held page since start                  |
+| `site`     | `string`                                             | the site build last read from `RENDER_BASE` (research R3) |
+| `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model)          |
 
 With `RENDER_REUSE=off`, `reuse` is `false` and the other three are absent.
 

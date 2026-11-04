@@ -53,6 +53,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       `service.ts`.
   - The first figure on a page is a full load; later ones navigate in the app.
   - Behind `RENDER_REUSE` (off is today).
+  - The comment above `getBrowser()` that warns against reuse is rewritten to say what
+    reuse rests on (research R2).
   - **Tests in `tools/render/pages.spec.ts`:**
     - no more pages than `RENDER_CONCURRENCY`;
     - no page shared by two figures;
@@ -62,6 +64,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
     failed request's answer is today's.
 - [ ] T007 [US4] Replacement by count, by heap and by build, with the defaults from T001.
+      The site's build is read from the render page's HTML at `RENDER_BASE`, at most once a
+      minute (research R3).
   - **Tests:** each rule, seen failing with it removed.
 - [ ] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
       settings in the service's header comment and its README (`tools/render/README.md`).
