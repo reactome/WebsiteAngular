@@ -140,6 +140,28 @@ describe("the release's files", () => {
     }
   });
 
+  it('a request answered after its render has ended is said, never thrown', async () => {
+    // Playwright runs a route's handler itself: a rejection from it is unhandled and ends
+    // the service, as a render that timed out while its file was being read once did.
+    const root = await mkdtemp(path.join(tmpdir(), 'render-core-files-'));
+    try {
+      await mkdir(path.join(root, '98', 'diagram'), { recursive: true });
+      await writeFile(path.join(root, '98', 'diagram', 'R-HSA-1.json'), '{"x":1}');
+      const { page, seen } = routed();
+      await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', files: root }).catch(
+        () => undefined
+      );
+      const [only] = seen();
+      const handled = {
+        request: () => ({ url: () => 'https://download.reactome.org/98/diagram/R-HSA-1.json' }),
+        fulfill: () => Promise.reject(new Error('route.fulfill: Route is already handled!')),
+      } as unknown as Route;
+      await expect(only?.handler(handled)).resolves.toBeUndefined();
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it('are left to the download site when no folder is given', async () => {
     const { page, seen } = routed();
     await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1' }).catch(() => undefined);

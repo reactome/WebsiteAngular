@@ -186,9 +186,17 @@ export async function render(
   };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
+  // A route handler's failure is no promise anyone awaits: Playwright runs the handler
+  // itself, so a rejection here is unhandled and ends the whole service. A request still
+  // being answered when the render has ended (timed out, its page closed) is "already
+  // handled" when its file arrives; that is said among the render's problems, never thrown.
   const fromFiles = async (route: Route, root: string) => {
-    const { status, contentType, body } = await localAnswer(root, new URL(route.request().url()));
-    return route.fulfill({ status, contentType, body });
+    try {
+      const { status, contentType, body } = await localAnswer(root, new URL(route.request().url()));
+      await route.fulfill({ status, contentType, body });
+    } catch (e) {
+      problems.push(`files: ${String(e).slice(0, 200)}`);
+    }
   };
   const handler = files ? (route: Route) => fromFiles(route, files) : undefined;
   if (handler) await page.route(isDownload, handler);
