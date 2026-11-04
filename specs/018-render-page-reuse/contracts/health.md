@@ -1,0 +1,20 @@
+# Contract: the render service's health answer
+
+Every field `/health` answers today stays as it is. With `RENDER_REUSE` on, it adds:
+
+| Field      | Type                                                 | Meaning                                          |
+| ---------- | ---------------------------------------------------- | ------------------------------------------------ |
+| `reuse`    | `boolean`                                            | whether held pages are used                      |
+| `pages`    | `number`                                             | pages held now                                   |
+| `reused`   | `number`                                             | figures drawn on a held page since start         |
+| `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model) |
+
+With `RENDER_REUSE=off`, `reuse` is `false` and the other three are absent.
+
+**Settings** (environment, read at start):
+
+| Setting                | Default           | Meaning                                    |
+| ---------------------- | ----------------- | ------------------------------------------ |
+| `RENDER_REUSE`         | on (after SC-003) | `off`: a fresh page and context per figure |
+| `RENDER_REUSE_MAX`     | from research R4  | figures a page draws before it is replaced |
+| `RENDER_REUSE_HEAP_MB` | from research R4  | heap above which a page is replaced        |
