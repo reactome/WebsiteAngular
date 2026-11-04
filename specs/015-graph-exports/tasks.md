@@ -309,7 +309,7 @@ Both exporters' adoption pull requests found that their own checks do not run ye
 - [x] T056 [US4] Level 2: decided with the user on 24 Oct 2026. `biopax2.zip` is no longer produced, and the decision is recorded in spec.md's edge cases. With the release's maintainers, the Level 2 step is turned off when the Level 3 step moves (T055). — #646
 - [ ] T057 [US4] [ext] With the release's maintainers: `sbml-exporter`'s release run moves to the graph-only command line (T040), after T041.
 - [ ] T058 [US4] Record in research.md R9 what is left for whoever retires `release-download-directory`:
-  - its other relational steps, and those `data-export` already makes from the graph;
+  - its other relational steps, and those `data-export` already makes from the graph (recorded 4 Nov 2026);
   - what in `sbml-exporter` (its relational half) and the legacy service can go once nothing calls them.
 
 ---

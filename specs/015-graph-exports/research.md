@@ -317,8 +317,24 @@ Read on each default branch, cloned shallowly, with nothing run against Reactome
 **`reactome/data-export`** (Java; graph-core and Cypher only, "the files to be placed in the download section"). Some of those steps already have a graph-based counterpart here, read from its task list on 24 Oct 2026:
 
 - **`pathway2summation` and `humanPathwaysWithDiagrams`:** made by its `PathwaySummationMapping` and `HumanPathwaysWithDiagrams` tasks.
-- **A GSEA-style GMT:** its `GmtExporter` writes `Reactome_GeneName.gmt` from the graph. Whether that is the same set as `release-download-directory`'s `ReactomePathways.gmt.zip`, under another name, is not shown by the code. A file comparison would settle it.
-- **No counterpart** for the database dumps (MySQL by nature), the Protégé ontology files, `reactome_stable_ids.txt`, `gene_association.reactome` or the BioSystems export.
+- **A GSEA-style GMT:** its `GmtExporter` writes `Reactome_GeneName.gmt` from the graph, but the release does not publish it. Compared on 4 Nov 2026 (T058), its query run on release 98's graph against release 98's published `ReactomePathways.gmt`:
+  - 2,858 of the published file's 2,874 pathways have the same gene set, and no published gene is missing from the graph's sets;
+  - 16 pathways gain 799 genes in total, all cell markers, because the query also follows `proteinMarker` and `RNAMarker`;
+  - one pathway more is in the graph's file;
+  - 50 names differ: the published file trims trailing spaces and makes repeated names unique by appending `_{dbId}`, which GSEA tools need.
+
+  So `GmtExporter` can replace the GSEA step once its query leaves the two marker relationships out, its names are trimmed and made unique the same way, and the file is published as `ReactomePathways.gmt.zip`.
+
+- **No counterpart** for the database dumps (MySQL by nature, kept for as long as a relational release is offered), `reactome_stable_ids.txt`, `gene_association.reactome` or the BioSystems export. A search of Reactome's public repositories on 4 Nov 2026 found no other producer of these three.
+- **No longer made**, by the user's decision of 4 Nov 2026: the Protégé ontology files. Level 2 BioPAX was dropped earlier (T056).
+
+**What is left (T058, first part, 4 Nov 2026).** For whoever retires `release-download-directory`, three files need a graph-based producer, in `data-export` where the port is small or a repository of its own where it is not:
+
+1. `reactome_stable_ids.txt`, which first needs a check that the graph's stable identifiers carry the old identifiers the stable-identifier database holds;
+2. `gene_association.reactome`, about 600 lines of rules in its GO annotation step;
+3. `ReactomeToBioSystems.zip`, unless its consumers have gone, in which case it is dropped.
+
+Plus the GMT change above. The two optional steps are already `data-export`'s.
 
 So retiring `release-download-directory` is smaller than its step list suggests. That work remains out of this spec's scope (T058 records it for whoever retires it).
 
