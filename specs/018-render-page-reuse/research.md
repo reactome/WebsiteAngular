@@ -56,6 +56,47 @@ anything global on the page, keep their state from one figure to the next:
 | `document.fonts`, the icon registry         | loaded fonts and icons                                        | loaded once                                            | harmless, and part of what reuse saves                                                                                                                                                 |
 | DOM left behind (`document.body` SVG hosts) | the exporter appends a measuring `svg` to `body`              | removed after use (to check)                           | R4 counts `body`'s children after each figure                                                                                                                                          |
 
+**Found by a reading audit (4 Nov 2026), to reproduce in T001 and R5 before fixing.**
+Two were checked against the code here (marked); the rest are as reported, with the
+order that would show each:
+
+1. **The component is not recreated by default.** No route reuse strategy exists, and
+   `render/A` → `render/B` matches the same route, so Angular keeps the component. A
+   query change alone keeps it too. Every `route.snapshot` read would stay stale
+   (`render/A?dark=true`, then `render/B`, draws B dark). This is R1's reuse strategy;
+   T003's first test is this order.
+2. **The readiness wait outlives its component** (checked: no `DestroyRef` or
+   `ngOnDestroy` in `render.component.ts`).
+   - `waitForDrawn` polls for up to its timeout and finds the host and the illustration
+     by global selectors. An old wait can therefore see the next figure's illustration
+     and publish the old figure's `__renderState` and `__renderExport`, or overwrite the
+     new one's with its timeout error.
+   - `__renderState` also keeps the old figure's `ready` until the new one publishes.
+   - Order: a slow or failing pathway, then an illustrated one.
+   - Fix: cancel the wait on destroy, scope its queries to its own host, and clear
+     `__renderState` at construction.
+3. **Species is never reset.** `currentSpecies` is set only when `species=` is given or
+   the pathway implies one. A mouse pathway, then `render` with no species, draws mouse's
+   genome-wide view.
+4. **An analysis load failure outlives its token** (checked: `_loadFailure` is cleared
+   in `analysis.service.ts` only when a token is present). A dead token, then a pathway
+   with no analysis, fails the second with "the analysis result is gone".
+5. **The interactors' thresholds** (`interactor.service.ts`: `thresholdByResource`, and
+   a one-shot `addressThresholdUnclaimed`) keep the first figure's score. An overlay at
+   0.8, then the same overlay at 0.5, draws 0.8.
+6. **The default resource** is chosen from the previous token's result while the next
+   loads (`analysis.service.ts`). Token A, then token B with another default resource,
+   colours B by A's resource.
+7. **Probably harmless, to check:**
+   - `EventService._diagramPathway` is never cleared, which is a race on a subpathway
+     without a diagram;
+   - the URL writer may write the previous figure's values while a dbId parameter
+     resolves;
+   - `cyToSelectedResource` keeps destroyed graphs, which leaks memory.
+
+Each is a row of R5's orders. Each fix is in the render page, in T004, so a fresh page
+draws exactly as before.
+
 **The service's own warning:** `service.ts` says, above `getBrowser()`, that reusing a page
 "leaks state between renders -- a stale analysis token being the obvious one", and it
 opens a fresh page for that reason. That warning is about reusing a page as it is. This

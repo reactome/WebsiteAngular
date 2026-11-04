@@ -42,7 +42,13 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     the new `nav`. A non-render address is refused.
 - [ ] T004 [US2] The state of research R2's table, each row settled. A leak found is
       fixed in the render page:
-  - the species reset when `species=` is absent, unless R5 shows nothing drawn reads it;
+  - the readiness wait cancelled on destroy, its queries scoped to its own host, and
+    `__renderState` cleared at construction (R2 audit 2);
+  - the species reset when `species=` is absent (audit 3);
+  - an analysis load failure cleared when the token is absent (audit 4);
+  - the interactors' thresholds and the default resource taken from the figure's own
+    address (audits 5 and 6);
+  - audit 7's three checked, and fixed if R5 shows them;
   - `body` left with no exporter hosts.
 
   Tests: each R5 order that would show the row.
