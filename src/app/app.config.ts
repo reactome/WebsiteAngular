@@ -4,7 +4,8 @@ import {
   importProvidersFrom,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, RouteReuseStrategy } from '@angular/router';
+import { RenderReuseStrategy } from '../../projects/pathway-browser/src/app/render/render-navigation';
 import { StoreModule } from '@ngrx/store';
 import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
 import { EffectsModule } from '@ngrx/effects';
@@ -42,6 +43,7 @@ export const appConfig: ApplicationConfig = {
     // template event bindings and explicit markForCheck instead.
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    { provide: RouteReuseStrategy, useClass: RenderReuseStrategy },
     // The Pathway Browser's state lives in the address bar on the site. The
     // token is router-free so the embeddable diagram can keep it in memory
     // without carrying the router (#356).

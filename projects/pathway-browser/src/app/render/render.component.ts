@@ -1,3 +1,4 @@
+import { installNavigate, takeNav } from './render-navigation';
 import {
   Component,
   computed,
@@ -15,7 +16,7 @@ import { ReactionDiagramComponent } from '../details/common/reaction-diagram/rea
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { AnalysisService, isNotFound } from '../services/analysis.service';
 import { failureMessage } from './failure-message';
@@ -72,6 +73,7 @@ const EHLD_SVG = 'cr-ehld #ehld svg';
   styleUrl: './render.component.scss',
   host: {
     '[attr.data-render-ready]': 'ready()',
+    '[attr.data-render-nav]': 'nav',
     '[attr.data-render-error]': 'error() || null',
   },
 })
@@ -85,6 +87,7 @@ export class RenderComponent {
   private dark = inject(DarkService);
   private route = inject(ActivatedRoute);
   private speciesService = inject(SpeciesService);
+  readonly nav = takeNav();
 
   /**
    * ?subpathways=false leaves the sub-pathway tints and labels out, matching
@@ -177,6 +180,7 @@ export class RenderComponent {
   private readonly stateForCaller = signal<Published | Record<string, never>>({});
 
   constructor() {
+    installNavigate(inject(Router));
     this.dark.isDark.set(this.wantsDark);
 
     // The diagram waits on EventService.diagramPathway$ before it will load,
@@ -465,6 +469,7 @@ export class RenderComponent {
     const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
+      nav: this.nav,
       ...this.stateForCaller(),
     };
     api['__renderState'] = state;

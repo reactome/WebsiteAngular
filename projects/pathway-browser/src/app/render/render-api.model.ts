@@ -34,7 +34,7 @@ export type Published = {
 } & Drawn;
 
 /** `window.__renderState`: whether the page is ready, and what it drew if it has. */
-export type RenderState = { ready: boolean; error: string | null } & (
+export type RenderState = { ready: boolean; error: string | null; nav?: string | null } & (
   Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined }
 );
 

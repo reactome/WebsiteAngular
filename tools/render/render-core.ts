@@ -173,7 +173,8 @@ export async function render(
     maxSize = MAX_SIZE,
     timeout = 120_000,
     files,
-  }: RenderOptions
+    nav,
+  }: RenderOptions & { nav?: string }
 ): Promise<{ bytes: Buffer; state: RenderReport; problems: string[] }> {
   if (!isFormat(format)) {
     throw new Error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
@@ -202,24 +203,46 @@ export async function render(
   if (handler) await page.route(isDownload, handler);
 
   try {
-    await page.goto(
-      renderUrl({ base, pathway, token, subpathways, dark, select, layout, highlight, species }),
-      {
-        waitUntil: 'load',
-        timeout,
-      }
-    );
+    const address = renderUrl({
+      base,
+      pathway,
+      token,
+      subpathways,
+      dark,
+      select,
+      layout,
+      highlight,
+      species,
+    });
+    // T001 PROTOTYPE: a page already holding the app is moved inside it.
+    if (nav) {
+      const { pathname, search } = new URL(address);
+      const moved = await page.evaluate(
+        ([u, n]) =>
+          (
+            window as unknown as { __renderNavigate: (u: string, n: string) => Promise<boolean> }
+          ).__renderNavigate(u!, n!),
+        [pathname + search, nav]
+      );
+      if (!moved) throw new Error(`the page refused to move to ${pathname + search}`);
+    } else {
+      await page.goto(address, { waitUntil: 'load', timeout });
+    }
 
     // The page's own signal, and its failure signal. A diagram fetches its
     // layout, its overlays and its fonts, and no fixed wait is both correct and
     // quick -- but waiting only for success means an id that does not resolve
     // costs a full timeout rather than the second it takes to find out.
-    await page.waitForSelector(
-      'cr-render[data-render-ready="true"], cr-render[data-render-error]',
+    const host = nav ? `cr-render[data-render-nav="${nav}"]` : 'cr-render';
+    // T001: the handle pins the host, so a held page keeps every drawn figure until
+    // it is disposed.
+    const ready = await page.waitForSelector(
+      `${host}[data-render-ready="true"], ${host}[data-render-error]`,
       {
         timeout,
       }
     );
+    await ready?.dispose();
 
     const state = await page.evaluate(() => window.__renderState);
     if (state?.error) throw new Error(state.error);

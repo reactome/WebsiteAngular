@@ -59,8 +59,8 @@ export const routes: Routes = [
     path: 'render',
     providers: [provideEnvironmentInitializer(registerPathwayBrowserIcons)],
     children: [
-      { path: '', component: RenderComponent },
-      { path: ':pathwayId', component: RenderComponent },
+      { path: '', component: RenderComponent, data: { recreate: true } },
+      { path: ':pathwayId', component: RenderComponent, data: { recreate: true } },
     ],
   },
   {

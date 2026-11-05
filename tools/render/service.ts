@@ -141,7 +141,7 @@ const CONTENT_TYPE: Record<Format, string> = {
 /** Formats a browser would not usefully display, so offer them as a download. */
 const ATTACHMENT = new Set(['pptx']);
 
-const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0, evicted: 0 };
+const stats = { served: 0, hits: 0, rendered: 0, failed: 0, rejected: 0, evicted: 0, reused: 0 };
 
 /**
  * Keep a request's numbers inside what this box can draw.
@@ -162,6 +162,24 @@ function clamp(value: unknown, low: number, high: number, fallback: number) {
 // state between renders -- a stale analysis token being the obvious one -- and a
 // page is cheap next to a browser.
 let browser: Browser | undefined;
+const REUSE = process.env['RENDER_REUSE'] === 'on';
+const idle: { page: import('@playwright/test').Page; used: number }[] = [];
+const REUSE_MAX = Number(process.env['RENDER_REUSE_MAX'] ?? 0) || Infinity;
+// T001: the renderer's memory is mostly outside the JS heap and stays at its high-water
+// mark, so the bound is the container's own memory, read from its cgroup.
+const REUSE_MEM = Number(process.env['RENDER_REUSE_MEM'] ?? 0) || 0;
+async function overMemory() {
+  if (!REUSE_MEM) return false;
+  try {
+    const { readFile } = await import('node:fs/promises');
+    const current = Number(await readFile('/sys/fs/cgroup/memory.current', 'utf8'));
+    const max = Number(await readFile('/sys/fs/cgroup/memory.max', 'utf8'));
+    return current > max * REUSE_MEM;
+  } catch {
+    return false;
+  }
+}
+let navs = 0;
 async function getBrowser() {
   if (!browser?.isConnected()) browser = await chromium.launch();
   return browser;
@@ -440,7 +458,13 @@ async function renderCached(params: RenderParams) {
   }
 
   const work = schedule(async () => {
-    const page = await (await getBrowser()).newPage({ viewport: { width: 1600, height: 1000 } });
+    // T001 PROTOTYPE: RENDER_REUSE=on holds pages between figures, no replacement rules.
+    const held = REUSE ? idle.pop() : undefined;
+    const page =
+      held?.page ??
+      (await (await getBrowser()).newPage({ viewport: { width: 1600, height: 1000 } }));
+    const nav = held ? `n${++navs}` : undefined;
+    let ok = false;
     try {
       const started = Date.now();
       const { bytes, state, problems } = await render(page, {
@@ -448,7 +472,10 @@ async function renderCached(params: RenderParams) {
         timeout: RENDER_TIMEOUT,
         ...(FILES ? { files: FILES } : {}),
         ...params,
+        ...(nav ? { nav } : {}),
       });
+      ok = true;
+      if (nav) stats.reused++;
       await toCache(key, params.format, bytes);
       stats.rendered++;
       const drew = [
@@ -466,7 +493,9 @@ async function renderCached(params: RenderParams) {
       );
       return { bytes, cached: false };
     } finally {
-      await page.close();
+      const used = (held?.used ?? 0) + 1;
+      if (REUSE && ok && used < REUSE_MAX && !(await overMemory())) idle.push({ page, used });
+      else await page.close();
     }
   });
 
