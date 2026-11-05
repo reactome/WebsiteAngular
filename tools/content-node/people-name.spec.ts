@@ -96,6 +96,12 @@ describe('/data/people/name/{name}', () => {
         ({ cypher }) => /surname IN \$name (AND|OR) n\.firstname IN \$name/.exec(cypher)?.[1]
       )
     ).toEqual(['OR', 'AND']);
+    // graph-core's own: people only, what they point to but InstanceEdits, in no order.
+    for (const { cypher } of queries) {
+      expect(cypher).toContain('MATCH (n:Person)');
+      expect(cypher).toContain('WHERE NOT m:InstanceEdit');
+      expect(cypher).not.toContain('ORDER BY');
+    }
     expect(queries.map(({ params }) => params['name'])).toEqual([
       ['Ann', 'Example'],
       ['Ann', 'Example'],

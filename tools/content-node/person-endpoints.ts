@@ -77,6 +77,10 @@ async function findPerson(id: string) {
  * a leading space, or two together -- is substring's
  * StringIndexOutOfBoundsException, Java's 500, worded as the JDK words it.
  * Only spaces is no part at all: nothing to match, so Java's 404.
+ *
+ * Upper case is Node's Unicode, newer than the JDK's: a few letters Java
+ * leaves alone (Georgian Mkhedruli, U+A7C1) are capitalised here. A name
+ * starting with one is not expected among Reactome's people.
  */
 export function personNames(name: string): { names: string[] } | { javaMessage: string } {
   const parts = name.split(' ');
@@ -373,7 +377,7 @@ export const personEndpoints: Endpoint[] = [
   ).map(([suffix, join]): Endpoint => ({
     path: `/ContentService/data/people/name/{name}${suffix}`,
     // A made-up name: real names stay out of this repository. Compare real
-    // ones with the people-name check, which prints counts only.
+    // ones with people-name-check.ts, which prints counts only.
     samplePath: { name: 'Xq%20Zv' },
     // The 404 body names the service that answered; see /pathways/top/{id}.
     differs: [/^\/ContentService\/data\/people\/name\/[^/]+(\/exact)?: \.url: /],
