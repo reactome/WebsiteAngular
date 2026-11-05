@@ -4,6 +4,8 @@
  * hash sets of glyphs hash Objects.hash(id): GlyphSet gives their order.
  */
 import { JavaHashMap } from '../java-hashmap.ts';
+import { Bounds } from './bounds.ts';
+import type { Segment } from './sizes.ts';
 
 /** EntityRole, by the name the query gives it. */
 export type EntityRole = 'input' | 'output' | 'catalyst' | 'negative' | 'positive';
@@ -83,6 +85,7 @@ export class CompartmentGlyph {
   readonly name: string;
   readonly accession: string;
   parent: CompartmentGlyph | undefined;
+  readonly bounds = new Bounds();
   readonly children = new GlyphSet<CompartmentGlyph>();
   readonly contained = new GlyphSet<ContainedGlyph>();
 
@@ -118,6 +121,9 @@ export class ReactionGlyph {
   readonly kind = 'reaction';
   readonly id: number;
   compartment: CompartmentGlyph | undefined;
+  readonly bounds = new Bounds();
+  /** The backbone: a segment out of each side (setSize), later the connectors' joins. */
+  readonly segments: Segment[] = [];
 
   readonly data: ReactionData;
 
@@ -148,6 +154,7 @@ export interface AttachmentData {
 
 export class AttachmentGlyph {
   readonly id: number;
+  readonly bounds = new Bounds();
 
   readonly data: AttachmentData;
 
@@ -191,6 +198,8 @@ export class EntityGlyph {
   renderableClass!: string;
   trivial = false;
   compartment: CompartmentGlyph | undefined;
+  /** A copy starts with bounds of its own, as Java's copy constructor gives it. */
+  readonly bounds = new Bounds();
 
   constructor(ids: GlyphIds, copyOf?: EntityGlyph) {
     this.id = ids.next();
