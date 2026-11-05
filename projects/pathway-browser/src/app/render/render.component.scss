@@ -8,6 +8,12 @@
   display: block;
   background: var(--surface, #fff);
   overflow: hidden;
+  // No structures in a figure. The style shrinks a protein's or molecule's label
+  // to make room for its structure, a video or picture in an HTML layer that is
+  // not part of the exported drawing; and the structure loads lazily, so whether
+  // the label had been restored by the export was chance. Off, every label is
+  // full size (ngx-reactome-cytoscape-style `features.structures`).
+  --structures: 0;
 }
 
 :host > * {

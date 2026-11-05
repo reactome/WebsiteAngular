@@ -348,8 +348,11 @@ each.
     most draws none had started.
 - **What an export shows:** the structure layers are HTML and not part of the export,
   so a shrunken label sits next to empty space. Making this repeatable means choosing
-  one look for exports, full-size labels or shrunken ones. The style library has no
-  setting for either, so this is a decision on the figures' look, left open here.
+  one look for exports, full-size labels or shrunken ones.
+- **Decided (5 Nov 2026):** full size. The style library gained `features.structures`
+  (CSS `--structures`), and the render page sets `--structures: 0`. R-HSA-211224, drawn
+  12 times four at once, then gave one SVG with full-size labels. The site itself keeps
+  its structures.
 - **The seventh:** its compartment and labels sit 32 px lower in one run. Here the
   endpoint computed a different layout: one answer in six for R-HSA-1791144 placed a
   node 16 px higher and shrank the compartment to fit. The layout is made per request
@@ -363,7 +366,7 @@ T011 makes them repeatable first:
 
 - the reaction layout put in a canonical form before it is drawn: nodes in a fixed
   order, ids renumbered from that order;
-- one look for structure labels in exports (above; a decision still open);
+- full-size structure labels in exports (above; done);
 - the endpoint's varying layout fixed where the layout is made (a separate change).
 
 **Also seen, in an earlier T001 run on fresh pages:** a species overview for a species
