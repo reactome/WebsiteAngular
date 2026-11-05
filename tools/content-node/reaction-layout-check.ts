@@ -11,7 +11,9 @@
  * - each role, from the edge: entity, type and stoichiometry;
  * - each compartment's place in the tree, and the headers;
  * - (step 2) each node's size and its attachments' boxes, and the reaction's
- *   backbone, relative to the glyph.
+ *   backbone, relative to the glyph;
+ * - the orders Java's hash sets give the nodes, the compartments and each
+ *   compartment's components, when everything else agrees.
  *
  *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count]
  *
@@ -77,6 +79,13 @@ interface Summary {
   ids: string[];
   /** Step 2: each node's size and its attachments' boxes from its corner; the reaction's backbone. */
   sizes: string[];
+  /**
+   * The orders Java's hash sets and maps give, by glyph id: the nodes, the
+   * compartments, and each compartment's components (its glyphs, then its
+   * children). Compared only when the ids agree and the reaction has not
+   * moved, when the two sides' ids name the same glyphs.
+   */
+  orders: string;
 }
 
 /** The edge's lists, by the role type they hold. */
@@ -218,6 +227,10 @@ function javaSummary(answer: JavaAnswer): Summary {
           .sort(),
       ])
     ),
+    orders: JSON.stringify([
+      nodes.map((node) => node.id),
+      compartments.map((c) => [c.id, c.componentIds ?? []]),
+    ]),
     sizes: sorted([
       ['reaction', backbone(edge.segments)],
       ...nodes.map((node) => [
@@ -295,6 +308,13 @@ function nodeSummary(inputs: Inputs): Summary {
         entity.roles.map((role) => JSON.stringify([role.type, role.n])).sort(),
       ])
     ),
+    orders: JSON.stringify([
+      entities.map((entity) => entity.id),
+      [...present].map((glyph) => [
+        glyph.id,
+        [...glyph.contained, ...glyph.children].map((member) => member.id),
+      ]),
+    ]),
     sizes: sorted([
       ['reaction', backbone(inputs.reaction.segments)],
       ...entities.map((entity) => [
@@ -351,6 +371,8 @@ function differences(java: Summary, node: Summary): string[] {
     (key) => JSON.stringify(java[key]) !== JSON.stringify(node[key])
   );
   if (!node.reactionIn.includes(java.reactionIn[0] ?? null)) parts.push('reaction compartment');
+  if (!parts.length && reactionStayed(java, node) && java.orders !== node.orders)
+    parts.push('orders');
   return parts;
 }
 
@@ -376,7 +398,10 @@ async function reactions(count: number): Promise<string[]> {
             RETURN DISTINCT r.stId AS stId LIMIT 15
       UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:EntityWithAccessionedSequence)-[:referenceEntity]->(:ReferenceDNASequence)
             RETURN DISTINCT r.stId AS stId LIMIT 5
-      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:Cell) RETURN DISTINCT r.stId AS stId LIMIT 5 }
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:Cell) RETURN DISTINCT r.stId AS stId LIMIT 5
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:PhysicalEntity)-[:compartment]->(c:Compartment)
+            WITH r, count(DISTINCT c) AS compartments WHERE compartments >= 4
+            RETURN r.stId AS stId LIMIT 25 }
      RETURN DISTINCT stId`,
     { count: Math.trunc(count) }
   );

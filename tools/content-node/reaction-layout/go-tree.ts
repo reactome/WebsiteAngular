@@ -303,8 +303,7 @@ function addToHierarchy(
   if (!best) return;
   let aux = term;
   for (const masterParent of best) {
-    let parent = tree.get(masterParent.id);
-    if (!parent) tree.set(masterParent.id, (parent = masterParent.copy()));
+    const parent = tree.computeIfAbsent(masterParent.id, () => masterParent.copy());
     aux.createRelationship('OUTGOING', 'surrounded_by', parent);
     aux = parent;
   }

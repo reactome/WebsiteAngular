@@ -143,9 +143,7 @@ function compartmentFor(
   ids: GlyphIds,
   data: CompartmentData
 ): CompartmentGlyph {
-  let glyph = compartments.get(data.accession);
-  if (!glyph) compartments.set(data.accession, (glyph = new CompartmentGlyph(ids, data)));
-  return glyph;
+  return compartments.computeIfAbsent(data.accession, () => new CompartmentGlyph(ids, data));
 }
 
 /** The same for a term of the GO tree: a glyph with its name and accession only. */
@@ -154,13 +152,10 @@ function compartmentForTerm(
   ids: GlyphIds,
   term: GoTerm
 ): CompartmentGlyph {
-  let glyph = compartments.get(term.accession);
-  if (!glyph)
-    compartments.set(
-      term.accession,
-      (glyph = new CompartmentGlyph(ids, { name: term.name, accession: term.accession }))
-    );
-  return glyph;
+  return compartments.computeIfAbsent(
+    term.accession,
+    () => new CompartmentGlyph(ids, { name: term.name, accession: term.accession })
+  );
 }
 
 /** buildCompartmentHierarchy: each term inside `term`, as a child glyph, depth first. */

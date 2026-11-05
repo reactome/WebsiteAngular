@@ -172,3 +172,98 @@ describe('JavaHashMap, as a HashSet of GO ids', () => {
     expect([...map.values()]).toEqual(JDK_GO_ORDER.map((id) => GO_IDS.indexOf(id)));
   });
 });
+
+describe('JavaHashMap.computeIfAbsent, in the order JDK 11 gives', () => {
+  // Printed by OpenJDK 11 for the same keys (a scratch program): a new key
+  // goes to the head of its bucket, and the table grows before an insert.
+  const SHORT = ['0005789', '0005635', '0005829'];
+  const LONG = [
+    '0005886',
+    '0005743',
+    '0005765',
+    '0005829',
+    '0005783',
+    '0005634',
+    '0005788',
+    '0005777',
+    '0005739',
+    '0005794',
+    '0005576',
+    '0005654',
+    '0005737',
+    '0016020',
+    '0031410',
+    '0005789',
+    '0005635',
+  ];
+  const keys = (map: JavaHashMap<string, number>) => [...map.keys()].join(',');
+
+  it('puts a new key at the head of its bucket, where put puts it at the tail', () => {
+    const viaCompute = new JavaHashMap<string, number>();
+    const viaPut = new JavaHashMap<string, number>();
+    for (const key of SHORT) {
+      viaCompute.computeIfAbsent(key, () => 1);
+      viaPut.set(key, 1);
+    }
+    expect(keys(viaCompute)).toBe('0005635,0005789,0005829');
+    expect(keys(viaPut)).toBe('0005789,0005635,0005829');
+  });
+
+  it('grows the table before an insert, not after, across a resize', () => {
+    const viaCompute = new JavaHashMap<string, number>();
+    for (const key of LONG) viaCompute.computeIfAbsent(key, () => 1);
+    expect(keys(viaCompute)).toBe(
+      '0005765,0005743,0005886,0005654,0005635,0005789,0005777,0005788,0005634,0005737,0005739,0005829,0031410,0016020,0005794,0005783,0005576'
+    );
+  });
+
+  it('does not grow on the 13th key, as put does: the check comes before the insert', () => {
+    // Keys whose order differs at 16 buckets and at 32.
+    const thirteen = [
+      '0073116',
+      '0071240',
+      '0068200',
+      '0068712',
+      '0012200',
+      '0059656',
+      '0087176',
+      '0053896',
+      '0020712',
+      '0047496',
+      '0090216',
+      '0030920',
+      '0041128',
+    ];
+    const viaCompute = new JavaHashMap<string, number>();
+    for (const key of thirteen) viaCompute.computeIfAbsent(key, () => 1);
+    expect(keys(viaCompute)).toBe(
+      '0020712,0068712,0053896,0030920,0087176,0047496,0071240,0068200,0073116,0059656,0012200,0041128,0090216'
+    );
+  });
+
+  it('keeps what is there, makes only what is not, after puts', () => {
+    const map = new JavaHashMap<string, number>();
+    for (const key of ['0005789', '0005886', '0005743']) map.set(key, 1);
+    let made = 0;
+    for (const key of [
+      '0005635',
+      '0005789',
+      '0005765',
+      '0005829',
+      '0005783',
+      '0005634',
+      '0005788',
+      '0005777',
+      '0005739',
+      '0005794',
+      '0005576',
+      '0005654',
+    ])
+      map.computeIfAbsent(key, () => (made += 1) && 2);
+    expect(made).toBe(11);
+    expect(map.get('0005789')).toBe(1);
+    expect(keys(map)).toBe(
+      '0005765,0005886,0005743,0005654,0005635,0005789,0005777,0005788,0005634,0005739,0005829,0005794,0005783,0005576'
+    );
+  });
+});
