@@ -547,8 +547,8 @@ What else the port carries over:
   - the library's text fitting, done again with a table of those widths
     instead of the font, gives the same size for every name release 98
     measures: the 96,310 distinct first names of physical entities and the
-    455 cellular components' names. Every whole string it measures is the
-    sum of its characters' widths;
+    455 cellular components' names. Every whole name, of an entity or a
+    compartment, measures as the sum of its characters' widths;
   - a character the font cannot draw measures 6, the missing glyph, and the
     line height is 10. A few combining, format and complex-script characters
     are exceptions (0, or 12 for one Thai vowel), and Java lays such scripts
