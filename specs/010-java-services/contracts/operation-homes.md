@@ -35,8 +35,8 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/database/name`                                     | node — ported          | graph or search index                                                                         |
 | GET    | `/data/database/version`                                  | node — ported          | graph or search index                                                                         |
 | GET    | `/data/discover/{identifier}`                             | node — ported          | graph or search index                                                                         |
-| GET    | `/data/diseases`                                          | node — to port         | graph or search index                                                                         |
-| GET    | `/data/diseases/doid`                                     | node — to port         | graph or search index                                                                         |
+| GET    | `/data/diseases`                                          | node — ported          | graph or search index                                                                         |
+| GET    | `/data/diseases/doid`                                     | node — ported          | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/componentOf`                           | node — ported          | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/in-depth`                              | node — ported          | graph or search index                                                                         |
 | GET    | `/data/entity/{id}/otherForms`                            | node — ported          | graph or search index                                                                         |
@@ -66,19 +66,19 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/person/{id}/publications`                          | node — ported          | graph or search index                                                                         |
 | GET    | `/data/person/{id}/reviewedPathways`                      | node — ported          | graph or search index                                                                         |
 | GET    | `/data/person/{id}/reviewedReactions`                     | node — ported          | graph or search index                                                                         |
-| GET    | `/data/person/{id}/{attributeName}`                       | node — to port         | graph or search index                                                                         |
+| GET    | `/data/person/{id}/{attributeName}`                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/query/enhanced/v2/{id}`                            | node — ported          | graph or search index                                                                         |
 | GET    | `/data/query/enhanced/{id}`                               | node — ported          | graph or search index                                                                         |
-| POST   | `/data/query/ids`                                         | node — to port         | graph or search index                                                                         |
-| POST   | `/data/query/ids/map`                                     | node — to port         | graph or search index                                                                         |
+| POST   | `/data/query/ids`                                         | node — ported          | graph or search index                                                                         |
+| POST   | `/data/query/ids/map`                                     | node — ported          | graph or search index                                                                         |
 | GET    | `/data/query/{id}`                                        | node — ported          | graph or search index                                                                         |
-| GET    | `/data/query/{id}/{attributeName}`                        | node — to port         | graph or search index                                                                         |
+| GET    | `/data/query/{id}/{attributeName}`                        | node — ported          | graph or search index                                                                         |
 | GET    | `/data/schema/model`                                      | node — ported          | graph or search index                                                                         |
-| GET    | `/data/schema/{className}`                                | node — to port         | graph or search index                                                                         |
+| GET    | `/data/schema/{className}`                                | node — ported          | graph or search index                                                                         |
 | GET    | `/data/schema/{className}/attributes`                     | node — ported          | graph or search index                                                                         |
 | GET    | `/data/schema/{className}/count`                          | node — ported          | graph or search index                                                                         |
 | GET    | `/data/schema/{className}/min`                            | node — ported          | graph or search index                                                                         |
-| GET    | `/data/schema/{className}/reference`                      | node — to port         | graph or search index                                                                         |
+| GET    | `/data/schema/{className}/reference`                      | node — ported          | graph or search index                                                                         |
 | GET    | `/data/schema/{className}/referrals`                      | node — ported          | graph or search index                                                                         |
 | GET    | `/data/species/all`                                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/species/main`                                      | node — ported          | graph or search index                                                                         |
@@ -86,7 +86,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/exporter/document/event/{identifier}.pdf`               | java-library           | event-pdf (iText, html2pdf); to be replaced by pdf-export (5 Nov amendment above)             |
 | GET    | `/exporter/event/{identifier}.sbgn`                       | java-library           | libSBGN; to follow SBML's pattern, one exporter for bulk and website (5 Nov)                  |
 | GET    | `/exporter/event/{identifier}.sbml`                       | java-library           | JSBML, in sbml-exporter; node answers it through the library service (spec 015, #666)         |
-| GET    | `/exporter/fireworks/{species}.{ext}`                     | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
+| GET    | `/exporter/fireworks/{species}.{ext}`                     | node — ported          | drawn by the render service; Java exporters not needed                                        |
 | GET    | `/exporter/reaction/{identifier}.{ext}`                   | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
 | GET    | `/exporter/reaction/{identifier}/diagram`                 | node — to port         | a layout, not a drawing; its library has no Java-only dependency (006 T092, D21)              |
 | GET    | `/interactors/psicquic/molecule/{resource}/{acc}/details` | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
@@ -125,7 +125,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/search/spellcheck`                                      | node — ported          | graph or search index                                                                         |
 | GET    | `/search/suggest`                                         | node — ported          | graph or search index                                                                         |
 
-Partly ported: `GET /data/query/{id}/{attributeName}`. Node answers it for `stId` and `normalPathway`; the other attributes are still to port.
+Brought up to date 5 Nov 2026 from spec 006's tasks: the diseases, the batch and attribute queries and the two schema operations (T070–T081), and the species overview, a 301 to `/exporter/voronoi/{species}.{ext}` (T093, #613).
 
 ## AnalysisService
 
