@@ -58,6 +58,12 @@ vi.mock('./graph.ts', () => ({
         },
       ].map(({ id, ...relationship }) => (withIds ? { id, ...relationship } : relationship)),
     });
+    // Coauthors: both wrote one paper, which the second record meets again.
+    if (names.includes('Coauthor'))
+      return [
+        row(person(1, 10, 'Ann'), publication(5, 50)),
+        row(person(2, 20, 'Bea'), publication(5, 50)),
+      ];
     return [
       row(person(1, 10, 'Ann'), publication(3, 30)),
       row(person(2, 20, 'Bea'), publication(4, 40)),
@@ -148,6 +154,16 @@ describe('/data/people/name/{name}', () => {
       [expect.objectContaining({ dbId: 30 })],
       [expect.objectContaining({ dbId: 40 })],
     ]);
+  });
+
+  it('maps a paper two people wrote, met again in a later record', async () => {
+    // The paper's authors are merged across records, hashed by relationship
+    // id: an id made up per record could not be hashed, a 500.
+    const response = await people('coauthor');
+    expect(response.status).toBe(200);
+    const answer = (await response.json()) as { publications?: unknown[] }[];
+    expect(answer[0]?.publications).toEqual([expect.objectContaining({ dbId: 50 })]);
+    expect(answer[1]?.publications).toEqual([50]);
   });
 
   it('is a 404 naming the name as sent when nobody matches', async () => {
