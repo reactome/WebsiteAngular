@@ -10,7 +10,7 @@ Every field `/health` answers today stays as it is. With `RENDER_REUSE` on, it a
 | `site`     | `string`                                             | the site build last read from `RENDER_BASE` (research R3) |
 | `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model)          |
 
-With `RENDER_REUSE=off`, `reuse` is `false` and the other three are absent.
+With `RENDER_REUSE=off`, `reuse` is `false` and the other four are absent.
 
 **Settings** (environment, read at start):
 

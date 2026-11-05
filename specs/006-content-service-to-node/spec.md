@@ -63,7 +63,7 @@ Anyone can see, for every published operation, whether node answers it, which pu
 - **FR-002**: Each port MUST be test-first, with each behaviour shown failing by mutation.
 - **FR-003**: Routing MUST be per operation, in nginx and the dev proxy alike, kept in agreement by a test; every node route MUST accept a trailing slash.
 - **FR-004**: A route node answers MUST never fall back to Java.
-- **FR-005**: Operations whose substance is a Java library or Java numerical work MUST NOT be ported; they go to the Java side ([spec 010](../010-java-services/spec.md)).
+- **FR-005**: Operations whose substance is a Java library or Java numerical work MUST NOT be ported; they go to the Java side ([spec 010](../010-java-services/spec.md)). Amended 5 Nov 2026 (awright), as spec 010 is: a Java library with no Java-only dependency may be ported, and the reaction layout is (T092, research D21 and D22).
 - **FR-006**: Each port MUST be reviewed adversarially before merge, deployed, and verified on the deployed site by what a reader sees.
 
 ## Success Criteria _(mandatory)_

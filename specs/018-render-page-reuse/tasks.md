@@ -54,6 +54,10 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
       Removing the exemption is part of spec 006 T092: it is done when this test
       passes with none.
+    - **On T001's own sample the cap fails:** two of 99 is 2.02% (research R7). Decided
+      5 Nov 2026 (awright): the cap is not raised; the reaction layout is ported (spec 006
+      T092), whose layout does not vary, so T011 waits on T092 and is ticked with no
+      reaction exempted.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **Written (#810):** the script and its tests. Its first run, `--mode fresh` on T001's
