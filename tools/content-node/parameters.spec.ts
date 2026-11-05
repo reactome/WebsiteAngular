@@ -57,7 +57,7 @@ describe('the record', () => {
     expect(declaredQuery('/ContentService/search/query').map((p) => p.name)).toContain('Start row');
   });
 
-  it('marks what is never stored: outside services, a daily date, a token', () => {
+  it('marks what is never stored: outside services, a daily date, a token, a name', () => {
     expect(
       Object.entries(RECORD)
         .filter(([, entry]) => entry.cache)
@@ -67,6 +67,8 @@ describe('the record', () => {
       ['/ContentService/citation/export', 'never'],
       ['/ContentService/citation/pathway/{id}', 'never'],
       ['/ContentService/citation/static/{id}', 'never'],
+      ['/ContentService/data/people/name/{name}', 'never'],
+      ['/ContentService/data/people/name/{name}/exact', 'never'],
       ['/ContentService/exporter/diagram/{id}', 'private'],
       ['/ContentService/exporter/fireworks/{id}', 'private'],
       ['/ContentService/exporter/voronoi/{id}', 'private'],

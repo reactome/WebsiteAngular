@@ -58,8 +58,8 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/pathways/low/entity/{id}`                          | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathways/low/entity/{id}/allForms`                 | node — ported          | graph or search index                                                                         |
 | GET    | `/data/pathways/top/{species}`                            | node — ported          | graph or search index                                                                         |
-| GET    | `/data/people/name/{name}`                                | node — to port         | graph or search index                                                                         |
-| GET    | `/data/people/name/{name}/exact`                          | node — to port         | graph or search index                                                                         |
+| GET    | `/data/people/name/{name}`                                | node — ported          | graph or search index                                                                         |
+| GET    | `/data/people/name/{name}/exact`                          | node — ported          | graph or search index                                                                         |
 | GET    | `/data/person/{id}`                                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/person/{id}/authoredPathways`                      | node — ported          | graph or search index                                                                         |
 | GET    | `/data/person/{id}/authoredReactions`                     | node — ported          | graph or search index                                                                         |

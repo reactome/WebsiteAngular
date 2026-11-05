@@ -1,8 +1,8 @@
 /**
- * The person endpoints (spec 014, research R1, a family): /data/person/*,
- * PersonController's -- a person by dbId or ORCID, their publications, and
- * the pathways and reactions they authored or reviewed -- with the helpers
- * only they use. Moved unchanged from service.ts.
+ * The person endpoints (spec 014, research R1, a family): /data/person/* and
+ * /data/people/name/*, PersonController's -- a person by dbId or ORCID, their
+ * publications, the pathways and reactions they authored or reviewed, and
+ * people by name -- with the helpers only they use. Moved from service.ts.
  */
 import type { Endpoint } from './endpoint.ts';
 import { asciiDigits, javaNumeric } from './java-text.ts';
@@ -12,12 +12,13 @@ import {
   findByIdQuery,
   mapNodes,
   mapResult,
+  mapResults,
   rootLabelsQuery,
   writeDomain,
 } from './domain.ts';
 import type { MappedRow } from './domain.ts';
 import { pathId, rawSegment, writerFor } from './spring.ts';
-import { compact, notFound } from './answers.ts';
+import { compact, javaError, notFound } from './answers.ts';
 import type { GraphNode } from './graph.ts';
 import { attributeAnswer } from './objects.ts';
 import type { SimpleEvent } from '../../projects/website-angular/src/model/person.model.ts';
@@ -66,6 +67,43 @@ async function findPerson(id: string) {
     ...findByIdParameters(found.labels),
   });
   return row ? mapResult(row) : undefined;
+}
+
+/**
+ * The names graph-core's PersonService.findPersonByName and queryPersonByName
+ * match on: the name split with String.split(" ") -- on each single space,
+ * trailing empty parts dropped -- and each part's first character upper-cased
+ * (substring(0, 1).toUpperCase(), the rest as sent). An empty part left in --
+ * a leading space, or two together -- is substring's
+ * StringIndexOutOfBoundsException, Java's 500, worded as the JDK words it.
+ * Only spaces is no part at all: nothing to match, so Java's 404.
+ *
+ * Upper case is Node's Unicode, newer than the JDK's: a few letters Java
+ * leaves alone (Georgian Mkhedruli from U+10D0, Latin U+A7C1) are capitalised here. A name
+ * starting with one is not expected among Reactome's people.
+ */
+export function personNames(name: string): { names: string[] } | { javaMessage: string } {
+  const parts = name.split(' ');
+  while (parts.length && parts[parts.length - 1] === '') parts.pop();
+  if (parts.includes('')) return { javaMessage: 'begin 0, end 1, length 0' };
+  return { names: parts.map((part) => part.slice(0, 1).toUpperCase() + part.slice(1)) };
+}
+
+/**
+ * People as PersonRepository's name queries load them: every Person `where`
+ * matches, each with what it points to but InstanceEdits, mapped as one
+ * result, so an affiliation two of them share is one object, written in full
+ * once (research D17) -- mapResults, as SDN maps a query's records.
+ */
+async function findPersons(where: string, params: Record<string, unknown>) {
+  const options = { anchor: 'n:Person', ordered: false, without: 'InstanceEdit' };
+  const [found] = await read<{ labels: string[] }>(rootLabelsQuery(where, options), params);
+  if (!found) return [];
+  const rows = await read<MappedRow>(findByIdQuery(where, options), {
+    ...params,
+    ...findByIdParameters(found.labels),
+  });
+  return mapResults(rows);
 }
 
 export const personEndpoints: Endpoint[] = [
@@ -331,4 +369,42 @@ export const personEndpoints: Endpoint[] = [
       return attributeAnswer(request, person, attribute);
     },
   },
+  ...(
+    [
+      ['/exact', 'AND'],
+      ['', 'OR'],
+    ] as const
+  ).map(([suffix, join]): Endpoint => ({
+    path: `/ContentService/data/people/name/{name}${suffix}`,
+    // A made-up name: real names stay out of this repository. Compare real
+    // ones with people-name-check.ts, which prints counts only.
+    samplePath: { name: 'Xq%20Zv' },
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/people\/name\/[^/]+(\/exact)?: \.url: /],
+    /**
+     * People by name: PersonController.findPersonByName (/exact: first name
+     * and surname both among the name's parts) and queryPersonByName (either
+     * one among them), graph-core's PersonRepository queries with its own
+     * `IN`s, written by the domain serialiser. Despite their descriptions
+     * neither matches part of a name: each part is a whole first name or
+     * surname. None found is Java's 404 naming the name as sent.
+     */
+    handler: async (request) => {
+      const name = pathId(rawSegment(request, 5));
+      const parsed = personNames(name);
+      if ('javaMessage' in parsed)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', parsed.javaMessage);
+      const persons = parsed.names.length
+        ? await findPersons(`n.surname IN $name ${join} n.firstname IN $name`, {
+            name: parsed.names,
+          })
+        : [];
+      if (!persons.length) return notFound(request, `No persons found for name: ${name}`);
+      return {
+        status: 200,
+        serialised: writeDomain(persons, ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  })),
 ];

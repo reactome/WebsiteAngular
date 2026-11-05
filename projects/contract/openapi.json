@@ -662,6 +662,46 @@
         }
       }
     },
+    "/ContentService/data/people/name/{name}": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/people/name/{name}/exact": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/data/person/{id}": {
       "get": {
         "x-contract": "not yet",
