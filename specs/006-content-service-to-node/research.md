@@ -471,11 +471,10 @@ rather than by its symptoms (D19). It applies to this operation only.
 The port is not held in Java by FR-005: spec 010's record homes it in node.
 What the library does is a layout algorithm (compartments from the GO cellular
 component ontology as the graph holds it, then the participants placed around
-the reaction), and
-none of its dependencies is Java-only. Reading the algorithm, and finding where
-its variation comes from, is the first step of T092. Spec 010's rule is
-amended to allow this (5 Nov 2026). The canonical form is
-site code today; the diff harness reaching it (moved to a shared module, or
+the reaction), and none of its dependencies is Java-only. Reading the
+algorithm, and finding where its variation comes from, is the first step of
+T092. Spec 010's rule is amended to allow this (5 Nov 2026). The canonical form
+is site code today; the diff harness reaching it (moved to a shared module, or
 reimplemented and checked against it) is part of T092's plan.
 
 ### Where the variation comes from (read 5 Nov 2026)
@@ -498,8 +497,8 @@ one running service:
     can tie;
   - sibling compartments' widths, when a name is wider than its content
     (`BoxAlgorithm.size`);
-  - entities tied on `LayoutIndex`'s sort keys (number of roles, negative
-    regulators first, trivial, class, name);
+  - entities tied on `LayoutIndex`'s sort keys (number of roles, then, for
+    regulators only, negative ones first, then trivial, class, name);
   - the graph's `diagramIds`, harmlessly, since the canonical form sorts them.
 
   Regulators tied on their x are not among them: they keep the grid's order,
@@ -537,20 +536,52 @@ What else the port carries over:
   answer: without Arial, Java falls back to its default font. Compartment
   names are measured in an Arial Bold bundled in the library. Neither font
   is freely licensed, so neither comes into this repository. Measured widths
-  would replace them, generated once from Java as deployed and checked
-  against it. Whether a string's width is the sum of its characters' widths
-  is checked before relying on it.
+  replace them, generated once from Java as deployed and checked against it.
+
+  Measured 5 Nov 2026, under the OpenJDK 11 the deployed service runs
+  (headless, as it runs), with the library's own calls (`stringWidth` and
+  `getHeight` on a `BufferedImage`'s graphics):
+  - the host's Arial Bold is the same file as the bundled one. Over every
+    code point, the two can draw the same 1,191 characters, at the same
+    widths;
+  - entities are sized by fitting their first name into lines. The
+    library's fitting, done again with a table of those widths instead of
+    the font, gives the same size for each of release 98's 96,310 distinct
+    first names of physical entities;
+  - compartments are sized by their name's whole width, without fitting.
+    Each of the 455 cellular components' names measures as the sum of its
+    characters' widths, as does each entity's first name;
+  - a character the font cannot draw measures 6, the missing glyph, and the
+    line height is 10. The exceptions are a few combining, format and
+    complex-script characters, and the whole of U+E0000 to U+E0FFF (tags,
+    variation selectors and unassigned code points). They measure 0, or 12
+    for one Thai vowel, and Java lays such scripts out as a whole. No release
+    98 name uses any of them.
+
+  So a table of 1,191 widths, with 6 for any other character, reproduces
+  Java's measure on the deployed setup for Reactome's names. Java on a host
+  without Arial would measure differently; that is a difference in Java's
+  setup, not in the port.
+
 - **Compartments.** The compartment tree is built from the graph: GO
   cellular components with their `instanceOf` and `surroundedBy`, plus two
   fixes the library makes. A GO file is bundled too, but only for a source
   ContentService does not use. Ties between equal branches follow the order
   of hash sets keyed by GO id, a string: arbitrary but deterministic, and
   node reproduces it.
-- **Inputs assumed stable.** The participants' order from the layout's query
-  (`collect(DISTINCT …)`), which diagram its `LIMIT 1` picks, and the order
-  of the graph's nodes and their children and parents from the graph's own
-  query (no `ORDER BY`) are stable in practice, but Neo4j does not promise
-  any of them.
+- **Inputs assumed stable.** None of these has an `ORDER BY`, and all are
+  stable in practice, but Neo4j does not promise any of them:
+  - the participants' order from the layout's query (`collect(DISTINCT …)`);
+  - which diagram its `LIMIT 1` picks;
+  - from the graph's two queries, the order of each graph node's children
+    and parents, and of each edge's inputs, outputs, catalysts,
+    entity functional statuses, regulations, preceding and following events.
+    The canonical form sorts the graph's nodes and edges, but not those
+    lists;
+  - the order of graph nodes that share a dbId. The node query returns one
+    row per species, so an entity of several species (355 in release 98) is
+    several nodes, which the canonical form's sort by dbId does not
+    separate.
 
 ## What exists already
 
