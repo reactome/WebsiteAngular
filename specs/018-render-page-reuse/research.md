@@ -380,7 +380,9 @@ species overview), drawn twice on fresh pages against a site build with #795 and
 - **198 of 200 byte-identical.** Before the fixes, 49 of the same 200 differed, but in a run
   at concurrency 4; this one ran at concurrency 1, so the settings differ as well as the
   code, and the label race (above) was measured four at once.
-- **The two that differ are both reactions whose Java layout varies:** asked eight times
+- **The two that differ are both reactions whose Java layout varies** (the three fetches
+  above, if of the same 99, would miss a split as even as R-HSA-9844549's one time in
+  four): asked eight times
   each, R-HSA-1791144 gave two node arrangements (2 and 6 calls) and R-HSA-9844549 two
   (4 and 4). A reaction drawn the same each time (R-HSA-1630306) gave one arrangement in
   eight calls.

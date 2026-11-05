@@ -6,9 +6,11 @@
 import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import {
+  canonical,
   compare,
   draw,
   healthProblem,
+  heldProblem,
   normalise,
   opposites,
   orders,
@@ -270,5 +272,41 @@ describe('drawing', () => {
       return { status: 200, cache: 'miss', bytes: Buffer.from('b') };
     });
     expect(result.map((item) => item.status)).toEqual([0, 200]);
+  });
+});
+
+describe('one figure, however it is written', () => {
+  it('is one request: order, encoding and dark=false do not make another', () => {
+    expect(canonical('/render/X.svg?token=T&dark=true')).toBe(
+      canonical('/render/X.svg?dark=true&token=T')
+    );
+    expect(canonical('/render/X.svg?highlight=a,b')).toBe(
+      canonical('/render/X.svg?highlight=a%2Cb')
+    );
+    expect(canonical('/render/X.svg?dark=false')).toBe(canonical('/render/X.svg'));
+    expect(canonical('/render/X.svg?dark=true')).not.toBe(canonical('/render/X.svg'));
+  });
+
+  it('is drawn once from the sample', () => {
+    expect(parseSample('/render/X.svg?a=1&b=2\n/render/X.svg?b=2&a=1\n')).toEqual([
+      '/render/X.svg?a=1&b=2',
+    ]);
+  });
+
+  it('is asked at most once in a run, though opposites re-encode it', () => {
+    const sample = ['/render/X.svg?highlight=a,b&dark=true', '/render/X.svg?highlight=a,b'];
+    for (const requests of Object.values(orders(sample)))
+      expect(new Set(requests.map(canonical)).size).toBe(requests.length);
+  });
+});
+
+describe('a reused run', () => {
+  it('drew every figure after the first on a held page', () => {
+    expect(heldProblem(9, 10)).toBeUndefined();
+  });
+
+  it('is no test when a page was replaced part-way, or reuse was never counted', () => {
+    expect(heldProblem(7, 10)).toBe('2 of 10 draws were not on a held page (/health reused 7)');
+    expect(heldProblem(undefined, 10)).toMatch(/9 of 10 draws/);
   });
 });

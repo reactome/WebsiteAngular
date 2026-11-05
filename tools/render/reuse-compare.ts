@@ -54,13 +54,30 @@ export interface Difference {
   why: string;
 }
 
-/** The sample's request paths, from its text: one per line, `#` comments, each once. */
+/**
+ * One figure however it is written: its path and its parameters decoded and
+ * sorted, `dark=false` as no `dark`. The service's cache key is built from
+ * the parsed parameters, so two spellings of one figure are one cache entry.
+ */
+export function canonical(request: string): string {
+  const [figure = '', query = ''] = request.split('?');
+  const params = [...new URLSearchParams(query)]
+    .filter(([name, value]) => !(name === 'dark' && value === 'false'))
+    .sort(([a, x], [b, y]) => (a === b ? (x < y ? -1 : 1) : a < b ? -1 : 1));
+  return `${figure}?${params.map(([name, value]) => `${name}=${value}`).join('&')}`;
+}
+
+/** The sample's request paths, from its text: one per line, `#` comments, each figure once. */
 export function parseSample(text: string): string[] {
-  const requests = text
+  const seen = new Set<string>();
+  return text
     .split('\n')
     .map((line) => line.replace(/#.*/, '').trim())
-    .filter(Boolean);
-  return [...new Set(requests)];
+    .filter((request) => {
+      if (!request || seen.has(canonical(request))) return false;
+      seen.add(canonical(request));
+      return true;
+    });
 }
 
 /** A request path's format, from its extension. */
@@ -79,9 +96,8 @@ function withQuery(request: string, change: (query: URLSearchParams) => void): s
 const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?? '');
 
 /**
- * The requests that may come straight before `request` in a pair: each its
- * opposite in one setting, so a held page that kept that setting would draw
- * `request` wrong. Dark against light, either way; a token against none,
+ * The requests that may come straight before `request` in a pair: each one a
+ * held page could carry a setting over from, drawing `request` wrong. Dark against light, either way; a token against none,
  * either way (`token` is the sample's own, if it has one); a selection against
  * none, either way (the sample's own selections on the same diagram); the
  * overview of one species against another's.
@@ -120,13 +136,14 @@ export function pairRuns(sample: string[]): string[][] {
   const runs: { requests: string[]; asked: Set<string> }[] = [];
   for (const request of sample)
     for (const opposite of opposites(request, sample, token)) {
-      let run = runs.find(({ asked }) => !asked.has(opposite) && !asked.has(request));
+      const [first, second] = [canonical(opposite), canonical(request)];
+      let run = runs.find(({ asked }) => !asked.has(first) && !asked.has(second));
       if (!run) {
         run = { requests: [], asked: new Set() };
         runs.push(run);
       }
       run.requests.push(opposite, request);
-      run.asked.add(opposite).add(request);
+      run.asked.add(first).add(second);
     }
   return runs.map(({ requests }) => requests);
 }
@@ -244,6 +261,18 @@ async function fetchBytes(url: string) {
   };
 }
 
+/**
+ * Whether a reused run drew on held pages throughout: at concurrency 1 the
+ * first draw makes the page and every later one reuses it. A page closed and
+ * replaced part-way (past its memory bound, say) puts the pair across the
+ * change on two pages, testing nothing, so the run is not a test. Undefined
+ * when it was one.
+ */
+export function heldProblem(reused: unknown, drawn: number): string | undefined {
+  if (reused === drawn - 1) return undefined;
+  return `${drawn - 1 - Number(reused ?? 0)} of ${drawn} draws were not on a held page (/health reused ${String(reused)})`;
+}
+
 /** What a run's service must say of itself: local files, and reuse as asked. Undefined when it does. */
 export function healthProblem(
   health: { files?: unknown; reuse?: unknown } | undefined,
@@ -283,7 +312,8 @@ async function withService<T>(
     code: string | undefined;
     reuse: boolean;
   },
-  use: (service: string, health: Record<string, unknown>) => Promise<T>
+  use: (service: string, health: Record<string, unknown>) => Promise<T>,
+  after: (health: Record<string, unknown>) => void = () => {}
 ): Promise<T> {
   // No --rm: removed here, after its logs could be read, and before the next run.
   const started = spawnSync('docker', [
@@ -304,6 +334,9 @@ async function withService<T>(
     'RENDER_CONCURRENCY=1',
     '-e',
     'RENDER_TIMEOUT=180000',
+    // No page is replaced for its count part-way through a run (heldProblem).
+    '-e',
+    'RENDER_REUSE_MAX=1000000',
     '-e',
     `RENDER_REUSE=${options.reuse ? 'on' : 'off'}`,
     '--shm-size',
@@ -314,7 +347,11 @@ async function withService<T>(
     '3g',
     options.image,
   ]);
-  if (started.status !== 0) throw new Error(`docker run failed: ${started.stderr.toString()}`);
+  if (started.status !== 0) {
+    // A container docker made but could not start (its port taken, say).
+    removeService();
+    throw new Error(`docker run failed: ${started.stderr.toString()}`);
+  }
   const service = `http://127.0.0.1:${PORT}`;
   try {
     let health: Record<string, unknown> | undefined;
@@ -331,7 +368,13 @@ async function withService<T>(
       const logs = spawnSync('docker', ['logs', '--tail', '20', NAME]).stdout.toString();
       throw new Error(`${service} ${problem}\n${logs}`);
     }
-    return await use(service, health ?? {});
+    const result = await use(service, health ?? {});
+    after(
+      (await fetch(`${service}/health`, { signal: AbortSignal.timeout(5000) })
+        .then((response) => response.json())
+        .catch(() => ({}))) as Record<string, unknown>
+    );
+    return result;
   } finally {
     removeService();
   }
@@ -346,12 +389,6 @@ async function main() {
     );
     process.exit(2);
   }
-  // A container left behind holds memory on a shared host.
-  for (const signal of ['SIGINT', 'SIGTERM'] as const)
-    process.on(signal, () => {
-      removeService();
-      process.exit(130);
-    });
   const mode = flag('mode', 'reuse');
   const options = {
     image: flag('image', 'websiteangular-render:latest') as string,
@@ -363,32 +400,63 @@ async function main() {
   console.log(`${sample.length} requests, mode ${mode}`);
 
   const builds: Record<string, unknown> = {};
-  const run = (label: string, reuse: boolean, requests: string[]) =>
-    withService({ ...options, reuse }, (service, health) => {
-      builds[label] = health['build'];
-      return draw(service, requests);
+  const differences: Difference[] = [];
+  // What was found so far is printed and written however the run ends.
+  const finish = (code: number, stopped?: string) => {
+    for (const item of differences)
+      console.log(`  ${item.run}: ${item.path} (after ${item.previous ?? 'nothing'}): ${item.why}`);
+    if (stopped) console.log(`stopped: ${stopped}`);
+    const out = flag('out');
+    if (out)
+      writeFileSync(
+        out,
+        JSON.stringify(
+          { mode, ...options, builds, requests: sample.length, stopped, differences },
+          null,
+          2
+        )
+      );
+    process.exit(code);
+  };
+  // A container left behind holds memory on a shared host.
+  for (const [signal, code] of [
+    ['SIGINT', 130],
+    ['SIGTERM', 143],
+  ] as const)
+    process.on(signal, () => {
+      removeService();
+      finish(code, signal);
     });
 
-  const fresh = await run('fresh', false, sample);
-  const reference = new Map(fresh.map((item) => [item.path, item]));
-  // The reference itself: a failure or a cache hit there is a difference too.
-  const differences = compare('fresh', new Map(), fresh);
-  const runs = mode === 'fresh' ? { 'fresh again': sample } : orders(sample);
-  for (const [label, requests] of Object.entries(runs)) {
-    const drawn = await run(label, mode !== 'fresh', requests);
-    const found = compare(label, reference, drawn);
-    console.log(`${label}: ${requests.length} drawn, ${found.length} differ`);
-    differences.push(...found);
-  }
-  for (const item of differences)
-    console.log(`  ${item.run}: ${item.path} (after ${item.previous ?? 'nothing'}): ${item.why}`);
-  const out = flag('out');
-  if (out)
-    writeFileSync(
-      out,
-      JSON.stringify({ mode, ...options, builds, requests: sample.length, differences }, null, 2)
+  const run = (label: string, reuse: boolean, requests: string[]) =>
+    withService(
+      { ...options, reuse },
+      (service, health) => {
+        builds[label] = health['build'];
+        return draw(service, requests);
+      },
+      (health) => {
+        const problem = reuse ? heldProblem(health['reused'], requests.length) : undefined;
+        if (problem) differences.push({ run: label, path: '', previous: undefined, why: problem });
+      }
     );
-  process.exit(differences.length ? 1 : 0);
+
+  try {
+    const fresh = await run('fresh', false, sample);
+    const reference = new Map(fresh.map((item) => [item.path, item]));
+    // The reference itself: a failure or a cache hit there is a difference too.
+    differences.push(...compare('fresh', new Map(), fresh));
+    const runs = mode === 'fresh' ? { 'fresh again': sample } : orders(sample);
+    for (const [label, requests] of Object.entries(runs)) {
+      const drawn = await run(label, mode !== 'fresh', requests);
+      const found = compare(label, reference, drawn);
+      console.log(`${label}: ${requests.length} drawn, ${found.length} differ`);
+      differences.push(...found);
+    }
+  } catch (error) {
+    finish(1, error instanceof Error ? error.message : String(error));
+  }
+  finish(differences.length ? 1 : 0);
 }
 
 if (isEntry(import.meta.url)) await main();
