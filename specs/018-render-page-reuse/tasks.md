@@ -9,7 +9,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 ## Phase 1: Measure first (go or no-go)
 
-- [ ] T001 Prototype and measure (research R4), on a branch that is not merged.
+- [x] T001 Prototype and measure (research R4), on a branch that is not merged (#793).
   - **On the render page:** add `__renderNavigate` and the never-reuse strategy for the
     render routes in `projects/pathway-browser/src/app/render/render-navigation.ts`.
   - **In the service:** add a held page per slot in `tools/render/service.ts`, without
@@ -17,13 +17,25 @@ first (constitution III). The PR that completes a task ticks it here with its nu
   - **Measure:** time each kind fresh against reused at concurrency 4, through a
     loopback service with `RENDER_FILES` and a scratch site build. Count each page's
     heap and `body`'s children over 2,000 figures.
+  - **Done** (research.md R4 result: go, on a sample in the book's proportions). Its
+    findings changed T003, T005 and T007, and added T011. The 2,000-figure run moved to
+    T007.
   - **Record:** the result in research.md R4 (go or no-go), with
-    `RENDER_REUSE_MAX` and `RENDER_REUSE_HEAP_MB` chosen.
+    `RENDER_REUSE_MAX` and the memory bound chosen.
   - **If no-go:** stop, and record why.
 
 **Checkpoint**: go: reused reactions take at most half their fresh median.
 
 ## Phase 2: The comparison first (US2, P1)
+
+- [ ] T011 [US2] Fresh renders repeatable (research R7), in the render page.
+  - **Fix:**
+    - the reaction layout put in a canonical form before it is drawn (nodes in a fixed
+      order, ids renumbered in the layout and in the graph's nodes, which refer to it);
+    - readiness that waits for the structure lookups to settle;
+    - the endpoint's varying layout (R7's seventh case) raised as a change of its own.
+  - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
+    failing before the fix.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **What it does:** draws the sample through two services, three orders, and compares
@@ -39,7 +51,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     `app-routing.module.ts`; `nav` and `build` in `__renderState` and `data-render-nav`
     in `render.component.ts`.
   - **Tests:** a second navigation recreates the component, and its readiness carries
-    the new `nav`. A non-render address is refused.
+    the new `nav`. A non-render address is refused. The page's own address rewrite
+    after drawing keeps the component (R4 result, 1).
 - [ ] T004 [US2] The state of research R2's table, each row settled. A leak found is
       fixed in the render page:
   - the readiness wait cancelled on destroy, its queries scoped to its own host, and
@@ -61,6 +74,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
   - Behind `RENDER_REUSE` (off is today).
   - The comment above `getBrowser()` that warns against reuse is rewritten to say what
     reuse rests on (research R2).
+  - The readiness handle is disposed (R4 result, 2).
   - **Tests in `tools/render/pages.spec.ts`:**
     - no more pages than `RENDER_CONCURRENCY`;
     - no page shared by two figures;
@@ -69,9 +83,12 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       restart (data-model Replacement).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
     failed request's answer is today's.
-- [ ] T007 [US4] Replacement by count, by heap and by build, with the defaults from T001.
-      The site's build is read from the render page's HTML at `RENDER_BASE`, at most once a
-      minute (research R3).
+- [ ] T007 [US4] Replacement by count, by the container's memory and by build, with the
+      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5).
+  - The site's build is read from the render page's HTML at `RENDER_BASE`, at most once
+    a minute (research R3).
+  - **Measure first:** heap and document nodes over 2,000 figures on one page, to set
+    `RENDER_REUSE_MAX` (R4 result).
   - **Tests:** each rule, seen failing with it removed.
 - [ ] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
       settings in the service's header comment and its README (`tools/render/README.md`).
@@ -87,12 +104,13 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 - [ ] T010 [US1] SC-001, SC-002 and SC-004: pdf-export's figures step for release 98 with
       T031's settings (research R6).
   - **Record here:** the time, the health counters, the container's peak memory and the
-    comparison with T031's figures.
+    comparison with a reuse-off run of the same build (research R6).
   - **Record in pdf-export:** the result, in its spec 001 (T042 and research R7).
 
 ## Dependencies
 
 - T001 gates everything.
+- T011 comes before T002's run on a real sample.
 - T002 comes before T003–T008, so each is checked by it.
 - T003 → T004.
 - T005 → T006 → T007 → T008.

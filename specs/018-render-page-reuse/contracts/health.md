@@ -14,8 +14,8 @@ With `RENDER_REUSE=off`, `reuse` is `false` and the other three are absent.
 
 **Settings** (environment, read at start):
 
-| Setting                | Default           | Meaning                                    |
-| ---------------------- | ----------------- | ------------------------------------------ |
-| `RENDER_REUSE`         | on (after SC-003) | `off`: a fresh page and context per figure |
-| `RENDER_REUSE_MAX`     | from research R4  | figures a page draws before it is replaced |
-| `RENDER_REUSE_HEAP_MB` | from research R4  | heap above which a page is replaced        |
+| Setting               | Default           | Meaning                                                                               |
+| --------------------- | ----------------- | ------------------------------------------------------------------------------------- |
+| `RENDER_REUSE`        | on (after SC-003) | `off`: a fresh page and context per figure                                            |
+| `RENDER_REUSE_MAX`    | 200 (research R4) | figures a page draws before it is replaced                                            |
+| `RENDER_REUSE_MEMORY` | 0.5 (research R4) | share of the container's memory limit above which a finished page is closed, not held |
