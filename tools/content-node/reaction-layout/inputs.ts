@@ -313,8 +313,7 @@ const COMPARTMENTS = (node: string) => `
 
 /** Each compartment repeated by its stoichiometry, as findCollectionByRelationship lists it. */
 function repeated<T extends { n: number }>(list: T[]): Omit<T, 'n'>[] {
-  // Java's loop runs no times for a stoichiometry below 1.
-  return list.flatMap(({ n, ...rest }) => Array.from({ length: Math.max(0, n) }, () => rest));
+  return list.flatMap(({ n, ...rest }) => Array.from({ length: n }, () => rest));
 }
 
 async function readReaction(stId: string): Promise<ReactionData> {

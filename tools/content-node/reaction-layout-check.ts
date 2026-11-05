@@ -28,6 +28,7 @@ import {
   reactionRenderableClass,
 } from './reaction-layout/inputs.ts';
 import type { Inputs } from './reaction-layout/inputs.ts';
+import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
 import type { CompartmentGlyph, EntityGlyph, EntityRole } from './reaction-layout/model.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
@@ -61,6 +62,11 @@ interface Summary {
     speciesName: string | null;
   };
   edge: { reactomeId: number; schemaClass: string; displayName: string };
+  /**
+   * The compartment holding the reaction: Java's, and node's with those
+   * inside it -- placement (step 3) may move the reaction inward, never out.
+   */
+  reactionIn: (string | null)[];
   nodes: string[];
   compartments: string[];
   roles: string[];
@@ -142,7 +148,11 @@ function javaSummary(answer: JavaAnswer): Summary {
       else holder.set(id, compartment.displayName);
     }
   const [edge] = diagram.edges;
-  const dbIdOf = new Map<number, number>(nodes.map((node) => [node.id, node.reactomeId]));
+  // An entity by dbId and dashed: Java keeps a dashed and a plain participant
+  // of one entity apart, and only DuplicateManager's copies are alike.
+  const entityOf = new Map<number, [number, boolean]>(
+    nodes.map((node) => [node.id, [node.reactomeId, node.needDashedBorder === true]])
+  );
   return {
     header: {
       displayName: diagram.displayName,
@@ -156,6 +166,7 @@ function javaSummary(answer: JavaAnswer): Summary {
       schemaClass: edge.schemaClass,
       displayName: edge.displayName,
     },
+    reactionIn: [holder.get(edge.id) ?? null],
     nodes: sorted(
       nodes.map((node): NodePart => ({
         reactomeId: node.reactomeId,
@@ -180,7 +191,7 @@ function javaSummary(answer: JavaAnswer): Summary {
     roles: sorted(
       ROLE_LISTS.flatMap(([list, type]) =>
         (edge[list] ?? []).map((part) => [
-          dbIdOf.get(part.id) ?? null,
+          entityOf.get(part.id) ?? null,
           type,
           part.stoichiometry ?? null,
         ])
@@ -188,8 +199,8 @@ function javaSummary(answer: JavaAnswer): Summary {
     ),
     ids: sorted([
       ['reaction', edge.id, edge.reactomeId],
-      ...nodes.map((node) => ['entity', node.id, node.reactomeId]),
-      ...compartments.map((c) => ['compartment', c.id, c.displayName]),
+      ...nodes.map((node) => ['entity', node.id, node.reactomeId, node.needDashedBorder === true]),
+      ...compartments.map((c) => ['compartment', c.id, c.displayName, c.reactomeId ?? null]),
     ]),
   };
 }
@@ -217,6 +228,7 @@ function nodeSummary(inputs: Inputs): Summary {
       schemaClass: reaction.schemaClass,
       displayName: reaction.displayName,
     },
+    reactionIn: within(inputs.reaction.compartment).map(shown),
     nodes: sorted(
       entities.map((entity): NodePart => ({
         reactomeId: entity.dbId,
@@ -239,21 +251,33 @@ function nodeSummary(inputs: Inputs): Summary {
       }))
     ),
     roles: sorted(
-      entities.flatMap((entity) => entity.roles.map((role) => [entity.dbId, role.type, role.n]))
+      entities.flatMap((entity) =>
+        entity.roles.map((role) => [[entity.dbId, entity.dashed], role.type, role.n])
+      )
     ),
     ids: sorted([
       ['reaction', inputs.reaction.id, reaction.dbId],
-      ...entities.map((entity) => ['entity', entity.id, entity.dbId]),
-      ...[...present].map((glyph) => ['compartment', glyph.id, glyph.name]),
+      ...entities.map((entity) => ['entity', entity.id, entity.dbId, entity.dashed]),
+      ...[...present].map((glyph) => ['compartment', glyph.id, glyph.name, glyph.dbId ?? null]),
     ]),
   };
+}
+
+/** A compartment and every compartment inside it, depth first. */
+function within(glyph: CompartmentGlyph | undefined): (CompartmentGlyph | undefined)[] {
+  if (!glyph) return [undefined];
+  return [glyph, ...[...glyph.children].flatMap((child) => within(child))];
 }
 
 const PARTS = ['header', 'edge', 'nodes', 'compartments', 'roles', 'ids'] as const;
 
 /** Which parts of two summaries differ. */
 function differences(java: Summary, node: Summary): string[] {
-  return PARTS.filter((key) => JSON.stringify(java[key]) !== JSON.stringify(node[key]));
+  const parts: string[] = PARTS.filter(
+    (key) => JSON.stringify(java[key]) !== JSON.stringify(node[key])
+  );
+  if (!node.reactionIn.includes(java.reactionIn[0] ?? null)) parts.push('reaction compartment');
+  return parts;
 }
 
 async function reactions(count: number): Promise<string[]> {
@@ -287,30 +311,58 @@ async function java(stId: string): Promise<{ status: number; body: JavaAnswer | 
   };
 }
 
-/** One reaction compared: the parts that differ, empty when none do. */
-async function compare(stId: string): Promise<string[]> {
+/** The outcome of one reaction: the parts that differ, empty when none do. */
+interface Outcome {
+  parts: string[];
+  /** Both sides failed, node with one of the library's Java exceptions. */
+  bothFailed?: boolean;
+}
+
+/** One reaction compared. */
+async function compare(stId: string): Promise<Outcome> {
   for (let attempt = 1; ; attempt += 1) {
-    const answer = await java(stId);
+    let answer: Awaited<ReturnType<typeof java>>;
+    try {
+      answer = await java(stId);
+    } catch (error) {
+      return { parts: [`java request failed (${(error as Error).name})`] };
+    }
     let inputs: Inputs | Error;
     try {
-      const first = answer.body?.diagram.edges[0].id ?? 1;
-      inputs = await readInputs(stId, first);
+      inputs = await readInputs(stId, answer.body?.diagram.edges[0].id ?? 1);
     } catch (error) {
       inputs = error as Error;
     }
-    if (!answer.body)
-      return inputs instanceof Error ? [] : [`java ${answer.status}, node answered`];
+    if (!answer.body) {
+      if (inputs instanceof JavaNullPointerException || inputs instanceof JavaRuntimeException)
+        return { parts: [], bothFailed: true };
+      return {
+        parts: [
+          inputs instanceof Error
+            ? `java ${answer.status}, node threw ${inputs.name}`
+            : `java ${answer.status}, node answered`,
+        ],
+      };
+    }
     if (inputs instanceof Error)
-      return [`node threw ${inputs.name}: ${inputs.message.slice(0, 80)}`];
+      return { parts: [`node threw ${inputs.name}: ${inputs.message.slice(0, 80)}`] };
+    let java_: Summary;
+    try {
+      java_ = javaSummary(answer.body);
+    } catch (error) {
+      return { parts: [`java's answer unreadable (${(error as Error).name})`] };
+    }
     let parts: string[];
     try {
-      parts = differences(javaSummary(answer.body), nodeSummary(inputs));
+      parts = differences(java_, nodeSummary(inputs));
     } catch (error) {
-      return [`node threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`];
+      return {
+        parts: [`node threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`],
+      };
     }
     // Ids alone differing may be another request's ids in between: ask again.
     if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
-    return parts;
+    return { parts };
   }
 }
 
@@ -318,12 +370,14 @@ async function main() {
   const ids = await reactions(Number(process.argv[2] ?? 200));
   console.log(`comparing ${ids.length} reactions, step 1`);
   let identical = 0;
+  let bothFailed = 0;
   let different = 0;
   let inARow = 0;
   for (const stId of ids) {
-    const parts = await compare(stId);
+    const { parts, bothFailed: failed } = await compare(stId);
     if (!parts.length) {
-      identical += 1;
+      if (failed) bothFailed += 1;
+      else identical += 1;
       inARow = 0;
       continue;
     }
@@ -336,7 +390,9 @@ async function main() {
     }
   }
   await close();
-  console.log(`compared: ${identical} identical, ${different} different`);
+  console.log(
+    `compared: ${identical} identical, ${bothFailed} failing on both sides (texts are step 5's), ${different} different`
+  );
   process.exit(different ? 1 : 0);
 }
 
