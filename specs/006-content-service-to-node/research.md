@@ -633,17 +633,22 @@ it is made, not three steps later.
    - an id, stable or a dbId, that is not a reaction-like event is Java's
      400 ("does not correspond to a 'ReactionLikeEvent'");
    - an unknown one is its 404 ("Identifier '…' not found");
-   - any other failure is its 500. A `NullPointerException` answers the
-     fixed "Something unexpected happened and the error has been reported.",
-     and anything else its own message. The paths known from reading are:
+   - any other failure is its 500, answered by Java's exception handler: a
+     `NullPointerException` with the fixed "Something unexpected happened
+     and the error has been reported.", an exception with no handler of its
+     own with its message (which can be null). The paths known from reading
+     are:
      - an entity of a class with no renderable class, "No Schema class
        defined for [dbId:displayName]";
-     - an entity with no name;
+     - an entity whose list of names is null (the fixed text) or empty
+       ("Index 0 out of bounds for length 0");
      - a compartment given two parents;
      - an entity with no compartment copied by `DuplicateManager`, which
        runs before the fixes;
-     - a null disease flag;
-     - a failed query.
+     - an entity's null disease flag;
+     - a failed layout query, which the library catches and returns as no
+       layout, so the answer is the fixed text;
+     - an unsupported case in `Transformer`, with no message.
 
      The comparison reports any 500 it meets, so node's answer can be
      checked against Java's.
@@ -663,8 +668,10 @@ order of a `HashSet` or `HashMap`:
 
 Node reproduces those orders with its port of JDK 11's `HashMap`
 (`java-hashmap.ts`). The port gains an initial size: a set made from a
-collection starts with the table Java gives it (16 buckets, or more for a
-collection of more than 12), not 16 grown later. Glyph ids are numbered in
+collection starts with the table Java gives it, not 16 grown later:
+`HashSet(Collection)` sizes it for n/0.75 + 1 entries, so 16 buckets up to
+11 entries and 32 from 12. A set filled one by one grows instead on its 13th
+entry, as the port already does. Glyph ids are numbered in
 the order Java makes glyphs, the reaction's first. That includes the ids
 used up by a merged participant that is discarded, by a copy, and by each
 attachment of either. Roles, which have no hash of their own, keep the
@@ -679,9 +686,13 @@ first glyph made, so the edge's id is the request's first id. Node's library
 takes the first id as an argument. The service starts at 1. The comparison
 runs the library in process from the edge id Java's answer shows, so the two
 should agree on everything but what roles' order decides. Where they still
-differ, Java is asked again, as below. An answer whose ids do not form one
-run from its edge's id was interleaved with another request, and is asked
-again.
+differ, Java is asked again, as below. Glyphs Java makes but never shows (attachments, a discarded merged
+participant, the removed root) leave gaps in its ids, so a gap alone proves
+nothing. An answer whose ids are not the ids node gives the same glyphs,
+started from the edge's id, was interleaved with another request, and is
+asked again. Interleaving that only shifts the ids of the copies'
+attachments cannot be seen, and does not matter: attachments are listed,
+never hashed.
 
 **What Java does that node copies.**
 
