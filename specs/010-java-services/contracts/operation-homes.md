@@ -1,6 +1,6 @@
 # Contract: where every published operation is answered
 
-> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../../006-content-service-to-node/tasks.md) T092, research D21). FR-002's rule reads with that exception: an operation whose substance is a Java library stays in Java unless the library has no Java-only dependency and the port is decided in spec 006. FR-003's list is unchanged: those operations stay in Java until spec 006's Phase 9 reconsiders each one.
+> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../../006-content-service-to-node/tasks.md) T092, research D21). FR-002's rule reads with that exception: an operation whose substance is a Java library stays in Java unless the library has no Java-only dependency and the port is decided in spec 006 and recorded here. FR-003's list is unchanged: those operations stay in Java until spec 006's Phase 9 reconsiders each one.
 
 > **Amended by [spec 015](../../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
 >
