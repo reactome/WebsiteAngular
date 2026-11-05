@@ -57,7 +57,8 @@ export interface Difference {
 /**
  * A parameter at the value the service takes when it is left out
  * (service.ts): `dark=false`, `subpathways=true`, `scale=2`, `delay=1000`,
- * `maxSize=0`, or empty.
+ * `maxSize=0` -- numbers compared as numbers -- or empty where the service
+ * takes an empty value as none.
  */
 const DEFAULTS: Record<string, string> = {
   dark: 'false',
@@ -66,7 +67,21 @@ const DEFAULTS: Record<string, string> = {
   delay: '1000',
   maxSize: '0',
 };
-const isDefault = (name: string, value: string) => value === '' || DEFAULTS[name] === value;
+/** Parameters the service reads as numbers (Number, then clamp): compared as numbers. */
+const NUMERIC = new Set(['scale', 'delay', 'maxSize']);
+/** Parameters whose empty value the service takes as none; any other empty value it refuses. */
+const EMPTY_IS_NONE = new Set(['token', 'select', 'highlight', 'maxSize']);
+const isDefault = (name: string, value: string) =>
+  value === ''
+    ? EMPTY_IS_NONE.has(name)
+    : NUMERIC.has(name)
+      ? Number(value) === Number(DEFAULTS[name])
+      : DEFAULTS[name] === value;
+/** A value as the service reads it: a number in its plain form. */
+const normal = (name: string, value: string) =>
+  NUMERIC.has(name) && value !== '' && Number.isFinite(Number(value))
+    ? String(Number(value))
+    : value;
 
 /**
  * One figure however it is written: its path and its parameters decoded and
@@ -75,9 +90,12 @@ const isDefault = (name: string, value: string) => value === '' || DEFAULTS[name
  * cache entry.
  */
 export function canonical(request: string): string {
-  const [figure = '', query = ''] = request.split('?');
+  const [path = '', query = ''] = request.split('?');
+  // The service draws a .jpg as a JPEG, one cache entry with .jpeg.
+  const figure = path.replace(/\.jpg$/, '.jpeg');
   const params = [...new URLSearchParams(query)]
     .filter(([name, value]) => !isDefault(name, value))
+    .map(([name, value]): [string, string] => [name, normal(name, value)])
     .sort(([a, x], [b, y]) => (a === b ? (x < y ? -1 : 1) : a < b ? -1 : 1));
   return `${figure}?${params.map(([name, value]) => `${name}=${value}`).join('&')}`;
 }
@@ -153,8 +171,12 @@ export function opposites(request: string, sample: string[], token: string | und
   for (const name of ['select', 'highlight', 'subpathways']) {
     if (query.has(name)) found.push(withQuery(request, (q) => q.delete(name)));
     else
+      // Two of them: a figure goes second once per run, so all forty
+      // highlights on one diagram before the diagram made forty runs.
       found.push(
-        ...sample.filter((other) => other.split('?')[0] === figure && queryOf(other).has(name))
+        ...sample
+          .filter((other) => other.split('?')[0] === figure && queryOf(other).has(name))
+          .slice(0, 2)
       );
   }
   if (request.startsWith('/render/genome-wide.'))
@@ -176,15 +198,28 @@ export function opposites(request: string, sample: string[], token: string | und
 }
 
 /**
+ * The pairs any one request may go first in: enough that each kind of
+ * leftover is shown before a few different figures, few enough that the runs
+ * stay bounded however large the sample.
+ */
+const OPPOSITE_USES = 3;
+
+/**
  * Pairs -- an opposite, then the request -- spread over runs so that no run
  * asks for anything twice: a second ask would be served from the cache.
  */
 export function pairRuns(sample: string[]): string[][] {
   const token = sample.map((request) => queryOf(request).get('token')).find(Boolean) ?? undefined;
   const runs: { requests: string[]; asked: Set<string> }[] = [];
+  // How often each request has gone first: at most OPPOSITE_USES times, so one
+  // request that is everyone's opposite -- a species overview, a bare diagram
+  // under many highlights -- cannot make a run per figure.
+  const used = new Map<string, number>();
   for (const request of sample)
     for (const opposite of opposites(request, sample, token)) {
       const [first, second] = [canonical(opposite), canonical(request)];
+      if ((used.get(first) ?? 0) >= OPPOSITE_USES) continue;
+      used.set(first, (used.get(first) ?? 0) + 1);
       let run = runs.find(({ asked }) => !asked.has(first) && !asked.has(second));
       if (!run) {
         run = { requests: [], asked: new Set() };

@@ -140,26 +140,47 @@ describe('the opposites', () => {
     expect(canonical('/render/R-HSA-1.svg?subpathways=false')).not.toBe(
       canonical('/render/R-HSA-1.svg')
     );
+    // Numbers as numbers, a .jpg as the JPEG it is, and an empty value only
+    // where the service takes it as none.
+    expect(canonical('/render/R-HSA-1.svg?scale=2.0')).toBe(canonical('/render/R-HSA-1.svg'));
+    expect(canonical('/render/R-HSA-1.svg?scale=1.0')).toBe(
+      canonical('/render/R-HSA-1.svg?scale=1')
+    );
+    expect(canonical('/render/R-HSA-1.jpg')).toBe(canonical('/render/R-HSA-1.jpeg'));
+    expect(canonical('/render/R-HSA-1.svg?dark=')).not.toBe(canonical('/render/R-HSA-1.svg'));
   });
 
-  it('keep the runs few: overviews go before one figure in 25, not every one', () => {
-    // As a release sample might be: diagrams, a third dark, highlights, five
-    // species overviews and a token.
-    const sample = [
-      ...Array.from(
-        { length: 400 },
+  it('keep the runs few however large the sample: a request goes first in a few pairs only', () => {
+    const figures = (count: number) =>
+      Array.from(
+        { length: count },
         (_, at) => `/render/R-HSA-${at + 1}.svg${at % 3 ? '' : '?dark=true'}`
-      ),
-      ...Array.from(
-        { length: 40 },
-        (_, at) => `/render/R-HSA-${at + 1}.svg?highlight=R-HSA-${at + 1000}`
-      ),
-      ...['9606', '10090', '10116', '7955', '4932'].map(
-        (id) => `/render/genome-wide.svg?species=${id}`
-      ),
-      '/render/R-HSA-1.png?token=T',
+      );
+    const shapes: [string, string[]][] = [
+      [
+        'five overviews',
+        [
+          ...figures(400),
+          ...['9606', '10090', '10116', '7955', '4932'].map(
+            (id) => `/render/genome-wide.svg?species=${id}`
+          ),
+          '/render/R-HSA-1.png?token=T',
+        ],
+      ],
+      ['one overview, 1,000 figures', [...figures(1000), '/render/genome-wide.svg?species=10090']],
+      [
+        '40 highlights on one diagram',
+        [
+          ...figures(100),
+          ...Array.from(
+            { length: 40 },
+            (_, at) => `/render/R-HSA-1.svg?highlight=R-HSA-${at + 1000}`
+          ),
+        ],
+      ],
     ];
-    expect(pairRuns(sample).length).toBeLessThanOrEqual(12);
+    for (const [shape, sample] of shapes)
+      expect(pairRuns(sample).length, shape).toBeLessThanOrEqual(12);
   });
 
   it("are another species' overview", () => {
