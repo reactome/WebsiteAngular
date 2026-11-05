@@ -37,10 +37,16 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       done in #796, with ngx-reactome-base #23;
     - the endpoint's varying layout (R7's seventh case) raised as a change of its own:
       [spec 006](../006-content-service-to-node/tasks.md) T092 ports the endpoint to
-      node, with a deterministic layout (research D21 there). Until then, a reaction
-      whose layout Java varies is listed by the test as such, not counted as a failure.
+      node, with a deterministic layout (research D21 there).
   - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
     failing before the fix.
+    - **Until T092 is done,** a reaction may differ between the two draws only if its
+      layout from the endpoint differed between them. The test records each draw's
+      canonical layout and shows that; any other difference fails. Each exempt
+      reaction is listed in the result with its count, so a growing list is seen.
+    - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
+      Removing the exemption is part of spec 006 T092: it is done when this test
+      passes with none.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **What it does:** draws the sample through two services, three orders, and compares

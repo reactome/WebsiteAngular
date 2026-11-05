@@ -86,7 +86,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/exporter/event/{identifier}.sbml`                       | java-library           | JSBML                                                                                         |
 | GET    | `/exporter/fireworks/{species}.{ext}`                     | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
 | GET    | `/exporter/reaction/{identifier}.{ext}`                   | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
-| GET    | `/exporter/reaction/{identifier}/diagram`                 | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
+| GET    | `/exporter/reaction/{identifier}/diagram`                 | node — to port         | a layout, not a drawing; its library has no Java-only dependency (006 T092, D21)              |
 | GET    | `/interactors/psicquic/molecule/{resource}/{acc}/details` | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
 | GET    | `/interactors/psicquic/molecule/{resource}/{acc}/summary` | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
 | POST   | `/interactors/psicquic/molecules/{resource}/details`      | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |

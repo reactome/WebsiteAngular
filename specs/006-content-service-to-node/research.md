@@ -430,30 +430,47 @@ did not give the same bytes:
 
 - **Ids** come from a counter that runs across requests, so the same node has a
   different `id` each time, and every reference to it (`componentIds`,
-  connectors' `edgeId`, the graph's `diagramIds`) changes with it.
-- **The order** of nodes, edges, links, connectors and components varies.
+  connectors' `edgeId`, the graph's `diagramIds`) changes with it. Over 99
+  reactions fetched three times each, every answer varied
+  ([spec 018](../018-render-page-reuse/research.md) R7).
+- **The order** of the nodes varies for some reactions.
 - **The layout itself** sometimes varies. R-HSA-1791144 came back with a
   different arrangement in about one call in six.
 
 FR-001's byte-identity cannot be met against an answer that is not identical
 to itself. So, as with D15, the comparison is declared by a transformation
-rather than by its symptoms (D19):
+rather than by its symptoms (D19). It applies to this operation only.
 
-- **Canonical form.** Both sides are compared after the transformation the
-  site already applies: `canonicalReaction` (#795), which sorts each list by
-  what an element is and where it sits, then numbers ids in that order. That
-  removes the counter and the order, and nothing else: a wrong position,
-  class, name or a missing element still differs.
+- **What stays exact.** The status and the headers are compared byte for byte,
+  as for any port. Key order inside each object survives the canonical form,
+  which keeps each side's own, so it is compared with the content. Number
+  formatting and whitespace do not survive parsing: the canonical comparison
+  does not see them, and T092 adds a check of them on the raw text.
+- **The body's content** is compared after both sides are parsed and put in
+  canonical form: `canonicalReaction` (#795), the transformation the site
+  already applies. It sorts the lists (compartments, nodes and edges by
+  reactomeId, x, y and class; links by class and segments; connectors,
+  components and the graph's nodes and edges likewise), then numbers the ids
+  in that order. Positions, classes, names and wiring remain values, so a
+  wrong one or a missing element still differs. Elements tied on every sort
+  key keep their input order, so two equal answers can still compare as
+  different: a false difference, never a false match, to be looked at by hand.
 - **The layout.** Node's answer is deterministic. Its canonical form must equal
-  the canonical form of one of the layouts Java gives for that reaction,
-  collected over repeated requests. A reaction whose Java layouts never match
-  node's is a difference, not noise.
+  the canonical form of one of the layouts Java gave for that reaction over at
+  least 24 requests, at which a layout Java gives one call in six is missed
+  about one time in eighty. A reaction whose Java layouts never match node's
+  is a difference, not noise.
+- **If T092 fixes the variation** rather than copying it, node's layout may
+  match none of Java's. That fix is then a declared difference (D11), on the
+  reactions it affects, and recorded with the reason.
 
-The port is not held in Java by FR-005. The library's substance is a layout
-algorithm (compartments from the GO cellular component ontology, then the
-participants placed around the reaction), and none of its dependencies is
-Java-only. Reading the algorithm, and whether its variation is a bug worth
-keeping, is the first step of T092.
+The port is not held in Java by FR-005: spec 010's record homes it in node.
+What the library does is a layout algorithm (compartments from the GO cellular
+component ontology, then the participants placed around the reaction), and
+none of its dependencies is Java-only. Reading the algorithm, and whether its
+variation is kept or fixed, is the first step of T092. The canonical form is
+site code today; the diff harness reaching it (moved to a shared module, or
+reimplemented and checked against it) is part of T092's plan.
 
 ## What exists already
 
