@@ -24,7 +24,7 @@ Run from the repository root. Host-specific settings (database addresses, creden
    - run `npx vitest run deploy/nginx projects/website-angular/src/scripts/proxy-order.spec.ts`;
    - run `deploy/nginx/test-config.sh`;
    - deploy.
-   - Then on the deployed site, open the page that uses it: the interactor overlay for PSICQUIC, a shared overlay link for a token, the export buttons for SBML, SBGN and PDF. Check that the request is answered through node.
+   - Then on the deployed site, open the page that uses it: the interactor overlay for PSICQUIC, a shared overlay link for a token, the export buttons for SBML, SBGN and PDF (SBGN and PDF on hold, 5 Nov 2026). Check that the request is answered through node.
 5. **Failure:** stop the Java service. Every Java-homed address answers 503 in ContentService's envelope, and node's own pages are unaffected. Start it again.
 6. **Roll back:** delete the location. The address is answered by Tomcat again.
 
