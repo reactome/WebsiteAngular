@@ -118,7 +118,9 @@ export function parseSample(text: string): string[] {
 
 /** A request path's format, from its extension. */
 export function formatOf(request: string): string {
-  return /\.([a-z]+)(\?|$)/.exec(request)?.[1] ?? 'svg';
+  // In lower case, as the service reads it; a .jpg is a JPEG.
+  const format = /\.([A-Za-z]+)(\?|$)/.exec(request)?.[1]?.toLowerCase() ?? 'svg';
+  return format === 'jpg' ? 'jpeg' : format;
 }
 
 function withQuery(request: string, change: (query: URLSearchParams) => void): string {

@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import {
   canonical,
+  formatOf,
   compare,
   draw,
   healthProblem,
@@ -147,6 +148,7 @@ describe('the opposites', () => {
     );
     expect(canonical('/render/R-HSA-1.jpg')).toBe(canonical('/render/R-HSA-1.jpeg'));
     expect(canonical('/render/R-HSA-1.JPG')).toBe(canonical('/render/R-HSA-1.jpeg'));
+    expect(formatOf('/render/R-HSA-1.JPG?scale=1')).toBe('jpeg');
     expect(canonical('/render/R-HSA-1.svg?dark=')).not.toBe(canonical('/render/R-HSA-1.svg'));
   });
 
@@ -183,6 +185,9 @@ describe('the opposites', () => {
         ],
       ],
     ];
+    // The proved bound is 27 whatever the sample: a request has at most 11
+    // opposites and goes first in at most 3 pairs, so a pair finds a run
+    // within 11 + 3 + 13 tries. These shapes come to 12 or fewer.
     for (const [shape, sample] of shapes)
       expect(pairRuns(sample).length, shape).toBeLessThanOrEqual(12);
   });
