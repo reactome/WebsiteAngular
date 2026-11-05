@@ -17,7 +17,7 @@ Run from the repository root. Host-specific settings (database addresses, creden
 ## Story 2: the Java library service
 
 1. **Build and start it:** `docker compose build java-library`, then `docker compose up -d --no-deps java-library`. Its health endpoint reports the pinned commits.
-2. **Parity against the running server:** run the parity harness for each class (PSICQUIC, overlay tokens, uploads into a throwaway store, SBML, SBGN, event PDF). Expected: zero unexplained differences. PDFs are compared after normalisation, as declared.
+2. **Parity against the running server:** run the parity harness for each class (PSICQUIC, overlay tokens, uploads into a throwaway store, SBML, SBGN, event PDF). Expected: zero unexplained differences. PDFs are compared after normalisation, as declared. (5 Nov 2026: SBGN and the event PDF are on hold here, going to Reactome's own exporters; see the amendment in spec.md.)
 3. **Transparency:** run the same requests through node and directly. Expected: identical status, headers and bytes.
 4. **Cut over one address group:**
    - add its nginx location and dev-proxy pattern;

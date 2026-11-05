@@ -103,7 +103,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 
 These were held in Java because their substance is a Java library or Java numerical work. awright, 19 Oct 2026: the held exports could be made, and the events hierarchy has no reason to need Java; each is reconsidered after spec 013 (types in the services) is done.
 
-- [ ] T100 `GET /exporter/event/{identifier}.sbml`, `GET /exporter/event/{identifier}.sbgn`, `GET /exporter/document/event/{identifier}.pdf`
+- [ ] T100 `GET /exporter/event/{identifier}.sbml`, `GET /exporter/event/{identifier}.sbgn`, `GET /exporter/document/event/{identifier}.pdf`. Not ported one by one: each is replaced by an exporter Reactome keeps for both the bulk file and the website. **SBML** is done that way by [spec 015](../015-graph-exports/tasks.md) (node answers it through `sbml-exporter`, T065, #666; release and production wait for its T068). **PDF** is to be answered by `pdf-export`'s single-event service (its spec 001, Story 2 and FR-014). **SBGN** is to follow SBML's pattern, one exporter for the download page's bulk file and the website (awright, 5 Nov 2026); its spec is to come.
 - [ ] T101 `GET /interactors/psicquic/molecule/{resource}/{acc}/details` and `/summary`, `POST /interactors/psicquic/molecules/{resource}/details` and `/summary`
 - [ ] T102 `POST /interactors/upload/tuple/content`, `/tuple/form`, `/tuple/url`, `POST /interactors/upload/psicquic/url`, `POST /interactors/token/{token}`
 - [ ] T103 `GET /data/eventsHierarchy/{species}` — portable. Java reads two things from analysis-core (EventsController): every node's `totalEntity`/`totalEntityAndInteractors`, from the in-memory pathway hierarchy the AnalysisService's data file holds, on every request; and, with a `token`, the stored analysis result it overlays. Node can read the result through the AnalysisService's own `token` API (behind the gateway). The research question is the sizes: computed from the graph as analysis-core counts them, byte for byte, or read from the AnalysisService.
@@ -117,7 +117,7 @@ Found 19 Oct 2026 by comparing every mapping in the Java source with the publish
 - [ ] T106 `GET /data/pathways/top/{species}/curated`, `/data/pathways/low/diagram/identifier/{id}/allForms`, `/data/diagram/{id}/entities/{instance}`, `/data/database/info`
 - [ ] T107 `GET /data/detail/{id}/direction/…` (four forms), `/data/detail/{id}/getSubGraph`, `/data/detail/{id}/getReverseGraph`
 - [ ] T108 `GET /citation/download`, `POST /download/{format}`
-- [ ] T109 Exporters: `/exporter/diagram/{id}.pptx`, `/exporter/reaction/{id}.pptx`, `/exporter/sbml/{id}.xml` (with Phase 9's exporters)
+- [ ] T109 Exporters: `/exporter/diagram/{id}.pptx`, `/exporter/reaction/{id}.pptx`, `/exporter/sbml/{id}.xml` (with Phase 9's exporters). The last is answered by node through `sbml-exporter` since spec 015 T065 (#666), on beta.
 
 ## Phase 10: Last
 
