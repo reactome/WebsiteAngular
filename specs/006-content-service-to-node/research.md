@@ -583,6 +583,60 @@ What else the port carries over:
     several nodes, which the canonical form's sort by dbId does not
     separate.
 
+## D22. How the reaction layout is ported (T092)
+
+The port is about 3,500 lines of the library's Java on the `BOX` path (D21),
+so it lands in steps, each its own pull request. Java shows nothing between
+the graph and its final answer. But each step decides parts of that answer
+that the later steps do not change, so each step is compared against Java's
+answer on those parts alone. A wrong step is found where it is made, not
+three steps later.
+
+1. **Participants and compartments.** The layout's query (`LayoutFactory`),
+   and for each participant what its glyph shows: name, class, the drug,
+   crossed and dashed flags, the attachments. Also the duplicate handling
+   (`DuplicateManager`) and the compartment tree built from the graph
+   (`ReactomeCompartmentFactory`, `GoTreeFactory`). Java loads the
+   participants lazily, as getters ask; node asks the graph for the same
+   fields explicitly. Compared: the nodes' `reactomeId`, `schemaClass`,
+   `renderableClass`, `displayName` and flags, and the compartments' names
+   and which compartment holds which.
+2. **Sizes.** The width table (D21) and the glyph sizes (`Transformer`).
+   Compared: each node's width and height.
+3. **Placement.** The `BOX` algorithm (`BoxAlgorithm`, `Box`, the glyph
+   layouts, `Grid`, `PlacePositioner`, `LayoutIndex`). Compared: positions,
+   and compartments' bounds.
+4. **Connectors and the answer.** `ConnectorFactory`, then the diagram and
+   graph JSON (`ReactionDiagramFactory`, `ReactionGraphFactory`). Compared:
+   the whole answer in canonical form, as D21 declares.
+5. **Routing.** `/exporter/reaction/{identifier}/diagram` moves to node,
+   errors included: an id that is no reaction is Java's 400 ("does not
+   correspond to a 'ReactionLikeEvent'"), and an unknown one its 404.
+   `/exporter/reaction/{identifier}.{ext}` follows whatever T090 and T091
+   decide for diagrams' images.
+
+**Where the code goes.** The algorithm is a library under
+`tools/content-node/reaction-layout/`, one module per part above, imported by
+a `reaction-layout-endpoints.ts` family. The boundary check sees only the
+top directory, so the rule is stated here: the library imports leaves
+(`graph`, `domain` and the like) and itself, never a family, the registry or
+the server.
+
+**The comparison.** `tools/content-node/reaction-layout-check.ts` compares
+node with Java over a sample of reactions (all, for the last run). It is
+spaced for the shared database. Each reaction is asked of Java once; only a
+reaction that differs is asked again, up to D21's 24 times, so a rare Java
+layout costs extra requests only where it matters. Each step compares only
+the parts it has built. The canonical form is the site's
+`canonicalReaction`, which imports only model types, so it moves to a module
+both the site and the service import.
+
+**One more variation.** Java answers with `Map.of("diagram", …, "graph", …)`,
+whose key order is set by a seed chosen when the JVM starts. The two
+top-level keys can therefore come in either order between restarts. Node
+writes `diagram` first, the order seen on 5 Nov 2026, and the comparison
+does not count the order of those two keys as a difference.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
