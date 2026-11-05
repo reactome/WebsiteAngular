@@ -14,7 +14,6 @@
  * case, and the whole name in the nested view with references. Spaced, for
  * the shared database. Exits 1 on any difference.
  */
-import { createHash } from 'node:crypto';
 import { close, read } from './graph.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
@@ -26,8 +25,17 @@ interface Side {
   body: string;
 }
 
-async function get(base: string, path: string): Promise<Side> {
-  const response = await fetch(base + path, { signal: AbortSignal.timeout(120_000) });
+/**
+ * One answer. A failure is rethrown without the URL, which holds the name: a
+ * malformed base, say, would otherwise print it in the error.
+ */
+async function get(base: string, path: string, index: number): Promise<Side> {
+  let response: Response;
+  try {
+    response = await fetch(base + path, { signal: AbortSignal.timeout(120_000) });
+  } catch {
+    throw new Error(`request #${index} to ${new URL(base).origin} failed`);
+  }
   return {
     status: response.status,
     type: (response.headers.get('content-type') ?? '').split(';')[0] ?? '',
@@ -49,8 +57,6 @@ function withoutUrl(body: string): string {
   return body;
 }
 
-const hash = (text: string) => createHash('sha256').update(text).digest('hex').slice(0, 10);
-
 async function main() {
   type Name = { first: string; last: string };
   const names = async (cypher: string) =>
@@ -61,11 +67,12 @@ async function main() {
   );
   const shared = await names(
     'MATCH (a:Person)-[:affiliation]->()<-[:affiliation]-(b:Person) ' +
-      'WHERE a.surname = b.surname AND a.dbId < b.dbId ' +
-      'RETURN a.firstname AS first, a.surname AS last LIMIT 10'
+      'WHERE a.surname = b.surname AND a.dbId < b.dbId AND a.firstname IS NOT NULL ' +
+      'RETURN a.firstname AS first, a.surname AS last ORDER BY rand() LIMIT 10'
   );
   const same = await names(
-    'MATCH (p:Person) WITH p.firstname AS first, p.surname AS last, count(*) AS people ' +
+    'MATCH (p:Person) WHERE p.firstname IS NOT NULL AND p.surname IS NOT NULL ' +
+      'WITH p.firstname AS first, p.surname AS last, count(*) AS people ' +
       'WHERE people > 1 RETURN first, last LIMIT 5'
   );
   await close();
@@ -89,8 +96,8 @@ async function main() {
   let identical = 0;
   let different = 0;
   for (const [index, path] of paths.entries()) {
-    const java = await get(JAVA, path);
-    const node = await get(NODE, path);
+    const java = await get(JAVA, path, index);
+    const node = await get(NODE, path, index);
     await new Promise((resolve) => setTimeout(resolve, 200));
     if (
       java.status === node.status &&
@@ -103,8 +110,9 @@ async function main() {
     different += 1;
     const kind = java.status !== node.status ? 'status' : java.type !== node.type ? 'type' : 'body';
     console.log(
-      `  #${index}: ${kind} differs (java ${java.status} ${hash(java.body)}, ` +
-        `node ${node.status} ${hash(node.body)})`
+      // Lengths, not hashes: a 404 names the name, which a hash would not hide.
+      `  #${index}: ${kind} differs (java ${java.status}, ${java.body.length} characters; ` +
+        `node ${node.status}, ${node.body.length} characters)`
     );
   }
   console.log(`compared ${paths.length}: ${identical} identical, ${different} different`);

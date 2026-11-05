@@ -79,7 +79,7 @@ async function findPerson(id: string) {
  * Only spaces is no part at all: nothing to match, so Java's 404.
  *
  * Upper case is Node's Unicode, newer than the JDK's: a few letters Java
- * leaves alone (Georgian Mkhedruli, U+A7C1) are capitalised here. A name
+ * leaves alone (Georgian Mkhedruli from U+10D0, Latin U+A7C1) are capitalised here. A name
  * starting with one is not expected among Reactome's people.
  */
 export function personNames(name: string): { names: string[] } | { javaMessage: string } {
