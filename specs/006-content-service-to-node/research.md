@@ -421,6 +421,40 @@ failure this whole harness exists to prevent, one level up. Until the harness
 defaults to a sample id per parameterised endpoint, **`--ids` is not optional**
 and a green run without it means less than it appears to.
 
+## D21. The reaction layout has no one answer to match
+
+`GET /exporter/reaction/{identifier}/diagram` (T092) returns a reaction's
+layout as diagram JSON and graph JSON, made on each request by the
+reaction-exporter library. Asking Java the same question twice, 5 Nov 2026,
+did not give the same bytes:
+
+- **Ids** come from a counter that runs across requests, so the same node has a
+  different `id` each time, and every reference to it (`componentIds`,
+  connectors' `edgeId`, the graph's `diagramIds`) changes with it.
+- **The order** of nodes, edges, links, connectors and components varies.
+- **The layout itself** sometimes varies. R-HSA-1791144 came back with a
+  different arrangement in about one call in six.
+
+FR-001's byte-identity cannot be met against an answer that is not identical
+to itself. So, as with D15, the comparison is declared by a transformation
+rather than by its symptoms (D19):
+
+- **Canonical form.** Both sides are compared after the transformation the
+  site already applies: `canonicalReaction` (#795), which sorts each list by
+  what an element is and where it sits, then numbers ids in that order. That
+  removes the counter and the order, and nothing else: a wrong position,
+  class, name or a missing element still differs.
+- **The layout.** Node's answer is deterministic. Its canonical form must equal
+  the canonical form of one of the layouts Java gives for that reaction,
+  collected over repeated requests. A reaction whose Java layouts never match
+  node's is a difference, not noise.
+
+The port is not held in Java by FR-005. The library's substance is a layout
+algorithm (compartments from the GO cellular component ontology, then the
+participants placed around the reaction), and none of its dependencies is
+Java-only. Reading the algorithm, and whether its variation is a bug worth
+keeping, is the first step of T092.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

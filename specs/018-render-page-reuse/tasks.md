@@ -35,7 +35,10 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       #795;
     - full-size structure labels in exports, which waiting cannot give (research R7):
       done in #796, with ngx-reactome-base #23;
-    - the endpoint's varying layout (R7's seventh case) raised as a change of its own.
+    - the endpoint's varying layout (R7's seventh case) raised as a change of its own:
+      [spec 006](../006-content-service-to-node/tasks.md) T092 ports the endpoint to
+      node, with a deterministic layout (research D21 there). Until then, a reaction
+      whose layout Java varies is listed by the test as such, not counted as a failure.
   - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
     failing before the fix.
 

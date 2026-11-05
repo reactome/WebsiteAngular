@@ -59,7 +59,7 @@ Anyone can see, for every published operation, whether node answers it, which pu
 
 ### Functional Requirements
 
-- **FR-001**: Each ported operation MUST answer byte-identically to Java for the same request, compared live before it is routed.
+- **FR-001**: Each ported operation MUST answer byte-identically to Java for the same request, compared live before it is routed. The one exception is an answer Java itself does not repeat for the same request: it is compared in a declared canonical form instead (research D21, the reaction layout).
 - **FR-002**: Each port MUST be test-first, with each behaviour shown failing by mutation.
 - **FR-003**: Routing MUST be per operation, in nginx and the dev proxy alike, kept in agreement by a test; every node route MUST accept a trailing slash.
 - **FR-004**: A route node answers MUST never fall back to Java.
