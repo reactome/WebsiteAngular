@@ -578,9 +578,11 @@ async function exportAnswer(
     const status = response.statusCode ?? 0;
     if (status !== 200) {
       const reason = await bodyText(response);
-      if (status === 404) return notFound(request, `Identifier '${name.identifier}' not found`);
       console.error(`${format.label} for ${event.stId}: the service answered ${status} ${reason}`);
-      return status === 503
+      // The event was found above, so a 404 here is the service out of step --
+      // an older image without the route, or another release's graph -- not
+      // an answer about the id: unavailable for now, as a 503 is.
+      return status === 503 || status === 404
         ? {
             ...javaError(request, 503, 'SERVICE_UNAVAILABLE', format.unavailable),
             headers: { 'Retry-After': '30' },
