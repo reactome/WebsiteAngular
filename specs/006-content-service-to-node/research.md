@@ -544,15 +544,19 @@ What else the port carries over:
   - the host's Arial Bold is the same file as the bundled one. Over every
     code point, the two can draw the same 1,191 characters, at the same
     widths;
-  - the library's text fitting, done again with a table of those widths
-    instead of the font, gives the same size for every name release 98
-    measures: the 96,310 distinct first names of physical entities and the
-    455 cellular components' names. Every whole name, of an entity or a
-    compartment, measures as the sum of its characters' widths;
+  - entities are sized by fitting their first name into lines. The
+    library's fitting, done again with a table of those widths instead of
+    the font, gives the same size for each of release 98's 96,310 distinct
+    first names of physical entities;
+  - compartments are sized by their name's whole width, without fitting.
+    Each of the 455 cellular components' names measures as the sum of its
+    characters' widths, as does each entity's first name;
   - a character the font cannot draw measures 6, the missing glyph, and the
-    line height is 10. A few combining, format and complex-script characters
-    are exceptions (0, or 12 for one Thai vowel), and Java lays such scripts
-    out as a whole; no release 98 name uses them.
+    line height is 10. The exceptions are a few combining, format and
+    complex-script characters, and the whole of U+E0000 to U+E0FFF (tags,
+    variation selectors and unassigned code points). They measure 0, or 12
+    for one Thai vowel, and Java lays such scripts out as a whole. No release
+    98 name uses any of them.
 
   So a table of 1,191 widths, with 6 for any other character, reproduces
   Java's measure on the deployed setup for Reactome's names. Java on a host
@@ -569,8 +573,8 @@ What else the port carries over:
   stable in practice, but Neo4j does not promise any of them:
   - the participants' order from the layout's query (`collect(DISTINCT …)`);
   - which diagram its `LIMIT 1` picks;
-  - from the graph's two queries, the order of the graph's nodes and their
-    children and parents, and of each edge's inputs, outputs, catalysts,
+  - from the graph's two queries, the order of each graph node's children
+    and parents, and of each edge's inputs, outputs, catalysts,
     entity functional statuses, regulations, preceding and following events.
     The canonical form sorts the graph's nodes and edges, but not those
     lists.
