@@ -197,8 +197,11 @@ Before building, a prototype measures reuse on the service itself:
   What varies is stripped and named, then the reused output is compared with the fresh
   (FR-003).
 
-- **Mutants (constitution III):** dark left, token left, species left, selection left, the
-  component reused. Each must fail the comparison, and the result is recorded.
+- **Mutants (constitution III):** dark left, token left, species left, selection left,
+  highlight left, subpathways left off, an analysis failure left, the component reused.
+  Each must fail the comparison, and the result is recorded. The comparison's pairs
+  (`opposites` in tools/render/reuse-compare.ts) put each such setting before the same
+  figure without it, either way, so each mutant has a pair that shows it.
 
 ## R6. The release run (SC-001, SC-004)
 

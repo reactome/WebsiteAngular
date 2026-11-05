@@ -97,13 +97,19 @@ const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?
 
 /**
  * The requests that may come straight before `request` in a pair: each one a
- * held page could carry a setting over from, drawing `request` wrong. Dark against light, either way; a token against none,
- * either way (`token` is the sample's own, if it has one); a selection against
- * none, either way (the sample's own selections on the same diagram); the
- * overview of one species against another's.
+ * held page could carry a setting over from, drawing `request` wrong (spec
+ * 018 FR-004, research R5):
+ * - dark against light, either way;
+ * - a token against none, either way (`token` is the sample's own, if it has
+ *   one), and against each of the sample's other tokens;
+ * - a selection, a highlight, or subpathways off, against none, either way:
+ *   the sample's own on the same figure, or the figure without it;
+ * - the overview of one species against another's, and the sample's species
+ *   overviews before anything that is not an overview.
  */
 export function opposites(request: string, sample: string[], token: string | undefined): string[] {
   const query = queryOf(request);
+  const figure = request.split('?')[0] ?? '';
   const found: string[] = [
     withQuery(request, (q) =>
       q.get('dark') === 'true' ? q.delete('dark') : q.set('dark', 'true')
@@ -111,12 +117,17 @@ export function opposites(request: string, sample: string[], token: string | und
   ];
   if (query.has('token')) found.push(withQuery(request, (q) => q.delete('token')));
   else if (token) found.push(withQuery(request, (q) => q.set('token', token)));
-  if (query.has('select')) found.push(withQuery(request, (q) => q.delete('select')));
-  else {
-    const figure = request.split('?')[0];
-    found.push(
-      ...sample.filter((other) => other.split('?')[0] === figure && queryOf(other).has('select'))
-    );
+  const own = query.get('token');
+  const tokens = new Set(sample.map((other) => queryOf(other).get('token')).filter(Boolean));
+  for (const other of tokens)
+    if (own && other && other !== own) found.push(withQuery(request, (q) => q.set('token', other)));
+  // A setting the figure has, or the sample's own figures with it.
+  for (const name of ['select', 'highlight', 'subpathways']) {
+    if (query.has(name)) found.push(withQuery(request, (q) => q.delete(name)));
+    else
+      found.push(
+        ...sample.filter((other) => other.split('?')[0] === figure && queryOf(other).has(name))
+      );
   }
   if (request.startsWith('/render/genome-wide.'))
     found.push(
@@ -124,7 +135,13 @@ export function opposites(request: string, sample: string[], token: string | und
         q.get('species') === '10090' ? q.delete('species') : q.set('species', '10090')
       )
     );
-  return found;
+  else
+    found.push(
+      ...sample.filter(
+        (other) => other.startsWith('/render/genome-wide.') && queryOf(other).has('species')
+      )
+    );
+  return [...new Set(found)].filter((other) => canonical(other) !== canonical(request));
 }
 
 /**
@@ -397,6 +414,11 @@ async function main() {
     code: flag('code'),
   };
   const sample = parseSample(readFileSync(samplePath, 'utf8'));
+  // A sample of nothing would draw nothing and find no difference: not a test.
+  if (!sample.length) {
+    console.error(`${samplePath} holds no requests`);
+    process.exit(2);
+  }
   console.log(`${sample.length} requests, mode ${mode}`);
 
   const builds: Record<string, unknown> = {};
@@ -418,10 +440,12 @@ async function main() {
       );
     process.exit(code);
   };
-  // A container left behind holds memory on a shared host.
+  // A container left behind holds memory on a shared host -- also when the
+  // terminal or session that started the run goes away (SIGHUP).
   for (const [signal, code] of [
     ['SIGINT', 130],
     ['SIGTERM', 143],
+    ['SIGHUP', 129],
   ] as const)
     process.on(signal, () => {
       removeService();

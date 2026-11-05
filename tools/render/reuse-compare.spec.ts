@@ -72,6 +72,47 @@ describe('the opposites', () => {
     expect(forNone).not.toContain('/render/R-HSA-3.svg?select=R-HSA-4');
   });
 
+  it("are none for a highlight or subpathways off, and the sample's own on the same figure for none", () => {
+    const sample = [
+      '/render/R-HSA-1.svg',
+      '/render/R-HSA-1.svg?highlight=R-HSA-2',
+      '/render/R-HSA-1.svg?subpathways=false',
+      '/render/R-HSA-3.svg?highlight=R-HSA-4',
+    ];
+    expect(opposites('/render/R-HSA-1.svg?highlight=R-HSA-2', sample, undefined)).toContain(
+      '/render/R-HSA-1.svg'
+    );
+    expect(opposites('/render/R-HSA-1.svg?subpathways=false', sample, undefined)).toContain(
+      '/render/R-HSA-1.svg'
+    );
+    const forNone = opposites('/render/R-HSA-1.svg', sample, undefined);
+    expect(forNone).toContain('/render/R-HSA-1.svg?highlight=R-HSA-2');
+    expect(forNone).toContain('/render/R-HSA-1.svg?subpathways=false');
+    expect(forNone).not.toContain('/render/R-HSA-3.svg?highlight=R-HSA-4');
+  });
+
+  it("are the sample's other tokens for a token, so one token's colours cannot stay for the next", () => {
+    const sample = ['/render/R-HSA-1.svg?token=A', '/render/R-HSA-5.svg?token=B'];
+    expect(opposites('/render/R-HSA-1.svg?token=A', sample, 'A')).toContain(
+      '/render/R-HSA-1.svg?token=B'
+    );
+  });
+
+  it("are the sample's species overviews before a figure that is not an overview", () => {
+    const sample = ['/render/R-HSA-1.svg', '/render/genome-wide.svg?species=10090'];
+    expect(opposites('/render/R-HSA-1.svg', sample, undefined)).toContain(
+      '/render/genome-wide.svg?species=10090'
+    );
+  });
+
+  it('never pair a request with itself', () => {
+    const sample = ['/render/R-HSA-1.svg', '/render/R-HSA-1.svg?highlight=R-HSA-2'];
+    for (const request of sample)
+      expect(opposites(request, sample, undefined).map(canonical)).not.toContain(
+        canonical(request)
+      );
+  });
+
   it("are another species' overview", () => {
     expect(opposites('/render/genome-wide.svg', [], undefined)).toContain(
       '/render/genome-wide.svg?species=10090'
