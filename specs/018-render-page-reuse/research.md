@@ -372,3 +372,19 @@ T011 makes them repeatable first:
 **Also seen, in an earlier T001 run on fresh pages:** a species overview for a species
 other than human failed with "asked for species 7955, the page drew 9606". It is
 recorded here for its own fix.
+
+**Measured after T011's fixes (5 Nov 2026, `reuse-compare.ts --mode fresh`):** T001's
+200-figure sample (99 reactions, 40 diagrams, 40 highlights, 20 illustrations, one
+species overview), drawn twice on fresh pages against a site build with #795 and #796:
+
+- **198 of 200 byte-identical.** Before the fixes, 49 of the same 200 differed, but in a run
+  at concurrency 4; this one ran at concurrency 1, so the settings differ as well as the
+  code, and the label race (above) was measured four at once.
+- **The two that differ are both reactions whose Java layout varies:** asked eight times
+  each, R-HSA-1791144 gave two node arrangements (2 and 6 calls) and R-HSA-9844549 two
+  (4 and 4). A reaction drawn the same each time (R-HSA-1630306) gave one arrangement in
+  eight calls.
+- **The exemption's cap:** 2 of the 99 reactions is 2.02%, just above T011's 2%, so the
+  test as written fails on this sample. Whether to raise the cap or wait for spec 006
+  T092 is open. The exemption's detection (each draw's layout as the page received it)
+  is not built yet; the two were identified by asking the endpoint directly.

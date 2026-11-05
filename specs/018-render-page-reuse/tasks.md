@@ -49,13 +49,16 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     - **Exempt reactions** are listed in the result. More than 2% of the sample's
       reactions exempt fails the test (for example, at 100 reactions two pass and a
       third fails), so a growing list stops it rather than passing
-      unnoticed. (So far a varying layout has been seen for one reaction, and for none
-      of the 99 fetched three times each in research R7.)
+      unnoticed. (Varying layouts have been seen for two reactions of the 99 in T001's sample:
+      research R7.)
     - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
       Removing the exemption is part of spec 006 T092: it is done when this test
       passes with none.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
+  - **Written (#809):** the script and its tests. Its first run, `--mode fresh` on T001's
+    sample, is in research R7. Still to do before it is ticked: a run in `reuse` mode,
+    which needs a site build with the render page's entry point (T003) or T001's prototype.
   - **What it does:** draws the sample through two services, three orders, and compares
     SVG by bytes and the other formats after their named variation.
   - **Tests in `tools/render/reuse-compare.spec.ts`:** it fails on a planted difference,
