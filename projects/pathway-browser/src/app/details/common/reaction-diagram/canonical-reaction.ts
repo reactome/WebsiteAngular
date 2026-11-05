@@ -13,7 +13,8 @@ const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activa
  * files (specs/018-render-page-reuse, research R7).
  *
  * This sorts the compartments, nodes and edges by what they are and where they
- * sit, then renumbers the ids from 1 in that order. Ids are only references
+ * sit, and the links by their kind and path, then renumbers the ids from 1 in that
+ * order. Ids are only references
  * inside the layout, and to it from the graph's nodes (`diagramIds`), so nothing
  * outside changes. A graph edge's `diagramIds` are reaction dbIds, not layout ids,
  * and are left alone.
@@ -37,6 +38,12 @@ export function canonicalReaction(
   byPlace(diagram.compartments);
   byPlace(diagram.nodes);
   byPlace(diagram.edges);
+  // A link has no reactomeId or position; its kind and its path are what it is.
+  diagram.links.sort(
+    (a, b) =>
+      a.renderableClass.localeCompare(b.renderableClass) ||
+      JSON.stringify(a.segments).localeCompare(JSON.stringify(b.segments))
+  );
 
   const ids = new Map<number, number>();
   const id = (old: number) => {

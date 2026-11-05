@@ -1,4 +1,3 @@
-import { canonicalReaction } from './canonical-reaction';
 import {
   AfterViewInit,
   Component,
@@ -15,6 +14,7 @@ import cytoscape from 'cytoscape';
 import { DiagramService } from '../../../services/diagram.service';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
 import { ReactionJson } from '../../../model/reaction-diagram.model';
+import { canonicalReaction } from './canonical-reaction';
 
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
@@ -57,7 +57,7 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
       .subscribe(({ diagram: layout, graph: answered }) => {
         // A reaction's layout leaves out the lists it does not have. Its ids and
         // node order vary from request to request, so it is put in one form
-        // before it is drawn: the same reaction is the same picture.
+        // before it is drawn, and those no longer change the picture.
         const { diagram, graph } = canonicalReaction(
           {
             ...layout,

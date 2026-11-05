@@ -1,39 +1,59 @@
 import { describe, expect, it } from 'vitest';
-import { Diagram } from '../../../model/diagram.model';
+import { Diagram, Link, NodeConnector } from '../../../model/diagram.model';
 import { Graph } from '../../../model/graph.model';
 import { canonicalReaction } from './canonical-reaction';
 
 /**
  * One reaction as the service sends it, numbered from `base`: a compartment
- * holding an input and an output, and the reaction between them. `swap` lists
- * the nodes the other way round, as the service sometimes does.
+ * holding an entity drawn twice as input (once also its catalyst), an output, and
+ * the reaction between them, and two links. `swap` gives every list the other way
+ * round, as the service sometimes does.
  */
 function answer(base: number, swap = false): { diagram: Diagram; graph: Graph.Data } {
-  const [compartment, input, output, reaction] = [0, 1, 2, 3].map((i) => base + i);
-  const node = (id: number, reactomeId: number, x: number, type: 'INPUT' | 'OUTPUT') => ({
+  const [compartment, input, again, output, reaction, link, other] = [0, 1, 2, 3, 4, 5, 6].map(
+    (i) => base + i
+  );
+  const order = <T>(items: T[]) => (swap ? [...items].reverse() : items);
+  const connector = (type: NodeConnector['type'], x: number, y: number): NodeConnector => ({
+    edgeId: reaction,
+    type,
+    segments: [{ from: { x, y }, to: { x: 150, y: 100 } }],
+    stoichiometry: { value: 1 },
+  });
+  const node = (
+    id: number,
+    reactomeId: number,
+    x: number,
+    y: number,
+    connectors: NodeConnector[]
+  ) => ({
     id,
     reactomeId,
     displayName: `entity ${reactomeId}`,
-    position: { x, y: 100 },
+    position: { x, y },
     renderableClass: 'Protein',
     schemaClass: 'EntityWithAccessionedSequence',
-    prop: { x: x - 20, y: 90, width: 40, height: 20 },
-    connectors: [
-      {
-        edgeId: reaction,
-        type,
-        segments: [{ from: { x, y: 100 }, to: { x: 150, y: 100 } }],
-        stoichiometry: { value: 1 },
-      },
-    ],
+    prop: { x: x - 20, y: y - 10, width: 40, height: 20 },
+    connectors,
   });
-  const nodes = [node(input, 11, 50, 'INPUT'), node(output, 12, 250, 'OUTPUT')];
+  const nodes = [
+    node(input, 11, 50, 100, order([connector('INPUT', 50, 100), connector('CATALYST', 50, 100)])),
+    node(again, 11, 50, 150, [connector('INPUT', 50, 150)]),
+    node(output, 12, 250, 100, [connector('OUTPUT', 250, 100)]),
+  ];
+  const aLink = (id: number, x: number): Link => ({
+    id,
+    inputs: [{ id: input }],
+    outputs: [{ id: output }],
+    renderableClass: 'EntitySetAndMemberLink',
+    segments: [{ from: { x, y: 0 }, to: { x, y: 10 } }],
+  });
   return {
     diagram: {
       displayName: 'a reaction',
       dbId: 99,
       stableId: 'R-HSA-99',
-      links: [],
+      links: order([aLink(link, 10), aLink(other, 20)]),
       shadows: [],
       compartments: [
         {
@@ -43,12 +63,12 @@ function answer(base: number, swap = false): { diagram: Diagram; graph: Graph.Da
           position: { x: 150, y: 100 },
           renderableClass: 'Compartment',
           schemaClass: 'Compartment',
-          componentIds: swap ? [reaction, output, input] : [input, output, reaction],
+          componentIds: order([input, again, output, reaction]),
           prop: { x: 0, y: 0, width: 300, height: 200 },
           textPosition: { x: 10, y: 190 },
         },
       ],
-      nodes: swap ? nodes.reverse() : nodes,
+      nodes: order(nodes),
       edges: [
         {
           id: reaction,
@@ -59,8 +79,9 @@ function answer(base: number, swap = false): { diagram: Diagram; graph: Graph.Da
           schemaClass: 'Reaction',
           reactionShape: { type: 'BOX' },
           segments: [],
-          inputs: [{ id: input }],
+          inputs: order([{ id: input }, { id: again }]),
           outputs: [{ id: output }],
+          catalysts: [{ id: input }],
         },
       ],
     },
@@ -68,22 +89,38 @@ function answer(base: number, swap = false): { diagram: Diagram; graph: Graph.Da
       dbId: 99,
       stId: 'R-HSA-99',
       speciesName: 'Homo sapiens',
-      nodes: (swap ? [12, 11] : [11, 12]).map((dbId) => ({
-        dbId,
-        stId: `R-HSA-${dbId}`,
-        displayName: `entity ${dbId}`,
-        schemaClass: 'EntityWithAccessionedSequence',
-        diagramIds: [dbId === 11 ? input : output],
-      })),
-      edges: [
+      nodes: order([
+        {
+          dbId: 11,
+          stId: 'R-HSA-11',
+          displayName: 'entity 11',
+          schemaClass: 'EntityWithAccessionedSequence',
+          diagramIds: order([input, again]),
+        },
+        {
+          dbId: 12,
+          stId: 'R-HSA-12',
+          displayName: 'entity 12',
+          schemaClass: 'EntityWithAccessionedSequence',
+          diagramIds: [output],
+        },
+      ]),
+      edges: order([
+        {
+          dbId: 98,
+          stId: 'R-HSA-98',
+          displayName: 'before',
+          schemaClass: 'Reaction',
+          diagramIds: [98],
+        },
         {
           dbId: 99,
           stId: 'R-HSA-99',
           displayName: 'a reaction',
           schemaClass: 'Reaction',
           diagramIds: [99],
-        } as Graph.Edge,
-      ],
+        },
+      ] as Graph.Edge[]),
     },
   };
 }
@@ -101,7 +138,7 @@ describe('canonicalReaction', () => {
     );
   });
 
-  it('gives one form whatever order the nodes came in', () => {
+  it('gives one form whatever order its lists came in', () => {
     const a = answer(149722);
     const b = answer(149722, true);
     expect(canonicalReaction(b.diagram, b.graph)).toEqual(canonicalReaction(a.diagram, a.graph));
@@ -112,26 +149,42 @@ describe('canonicalReaction', () => {
       answer(149729, true).diagram,
       answer(149729, true).graph
     );
-    const byId = new Map(diagram.nodes.map((n) => [n.id, n.reactomeId]));
+    const entity = new Map(diagram.nodes.map((n) => [n.id, n.reactomeId]));
     const reaction = only(diagram.edges);
-    expect(byId.get(only(reaction.inputs).id)).toBe(11);
-    expect(byId.get(only(reaction.outputs).id)).toBe(12);
-    for (const n of diagram.nodes) expect(only(n.connectors).edgeId).toBe(reaction.id);
-    for (const g of graph.nodes) expect(byId.get(only(g.diagramIds))).toBe(g.dbId);
+    expect((reaction.inputs ?? []).map((c) => entity.get(c.id))).toEqual([11, 11]);
+    expect(entity.get(only(reaction.outputs).id)).toBe(12);
+    expect(entity.get(only(reaction.catalysts).id)).toBe(11);
+    for (const n of diagram.nodes) for (const c of n.connectors) expect(c.edgeId).toBe(reaction.id);
+    for (const g of graph.nodes) {
+      for (const d of g.diagramIds ?? []) expect(entity.get(d)).toBe(g.dbId);
+    }
+    for (const l of diagram.links) {
+      expect(entity.get(only(l.inputs).id)).toBe(11);
+      expect(entity.get(only(l.outputs).id)).toBe(12);
+    }
     expect(only(diagram.compartments).componentIds).toEqual(
       [...diagram.nodes.map((n) => n.id), reaction.id].sort((a, b) => a - b)
     );
   });
 
+  it('leaves what the service sent as it came', () => {
+    const sent = answer(149729, true);
+    const before = structuredClone(sent);
+    canonicalReaction(sent.diagram, sent.graph);
+    expect(sent).toEqual(before);
+  });
+
   it("leaves a graph edge's diagramIds, which are reaction dbIds", () => {
     const { graph } = canonicalReaction(answer(149729).diagram, answer(149729).graph);
-    expect((only(graph.edges) as Graph.Edge & { diagramIds: number[] }).diagramIds).toEqual([99]);
+    expect(graph.edges.map((e) => (e as Graph.Edge & { diagramIds: number[] }).diagramIds)).toEqual(
+      [[98], [99]]
+    );
   });
 
   it('still tells two different layouts apart', () => {
     const a = answer(149722);
     const b = answer(149722);
-    only(b.diagram.nodes.slice(0, 1)).position.y = 116;
+    only(b.diagram.nodes.slice(2)).position.y = 116;
     expect(canonicalReaction(b.diagram, b.graph)).not.toEqual(
       canonicalReaction(a.diagram, a.graph)
     );
