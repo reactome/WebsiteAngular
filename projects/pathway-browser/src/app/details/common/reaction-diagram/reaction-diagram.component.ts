@@ -11,10 +11,10 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import cytoscape from 'cytoscape';
-import { Diagram } from '../../../model/diagram.model';
 import { DiagramService } from '../../../services/diagram.service';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
 import { ReactionJson } from '../../../model/reaction-diagram.model';
+import { canonicalReaction } from './canonical-reaction';
 
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
@@ -54,14 +54,19 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
 
     this.http
       .get<ReactionJson>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
-      .subscribe(({ diagram: layout, graph }) => {
-        // A reaction's layout leaves out the lists it does not have.
-        const diagram: Diagram = {
-          ...layout,
-          links: layout.links ?? [],
-          shadows: layout.shadows ?? [],
-          compartments: layout.compartments ?? [],
-        };
+      .subscribe(({ diagram: layout, graph: answered }) => {
+        // A reaction's layout leaves out the lists it does not have. Its ids and
+        // node order vary from request to request, so it is put in one form
+        // before it is drawn, and those no longer change the picture.
+        const { diagram, graph } = canonicalReaction(
+          {
+            ...layout,
+            links: layout.links ?? [],
+            shadows: layout.shadows ?? [],
+            compartments: layout.compartments ?? [],
+          },
+          answered
+        );
 
         const elements = this.diagramService.diagramFromData(diagram, graph);
 
