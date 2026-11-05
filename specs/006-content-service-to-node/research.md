@@ -577,7 +577,11 @@ What else the port carries over:
     and parents, and of each edge's inputs, outputs, catalysts,
     entity functional statuses, regulations, preceding and following events.
     The canonical form sorts the graph's nodes and edges, but not those
-    lists.
+    lists;
+  - the order of graph nodes that share a dbId. The node query returns one
+    row per species, so an entity of several species (355 in release 98) is
+    several nodes, which the canonical form's sort by dbId does not
+    separate.
 
 ## What exists already
 
