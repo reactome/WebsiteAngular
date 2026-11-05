@@ -1,18 +1,25 @@
 /**
  * The reaction layout comparison (spec 006 T092, research D22): node's
  * layout against Java's /exporter/reaction/{id}/diagram, on the parts the
- * steps built so far decide. Step 1 compares the inputs: each node's
- * identity, flags, attachments and compartment, each compartment's place in
- * the tree, and the diagram's header -- as sorted lists, nothing being
- * placed yet.
+ * steps built so far decide. Step 1 compares the inputs, as lists that do
+ * not depend on Java's random order of a participant's roles:
+ * - each node's identity, flags, attachments and compartment;
+ * - each glyph id with what it is: node ids with their entity, compartment
+ *   ids with their compartment, the edge's with the reaction -- node runs
+ *   from the first id Java's answer shows (its edge's), so a glyph made out
+ *   of Java's order shows here;
+ * - each role, from the edge: entity, type and stoichiometry;
+ * - each compartment's place in the tree, and the headers.
  *
  *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count]
  *
  * Reactions: `count` at random (default 200), every reaction with no
- * compartment, and a few failed reactions, drug and disease ones. Node runs
- * in process, from the first glyph id Java's answer shows (its edge's id).
- * Spaced for the shared database; stops after 20 differences in a row.
- * Prints reaction ids and counts only. Exits 1 on any difference.
+ * compartment, and some failed reactions, disease ones, and ones with drugs
+ * among or inside their participants. An answer whose ids differ is asked
+ * again (another request may have taken ids in between), up to three times.
+ * A Java error must meet an error from node; its text is step 5's. Spaced for
+ * the shared database; stops after 20 differences in a row. Prints reaction
+ * ids and counts only. Exits 1 on any difference.
  */
 import { close, read } from './graph.ts';
 import {
@@ -21,7 +28,7 @@ import {
   reactionRenderableClass,
 } from './reaction-layout/inputs.ts';
 import type { Inputs } from './reaction-layout/inputs.ts';
-import type { CompartmentGlyph, EntityGlyph } from './reaction-layout/model.ts';
+import type { CompartmentGlyph, EntityGlyph, EntityRole } from './reaction-layout/model.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 
@@ -46,84 +53,153 @@ interface CompartmentPart {
 }
 
 interface Summary {
-  header: { displayName: string; dbId: number; isDisease: boolean; stableId: string | null };
+  header: {
+    displayName: string;
+    dbId: number;
+    isDisease: boolean;
+    stableId: string | null;
+    speciesName: string | null;
+  };
   edge: { reactomeId: number; schemaClass: string; displayName: string };
   nodes: string[];
   compartments: string[];
+  roles: string[];
+  ids: string[];
+}
+
+/** The edge's lists, by the role type they hold. */
+const ROLE_LISTS: [
+  list: 'inputs' | 'outputs' | 'catalysts' | 'inhibitors' | 'activators',
+  type: EntityRole,
+][] = [
+  ['inputs', 'input'],
+  ['outputs', 'output'],
+  ['catalysts', 'catalyst'],
+  ['inhibitors', 'negative'],
+  ['activators', 'positive'],
+];
+
+/** Java's answer, as far as step 1 reads it. Jackson leaves out what is null or empty. */
+interface JavaPart {
+  id: number;
+  stoichiometry?: number;
+}
+interface JavaEdge {
+  id: number;
+  reactomeId: number;
+  schemaClass: string;
+  displayName: string;
+  inputs?: JavaPart[];
+  outputs?: JavaPart[];
+  catalysts?: JavaPart[];
+  inhibitors?: JavaPart[];
+  activators?: JavaPart[];
+}
+interface JavaNode {
+  id: number;
+  reactomeId: number;
+  schemaClass: string;
+  renderableClass: string;
+  displayName: string;
+  isDisease?: boolean;
+  needDashedBorder?: boolean;
+  trivial?: boolean;
+  nodeAttachments?: { label?: string; reactomeId: number }[];
+}
+interface JavaCompartment {
+  id: number;
+  reactomeId?: number;
+  schemaClass?: string;
+  displayName: string;
+  componentIds?: number[];
+}
+interface JavaAnswer {
+  diagram: {
+    displayName: string;
+    dbId: number;
+    isDisease: boolean;
+    stableId?: string;
+    nodes?: JavaNode[];
+    compartments?: JavaCompartment[];
+    edges: [JavaEdge];
+  };
+  graph?: { speciesName?: string };
 }
 
 /** A list compared as a multiset: each item as JSON, sorted. */
 const sorted = (items: unknown[]) => items.map((item) => JSON.stringify(item)).sort();
 
-/* eslint-disable @typescript-eslint/no-explicit-any -- Java's answer, read as it comes */
-function javaSummary(answer: any): Summary {
+function javaSummary(answer: JavaAnswer): Summary {
   const diagram = answer.diagram;
+  const nodes = diagram.nodes ?? [];
+  const compartments = diagram.compartments ?? [];
   const holder = new Map<number, string>();
   const parentOf = new Map<number, string>();
-  const compartmentIds = new Set<number>((diagram.compartments ?? []).map((c: any) => c.id));
-  for (const compartment of diagram.compartments ?? [])
+  const compartmentIds = new Set<number>(compartments.map((c) => c.id));
+  for (const compartment of compartments)
     for (const id of compartment.componentIds ?? []) {
       if (compartmentIds.has(id)) parentOf.set(id, compartment.displayName);
       else holder.set(id, compartment.displayName);
     }
-  const nodes: NodePart[] = (diagram.nodes ?? []).map((node: any) => ({
-    reactomeId: node.reactomeId,
-    schemaClass: node.schemaClass,
-    renderableClass: node.renderableClass,
-    displayName: node.displayName,
-    isDisease: node.isDisease ?? null,
-    needDashedBorder: node.needDashedBorder ?? null,
-    trivial: node.trivial ?? null,
-    attachments: (node.nodeAttachments ?? []).map((a: any) => [a.label ?? null, a.reactomeId]),
-    compartment: holder.get(node.id) ?? null,
-  }));
-  const compartments: CompartmentPart[] = (diagram.compartments ?? []).map((c: any) => ({
-    displayName: c.displayName,
-    reactomeId: c.reactomeId ?? null,
-    schemaClass: c.schemaClass ?? null,
-    parent: parentOf.get(c.id) ?? null,
-  }));
   const [edge] = diagram.edges;
+  const dbIdOf = new Map<number, number>(nodes.map((node) => [node.id, node.reactomeId]));
   return {
     header: {
       displayName: diagram.displayName,
       dbId: diagram.dbId,
       isDisease: diagram.isDisease,
       stableId: diagram.stableId ?? null,
+      speciesName: answer.graph?.speciesName ?? null,
     },
     edge: {
       reactomeId: edge.reactomeId,
       schemaClass: edge.schemaClass,
       displayName: edge.displayName,
     },
-    nodes: sorted(nodes),
-    compartments: sorted(compartments),
+    nodes: sorted(
+      nodes.map((node): NodePart => ({
+        reactomeId: node.reactomeId,
+        schemaClass: node.schemaClass,
+        renderableClass: node.renderableClass,
+        displayName: node.displayName,
+        isDisease: node.isDisease ?? null,
+        needDashedBorder: node.needDashedBorder ?? null,
+        trivial: node.trivial ?? null,
+        attachments: (node.nodeAttachments ?? []).map((a) => [a.label ?? null, a.reactomeId]),
+        compartment: holder.get(node.id) ?? null,
+      }))
+    ),
+    compartments: sorted(
+      compartments.map((c): CompartmentPart => ({
+        displayName: c.displayName,
+        reactomeId: c.reactomeId ?? null,
+        schemaClass: c.schemaClass ?? null,
+        parent: parentOf.get(c.id) ?? null,
+      }))
+    ),
+    roles: sorted(
+      ROLE_LISTS.flatMap(([list, type]) =>
+        (edge[list] ?? []).map((part) => [
+          dbIdOf.get(part.id) ?? null,
+          type,
+          part.stoichiometry ?? null,
+        ])
+      )
+    ),
+    ids: sorted([
+      ['reaction', edge.id, edge.reactomeId],
+      ...nodes.map((node) => ['entity', node.id, node.reactomeId]),
+      ...compartments.map((c) => ['compartment', c.id, c.displayName]),
+    ]),
   };
 }
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function nodeSummary(inputs: Inputs): Summary {
   removeExtracellular(inputs);
   const present = new Set<CompartmentGlyph>(inputs.compartments.values());
   const shown = (glyph: CompartmentGlyph | undefined) =>
     glyph && present.has(glyph) ? glyph.name : null;
-  const nodes: NodePart[] = [...inputs.entities].map((entity: EntityGlyph) => ({
-    reactomeId: entity.dbId,
-    schemaClass: entity.schemaClass,
-    renderableClass: entity.renderableClass,
-    displayName: entity.name,
-    isDisease: entity.disease ? true : null,
-    needDashedBorder: entity.dashed ? true : null,
-    trivial: entity.trivial ? true : null,
-    attachments: entity.attachments.map((a) => [a.data.label, a.data.dbId]),
-    compartment: shown(entity.compartment),
-  }));
-  const compartments: CompartmentPart[] = [...present].map((glyph) => ({
-    displayName: glyph.name,
-    reactomeId: glyph.dbId ?? null,
-    schemaClass: glyph.schemaClass ?? null,
-    parent: shown(glyph.parent),
-  }));
+  const entities: EntityGlyph[] = [...inputs.entities];
   const reaction = inputs.reaction.data;
   // The edge's renderable class is always "Reaction"; its shape, which the
   // category decides, is step 3's. The category is read here so it is checked.
@@ -134,23 +210,50 @@ function nodeSummary(inputs: Inputs): Summary {
       dbId: reaction.dbId,
       isDisease: reaction.isInDisease === true,
       stableId: inputs.pathway,
+      speciesName: reaction.speciesName,
     },
     edge: {
       reactomeId: reaction.dbId,
       schemaClass: reaction.schemaClass,
       displayName: reaction.displayName,
     },
-    nodes: sorted(nodes),
-    compartments: sorted(compartments),
+    nodes: sorted(
+      entities.map((entity): NodePart => ({
+        reactomeId: entity.dbId,
+        schemaClass: entity.schemaClass,
+        renderableClass: entity.renderableClass,
+        displayName: entity.name,
+        isDisease: entity.disease ? true : null,
+        needDashedBorder: entity.dashed ? true : null,
+        trivial: entity.trivial ? true : null,
+        attachments: entity.attachments.map((a) => [a.data.label, a.data.dbId]),
+        compartment: shown(entity.compartment),
+      }))
+    ),
+    compartments: sorted(
+      [...present].map((glyph): CompartmentPart => ({
+        displayName: glyph.name,
+        reactomeId: glyph.dbId ?? null,
+        schemaClass: glyph.schemaClass ?? null,
+        parent: shown(glyph.parent),
+      }))
+    ),
+    roles: sorted(
+      entities.flatMap((entity) => entity.roles.map((role) => [entity.dbId, role.type, role.n]))
+    ),
+    ids: sorted([
+      ['reaction', inputs.reaction.id, reaction.dbId],
+      ...entities.map((entity) => ['entity', entity.id, entity.dbId]),
+      ...[...present].map((glyph) => ['compartment', glyph.id, glyph.name]),
+    ]),
   };
 }
 
+const PARTS = ['header', 'edge', 'nodes', 'compartments', 'roles', 'ids'] as const;
+
 /** Which parts of two summaries differ. */
 function differences(java: Summary, node: Summary): string[] {
-  const parts: string[] = [];
-  for (const key of ['header', 'edge', 'nodes', 'compartments'] as const)
-    if (JSON.stringify(java[key]) !== JSON.stringify(node[key])) parts.push(key);
-  return parts;
+  return PARTS.filter((key) => JSON.stringify(java[key]) !== JSON.stringify(node[key]));
 }
 
 async function reactions(count: number): Promise<string[]> {
@@ -160,7 +263,9 @@ async function reactions(count: number): Promise<string[]> {
       UNION MATCH (r:ReactionLikeEvent) WHERE NOT (r)-[:compartment]->() RETURN r.stId AS stId
       UNION MATCH (r:FailedReaction) RETURN r.stId AS stId LIMIT 10
       UNION MATCH (r:ReactionLikeEvent {isInDisease: true}) RETURN r.stId AS stId LIMIT 10
-      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:Drug) RETURN DISTINCT r.stId AS stId LIMIT 10
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output|catalystActivity|physicalEntity|regulatedBy|regulator*1..3]->(pe:PhysicalEntity)
+            WHERE (pe)-[:hasComponent|hasMember|hasCandidate*0..2]->(:Drug)
+            RETURN DISTINCT r.stId AS stId LIMIT 20
       UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(pe)
             WHERE NOT (pe)-[:compartment]->() RETURN DISTINCT r.stId AS stId LIMIT 10 }
      RETURN DISTINCT stId`,
@@ -169,32 +274,54 @@ async function reactions(count: number): Promise<string[]> {
   return rows.map((row) => row.stId);
 }
 
+/** Java's answer for a reaction: its status, and its body when there is one. */
+async function java(stId: string): Promise<{ status: number; body: JavaAnswer | undefined }> {
+  const response = await fetch(`${JAVA}/ContentService/exporter/reaction/${stId}/diagram`, {
+    signal: AbortSignal.timeout(120_000),
+  });
+  const text = await response.text();
+  await new Promise((resolve) => setTimeout(resolve, 150));
+  return {
+    status: response.status,
+    body: response.status === 200 ? (JSON.parse(text) as JavaAnswer) : undefined,
+  };
+}
+
+/** One reaction compared: the parts that differ, empty when none do. */
+async function compare(stId: string): Promise<string[]> {
+  for (let attempt = 1; ; attempt += 1) {
+    const answer = await java(stId);
+    let inputs: Inputs | Error;
+    try {
+      const first = answer.body?.diagram.edges[0].id ?? 1;
+      inputs = await readInputs(stId, first);
+    } catch (error) {
+      inputs = error as Error;
+    }
+    if (!answer.body)
+      return inputs instanceof Error ? [] : [`java ${answer.status}, node answered`];
+    if (inputs instanceof Error)
+      return [`node threw ${inputs.name}: ${inputs.message.slice(0, 80)}`];
+    let parts: string[];
+    try {
+      parts = differences(javaSummary(answer.body), nodeSummary(inputs));
+    } catch (error) {
+      return [`node threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`];
+    }
+    // Ids alone differing may be another request's ids in between: ask again.
+    if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
+    return parts;
+  }
+}
+
 async function main() {
   const ids = await reactions(Number(process.argv[2] ?? 200));
   console.log(`comparing ${ids.length} reactions, step 1`);
   let identical = 0;
   let different = 0;
   let inARow = 0;
-  const failures: Record<string, number> = {};
   for (const stId of ids) {
-    const response = await fetch(`${JAVA}/ContentService/exporter/reaction/${stId}/diagram`, {
-      signal: AbortSignal.timeout(120_000),
-    });
-    await new Promise((resolve) => setTimeout(resolve, 150));
-    if (response.status !== 200) {
-      // Java's errors are compared at step 5; noted here.
-      failures[`java ${response.status}`] = (failures[`java ${response.status}`] ?? 0) + 1;
-      await response.text();
-      continue;
-    }
-    const answer = await response.json();
-    const first = answer.diagram.edges[0].id as number;
-    let parts: string[];
-    try {
-      parts = differences(javaSummary(answer), nodeSummary(await readInputs(stId, first)));
-    } catch (error) {
-      parts = [`threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`];
-    }
+    const parts = await compare(stId);
     if (!parts.length) {
       identical += 1;
       inARow = 0;
@@ -209,7 +336,6 @@ async function main() {
     }
   }
   await close();
-  for (const [what, n] of Object.entries(failures)) console.log(`  ${n} answered ${what} by Java`);
   console.log(`compared: ${identical} identical, ${different} different`);
   process.exit(different ? 1 : 0);
 }

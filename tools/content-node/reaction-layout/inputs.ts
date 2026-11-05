@@ -52,7 +52,11 @@ interface Participant {
 
 let master: Promise<JavaHashMap<string, GoTerm>> | undefined;
 
-/** The master tree, read once: Java's is static, and the graph does not change within a release. */
+/**
+ * The master tree, read once: Java's is static, and the graph does not change
+ * within a release. A service left running across a move to the next
+ * release's graph keeps the old tree until it restarts, as Java does.
+ */
 function masterOnce() {
   master ??= readCellularComponents().then(masterTree);
   // A failed read is not kept: the next request reads again.
@@ -309,7 +313,8 @@ const COMPARTMENTS = (node: string) => `
 
 /** Each compartment repeated by its stoichiometry, as findCollectionByRelationship lists it. */
 function repeated<T extends { n: number }>(list: T[]): Omit<T, 'n'>[] {
-  return list.flatMap(({ n, ...rest }) => Array.from({ length: n }, () => rest));
+  // Java's loop runs no times for a stoichiometry below 1.
+  return list.flatMap(({ n, ...rest }) => Array.from({ length: Math.max(0, n) }, () => rest));
 }
 
 async function readReaction(stId: string): Promise<ReactionData> {

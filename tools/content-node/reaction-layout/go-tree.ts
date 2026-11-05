@@ -125,7 +125,8 @@ export class GoTerm {
 
   #related(direction: Direction, type: RelationshipType): GoTerm[] {
     let byType = this.#relationships.get(direction);
-    if (!byType) this.#relationships.set(direction, (byType = new Map()));
+    if (!byType)
+      this.#relationships.set(direction, (byType = new Map<RelationshipType, GoTerm[]>()));
     let terms = byType.get(type);
     if (!terms) byType.set(type, (terms = []));
     return terms;
