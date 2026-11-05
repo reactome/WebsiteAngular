@@ -56,6 +56,9 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       passes with none.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
+  - **Written (#808):** the script and its tests. Its first run, `--mode fresh` on T001's
+    sample, is in research R7. Still to do before it is ticked: a run in `reuse` mode,
+    which needs a site build with the render page's entry point (T003) or T001's prototype.
   - **What it does:** draws the sample through two services, three orders, and compares
     SVG by bytes and the other formats after their named variation.
   - **Tests in `tools/render/reuse-compare.spec.ts`:** it fails on a planted difference,
