@@ -110,7 +110,7 @@ Each phase is its own set of pull requests, each ending in review, CI, merge, de
      - node's pass-through and graceful shutdown;
      - routing tests that read `routes.conf` and know three outcomes;
      - the parity harness.
-   - **Cutover:** one address group at a time, in this order: PSICQUIC; tokens and uploads; SBGN and SBML; event PDF. The events hierarchy stays on Tomcat (R3).
+   - **Cutover:** one address group at a time, in this order: PSICQUIC; tokens and uploads; SBGN and SBML; event PDF. The events hierarchy stays on Tomcat (R3). (5 Nov 2026: SBML is spec 015's, and SBGN and the event PDF go to Reactome's own exporters instead; see the amendment in spec.md.)
 3. **AnalysisService (Story 3).**
    - Build it from its pinned commit and run it in its own container, with token and data volumes.
    - nginx routes it directly (R5).

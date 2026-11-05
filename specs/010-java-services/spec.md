@@ -1,6 +1,6 @@
 # Feature Specification: The Java side of Reactome's services
 
-> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../006-content-service-to-node/tasks.md) T092, research D21).
+> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../006-content-service-to-node/tasks.md) T092, research D21). FR-002's rule reads with that exception: an operation whose substance is a Java library stays in Java unless the library has no Java-only dependency and the port is decided in spec 006 and recorded here. FR-003's list stands except where a later spec replaces it. **Event SBML** is replaced by spec 015: node answers it through `sbml-exporter` (on beta; release and production wait for its T068), the exporter Reactome now keeps for both the bulk file and the website. **Event PDF** is to be replaced by `pdf-export`'s single-event service (its spec 001, Story 2 and FR-014). **Event SBGN** is to follow SBML's pattern: one exporter for both the download page's bulk file and the website (awright, 5 Nov 2026; its spec is to come). The rest stay in Java until spec 006's Phase 9 reconsiders each one.
 
 > **Amended by [spec 015](../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
 >
@@ -141,7 +141,7 @@ A researcher submits an analysis while the service is busy. Their analysis waits
 
 - **FR-001**: The project MUST keep a record assigning every published operation of ContentService and AnalysisService to exactly one home — node, the Java library service, or AnalysisService — with the reason.
 - **FR-002**: The record MUST state the rule: an operation whose substance is a Java library or Java numerical work stays in Java; one that reads the graph, the search index, or logic Reactome writes for the website moves to node. Cases the rule does not settle are decided by the team and added to the record.
-- **FR-003**: The record MUST place, at minimum: PSICQUIC molecule queries and custom PSICQUIC queries; custom interactor uploads and overlay tokens; event SBML, SBGN and PDF export; the events hierarchy (it needs the analysis data's pathway sizes, which a graph count does not reproduce); and all of AnalysisService — in Java.
+- **FR-003**: The record MUST place, at minimum: PSICQUIC molecule queries and custom PSICQUIC queries; custom interactor uploads and overlay tokens; event SBML, SBGN and PDF export; the events hierarchy (it needs the analysis data's pathway sizes, which a graph count does not reproduce); and all of AnalysisService — in Java. (Event SBML, SBGN and PDF: see the 5 Nov 2026 amendment at the top.)
 
 **Running the Java**
 

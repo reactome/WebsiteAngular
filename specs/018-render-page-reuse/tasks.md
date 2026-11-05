@@ -47,7 +47,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       any order, must match, so a label regression on such a reaction still fails. Any other
       difference fails.
     - **Exempt reactions** are listed in the result. More than 2% of the sample's
-      reactions exempt fails the test, so a growing list stops it rather than passing
+      reactions exempt fails the test (for example, at 100 reactions two pass and a
+      third fails), so a growing list stops it rather than passing
       unnoticed. (So far a varying layout has been seen for one reaction, and for none
       of the 99 fetched three times each in research R7.)
     - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
