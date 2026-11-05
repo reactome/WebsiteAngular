@@ -55,14 +55,29 @@ export interface Difference {
 }
 
 /**
+ * A parameter at the value the service takes when it is left out
+ * (service.ts): `dark=false`, `subpathways=true`, `scale=2`, `delay=1000`,
+ * `maxSize=0`, or empty.
+ */
+const DEFAULTS: Record<string, string> = {
+  dark: 'false',
+  subpathways: 'true',
+  scale: '2',
+  delay: '1000',
+  maxSize: '0',
+};
+const isDefault = (name: string, value: string) => value === '' || DEFAULTS[name] === value;
+
+/**
  * One figure however it is written: its path and its parameters decoded and
- * sorted, `dark=false` as no `dark`. The service's cache key is built from
- * the parsed parameters, so two spellings of one figure are one cache entry.
+ * sorted, a parameter at its default as none. The service's cache key is
+ * built from the parsed parameters, so two spellings of one figure are one
+ * cache entry.
  */
 export function canonical(request: string): string {
   const [figure = '', query = ''] = request.split('?');
   const params = [...new URLSearchParams(query)]
-    .filter(([name, value]) => !(name === 'dark' && value === 'false'))
+    .filter(([name, value]) => !isDefault(name, value))
     .sort(([a, x], [b, y]) => (a === b ? (x < y ? -1 : 1) : a < b ? -1 : 1));
   return `${figure}?${params.map(([name, value]) => `${name}=${value}`).join('&')}`;
 }
@@ -96,6 +111,19 @@ function withQuery(request: string, change: (query: URLSearchParams) => void): s
 const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?? '');
 
 /**
+ * Which of the sample's species overviews goes before `request`, if any:
+ * one, for about one figure in 25, both chosen by the figure's text so a
+ * run is repeatable. An overview can be asked once per run, so all of them
+ * before every figure made a run per figure: 448 container starts for a
+ * 400-figure sample.
+ */
+function overviewBefore(request: string, overviews: string[]): string | undefined {
+  let hash = 0;
+  for (const character of canonical(request)) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return hash % 25 === 0 ? overviews[Math.trunc(hash / 25) % overviews.length] : undefined;
+}
+
+/**
  * The requests that may come straight before `request` in a pair: each one a
  * held page could carry a setting over from, drawing `request` wrong (spec
  * 018 FR-004, research R5):
@@ -105,7 +133,7 @@ const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?
  * - a selection, a highlight, or subpathways off, against none, either way:
  *   the sample's own on the same figure, or the figure without it;
  * - the overview of one species against another's, and the sample's species
- *   overviews before anything that is not an overview.
+ *   overviews, one before each of about one figure in 25 (overviewBefore).
  */
 export function opposites(request: string, sample: string[], token: string | undefined): string[] {
   const query = queryOf(request);
@@ -135,12 +163,15 @@ export function opposites(request: string, sample: string[], token: string | und
         q.get('species') === '10090' ? q.delete('species') : q.set('species', '10090')
       )
     );
-  else
-    found.push(
-      ...sample.filter(
+  else {
+    const overview = overviewBefore(
+      request,
+      sample.filter(
         (other) => other.startsWith('/render/genome-wide.') && queryOf(other).has('species')
       )
     );
+    if (overview) found.push(overview);
+  }
   return [...new Set(found)].filter((other) => canonical(other) !== canonical(request));
 }
 
@@ -441,7 +472,8 @@ async function main() {
     process.exit(code);
   };
   // A container left behind holds memory on a shared host -- also when the
-  // terminal or session that started the run goes away (SIGHUP).
+  // terminal or session that started the run goes away (SIGHUP). That stops a
+  // run started under nohup too: start a long run in tmux or screen instead.
   for (const [signal, code] of [
     ['SIGINT', 130],
     ['SIGTERM', 143],

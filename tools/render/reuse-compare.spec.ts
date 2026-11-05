@@ -98,19 +98,68 @@ describe('the opposites', () => {
     );
   });
 
-  it("are the sample's species overviews before a figure that is not an overview", () => {
-    const sample = ['/render/R-HSA-1.svg', '/render/genome-wide.svg?species=10090'];
-    expect(opposites('/render/R-HSA-1.svg', sample, undefined)).toContain(
-      '/render/genome-wide.svg?species=10090'
+  it("are one of the sample's species overviews before some figures that are not overviews", () => {
+    const overviews = [
+      '/render/genome-wide.svg?species=10090',
+      '/render/genome-wide.svg?species=10116',
+    ];
+    const figures = Array.from({ length: 200 }, (_, at) => `/render/R-HSA-${at + 1}.svg`);
+    const sample = [...figures, ...overviews];
+    const before = figures.map((figure) =>
+      opposites(figure, sample, undefined).filter((other) => overviews.includes(other))
     );
+    // Some figures, not all, and never more than one overview each.
+    expect(before.filter((found) => found.length).length).toBeGreaterThan(0);
+    expect(before.filter((found) => found.length).length).toBeLessThan(figures.length / 5);
+    expect(Math.max(...before.map((found) => found.length))).toBe(1);
   });
 
-  it('never pair a request with itself', () => {
-    const sample = ['/render/R-HSA-1.svg', '/render/R-HSA-1.svg?highlight=R-HSA-2'];
+  it('never pair a request with itself, a default setting counting as none', () => {
+    const sample = [
+      '/render/R-HSA-1.svg',
+      '/render/R-HSA-1.svg?highlight=R-HSA-2',
+      '/render/R-HSA-1.svg?subpathways=true',
+      '/render/R-HSA-1.svg?scale=2&highlight=',
+    ];
     for (const request of sample)
       expect(opposites(request, sample, undefined).map(canonical)).not.toContain(
         canonical(request)
       );
+  });
+
+  it("take a parameter at the service's default as no parameter, as its cache key does", () => {
+    for (const same of [
+      '/render/R-HSA-1.svg?dark=false',
+      '/render/R-HSA-1.svg?subpathways=true',
+      '/render/R-HSA-1.svg?scale=2',
+      '/render/R-HSA-1.gif?delay=1000',
+      '/render/R-HSA-1.svg?maxSize=0',
+      '/render/R-HSA-1.svg?highlight=',
+    ])
+      expect(canonical(same)).toBe(canonical(same.replace(/\?.*/, '')));
+    expect(canonical('/render/R-HSA-1.svg?subpathways=false')).not.toBe(
+      canonical('/render/R-HSA-1.svg')
+    );
+  });
+
+  it('keep the runs few: overviews go before one figure in 25, not every one', () => {
+    // As a release sample might be: diagrams, a third dark, highlights, five
+    // species overviews and a token.
+    const sample = [
+      ...Array.from(
+        { length: 400 },
+        (_, at) => `/render/R-HSA-${at + 1}.svg${at % 3 ? '' : '?dark=true'}`
+      ),
+      ...Array.from(
+        { length: 40 },
+        (_, at) => `/render/R-HSA-${at + 1}.svg?highlight=R-HSA-${at + 1000}`
+      ),
+      ...['9606', '10090', '10116', '7955', '4932'].map(
+        (id) => `/render/genome-wide.svg?species=${id}`
+      ),
+      '/render/R-HSA-1.png?token=T',
+    ];
+    expect(pairRuns(sample).length).toBeLessThanOrEqual(12);
   });
 
   it("are another species' overview", () => {
