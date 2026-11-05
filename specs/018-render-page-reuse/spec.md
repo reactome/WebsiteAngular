@@ -115,14 +115,15 @@ the failed page was replaced.
 ### User Story 4 - Memory stays bounded (Priority: P2)
 
 A long run, such as the book's 19,076 figures, does not grow the service's memory without
-limit. A page is replaced after a set number of figures, or sooner when it is using more
-memory than a set bound.
+limit. A page is replaced after a set number of figures, or sooner when the service is
+using more memory than a set bound.
 
 **Why this priority**: a page that lives for thousands of figures can collect memory the
 site's code never gives back, and the service runs in a container with a memory limit.
 
-**Independent Test**: draw several thousand figures and record each page's memory after
-each figure, and the container's peak.
+**Independent Test**: draw several thousand figures on one page and record its heap and
+document nodes after each figure (a leak in the page), and the service's memory and the
+container's peak (the bound).
 
 **Acceptance Scenarios**:
 
@@ -168,7 +169,9 @@ each figure, and the container's peak.
   reports a problem while drawing (the browser problems today's log line counts). It is
   closed, and later requests use another page.
 - **FR-006**: A page MUST be replaced after a configurable number of figures. It MUST
-  also be replaced when its memory passes a configurable bound, checked after each figure.
+  also be closed rather than held when the service's memory passes a configurable bound,
+  checked after each figure. The bound is the service's, not one page's: a browser page's
+  memory is mostly outside what it reports as its own (research R4).
   Both have defaults chosen from measurement (plan).
 - **FR-007**: The service's HTTP interface MUST NOT change: its routes, parameters,
   answers and errors, its figure cache, its queue, and its concurrency and timeout
@@ -186,7 +189,7 @@ each figure, and the container's peak.
 ### Key Entities
 
 - **Held page:** a browser page with the render page loaded. It records the site build
-  it loaded, the figures drawn on it, and its last memory reading.
+  it loaded and the figures drawn on it.
 - **Replacement:** closing a held page and why: a failure, the figure count, the memory
   bound, or a build change.
 
