@@ -37,11 +37,12 @@ const SHARED: Record<string, string[]> = {
   ],
 };
 /**
- * The tools beside the service that read its endpoint list -- the parity
- * harness and the invalid-input corpus: they may import anything, and
- * nothing in the service may import them.
+ * The tools beside the service that read its endpoint list or its
+ * libraries -- the parity harness, the invalid-input corpus and the reaction
+ * layout comparison: they may import anything, and nothing in the service
+ * may import them.
  */
-const TOOLS = new Set(['diff', 'invalid-inputs']);
+const TOOLS = new Set(['diff', 'invalid-inputs', 'reaction-layout-check']);
 const isFamily = (name: string) => name.endsWith('-endpoints');
 const isShared = (name: string) => name in SHARED;
 /**
@@ -56,27 +57,30 @@ const isLeaf = (name: string) =>
 /**
  * The local modules a source imports -- static, type-only, side-effect,
  * re-exported or dynamic -- by name without `./` or an extension, as
- * TypeScript itself reads them.
+ * TypeScript itself reads them. A module in a subdirectory is named by its
+ * path from this directory (`reaction-layout/go-tree`), and its imports are
+ * resolved from its own directory.
  */
-function importsOf(source: string): string[] {
-  // Resolved against this directory, so `../content-node/registry.ts` and
-  // `./registry.js` are the registry as much as `./registry.ts` is; a module
-  // elsewhere is not one of this service's.
-  const here = path.posix.join('tools', 'content-node');
+function importsOf(name: string, source: string): string[] {
+  // Resolved against the module's directory, so `../content-node/registry.ts`
+  // and `./registry.js` are the registry as much as `./registry.ts` is; a
+  // module elsewhere is not one of this service's.
+  const root = path.posix.join('tools', 'content-node');
+  const here = path.posix.join(root, path.posix.dirname(name));
   return ts
     .preProcessFile(source, true, true)
     .importedFiles.map((file) => file.fileName)
-    .filter((name) => name.startsWith('.'))
-    .map((name) => path.posix.normalize(path.posix.join(here, name)))
-    .filter((resolved) => path.posix.dirname(resolved) === here)
-    .map((resolved) => path.posix.basename(resolved).replace(/\.[cm]?[jt]s$/, ''));
+    .filter((imported) => imported.startsWith('.'))
+    .map((imported) => path.posix.normalize(path.posix.join(here, imported)))
+    .filter((resolved) => resolved.startsWith(`${root}/`))
+    .map((resolved) => path.posix.relative(root, resolved).replace(/\.[cm]?[jt]s$/, ''));
 }
 
 /** Every import the boundaries forbid, as "module imports other: why". */
 function violations(modules: Record<string, string>): string[] {
   const found: string[] = [];
   for (const [name, source] of Object.entries(modules)) {
-    for (const other of importsOf(source)) {
+    for (const other of importsOf(name, source)) {
       const say = (why: string) => found.push(`${name} imports ${other}: ${why}`);
       if (TOOLS.has(name)) continue;
       if (TOOLS.has(other)) say('nothing in the service imports a tool');
@@ -119,14 +123,16 @@ function violations(modules: Record<string, string>): string[] {
  */
 function valueEscapes(modules: Record<string, string>): string[] {
   const found: string[] = [];
-  /** Where a written path goes: outside, or null when it stays here or is a package. */
-  const outside = (specifier: ts.Expression | undefined) => {
+  /** Where a written path goes from `name`: outside, or null when it stays here or is a package. */
+  const outside = (name: string, specifier: ts.Expression | undefined) => {
     if (!specifier) return null;
     if (!ts.isStringLiteralLike(specifier)) return 'a path not written out';
     const target = specifier.text;
     if (!target.startsWith('.')) return null;
     // `.` is the directory itself, which normalises without its slash.
-    const resolved = path.posix.normalize(path.posix.join('tools', 'content-node', target));
+    const resolved = path.posix.normalize(
+      path.posix.join('tools', 'content-node', path.posix.dirname(name), target)
+    );
     return resolved === 'tools/content-node' || resolved.startsWith('tools/content-node/')
       ? null
       : target;
@@ -136,7 +142,7 @@ function valueEscapes(modules: Record<string, string>): string[] {
   for (const [name, source] of Object.entries(modules)) {
     const file = ts.createSourceFile(`${name}.ts`, source, ts.ScriptTarget.Latest, true);
     const check = (specifier: ts.Expression | undefined, verb = 'imports') => {
-      const target = outside(specifier);
+      const target = outside(name, specifier);
       if (target) found.push(`${name} ${verb} ${target}`);
     };
     const visit = (node: ts.Node) => {
@@ -178,15 +184,43 @@ function valueEscapes(modules: Record<string, string>): string[] {
 }
 
 const DIR = new URL('./', import.meta.url);
+/**
+ * The service's modules, subdirectories' included (a library such as
+ * reaction-layout/), but not the snapshot scripts' directories: they run on
+ * a developer's machine to make the snapshots, never in the image, and read
+ * outside it by design.
+ */
 const real = Object.fromEntries(
-  readdirSync(DIR)
+  readdirSync(DIR, { recursive: true, encoding: 'utf8' })
     .filter((file) => file.endsWith('.ts') && !/\.(spec|d)\.ts$/.test(file))
+    .filter((file) => !/^(snapshot-[^/]+|fixtures|node_modules)\//.test(file))
     .map((file) => [file.replace(/\.ts$/, ''), readFileSync(new URL(file, DIR), 'utf8')])
 );
 
 describe('the content service boundaries', () => {
   it('hold in the service as it is', () => {
     expect(violations(real)).toEqual([]);
+  });
+
+  it("hold a library in a subdirectory to the leaves' rule, resolving from its own directory", () => {
+    expect(
+      violations({
+        'reaction-layout/inputs':
+          "import { read } from '../graph.ts';\nimport { x } from './go-tree.ts';\nimport { y } from '../person-endpoints.ts';\nimport '../registry.ts';",
+        'reaction-layout/go-tree': "import { app } from '../server.ts';",
+        'reaction-layout-endpoints': "import { readInputs } from './reaction-layout/inputs.ts';",
+      })
+    ).toEqual([
+      'reaction-layout/inputs imports person-endpoints: a leaf imports only leaves',
+      'reaction-layout/inputs imports registry: a leaf imports only leaves',
+      'reaction-layout/go-tree imports server: a leaf imports only leaves',
+    ]);
+    expect(
+      valueEscapes({
+        'reaction-layout/inputs':
+          "import { read } from '../graph.ts';\nimport { z } from '../../render/x.ts';",
+      })
+    ).toEqual(['reaction-layout/inputs imports ../../render/x.ts']);
   });
 
   it('refuse a family importing another family, or the registry', () => {

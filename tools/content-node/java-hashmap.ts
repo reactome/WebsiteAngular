@@ -36,9 +36,48 @@ export class JavaHashMap<K = string, V = unknown> {
   /**
    * `hash` is the key's hashCode, String.hashCode unless given -- a
    * TargetResult's is Objects.hash(term), 31 more than its term's.
+   * `capacity` is Java's initialCapacity: the table starts at the power of
+   * two at or above it (tableSizeFor), 16 when it is not given.
    */
-  constructor({ hash }: { hash?: (key: K) => number } = {}) {
+  constructor({ hash, capacity }: { hash?: (key: K) => number; capacity?: number } = {}) {
     this.#keyHash = hash;
+    if (capacity !== undefined)
+      this.#table = new Array<HashNode | null>(tableSizeFor(capacity)).fill(null);
+  }
+
+  /**
+   * The initialCapacity `new HashSet<>(collection)` gives its map for a
+   * collection of `size`: Math.max((int) (size / .75f) + 1, 16), in float as
+   * Java divides -- so 16 buckets up to 11 entries and 32 from 12, where a
+   * set filled one by one grows on its 13th.
+   */
+  static capacityFor(size: number): number {
+    return Math.max(Math.trunc(Math.fround(Math.fround(size) / Math.fround(0.75))) + 1, 16);
+  }
+
+  /**
+   * Objects.hash(id) for a long id: 31 + Long.hashCode(id), the high half
+   * folded into the low -- the hash of a reaction layout's glyphs.
+   */
+  static longObjectsHash(id: number): number {
+    const big = BigInt.asUintN(64, BigInt(id));
+    return (31 + Number(BigInt.asIntN(32, big ^ (big >> 32n)))) | 0;
+  }
+
+  /** The node holding `key`, or null: a bucket's list or its tree, walked in order. */
+  #find(key: K): HashNode | null {
+    const hash = this.#hashOf(key);
+    for (let node = this.#table[(this.#table.length - 1) & hash] ?? null; node; node = node.next)
+      if (node.hash === hash && node.key === key) return node;
+    return null;
+  }
+
+  get(key: K): V | undefined {
+    return this.#find(key)?.value as V | undefined;
+  }
+
+  has(key: K): boolean {
+    return this.#find(key) !== null;
   }
 
   #hashOf(key: K): number {
@@ -126,6 +165,10 @@ export class JavaHashMap<K = string, V = unknown> {
 
   *keys() {
     for (const [key] of this.entries()) yield key;
+  }
+
+  *values() {
+    for (const [, value] of this.entries()) yield value;
   }
 
   #resize() {
@@ -355,4 +398,11 @@ export class JavaHashMap<K = string, V = unknown> {
       }
     }
   }
+}
+
+/** HashMap.tableSizeFor: the power of two at or above `capacity`, at least 1. */
+function tableSizeFor(capacity: number): number {
+  let size = 1;
+  while (size < capacity) size *= 2;
+  return size;
 }

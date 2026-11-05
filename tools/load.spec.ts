@@ -35,6 +35,7 @@ const RUN_ON_LOAD = new Set([
   'tools/analysis-types/record',
   'tools/content-node/diff',
   'tools/content-node/people-name-check',
+  'tools/content-node/reaction-layout-check',
   'tools/content-node/snapshot-case',
   'tools/content-node/snapshot-domain',
   'tools/content-node/snapshot-graph-names',
