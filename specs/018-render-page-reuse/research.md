@@ -325,20 +325,36 @@ Six calls for one reaction gave six different answers. Six fresh draws of that r
 gave three different SVGs from the live endpoint, and one SVG when the endpoint was
 answered from a fixed copy. That was shown for one reaction; the 42 are attributed to
 it, not each tested. Over 99 reactions fetched three times each, every answer varied,
-and none did once put in the canonical form T011 describes.
+and none did once put in the canonical form T011 describes. (The layout itself still
+varies for some reactions, below, but none did in those three fetches.) With that form
+in the render page, six fresh draws each of R-HSA-1483229 and R-HSA-1630306 gave one SVG
+each.
 
 **Label placement (7).**
 
 - **Six:** a node's label was drawn smaller and moved aside, at 8.43 to 11.72 px
   against 12 px.
-- **The likely cause (read from the code, not reproduced):** the style library does
-  that to a node while its structure (a protein's
-  or a molecule's picture) is loading or found, and undoes it when the lookup fails. The
-  readiness signal does not wait for those lookups.
+- **The cause, reproduced for proteins:**
+  - **What the style does:** it shrinks a protein's or molecule's label and moves it
+    aside, to make room for its structure, which is a video or picture in an HTML layer
+    over the diagram. It undoes that when the structure fails to load.
+  - **When the load starts:** for a protein, only after a throttled check that the node
+    is on screen at a zoom where structures show, so possibly after the figure is
+    declared ready.
+  - **Measured:** R-HSA-211224 drawn 12 times, four at once, gave two SVGs. DFFA and
+    DFFB were at 8.43 px in 10 and at 12 px in 2. No lookup was pending at export in
+    either.
+  - **Waiting is not enough:** waiting for pending lookups does not help, because in
+    most draws none had started.
+- **What an export shows:** the structure layers are HTML and not part of the export,
+  so a shrunken label sits next to empty space. Making this repeatable means choosing
+  one look for exports, full-size labels or shrunken ones. The style library has no
+  setting for either, so this is a decision on the figures' look, left open here.
 - **The seventh:** its compartment and labels sit 32 px lower in one run. Here the
   endpoint computed a different layout: one answer in six for R-HSA-1791144 placed a
   node 16 px higher and shrank the compartment to fit. The layout is made per request
-  and depends on the node order, so it varies for some reactions. No canonical form can
+  and probably depends on the order the endpoint takes the nodes in, so it varies for
+  some reactions. No canonical form can
   fix that; it has to be fixed where the layout is made.
 
 **Reuse against fresh:** reused SVGs differed from fresh ones in 88 of 183 (a run after
@@ -347,7 +363,7 @@ T011 makes them repeatable first:
 
 - the reaction layout put in a canonical form before it is drawn: nodes in a fixed
   order, ids renumbered from that order;
-- readiness waiting for the structure lookups to settle;
+- one look for structure labels in exports (above; a decision still open);
 - the endpoint's varying layout fixed where the layout is made (a separate change).
 
 **Also seen, in an earlier T001 run on fresh pages:** a species overview for a species
