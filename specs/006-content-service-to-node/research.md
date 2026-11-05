@@ -538,21 +538,26 @@ What else the port carries over:
   is freely licensed, so neither comes into this repository. Measured widths
   replace them, generated once from Java as deployed and checked against it.
 
-  Measured 5 Nov 2026, under the OpenJDK 11 the deployed service runs, with
-  the library's own calls (`stringWidth` and `getHeight` on a
-  `BufferedImage`'s graphics):
-  - the host's Arial Bold is the same file as the bundled one, and the two
-    give the same width for each of the 941 characters they can draw;
-  - a string's width is the sum of its characters' widths, for every one of
-    the 123,723 distinct names of physical entities and cellular components
-    in release 98;
+  Measured 5 Nov 2026, under the OpenJDK 11 the deployed service runs
+  (headless, as it runs), with the library's own calls (`stringWidth` and
+  `getHeight` on a `BufferedImage`'s graphics):
+  - the host's Arial Bold is the same file as the bundled one. Over every
+    code point, the two can draw the same 1,191 characters, at the same
+    widths;
+  - the library's text fitting, done again with a table of those widths
+    instead of the font, gives the same size for every name release 98
+    measures: the 96,310 distinct first names of physical entities and the
+    455 cellular components' names. Every whole string it measures is the
+    sum of its characters' widths;
   - a character the font cannot draw measures 6, the missing glyph, and the
-    line height is 10.
+    line height is 10. A few combining, format and complex-script characters
+    are exceptions (0, or 12 for one Thai vowel), and Java lays such scripts
+    out as a whole; no release 98 name uses them.
 
-  So a table of 941 character widths, with 6 for any other character,
-  reproduces Java's measure on the deployed setup. Java on a host without
-  Arial would measure differently; that is a difference in Java's setup, not
-  in the port.
+  So a table of 1,191 widths, with 6 for any other character, reproduces
+  Java's measure on the deployed setup for Reactome's names. Java on a host
+  without Arial would measure differently; that is a difference in Java's
+  setup, not in the port.
 
 - **Compartments.** The compartment tree is built from the graph: GO
   cellular components with their `instanceOf` and `surroundedBy`, plus two
@@ -567,7 +572,8 @@ What else the port carries over:
   - from the graph's two queries, the order of the graph's nodes and their
     children and parents, and of each edge's inputs, outputs, catalysts,
     entity functional statuses, regulations, preceding and following events.
-    The canonical form sorts the edges but not those lists.
+    The canonical form sorts the graph's nodes and edges, but not those
+    lists.
 
 ## What exists already
 
