@@ -520,13 +520,15 @@ hash set, but merged into `EnumSet`s, in declaration order, before any use
 that depends on order.
 
 No single Java answer has the same ids or order every time, so the comparison
-stays canonical, as above. **Node** is deterministic: its sets keep insertion
-order and an entity's roles keep the order the query gives. Which glyph is
-the original and which the copy, and the order of an entity's connectors, do
-not survive the canonical form, which renumbers ids and sorts connectors. So
-node's choice there is not checked by the comparison, and needs no match.
-Where node's layout matches none of Java's, that is the declared difference
-above, with this as its reason.
+stays canonical, as above. **Node** is deterministic given where its glyph ids
+start, and its hash sets iterate as Java's do with those ids (D22). The service
+starts at 1, the order a freshly started service gives its first request, roles
+apart; the comparison starts where Java's answer shows Java started. An
+entity's roles keep the order the query gives. Which glyph is the original and
+which the copy, and the order of an entity's connectors, do not survive the
+canonical form, which renumbers ids and sorts connectors, though the ids they
+take can decide a tie in placement. Where node's layout matches none of Java's,
+that is the declared difference above, with this as its reason.
 
 What else the port carries over:
 
@@ -582,6 +584,152 @@ What else the port carries over:
     row per species, so an entity of several species (355 in release 98) is
     several nodes, which the canonical form's sort by dbId does not
     separate.
+
+## D22. How the reaction layout is ported (T092)
+
+The port covers the library's `BOX` path (D21), about 5,900 lines of Java
+with comments, so it lands in steps, each its own pull request. Java shows
+nothing between the graph and its final answer. But each step decides parts
+of that answer that later steps do not change. So each step is compared
+against Java's answer on those parts alone, and a wrong step is found where
+it is made, not three steps later.
+
+1. **Inputs.** The layout's query (`LayoutFactory`) and what each
+   participant's glyph shows: name, class, renderable class, drug and dashed
+   flags, and its attachments' names. Also merging a participant asked for
+   twice (`Layout.setParticipants`), the reaction glyph's own fields, and the
+   answer's headers (the diagram's and the graph's ids, names, disease flag
+   and species, and the diagram's stable id). Then the compartment tree from
+   the graph (`ReactomeCompartmentFactory`, `GoTreeFactory`) and each
+   entity's compartment, the first of its own. Last, in the order
+   `BoxAlgorithm` runs them: the copies `DuplicateManager` makes of an
+   entity in roles drawn apart, then the fixes that put a glyph without a
+   compartment in the root, and the root's removal at the end
+   (`removeExtracellular`).
+   - Java loads participants lazily, as getters ask, with lists in their
+     `order` (relationships by type, then `order`). Node asks the graph for
+     the same fields explicitly, in that order.
+   - Compared, as sorted lists since nothing is placed yet: each node's
+     `reactomeId`, `schemaClass`, `renderableClass`, `displayName` and flags,
+     with the name of the compartment holding it; the headers; and each
+     compartment's name with the name of the compartment around it.
+   - A reaction in no pathway with a diagram is checked here for its
+     diagram's stable id: the string "null" if the deployed driver reads a
+     missing value as that, which node then copies.
+2. **Sizes.** The width table (D21) and the glyph sizes (`Transformer`): each
+   node's width and height, a protein's attachments and how they enlarge it,
+   and the reaction's own segments. Compared: those, per node.
+3. **Placement and connectors.** The `BOX` algorithm (`BoxAlgorithm`, `Box`,
+   the glyph layouts, `Grid`, `PlacePositioner`, `LayoutIndex`) and
+   `ConnectorFactory`, which runs inside it: a connector can widen a
+   compartment and the layout's bounds, so the two cannot be compared apart.
+   Placement can move the reaction into another compartment, the one change
+   of containment after step 1. Compared: the whole diagram in canonical form.
+4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
+   the answer as Java writes it. Compared: the whole answer in canonical
+   form, as D21 declares.
+5. **Routing.** `/exporter/reaction/{identifier}/diagram` moves to node,
+   errors included:
+   - an id, stable or a dbId, that is not a reaction-like event is Java's
+     400 ("does not correspond to a 'ReactionLikeEvent'");
+   - an unknown one is its 404 ("Identifier '…' not found");
+   - any other failure is its 500, answered by Java's exception handler: a
+     `NullPointerException` with the fixed "Something unexpected happened
+     and the error has been reported.", an exception with no handler of its
+     own with its message (which can be null). The paths known from reading
+     are:
+     - an entity of a class with no renderable class, "No Schema class
+       defined for [dbId:displayName]";
+     - an entity whose list of names is null (the fixed text) or empty
+       ("Index 0 out of bounds for length 0");
+     - a compartment given two parents;
+     - an entity with no compartment copied by `DuplicateManager`, which
+       runs before the fixes;
+     - an entity's null disease flag;
+     - a failed layout query, which the library catches and returns as no
+       layout, so the answer is the fixed text;
+     - an unsupported case in `Transformer`, with no message.
+
+     The comparison reports any 500 it meets, so node's answer can be
+     checked against Java's.
+
+   `/exporter/reaction/{identifier}.{ext}` follows whatever T090 and T091
+   decide for diagrams' images.
+
+**Java's hash sets.** Many of the library's choices follow the iteration
+order of a `HashSet` or `HashMap`:
+
+- of GO terms, hashed by their id, a string;
+- of participants, keyed by "stable id:crossed:dashed", and of compartment
+  glyphs, keyed by their bare accession: both strings, so these orders
+  decide which glyphs are made first, and the GO ids the tree is built from;
+- of glyphs, hashed by `Objects.hash(id)`, which is 31 more than the id from
+  the counter (D21). The 31 shifts every bucket, so it matters to the order.
+
+Node reproduces those orders with its port of JDK 11's `HashMap`
+(`java-hashmap.ts`). The port gains an initial size: a set made from a
+collection starts with the table Java gives it, not 16 grown later:
+`HashSet(Collection)` sizes it for n/0.75 + 1 entries, so 16 buckets up to
+11 entries and 32 from 12. A set filled one by one grows instead on its 13th
+entry, as the port already does. Glyph ids are numbered in
+the order Java makes glyphs, the reaction's first. That includes the ids
+used up by a merged participant that is discarded, by a copy, and by each
+attachment of either. Roles, which have no hash of their own, keep the
+query's order, one of the orders Java can give; two roles of one type stay
+two.
+
+**Starting where Java started.** Java's counter starts each request wherever
+earlier requests left it, and the bucket a glyph lands in depends on that
+start. So a fixed start would match Java only on those requests that happen
+to start in step with it. Java's answer shows its start: the reaction is the
+first glyph made, so the edge's id is the request's first id. Node's library
+takes the first id as an argument. The service starts at 1. The comparison
+runs the library in process from the edge id Java's answer shows, so the two
+should agree on everything but what roles' order decides. Where they still
+differ, Java is asked again, as below. Glyphs Java makes but never shows (attachments, a discarded merged
+participant, the removed root) leave gaps in its ids, so a gap alone proves
+nothing. An answer whose ids are not the ids node gives the same glyphs,
+started from the edge's id, was interleaved with another request, and is
+asked again. Interleaving that only shifts the ids of the copies'
+attachments cannot be seen, and does not matter: attachments are listed,
+never hashed.
+
+**What Java does that node copies.**
+
+- The query marks a normal reaction's participants `crossed`, but
+  `LayoutFactory` never sets the flag. So Java never draws them crossed out
+  or faded, wires them into the reaction like its own, and merges one with
+  the reaction's own participant of the same stable id and dashed flag. Node
+  does the same: the answer is Java's, and a fix belongs in a ticket for the
+  team.
+
+**Where the code goes.** The algorithm is a library under
+`tools/content-node/reaction-layout/`, one module per part above, imported by
+a `reaction-layout-endpoints.ts` family. It imports leaves (`graph`, `domain`,
+`java-hashmap` and the like) and itself, never a family, the registry or the
+server. Step 1 extends `boundaries.spec.ts` to subdirectories, so the check
+holds that rule and the one against reaching outside the image.
+
+**The comparison.** `tools/content-node/reaction-layout-check.ts`, a tool
+beside the service like the parity harness, compares node with Java over a
+sample of reactions (all of them, for the last run).
+
+- It is spaced for the shared database.
+- Each reaction is asked of Java once. Only a reaction that differs is asked
+  again, up to D21's 24 times, so a rare Java layout costs extra requests
+  only where it matters.
+- The run stops after 20 differences in a row: a bug that hits every
+  reaction should not cost 24 requests each.
+- Each step compares only the parts it has built, as listed above.
+- The canonical form is the site's `canonicalReaction`. The service may not
+  import site code, so the check has a copy, and a test runs both on the
+  same answers and requires the same result.
+
+**One more variation.** Java answers with `Map.of("diagram", …, "graph", …)`,
+whose key order is set by a seed chosen when the JVM starts. Over 16 starts
+under the deployed JDK, `diagram` came first 12 times. Node writes `diagram`
+first, and the comparison does not count the order of those two keys as a
+difference.
 
 ## What exists already
 
