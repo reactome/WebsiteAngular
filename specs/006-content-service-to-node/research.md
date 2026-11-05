@@ -636,16 +636,17 @@ it is made, not three steps later.
    - any other failure is its 500, answered by Java's exception handler: a
      `NullPointerException` with the fixed "Something unexpected happened
      and the error has been reported.", an exception with no handler of its
-     own with its message (which can be null). The paths known from reading
-     are:
+     own with its message. A null message is written `"messages":[null]`.
+     The paths known from reading are:
      - an entity of a class with no renderable class, "No Schema class
        defined for [dbId:displayName]";
      - an entity whose list of names is null (the fixed text) or empty
-       ("Index 0 out of bounds for length 0");
+       ("Index 0 out of bounds for length 0", if the list is an `ArrayList`;
+       Java's empty list says "Index: 0");
      - a compartment given two parents;
      - an entity with no compartment copied by `DuplicateManager`, which
        runs before the fixes;
-     - an entity's null disease flag;
+     - a null disease flag on an entity that is not dashed;
      - a failed layout query, which the library catches and returns as no
        layout, so the answer is the fixed text;
      - an unsupported case in `Transformer`, with no message.
@@ -669,30 +670,31 @@ order of a `HashSet` or `HashMap`:
 Node reproduces those orders with its port of JDK 11's `HashMap`
 (`java-hashmap.ts`). The port gains an initial size: a set made from a
 collection starts with the table Java gives it, not 16 grown later:
-`HashSet(Collection)` sizes it for n/0.75 + 1 entries, so 16 buckets up to
-11 entries and 32 from 12. A set filled one by one grows instead on its 13th
-entry, as the port already does. Glyph ids are numbered in
-the order Java makes glyphs, the reaction's first. That includes the ids
-used up by a merged participant that is discarded, by a copy, and by each
-attachment of either. Roles, which have no hash of their own, keep the
-query's order, one of the orders Java can give; two roles of one type stay
-two.
+`HashSet(Collection)` sizes it for n/0.75 + 1 entries, so 16 buckets up to 11
+entries, 32 from 12 to 23, and so on. A set filled one by one grows instead on
+its 13th entry, as the port already does. Glyph ids are numbered in the order
+Java makes glyphs, the reaction's first. That includes the ids used up by a
+merged participant that is discarded, by a copy, and by each attachment of
+either. Roles, which have no hash of their own, keep the query's order, one of
+the orders Java can give; two roles of one type stay two.
 
 **Starting where Java started.** Java's counter starts each request wherever
 earlier requests left it, and the bucket a glyph lands in depends on that
-start. So a fixed start would match Java only on those requests that happen
-to start in step with it. Java's answer shows its start: the reaction is the
-first glyph made, so the edge's id is the request's first id. Node's library
-takes the first id as an argument. The service starts at 1. The comparison
-runs the library in process from the edge id Java's answer shows, so the two
-should agree on everything but what roles' order decides. Where they still
-differ, Java is asked again, as below. Glyphs Java makes but never shows (attachments, a discarded merged
-participant, the removed root) leave gaps in its ids, so a gap alone proves
-nothing. An answer whose ids are not the ids node gives the same glyphs,
-started from the edge's id, was interleaved with another request, and is
-asked again. Interleaving that only shifts the ids of the copies'
-attachments cannot be seen, and does not matter: attachments are listed,
-never hashed.
+start. So a fixed start would match Java only on those requests that happen to
+start in step with it. Java's answer shows its start: the reaction is the first
+glyph made, so the edge's id is the request's first id. Node's library takes
+the first id as an argument. The service starts at 1. The comparison runs the
+library in process from the edge id Java's answer shows, so the two should
+agree on everything but what roles' order decides. Where they still differ,
+Java is asked again, as below. Ids depend on the order of the participant rows
+too, which Neo4j does not promise (D21): node reads the same query, so its rows
+are expected in Java's order. Glyphs Java makes but never shows (attachments, a
+discarded merged participant, the removed root) leave gaps in its ids, so a gap
+alone proves nothing. An answer whose ids are not the ids node gives the same
+glyphs, started from the edge's id, was interleaved with another request, and
+is asked again. Interleaving that only shifts the ids of the copies'
+attachments cannot be seen, and does not matter: attachments are listed, never
+hashed.
 
 **What Java does that node copies.**
 
