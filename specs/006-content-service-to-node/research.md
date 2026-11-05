@@ -567,8 +567,7 @@ What else the port carries over:
   - from the graph's two queries, the order of the graph's nodes and their
     children and parents, and of each edge's inputs, outputs, catalysts,
     entity functional statuses, regulations, preceding and following events.
-    The canonical form sorts
-    the edges but not those lists.
+    The canonical form sorts the edges but not those lists.
 
 ## What exists already
 
