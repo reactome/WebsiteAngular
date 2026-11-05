@@ -470,7 +470,8 @@ rather than by its symptoms (D19). It applies to this operation only.
 
 The port is not held in Java by FR-005: spec 010's record homes it in node.
 What the library does is a layout algorithm (compartments from the GO cellular
-component ontology, then the participants placed around the reaction), and
+component ontology as the graph holds it, then the participants placed around
+the reaction), and
 none of its dependencies is Java-only. Reading the algorithm, and finding where
 its variation comes from, is the first step of T092. Spec 010's rule is
 amended to allow this (5 Nov 2026). The canonical form is
@@ -497,12 +498,18 @@ one running service:
     can tie;
   - sibling compartments' widths, when a name is wider than its content
     (`BoxAlgorithm.size`);
-  - entities tied on `LayoutIndex`'s sort keys (number of roles, trivial,
-    class, name), and regulators tied on their x.
+  - entities tied on `LayoutIndex`'s sort keys (number of roles, negative
+    regulators first, trivial, class, name);
+  - the graph's `diagramIds`, harmlessly, since the canonical form sorts them.
+
+  Regulators tied on their x are not among them: they keep the grid's order,
+  column then row, which is fixed once the grid is.
+
 - **A participant's roles in a hash set of objects without a hash of their
   own.** `Role` has no `equals` or `hashCode`, so an entity's roles iterate in
   identity-hash order, new on every request. So even a freshly started
-  service's first request is not reproducible. The order decides two things:
+  service's first request is not guaranteed to be reproducible. The order
+  decides two things:
   - for an entity in two roles that are drawn apart, an output that is also
     a negative regulator say, which role keeps the original glyph and which
     gets a copy (`DuplicateManager`);
@@ -515,10 +522,12 @@ that depends on order.
 
 No single Java answer has the same ids or order every time, so the comparison
 stays canonical, as above. **Node** is deterministic: its sets keep insertion
-order and an entity's roles keep the order the query gives. Whether node's
-choice for a two-role entity is one Java also makes is checked by the
-comparison. Where it matches none of Java's layouts, that is the declared
-difference above, with this as its reason.
+order and an entity's roles keep the order the query gives. Which glyph is
+the original and which the copy, and the order of an entity's connectors, do
+not survive the canonical form, which renumbers ids and sorts connectors. So
+node's choice there is not checked by the comparison, and needs no match.
+Where node's layout matches none of Java's, that is the declared difference
+above, with this as its reason.
 
 What else the port carries over:
 
@@ -537,9 +546,11 @@ What else the port carries over:
   ContentService does not use. Ties between equal branches follow the order
   of hash sets keyed by GO id, a string: arbitrary but deterministic, and
   node reproduces it.
-- **Inputs assumed stable.** The participants' order from the query
-  (`collect(DISTINCT …)`) and which diagram `LIMIT 1` picks are stable in
-  practice, but Neo4j does not promise either.
+- **Inputs assumed stable.** The participants' order from the layout's query
+  (`collect(DISTINCT …)`), which diagram its `LIMIT 1` picks, and the order
+  of the graph's nodes and their children and parents from the graph's own
+  query (no `ORDER BY`) are stable in practice, but Neo4j does not promise
+  any of them.
 
 ## What exists already
 
