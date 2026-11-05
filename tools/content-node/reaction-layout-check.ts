@@ -188,14 +188,19 @@ function javaSummary(answer: JavaAnswer): Summary {
         parent: parentOf.get(c.id) ?? null,
       }))
     ),
+    // Each glyph's roles, sorted: Java's order within a glyph is random, but
+    // which roles share a glyph is not.
     roles: sorted(
-      ROLE_LISTS.flatMap(([list, type]) =>
-        (edge[list] ?? []).map((part) => [
-          entityOf.get(part.id) ?? null,
-          type,
-          part.stoichiometry ?? null,
-        ])
-      )
+      nodes.map((node) => [
+        entityOf.get(node.id),
+        ROLE_LISTS.flatMap(([list, type]) =>
+          (edge[list] ?? [])
+            .filter((part) => part.id === node.id)
+            .map((part) => [type, part.stoichiometry ?? null])
+        )
+          .map((role) => JSON.stringify(role))
+          .sort(),
+      ])
     ),
     ids: sorted([
       ['reaction', edge.id, edge.reactomeId],
@@ -251,9 +256,10 @@ function nodeSummary(inputs: Inputs): Summary {
       }))
     ),
     roles: sorted(
-      entities.flatMap((entity) =>
-        entity.roles.map((role) => [[entity.dbId, entity.dashed], role.type, role.n])
-      )
+      entities.map((entity) => [
+        [entity.dbId, entity.dashed],
+        entity.roles.map((role) => JSON.stringify([role.type, role.n])).sort(),
+      ])
     ),
     ids: sorted([
       ['reaction', inputs.reaction.id, reaction.dbId],
@@ -278,6 +284,11 @@ function differences(java: Summary, node: Summary): string[] {
   );
   if (!node.reactionIn.includes(java.reactionIn[0] ?? null)) parts.push('reaction compartment');
   return parts;
+}
+
+/** Whether Java's reaction sits where step 1 put it, rather than moved inward. */
+function reactionStayed(java: Summary, node: Summary): boolean {
+  return node.reactionIn[0] === (java.reactionIn[0] ?? null);
 }
 
 async function reactions(count: number): Promise<string[]> {
@@ -314,8 +325,10 @@ async function java(stId: string): Promise<{ status: number; body: JavaAnswer | 
 /** The outcome of one reaction: the parts that differ, empty when none do. */
 interface Outcome {
   parts: string[];
-  /** Both sides failed, node with one of the library's Java exceptions. */
+  /** Both sides failed: Java with its 500, node with one of the library's Java exceptions. */
   bothFailed?: boolean;
+  /** Placement moved Java's reaction inward from where step 1 put it. */
+  movedInward?: boolean;
 }
 
 /** One reaction compared. */
@@ -325,16 +338,32 @@ async function compare(stId: string): Promise<Outcome> {
     try {
       answer = await java(stId);
     } catch (error) {
-      return { parts: [`java request failed (${(error as Error).name})`] };
+      const name = (error as Error).name;
+      return {
+        parts: [
+          name === 'SyntaxError'
+            ? "java's answer unreadable (not JSON)"
+            : `java request failed (${name})`,
+        ],
+      };
+    }
+    let first = 1;
+    try {
+      if (answer.body) first = answer.body.diagram.edges[0].id;
+    } catch (error) {
+      return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
     let inputs: Inputs | Error;
     try {
-      inputs = await readInputs(stId, answer.body?.diagram.edges[0].id ?? 1);
+      inputs = await readInputs(stId, first);
     } catch (error) {
       inputs = error as Error;
     }
     if (!answer.body) {
-      if (inputs instanceof JavaNullPointerException || inputs instanceof JavaRuntimeException)
+      if (
+        answer.status === 500 &&
+        (inputs instanceof JavaNullPointerException || inputs instanceof JavaRuntimeException)
+      )
         return { parts: [], bothFailed: true };
       return {
         parts: [
@@ -353,8 +382,10 @@ async function compare(stId: string): Promise<Outcome> {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
     let parts: string[];
+    let node_: Summary;
     try {
-      parts = differences(java_, nodeSummary(inputs));
+      node_ = nodeSummary(inputs);
+      parts = differences(java_, node_);
     } catch (error) {
       return {
         parts: [`node threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`],
@@ -362,7 +393,7 @@ async function compare(stId: string): Promise<Outcome> {
     }
     // Ids alone differing may be another request's ids in between: ask again.
     if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
-    return { parts };
+    return { parts, movedInward: !parts.length && !reactionStayed(java_, node_) };
   }
 }
 
@@ -371,13 +402,19 @@ async function main() {
   console.log(`comparing ${ids.length} reactions, step 1`);
   let identical = 0;
   let bothFailed = 0;
+  let movedInward = 0;
   let different = 0;
   let inARow = 0;
   for (const stId of ids) {
-    const { parts, bothFailed: failed } = await compare(stId);
+    const { parts, bothFailed: failed, movedInward: moved } = await compare(stId);
     if (!parts.length) {
       if (failed) bothFailed += 1;
       else identical += 1;
+      if (moved) {
+        // Placement's to explain, at step 3: listed so that many can be looked at.
+        movedInward += 1;
+        console.log(`  ${stId}: the reaction moved inward`);
+      }
       inARow = 0;
       continue;
     }
@@ -391,7 +428,8 @@ async function main() {
   }
   await close();
   console.log(
-    `compared: ${identical} identical, ${bothFailed} failing on both sides (texts are step 5's), ${different} different`
+    `compared: ${identical} identical (${movedInward} with the reaction moved inward by placement), ` +
+      `${bothFailed} failing on both sides (texts are step 5's), ${different} different`
   );
   process.exit(different ? 1 : 0);
 }
