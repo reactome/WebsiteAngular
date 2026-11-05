@@ -35,9 +35,24 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       #795;
     - full-size structure labels in exports, which waiting cannot give (research R7):
       done in #796, with ngx-reactome-base #23;
-    - the endpoint's varying layout (R7's seventh case) raised as a change of its own.
+    - the endpoint's varying layout (R7's seventh case) raised as a change of its own:
+      [spec 006](../006-content-service-to-node/tasks.md) T092 ports the endpoint to
+      node, with a deterministic layout (research D21 there).
   - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
     failing before the fix.
+    - **Until T092 is done,** a reaction may differ between the two draws only if its
+      layout from the endpoint differed between them. The test records each draw's
+      layout response, as the page received it, and compares their canonical forms.
+      Even then, the two draws' text elements, taken as (content, font size) pairs in
+      any order, must match, so a label regression on such a reaction still fails. Any other
+      difference fails.
+    - **Exempt reactions** are listed in the result. More than 2% of the sample's
+      reactions exempt fails the test, so a growing list stops it rather than passing
+      unnoticed. (So far a varying layout has been seen for one reaction, and for none
+      of the 99 fetched three times each in research R7.)
+    - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
+      Removing the exemption is part of spec 006 T092: it is done when this test
+      passes with none.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **What it does:** draws the sample through two services, three orders, and compares
@@ -113,6 +128,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 - T001 gates everything.
 - T011 comes before T002's run on a real sample.
+- T011's exemption for reactions whose layout Java varies stays until spec 006 T092
+  is done; that task, not this spec, removes it.
 - T002 comes before T003–T008, so each is checked by it.
 - T003 → T004.
 - T005 → T006 → T007 → T008.

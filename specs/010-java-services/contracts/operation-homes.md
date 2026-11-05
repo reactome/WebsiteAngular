@@ -1,5 +1,7 @@
 # Contract: where every published operation is answered
 
+> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../../006-content-service-to-node/tasks.md) T092, research D21).
+
 > **Amended by [spec 015](../../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
 >
 > - **SBML:** the library service's SBML operation uses `sbml-exporter`'s fixed graph-only converter, with its layout drawn from the diagram files. It needs no relational database, and its body is proven by spec 015's comparison rather than byte-identical to the old server's relational answer. Status, headers and errors are still Java's.
@@ -86,7 +88,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/exporter/event/{identifier}.sbml`                       | java-library           | JSBML                                                                                         |
 | GET    | `/exporter/fireworks/{species}.{ext}`                     | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
 | GET    | `/exporter/reaction/{identifier}.{ext}`                   | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
-| GET    | `/exporter/reaction/{identifier}/diagram`                 | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
+| GET    | `/exporter/reaction/{identifier}/diagram`                 | node — to port         | a layout, not a drawing; its library has no Java-only dependency (006 T092, D21)              |
 | GET    | `/interactors/psicquic/molecule/{resource}/{acc}/details` | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
 | GET    | `/interactors/psicquic/molecule/{resource}/{acc}/summary` | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
 | POST   | `/interactors/psicquic/molecules/{resource}/details`      | java-library           | IntAct clustering and scoring (micluster, miscore, psimitab)                                  |
