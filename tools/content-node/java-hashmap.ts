@@ -72,6 +72,32 @@ export class JavaHashMap<K = string, V = unknown> {
     return null;
   }
 
+  /**
+   * HashMap.computeIfAbsent, as JDK 11 does it -- not put's order: the table
+   * grows first if it is already past three quarters full, and a new key goes
+   * to the head of its bucket, not the tail. `make` runs only for a key not
+   * there. A tree bin is refused, as delete refuses one: never reached by the
+   * maps it serves.
+   */
+  computeIfAbsent(key: K, make: (key: K) => V): V {
+    if (this.size > this.#table.length * 0.75) this.#resize();
+    const hash = this.#hashOf(key);
+    const table = this.#table;
+    const index = (table.length - 1) & hash;
+    const first = table[index] ?? null;
+    if (first?.tree) throw new Error('JavaHashMap.computeIfAbsent on a tree bin is not ported');
+    let count = 0;
+    for (let node = first; node; node = node.next) {
+      if (node.hash === hash && node.key === key) return node.value as V;
+      count += 1;
+    }
+    const value = make(key);
+    table[index] = { hash, key, value, next: first };
+    if (count >= 7) this.#treeifyBin(hash);
+    this.size += 1;
+    return value;
+  }
+
   get(key: K): V | undefined {
     return this.#find(key)?.value as V | undefined;
   }
