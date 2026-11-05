@@ -470,12 +470,87 @@ rather than by its symptoms (D19). It applies to this operation only.
 
 The port is not held in Java by FR-005: spec 010's record homes it in node.
 What the library does is a layout algorithm (compartments from the GO cellular
-component ontology, then the participants placed around the reaction), and
+component ontology as the graph holds it, then the participants placed around
+the reaction), and
 none of its dependencies is Java-only. Reading the algorithm, and finding where
 its variation comes from, is the first step of T092. Spec 010's rule is
 amended to allow this (5 Nov 2026). The canonical form is
 site code today; the diff harness reaching it (moved to a shared module, or
 reimplemented and checked against it) is part of T092's plan.
+
+### Where the variation comes from (read 5 Nov 2026)
+
+The library read is reaction-exporter's main at 9465e2e, the source of the
+1.2.9-SNAPSHOT ContentService deploys; the deployed classes were checked
+against it. ContentService lays reactions out with its `BOX` style
+(`BoxAlgorithm`, `Box`); `BRUTE_FORCE` is not used. Two causes, both within
+one running service:
+
+- **Glyph ids from a counter that never resets.** Every glyph takes its id
+  from one static `AtomicLong`, shared by all requests and threads, and its
+  `equals` and `hashCode` are the id's. The layout's entities, and each
+  compartment's children and contained glyphs, are `HashSet`s, which iterate
+  in an order set by those ids. That order reaches the answer in these places:
+  - the order of the nodes, of the edges' parts and of each compartment's
+    components (`ReactionDiagramFactory`);
+  - a compartment's child boxes (`Box`). The first two are placed relative
+    to each other in set order, and more than two are sorted on keys that
+    can tie;
+  - sibling compartments' widths, when a name is wider than its content
+    (`BoxAlgorithm.size`);
+  - entities tied on `LayoutIndex`'s sort keys (number of roles, negative
+    regulators first, trivial, class, name);
+  - the graph's `diagramIds`, harmlessly, since the canonical form sorts them.
+
+  Regulators tied on their x are not among them: they keep the grid's order,
+  column then row, which is fixed once the grid is.
+
+- **A participant's roles in a hash set of objects without a hash of their
+  own.** `Role` has no `equals` or `hashCode`, so an entity's roles iterate in
+  identity-hash order, new on every request. So even a freshly started
+  service's first request is not guaranteed to be reproducible. The order
+  decides two things:
+  - for an entity in two roles that are drawn apart, an output that is also
+    a negative regulator say, which role keeps the original glyph and which
+    gets a copy (`DuplicateManager`);
+  - the order of the connectors of an entity that is both input and
+    catalyst.
+
+Not a cause: an entity's places (left, top and so on) are gathered into a
+hash set, but merged into `EnumSet`s, in declaration order, before any use
+that depends on order.
+
+No single Java answer has the same ids or order every time, so the comparison
+stays canonical, as above. **Node** is deterministic: its sets keep insertion
+order and an entity's roles keep the order the query gives. Which glyph is
+the original and which the copy, and the order of an entity's connectors, do
+not survive the canonical form, which renumbers ids and sorts connectors. So
+node's choice there is not checked by the comparison, and needs no match.
+Where node's layout matches none of Java's, that is the declared difference
+above, with this as its reason.
+
+What else the port carries over:
+
+- **Text widths.** Glyph sizes come from text measured with Java's AWT font
+  metrics, at 8 points bold. Entities are measured in the system's `arial`,
+  looked up by name, so the fonts installed where Java runs are part of its
+  answer: without Arial, Java falls back to its default font. Compartment
+  names are measured in an Arial Bold bundled in the library. Neither font
+  is freely licensed, so neither comes into this repository. Measured widths
+  would replace them, generated once from Java as deployed and checked
+  against it. Whether a string's width is the sum of its characters' widths
+  is checked before relying on it.
+- **Compartments.** The compartment tree is built from the graph: GO
+  cellular components with their `instanceOf` and `surroundedBy`, plus two
+  fixes the library makes. A GO file is bundled too, but only for a source
+  ContentService does not use. Ties between equal branches follow the order
+  of hash sets keyed by GO id, a string: arbitrary but deterministic, and
+  node reproduces it.
+- **Inputs assumed stable.** The participants' order from the layout's query
+  (`collect(DISTINCT …)`), which diagram its `LIMIT 1` picks, and the order
+  of the graph's nodes and their children and parents from the graph's own
+  query (no `ORDER BY`) are stable in practice, but Neo4j does not promise
+  any of them.
 
 ## What exists already
 
