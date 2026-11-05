@@ -141,6 +141,8 @@ module.exports = {
   // It is matched against the path and query, as Vite does; serve-prod.js
   // reads it the same way. Same pattern as nginx's.
   '^/ContentService/data/person/[^/?]+(/[^/?]+)?/?(\\?|$)': contentNode,
+  // People by name. Same pattern as nginx's.
+  '^/ContentService/data/people/name/[^/?]+(/exact)?/?(\\?|$)': contentNode,
   // One object with everything it points to, in any of Java's views
   // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
   // /query/enhanced|abridged/{id} are other endpoints.

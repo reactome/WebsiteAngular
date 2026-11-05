@@ -35,6 +35,8 @@
   "GET /ContentService/data/person/{id}/reviewedPathways",
   "GET /ContentService/data/person/{id}/reviewedReactions",
   "GET /ContentService/data/person/{id}/{attribute}",
+  "GET /ContentService/data/people/name/{name}/exact",
+  "GET /ContentService/data/people/name/{name}",
   "GET /ContentService/data/species/main",
   "GET /ContentService/data/species/all",
   "GET /ContentService/data/mapping/{resource}/{identifier}/reactions",

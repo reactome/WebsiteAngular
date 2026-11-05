@@ -290,6 +290,18 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/person/{id}/{attributeName}',
     path: { id: 'person', attribute: 'attribute' },
   },
+  // A person's name in the URL: never stored at the edge, so no cache keeps a
+  // name someone searched for.
+  '/ContentService/data/people/name/{name}/exact': {
+    java: '/data/people/name/{name}/exact',
+    path: { name: 'any' },
+    cache: 'never',
+  },
+  '/ContentService/data/people/name/{name}': {
+    java: '/data/people/name/{name}',
+    path: { name: 'any' },
+    cache: 'never',
+  },
   '/ContentService/data/species/main': { java: '/data/species/main' },
   '/ContentService/data/species/all': { java: '/data/species/all' },
   '/ContentService/data/mapping/{resource}/{identifier}/reactions': {

@@ -77,7 +77,7 @@ Each port follows the eight steps in [plan.md](plan.md#how-one-endpoint-is-porte
 - [x] T070 `GET /data/query/{id}/{attributeName}` for the attributes not yet ported (only `stId` and `normalPathway` are) — #523
 - [x] T071 `POST /data/query/ids`, `POST /data/query/ids/map` — #509
 - [x] T072 `GET /data/person/{id}/{attributeName}` — #523
-- [ ] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`
+- [x] T073 `GET /data/people/name/{name}`, `GET /data/people/name/{name}/exact`. Despite their descriptions, each part of the name matches a whole first name or surname. Compared with Java over real names by a check that prints counts only, run by awright, since names are personal data. — #804
 - [x] T074 `GET /data/schema/{className}` — #511
 - [x] T074b `GET /data/schema/{className}/reference` — #512
 - [x] T075 `GET /data/complex/{id}/subunits`, `GET /data/complexes/{resource}/{identifier}` — #514
