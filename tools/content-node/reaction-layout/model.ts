@@ -122,7 +122,7 @@ export class ReactionGlyph {
   readonly id: number;
   compartment: CompartmentGlyph | undefined;
   readonly bounds = new Bounds();
-  /** The backbone: a segment out of each side (setSize), later the connectors' joins. */
+  /** The backbone: a segment out of each side (setSize). Java adds no others; connectors keep their own. */
   readonly segments: Segment[] = [];
 
   readonly data: ReactionData;

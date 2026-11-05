@@ -335,11 +335,11 @@ function round(value: number): number {
   return Math.round(value * 1e6) / 1e6;
 }
 
-/** The reaction's first two segments from the first one's start: its size and backbone. */
+/** The reaction's segments, all of them, from the first one's start: its size and backbone. */
 function backbone(segments: { from: JavaPoint; to: JavaPoint }[]): number[][] {
   const [first] = segments;
   if (!first) return [];
-  return segments.slice(0, 2).flatMap(({ from, to }) => [
+  return segments.flatMap(({ from, to }) => [
     [round(from.x - first.from.x), round(from.y - first.from.y)],
     [round(to.x - first.from.x), round(to.y - first.from.y)],
   ]);
