@@ -520,13 +520,15 @@ hash set, but merged into `EnumSet`s, in declaration order, before any use
 that depends on order.
 
 No single Java answer has the same ids or order every time, so the comparison
-stays canonical, as above. **Node** is deterministic: its sets keep insertion
-order and an entity's roles keep the order the query gives. Which glyph is
+stays canonical, as above. **Node** is deterministic. Its glyph ids are
+numbered from 1 on each request, and its hash sets iterate as Java's do with
+those ids (D22): the order a freshly started service gives its first request,
+roles apart. An entity's roles keep the order the query gives. Which glyph is
 the original and which the copy, and the order of an entity's connectors, do
 not survive the canonical form, which renumbers ids and sorts connectors. So
-node's choice there is not checked by the comparison, and needs no match.
-Where node's layout matches none of Java's, that is the declared difference
-above, with this as its reason.
+node's choice there is not checked by the comparison, and needs no match. Where
+node's layout matches none of Java's, that is the declared difference above,
+with this as its reason.
 
 What else the port carries over:
 
@@ -585,57 +587,102 @@ What else the port carries over:
 
 ## D22. How the reaction layout is ported (T092)
 
-The port is about 3,500 lines of the library's Java on the `BOX` path (D21),
-so it lands in steps, each its own pull request. Java shows nothing between
-the graph and its final answer. But each step decides parts of that answer
-that the later steps do not change, so each step is compared against Java's
-answer on those parts alone. A wrong step is found where it is made, not
-three steps later.
+The port covers the library's `BOX` path (D21), about 5,900 lines of Java
+with comments, so it lands in steps, each its own pull request. Java shows
+nothing between the graph and its final answer. But each step decides parts
+of that answer that later steps do not change. So each step is compared
+against Java's answer on those parts alone, and a wrong step is found where
+it is made, not three steps later.
 
-1. **Participants and compartments.** The layout's query (`LayoutFactory`),
-   and for each participant what its glyph shows: name, class, the drug,
-   crossed and dashed flags, the attachments. Also the duplicate handling
-   (`DuplicateManager`) and the compartment tree built from the graph
-   (`ReactomeCompartmentFactory`, `GoTreeFactory`). Java loads the
-   participants lazily, as getters ask; node asks the graph for the same
-   fields explicitly. Compared: the nodes' `reactomeId`, `schemaClass`,
-   `renderableClass`, `displayName` and flags, and the compartments' names
-   and which compartment holds which.
-2. **Sizes.** The width table (D21) and the glyph sizes (`Transformer`).
-   Compared: each node's width and height.
-3. **Placement.** The `BOX` algorithm (`BoxAlgorithm`, `Box`, the glyph
-   layouts, `Grid`, `PlacePositioner`, `LayoutIndex`). Compared: positions,
-   and compartments' bounds.
-4. **Connectors and the answer.** `ConnectorFactory`, then the diagram and
-   graph JSON (`ReactionDiagramFactory`, `ReactionGraphFactory`). Compared:
-   the whole answer in canonical form, as D21 declares.
+1. **Inputs.** The layout's query (`LayoutFactory`) and what each
+   participant's glyph shows: name, class, renderable class, drug and dashed
+   flags, and its attachments' names. Also merging a participant asked for
+   twice (`Layout.setParticipants`), the reaction glyph's own fields, and the
+   answer's headers (the diagram's and the graph's ids, names, disease flag
+   and species). Last comes the compartment tree from the graph
+   (`ReactomeCompartmentFactory`, `GoTreeFactory`), with the fixes that put a
+   glyph without a compartment in the root, and the root's removal at the
+   end (`removeExtracellular`).
+   - Java loads participants lazily, as getters ask, with lists in their
+     `order` (relationships by type, then `order`). Node asks the graph for
+     the same fields explicitly, in that order.
+   - Compared, as sorted lists since nothing is placed yet: each node's
+     `reactomeId`, `schemaClass`, `renderableClass`, `displayName` and flags;
+     the headers; and each compartment's name with the name of the
+     compartment around it.
+2. **Sizes.** The width table (D21) and the glyph sizes (`Transformer`): each
+   node's width and height, a protein's attachments and how they enlarge it,
+   and the reaction's own segments. Compared: those, per node.
+3. **Placement and connectors.** The `BOX` algorithm (`BoxAlgorithm`, `Box`,
+   the glyph layouts, `Grid`, `PlacePositioner`, `LayoutIndex`) and
+   `ConnectorFactory`, which runs inside it: a connector can widen a
+   compartment and the layout's bounds, so the two cannot be compared apart.
+   This step also decides which compartment holds the reaction, which
+   placement can move. Compared: the whole diagram in canonical form.
+4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
+   the answer as Java writes it. Compared: the whole answer in canonical
+   form, as D21 declares.
 5. **Routing.** `/exporter/reaction/{identifier}/diagram` moves to node,
-   errors included: an id that is no reaction is Java's 400 ("does not
-   correspond to a 'ReactionLikeEvent'"), and an unknown one its 404.
+   errors included:
+   - an id, stable or a dbId, that is not a reaction-like event is Java's
+     400 ("does not correspond to a 'ReactionLikeEvent'");
+   - an unknown one is its 404 ("Identifier '…' not found");
+   - an entity of a class the library has no renderable class for is its 500.
+
    `/exporter/reaction/{identifier}.{ext}` follows whatever T090 and T091
    decide for diagrams' images.
 
+**Java's hash sets.** Many of the library's choices follow the iteration
+order of a `HashSet` or `HashMap`:
+
+- of GO terms, hashed by their id, a string;
+- of glyphs, hashed by an id from the counter (D21).
+
+Node reproduces those orders with its port of JDK 11's `HashMap`
+(`java-hashmap.ts`), with glyph ids numbered from 1 in the order Java makes
+glyphs. That includes the ids a merged participant or a copied glyph uses
+up. Where a set is made from a collection, its first table size follows the
+collection's, as Java's does. Roles, which have no hash of their own, keep
+the query's order.
+
+**What Java does that node copies.**
+
+- The query marks a normal reaction's participants `crossed`, but
+  `LayoutFactory` never sets the flag. So Java never draws them crossed, and
+  merges one with the reaction's own participant of the same stable id.
+  Node does the same: the answer is Java's, and a fix belongs in a ticket
+  for the team.
+- A reaction in no pathway with a diagram has the string "null" as its
+  diagram's stable id, if the deployed driver reads a missing value as
+  that. This is checked at step 4 before it is copied.
+
 **Where the code goes.** The algorithm is a library under
 `tools/content-node/reaction-layout/`, one module per part above, imported by
-a `reaction-layout-endpoints.ts` family. The boundary check sees only the
-top directory, so the rule is stated here: the library imports leaves
-(`graph`, `domain` and the like) and itself, never a family, the registry or
-the server.
+a `reaction-layout-endpoints.ts` family. It imports leaves (`graph`, `domain`,
+`java-hashmap` and the like) and itself, never a family, the registry or the
+server. Step 1 extends `boundaries.spec.ts` to subdirectories, so the check
+holds that rule and the one against reaching outside the image.
 
-**The comparison.** `tools/content-node/reaction-layout-check.ts` compares
-node with Java over a sample of reactions (all, for the last run). It is
-spaced for the shared database. Each reaction is asked of Java once; only a
-reaction that differs is asked again, up to D21's 24 times, so a rare Java
-layout costs extra requests only where it matters. Each step compares only
-the parts it has built. The canonical form is the site's
-`canonicalReaction`, which imports only model types, so it moves to a module
-both the site and the service import.
+**The comparison.** `tools/content-node/reaction-layout-check.ts`, a tool
+beside the service like the parity harness, compares node with Java over a
+sample of reactions (all of them, for the last run).
+
+- It is spaced for the shared database.
+- Each reaction is asked of Java once. Only a reaction that differs is asked
+  again, up to D21's 24 times, so a rare Java layout costs extra requests
+  only where it matters.
+- The run stops after 20 differences in a row: a bug that hits every
+  reaction should not cost 24 requests each.
+- Each step compares only the parts it has built, as listed above.
+- The canonical form is the site's `canonicalReaction`. The service may not
+  import site code, so the check has a copy, and a test runs both on the
+  same answers and requires the same result.
 
 **One more variation.** Java answers with `Map.of("diagram", …, "graph", …)`,
-whose key order is set by a seed chosen when the JVM starts. The two
-top-level keys can therefore come in either order between restarts. Node
-writes `diagram` first, the order seen on 5 Nov 2026, and the comparison
-does not count the order of those two keys as a difference.
+whose key order is set by a seed chosen when the JVM starts. Over 16 starts
+under the deployed JDK, `diagram` came first 12 times. Node writes `diagram`
+first, and the comparison does not count the order of those two keys as a
+difference.
 
 ## What exists already
 
