@@ -477,6 +477,46 @@ amended to allow this (5 Nov 2026). The canonical form is
 site code today; the diff harness reaching it (moved to a shared module, or
 reimplemented and checked against it) is part of T092's plan.
 
+### Where the variation comes from (read 5 Nov 2026)
+
+The library read is reaction-exporter's main at 9465e2e, the source of the
+1.2.9-SNAPSHOT ContentService deploys. ContentService lays reactions out with
+its `BOX` style (`BoxAlgorithm`, `Box`); `BRUTE_FORCE` is not used. Two causes:
+
+- **Glyph ids from a counter that never resets.** Every glyph takes its id
+  from one static `AtomicLong`, and its `equals` and `hashCode` are the id's.
+  The layout's entities, and each compartment's children and contained
+  glyphs, are `HashSet`s, which iterate in an order set by those ids. The
+  `BOX` algorithm iterates them while placing, so the order of the answer
+  depends on how many glyphs earlier requests made. So does the layout,
+  wherever that order breaks a tie. This explains all three variations above
+  within one running service.
+- **Places in a hash set of enums.** `Box.places` gathers an entity's places
+  (left for an input, top for a catalyst, and so on) into a `HashSet` of the
+  `Place` enum. An enum's hash is its identity, fixed while the service runs
+  but free to differ after a restart. `PlacePositioner.buildOrderedIntersection`
+  takes the first place's preference list as the order. So an entity with
+  roles in two places, an input that is also a catalyst say, can be placed
+  differently after a restart. A comparison within one run cannot see this.
+
+**Node** numbers glyphs from 1 on each request, the order a freshly started
+service gives its first request, and keeps an entity's places in declaration
+order, as an `EnumSet` would. Both are deterministic. Where the second cause
+makes node's layout match none of Java's, that is the declared difference
+above, with this as its reason.
+
+What else the port carries over:
+
+- **Text widths.** Glyph sizes come from text measured with Java's AWT font
+  metrics, on Arial Bold at 8 points from a font file bundled in the library.
+  Node needs the same integer widths. The font is not freely licensed, so it
+  does not come into this repository. Measured widths, generated from Java
+  once and checked against it, would replace it. Whether a string's width is
+  the sum of its characters' widths is checked before relying on it.
+- **Compartments.** The compartment nesting comes from the GO cellular
+  component ontology, read from a `go-basic.obo` bundled in the library.
+  Node reads the same file, which is plain text.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
