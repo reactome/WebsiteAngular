@@ -126,8 +126,8 @@ requests in an order that would show it.
   - it has drawn `RENDER_REUSE_MAX` figures (FR-006; default from R4);
   - the service's container, read from its own cgroup (`memory.current` against
     `memory.max`) after each figure, is over `RENDER_REUSE_MEMORY` of its limit (FR-006;
-    default from R4). Not the page's JavaScript heap: R4 found that flat while the
-    renderer grew. With no limit to read (the CLI, or no container), only the count
+    default from R4). Not the page's JavaScript heap: in R4 pages crashed the container
+    while their heaps stayed between 38 and 53 MB. With no limit to read (the CLI, or no container), only the count
     applies;
   - the site's build differs from the build the page loaded (FR-008). Nothing reports
     the site's build today: `/health`'s `build` is a hash of the service's own modules
@@ -222,12 +222,14 @@ Before building, a prototype measures reuse on the service itself:
   container and a 180 s timeout;
 - release 98.
 
-Each service started with an empty cache and drew SVGs four at a time, in one fixed
+The prototype's setting is named `RENDER_REUSE_MEM`; the plan calls it
+`RENDER_REUSE_MEMORY`. Each service started with an empty cache and drew SVGs four at a time, in one fixed
 shuffled order. Reused pages ran with the memory rule (point 3 below) at 0.5.
 
 **The gate, on a sample in the book's proportions:** 340 reactions, 24 diagrams, 24
-highlights in an ancestor's diagram and 12 illustrations (the book is 16,187 reactions
-of 19,076 figures).
+highlights in an ancestor's diagram and 12 illustrations, and no overview. The book is
+16,187 reactions of 19,076 figures. The split of the other 60 was chosen, not taken
+from the book's counts, and the projection depends on it.
 
 | Kind         | Fresh median | Fresh mean | Reused median | Reused mean |
 | ------------ | ------------ | ---------- | ------------- | ----------- |
@@ -266,7 +268,7 @@ of 19,076 figures).
    - **Measured:** on one page, over the same 36 diagrams, in a harness that forces
      garbage collection before each reading:
 
-     | After 35 diagrams | Heap   | DOM nodes |
+     | After 36 diagrams | Heap   | DOM nodes |
      | ----------------- | ------ | --------- |
      | handle kept       | 157 MB | 343,370   |
      | handle disposed   | 43 MB  | 10,935    |
@@ -281,7 +283,8 @@ of 19,076 figures).
      memory rule. Runs after the fix had 17 of 200 failures, then 8 and 16 with 10 and
      25 figures per page. A count does not prevent it.
    - **Container memory:** the container's peak was its 3 GB limit in the count runs.
-   - **Renderer memory:** during one such run the largest renderer process sampled
+   - **Renderer memory:** during a separate reused run, with neither a count nor the
+     memory rule, the largest renderer process sampled
      between 530 MB and 1,100 MB, and the others between 320 and 900 MB. These are
      resident sizes, which count shared memory more than once. Sizes fell as well as
      rose, so they are not a strict high-water mark.
@@ -302,7 +305,8 @@ of 19,076 figures).
 - **The 2,000-figure run on one page.** The memory rule bounds the service whatever a
   page holds, but it would not show a slow leak inside a page. That run moves to T007,
   which sets the count against it.
-- **The overviews:** the samples had one overview, not five.
+- **The overviews:** the mixed sample had one overview, not five, and the gate sample
+  none.
 
 ## R7. Fresh renders vary (found by T001)
 
@@ -319,17 +323,23 @@ the reaction layout's source, ContentService's Java
 
 Six calls for one reaction gave six different answers. Six fresh draws of that reaction
 gave three different SVGs from the live endpoint, and one SVG when the endpoint was
-answered from a fixed copy.
+answered from a fixed copy. That was shown for one reaction; the 42 are attributed to
+it, not each tested. Over 99 reactions fetched three times each, every answer varied,
+and none did once put in the canonical form T011 describes.
 
 **Label placement (7).**
 
 - **Six:** a node's label was drawn smaller and moved aside, at 8.43 to 11.72 px
   against 12 px.
-- **The cause:** the style library does that to a node while its structure (a protein's
+- **The likely cause (read from the code, not reproduced):** the style library does
+  that to a node while its structure (a protein's
   or a molecule's picture) is loading or found, and undoes it when the lookup fails. The
   readiness signal does not wait for those lookups.
-- **The seventh:** its compartment and labels sit 32 px lower in one run, not yet
-  explained.
+- **The seventh:** its compartment and labels sit 32 px lower in one run. Here the
+  endpoint computed a different layout: one answer in six for R-HSA-1791144 placed a
+  node 16 px higher and shrank the compartment to fit. The layout is made per request
+  and depends on the node order, so it varies for some reactions. No canonical form can
+  fix that; it has to be fixed where the layout is made.
 
 **Reuse against fresh:** reused SVGs differed from fresh ones in 88 of 183 (a run after
 the handle fix). R5 cannot tell a leak from this until fresh renders are repeatable, so
@@ -338,7 +348,7 @@ T011 makes them repeatable first:
 - the reaction layout put in a canonical form before it is drawn: nodes in a fixed
   order, ids renumbered from that order;
 - readiness waiting for the structure lookups to settle;
-- the seventh case explained.
+- the endpoint's varying layout fixed where the layout is made (a separate change).
 
 **Also seen, in an earlier T001 run on fresh pages:** a species overview for a species
 other than human failed with "asked for species 7955, the page drew 9606". It is

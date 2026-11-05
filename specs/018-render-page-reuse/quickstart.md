@@ -41,4 +41,4 @@ settings (research R6). Expected results:
 - it takes at most 2 h 54 min;
 - every figure is drawn;
 - no request fails for want of memory, and the container stays within 3 GB;
-- the figures match T031's folder, or each difference is explained.
+- the figures match a run of the same build with `RENDER_REUSE=off` (research R6).

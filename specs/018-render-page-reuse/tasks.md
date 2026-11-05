@@ -9,7 +9,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 ## Phase 1: Measure first (go or no-go)
 
-- [x] T001 Prototype and measure (research R4), on a branch that is not merged (#792).
+- [x] T001 Prototype and measure (research R4), on a branch that is not merged (#793).
   - **On the render page:** add `__renderNavigate` and the never-reuse strategy for the
     render routes in `projects/pathway-browser/src/app/render/render-navigation.ts`.
   - **In the service:** add a held page per slot in `tools/render/service.ts`, without
@@ -31,9 +31,9 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 - [ ] T011 [US2] Fresh renders repeatable (research R7), in the render page.
   - **Fix:**
     - the reaction layout put in a canonical form before it is drawn (nodes in a fixed
-      order, ids renumbered);
+      order, ids renumbered in the layout and in the graph's nodes, which refer to it);
     - readiness that waits for the structure lookups to settle;
-    - R7's seventh case explained.
+    - the endpoint's varying layout (R7's seventh case) raised as a change of its own.
   - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
     failing before the fix.
 
@@ -85,10 +85,10 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     failed request's answer is today's.
 - [ ] T007 [US4] Replacement by count, by the container's memory and by build, with the
       defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5).
+  - The site's build is read from the render page's HTML at `RENDER_BASE`, at most once
+    a minute (research R3).
   - **Measure first:** heap and document nodes over 2,000 figures on one page, to set
     `RENDER_REUSE_MAX` (R4 result).
-    The site's build is read from the render page's HTML at `RENDER_BASE`, at most once a
-    minute (research R3).
   - **Tests:** each rule, seen failing with it removed.
 - [ ] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
       settings in the service's header comment and its README (`tools/render/README.md`).

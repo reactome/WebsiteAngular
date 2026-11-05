@@ -48,8 +48,8 @@ in at most half today's time on the same machine.
 longest step of making the book, and most of its time is page loads.
 
 **Independent Test**: run pdf-export's figures step for release 98 against the service
-on the same host and settings as T031's run, and compare its time and its figures with
-that run's.
+on the same host and settings as T031's run, compare its time with that run's, and its
+figures with a run of the same build on fresh pages.
 
 **Acceptance Scenarios**:
 
