@@ -98,7 +98,7 @@ describe('the opposites', () => {
     );
   });
 
-  it("are one of the sample's species overviews before some figures that are not overviews", () => {
+  it("are one of the sample's species overviews before each figure that is not an overview", () => {
     const overviews = [
       '/render/genome-wide.svg?species=10090',
       '/render/genome-wide.svg?species=10116',
@@ -108,10 +108,9 @@ describe('the opposites', () => {
     const before = figures.map((figure) =>
       opposites(figure, sample, undefined).filter((other) => overviews.includes(other))
     );
-    // Some figures, not all, and never more than one overview each.
-    expect(before.filter((found) => found.length).length).toBeGreaterThan(0);
-    expect(before.filter((found) => found.length).length).toBeLessThan(figures.length / 5);
-    expect(Math.max(...before.map((found) => found.length))).toBe(1);
+    // One overview each, the overviews taking turns.
+    expect(before.every((found) => found.length === 1)).toBe(true);
+    expect(new Set(before.flat()).size).toBe(overviews.length);
   });
 
   it('never pair a request with itself, a default setting counting as none', () => {
@@ -147,6 +146,7 @@ describe('the opposites', () => {
       canonical('/render/R-HSA-1.svg?scale=1')
     );
     expect(canonical('/render/R-HSA-1.jpg')).toBe(canonical('/render/R-HSA-1.jpeg'));
+    expect(canonical('/render/R-HSA-1.JPG')).toBe(canonical('/render/R-HSA-1.jpeg'));
     expect(canonical('/render/R-HSA-1.svg?dark=')).not.toBe(canonical('/render/R-HSA-1.svg'));
   });
 
@@ -168,6 +168,10 @@ describe('the opposites', () => {
         ],
       ],
       ['one overview, 1,000 figures', [...figures(1000), '/render/genome-wide.svg?species=10090']],
+      [
+        '50 tokens',
+        Array.from({ length: 50 }, (_, at) => `/render/R-HSA-${at + 1}.svg?token=T${at}`),
+      ],
       [
         '40 highlights on one diagram',
         [

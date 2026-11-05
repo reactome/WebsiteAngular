@@ -91,8 +91,11 @@ const normal = (name: string, value: string) =>
  */
 export function canonical(request: string): string {
   const [path = '', query = ''] = request.split('?');
-  // The service draws a .jpg as a JPEG, one cache entry with .jpeg.
-  const figure = path.replace(/\.jpg$/, '.jpeg');
+  // The service reads the extension in lower case and draws a .jpg as a
+  // JPEG: one cache entry with .jpeg.
+  const figure = path
+    .replace(/\.[A-Za-z]+$/, (extension) => extension.toLowerCase())
+    .replace(/\.jpg$/, '.jpeg');
   const params = [...new URLSearchParams(query)]
     .filter(([name, value]) => !isDefault(name, value))
     .map(([name, value]): [string, string] => [name, normal(name, value)])
@@ -129,16 +132,15 @@ function withQuery(request: string, change: (query: URLSearchParams) => void): s
 const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?? '');
 
 /**
- * Which of the sample's species overviews goes before `request`, if any:
- * one, for about one figure in 25, both chosen by the figure's text so a
- * run is repeatable. An overview can be asked once per run, so all of them
- * before every figure made a run per figure: 448 container starts for a
- * 400-figure sample.
+ * Which of the sample's species overviews goes before `request`: one,
+ * chosen by the figure's text so a run is repeatable. pairRuns' cap keeps
+ * the runs bounded; every figure being offered one keeps a small sample
+ * covered.
  */
 function overviewBefore(request: string, overviews: string[]): string | undefined {
   let hash = 0;
   for (const character of canonical(request)) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
-  return hash % 25 === 0 ? overviews[Math.trunc(hash / 25) % overviews.length] : undefined;
+  return overviews[hash % overviews.length];
 }
 
 /**
@@ -151,7 +153,7 @@ function overviewBefore(request: string, overviews: string[]): string | undefine
  * - a selection, a highlight, or subpathways off, against none, either way:
  *   the sample's own on the same figure, or the figure without it;
  * - the overview of one species against another's, and the sample's species
- *   overviews, one before each of about one figure in 25 (overviewBefore).
+ *   overviews, one before each figure (overviewBefore; pairRuns caps them).
  */
 export function opposites(request: string, sample: string[], token: string | undefined): string[] {
   const query = queryOf(request);
@@ -165,8 +167,11 @@ export function opposites(request: string, sample: string[], token: string | und
   else if (token) found.push(withQuery(request, (q) => q.set('token', token)));
   const own = query.get('token');
   const tokens = new Set(sample.map((other) => queryOf(other).get('token')).filter(Boolean));
-  for (const other of tokens)
-    if (own && other && other !== own) found.push(withQuery(request, (q) => q.set('token', other)));
+  // Two of them: every token before every other token's figures grew the
+  // runs with the number of tokens.
+  if (own)
+    for (const other of [...tokens].filter((other) => other && other !== own).slice(0, 2))
+      found.push(withQuery(request, (q) => q.set('token', other as string)));
   // A setting the figure has, or the sample's own figures with it.
   for (const name of ['select', 'highlight', 'subpathways']) {
     if (query.has(name)) found.push(withQuery(request, (q) => q.delete(name)));
