@@ -248,10 +248,7 @@ function setPhysicalEntity(entity: EntityGlyph, ids: GlyphIds, data: EntityData 
 }
 
 /** RenderableClass.getRenderableClass for a physical entity, by its labels (instanceof). */
-export function renderableClass(
-  data: EntityData & { displayName?: string },
-  drug: boolean
-): string {
+function renderableClass(data: EntityData & { displayName?: string }, drug: boolean): string {
   const is = (label: string) => data.labels.includes(label);
   if (is('EntitySet')) return drug ? 'EntitySetDrug' : 'EntitySet';
   if (is('Complex')) return drug ? 'ComplexDrug' : 'Complex';
