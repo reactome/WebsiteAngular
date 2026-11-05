@@ -42,8 +42,14 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     failing before the fix.
     - **Until T092 is done,** a reaction may differ between the two draws only if its
       layout from the endpoint differed between them. The test records each draw's
-      canonical layout and shows that; any other difference fails. Each exempt
-      reaction is listed in the result with its count, so a growing list is seen.
+      layout response, as the page received it, and compares their canonical forms.
+      Even then, the two draws' text elements, taken as (content, font size) pairs in
+      any order, must match, so a label regression on such a reaction still fails. Any other
+      difference fails.
+    - **Exempt reactions** are listed in the result. More than 2% of the sample's
+      reactions exempt fails the test, so a growing list stops it rather than passing
+      unnoticed. (So far a varying layout has been seen for one reaction, and for none
+      of the 99 fetched three times each in research R7.)
     - **T011 is ticked** when the test passes with that exemption, so T002 can go on.
       Removing the exemption is part of spec 006 T092: it is done when this test
       passes with none.
@@ -122,6 +128,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 - T001 gates everything.
 - T011 comes before T002's run on a real sample.
+- T011's exemption for reactions whose layout Java varies stays until spec 006 T092
+  is done; that task, not this spec, removes it.
 - T002 comes before T003–T008, so each is checked by it.
 - T003 → T004.
 - T005 → T006 → T007 → T008.
