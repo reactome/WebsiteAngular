@@ -9,13 +9,16 @@
  *   from the first id Java's answer shows (its edge's), so a glyph made out
  *   of Java's order shows here;
  * - each role, from the edge: entity, type and stoichiometry;
- * - each compartment's place in the tree, and the headers.
+ * - each compartment's place in the tree, and the headers;
+ * - (step 2) each node's size and its attachments' boxes, and the reaction's
+ *   backbone, relative to the glyph.
  *
  *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count]
  *
  * Reactions: `count` at random (default 200), every reaction with no
- * compartment, and some failed reactions, disease ones, and ones with drugs
- * among or inside their participants. An answer whose ids differ is asked
+ * compartment, and some failed reactions, disease ones, ones with drugs among
+ * or inside their participants, and ones with heavily modified proteins,
+ * genes and cells (step 2's sizes). An answer whose ids differ is asked
  * again (another request may have taken ids in between), up to three times.
  * A Java error must meet an error from node; its text is step 5's. Spaced for
  * the shared database; stops after 20 differences in a row. Prints reaction
@@ -28,6 +31,7 @@ import {
   reactionRenderableClass,
 } from './reaction-layout/inputs.ts';
 import type { Inputs } from './reaction-layout/inputs.ts';
+import { setEntitySize, setReactionSize } from './reaction-layout/sizes.ts';
 import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
 import type { CompartmentGlyph, EntityGlyph, EntityRole } from './reaction-layout/model.ts';
 
@@ -71,6 +75,8 @@ interface Summary {
   compartments: string[];
   roles: string[];
   ids: string[];
+  /** Step 2: each node's size and its attachments' boxes from its corner; the reaction's backbone. */
+  sizes: string[];
 }
 
 /** The edge's lists, by the role type they hold. */
@@ -92,6 +98,7 @@ interface JavaPart {
 }
 interface JavaEdge {
   id: number;
+  segments: { from: JavaPoint; to: JavaPoint }[];
   reactomeId: number;
   schemaClass: string;
   displayName: string;
@@ -110,7 +117,16 @@ interface JavaNode {
   isDisease?: boolean;
   needDashedBorder?: boolean;
   trivial?: boolean;
-  nodeAttachments?: { label?: string; reactomeId: number }[];
+  nodeAttachments?: { label?: string; reactomeId: number; shape: JavaBox }[];
+  prop: { x: number; y: number; width: number; height: number };
+}
+interface JavaPoint {
+  x: number;
+  y: number;
+}
+interface JavaBox {
+  a: JavaPoint;
+  b: JavaPoint;
 }
 interface JavaCompartment {
   id: number;
@@ -202,6 +218,21 @@ function javaSummary(answer: JavaAnswer): Summary {
           .sort(),
       ])
     ),
+    sizes: sorted([
+      ['reaction', backbone(edge.segments)],
+      ...nodes.map((node) => [
+        entityOf.get(node.id),
+        round(node.prop.width),
+        round(node.prop.height),
+        (node.nodeAttachments ?? []).map((a) => [
+          a.label ?? null,
+          round(a.shape.a.x - node.prop.x),
+          round(a.shape.a.y - node.prop.y),
+          round(a.shape.b.x - a.shape.a.x),
+          round(a.shape.b.y - a.shape.a.y),
+        ]),
+      ]),
+    ]),
     ids: sorted([
       ['reaction', edge.id, edge.reactomeId],
       ...nodes.map((node) => ['entity', node.id, node.reactomeId, node.needDashedBorder === true]),
@@ -212,6 +243,9 @@ function javaSummary(answer: JavaAnswer): Summary {
 
 function nodeSummary(inputs: Inputs): Summary {
   removeExtracellular(inputs);
+  // Step 2: every glyph sized, as the layouts do when they take it in.
+  setReactionSize(inputs.reaction);
+  for (const entity of inputs.entities) setEntitySize(entity);
   const present = new Set<CompartmentGlyph>(inputs.compartments.values());
   const shown = (glyph: CompartmentGlyph | undefined) =>
     glyph && present.has(glyph) ? glyph.name : null;
@@ -261,6 +295,21 @@ function nodeSummary(inputs: Inputs): Summary {
         entity.roles.map((role) => JSON.stringify([role.type, role.n])).sort(),
       ])
     ),
+    sizes: sorted([
+      ['reaction', backbone(inputs.reaction.segments)],
+      ...entities.map((entity) => [
+        [entity.dbId, entity.dashed],
+        round(entity.bounds.width),
+        round(entity.bounds.height),
+        entity.attachments.map((a) => [
+          a.data.label,
+          round(a.bounds.x - entity.bounds.x),
+          round(a.bounds.y - entity.bounds.y),
+          round(a.bounds.width),
+          round(a.bounds.height),
+        ]),
+      ]),
+    ]),
     ids: sorted([
       ['reaction', inputs.reaction.id, reaction.dbId],
       ...entities.map((entity) => ['entity', entity.id, entity.dbId, entity.dashed]),
@@ -275,7 +324,26 @@ function within(glyph: CompartmentGlyph | undefined): (CompartmentGlyph | undefi
   return [glyph, ...[...glyph.children].flatMap((child) => within(child))];
 }
 
-const PARTS = ['header', 'edge', 'nodes', 'compartments', 'roles', 'ids'] as const;
+const PARTS = ['header', 'edge', 'nodes', 'compartments', 'roles', 'ids', 'sizes'] as const;
+
+/**
+ * A size or offset to a millionth: placement moves a node and its
+ * attachments by the same amount, which can leave a last bit behind in the
+ * difference. Exact positions are step 3's.
+ */
+function round(value: number): number {
+  return Math.round(value * 1e6) / 1e6;
+}
+
+/** The reaction's segments, all of them, from the first one's start: its size and backbone. */
+function backbone(segments: { from: JavaPoint; to: JavaPoint }[]): number[][] {
+  const [first] = segments;
+  if (!first) return [];
+  return segments.flatMap(({ from, to }) => [
+    [round(from.x - first.from.x), round(from.y - first.from.y)],
+    [round(to.x - first.from.x), round(to.y - first.from.y)],
+  ]);
+}
 
 /** Which parts of two summaries differ. */
 function differences(java: Summary, node: Summary): string[] {
@@ -302,7 +370,13 @@ async function reactions(count: number): Promise<string[]> {
             WHERE (pe)-[:hasComponent|hasMember|hasCandidate*0..2]->(:Drug)
             RETURN DISTINCT r.stId AS stId LIMIT 20
       UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(pe)
-            WHERE NOT (pe)-[:compartment]->() RETURN DISTINCT r.stId AS stId LIMIT 10 }
+            WHERE NOT (pe)-[:compartment]->() RETURN DISTINCT r.stId AS stId LIMIT 10
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(pe:EntityWithAccessionedSequence)
+            WHERE size([(pe)-[:hasModifiedResidue]->(m:TranslationalModification) | m]) > 8
+            RETURN DISTINCT r.stId AS stId LIMIT 15
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:EntityWithAccessionedSequence)-[:referenceEntity]->(:ReferenceDNASequence)
+            RETURN DISTINCT r.stId AS stId LIMIT 5
+      UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:Cell) RETURN DISTINCT r.stId AS stId LIMIT 5 }
      RETURN DISTINCT stId`,
     { count: Math.trunc(count) }
   );
@@ -399,7 +473,7 @@ async function compare(stId: string): Promise<Outcome> {
 
 async function main() {
   const ids = await reactions(Number(process.argv[2] ?? 200));
-  console.log(`comparing ${ids.length} reactions, step 1`);
+  console.log(`comparing ${ids.length} reactions, steps 1 and 2`);
   let identical = 0;
   let bothFailed = 0;
   let movedInward = 0;
