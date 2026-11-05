@@ -877,6 +877,11 @@ export function javaDouble(value: number): string {
  * related node's id still comes back, in order, because a node's first
  * appearance decides where it sits in a list (fill). For that person: 1.6s
  * with all of them, ~100ms without.
+ *
+ * Each relationship comes back with its own id, as SDN keys it: one result
+ * of many records (mapResults, the people-by-name queries) counts and
+ * merges relationships by id across records, so ids made up per record
+ * would make one person's relationships another's.
  */
 export function findByIdQuery(
   where: string,
@@ -895,8 +900,8 @@ export function findByIdQuery(
      RETURN {id: id(n), labels: labels(n), props: properties(n)} AS root,
             [m IN ms | id(m)] AS order,
             [m IN ms WHERE id(m) IN kept | {id: id(m), labels: labels(m), props: properties(m)}] AS nodes,
-            [r IN rs WHERE id(endNode(r)) IN kept | {type: type(r), start: id(startNode(r)),
-                        end: id(endNode(r)), props: properties(r)}] AS relationships`;
+            [r IN rs WHERE id(endNode(r)) IN kept | {id: id(r), type: type(r),
+                        start: id(startNode(r)), end: id(endNode(r)), props: properties(r)}] AS relationships`;
 }
 
 /** The labels of the object findByIdQuery will load, to pick its parameters by. */

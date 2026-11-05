@@ -35,13 +35,33 @@ vi.mock('./graph.ts', () => ({
         schemaClass: 'Affiliation',
       },
     };
-    const row = (root: ReturnType<typeof person>) => ({
-      root,
-      order: [affiliation.id],
-      nodes: [affiliation],
-      relationships: [{ type: 'affiliation', start: root.id, end: affiliation.id, props: {} }],
+    const publication = (id: number, dbId: number) => ({
+      id,
+      labels: ['DatabaseObject', 'Publication', 'LiteratureReference'],
+      props: { dbId, displayName: `A paper ${dbId}`, schemaClass: 'LiteratureReference' },
     });
-    return [row(person(1, 10, 'Ann')), row(person(2, 20, 'Bea'))];
+    // As findByIdQuery returns them: with the relationship's own id when the
+    // query asks for it, and without one when it does not.
+    const withIds = cypher.includes('{id: id(r)');
+    const row = (root: ReturnType<typeof person>, paper: ReturnType<typeof publication>) => ({
+      root,
+      order: [affiliation.id, paper.id],
+      nodes: [affiliation, paper],
+      relationships: [
+        { id: root.id * 100, type: 'affiliation', start: root.id, end: affiliation.id, props: {} },
+        {
+          id: root.id * 100 + 1,
+          type: 'author',
+          start: root.id,
+          end: paper.id,
+          props: { order: 0 },
+        },
+      ].map(({ id, ...relationship }) => (withIds ? { id, ...relationship } : relationship)),
+    });
+    return [
+      row(person(1, 10, 'Ann'), publication(3, 30)),
+      row(person(2, 20, 'Bea'), publication(4, 40)),
+    ];
   },
   configured: () => true,
   close: async () => {},
@@ -116,6 +136,18 @@ describe('/data/people/name/{name}', () => {
     expect(answer.map((person) => person.dbId)).toEqual([10, 20]);
     expect(answer[0]?.affiliation[0]).toMatchObject({ dbId: 90 });
     expect(answer[1]?.affiliation[0]).toBe(90);
+  });
+
+  it('gives each person their own publications, relationships told apart by id', async () => {
+    const answer = (await (await people('example')).json()) as {
+      publications?: unknown[];
+    }[];
+    // Ids made up per record would map Bea's paper as Ann's (one relation
+    // object, written once): Bea would show Ann's paper by reference.
+    expect(answer.map((person) => person.publications)).toEqual([
+      [expect.objectContaining({ dbId: 30 })],
+      [expect.objectContaining({ dbId: 40 })],
+    ]);
   });
 
   it('is a 404 naming the name as sent when nobody matches', async () => {
