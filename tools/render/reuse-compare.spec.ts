@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { strToU8, zipSync } from 'fflate';
 import {
   canonical,
+  formatOf,
   compare,
   draw,
   healthProblem,
@@ -70,6 +71,125 @@ describe('the opposites', () => {
     const forNone = opposites('/render/R-HSA-1.svg', sample, undefined);
     expect(forNone).toContain('/render/R-HSA-1.svg?select=R-HSA-2');
     expect(forNone).not.toContain('/render/R-HSA-3.svg?select=R-HSA-4');
+  });
+
+  it("are none for a highlight or subpathways off, and the sample's own on the same figure for none", () => {
+    const sample = [
+      '/render/R-HSA-1.svg',
+      '/render/R-HSA-1.svg?highlight=R-HSA-2',
+      '/render/R-HSA-1.svg?subpathways=false',
+      '/render/R-HSA-3.svg?highlight=R-HSA-4',
+    ];
+    expect(opposites('/render/R-HSA-1.svg?highlight=R-HSA-2', sample, undefined)).toContain(
+      '/render/R-HSA-1.svg'
+    );
+    expect(opposites('/render/R-HSA-1.svg?subpathways=false', sample, undefined)).toContain(
+      '/render/R-HSA-1.svg'
+    );
+    const forNone = opposites('/render/R-HSA-1.svg', sample, undefined);
+    expect(forNone).toContain('/render/R-HSA-1.svg?highlight=R-HSA-2');
+    expect(forNone).toContain('/render/R-HSA-1.svg?subpathways=false');
+    expect(forNone).not.toContain('/render/R-HSA-3.svg?highlight=R-HSA-4');
+  });
+
+  it("are the sample's other tokens for a token, so one token's colours cannot stay for the next", () => {
+    const sample = ['/render/R-HSA-1.svg?token=A', '/render/R-HSA-5.svg?token=B'];
+    expect(opposites('/render/R-HSA-1.svg?token=A', sample, 'A')).toContain(
+      '/render/R-HSA-1.svg?token=B'
+    );
+  });
+
+  it("are one of the sample's species overviews before each figure that is not an overview", () => {
+    const overviews = [
+      '/render/genome-wide.svg?species=10090',
+      '/render/genome-wide.svg?species=10116',
+    ];
+    const figures = Array.from({ length: 200 }, (_, at) => `/render/R-HSA-${at + 1}.svg`);
+    const sample = [...figures, ...overviews];
+    const before = figures.map((figure) =>
+      opposites(figure, sample, undefined).filter((other) => overviews.includes(other))
+    );
+    // One overview each, the overviews taking turns.
+    expect(before.every((found) => found.length === 1)).toBe(true);
+    expect(new Set(before.flat()).size).toBe(overviews.length);
+  });
+
+  it('never pair a request with itself, a default setting counting as none', () => {
+    const sample = [
+      '/render/R-HSA-1.svg',
+      '/render/R-HSA-1.svg?highlight=R-HSA-2',
+      '/render/R-HSA-1.svg?subpathways=true',
+      '/render/R-HSA-1.svg?scale=2&highlight=',
+    ];
+    for (const request of sample)
+      expect(opposites(request, sample, undefined).map(canonical)).not.toContain(
+        canonical(request)
+      );
+  });
+
+  it("take a parameter at the service's default as no parameter, as its cache key does", () => {
+    for (const same of [
+      '/render/R-HSA-1.svg?dark=false',
+      '/render/R-HSA-1.svg?subpathways=true',
+      '/render/R-HSA-1.svg?scale=2',
+      '/render/R-HSA-1.gif?delay=1000',
+      '/render/R-HSA-1.svg?maxSize=0',
+      '/render/R-HSA-1.svg?highlight=',
+    ])
+      expect(canonical(same)).toBe(canonical(same.replace(/\?.*/, '')));
+    expect(canonical('/render/R-HSA-1.svg?subpathways=false')).not.toBe(
+      canonical('/render/R-HSA-1.svg')
+    );
+    // Numbers as numbers, a .jpg as the JPEG it is, and an empty value only
+    // where the service takes it as none.
+    expect(canonical('/render/R-HSA-1.svg?scale=2.0')).toBe(canonical('/render/R-HSA-1.svg'));
+    expect(canonical('/render/R-HSA-1.svg?scale=1.0')).toBe(
+      canonical('/render/R-HSA-1.svg?scale=1')
+    );
+    expect(canonical('/render/R-HSA-1.jpg')).toBe(canonical('/render/R-HSA-1.jpeg'));
+    expect(canonical('/render/R-HSA-1.JPG')).toBe(canonical('/render/R-HSA-1.jpeg'));
+    expect(formatOf('/render/R-HSA-1.JPG?scale=1')).toBe('jpeg');
+    expect(canonical('/render/R-HSA-1.svg?dark=')).not.toBe(canonical('/render/R-HSA-1.svg'));
+  });
+
+  it('keep the runs few however large the sample: a request goes first in a few pairs only', () => {
+    const figures = (count: number) =>
+      Array.from(
+        { length: count },
+        (_, at) => `/render/R-HSA-${at + 1}.svg${at % 3 ? '' : '?dark=true'}`
+      );
+    const shapes: [string, string[]][] = [
+      [
+        'five overviews',
+        [
+          ...figures(400),
+          ...['9606', '10090', '10116', '7955', '4932'].map(
+            (id) => `/render/genome-wide.svg?species=${id}`
+          ),
+          '/render/R-HSA-1.png?token=T',
+        ],
+      ],
+      ['one overview, 1,000 figures', [...figures(1000), '/render/genome-wide.svg?species=10090']],
+      [
+        '50 tokens',
+        Array.from({ length: 50 }, (_, at) => `/render/R-HSA-${at + 1}.svg?token=T${at}`),
+      ],
+      [
+        '40 highlights on one diagram',
+        [
+          ...figures(100),
+          ...Array.from(
+            { length: 40 },
+            (_, at) => `/render/R-HSA-1.svg?highlight=R-HSA-${at + 1000}`
+          ),
+        ],
+      ],
+    ];
+    // The proved bound is 27 whatever the sample: a request has at most 11
+    // opposites and goes first in at most 3 pairs, so a pair finds a run
+    // within 11 + 3 + 13 tries. These shapes come to 12 or fewer.
+    for (const [shape, sample] of shapes)
+      expect(pairRuns(sample).length, shape).toBeLessThanOrEqual(12);
   });
 
   it("are another species' overview", () => {

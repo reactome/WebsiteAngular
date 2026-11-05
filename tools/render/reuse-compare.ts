@@ -55,14 +55,50 @@ export interface Difference {
 }
 
 /**
+ * A parameter at the value the service takes when it is left out
+ * (service.ts): `dark=false`, `subpathways=true`, `scale=2`, `delay=1000`,
+ * `maxSize=0` -- numbers compared as numbers -- or empty where the service
+ * takes an empty value as none.
+ */
+const DEFAULTS: Record<string, string> = {
+  dark: 'false',
+  subpathways: 'true',
+  scale: '2',
+  delay: '1000',
+  maxSize: '0',
+};
+/** Parameters the service reads as numbers (Number, then clamp): compared as numbers. */
+const NUMERIC = new Set(['scale', 'delay', 'maxSize']);
+/** Parameters whose empty value the service takes as none; any other empty value it refuses. */
+const EMPTY_IS_NONE = new Set(['token', 'select', 'highlight', 'maxSize']);
+const isDefault = (name: string, value: string) =>
+  value === ''
+    ? EMPTY_IS_NONE.has(name)
+    : NUMERIC.has(name)
+      ? Number(value) === Number(DEFAULTS[name])
+      : DEFAULTS[name] === value;
+/** A value as the service reads it: a number in its plain form. */
+const normal = (name: string, value: string) =>
+  NUMERIC.has(name) && value !== '' && Number.isFinite(Number(value))
+    ? String(Number(value))
+    : value;
+
+/**
  * One figure however it is written: its path and its parameters decoded and
- * sorted, `dark=false` as no `dark`. The service's cache key is built from
- * the parsed parameters, so two spellings of one figure are one cache entry.
+ * sorted, a parameter at its default as none. The service's cache key is
+ * built from the parsed parameters, so two spellings of one figure are one
+ * cache entry.
  */
 export function canonical(request: string): string {
-  const [figure = '', query = ''] = request.split('?');
+  const [path = '', query = ''] = request.split('?');
+  // The service reads the extension in lower case and draws a .jpg as a
+  // JPEG: one cache entry with .jpeg.
+  const figure = path
+    .replace(/\.[A-Za-z]+$/, (extension) => extension.toLowerCase())
+    .replace(/\.jpg$/, '.jpeg');
   const params = [...new URLSearchParams(query)]
-    .filter(([name, value]) => !(name === 'dark' && value === 'false'))
+    .filter(([name, value]) => !isDefault(name, value))
+    .map(([name, value]): [string, string] => [name, normal(name, value)])
     .sort(([a, x], [b, y]) => (a === b ? (x < y ? -1 : 1) : a < b ? -1 : 1));
   return `${figure}?${params.map(([name, value]) => `${name}=${value}`).join('&')}`;
 }
@@ -82,7 +118,9 @@ export function parseSample(text: string): string[] {
 
 /** A request path's format, from its extension. */
 export function formatOf(request: string): string {
-  return /\.([a-z]+)(\?|$)/.exec(request)?.[1] ?? 'svg';
+  // In lower case, as the service reads it; a .jpg is a JPEG.
+  const format = /\.([A-Za-z]+)(\?|$)/.exec(request)?.[1]?.toLowerCase() ?? 'svg';
+  return format === 'jpg' ? 'jpeg' : format;
 }
 
 function withQuery(request: string, change: (query: URLSearchParams) => void): string {
@@ -96,14 +134,32 @@ function withQuery(request: string, change: (query: URLSearchParams) => void): s
 const queryOf = (request: string) => new URLSearchParams(request.split('?')[1] ?? '');
 
 /**
+ * Which of the sample's species overviews goes before `request`: one,
+ * chosen by the figure's text so a run is repeatable. pairRuns' cap keeps
+ * the runs bounded; every figure being offered one keeps a small sample
+ * covered.
+ */
+function overviewBefore(request: string, overviews: string[]): string | undefined {
+  let hash = 0;
+  for (const character of canonical(request)) hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  return overviews[hash % overviews.length];
+}
+
+/**
  * The requests that may come straight before `request` in a pair: each one a
- * held page could carry a setting over from, drawing `request` wrong. Dark against light, either way; a token against none,
- * either way (`token` is the sample's own, if it has one); a selection against
- * none, either way (the sample's own selections on the same diagram); the
- * overview of one species against another's.
+ * held page could carry a setting over from, drawing `request` wrong (spec
+ * 018 FR-004, research R5):
+ * - dark against light, either way;
+ * - a token against none, either way (`token` is the sample's own, if it has
+ *   one), and against each of the sample's other tokens;
+ * - a selection, a highlight, or subpathways off, against none, either way:
+ *   the sample's own on the same figure, or the figure without it;
+ * - the overview of one species against another's, and the sample's species
+ *   overviews, one before each figure (overviewBefore; pairRuns caps them).
  */
 export function opposites(request: string, sample: string[], token: string | undefined): string[] {
   const query = queryOf(request);
+  const figure = request.split('?')[0] ?? '';
   const found: string[] = [
     withQuery(request, (q) =>
       q.get('dark') === 'true' ? q.delete('dark') : q.set('dark', 'true')
@@ -111,12 +167,24 @@ export function opposites(request: string, sample: string[], token: string | und
   ];
   if (query.has('token')) found.push(withQuery(request, (q) => q.delete('token')));
   else if (token) found.push(withQuery(request, (q) => q.set('token', token)));
-  if (query.has('select')) found.push(withQuery(request, (q) => q.delete('select')));
-  else {
-    const figure = request.split('?')[0];
-    found.push(
-      ...sample.filter((other) => other.split('?')[0] === figure && queryOf(other).has('select'))
-    );
+  const own = query.get('token');
+  const tokens = new Set(sample.map((other) => queryOf(other).get('token')).filter(Boolean));
+  // Two of them: every token before every other token's figures grew the
+  // runs with the number of tokens.
+  if (own)
+    for (const other of [...tokens].filter((other) => other && other !== own).slice(0, 2))
+      found.push(withQuery(request, (q) => q.set('token', other as string)));
+  // A setting the figure has, or the sample's own figures with it.
+  for (const name of ['select', 'highlight', 'subpathways']) {
+    if (query.has(name)) found.push(withQuery(request, (q) => q.delete(name)));
+    else
+      // Two of them: a figure goes second once per run, so all forty
+      // highlights on one diagram before the diagram made forty runs.
+      found.push(
+        ...sample
+          .filter((other) => other.split('?')[0] === figure && queryOf(other).has(name))
+          .slice(0, 2)
+      );
   }
   if (request.startsWith('/render/genome-wide.'))
     found.push(
@@ -124,8 +192,24 @@ export function opposites(request: string, sample: string[], token: string | und
         q.get('species') === '10090' ? q.delete('species') : q.set('species', '10090')
       )
     );
-  return found;
+  else {
+    const overview = overviewBefore(
+      request,
+      sample.filter(
+        (other) => other.startsWith('/render/genome-wide.') && queryOf(other).has('species')
+      )
+    );
+    if (overview) found.push(overview);
+  }
+  return [...new Set(found)].filter((other) => canonical(other) !== canonical(request));
 }
+
+/**
+ * The pairs any one request may go first in: enough that each kind of
+ * leftover is shown before a few different figures, few enough that the runs
+ * stay bounded however large the sample.
+ */
+const OPPOSITE_USES = 3;
 
 /**
  * Pairs -- an opposite, then the request -- spread over runs so that no run
@@ -134,9 +218,15 @@ export function opposites(request: string, sample: string[], token: string | und
 export function pairRuns(sample: string[]): string[][] {
   const token = sample.map((request) => queryOf(request).get('token')).find(Boolean) ?? undefined;
   const runs: { requests: string[]; asked: Set<string> }[] = [];
+  // How often each request has gone first: at most OPPOSITE_USES times, so one
+  // request that is everyone's opposite -- a species overview, a bare diagram
+  // under many highlights -- cannot make a run per figure.
+  const used = new Map<string, number>();
   for (const request of sample)
     for (const opposite of opposites(request, sample, token)) {
       const [first, second] = [canonical(opposite), canonical(request)];
+      if ((used.get(first) ?? 0) >= OPPOSITE_USES) continue;
+      used.set(first, (used.get(first) ?? 0) + 1);
       let run = runs.find(({ asked }) => !asked.has(first) && !asked.has(second));
       if (!run) {
         run = { requests: [], asked: new Set() };
@@ -397,6 +487,11 @@ async function main() {
     code: flag('code'),
   };
   const sample = parseSample(readFileSync(samplePath, 'utf8'));
+  // A sample of nothing would draw nothing and find no difference: not a test.
+  if (!sample.length) {
+    console.error(`${samplePath} holds no requests`);
+    process.exit(2);
+  }
   console.log(`${sample.length} requests, mode ${mode}`);
 
   const builds: Record<string, unknown> = {};
@@ -418,10 +513,13 @@ async function main() {
       );
     process.exit(code);
   };
-  // A container left behind holds memory on a shared host.
+  // A container left behind holds memory on a shared host -- also when the
+  // terminal or session that started the run goes away (SIGHUP). That stops a
+  // run started under nohup too: start a long run in tmux or screen instead.
   for (const [signal, code] of [
     ['SIGINT', 130],
     ['SIGTERM', 143],
+    ['SIGHUP', 129],
   ] as const)
     process.on(signal, () => {
       removeService();
