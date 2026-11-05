@@ -33,8 +33,8 @@ first (constitution III). The PR that completes a task ticks it here with its nu
     - the reaction layout put in a canonical form before it is drawn (nodes in a fixed
       order, ids renumbered in the layout and in the graph's nodes, which refer to it): done in
       #795;
-    - one look for structure labels in exports, full size or shrunken, which waiting cannot
-      give (research R7; the look is still to be decided);
+    - full-size structure labels in exports, which waiting cannot give (research R7):
+      done in #796, with ngx-reactome-base #23;
     - the endpoint's varying layout (R7's seventh case) raised as a change of its own.
   - **Test:** the same sample drawn twice on fresh pages, every SVG byte-identical; seen
     failing before the fix.

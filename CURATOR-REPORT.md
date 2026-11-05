@@ -273,6 +273,15 @@ Not bugs, so as not to waste your time:
 
 ## Decisions they should know about
 
+- **Downloaded and exported figures show every protein and molecule label at
+  full size** (from 5 November 2026). On the site, zooming in shrinks a protein's
+  or molecule's label and moves it aside, to make room for its 3D structure or
+  chemical picture. Those pictures are never part of a downloaded figure, so a
+  download left the shrunken label beside empty space. Whether a download had the
+  shrunken label at all was chance, because the picture loads late. The site
+  itself is unchanged. **If a downloaded label, a structure or a drug badge looks
+  wrong, this change is the first suspect:** the render page turns structures off
+  with `--structures: 0`.
 - **PowerPoint files are built out of shapes**, one per compartment, connector,
   entity and sub-pathway tint, editable the moment the file opens. They carried
   the diagram as a single vector image until now, on the argument that one click
