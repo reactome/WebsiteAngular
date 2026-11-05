@@ -116,13 +116,23 @@ describe('the file', () => {
     expect(asked).toEqual(Array(4).fill('/biopax/R-HSA-1'));
   });
 
-  it('the service’s 404 is a 404, and its failure a 500 without its own reason', async () => {
+  it('the service’s 404 is a 503 to try again, never "not found"; its failure a 500 without its own reason', async () => {
     withService();
-    behave = (_path, res) => {
-      res.writeHead(404, { 'Content-Type': 'application/json' });
-      res.end('{"error":"No event"}');
-    };
-    expect((await answers('event/R-HSA-1.biopax')).status).toBe(404);
+    // The service's own backstop, and a service too old to have the route:
+    // node found the event, so neither is an answer about the id.
+    for (const body of ['{"error":"No event"}', '{"status":404,"error":"Not Found"}']) {
+      behave = (_path, res) => {
+        res.writeHead(404, { 'Content-Type': 'application/json' });
+        res.end(body);
+      };
+      const answer = await answers('event/R-HSA-1.biopax');
+      expect(envelope(answer)).toEqual([
+        503,
+        'SERVICE_UNAVAILABLE',
+        ['The BioPAX file cannot be made just now; try again shortly'],
+      ]);
+      expect(answer.headers?.['Retry-After']).toBe('30');
+    }
     behave = (_path, res) => {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end('{"error":"/cache/tmp/biopax/x cannot be written"}');
