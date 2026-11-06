@@ -63,6 +63,16 @@ describe('the dev server proxy', () => {
     await expectContentNode('/ContentService/exporter/fireworks/9606.png?token=x');
   });
 
+  it("sends a reaction's layout to the content service, and leaves its image to Java", async () => {
+    for (const id of ['R-HSA-6805479', '6805479', 'R-HSA-6805479.3'])
+      await expectContentNode(`/ContentService/exporter/reaction/${id}/diagram`);
+    for (const url of [
+      '/ContentService/exporter/reaction/R-HSA-6805479.png',
+      '/ContentService/exporter/reaction/R-HSA-6805479.svg?quality=5',
+    ])
+      expect([url, await targetOf(url)]).toEqual([url, backend]);
+  });
+
   for (const id of ['70486', 'R-HSA-70486.4', 'REACT_1081', 'UniProt:P04637']) {
     it(`sends the stable id of ${id} to the content service`, async () => {
       await expectContentNode(`/ContentService/data/query/${id}/stId`);

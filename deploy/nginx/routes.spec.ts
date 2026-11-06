@@ -323,6 +323,10 @@ const JAVAS = [
   '/ContentService/exporter/event/R-HSA-109581.sbgn',
   '/ContentService/exporter/event/R-HSA-109581.sbml.sbgn',
   '/ContentService/exporter/sbml/R-HSA-109581.sbml',
+  // A reaction's image, beside its layout (spec 006 T092), until T090 and T091.
+  '/ContentService/exporter/reaction/R-HSA-6805479.png',
+  '/ContentService/exporter/reaction/R-HSA-6805479.svg?quality=5',
+  '/ContentService/exporter/reaction/R-HSA-6805479/diagramx',
 ];
 
 describe("Java's neighbours of node routes", () => {

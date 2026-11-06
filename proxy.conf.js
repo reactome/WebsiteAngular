@@ -197,6 +197,9 @@ module.exports = {
   '^/ContentService/data/schema/model/?(\\?|$)': contentNode,
   '^/ContentService/data/schema/[^/?]+(/(count|min|attributes|referrals|reference))?/?(\\?|$)':
     contentNode,
+  // A reaction's layout, the reaction page's figure (spec 006 T092); not the
+  // reaction's image, /exporter/reaction/{id}.{ext}, which stays Java's.
+  '^/ContentService/exporter/reaction/[^/?]+/diagram/?(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
     apiPage('/AnalysisService'),
