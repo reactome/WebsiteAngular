@@ -14,7 +14,10 @@ import {
   written,
 } from './generate.ts';
 
-describe('the API description', () => {
+// Each generation takes over a second, and the first two tests about 4.5 s
+// alone, near vitest's 5 s default: under the pre-push hook's load, one timed
+// out (T024). They have 60 s, as the schema check's do.
+describe('the API description', { timeout: 60_000 }, () => {
   it('describes only routes the service serves', () => {
     const served = new Set(servedRoutes());
     expect(contractRoutes().filter((route) => !served.has(route))).toEqual([]);
