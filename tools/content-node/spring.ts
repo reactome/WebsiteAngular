@@ -153,43 +153,79 @@ export function springInteger(values: string[], name: string): Bound<number> {
 }
 
 /**
- * One query parameter's values as Tomcat reads them, in order: the query is
- * split on '&' and each pair at its first '='; a pair with no name is skipped;
- * name and value are percent-decoded, '+' as a space, the bytes read as UTF-8
- * with U+FFFD for a bad sequence. A pair whose name or value holds a malformed
- * escape (`%zz`, a lone `%`) is dropped whole -- Tomcat logs it and carries on
- * -- which URLSearchParams does not do: it keeps the text as it is.
+ * Every parameter of a query (or a URL-encoded form body) as Tomcat reads
+ * them, by name, each name's values in order: the text is split on '&' and
+ * each pair at its first '='; a pair with no name is skipped; name and value
+ * are percent-decoded, '+' as a space, the bytes read as UTF-8 with U+FFFD
+ * for a bad sequence. A pair whose name or value holds a malformed escape
+ * (`%zz`, a lone `%`) is dropped whole -- Tomcat logs it and carries on --
+ * which URLSearchParams does not do: it keeps the text as it is. One pass,
+ * in time linear in the text: read once, every name is to hand.
  */
-export function servletParameter(query: string, name: string): string[] {
-  const values: string[] = [];
+export function servletParameters(query: string): Map<string, string[]> {
+  const found = new Map<string, string[]>();
   for (const pair of String(query).split('&')) {
     if (pair === '') continue;
     const at = pair.indexOf('=');
     const key = servletDecode(at === -1 ? pair : pair.slice(0, at));
     const value = servletDecode(at === -1 ? '' : pair.slice(at + 1));
     if (key === null || value === null || key === '') continue;
-    if (key === name) values.push(value);
+    const values = found.get(key);
+    if (values) values.push(value);
+    else found.set(key, [value]);
   }
-  return values;
+  return found;
 }
 
-/** Percent-decoding as Tomcat's query parser does it, or null when malformed. */
+/** One parameter's values, as servletParameters reads them. */
+export function servletParameter(query: string, name: string): string[] {
+  return servletParameters(query).get(name) ?? [];
+}
+
+/** A hexadecimal digit's value, or -1 (NaN, past the text's end, included). */
+function hexDigit(code: number): number {
+  if (code >= 0x30 && code <= 0x39) return code - 0x30;
+  if (code >= 0x41 && code <= 0x46) return code - 0x37;
+  if (code >= 0x61 && code <= 0x66) return code - 0x57;
+  return -1;
+}
+
+/**
+ * Percent-decoding as Tomcat's query parser does it, or null when malformed:
+ * into bytes, then read as UTF-8. Any other character goes in as its UTF-8,
+ * one UTF-16 unit at a time, so a surrogate -- even one of a pair -- is
+ * EF BF BD, as Node's encoder writes a lone one: what this always did.
+ */
 function servletDecode(text: string): string | null {
-  const bytes: number[] = [];
+  // At most three bytes for each unit of the text.
+  const bytes = new Uint8Array(text.length * 3);
+  let size = 0;
   for (let i = 0; i < text.length; i += 1) {
-    const char = text.charAt(i);
-    if (char === '+') {
-      bytes.push(0x20);
-    } else if (char === '%') {
-      const hex = text.slice(i + 1, i + 3);
-      if (!/^[0-9a-fA-F]{2}$/.test(hex)) return null;
-      bytes.push(parseInt(hex, 16));
+    const code = text.charCodeAt(i);
+    if (code === 0x2b) {
+      bytes[size++] = 0x20;
+    } else if (code === 0x25) {
+      const high = hexDigit(text.charCodeAt(i + 1));
+      const low = hexDigit(text.charCodeAt(i + 2));
+      if (high < 0 || low < 0) return null;
+      bytes[size++] = high * 16 + low;
       i += 2;
+    } else if (code < 0x80) {
+      bytes[size++] = code;
+    } else if (code < 0x800) {
+      bytes[size++] = 0xc0 | (code >> 6);
+      bytes[size++] = 0x80 | (code & 0x3f);
+    } else if (code >= 0xd800 && code <= 0xdfff) {
+      bytes[size++] = 0xef;
+      bytes[size++] = 0xbf;
+      bytes[size++] = 0xbd;
     } else {
-      bytes.push(...Buffer.from(char, 'utf8'));
+      bytes[size++] = 0xe0 | (code >> 12);
+      bytes[size++] = 0x80 | ((code >> 6) & 0x3f);
+      bytes[size++] = 0x80 | (code & 0x3f);
     }
   }
-  return javaUtf8(bytes);
+  return javaUtf8(bytes.subarray(0, size));
 }
 
 /**

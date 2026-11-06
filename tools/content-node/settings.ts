@@ -40,6 +40,28 @@ export const settings = {
   reportUser: (): string => envSetting('REPORT_USER', 'default'),
   reportPassword: (): string => envSetting('REPORT_PASSWORD', 'default'),
 
+  /**
+   * The help-desk form's mail (POST /contact, contact.ts): the support
+   * address and name messages go to and come from (Java's
+   * cnf.mail.support.address and cnf.mail.support.name), and the Amazon SES
+   * region they are sent through. No credentials: the AWS SDK finds the
+   * instance's role. Without the address, the form answers 503.
+   */
+  contactSupportAddress: (): string => envSetting('CONTACT_SUPPORT_ADDRESS'),
+  contactSupportName: (): string => envSetting('CONTACT_SUPPORT_NAME'),
+  contactSesRegion: (): string => envSetting('CONTACT_SES_REGION', 'us-east-1'),
+
+  /**
+   * Cloudflare Turnstile's secret, under the names the site's own gate reads
+   * (projects/website-angular/src/scripts/human-gate.js): one secret, one
+   * convention. None, and nothing that needs it can pass.
+   */
+  turnstileSecret: (): string =>
+    envSetting('CLOUDFLARE_SECRET_KEY') || envSetting('TURNSTILE_SECRET'),
+  /** Turnstile's siteverify, replaced only in tests. */
+  turnstileVerifyUrl: (): string =>
+    envSetting('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+
   /** Europe PMC's search, for citations of PubMed ids. */
   europePmcUrl: (): string =>
     envSetting('EUROPE_PMC_URL', 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'),

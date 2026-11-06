@@ -131,6 +131,8 @@ module.exports = {
   // PubMed id, and either to download. /citation/export/{id} and /download
   // stay with Java.
   '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)/?(\\?|$)': contentNode,
+  // The help-desk form (spec 006 T085), its human check Turnstile's.
+  '^/ContentService/contact/?(\\?|$)': contentNode,
   // What points at an object, for the website's detail pages.
   '^/ContentService/data/instance/[^/?]+/referrers/?(\\?|$)': contentNode,
   // A person, the publications they authored, the person page's four lists,

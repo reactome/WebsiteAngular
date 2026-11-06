@@ -868,6 +868,156 @@ under the deployed JDK, `diagram` came first 12 times. Node writes `diagram`
 first, and the comparison does not count the order of those two keys as a
 difference.
 
+## D23. The contact form: Java's form, Turnstile's check, mail through SES (T085)
+
+**Decided** by awright, 6 Nov 2026, for `POST /contact`
+(ContactController): Java's parameters and refusals, and four things not
+done as Java does them -- the human check, how the mail is sent, whom the
+message is from, and the reader's copy.
+
+**What is Java's, unchanged.** The parameters, read from the query and from a
+URL-encoded or multipart form body, as Tomcat reads them; a text/plain body
+is not read (measured). The first missing required parameter is Spring's 400
+in the envelope, in the method's order. A blank token is the 400 text
+`captcha verification failed`, then a blank address, subject or message the
+400 text `missing required field`. The message keeps Java's subject (the
+reader's) and Java's body: `From: name <address>` -- the address when no
+name is given -- a blank line, and the message. The answer is an empty 200.
+Java's answers before sending were
+measured against the deployed service on 6 Nov 2026; no request it would
+accept was sent to it, since it would send mail.
+
+**Different: the human check.** Java verified an hCaptcha token, through an
+HTTP client that trusted any certificate and checked no host name. Node
+verifies a Cloudflare Turnstile token, with the secret and the siteverify
+address the site's own gate uses (`human-gate.js`), over a verified
+connection, and anything but `success: true` fails: a network error, a
+timeout, an answer that is not JSON. The token's parameter is
+`cf-turnstile-response`, the field Turnstile's widget adds to a form, in
+place of `h-captcha-response`; missing, it is Spring's 400 naming it. An
+hCaptcha token cannot be checked by Turnstile, so a caller still sending one
+is refused as an unverified one is. The site's own form needed no change: it
+already asks with Turnstile, and posts to the site's own route.
+
+**Different: how the mail is sent** (awright, 6 Nov 2026, replacing the
+SMTP sending of #835 and #836). Java logged in to an SMTP server with a
+stored user name and password, over STARTTLS it did not require, checking
+the certificate without the host name (JavaMail 1.6's defaults). Node sends
+through Amazon SES's API, `SendEmail` (v2), with `@aws-sdk/client-sesv2`,
+signed with the credentials the SDK's default chain finds: on the host, the
+instance's role, through the instance metadata service. Why:
+
+- No password is stored: there is nothing to keep secret, rotate or leak,
+  and the permission is the role's, one statement an administrator grants
+  and can withdraw (`ses:SendEmail`, conditioned on `ses:FromAddress` being
+  the support address).
+- The SMTP credentials the Java configuration holds are refused (535), so
+  that path was not available anyway; the servers it names are SES's.
+- The server's identity: the SDK speaks HTTPS to SES's regional endpoint and
+  verifies it as Node verifies any HTTPS server, against the system's
+  authorities and by name. Nothing here gives it an agent or turns that
+  off (tested: the client's configuration is the region, one attempt and
+  the timeouts, and the module names no agent and no verification switch).
+
+The one attempt has five seconds to connect and ten to answer, and the
+whole send is abandoned after fifteen, so a reader's request is never held.
+There is no retry: an answer that comes late may come from a message SES
+has sent, and a retry would send it twice. A failure -- credentials not found, permission
+refused, SES unreachable -- is the 500 below, logged by the error's name and
+HTTP status alone, never its message, which can carry the role's or the
+reader's details.
+
+The message is a simple one: SES writes the headers from the from, to and
+reply-to addresses and a UTF-8 subject, and the text body. The addresses
+are given as text, so they are written here so that they cannot break a
+header. A display name and the subject are made one line first: every
+control character (C0, DEL, U+0085) and the Unicode line and paragraph
+separators become spaces. Then a display name of printable ASCII is a
+quoted string; any other is RFC 2047 encoded words, each at most 75
+characters, split between characters, separated by spaces (tested, and on
+the request the SDK would send).
+
+**For the deployment:** the role's permission above; and the instance
+metadata service within reach of the container. With host networking, as
+compose runs the content service today, the instance's default hop limit
+of 1 is enough; a bridged container -- the plan once the graph is a
+container (D13) -- is one hop further and needs a hop limit of at least 2.
+
+**Different: whom the message is from, and no copy** (awright, 6 Nov 2026,
+replacing #835's Java shape). Java sent the help desk's message from the
+reader's own name and address, and, when `sendEmailCopy` was `on` or
+`true`, a copy from the support address to the reader. Node sends one
+message, from the support name and address (`CONTACT_SUPPORT_NAME`,
+`CONTACT_SUPPORT_ADDRESS`) to the support address, with the reader as its
+Reply-To, so a reply from the help desk reaches them. A message from the
+reader's address, sent by a server that domain does not name, is refused
+or filed as spam by receiving mail checks (SPF, DMARC); one from the site's
+own address is not. No copy goes to the reader: it would send mail to any
+address someone types, a Turnstile pass apiece. `sendEmailCopy` is still
+taken, as an optional parameter as Java declares it, and ignored.
+
+**Open, for awright to decide later:** whether the site's search-page form
+(its own `/contact` route, which sends through the local mail transfer
+agent) moves onto this endpoint, so there is one mail path. Both stay for
+now.
+
+**Limits** (from the review of #836 and #838). Java read any body Tomcat
+would; node had read up to 10MB, and its decoder re-read the whole body for
+each of the six parameters, a Buffer for every character: about 1.5 s of a
+1MB body, the whole service waiting, before Turnstile or the 503 was
+reached. Now:
+
+- The body is held to 64KB: nginx's `client_max_body_size 64k` on the route,
+  and node's own limit (the endpoint's `bodyLimit`), past which node stops
+  keeping what it reads and answers 413 in the envelope, before parsing.
+- The query and a URL-encoded body are each parsed once, in one linear pass
+  over bytes (spring.ts, `servletParameters`), giving what the old decoder
+  gave on every input (compared on 5,000 random ones, malformed escapes and
+  lone surrogates among them); the other endpoints that read parameters
+  share it. 64KB parses in a few milliseconds, 1MB in about 15.
+- The fields are capped, a 400 in the envelope before Turnstile is asked:
+  `contactName` and `subject` at 200 characters, `message` at 20,000. A
+  message of 20,000 characters past ASCII is more than 64KB once
+  URL-encoded, so for one of those the body's limit comes first.
+- The reader's address is one plain address: a dot-atom local part (no dot
+  leading, trailing or doubled), without `%` or `!`, not starting `=?`, and
+  a domain of two or more labels of letters, digits and hyphens, none at a
+  label's ends.
+
+**Open, not done here:** checking Turnstile's answer for the action and the
+hostname the token was made for -- no widget of the site's posts here yet,
+so there is nothing to name; parameters taken from the query string as well
+as the body, as Java takes them; and nginx's rate limit, keyed on the whole
+address, which gives an IPv6 client a key per address of its /64.
+
+**What Java never answered.** In its envelope: 503 `SERVICE_UNAVAILABLE` when
+the deployment cannot send (no support address, a region that is not one,
+or no Turnstile secret), before Cloudflare is asked
+anything; 400 `BAD_REQUEST` for an address that is not one plain address
+(Java's `InternetAddress` refused those with a 500 naming the exception), so
+the Reply-To is never a list; 400 for a field past its cap and 413 for a
+body past 64KB (Limits, above); and 500 `The message could not be sent`,
+without SES's own words, when the mail could not be handed on (Java's
+500 carried the exception's message).
+
+**The library: Amazon's SES client** (`@aws-sdk/client-sesv2`, Apache-2.0,
+as are its AWS and Smithy dependencies; one more, `bowser`, is MIT). Pinned
+exactly, at a release two weeks old when it was added, and installed into
+the content service's image from the root lockfile, as express and the
+graph driver are; about 7 MB more in the image. nodemailer, which #835 and
+#836 used for SMTP, is removed.
+
+**Settings**, in the environment or the credentials file:
+`CONTACT_SUPPORT_ADDRESS` (Java's cnf.mail.support.address),
+`CONTACT_SUPPORT_NAME` (cnf.mail.support.name), `CONTACT_SES_REGION` (the
+SES region, `us-east-1` by default), and Turnstile's `CLOUDFLARE_SECRET_KEY`,
+the site's gate's name for it. No credentials: the role supplies them.
+
+**A budget.** Each request that passes sends a message, so nginx gives
+the route its own limit, six a minute per address with a burst of three
+(`contact_rate`), in each deployment; local, which has no limits, routes it
+without one.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

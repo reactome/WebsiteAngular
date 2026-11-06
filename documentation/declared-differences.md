@@ -1,0 +1,344 @@
+# Declared differences from the Java implementations
+
+Reactome is replacing several Java services and converters with new
+implementations: the ContentService answered by the node content service in
+this repository, and four exporters in their own repositories (SBML, BioPAX,
+SBGN and PDF). The rule for each is to match what the Java one does today,
+byte for byte where it can be compared that way. Where the new one does
+something else on purpose, the difference is **declared**: written down with
+its reason, and, where a comparison tool exists, taught to that tool so that it
+reports the difference as intended and reports its disappearance as news
+([spec 006, D11](../specs/006-content-service-to-node/research.md)).
+
+This page gathers every declared difference into one register. It does not
+replace the sources: each row links to the place the difference is recorded,
+which stays the authority. Compiled 6 Nov 2026, and updated the same day.
+
+**Terms used here**
+
+- **Java** means the implementation being replaced: the Java ContentService,
+  the AnalysisService, or the old converters (`event-pdf`, the relational SBML
+  converter, the Pathway-Exchange BioPAX converter, diagram-exporter's SBGN
+  converter).
+- **Node** means the node content service in `tools/content-node`.
+- **Beta** is the test deployment of the new website.
+- **Why** is one of: _bug fix_ (Java's answer is wrong), _security_,
+  _determinism_ (Java's answer is not the same from one run to the next, so
+  there is nothing fixed to match), _platform_ (something the new platform
+  cannot reproduce exactly), _data_ (the graph database holds something
+  different from the relational database the old converter read), or _design_
+  (a deliberate change of behaviour, decided on its merits).
+- **Status**: _live on beta_ (merged and answering on beta), _merged_ (in the
+  code, not yet serving the website), _spec only_ (decided in a spec or an open
+  pull request, not yet built or merged).
+- A spec's **D**, **R** or **T** number is a decision, research or task entry
+  in that spec. `#123` is a pull request or issue in this repository; other
+  repositories are linked in full.
+
+## Summary
+
+| Area                                                                                  | Differences | Status                                               |
+| ------------------------------------------------------------------------------------- | ----------: | ---------------------------------------------------- |
+| [ContentService: every ported endpoint](#contentservice-every-ported-endpoint)        |           4 | Live on beta                                         |
+| [ContentService: content and people](#contentservice-content-and-people)              |           6 | Live on beta                                         |
+| [ContentService: graph queries and search](#contentservice-graph-queries-and-search)  |           3 | Live on beta                                         |
+| [ContentService: reaction layout](#contentservice-reaction-layout)                    |           4 | Live on beta                                         |
+| [ContentService: contact form](#contentservice-contact-form)                          |           7 | Live on beta                                         |
+| [ContentService: images](#contentservice-images)                                      |           2 | One live on beta, one merged                         |
+| [AnalysisService gateway](#analysisservice-gateway)                                   |           2 | Live on beta                                         |
+| [SBML (sbml-exporter)](#sbml-sbml-exporter)                                           |          13 | Website's SBML live on beta; bulk file not switched  |
+| [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint merged, not routed |
+| [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           6 | Spec merged; not built                               |
+| [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          13 | Being built; not serving the website                 |
+| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          14 | Spec only                                            |
+| **Total**                                                                             |      **87** |                                                      |
+
+Then: [things that look like differences but are not](#not-differences),
+and [decisions still open](#decisions-still-open).
+
+## ContentService: every ported endpoint
+
+These apply to every ContentService operation node answers, not to one
+endpoint.
+
+| What                                  | Java                                                         | New                                                                                                                                                           | Why                                                                                                              | Decided                                                                                                                                          | Status       | Source                                                                                                             |
+| ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Trailing slash                        | Answers `/x/` exactly as `/x`                                | A GET or HEAD to `/x/` is a `301` to `/x`, query string kept. POST is not redirected                                                                          | Design: one URL per answer, so the edge cache holds one copy                                                     | The user, 18 Oct 2026                                                                                                                            | Live on beta | [spec 011 R10](../specs/011-api-cache-headers/research.md)                                                         |
+| Matrix parameters (`/x;jsessionid=…`) | Strips them and answers as `/x`                              | Spring's JSON 404                                                                                                                                             | Design: nothing sends them on purpose, and each spelling is another cache entry                                  | 18 Oct 2026                                                                                                                                      | Live on beta | [spec 006 T008](../specs/006-content-service-to-node/tasks.md), #526                                               |
+| Caching instruction                   | Sends no `Cache-Control`, only a weak ETag                   | Each answer is labelled: a request in standard form may be stored by the edge cache; anything else, and every error, is `no-store`. Status and body unchanged | Design: lets the edge cache serve the API, without bots filling it                                               | The user (CACHING.md)                                                                                                                            | Live on beta | [spec 011](../specs/011-api-cache-headers/spec.md), [CACHING.md](../tools/content-node/CACHING.md)                 |
+| Content-Type's charset spelling       | `application/json;charset=UTF-8`, `text/plain;charset=UTF-8` | `application/json; charset=utf-8`, `text/plain; charset=utf-8`: a space after the `;`, and `utf-8` in lower case. The media type is Java's                    | Platform: the web framework writes the parameter so. The value is the same: charset names are not case-sensitive | Measured 6 Nov 2026 on seven endpoints of different families (lists, an object, an error, search, the reaction layout, a text answer): every one | Live on beta | [spec 006 D22, step 5](../specs/006-content-service-to-node/research.md), which records it for the reaction layout |
+
+## ContentService: content and people
+
+| What                                                                    | Java                                                                                                   | New                                                                                | Why                                                                                          | Decided               | Status       | Source                                                                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- | --------------------- | ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `/data/content/toc`: subpathway DOIs                                    | Drops every subpathway's DOI (a hard-coded `null`), so 41 of 44 DOIs on the contents page were missing | Writes each subpathway's DOI when it has one                                       | Bug fix                                                                                      | Sep 2026 (D11, D12)   | Live on beta | [spec 006 D11, D12](../specs/006-content-service-to-node/research.md), `content-endpoints.ts`               |
+| `/data/content/contributors`: order                                     | An order that is not by name, id or any count: whatever its aggregation emitted                        | Its own order. All 999 entries are still compared field by field, sorted by person | Determinism: Java's order cannot be reproduced, and the page sorts by name before showing it | Sep 2026 (D15)        | Live on beta | [spec 006 D15](../specs/006-content-service-to-node/research.md), `content-endpoints.ts`                    |
+| Contents and DOI lists: a failed start                                  | If the database is unreachable at start-up, keeps an **empty** list until the service is redeployed    | A failed build is not kept; the next request builds the list again                 | Bug fix: a slow start should cost one slow request, not a blank contents page                | Sep 2026 (D10)        | Live on beta | [spec 006 D10](../specs/006-content-service-to-node/research.md), `answers.ts`                              |
+| `/data/person/{id}/authored…`, `/reviewed…` (pathways, reactions)       | Lists an event once per authorship edit, so a reaction edited twice appears twice                      | Each event once                                                                    | Bug fix: the page asks what a person authored, not when they edited it                       | Oct 2026 (D19)        | Live on beta | [spec 006 D19](../specs/006-content-service-to-node/research.md), `person-endpoints.ts`, `routes-core.conf` |
+| The same four lists, and `/publications`: an id that is not a person id | A bare empty `200`: no body and no Content-Type                                                        | `200` with `[]`, as for a person with nothing in the list                          | Bug fix: a client parsing JSON fails on an empty body                                        | Recorded in code only | Live on beta | `person-endpoints.ts` (not in spec 006 research: see [inconsistencies](#inconsistencies-between-sources))   |
+| `/data/person/{id}/publications`: order                                 | Two orders: by dbId, the reverse of its order by ORCID                                                 | The by-ORCID order for both. Compared as sets                                      | Determinism: Java has no single order to match                                               | Recorded in code only | Live on beta | `person-endpoints.ts`, `routes-core.conf`                                                                   |
+
+## ContentService: graph queries and search
+
+| What                                                                                                                                 | Java                                                                                                 | New                                                                  | Why                                                | Decided               | Status       | Source                                                                                |
+| ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------------------------------------- | --------------------- | ------------ | ------------------------------------------------------------------------------------- |
+| `/data/entity/{id}/in-depth`, `/data/event/{id}/in-depth`: an `attributes` value that is not relationship names                      | Writes it into its database query and answers the database's syntax error                            | Refuses it before any query, with a message of its own (same status) | Security: user input is never written into a query | Recorded in code only | Live on beta | `pathways-events-endpoints.ts`                                                        |
+| `/data/query/{id}`, `/data/query/ids`, `/data/query/ids/map`, `/data/query/enhanced/v2/{id}` in a nested view with `includeRef=true` | Numbers the `@id`/`@ref` references in an order that changes from one service start to the next      | One fixed order. The references agree within each answer             | Determinism                                        | Recorded in code      | Live on beta | `data-query-endpoints.ts`, [spec 011 R12](../specs/011-api-cache-headers/research.md) |
+| `/search/*`: the search index fails                                                                                                  | A 500 whose message repeats the index's internals: its server address and the parameters it was sent | The same 500, with the message "Solr exception occurred" only        | Security: no internal addresses in public answers  | Recorded 18 Oct 2026  | Live on beta | `search-core.ts`, [spec 011 R12](../specs/011-api-cache-headers/research.md)          |
+
+## ContentService: reaction layout
+
+`GET /exporter/reaction/{identifier}/diagram` returns a reaction's layout, which
+the reaction page's figure and the render service draw. Java's answer is not the
+same twice for the same request, so it is compared in a canonical form, against
+the layouts Java gives over many requests, not byte for byte. Node's layout is
+the same every time, so a figure drawn from it repeats exactly: spec 018 T011's
+test of fresh renders passes with no reaction exempted (#846, open).
+
+| What                                                              | Java                                                                                                                                         | New                                                                                                             | Why                                                                                      | Decided                    | Status       | Source                                                                      |
+| ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------- | ------------ | --------------------------------------------------------------------------- |
+| Ids, order and layout                                             | Ids come from a counter shared by all requests; node order, and sometimes the layout itself (about one call in six for some reactions), vary | One answer per reaction per release: ids from 1, a fixed order and layout. So it can be cached                  | Determinism: Java's variation comes from hash-set order and a counter, not from the data | 5 Nov 2026 (D21)           | Live on beta | [spec 006 D21, D22](../specs/006-content-service-to-node/research.md), #834 |
+| Numbers, last digit                                               | `sin` and `cos` from the Java runtime's own routines                                                                                         | Node's; differ in the last bit on about 3.5% of arguments. Equal within a billionth of the value (1e-9 below 1) | Platform: no drawing can show it, and Java's own bits change on another platform         | The user, 5 Nov 2026 (D22) | Live on beta | [spec 006 D22, step 3](../specs/006-content-service-to-node/research.md)    |
+| Order of the two top keys (`diagram`, `graph`)                    | Set by a seed chosen when the Java runtime starts (`diagram` first 12 times in 16)                                                           | `diagram` first, always                                                                                         | Determinism                                                                              | 5 Nov 2026 (D22)           | Live on beta | [spec 006 D22](../specs/006-content-service-to-node/research.md)            |
+| Order of a graph event's `entityFunctionalStatus` and `speciesID` | Set by the order the Java runtime happened to load classes in                                                                                | The deployed service's order, always                                                                            | Determinism                                                                              | 5 Nov 2026 (D22)           | Live on beta | [spec 006 D22, step 4](../specs/006-content-service-to-node/research.md)    |
+
+## ContentService: contact form
+
+`POST /contact`, the "contact us" form. Java's parameters, its refusals before
+sending, and the message's subject and body are kept. Done on beta on
+6 Nov 2026 (#836, #838, #840); its limits merged in #844.
+
+| What                     | Java                                                                                                                                       | New                                                                                                                                                                                                                                                                                                                                                   | Why                                                                                                                        | Decided                               | Status       | Source                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------ | -------------------------------------------------------------------------------- |
+| The human check          | hCaptcha, parameter `h-captcha-response`, checked over a connection that trusted any certificate                                           | Cloudflare Turnstile, parameter `cf-turnstile-response`, over a verified connection; anything but a clear pass fails. An hCaptcha token is refused                                                                                                                                                                                                    | Security, and design: the site already uses Turnstile, and the secret now sits with the site                               | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| How the mail is sent     | Logs in to a mail server with a stored password, over encryption it did not require                                                        | Amazon SES's API, signed with the server's own cloud role: no password stored. One attempt, no retry (a late answer may be for a message already sent), abandoned after 15 seconds                                                                                                                                                                    | Security                                                                                                                   | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #838           |
+| Whom the message is from | From the reader's own name and address                                                                                                     | From the site's support address, with the reader as Reply-To; the body still begins `From: name <address>`                                                                                                                                                                                                                                            | Bug fix: mail from a reader's address sent by our server is refused or filed as spam by receiving mail checks (SPF, DMARC) | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #836           |
+| A copy to the reader     | Sent when `sendEmailCopy` was `on` or `true`                                                                                               | Never sent. The parameter is still accepted, and ignored                                                                                                                                                                                                                                                                                              | Security: it would send mail to any address typed in, one per pass of the check                                            | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| New error answers        | No such answers: an address that is not one plain address was a 500 naming the exception; a failed send a 500 with the exception's message | 503 when the deployment cannot send (checked before anything else); 400 for an address that is not one plain address or a field past its cap; 413 for a body past 64 KB; 500 "The message could not be sent", without the mail service's own words                                                                                                    | Design and security: a clear status, and no internal detail in public answers                                              | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| A rate limit             | None of its own                                                                                                                            | Six requests a minute per client address, with a burst of three, at the web server                                                                                                                                                                                                                                                                    | Security: each request that passes sends a message                                                                         | 6 Nov 2026 (D23)                      | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), `deploy/nginx` |
+| Limits on what is sent   | Any body the server would read, any field length; an address checked by JavaMail                                                           | Body at most 64 KB (413 from the web server and from node); name and subject at most 200 characters, message at most 20,000 (400); the reader's address must be one plain address (no `%`, `!` or encoded word, a domain of two or more labels); header values made one line, and a non-ASCII name written as RFC 2047 words of at most 75 characters | Security: a large body held the service, and a reader's text must not break the message's headers                          | Review of #836 and #838 (D23, Limits) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #844           |
+
+## ContentService: images
+
+| What                                                          | Java                                                                | New                                                                                                                                                           | Why                                                                    | Decided       | Status                                  | Source                                                                                                           |
+| ------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ------------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Species overview image, `/exporter/fireworks/{species}.{ext}` | Draws the retired Fireworks view                                    | A `301` to `/exporter/voronoi/{species}.{ext}` (species, extension and query kept), which draws the overview the site shows today: the Reacfoam (Voronoi) map | Design: the image now shows what the site shows, at a URL named for it | 22 Oct 2026   | Live on beta                            | [spec 006 T093](../specs/006-content-service-to-node/tasks.md), #613                                             |
+| Diagram images, `/exporter/diagram/{identifier}.{ext}`        | Drawn by Java's diagram-exporter, in the old pathway browser's look | Drawn by the render service from the site's own page: the website's look. GIF is the expression animation                                                     | Design: one renderer, so a file looks like what the reader sees        | Spec 006 T090 | Merged (#479), not routed: Java answers | [spec 006 T090, T091](../specs/006-content-service-to-node/tasks.md), [render README](../tools/render/README.md) |
+
+## AnalysisService gateway
+
+The analysis maths stays in Java. A small gateway in this repository sits in
+front of the AnalysisService and admits a few computations at a time. Every
+answer the service gives passes through byte for byte.
+
+| What                  | Java                                                                                                        | New                                                                                                                                                                                                                              | Why                                                              | Decided                      | Status       | Source                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------- | ------------ | --------------------------------------------------------------------------- |
+| Many analyses at once | Runs them all at once; under a burst every one slows, and all can pass the edge's 100-second limit together | At most 4 analyses (and 1 PDF report) run at a time, the rest wait in order. A request that cannot be admitted in time is a `503` with `Retry-After`, in the service's error form, and is never run later. The site retries once | Design: a burst should make a few people wait, not fail everyone | The user, 19 Oct 2026 (R12)  | Live on beta | [spec 010 R12, FR-021–FR-024](../specs/010-java-services/research.md), #539 |
+| A share per client    | None                                                                                                        | At most 8 computations running or waiting per client address (an IPv6 one by its /64)                                                                                                                                            | Design: one client cannot keep everyone else out                 | Review of 20 Oct 2026 (T065) | Live on beta | [spec 010 T065](../specs/010-java-services/tasks.md), #574                  |
+
+## SBML (sbml-exporter)
+
+The graph-only converter on sbml-exporter's `graph-only` branch, compared
+with the relational converter's output for the same release. Its one list is
+[sbml-exporter's `differences.md`](https://github.com/reactome/sbml-exporter/blob/graph-only/specs/001-graph-only-sbml/differences.md);
+the rows below summarise it. The model is to match today's file ("match today",
+decided 25 Oct 2026); only obvious bugs are fixed, and improvements become
+issues. The website's per-event SBML is answered by node through this library
+on beta (spec 015 T065, #666); the release's bulk file and production have not
+switched (spec 015 T068).
+
+| What                                                                    | Today (relational)                                                 | Graph-only                                                    | Why                                                                                                                           | Source                                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Order of species and reactions, metaids, the timestamp                  | Hash-set order; a new timestamp each time                          | The queries' order; the timestamp still differs on every file | Determinism. Set aside by the comparison                                                                                      | [spec 015 differences](../specs/015-graph-exports/contracts/differences.md) |
+| EC numbers on reactions                                                 | Every EC number                                                    | Fewer: a subset, never a different one                        | Data: the graph keeps one per molecular function ([graph-importer#9](https://github.com/reactome/graph-importer/issues/9))    | sbml-exporter differences                                                   |
+| A pathway's last-modified date                                          | The relational database's last edit                                | The graph's                                                   | Data                                                                                                                          | sbml-exporter differences                                                   |
+| `isHomologTo` for some species                                          | Present                                                            | Missing where the inferred entities are not in the graph      | Data                                                                                                                          | sbml-exporter differences                                                   |
+| Layout: a node's box, and the line ends that meet it                    | Resized to fit the label in the exporting machine's font           | The size stored in the diagram file                           | Platform: the old size depends on fonts, and is stored nowhere                                                                | sbml-exporter differences                                                   |
+| Layout: positions of reaction hubs, compartments and lines stored oddly | Taken from the relational drawing                                  | Taken from the diagram file, where the website draws them     | Design: the file the website draws from is the source                                                                         | sbml-exporter differences                                                   |
+| Layout: hidden compartments' anchor and numbering                       | Anchored and numbered by the old converter's order                 | Follow the resized nodes and the model's compartment order    | Determinism, platform                                                                                                         | sbml-exporter differences                                                   |
+| Layout: glyph order                                                     | The order the relational drawing was made in                       | The diagram file's order; the same glyph sets                 | Determinism                                                                                                                   | sbml-exporter differences                                                   |
+| Layout: a drawn species' SBO term                                       | The stored drawing's class (a set's term for some single proteins) | Corrected to the graph's class                                | Bug fix                                                                                                                       | sbml-exporter differences                                                   |
+| Layout: species on disease diagrams the diagram file does not hold      | Drawn                                                              | Left out: they cannot be drawn from the file                  | Platform: the diagram files leave them out                                                                                    | sbml-exporter differences                                                   |
+| Layout: an id and dimensions                                            | None, so libSBML refuses the layout                                | The diagram's extent                                          | Bug fix: the file becomes valid                                                                                               | sbml-exporter differences                                                   |
+| Layout: a line to a part not drawn as a species                         | Written, pointing at nothing                                       | Left out                                                      | Bug fix: the file becomes valid                                                                                               | sbml-exporter differences                                                   |
+| Reactions' cross-references (MONDO, Rhea)                               | No MONDO, few Rhea                                                 | Every cross-reference the graph holds                         | Data. **Open**: why today's lacks them is not known ([sbml-exporter#36](https://github.com/reactome/sbml-exporter/issues/36)) | sbml-exporter differences                                                   |
+
+A draft follow-up, sbml-exporter's
+[spec 002](https://github.com/reactome/sbml-exporter/blob/graph-only/specs/002-website-drawn-layout/spec.md)
+(25 Oct 2026), drops "match today" for the layout only: the layout would hold
+the whole diagram the website shows, in its style. If built, it replaces the
+layout rows above.
+
+## BioPAX (BioPAX3Exporter)
+
+BioPAX Level 3 from the graph, compared by meaning with the release's
+published `biopax.zip`. Its list is
+[BioPAX3Exporter's `differences.md`](https://github.com/reactome/BioPAX3Exporter/blob/main/specs/001-biopax-from-graph/differences.md);
+a difference may stay only for order and ids, the data (with its ticket), or an
+obvious bug of the old converter. The exporter is merged on its `main`; the
+release's bulk file has not switched. Node's website endpoint is merged
+(spec 015 T070, #754) and not yet routed (T071).
+
+| What                                               | Today                                                                   | BioPAX3Exporter                                                                                      | Why                                                                                                                                  | Status                                                                       | Source                                                |
+| -------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Element order and `rdf:ID` numbers                 | Hash order, which can change between runs                               | The converter's order, the same on every run                                                         | Determinism                                                                                                                          | Merged                                                                       | BioPAX3Exporter differences (T018)                    |
+| `conversionDirection`                              | `LEFT-TO-RIGHT`                                                         | `LEFT_TO_RIGHT`, the only form Paxtools writes; its reader and the validator accept both             | Platform                                                                                                                             | Merged                                                                       | BioPAX3Exporter differences (T012)                    |
+| A name equal to the display name                   | Listed among the names too                                              | Written only as `displayName`                                                                        | Platform: Paxtools cannot write it apart                                                                                             | Merged                                                                       | BioPAX3Exporter differences (T011)                    |
+| Cross-references and diseases after a repeated one | The old converter stopped at the first one it had already written       | Every one written                                                                                    | Bug fix                                                                                                                              | Merged                                                                       | BioPAX3Exporter differences (T011, T014)              |
+| Newer cross-references (Mondo, COSMIC, ClinGen)    | Absent                                                                  | Written                                                                                              | Data: added to the graph after the relational database was read                                                                      | Merged                                                                       | BioPAX3Exporter differences (T011)                    |
+| Authors' names                                     | Surname and first name for some people                                  | Surname and initials, the graph's display name                                                       | Data: the graph importer rebuilds people's display names ([graph-importer#10](https://github.com/reactome/graph-importer/issues/10)) | Merged                                                                       | BioPAX3Exporter differences ("Authors' names")        |
+| A modification repeated on one protein             | Its feature written twice                                               | Written once                                                                                         | Platform: a BioPAX feature has no count, and Paxtools keeps values as a set                                                          | Merged                                                                       | BioPAX3Exporter differences (T011)                    |
+| Empty values                                       | Written as empty elements                                               | Not written                                                                                          | Platform                                                                                                                             | Merged                                                                       | BioPAX3Exporter differences (T020)                    |
+| One event's file: a comment on the header          | `BioPAX pathway converted from "…"`                                     | Not written                                                                                          | Platform: Paxtools has no place for it, and it tells a reader nothing                                                                | Merged                                                                       | BioPAX3Exporter differences (T019)                    |
+| A failure to write                                 | A printed message; the run went on with a file missing or half written  | An error that ends the run; each file is written whole or not at all                                 | Bug fix                                                                                                                              | Merged                                                                       | BioPAX3Exporter differences (T018, T019)              |
+| Website answer: type, file name, errors            | `text/plain`, no file name, errors as `200` text                        | `application/rdf+xml`, a `{stId}.biopax` download, `404` and `400` errors in the service's JSON form | Design: a download should be named and an error should not be a `200`                                                                | Merged, not routed                                                           | [spec 015 R6](../specs/015-graph-exports/research.md) |
+| Website address                                    | The legacy `/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}` | `/ContentService/exporter/event/{stId}.biopax`, with a `301` from the legacy address                 | Design: the legacy service is being retired                                                                                          | Spec only (spec 015 T053)                                                    | [spec 015 R6](../specs/015-graph-exports/research.md) |
+| BioPAX Level 2 (`biopax2.zip`)                     | Produced                                                                | No longer produced                                                                                   | Design                                                                                                                               | Decided with the user, 24 Oct 2026; takes effect when the Level 3 step moves | [spec 015 T056](../specs/015-graph-exports/tasks.md)  |
+
+## SBGN (sbgn-exporter)
+
+SBGN-ML from one TypeScript exporter, for the website and the bulk file.
+**Spec merged; not built**: the spec was merged as
+[sbgn-exporter#3](https://github.com/reactome/sbgn-exporter/pull/3) on
+6 Nov 2026, replacing #1 and #2 there
+([`specs/001-sbgn-export`](https://github.com/reactome/sbgn-exporter/tree/main/specs/001-sbgn-export),
+research R3, spec FR-003). Each difference is an obvious bug of diagram-exporter's SBGN converter;
+everything else is to match Java byte for byte once order is set aside.
+Anything that would improve the files beyond these becomes an issue for the
+team (FR-006).
+
+| What                                     | Java                                                                                                                                                                 | New                                                                            | Why                                                     | Decided              |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------- | -------------------- |
+| D1, order                                | Glyphs and arcs in an order that changes from run to run                                                                                                             | A fixed order derived from the layout                                          | Determinism                                             | Spec FR-003          |
+| D2, arc geometry                         | Reverses the reaction's line in place for each product arc, so later arcs read it reversed or not, by chance (7 of 253 arcs differ between two files of one pathway) | Every arc read from the line as the layout gives it                            | Bug fix, determinism                                    | Spec FR-003          |
+| D3, the stoichiometry glyph              | Class `stoichiometry`, which SBGN-ML 0.2 does not have: 550 of 1,390 bulk files are invalid                                                                          | Class `cardinality`, as Java's own comment intends                             | Bug fix                                                 | Spec FR-003          |
+| D4, text widths                          | Arial's widths in the website's answers; other widths in the bulk file                                                                                               | Java's Arial widths always, from a table measured from Java                    | Platform: the bulk file depended on the machine's fonts | The user, 6 Nov 2026 |
+| D5, product arcs run backwards           | Starts at the product and ends at the reaction, with the middle points the other way                                                                                 | Start and end swapped, so the arc runs from the reaction to the product        | Bug fix                                                 | The user, 6 Nov 2026 |
+| D6, product arcs that are a single point | A product arc with no line of its own often starts and ends at one point                                                                                             | Starts at the reaction and ends towards the product, on the segment Java picks | Bug fix                                                 | The user, 6 Nov 2026 |
+
+## Pathway PDFs (pdf-export spec 001)
+
+pdf-export replaces `event-pdf` for the release's book (one PDF per top-level
+pathway, as today) and the website's PDF of one event. Being built on
+pdf-export's `main`; not serving the website. Source:
+[pdf-export spec 001](https://github.com/reactome/pdf-export/blob/main/specs/001-pathway-pdfs/spec.md),
+Assumptions ("Expected differences from `event-pdf`" and "Departures in the
+endpoint's answers") and research R2, R4.
+
+| What                                                                                                                          | `event-pdf`                                                       | pdf-export                                                                                             | Why                                                                | Decided                  |
+| ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ | ------------------------ |
+| Bookmarks                                                                                                                     | None                                                              | Nested bookmarks in every PDF                                                                          | Design                                                             | Spec 001                 |
+| Contents list                                                                                                                 | After the sections                                                | Before them                                                                                            | Design                                                             | Spec 001                 |
+| An event that recurs within one PDF                                                                                           | Nothing at its later places                                       | A short entry (name, stable id) linking to its full section                                            | Design                                                             | Spec 001                 |
+| Boilerplate text                                                                                                              | Today's                                                           | Rewritten                                                                                              | Design                                                             | Spec 001 (FR-009)        |
+| Figures                                                                                                                       | Drawn by the Java exporters in the old pathway browser's look     | Drawn as the website draws them; a section may gain or lose a figure, each recorded                    | Design                                                             | Spec 001                 |
+| The look                                                                                                                      | Today's layout, colours and typefaces                             | The website's                                                                                          | Design                                                             | Spec 001                 |
+| Figure size                                                                                                                   | Scaled to the portrait text width                                 | Every figure in the text column, no landscape pages; each links to its interactive form on the website | Design: a reader zooms in (figures are vector) or follows the link | The user, 4 Nov 2026     |
+| Licence statement                                                                                                             | CC BY 4.0 for everything                                          | CC0 for data, CC BY 4.0 for illustrations and art, as the website's licence page                       | Design                                                             | The user (spec 001 T016) |
+| Order of lists (children, literature and so which five references show, summations, diseases, preceding and following events) | The database's order                                              | The curators' order                                                                                    | Bug fix: the curated order was never read                          | Spec 001 (research R2)   |
+| With an analysis: identifiers found                                                                                           | Not counted where only a pathway its filter leaves out holds them | Counted                                                                                                | Bug fix                                                            | Spec 001 (research R6)   |
+| Website endpoint: an unknown or expired analysis token                                                                        | An empty response for both                                        | Answered as such                                                                                       | Bug fix                                                            | Spec 001 (FR-014)        |
+| Website endpoint: analysis options (resource, expression column, importable only, colour profiles)                            | Read                                                              | Dropped, ignored if sent: the website sends none                                                       | Design                                                             | Spec 001 (FR-006)        |
+| Analysis overlay colours                                                                                                      | Today's colour profiles                                           | The website's default analysis colours                                                                 | Design                                                             | Spec 001 (FR-006)        |
+
+## Analysis report PDF (pdf-export spec 002)
+
+The analysis report PDF, today written inside the AnalysisService by
+`analysis-report`, is to be made by pdf-export with today's content in the new
+look (the user's choice, 30 Oct 2026). **Spec only.** Source:
+[pdf-export spec 002](https://github.com/reactome/pdf-export/blob/main/specs/002-analysis-report/spec.md),
+Assumptions ("Expected differences from today's report").
+
+| What                                                                      | Today's report                                                    | New report                                                                    | Why                                       |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------- |
+| Look, bookmarks and text                                                  | Old look, no bookmarks, today's text                              | As spec 001: the website's look, bookmarks, rewritten text                    | Design                                    |
+| Colour profiles                                                           | Read                                                              | Ignored                                                                       | Design                                    |
+| Footer                                                                    | A link to the server, with its numbering                          | A running header and page numbers counted from the cover                      | Design                                    |
+| "Identifiers not found" when there are none                               | Left out, but still in the contents list                          | Left out of the contents list too                                             | Bug fix                                   |
+| A pathway's figure when the report's resource is not the result's default | Overlaid for the report's resource                                | Overlaid for the default resource, until the render service takes a resource  | Platform (temporary)                      |
+| An edit-history row with more than five names                             | Five names from a hash set                                        | Five in the edits' authors' order                                             | Determinism                               |
+| The genome-wide overview                                                  | Only the pathways the resource and importable-only filters kept   | The whole result's pathways (the same with the website's defaults)            | Design                                    |
+| KEGG COMPOUND and NCBI Protein                                            | Tables always empty and left out                                  | Their identifiers and interactors shown                                       | Bug fix                                   |
+| An edit with no date                                                      | The report fails                                                  | Left out of the edit history                                                  | Bug fix                                   |
+| A service it needs cannot answer before the PDF begins                    | 500                                                               | 503                                                                           | Design                                    |
+| Order of what a pathway was inferred from                                 | No set order                                                      | The curators' order                                                           | Determinism                               |
+| A failure while making the PDF                                            | The answer ends early, or a 500 with the framework's default body | A 500 in the analysis service's JSON form, before any of the PDF is sent      | Bug fix                                   |
+| Too many requests                                                         | Waits without limit                                               | Beyond the queue or its time budget, "unavailable"                            | Design                                    |
+| A report that takes long                                                  | Answered in one request however long it takes                     | Made in the background: "accepted" (202), fetched again from the same address | Platform: the edge allows 100 s a request |
+
+## Not differences
+
+These show up in comparisons but are not differences in what a reader gets.
+
+- **The `url` field of an error answer** names the service that answered it.
+  Compared on their own ports, Java and node disagree about it; behind the web
+  server both name the site, so they agree. About forty endpoints declare it
+  to the comparison tool, each narrowly (`.url` only).
+- **Key order and whitespace in JSON** are not compared by the parity
+  harness, except for the reaction layout, whose raw text is compared too.
+- **Java's bugs that node copies on purpose**, for the team to fix in both
+  places: children in internal id order rather than the curated order on the
+  contents page ([spec 006 D12](../specs/006-content-service-to-node/research.md)),
+  and a normal reaction's participants never drawn crossed out in the reaction
+  layout (D22). These are parity, not differences.
+
+## Decisions still open
+
+- **One mail path for contact messages.** The site's search-page form (its own
+  `/contact` route, sending through the server's local mail program) and the
+  ContentService `POST /contact` (through SES) both stay for now; whether the
+  form moves onto the endpoint is for the user to decide
+  ([spec 006 D23](../specs/006-content-service-to-node/research.md)).
+- **The Turnstile check's action and hostname.** `POST /contact` accepts any
+  token Turnstile calls a success; it does not check that the token was made
+  for this form (its action) or on this site (its hostname). No widget of the
+  site's posts to it yet, so there is nothing to name (D23, "Open").
+- **Contact parameters in the query string.** Following Java, `POST /contact`
+  reads its parameters from the URL's query string as well as the body, so a
+  message sent that way can land in access logs (D23, "Open").
+- **The contact rate limit's key for IPv6.** The web server limits each full
+  client address, so an IPv6 client has a key for every address of its /64,
+  where the analysis gateway groups IPv6 clients by their /64 (D23, "Open").
+- **SBML reactions' cross-references** (MONDO, Rhea): why today's file lacks
+  them ([sbml-exporter#36](https://github.com/reactome/sbml-exporter/issues/36)).
+  SBML for the release and production waits for this and the other open
+  differences (spec 015 T068).
+- **SBML layout as the website draws it**: sbml-exporter's spec 002 is a
+  draft.
+- **Data fixes in the graph importer** that would remove differences:
+  one EC number per molecular function
+  ([graph-importer#9](https://github.com/reactome/graph-importer/issues/9)),
+  and people's display names
+  ([graph-importer#10](https://github.com/reactome/graph-importer/issues/10)).
+- **SBGN**: the spec is merged and the exporter not yet built; the bulk file's
+  text encoding is still to be checked, and a mismatch would come to the user
+  as a candidate difference (its task T034).
+- **Diagram images** (`/exporter/diagram/{identifier}.{ext}`, and the
+  reaction image `/exporter/reaction/{identifier}.{ext}`) wait for a scan of
+  which formats and options callers use (spec 006 T090, T091; #273).
+- **The analysis report's figures**: the render page must wait for an
+  analysis overlay and take a resource before the report can match today's
+  overlays (pdf-export spec 002, FR-204). The report's species overview still
+  shows the retired Fireworks figure while the AnalysisService makes it
+  (spec 010 T058).
+
+## Inconsistencies between sources
+
+Found while compiling this register, for the sources' owners to settle.
+
+- **Spec 006's FR-001** says declared exceptions are recorded in research
+  "(D11, D15, D19, D21)" and none is added without a decision recorded there.
+  Several are declared in code with their reason but not in research: the
+  person lists' `[]` for an unreadable id, the publications' order, the
+  in-depth `attributes` refusal, the nested views' reference order, and the
+  search index's 500 message (the last two are in spec 011 R12). FR-001 also
+  does not list D10, D22 or D23, which are in research.
+- **Spec 015's `contracts/differences.md`, SBML table**: its first row says a
+  reaction's model names its first parent pathway. sbml-exporter's own list
+  records the opposite decision (#37 there: matched to today's, "No parent
+  pathway detected"). Spec 015 says sbml-exporter's list supersedes its rows,
+  but the row still reads as current.
+- **Spec 015's `contracts/differences.md`, BioPAX table**: "One EC number per
+  molecular function" is listed, but BioPAX3Exporter measured that this
+  difference is gone at release 98 (its T012, T020).

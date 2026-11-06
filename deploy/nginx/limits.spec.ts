@@ -39,7 +39,12 @@ const JAVA_UPLOAD_CAP_MB = 50;
 describe('request body limits', () => {
   for (const file of ['dev.conf', 'release.conf', 'production.conf', 'local.conf']) {
     it(`${file} lets an upload of Java's size through`, () => {
-      const conf = readFileSync(join(__dirname, file), 'utf8');
+      // The contact form's location is held smaller on purpose, a form of a
+      // few fields (routes.spec.ts holds it at 64k); every other value counts.
+      const conf = readFileSync(join(__dirname, file), 'utf8').replace(
+        /location ~ \^\/ContentService\/contact\/\?\$ \{[^}]*\}/g,
+        ''
+      );
       // Every value, in any unit nginx takes: matching only "64m" let a smaller
       // limit written as "512k" pass unseen. A value it cannot read fails.
       const values = [...conf.matchAll(/^\s*client_max_body_size\s+(\S+);/gm)].map((m) => m[1]);
