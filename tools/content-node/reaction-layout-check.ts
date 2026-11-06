@@ -6,8 +6,8 @@
  * - the status and the Content-Type's media type, as the parity harness
  *   compares them;
  * - the whole diagram and graph in the site's canonical form (canonical.ts),
- *   numbers within a billionth of their size (compare-json.ts, research
- *   D22's declared sin and cos difference);
+ *   numbers within a billionth of Java's value's size, or 1e-9 below 1
+ *   (compare-json.ts, research D22's declared sin and cos difference);
  * - each glyph id with what it is: node ids with their entity, compartment
  *   ids with their compartment, the edge's with the reaction -- so a glyph
  *   made out of Java's order shows here;
@@ -30,9 +30,10 @@
  * REACTION_LAYOUT_ATTEMPTS times (default 24, D21): Java's layout, and which
  * glyph of an entity drawn twice keeps which role, can follow the random
  * order of a participant's roles, and a match on any attempt is a match. Once
- * Java has answered the same REACTION_LAYOUT_STEADY times (default 4), it
- * stops, and reports the reaction to be looked at by hand; 24 gives D21's
- * miss rate. A Java error
+ * Java has drawn the same REACTION_LAYOUT_STEADY times (default 4) it stops,
+ * and reports the reaction to be looked at by hand -- unless all that differs
+ * is the order of a node's connectors, which follows the roles' random order
+ * however Java draws; 24 gives D21's miss rate. A Java error
  * must meet an error from node; its text is step 5's. Spaced for the shared
  * database; stops after 20 differences in a row. Prints reaction ids, counts
  * and paths into the answer only. Exits 1 on any difference.
@@ -101,6 +102,11 @@ interface Summary {
   ids: string[];
   /** The orders Java's hash sets and maps give, by glyph id, and each node's connectors'. */
   orders: string;
+  /**
+   * The orders with each node's connectors' types sorted: what is left when
+   * the roles' random order (D21) is set aside.
+   */
+  unroled: string;
 }
 
 const PART_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
@@ -146,6 +152,11 @@ function summary(answer: JavaAnswer): Summary {
       // With each node, its connectors' types: an entity both input and
       // catalyst has its connectors in its roles' random order (D21).
       nodes.map((node) => [node.id, (node.connectors ?? []).map((c) => c.type)]),
+      compartments.map((c) => [c.id, c.componentIds ?? []]),
+      PART_LISTS.map((list) => (edge[list] ?? []).map((part) => part.id)),
+    ]),
+    unroled: JSON.stringify([
+      nodes.map((node) => [node.id, (node.connectors ?? []).map((c) => c.type).sort()]),
       compartments.map((c) => [c.id, c.componentIds ?? []]),
       PART_LISTS.map((list) => (edge[list] ?? []).map((part) => part.id)),
     ]),
@@ -348,11 +359,16 @@ async function compare(stId: string): Promise<Outcome> {
     // order of its connectors, follow the roles' random order (D21): ask
     // again, up to ATTEMPTS -- but once Java has drawn the same STEADY times
     // it is probably not varying, so stop asking on the shared database and
-    // report it (below). Orders alone are not stopped so: Java draws the
-    // same while they vary, an entity both input and catalyst's connectors
-    // one way or the other on each request.
-    const steady = shape !== undefined && attempt >= STEADY && answers.size === 1;
-    if ((shape || parts.includes('orders')) && attempt < ATTEMPTS && !steady) continue;
+    // report it (below). Orders alone are stopped so too, unless all that
+    // differs is the order of a node's connectors: Java draws the same while
+    // that varies, an entity both input and catalyst's connectors one way or
+    // the other on each request, so only asking again can find node's order.
+    // Any other order node is given Java's ids for, and should match at once.
+    const roles = javaSummary.unroled === nodeSummary.unroled;
+    const orders = parts.includes('orders');
+    const steady =
+      attempt >= STEADY && answers.size === 1 && (shape !== undefined || (orders && !roles));
+    if ((shape || orders) && attempt < ATTEMPTS && !steady) continue;
     // Stopped early, Java having answered the same each time: most likely
     // node's, but a layout Java gives rarely can hide behind four of its
     // usual one -- to look at by hand, or ask again with

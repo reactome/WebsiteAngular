@@ -644,8 +644,10 @@ it is made, not three steps later.
      on about 3.5% of arguments. Diagonal catalyst, inhibitor and activator
      lines, and fans of nine or more regulators, can come out a bit apart
      (0.35% of 20,000 random connector ends). Decided 5 Nov 2026 (awright),
-     a declared difference (D11): the comparison takes numbers within a
-     billionth of their size as equal. Java's own bits would change on
+     a declared difference (D11): the comparison takes two numbers as equal
+     when they are within a billionth of Java's value's size, or within
+     1e-9 of it when that value is below 1 in size (`1e-9 * max(1, |java|)`).
+     Java's own bits would change on
      another platform, so they are not a stable target, and no drawing can
      show the difference.
    - A reaction moved into a child compartment is held by the child, but
@@ -665,7 +667,7 @@ it is made, not three steps later.
 4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
    the answer as Java writes it. Compared: the whole answer in canonical
    form, as D21 declares.
-   - Done in #832. The graph's two queries are Java's, unchanged. graph-core
+   - Done in #833 (replacing #832). The graph's two queries are Java's, unchanged. graph-core
      maps their rows into diagram-reader's `EntityNodeImpl` and
      `EventNodeImpl` by field name (`ReflectionUtils.build`, read from the
      deployed bytecode): a Long with no value is 0, a list with none is
@@ -697,19 +699,35 @@ it is made, not three steps later.
      `cpicture`, never set.
    - **The raw text** (D21) is compared once the canonical forms, the ids
      and the orders agree, when node has made Java's glyphs with Java's ids:
-     the two texts must then be the same byte for byte, but for the two top
-     keys' order, the event's two fields above, and numbers within the
-     declared billionth (step 3), which must still be written as Java writes
-     a double. A number of the same value written another way (`1` for
+     the two texts must then be the same character for character, but for
+     the two top keys' order, the order of the two fields above in the
+     graph's events (`.graph.edges[n]`) and nowhere else, and numbers within
+     the declared tolerance (step 3: a billionth of Java's value's size, or
+     1e-9 below 1), which must still be written as Java writes a double.
+     Node's members are put in Java's top-key order only once node's own text
+     is shown to be `{`, its members joined by `,`, and `}`, with nothing
+     else between or around them and no key twice: so its own framing is
+     still compared. What is compared are JavaScript strings, Java's as
+     `response.text()` decodes it and node's as the service makes it in
+     process; the bytes and the charset sent over HTTP are step 5's. A number of the same value written another way (`1` for
      `1.0`, `0.0001` for `1.0E-4`, `0.0` for `-0.0`), a space, a key out of
      order or a field left out is a difference. Mutating node's writer
      (a Double written as an integer, two fields swapped, a 0 left out)
      makes the live comparison fail.
    - The orders compared now include each node's connectors' types: an
      entity both input and catalyst has its connectors in its roles' random
-     order (D21), so such a reaction is asked again like any other order,
-     and, Java drawing the same while that order varies, is not stopped
-     after REACTION_LAYOUT_STEADY answers.
+     order (D21), so such a reaction is asked again like any other order.
+     Java draws the same while that order varies, and it varies unevenly
+     (one way on four requests of six, for one such entity), so neither
+     Java's drawing nor its connectors' order coming back the same says
+     node cannot match: stopping on those stopped three reactions of 425
+     that a later attempt would have matched. So an answer whose orders
+     alone differ is asked again up to 24 times only while nothing but the
+     order of some node's connectors differs. Any other order node makes
+     from Java's own ids and should match at once: once Java has drawn the
+     same REACTION_LAYOUT_STEADY times, such a reaction is reported to be
+     looked at by hand, as a drawing that differs is. A mutation reversing
+     node's compartment components stopped so on the fourth request.
    - One more input assumed stable (D21): the order of the graph query's
      rows, which is the graph's node order, and which the raw text compares.
 5. **Routing.** `/exporter/reaction/{identifier}/diagram` moves to node,

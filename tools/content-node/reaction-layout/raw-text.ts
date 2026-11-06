@@ -1,20 +1,22 @@
 /**
  * The reaction layout's answer compared as text (research D21, D22): what
  * the canonical form cannot see -- number formatting, whitespace, field order
- * and what is left out -- compared on the raw bytes.
+ * and what is left out -- compared on the raw text.
  *
  * Node's answer is made from the first glyph id Java's shows, so once the
  * canonical forms, the ids and the orders agree, the two texts must be the
- * same, byte for byte, but for the two declared differences:
+ * same, character for character, but for three declared differences:
  * - the order of the two top keys, which a seed Java picks at start sets
- *   (D22): node's members are put in Java's order before comparing;
- * - the order of the graph's event's `speciesID` and
- *   `entityFunctionalStatus`, which follows the JVM's order of the class's
- *   methods (D22): Java's are put in node's order, the deployed one;
- * - numbers within a billionth of their size (D22's sin and cos), where
- *   node's number must still be written as Java writes a double. Two numbers
- *   of the same value written differently (1 and 1.0, 1.0E-4 and 0.0001) are
- *   a difference.
+ *   (D22): node's members are put in Java's order before comparing, once
+ *   node's own text is shown to be nothing but `{`, its members and `,`
+ *   between them, and `}`, no key twice;
+ * - the order of `speciesID` and `entityFunctionalStatus` in each of the
+ *   graph's events (`.graph.edges[n]`), which follows the JVM's order of the
+ *   class's methods (D22): Java's are put in node's order, the deployed one;
+ * - numbers within a billionth of their size, or of 1 below 1 (D22's sin and
+ *   cos), where node's number must still be written as Java writes a double.
+ *   Two numbers of the same value written differently (1 and 1.0, 1.0E-4 and
+ *   0.0001) are a difference.
  * Anything else -- a space, a key, a string, a number further apart -- is one.
  */
 import { javaDouble } from '../domain.ts';
@@ -123,16 +125,37 @@ function sameNumber(java: string, node: string): boolean {
  * and two numbers when it is numbers that differ.
  */
 export function rawDifference(answered: string, node: string): string | undefined {
-  // An event's two getter-only fields, in node's order. A string's quotes
-  // are escaped, so none is matched here.
+  // A graph event's two getter-only fields, in node's order; only there
+  // (D22). A string's quotes are escaped, so none is matched here.
+  const keyPaths = new Map(
+    tokens(answered)
+      .filter((token) => token.kind === 'string')
+      .map((token) => [token.at, token.path])
+  );
   const java = answered.replace(
     /"speciesID":(-?\d+),"entityFunctionalStatus":(\[[-\d,]*\])/g,
-    '"entityFunctionalStatus":$2,"speciesID":$1'
+    (pair, species: string, statuses: string, at: number) =>
+      /^\.graph\.edges\[\d+\]\.speciesID$/.test(keyPaths.get(at) ?? '')
+        ? `"entityFunctionalStatus":${statuses},"speciesID":${species}`
+        : pair
   );
   // Node's members in Java's order: the top keys' order is Java's seed's.
   const javaKeys = topMembers(java).map(([key]) => key);
-  const nodeMembers = new Map(topMembers(node));
+  const members = topMembers(node);
+  const nodeMembers = new Map(members);
   const nodeKeys = [...nodeMembers.keys()];
+  if (javaKeys.join() !== nodeKeys.join()) {
+    // Rebuilt from its members, node's text loses whatever lies between
+    // them: so it must have nothing else -- no byte before `{` or after `}`,
+    // none after `{` or a top `,` -- and no key twice, which a map hides.
+    if (nodeKeys.length !== members.length) return ".: node's text repeats a top key";
+    const framed = `{${members.map(([key, value]) => `${JSON.stringify(key)}:${value}`).join(',')}}`;
+    if (framed !== node) {
+      let at = 0;
+      while (at < node.length && node[at] === framed[at]) at += 1;
+      return `.: node's text differs at character ${at}`;
+    }
+  }
   const reordered =
     javaKeys.length === nodeKeys.length &&
     javaKeys.join() !== nodeKeys.join() &&

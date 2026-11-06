@@ -16,7 +16,6 @@
  */
 import neo4j from 'neo4j-driver';
 import { read } from '../graph.ts';
-import { JavaHashMap } from '../java-hashmap.ts';
 import type { Laid } from './algorithm.ts';
 import { JavaNullPointerException, JavaRuntimeException } from './model.ts';
 
@@ -193,11 +192,17 @@ export function eventNode(row: Row): EventNode {
 
 /**
  * getMap: each drawn entity's dbId to the ids of the glyphs drawing it, in
- * the order the layout's entities iterate (a copy is a second glyph).
+ * the order the layout's entities iterate (a copy is a second glyph). Java's
+ * is a HashMap, but it is only ever read with get(), never iterated, so its
+ * order cannot show and a plain Map gives the same answers.
  */
 export function diagramIdsByDbId(entities: Iterable<{ dbId: number; id: number }>) {
-  const map = new JavaHashMap<number, number[]>({ hash: JavaHashMap.longHash });
-  for (const entity of entities) map.computeIfAbsent(entity.dbId, () => []).push(entity.id);
+  const map = new Map<number, number[]>();
+  for (const entity of entities) {
+    const ids = map.get(entity.dbId) ?? [];
+    map.set(entity.dbId, ids);
+    ids.push(entity.id);
+  }
   return map;
 }
 

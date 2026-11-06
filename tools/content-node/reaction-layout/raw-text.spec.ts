@@ -31,10 +31,38 @@ describe('rawDifference', () => {
     expect(rawDifference(JAVA, swapped)).toBeDefined();
   });
 
+  it("swaps the two only in the graph's events, not in the diagram", () => {
+    const inDiagram = (first: string, second: string) =>
+      JAVA.replace('"minX":0}', `"minX":0,"edges":[{"id":1,${first},${second}}]}`);
+    const [species, statuses] = ['"speciesID":0', '"entityFunctionalStatus":[3]'];
+    expect(rawDifference(inDiagram(species, statuses), inDiagram(statuses, species))).toBe(
+      '.diagram.edges[0].speciesID: text differs at character 101'
+    );
+  });
+
   it("takes a last-bit difference written as Java's double", () => {
     expect(
       rawDifference(JAVA, JAVA.replace('288.6301451057273', '288.63014510572737'))
     ).toBeUndefined();
+  });
+
+  describe("finds node's own framing with the top keys reordered", () => {
+    const [[, diagram], [, graph]] = topMembers(JAVA) as [[string, string], [string, string]];
+    const java = `{"graph":${graph},"diagram":${diagram}}`;
+    it.each([
+      ['a trailing newline', `${JAVA}\n`, JAVA.length],
+      ['a leading space', ` ${JAVA}`, 0],
+      ["a space after '{'", `{ "diagram":${diagram},"graph":${graph}}`, 1],
+      ["a space after ','", `{"diagram":${diagram}, "graph":${graph}}`, diagram.length + 12],
+    ])('%s', (_, node, at) => {
+      expect(rawDifference(java, node)).toBe(`.: node's text differs at character ${at}`);
+    });
+
+    it('a top key twice', () => {
+      expect(rawDifference(java, `{"diagram":${diagram},"graph":${graph},"graph":${graph}}`)).toBe(
+        ".: node's text repeats a top key"
+      );
+    });
   });
 
   it('finds a number written another way, even of the same value', () => {

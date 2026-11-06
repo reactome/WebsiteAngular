@@ -1,11 +1,14 @@
 // @vitest-environment node
 //
 // The reaction layout's answer as Java writes it (research D22, step 4).
-// EXPECTED is Jackson's text, not written by hand: the same objects built
+// EXPECTED is Jackson's text but for one hand edit: the same objects built
 // from the deployed diagram-reader 1.2.5's classes, field by field, and
 // written by the deployed Jackson 2.13 with ContentService's mapper
 // (NON_EMPTY, the Flatten view) under JDK 11, into a LinkedHashMap with
-// "diagram" first. It holds each rule: every class's field order, what is
+// "diagram" first. The event's last two keys, `entityFunctionalStatus` and
+// `speciesID`, were then put by hand in the deployed service's order: their
+// order follows what the JVM loaded first, and the writing program's was the
+// other (D22). It holds each rule: every class's field order, what is
 // left out (null, "" and empty lists; not 0 or false), and number text
 // (Doubles as Double.toString: 66.0, -0.0, 1.0E-4, 1.0E7; Longs and
 // Integers as digits).
