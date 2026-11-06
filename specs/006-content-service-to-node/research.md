@@ -868,6 +868,81 @@ under the deployed JDK, `diagram` came first 12 times. Node writes `diagram`
 first, and the comparison does not count the order of those two keys as a
 difference.
 
+## D23. The contact form: Java's mail, Turnstile's check, a verified server (T085)
+
+**Decided** by awright, 6 Nov 2026, for `POST /contact`
+(ContactController): the help desk's mail is sent as Java sends it, and two
+things are not done as Java does them.
+
+**What is Java's, unchanged.** The parameters, read from the query and from a
+URL-encoded or multipart form body, as Tomcat reads them; a text/plain body
+is not read (measured). The first missing required parameter is Spring's 400
+in the envelope, in the method's order. A blank token is the 400 text
+`captcha verification failed`, then a blank address, subject or message the
+400 text `missing required field`. Then up to two messages, one after the
+other: the reader's, from the reader's name and address (the address when no
+name is given) to the support address, under the reader's subject; and, when
+`sendEmailCopy` is `on` or `true` in any case, a copy to the reader from the
+support name and address, its subject `[Copy] ` and the subject. Both bodies
+are `From: name <address>`, a blank line, and the message. No Reply-To, as
+in Java. The answer is an empty 200. Java's answers before sending were
+measured against the deployed service on 6 Nov 2026; no request it would
+accept was sent to it, since it would send mail.
+
+**Different: the human check.** Java verified an hCaptcha token, through an
+HTTP client that trusted any certificate and checked no host name. Node
+verifies a Cloudflare Turnstile token, with the secret and the siteverify
+address the site's own gate uses (`human-gate.js`), over a verified
+connection, and anything but `success: true` fails: a network error, a
+timeout, an answer that is not JSON. The token's parameter is
+`cf-turnstile-response`, the field Turnstile's widget adds to a form, in
+place of `h-captcha-response`; missing, it is Spring's 400 naming it. An
+hCaptcha token cannot be checked by Turnstile, so a caller still sending one
+is refused as an unverified one is. The site's own form needed no change: it
+already asks with Turnstile, and posts to the site's own route.
+
+**Different: the mail server's certificate.** Java's mail session enabled
+STARTTLS without requiring it, so a server that did not offer it, or a
+connection whose offer was removed on the way, was sent the message and the
+login in clear; and it checked the certificate against the JVM's trust store
+without checking the host name (JavaMail 1.6's defaults). Node requires TLS -- STARTTLS, or TLS from
+the first byte on port 465 -- checks the certificate against the system's
+authorities and the host's name, and has no setting that turns either off. An
+internal authority is added with Node's `NODE_EXTRA_CA_CERTS`, never by
+trusting everything. Whether the deployed server passes is learned by the
+first test message, which needs awright's go-ahead.
+
+**What Java never answered.** In its envelope: 503 `SERVICE_UNAVAILABLE` when
+the deployment cannot send (no SMTP server, no support address, a login asked
+for and not given, or no Turnstile secret), before Cloudflare is asked
+anything; 400 `BAD_REQUEST` for an address that is not one plain address
+(Java's `InternetAddress` refused those with a 500 naming the exception), so
+the copy can never go to a list; and 500 `The message could not be sent`,
+without the server's own words, when the mail could not be handed on (Java's
+500 carried the exception's message). A copy that fails after the help
+desk's message was sent is that 500, as in Java.
+
+**The library: nodemailer.** It is the usual way Node sends mail, with no
+dependencies of its own and an MIT-0 licence; it handles STARTTLS, the login,
+and the encoding of names and subjects, so a line break in either starts no
+new header (tested). Writing an SMTP client here would be more code to get
+wrong in the part that must not be. Pinned exactly in the root package, and
+installed into the content service's image from the root lockfile, as
+express and the graph driver are.
+
+**Settings**, in the environment or the credentials file, each Java's:
+`CONTACT_SMTP_HOST` (mail.host), `CONTACT_SMTP_PORT` (mail.port, 587 by
+default), `CONTACT_SMTP_AUTH` (mail.enable.auth), `CONTACT_SMTP_USER`
+(mail.username), `CONTACT_SMTP_PASSWORD` (mail.password),
+`CONTACT_SUPPORT_ADDRESS` (cnf.mail.support.address), `CONTACT_SUPPORT_NAME`
+(cnf.mail.support.name), and Turnstile's `CLOUDFLARE_SECRET_KEY`, the site's
+gate's name for it.
+
+**A budget.** Each request that passes may send two messages, so nginx gives
+the route its own limit, six a minute per address with a burst of three
+(`contact_rate`), in each deployment; local, which has no limits, routes it
+without one.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

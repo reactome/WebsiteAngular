@@ -40,6 +40,33 @@ export const settings = {
   reportUser: (): string => envSetting('REPORT_USER', 'default'),
   reportPassword: (): string => envSetting('REPORT_PASSWORD', 'default'),
 
+  /**
+   * The help-desk form's mail (POST /contact, contact.ts): the SMTP server,
+   * its port (587, or 465 for TLS from the first byte), whether it asks for a
+   * login, the login, and where messages go and whom the reader's copy is
+   * from. Java's mail.host, mail.port, mail.enable.auth, mail.username,
+   * mail.password, cnf.mail.support.address and cnf.mail.support.name. Without
+   * the server, the address or (asked for) the login, the form answers 503.
+   */
+  contactSmtpHost: (): string => envSetting('CONTACT_SMTP_HOST'),
+  contactSmtpPort: (): string => envSetting('CONTACT_SMTP_PORT', '587'),
+  contactSmtpAuth: (): string => envSetting('CONTACT_SMTP_AUTH', 'false'),
+  contactSmtpUser: (): string => envSetting('CONTACT_SMTP_USER'),
+  contactSmtpPassword: (): string => envSetting('CONTACT_SMTP_PASSWORD'),
+  contactSupportAddress: (): string => envSetting('CONTACT_SUPPORT_ADDRESS'),
+  contactSupportName: (): string => envSetting('CONTACT_SUPPORT_NAME'),
+
+  /**
+   * Cloudflare Turnstile's secret, under the names the site's own gate reads
+   * (projects/website-angular/src/scripts/human-gate.js): one secret, one
+   * convention. None, and nothing that needs it can pass.
+   */
+  turnstileSecret: (): string =>
+    envSetting('CLOUDFLARE_SECRET_KEY') || envSetting('TURNSTILE_SECRET'),
+  /** Turnstile's siteverify, replaced only in tests. */
+  turnstileVerifyUrl: (): string =>
+    envSetting('TURNSTILE_VERIFY_URL', 'https://challenges.cloudflare.com/turnstile/v0/siteverify'),
+
   /** Europe PMC's search, for citations of PubMed ids. */
   europePmcUrl: (): string =>
     envSetting('EUROPE_PMC_URL', 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'),

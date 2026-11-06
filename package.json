@@ -101,6 +101,7 @@
     "ngx-reactome-cytoscape-style": "github:reactome/ngx-reactome-base#dist/ngx-reactome-cytoscape-style",
     "ngx-reactome-style": "github:reactome/ngx-reactome-base#dist/ngx-reactome-style",
     "ngx-ui-tour-md-menu": "^16.0.0",
+    "nodemailer": "10.3.1",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "rxjs": "~7.8.0",
