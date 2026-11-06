@@ -11,7 +11,7 @@ WORKDIR /content-node
 # tests: each must be a dependency of the root package.json, and is installed
 # at the version the root lockfile resolved for it. The repository's own
 # lockfile would drag in Angular, Playwright and the CMS to run three packages
-# (nodemailer, with no dependencies of its own, sends the help-desk form's mail).
+# (the third, Amazon SES's client, sends the help-desk form's mail).
 # A pin restated here stayed at express 5.2.1 when Dependabot moved the root
 # to 5.3.0 (it watches only the root); a range read from package.json
 # (neo4j-driver's ^6.2.0) would take the newest 6.x at build time, untested.
@@ -23,7 +23,7 @@ RUN node -e " \
       const root = require('./root-package.json'); \
       const lock = require('./root-lock.json'); \
       const dependencies = {}; \
-      for (const name of ['express', 'neo4j-driver', 'nodemailer']) { \
+      for (const name of ['express', 'neo4j-driver', '@aws-sdk/client-sesv2']) { \
         if (!(root.dependencies ?? {})[name]) \
           throw new Error(name + ' is not a dependency of the root package'); \
         const locked = (lock.packages ?? {})['node_modules/' + name]; \
