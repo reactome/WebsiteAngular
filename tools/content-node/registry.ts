@@ -12,6 +12,7 @@ import { personEndpoints } from './person-endpoints.ts';
 import { schemaEndpoints } from './schema-endpoints.ts';
 import { interactorsEndpoints, refreshPsicquicResources } from './interactors-endpoints.ts';
 import { exportersEndpoints } from './exporters-endpoints.ts';
+import { reactionLayoutEndpoints } from './reaction-layout-endpoints.ts';
 import { entitiesEndpoints } from './entities-endpoints.ts';
 import { mappingSpeciesEndpoints } from './mapping-species-endpoints.ts';
 import { dataQueryEndpoints } from './data-query-endpoints.ts';
@@ -38,6 +39,7 @@ export const endpoints: Endpoint[] = [
   ...schemaEndpoints,
   ...interactorsEndpoints,
   ...exportersEndpoints,
+  ...reactionLayoutEndpoints,
   ...searchEndpoints,
   ...searchDiagramEndpoints,
   ...citationEndpoints,

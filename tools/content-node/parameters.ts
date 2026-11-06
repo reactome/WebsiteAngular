@@ -447,6 +447,17 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'private',
   },
+  // A reaction's layout (spec 006 T092). Stored like any graph answer: Java's
+  // varies between requests (research D21), but node's is laid out from
+  // glyph id 1 every time, so it is one answer per reaction per release.
+  '/ContentService/exporter/reaction/{id}/diagram': {
+    java: '/exporter/reaction/{identifier}/diagram',
+    path: { id: 'oid' },
+    // Declared and never read: the answer is a Map of the diagram and the
+    // graph, which no view changes (measured: view=nested, view=bogus and
+    // includeRef=true give Java's same layout).
+    ignored: ['includeRef', 'view'],
+  },
   '/ContentService/search/suggest': { java: '/search/suggest' },
   '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
   '/ContentService/search/facet': { java: '/search/facet' },

@@ -722,8 +722,9 @@ it is made, not three steps later.
      Java's drawing nor its connectors' order coming back the same says
      node cannot match: stopping on those stopped three reactions of 425
      that a later attempt would have matched. So an answer whose orders
-     alone differ is asked again up to 24 times only while nothing but the
-     order of some node's connectors differs. Any other order node makes
+     alone differ is asked again up to REACTION_LAYOUT_ATTEMPTS times
+     (default 24) only while nothing but the order of some node's
+     connectors differs. Any other order node makes
      from Java's own ids and should match at once: once Java has drawn the
      same REACTION_LAYOUT_STEADY times, such a reaction is reported to be
      looked at by hand, as a drawing that differs is. A mutation reversing
@@ -755,6 +756,28 @@ it is made, not three steps later.
 
      The comparison reports any 500 it meets, so node's answer can be
      checked against Java's.
+
+   - Done in #834. A family of its own, `reaction-layout-endpoints.ts`,
+     answers it, routed to node in nginx (`routes-core.conf`) and the dev
+     proxy; the image, `/exporter/reaction/{identifier}.{ext}`, is not
+     matched. The id is read as graph-core's `findById` reads it
+     (`resolveId`: trimmed, a version cut, a dbId, a pre-2016 `REACT_` id),
+     with its two 500s, an id of dots and a dbId past a long, and the error
+     answers name the id as sent. Compared with Java live: every error kind
+     byte for byte but for the `url` field's host, and the layouts in
+     canonical form (and `reaction-layout-check.ts` over 225 reactions, all
+     identical, 23 on a later attempt). The Content-Type's media type is
+     Java's; its parameter is written as node writes it on every other
+     ported endpoint (`charset=utf-8`, where Java writes `charset=UTF-8`).
+   - **Stored at the edge**, as any graph answer is (spec 011): node's
+     answer is one per reaction per release, laid out from glyph id 1 every
+     time, so the variation that would have made Java's uncacheable is not
+     there. `view` and `includeRef`, which Java declares and never reads,
+     are left out of the standard form, so a URL carrying them is answered
+     the same and not stored.
+   - The parity harness compares the error path alone (a pathway's 400):
+     it compares answers as data, and Java's layout is not the same twice.
+     The layouts are `reaction-layout-check.ts`'s.
 
    `/exporter/reaction/{identifier}.{ext}` follows whatever T090 and T091
    decide for diagrams' images.
@@ -820,12 +843,20 @@ sample of reactions (all of them, for the last run).
 
 - It is spaced for the shared database.
 - Each reaction is asked of Java once. Only a reaction that differs is asked
-  again, up to D21's 24 times while Java's answers vary, so a rare Java
-  layout costs extra requests only where it matters. Four answers the same
-  stop it, a node bug costing four requests, not 24, and such a reaction is
-  reported to be looked at by hand.
-- The run stops after 20 differences in a row: a bug that hits every
-  reaction should not cost 24 requests each.
+  again, up to REACTION_LAYOUT_ATTEMPTS times (default 24, D21's) while
+  Java's answers vary, so a rare Java layout costs extra requests only where
+  it matters. Once Java has drawn the same REACTION_LAYOUT_STEADY times
+  (default 4) it stops, a node bug costing four requests, not 24, and such a
+  reaction is reported to be looked at by hand. Not when all that differs is
+  the order of some node's connectors, which follows the roles' random order
+  however Java draws (step 4): that is asked to the limit.
+- The run stops after 20 differences in a row, so a bug that hits every
+  reaction costs at most 20 × REACTION_LAYOUT_ATTEMPTS requests: a run of
+  connector-order differences goes to the limit each time, other differences
+  stop at REACTION_LAYOUT_STEADY.
+- A reaction Java fails with its 500 must meet one of the library's Java
+  exceptions in node, and the message the service answers it with (step 5)
+  must be Java's.
 - Each step compares only the parts it has built, as listed above.
 - The canonical form is the site's `canonicalReaction`. The service may not
   import site code, so the check has a copy, and a test runs both on the

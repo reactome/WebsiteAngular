@@ -33,9 +33,10 @@
  * Java has drawn the same REACTION_LAYOUT_STEADY times (default 4) it stops,
  * and reports the reaction to be looked at by hand -- unless all that differs
  * is the order of a node's connectors, which follows the roles' random order
- * however Java draws; 24 gives D21's miss rate. A Java error
- * must meet an error from node; its text is step 5's. Spaced for the shared
- * database; stops after 20 differences in a row. Prints reaction ids, counts
+ * however Java draws; 24 gives D21's miss rate. A Java 500 must meet one of
+ * the library's Java exceptions, whose message the service answers with
+ * (reaction-layout-endpoints.ts, step 5): the two messages are compared.
+ * Spaced for the shared database; stops after 20 differences in a row. Prints reaction ids, counts
  * and paths into the answer only. Exits 1 on any difference.
  */
 import { sameWithin } from './reaction-layout/compare-json.ts';
@@ -43,8 +44,8 @@ import { close, read } from './graph.ts';
 import { reactionAnswer } from './reaction-layout/answer.ts';
 import { canonicalReaction } from './reaction-layout/canonical.ts';
 import type { CanonicalDiagram } from './reaction-layout/canonical.ts';
-import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
 import { rawDifference } from './reaction-layout/raw-text.ts';
+import { layoutFailureMessage } from './reaction-layout-endpoints.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const ATTEMPTS = Number(process.env['REACTION_LAYOUT_ATTEMPTS'] || 24);
@@ -256,8 +257,15 @@ interface Outcome {
   where?: string;
 }
 
-const isJavaException = (error: unknown) =>
-  error instanceof JavaNullPointerException || error instanceof JavaRuntimeException;
+/** The message of Java's error answer, or undefined when it has none to read. */
+function javaMessage(text: string): string | null | undefined {
+  try {
+    const { messages } = JSON.parse(text) as { messages?: (string | null)[] };
+    return Array.isArray(messages) && messages.length === 1 ? messages[0] : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * Java's layout and graph, in canonical form: the same on two attempts when
@@ -312,7 +320,13 @@ async function compare(stId: string): Promise<Outcome> {
       made = error as Error;
     }
     if (!body) {
-      if (answer.status === 500 && isJavaException(made)) return { parts: [], bothFailed: true };
+      // Both failed: the service answers node's exception with Java's 500
+      // (step 5), so its message must be Java's.
+      const failed = layoutFailureMessage(made);
+      if (answer.status === 500 && failed)
+        return failed.message === javaMessage(answer.text)
+          ? { parts: [], bothFailed: true }
+          : { parts: ["the 500's messages"] };
       return {
         parts: [
           made instanceof Error
@@ -413,7 +427,7 @@ async function main() {
   await close();
   console.log(
     `compared: ${identical} identical (${retried} of them on a later attempt), ` +
-      `${bothFailed} failing on both sides (texts are step 5's), ${different} different`
+      `${bothFailed} failing on both sides with the same message, ${different} different`
   );
   process.exit(different ? 1 : 0);
 }
