@@ -1,4 +1,1 @@
-export interface PathwayCitation {
-  imageCitation: string;
-  pathwayCitation: string;
-}
+export type { PathwayCitation } from '../../../../contract/citation.ts';

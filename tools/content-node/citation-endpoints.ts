@@ -20,8 +20,8 @@ import {
 } from './citation.ts';
 import type { Citation } from './citation.ts';
 import { javaError, unexpectedFailure } from './answers.ts';
-import type { Failure, JsonWritten } from './answers.ts';
-import type { PathwayCitation } from '../../projects/pathway-browser/src/app/model/citation.model.ts';
+import type { Failure } from './answers.ts';
+import type { PathwayCitation } from '../../projects/contract/citation.ts';
 import { hashSetOf } from './java-text.ts';
 import { URLSearchParams } from 'node:url';
 import { settings } from './settings.ts';
@@ -86,21 +86,21 @@ function tomcatHeader(text: string) {
 }
 
 /**
- * The two citations of /citation/pathway/{id}, as the site reads them
- * (PathwayCitation, spec 013 T019), in the order Java's HashMap writes them.
- * Built as a full literal of the site's type, so a field renamed there fails
+ * The two citations of /citation/pathway/{id} (the contract's PathwayCitation),
+ * in the order Java's HashMap writes them. Each order is a full literal of the
+ * contract's type, and the keys are its keys, so a field renamed there fails
  * here too.
  */
 export function pathwayCitations(citation: Citation, date: string): PathwayCitation {
-  const texts: JsonWritten<PathwayCitation> = {
-    pathwayCitation: eventText(citation, date),
-    imageCitation: imageText(citation, date),
-  };
-  // Only the order changes: hashSetOf gives back the keys it was given.
-  const order = [...hashSetOf(Object.keys(texts)).keys()] as (keyof PathwayCitation)[];
-  const body = {} as PathwayCitation;
-  for (const key of order) body[key] = texts[key];
-  return body;
+  const pathwayCitation = eventText(citation, date);
+  const imageCitation = imageText(citation, date);
+  // Only the order changes: hashSetOf gives back the keys it was given, in
+  // the order Java's HashMap holds them.
+  const keys: (keyof PathwayCitation)[] = ['pathwayCitation', 'imageCitation'];
+  const [first] = hashSetOf(keys).keys();
+  return first === 'imageCitation'
+    ? { imageCitation, pathwayCitation }
+    : { pathwayCitation, imageCitation };
 }
 
 /** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
