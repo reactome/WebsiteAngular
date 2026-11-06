@@ -172,7 +172,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 3. The description: the generator, the route table and the up-to-date check, then the ajv check.
 4. The rest of T019's types, family by family (content lists, schema tables, interactors, person events, locations, flags, citation).
    - The pathway browser's `Interactor` is first split into the answer and its client extension (`existingNodes`, a drawing collection). Its file also holds an enum and a class, which stay.
-5. The remaining families, the most known problems first: the enhanced query (2,659), an entity's other forms (1,660), the interactors' details (1,560), then the rest. Then the analysis service.
+5. The remaining families, the most known problems first: the enhanced query (2,659; 2,793 by T025's count, R9), an entity's other forms (1,660), the interactors' details (1,560), then the rest. Then the analysis service.
 
 **Rationale**: moving all 23 shared types first would touch 9 model files and 12 service modules before a single known problem falls. The facets prove the setup in one small change.
 
@@ -184,3 +184,65 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 
 - The render service's types are a later family, as for the content service, and stay where they are until then.
 - The analysis model holds values (`TYPES`), reached by one dynamic import in a spec. It is split into types and values when the analysis service's family moves (US5), not before.
+
+## R9. Graph objects as written
+
+Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhanced/v2/{id}` (7.8 MB), the recordings of the other graph routes and the domain snapshot (`tools/content-node/domain-snapshot.json`). Nothing here asked the graph database or a Reactome service.
+
+**What the enhanced query writes**:
+
+- **JSOG references.** The readers ask with `includeRef=true`, so the answer is JSOG: each object's first appearance is written whole and starts with `"@id"`, and every later one is `{"@ref": "<that id>"}`. The 93 answers hold 28,752 objects written whole and 32,134 references. A reference carries no `schemaClass`.
+- **47 classes in all**, nested at any depth. By count, the most common are Person (19,712, as edit authors), LiteratureReference, Pathway, Species, DatabaseIdentifier, Reaction and InstanceEdit. The query answers any class the snapshot's store holds (108).
+- **A composition is not an object.** Each entry of `composedOf` is `{type, stoichiometry, order, element}` with no identity, and its `element` was a reference in all 658 recorded entries.
+- **`className` is not `schemaClass`** in 205 objects (`Genes and Transcripts` for a ReferenceGeneProduct, for example). `schemaClass` is the class; it is the discriminator.
+
+**Why it carries 2,793 known problems** (not the 2,659 R7 gave; the recordings have grown since):
+
+- 2,632 come from `composedOf`: the readers declare the entry's `element` a whole object and the entry as having an `index`, which the reader adds itself. That is 4 problems on each of the 658 entries.
+- 161 come from the edits' authors: the readers declare a Person's `orcidId` and `firstname` required, and an author is sometimes a reference.
+- **That is all of them only because the readers' `DatabaseObject` has `[key: string]: any`.** Every field no reader declares passes unchecked, so the count says little about how well the types fit.
+
+**The readers type the wire as the resolved object**:
+
+- The pathway browser and the site ask for the answer as `get<T>` (a resolved `Pathway`, say), then resolve its references with `JSOGDeserializer`, whose `deserialize<T>` returns whatever it is told.
+- So what is declared as received is not what arrives, and what the deserializer returns is a cast.
+
+**The other graph routes write another form**:
+
+- None of their recordings has `@id` or `@ref`: species, top-level and lower-level pathways, participants, other forms, orthologies, the reaction diagram and the plain enhanced query. Neither do the ancestors asked with `includeRef=true`.
+- Without JSOG, Jackson writes an object's later appearances as its dbId.
+- Their views differ too: an entity's other forms (1,660 known problems, T026) are written in the flat view, which leaves out fields the readers' `PhysicalEntity` requires.
+
+**Decision**:
+
+1. **The contract describes the wire, under Java's class names, generic in the reference form.** One interface per class (`Pathway<Ref>`, `Species<Ref>`, …), where `Ref` is `JsogReference` (`{'@ref': string}`) for the enhanced query and `number` (a dbId) for the plain routes. A related object is `X<Ref> | Ref`.
+   - Each concrete class has its `schemaClass` as a literal.
+   - Each abstract class is a union of its subclasses, tagged `@discriminator schemaClass`.
+   - A composition entry is `Has<Element, Ref>`.
+   - Prototyped in scratch with the generator's settings: it writes `Pathway<JsogReference>` and `Pathway<number>` as separate components (`Pathway_JsogReference` once `generate.ts` names them, T018), the union as `oneOf` with `discriminator: {propertyName: schemaClass}`, and a related field as `anyOf` of the object and the reference.
+2. **The readers keep their names; the shapes become the contract's.** The pathway browser's model files turn, class by class, from interfaces into aliases:
+   - the form is `type Pathway = Resolved<C.Pathway<JsogReference>> & ObjectState`, where `Resolved<T>` is the answer with every reference replaced by its object, and `ObjectState` names what the reader adds itself (`isLoaded`, `_updateCounter`; `index`, `moleculeView` and `highlight` on a composition);
+   - an alias of the contract's type with a named client part is allowed by the one-description check (T016), so the 98 model files' names and their 133 uses stay;
+   - an `interface` may still extend such an alias, as the prototype showed.
+3. **The deserializer's type follows its work.** `deserialize<W>(jsog: W): Resolved<W>`. The readers ask for the wire type and get the resolved one, with no cast at the call. The cast stays inside the deserializer, the one place that does the resolving.
+4. **`[key: string]: any` goes**, class by class, as each class moves. A reader of a field no class declares fails the type check, and is fixed then, which lowers the lint count too.
+5. **The writer is held by the snapshot, not by types.** `writeDomain` writes any class from the domain snapshot, with no per-class type, so a renamed contract field cannot fail it at compile time. Instead, a spec holds every contract graph class, field by field, to the properties the snapshot writes for that class, in both directions, as `entity-types.spec.ts` holds the entity kinds.
+6. **The site's `Person` is the graph's Person.** The site reads `/data/person/{id}` as its own `Person`. That is the same Java class in the plain form, so it becomes `Person<number>`, and its 42 known problems as `Person` fall with the person family's move.
+
+**Rationale**: the references are what arrives, so a type without them describes something no client receives; `Resolved<>` states what the deserializer already does. Generic reference forms keep one description per class (FR-003) where two near-copies would drift. Renaming the pathway browser's 98 model types to make room for the contract's, as T023 did for the interactors' one, would touch every file that reads a graph object for no gain in checking.
+
+**Alternatives considered**:
+
+- **The contract describes the resolved object.** It is what the readers use, but no request returns it, so the schema check could not read the recordings with it, and an OpenAPI client would be told something false.
+- **One type per class and form, with no generic** (`JsogPathway`, `PlainPathway`). Two descriptions of each class, which FR-003 forbids in spirit.
+- **The pathway browser's names move to client-only names** (`DrawnPathway`, as T023's `DrawnInteractor`). 133 uses in 51 files renamed, which buys nothing an alias does not.
+- **Generating the graph types from the snapshot.** It knows each class's fields and Java types, but not which fields a view writes or leaves empty. The schema project (reactome/reactome-schemas) is to generate graph types later (spec.md, out of scope), so the hand-written types are checked against the snapshot instead.
+
+**Order**: the families, by what a reader of the enhanced query meets first, each lowering the route's known problems (T025a–f in tasks.md):
+
+1. this design;
+2. the foundation: the reference form, `Resolved<>`, the typed deserializer and the snapshot check, with the edits and their authors (InstanceEdit, Person, Affiliation, the site's `Person`);
+3. the events: Event, Pathway, TopLevelPathway and the reaction-like events;
+4. what events carry: species, compartments and GO terms, summations, literature, figures, review status, disease, cross-references, catalyst activities and regulations;
+5. the physical entities and reference entities, with compositions;
+6. the route row, as the union of every concrete class, so the schema check reads the recordings; the known problems at zero or explained, and T025 ticked.

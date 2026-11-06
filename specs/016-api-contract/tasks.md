@@ -154,7 +154,13 @@ description: 'Tasks for spec 016: one API contract for the content service and t
   - **Renames fail both sides** (`npx tsc -p tools/tsconfig.json --noEmit`, `npx tsc -p tsconfig.app.json --noEmit`): `PathwayCitation.imageCitation` fails `citation-endpoints.ts` and the pathway browser's `citation.component.ts`; `DiagramFlagResult.occurrences` fails `search-diagram-endpoints.ts` and `data-state.service.ts`; `PathwayBrowserNode.children` fails `pathways-events-endpoints.ts` and the site's `locations-tree.component.ts`; `SimpleEvent.speciesName` fails `person-endpoints.ts` and `person-detail.component.ts`.
   - **Shown failing:** `PathwayBrowserNode.type`, `SimpleEvent.labels` and `DiagramFlagResult.occurrences` retyped fail every recorded answer of their routes.
   - Known problems are unchanged at 11,470: these routes had none.
-- [ ] T025 [US5] The enhanced query (2,659 known problems): graph objects as a union on `className`/`schemaClass` with an OpenAPI discriminator, starting from the classes the site reads.
+- [ ] T025 [US5] The enhanced query (2,793 known problems; 2,659 when this was planned, the recordings having grown since): graph objects as a union on `schemaClass` with an OpenAPI discriminator, starting from the classes the site reads. Split by family as [research.md](research.md) R9 orders it, one or more pull requests each; T025 is ticked with T025f.
+  - [x] T025a The design: what the enhanced query writes (JSOG references, compositions, 47 classes), why its known problems are what they are, and how the contract describes graph objects (R9, data-model.md "Graph objects"). Docs only. — #854
+  - [ ] T025b The foundation: the reference form (`JsogReference`), `Resolved<>` and the typed `JSOGDeserializer.deserialize`, the snapshot check of graph classes' fields, and the edits with their authors (`InstanceEdit`, `Person`, `Affiliation`; the site's `Person` becomes `Person<number>`).
+  - [ ] T025c The events: `Event`, `Pathway`, `TopLevelPathway` and the reaction-like events.
+  - [ ] T025d What events carry: species, compartments and GO terms, summations, literature, figures, review status, disease, cross-references, catalyst activities and regulations.
+  - [ ] T025e The physical entities and reference entities, with compositions (`Has`).
+  - [ ] T025f The route row for `/data/query/enhanced/v2/{id}`, the union of every class the query can answer, so the schema check reads its 93 recordings; the known problems at zero or each explained.
 - [ ] T026 [US5] An entity's other forms (1,660), then the interactors' details (1,560), then the remaining families by known problems.
 - [ ] T027 [US5] The render service's types (`tools/render`), then the analysis service's, splitting the analysis model's values (`TYPES`) from its types first.
 
