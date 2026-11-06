@@ -31,6 +31,7 @@
  * database; stops after 20 differences in a row. Prints reaction ids, counts
  * and paths into the diagram only. Exits 1 on any difference.
  */
+import { sameWithin } from './reaction-layout/compare-json.ts';
 import { close, read } from './graph.ts';
 import { layOut } from './reaction-layout/algorithm.ts';
 import { canonicalReaction } from './reaction-layout/canonical.ts';
@@ -191,8 +192,10 @@ function whereDiffers(java: Json, node: Json, path = ''): string {
 
 /** Which parts of two summaries differ; the orders only when all else agrees. */
 function differences(java: Summary, node: Summary): string[] {
-  const parts: string[] = (['diagram', 'ids', 'species'] as const).filter(
-    (key) => JSON.stringify(java[key]) !== JSON.stringify(node[key])
+  const parts: string[] = (['diagram', 'ids', 'species'] as const).filter((key) =>
+    key === 'diagram'
+      ? !sameWithin(JSON.parse(java.diagram) as Json, JSON.parse(node.diagram) as Json)
+      : JSON.stringify(java[key]) !== JSON.stringify(node[key])
   );
   if (!parts.length && java.orders !== node.orders) parts.push('orders');
   return parts;
@@ -252,8 +255,28 @@ interface Outcome {
 const isJavaException = (error: unknown) =>
   error instanceof JavaNullPointerException || error instanceof JavaRuntimeException;
 
+/**
+ * Java's answer with its ids taken from its first: the same layout and orders
+ * on two attempts give the same text, wherever each attempt's ids began.
+ */
+function fingerprint(summary: Summary, first: number): string {
+  const relative = (text: string) =>
+    JSON.stringify(
+      JSON.parse(text, (_key, value: unknown) =>
+        typeof value === 'number' && Number.isInteger(value) && value >= first
+          ? value - first
+          : value
+      )
+    );
+  return `${summary.diagram}|${relative(summary.orders)}`;
+}
+
+/** Attempts after which, Java having answered the same each time, node's difference is node's. */
+const STEADY = 4;
+
 /** One reaction compared. */
 async function compare(stId: string): Promise<Outcome> {
+  const answers = new Set<string>();
   for (let attempt = 1; ; attempt += 1) {
     let answer: Awaited<ReturnType<typeof java>>;
     try {
@@ -300,6 +323,7 @@ async function compare(stId: string): Promise<Outcome> {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
     const nodeSummary = summary(laid.diagram, laid.inputs.reaction.data.speciesName);
+    answers.add(fingerprint(javaSummary, first));
     const parts = differences(javaSummary, nodeSummary);
     if (!parts.length) return attempt > 1 ? { parts, attempt } : { parts };
     const last: Outcome = parts.includes('diagram')
@@ -315,8 +339,12 @@ async function compare(stId: string): Promise<Outcome> {
     if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
     // A layout or an order that differs may be one of Java's others -- which of
     // an entity's roles keeps the glyph and which goes to its copy follows the
-    // roles' random order (D21): ask again, up to ATTEMPTS.
-    if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS) continue;
+    // roles' random order (D21): ask again, up to ATTEMPTS -- but once Java has
+    // answered the same STEADY times, it is not varying, and the difference is
+    // node's: no more requests on the shared database.
+    const steady = attempt >= STEADY && answers.size === 1;
+    if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS && !steady)
+      continue;
     return last;
   }
 }

@@ -633,8 +633,16 @@ it is made, not three steps later.
      (`ConnectorImpl.setPointer`, `ShapeBuilder`). That code is not in the
      library's source: it was read from the bytecode of the deployed
      diagram-reader 1.2.5, and its values were checked against that jar run
-     under JDK 11. Java's `Math.sin`, `cos` and `atan` gave the same bits as
-     Node's on every value the comparison met.
+     under JDK 11. `atan` gives Java's bits (Java's goes through StrictMath,
+     fdlibm, as Node's does), but `sin` and `cos` do not: on x86-64 HotSpot
+     uses its own table-driven routines, whose last bit differs from Node's
+     on about 3.5% of arguments. Diagonal catalyst, inhibitor and activator
+     lines, and fans of nine or more regulators, can come out a bit apart
+     (0.35% of 20,000 random connector ends). Decided 5 Nov 2026 (awright),
+     a declared difference (D11): the comparison takes numbers within a
+     billionth of their size as equal. Java's own bits would change on
+     another platform, so they are not a stable target, and no drawing can
+     show the difference.
    - A reaction moved into a child compartment is held by the child, but
      keeps the outer compartment as its own (`Box.moveReactionTo`). Its cell
      is then sized and checked as the outer compartment's.
