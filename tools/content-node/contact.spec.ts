@@ -523,45 +523,44 @@ describe('the mail, through an SMTP server', () => {
     return { headers: data.slice(0, at), body: data.slice(at + 4) };
   };
 
-  it("sends Java's message to the support address, from the reader", async () => {
+  it("sends one message to the support address, from it, Reply-To the reader, with Java's body", async () => {
     const answer = await contactAnswer(request(form()), trusting(good.cert));
     expect(answer).toEqual({ status: 200 });
     expect(smtp.received).toHaveLength(1);
     const [mail] = smtp.received;
-    expect(mail?.from).toBe('MAIL FROM:<reader@example.org>');
+    expect(mail?.from).toBe('MAIL FROM:<support@example.org>');
     expect(mail?.to).toEqual(['RCPT TO:<support@example.org>']);
     const { headers, body } = parts(mail?.data ?? '');
-    expect(headers).toMatch(/^From: A Reader <reader@example\.org>$/m);
-    expect(headers).toMatch(/^To: support@example\.org$/m);
+    expect(headers).toMatch(/^From: Help desk <support@example\.org>$/m);
+    expect(headers).toMatch(/^Reply-To: A Reader <reader@example\.org>$/m);
+    expect(headers).toMatch(/^To: Help desk <support@example\.org>$/m);
     expect(headers).toMatch(/^Subject: A question$/m);
     expect(headers).toMatch(/^Content-Type: text\/plain; charset=utf-8$/m);
     expect(headers).not.toMatch(/^X-Mailer:/m);
     expect(body).toBe('From: A Reader <reader@example.org>\r\n\r\nHello.\r\nA second line.\r\n');
   });
 
-  it('sends the reader a copy, from the support address, when asked as Java is asked', async () => {
-    for (const [flag, copies] of [
-      ['on', true],
-      ['TRUE', true],
-      ['yes', false],
-      [undefined, false],
-    ] as const) {
+  it('names the reader by address when no name is given, as Java does', async () => {
+    await contactAnswer(request(form({ contactName: ' ' })), trusting(good.cert));
+    const { headers, body } = parts(smtp.received[0]?.data ?? '');
+    expect(headers).toMatch(/^Reply-To: reader@example\.org$/m);
+    expect(body).toBe(
+      'From: reader@example.org <reader@example.org>\r\n\r\nHello.\r\nA second line.\r\n'
+    );
+  });
+
+  it('sends nothing to the reader, whatever sendEmailCopy says', async () => {
+    for (const flag of ['on', 'TRUE', 'yes', undefined]) {
       smtp.received.length = 0;
-      await contactAnswer(
-        request(form({ sendEmailCopy: flag, contactName: '' })),
+      const answer = await contactAnswer(
+        request(form({ sendEmailCopy: flag })),
         trusting(good.cert)
       );
-      expect([flag, smtp.received.length]).toEqual([flag, copies ? 2 : 1]);
-      if (!copies) continue;
-      const copy = smtp.received[1];
-      expect(copy?.to).toEqual(['RCPT TO:<reader@example.org>']);
-      const { headers, body } = parts(copy?.data ?? '');
-      expect(headers).toMatch(/^From: Help desk <support@example\.org>$/m);
-      expect(headers).toMatch(/^Subject: \[Copy\] A question$/m);
-      // No name given: the address stands for it, as in Java.
-      expect(body).toBe(
-        'From: reader@example.org <reader@example.org>\r\n\r\nHello.\r\nA second line.\r\n'
-      );
+      expect([flag, answer.status, smtp.received.map((each) => each.to)]).toEqual([
+        flag,
+        200,
+        [['RCPT TO:<support@example.org>']],
+      ]);
     }
   });
 
@@ -577,7 +576,9 @@ describe('the mail, through an SMTP server', () => {
     );
     const [mail] = smtp.received;
     expect(mail?.to).toEqual(['RCPT TO:<support@example.org>']);
-    expect(parts(mail?.data ?? '').headers).not.toMatch(/^Bcc:/im);
+    const { headers } = parts(mail?.data ?? '');
+    expect(headers).not.toMatch(/^Bcc:/im);
+    expect(headers.match(/^Reply-To:.*$/gm)).toHaveLength(1);
   });
 
   it('logs in only once the connection is secure', async () => {

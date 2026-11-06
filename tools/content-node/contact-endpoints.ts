@@ -1,7 +1,8 @@
 /**
  * The contact endpoint (spec 006 T085, research D23): POST /contact,
- * ContactController's -- a message to the help desk, and a copy to the
- * reader if asked.
+ * ContactController's -- a message to the help desk. Not the copy to the
+ * reader Java sent when asked: `sendEmailCopy` is still taken, and ignored
+ * (research D23).
  *
  * Java's parameters, read as Tomcat reads them -- from the query and from a
  * form body, URL-encoded or multipart -- and Java's answers where Java
@@ -20,10 +21,10 @@ import { settings } from './settings.ts';
 import { turnstileVerified } from './turnstile.ts';
 import type { MailSettings, Sender } from './contact.ts';
 import {
-  contactMails,
+  contactMail,
   javaBlank,
   mailSettings,
-  sendOne,
+  sendMail,
   singleAddress,
   smtpSender,
 } from './contact.ts';
@@ -131,13 +132,11 @@ export async function contactAnswer(
   if (!singleAddress(form.mailAddress))
     return javaError(request, 400, 'BAD_REQUEST', 'mailAddress is not one email address');
 
-  const copyFlag = field('sendEmailCopy').toLowerCase();
-  const mails = contactMails(form, copyFlag === 'on' || copyFlag === 'true', mail);
+  // sendEmailCopy was bound above, as Java declares it, and goes no further:
+  // nothing is sent to an address the reader typed (research D23).
   const sender = dependencies.sender(mail);
   try {
-    // One after the other, as Java sends them: no copy of a message that
-    // did not reach the help desk.
-    for (const each of mails) await sendOne(sender, each);
+    await sendMail(sender, contactMail(form, mail));
   } catch (failure) {
     // The code alone: the server's own words can carry the addresses.
     const { code, responseCode } = (failure ?? {}) as { code?: unknown; responseCode?: unknown };

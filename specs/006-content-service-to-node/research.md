@@ -871,21 +871,19 @@ difference.
 ## D23. The contact form: Java's mail, Turnstile's check, a verified server (T085)
 
 **Decided** by awright, 6 Nov 2026, for `POST /contact`
-(ContactController): the help desk's mail is sent as Java sends it, and two
-things are not done as Java does them.
+(ContactController): Java's parameters and refusals, and four things not
+done as Java does them -- the human check, the mail server's certificate,
+whom the message is from, and the reader's copy.
 
 **What is Java's, unchanged.** The parameters, read from the query and from a
 URL-encoded or multipart form body, as Tomcat reads them; a text/plain body
 is not read (measured). The first missing required parameter is Spring's 400
 in the envelope, in the method's order. A blank token is the 400 text
 `captcha verification failed`, then a blank address, subject or message the
-400 text `missing required field`. Then up to two messages, one after the
-other: the reader's, from the reader's name and address (the address when no
-name is given) to the support address, under the reader's subject; and, when
-`sendEmailCopy` is `on` or `true` in any case, a copy to the reader from the
-support name and address, its subject `[Copy] ` and the subject. Both bodies
-are `From: name <address>`, a blank line, and the message. No Reply-To, as
-in Java. The answer is an empty 200. Java's answers before sending were
+400 text `missing required field`. The message keeps Java's subject (the
+reader's) and Java's body: `From: name <address>` -- the address when no
+name is given -- a blank line, and the message. The answer is an empty 200.
+Java's answers before sending were
 measured against the deployed service on 6 Nov 2026; no request it would
 accept was sent to it, since it would send mail.
 
@@ -912,15 +910,33 @@ internal authority is added with Node's `NODE_EXTRA_CA_CERTS`, never by
 trusting everything. Whether the deployed server passes is learned by the
 first test message, which needs awright's go-ahead.
 
+**Different: whom the message is from, and no copy** (awright, 6 Nov 2026,
+replacing #835's Java shape). Java sent the help desk's message from the
+reader's own name and address, and, when `sendEmailCopy` was `on` or
+`true`, a copy from the support address to the reader. Node sends one
+message, from the support name and address (`CONTACT_SUPPORT_NAME`,
+`CONTACT_SUPPORT_ADDRESS`) to the support address, with the reader as its
+Reply-To, so a reply from the help desk reaches them. A message from the
+reader's address, sent by a server that domain does not name, is refused
+or filed as spam by receiving mail checks (SPF, DMARC); one from the site's
+own address is not. No copy goes to the reader: it would send mail to any
+address someone types, a Turnstile pass apiece. `sendEmailCopy` is still
+taken, as an optional parameter as Java declares it, and ignored. Every
+address goes to the library as an object, never as text it parses.
+
+**Open, for awright to decide later:** whether the site's search-page form
+(its own `/contact` route, which sends through the local mail transfer
+agent) moves onto this endpoint, so there is one mail path. Both stay for
+now.
+
 **What Java never answered.** In its envelope: 503 `SERVICE_UNAVAILABLE` when
 the deployment cannot send (no SMTP server, no support address, a login asked
 for and not given, or no Turnstile secret), before Cloudflare is asked
 anything; 400 `BAD_REQUEST` for an address that is not one plain address
 (Java's `InternetAddress` refused those with a 500 naming the exception), so
-the copy can never go to a list; and 500 `The message could not be sent`,
+the Reply-To is never a list; and 500 `The message could not be sent`,
 without the server's own words, when the mail could not be handed on (Java's
-500 carried the exception's message). A copy that fails after the help
-desk's message was sent is that 500, as in Java.
+500 carried the exception's message).
 
 **The library: nodemailer.** It is the usual way Node sends mail, with no
 dependencies of its own and an MIT-0 licence; it handles STARTTLS, the login,
@@ -938,7 +954,7 @@ default), `CONTACT_SMTP_AUTH` (mail.enable.auth), `CONTACT_SMTP_USER`
 (cnf.mail.support.name), and Turnstile's `CLOUDFLARE_SECRET_KEY`, the site's
 gate's name for it.
 
-**A budget.** Each request that passes may send two messages, so nginx gives
+**A budget.** Each request that passes sends a message, so nginx gives
 the route its own limit, six a minute per address with a burst of three
 (`contact_rate`), in each deployment; local, which has no limits, routes it
 without one.

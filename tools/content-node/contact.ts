@@ -4,10 +4,14 @@
  * and MailService's, with Java's mail settings read from the environment
  * (settings.ts).
  *
- * Two messages at most, as Java sends them: the reader's to the support
- * address, from the reader, and -- asked for -- a copy to the reader, from
- * the support address, its subject "[Copy] " and the subject. Both bodies are
- * "From: name <address>", a blank line, and the message.
+ * One message: the reader's, to the support address. Not Java's shape, by
+ * awright's decision (research D23): it is from the support address, with
+ * the reader as its Reply-To, where Java wrote it from the reader's own
+ * address -- which receiving servers' checks (SPF, DMARC) refuse or file as
+ * spam -- and no copy goes back to the reader, where Java sent one to
+ * whatever address was typed. The body is still Java's: "From: name
+ * <address>", a blank line, and the message, so the help desk sees who
+ * wrote.
  *
  * The connection is not Java's in one respect, deliberately (research D23):
  * the server's certificate is verified -- against the system's certificate
@@ -83,20 +87,29 @@ export function transportOptions(
   };
 }
 
-/** One message, as MailService.start takes it. */
+/** An address as nodemailer takes it: an object, never text to be parsed. */
+export interface Address {
+  name: string;
+  address: string;
+}
+
+/** The one message a form sends. */
 export interface Mail {
-  fromName: string;
-  fromAddress: string;
-  to: string;
+  from: Address;
+  replyTo: Address;
+  to: Address;
   subject: string;
   body: string;
 }
 
 /**
  * One plain address, user@domain, and nothing an address parser could read
- * as more than one, or as a name: MailService's `new InternetAddress(..)`
- * refused anything but one address, and the copy goes to the address the
- * reader gives, so this is what stops one request mailing a list.
+ * as more than one, or as a name. Nothing is sent to the reader's address
+ * any more, but it is still the message's Reply-To: a reply from the help
+ * desk goes to it, so a list typed there would be answered as a list. And
+ * MailService's `new InternetAddress(..)` refused anything but one address,
+ * so this keeps that refusal (a 400 here, Java's 500). The support address
+ * is held to it too.
  */
 export function singleAddress(text: string): boolean {
   // Printable ASCII only -- no space, no control character -- as an
@@ -122,35 +135,25 @@ export function javaBlank(text: string): boolean {
 }
 
 /**
- * ContactController's messages for one form: the reader's to the support
- * address and, asked for, the copy back to the reader.
+ * The message for one form: from the support address, to it, Reply-To the
+ * reader -- named when a name was given -- and Java's body. `sendEmailCopy`
+ * plays no part: no copy is sent (research D23).
  */
-export function contactMails(
+export function contactMail(
   form: { contactName: string; mailAddress: string; subject: string; message: string },
-  copy: boolean,
   mail: MailSettings
-): Mail[] {
-  const fromName = javaBlank(form.contactName) ? form.mailAddress : form.contactName;
-  // String.format's %n is the platform's line separator: a newline on Linux.
-  const body = `From: ${fromName} <${form.mailAddress}>\n\n${form.message}`;
-  const mails: Mail[] = [
-    {
-      fromName,
-      fromAddress: form.mailAddress,
-      to: mail.supportAddress,
-      subject: form.subject,
-      body,
-    },
-  ];
-  if (copy)
-    mails.push({
-      fromName: mail.supportName,
-      fromAddress: mail.supportAddress,
-      to: form.mailAddress,
-      subject: `[Copy] ${form.subject}`,
-      body,
-    });
-  return mails;
+): Mail {
+  const named = !javaBlank(form.contactName);
+  const fromName = named ? form.contactName : form.mailAddress;
+  const support = { name: mail.supportName, address: mail.supportAddress };
+  return {
+    from: support,
+    replyTo: { name: named ? form.contactName : '', address: form.mailAddress },
+    to: support,
+    subject: form.subject,
+    // String.format's %n is the platform's line separator: a newline on Linux.
+    body: `From: ${fromName} <${form.mailAddress}>\n\n${form.message}`,
+  };
 }
 
 /** Something that sends a message, as nodemailer's transports do. */
@@ -163,19 +166,21 @@ export function smtpSender(mail: MailSettings, ca?: ConnectionOptions['ca']): Se
   return nodemailer.createTransport(transportOptions(mail, ca));
 }
 
+/** nodemailer's form of an address: the address alone when there is no name. */
+const addressOf = ({ name, address }: Address) =>
+  javaBlank(name) ? { name: '', address } : { name, address };
+
 /**
- * Sends one message, as MailService.start does: plain text, From the name
- * and address (the address alone when the name is blank), To one address.
- * Addresses go in as objects, never as text to be parsed, and the name and
- * subject are encoded by the library, so a line break in either is no new
- * header.
+ * Sends the message: plain text, as MailService.start did. Every address
+ * goes in as an object, never as text to be parsed, and the names and the
+ * subject are encoded by the library, so a line break in any of them is no
+ * new header.
  */
-export async function sendOne(sender: Sender, mail: Mail) {
+export async function sendMail(sender: Sender, mail: Mail) {
   await sender.sendMail({
-    from: javaBlank(mail.fromName)
-      ? mail.fromAddress
-      : { name: mail.fromName, address: mail.fromAddress },
-    to: mail.to,
+    from: addressOf(mail.from),
+    replyTo: addressOf(mail.replyTo),
+    to: addressOf(mail.to),
     subject: mail.subject,
     text: mail.body,
     // No X-Mailer naming the library and its version.

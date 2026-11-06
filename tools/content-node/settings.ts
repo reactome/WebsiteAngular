@@ -43,8 +43,8 @@ export const settings = {
   /**
    * The help-desk form's mail (POST /contact, contact.ts): the SMTP server,
    * its port (587, or 465 for TLS from the first byte), whether it asks for a
-   * login, the login, and where messages go and whom the reader's copy is
-   * from. Java's mail.host, mail.port, mail.enable.auth, mail.username,
+   * login, the login, and the support name and address messages go to and
+   * come from. Java's mail.host, mail.port, mail.enable.auth, mail.username,
    * mail.password, cnf.mail.support.address and cnf.mail.support.name. Without
    * the server, the address or (asked for) the login, the form answers 503.
    */
