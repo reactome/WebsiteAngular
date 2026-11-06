@@ -4,8 +4,9 @@
  * steps built so far decide. Node runs in process from the first glyph id
  * Java's answer shows (its edge's), so the two make the same glyphs with the
  * same ids. Step 3 compares:
- * - the whole diagram in the site's canonical form (canonical.ts), with
- *   every position exact. What Jackson leaves out and the order it writes
+ * - the whole diagram in the site's canonical form (canonical.ts), numbers
+ *   within a billionth of their size (compare-json.ts, research D22's
+ *   declared sin and cos difference). What Jackson leaves out and the order it writes
  *   fields in are step 4's, so null and empty fields are dropped from node's
  *   side, as Java's answer has them, and keys are compared sorted;
  * - each glyph id with what it is: node ids with their entity, compartment
@@ -26,7 +27,10 @@
  * times. One whose diagram or orders differ is asked again up to
  * REACTION_LAYOUT_ATTEMPTS times (default 24, D21): Java's layout, and which
  * glyph of an entity drawn twice keeps which role, can follow the random
- * order of a participant's roles, and a match on any attempt is a match. A Java error
+ * order of a participant's roles, and a match on any attempt is a match. Once
+ * Java has answered the same REACTION_LAYOUT_STEADY times (default 4), it
+ * stops, and reports the reaction to be looked at by hand; 24 gives D21's
+ * miss rate. A Java error
  * must meet an error from node; its text is step 5's. Spaced for the shared
  * database; stops after 20 differences in a row. Prints reaction ids, counts
  * and paths into the diagram only. Exits 1 on any difference.
@@ -172,7 +176,7 @@ function whereDiffers(java: Json, node: Json, path = ''): string {
     if (java.length !== node.length)
       return `${path} (java ${java.length} items, node ${node.length})`;
     for (let i = 0; i < java.length; i += 1)
-      if (JSON.stringify(java[i]) !== JSON.stringify(node[i]))
+      if (!sameWithin(java[i] as Json, node[i] as Json))
         return whereDiffers(java[i] as Json, node[i] as Json, `${path}[${i}]`);
   } else if (
     java &&
@@ -184,7 +188,7 @@ function whereDiffers(java: Json, node: Json, path = ''): string {
   ) {
     const keys = [...new Set([...Object.keys(java), ...Object.keys(node)])].sort();
     for (const key of keys)
-      if (JSON.stringify(java[key]) !== JSON.stringify(node[key]))
+      if (!(key in java && key in node && sameWithin(java[key] as Json, node[key] as Json)))
         return whereDiffers(java[key] ?? null, node[key] ?? null, `${path}.${key}`);
   }
   return path || '.';
@@ -256,23 +260,16 @@ const isJavaException = (error: unknown) =>
   error instanceof JavaNullPointerException || error instanceof JavaRuntimeException;
 
 /**
- * Java's answer with its ids taken from its first: the same layout and orders
- * on two attempts give the same text, wherever each attempt's ids began.
+ * Java's layout, in canonical form: the same on two attempts when Java drew
+ * the same thing. Its orders are not part of it -- they follow where each
+ * request's ids began (D21), so they differ between attempts by design.
  */
-function fingerprint(summary: Summary, first: number): string {
-  const relative = (text: string) =>
-    JSON.stringify(
-      JSON.parse(text, (_key, value: unknown) =>
-        typeof value === 'number' && Number.isInteger(value) && value >= first
-          ? value - first
-          : value
-      )
-    );
-  return `${summary.diagram}|${relative(summary.orders)}`;
+function fingerprint(summary: Summary): string {
+  return summary.diagram;
 }
 
 /** Attempts after which, Java having answered the same each time, node's difference is node's. */
-const STEADY = 4;
+const STEADY = Number(process.env['REACTION_LAYOUT_STEADY'] || 4);
 
 /** One reaction compared. */
 async function compare(stId: string): Promise<Outcome> {
@@ -323,7 +320,7 @@ async function compare(stId: string): Promise<Outcome> {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
     const nodeSummary = summary(laid.diagram, laid.inputs.reaction.data.speciesName);
-    answers.add(fingerprint(javaSummary, first));
+    answers.add(fingerprint(javaSummary));
     const parts = differences(javaSummary, nodeSummary);
     if (!parts.length) return attempt > 1 ? { parts, attempt } : { parts };
     const last: Outcome = parts.includes('diagram')
@@ -345,7 +342,13 @@ async function compare(stId: string): Promise<Outcome> {
     const steady = attempt >= STEADY && answers.size === 1;
     if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS && !steady)
       continue;
-    return last;
+    // Stopped early, Java having answered the same each time: most likely
+    // node's, but a layout Java gives rarely can hide behind four of its
+    // usual one -- to look at by hand, or ask again with
+    // REACTION_LAYOUT_STEADY=24 for D21's rate.
+    return steady && attempt < ATTEMPTS
+      ? { ...last, parts: [...last.parts, `Java the same ${attempt} times: look at by hand`] }
+      : last;
   }
 }
 
