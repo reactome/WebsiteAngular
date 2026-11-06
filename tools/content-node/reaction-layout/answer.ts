@@ -50,7 +50,8 @@ type Members = Member[];
 function written(value: Exclude<Value, undefined>, double = false): string {
   if (value === null) return 'null';
   if (value instanceof RawJson) return value.text;
-  if (Array.isArray(value)) return `[${value.map((item) => written(item)).join(',')}]`;
+  // The one object left is a list (Array.isArray would make its items `any`).
+  if (typeof value === 'object') return `[${value.map((item) => written(item)).join(',')}]`;
   if (typeof value === 'string') return javaString(value);
   if (typeof value === 'number') return double ? javaDouble(value) : String(value);
   return String(value);
