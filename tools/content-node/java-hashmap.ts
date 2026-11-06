@@ -60,8 +60,13 @@ export class JavaHashMap<K = string, V = unknown> {
    * folded into the low -- the hash of a reaction layout's glyphs.
    */
   static longObjectsHash(id: number): number {
+    return (31 + JavaHashMap.longHash(id)) | 0;
+  }
+
+  /** Long.hashCode: the high half folded into the low -- a map keyed by a Long. */
+  static longHash(id: number): number {
     const big = BigInt.asUintN(64, BigInt(id));
-    return (31 + Number(BigInt.asIntN(32, big ^ (big >> 32n)))) | 0;
+    return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
   }
 
   /** The node holding `key`, or null: a bucket's list or its tree, walked in order. */

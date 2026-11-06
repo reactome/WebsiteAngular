@@ -1,30 +1,32 @@
 /**
  * The reaction layout comparison (spec 006 T092, research D22): node's
- * layout against Java's /exporter/reaction/{id}/diagram, on the parts the
- * steps built so far decide. Node runs in process from the first glyph id
- * Java's answer shows (its edge's), so the two make the same glyphs with the
- * same ids. Step 3 compares:
- * - the whole diagram in the site's canonical form (canonical.ts), numbers
- *   within a billionth of their size (compare-json.ts, research D22's
- *   declared sin and cos difference). What Jackson leaves out and the order it writes
- *   fields in are step 4's, so null and empty fields are dropped from node's
- *   side, as Java's answer has them, and keys are compared sorted;
+ * answer against Java's /exporter/reaction/{id}/diagram. Node runs in
+ * process from the first glyph id Java's answer shows (its edge's), so the
+ * two make the same glyphs with the same ids. Steps 1 to 4 compare:
+ * - the status and the Content-Type's media type, as the parity harness
+ *   compares them;
+ * - the whole diagram and graph in the site's canonical form (canonical.ts),
+ *   numbers within a billionth of their size (compare-json.ts, research
+ *   D22's declared sin and cos difference);
  * - each glyph id with what it is: node ids with their entity, compartment
  *   ids with their compartment, the edge's with the reaction -- so a glyph
  *   made out of Java's order shows here;
  * - the orders Java's hash sets give the nodes, the compartments, each
- *   compartment's components and the edge's parts, when everything else
- *   agrees;
- * - the reaction's species, from the graph, until step 4 compares the graph.
+ *   compartment's components and the edge's parts, and the order of each
+ *   node's connectors, when everything else agrees;
+ * - then the raw text, byte for byte but for the declared differences
+ *   (raw-text.ts): what the canonical form cannot see -- number formatting,
+ *   whitespace, field order, what is left out -- and the graph's own orders.
  *
  *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count | stId...]
  *
  * Reactions: the stable ids given, or `count` at random (default 200), every reaction with no
  * compartment, and some failed reactions, disease ones, ones with drugs among
  * or inside their participants, heavily modified proteins, genes and cells,
- * and ones across many compartments. An answer whose ids alone differ is
+ * ones across many compartments, and regulated ones and ones with entity
+ * functional statuses, for the graph. An answer whose ids alone differ is
  * asked again (another request may have taken ids in between), up to three
- * times. One whose diagram or orders differ is asked again up to
+ * times. One whose diagram, graph or orders differ is asked again up to
  * REACTION_LAYOUT_ATTEMPTS times (default 24, D21): Java's layout, and which
  * glyph of an entity drawn twice keeps which role, can follow the random
  * order of a participant's roles, and a match on any attempt is a match. Once
@@ -33,18 +35,15 @@
  * miss rate. A Java error
  * must meet an error from node; its text is step 5's. Spaced for the shared
  * database; stops after 20 differences in a row. Prints reaction ids, counts
- * and paths into the diagram only. Exits 1 on any difference.
+ * and paths into the answer only. Exits 1 on any difference.
  */
 import { sameWithin } from './reaction-layout/compare-json.ts';
 import { close, read } from './graph.ts';
-import { layOut } from './reaction-layout/algorithm.ts';
+import { reactionAnswer } from './reaction-layout/answer.ts';
 import { canonicalReaction } from './reaction-layout/canonical.ts';
 import type { CanonicalDiagram } from './reaction-layout/canonical.ts';
-import { reactionDiagram } from './reaction-layout/diagram.ts';
-import type { ReactionDiagram } from './reaction-layout/diagram.ts';
-import { readInputs } from './reaction-layout/inputs.ts';
-import type { Inputs } from './reaction-layout/inputs.ts';
 import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
+import { rawDifference } from './reaction-layout/raw-text.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const ATTEMPTS = Number(process.env['REACTION_LAYOUT_ATTEMPTS'] || 24);
@@ -52,7 +51,7 @@ const ATTEMPTS = Number(process.env['REACTION_LAYOUT_ATTEMPTS'] || 24);
 /** A JSON value, as the answer is parsed. */
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
-/** Java's diagram, as far as the comparison reads it. Jackson leaves out what is null or empty. */
+/** The answer, as far as the comparison reads it. Jackson leaves out what is null or empty. */
 interface JavaPart {
   id: number;
 }
@@ -77,19 +76,31 @@ interface JavaDiagram {
   compartments?: (JavaPlaced & { displayName: string; componentIds?: number[] })[];
   links?: CanonicalDiagram['links'];
 }
+interface JavaGraph {
+  nodes?: { dbId: number; diagramIds?: number[] }[];
+  edges?: { dbId: number }[];
+}
 interface JavaAnswer {
   diagram: JavaDiagram;
-  graph?: { speciesName?: string };
+  graph: JavaGraph;
+}
+
+/** One side's answer: its status, media type and text. */
+interface Side {
+  status: number;
+  type: string;
+  text: string;
 }
 
 /** What is compared, part by part. */
 interface Summary {
-  /** The canonical diagram, keys sorted, as JSON. */
+  /** The canonical diagram, as JSON. */
   diagram: string;
+  /** The canonical graph, its diagram ids numbered as the diagram's, as JSON. */
+  graph: string;
   ids: string[];
-  /** The orders Java's hash sets and maps give, by glyph id. */
+  /** The orders Java's hash sets and maps give, by glyph id, and each node's connectors'. */
   orders: string;
-  species: string | null;
 }
 
 const PART_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
@@ -97,34 +108,8 @@ const PART_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'
 /** A list compared as a multiset: each item as JSON, sorted. */
 const sorted = (items: unknown[]) => items.map((item) => JSON.stringify(item)).sort();
 
-/**
- * What Jackson writes of a value (NON_EMPTY): no null fields and no empty
- * lists, at any depth. Applied to node's diagram, which keeps Java's nulls.
- */
-function jackson(value: Json): Json {
-  if (Array.isArray(value)) return value.map(jackson);
-  if (value === null || typeof value !== 'object') return value;
-  const kept: { [key: string]: Json } = {};
-  for (const [key, inner] of Object.entries(value)) {
-    if (inner === null || (Array.isArray(inner) && !inner.length)) continue;
-    kept[key] = jackson(inner);
-  }
-  return kept;
-}
-
-/** A value with every object's keys sorted: key order is step 4's. */
-function keysSorted(value: Json): Json {
-  if (Array.isArray(value)) return value.map(keysSorted);
-  if (value === null || typeof value !== 'object') return value;
-  return Object.fromEntries(
-    Object.keys(value)
-      .sort()
-      .map((key) => [key, keysSorted(value[key] as Json)])
-  );
-}
-
-/** The diagram in canonical form, as the site puts it before drawing (its absent lists as empty). */
-function canonical(diagram: JavaDiagram): Json {
+/** The answer in canonical form, as the site puts it before drawing (its absent lists as empty). */
+function canonical({ diagram, graph }: JavaAnswer): { diagram: Json; graph: Json } {
   const complete = {
     ...diagram,
     nodes: (diagram.nodes ?? []).map((n) => ({ ...n, connectors: n.connectors ?? [] })),
@@ -134,16 +119,23 @@ function canonical(diagram: JavaDiagram): Json {
     })),
     links: diagram.links ?? [],
   };
-  const { diagram: form } = canonicalReaction(complete, { nodes: [], edges: [] });
-  return keysSorted(form as unknown as Json);
+  const form = canonicalReaction(complete, {
+    ...graph,
+    nodes: graph.nodes ?? [],
+    edges: graph.edges ?? [],
+  });
+  return form as unknown as { diagram: Json; graph: Json };
 }
 
-function summary(diagram: JavaDiagram, species: string | null): Summary {
+function summary(answer: JavaAnswer): Summary {
+  const { diagram } = answer;
   const nodes = diagram.nodes ?? [];
   const compartments = diagram.compartments ?? [];
   const [edge] = diagram.edges;
+  const form = canonical(answer);
   return {
-    diagram: JSON.stringify(canonical(diagram)),
+    diagram: JSON.stringify(form.diagram),
+    graph: JSON.stringify(form.graph),
     ids: sorted([
       ['reaction', edge.id, edge.reactomeId],
       ...nodes.map((node) => ['entity', node.id, node.reactomeId]),
@@ -151,22 +143,17 @@ function summary(diagram: JavaDiagram, species: string | null): Summary {
       ...compartments.map((c) => ['compartment', c.id, c.displayName, c.reactomeId]),
     ]),
     orders: JSON.stringify([
-      nodes.map((node) => node.id),
+      // With each node, its connectors' types: an entity both input and
+      // catalyst has its connectors in its roles' random order (D21).
+      nodes.map((node) => [node.id, (node.connectors ?? []).map((c) => c.type)]),
       compartments.map((c) => [c.id, c.componentIds ?? []]),
       PART_LISTS.map((list) => (edge[list] ?? []).map((part) => part.id)),
     ]),
-    species,
   };
 }
 
-/** Node's diagram as Java's answer would have it: laid out, then written as Jackson does. */
-function nodeDiagram(inputs: Inputs): JavaDiagram {
-  const diagram: ReactionDiagram = reactionDiagram(layOut(inputs));
-  return jackson(JSON.parse(JSON.stringify(diagram)) as Json) as unknown as JavaDiagram;
-}
-
 /**
- * Where two canonical diagrams first differ: a path into them, with the two
+ * Where two canonical forms first differ: a path into them, with the two
  * values when they are numbers -- never a name.
  */
 function whereDiffers(java: Json, node: Json, path = ''): string {
@@ -196,10 +183,10 @@ function whereDiffers(java: Json, node: Json, path = ''): string {
 
 /** Which parts of two summaries differ; the orders only when all else agrees. */
 function differences(java: Summary, node: Summary): string[] {
-  const parts: string[] = (['diagram', 'ids', 'species'] as const).filter((key) =>
-    key === 'diagram'
-      ? !sameWithin(JSON.parse(java.diagram) as Json, JSON.parse(node.diagram) as Json)
-      : JSON.stringify(java[key]) !== JSON.stringify(node[key])
+  const parts: string[] = (['diagram', 'graph', 'ids'] as const).filter((key) =>
+    key === 'ids'
+      ? JSON.stringify(java[key]) !== JSON.stringify(node[key])
+      : !sameWithin(JSON.parse(java[key]) as Json, JSON.parse(node[key]) as Json)
   );
   if (!parts.length && java.orders !== node.orders) parts.push('orders');
   return parts;
@@ -225,24 +212,26 @@ async function reactions(count: number): Promise<string[]> {
       UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:Cell) RETURN DISTINCT r.stId AS stId LIMIT 5
       UNION MATCH (r:ReactionLikeEvent)-[:input|output]->(:PhysicalEntity)-[:compartment]->(c:Compartment)
             WITH r, count(DISTINCT c) AS compartments WHERE compartments >= 4
-            RETURN r.stId AS stId LIMIT 25 }
+            RETURN r.stId AS stId LIMIT 25
+      UNION MATCH (r:ReactionLikeEvent)-[:regulatedBy]->(:Regulation) RETURN DISTINCT r.stId AS stId LIMIT 10
+      UNION MATCH (r:ReactionLikeEvent)-[:entityFunctionalStatus]->() RETURN DISTINCT r.stId AS stId LIMIT 10 }
      RETURN DISTINCT stId`,
     { count: Math.trunc(count) }
   );
   return rows.map((row) => row.stId);
 }
 
-/** Java's answer for a reaction: its status, and its body when there is one. */
-async function java(stId: string): Promise<{ status: number; body: JavaAnswer | undefined }> {
+/** The media type of a Content-Type, as the parity harness compares it. */
+const mediaType = (type: string | null) => (type ?? '').split(';')[0]?.trim() ?? '';
+
+/** Java's answer for a reaction. */
+async function java(stId: string): Promise<Side> {
   const response = await fetch(`${JAVA}/ContentService/exporter/reaction/${stId}/diagram`, {
     signal: AbortSignal.timeout(120_000),
   });
   const text = await response.text();
   await new Promise((resolve) => setTimeout(resolve, 150));
-  return {
-    status: response.status,
-    body: response.status === 200 ? (JSON.parse(text) as JavaAnswer) : undefined,
-  };
+  return { status: response.status, type: mediaType(response.headers.get('content-type')), text };
 }
 
 /** The outcome of one reaction: the parts that differ, empty when none do. */
@@ -252,7 +241,7 @@ interface Outcome {
   bothFailed?: boolean;
   /** The attempt Java's layout matched on, past the first. */
   attempt?: number;
-  /** Where the diagrams first differed, on the last attempt. */
+  /** Where the answers first differed, on the last attempt. */
   where?: string;
 }
 
@@ -260,12 +249,13 @@ const isJavaException = (error: unknown) =>
   error instanceof JavaNullPointerException || error instanceof JavaRuntimeException;
 
 /**
- * Java's layout, in canonical form: the same on two attempts when Java drew
- * the same thing. Its orders are not part of it -- they follow where each
- * request's ids began (D21), so they differ between attempts by design.
+ * Java's layout and graph, in canonical form: the same on two attempts when
+ * Java drew the same thing. Its orders are not part of it -- they follow
+ * where each request's ids began (D21), so they differ between attempts by
+ * design.
  */
 function fingerprint(summary: Summary): string {
-  return summary.diagram;
+  return summary.diagram + summary.graph;
 }
 
 /**
@@ -284,73 +274,85 @@ if (!Number.isInteger(STEADY) || STEADY < 2) {
 async function compare(stId: string): Promise<Outcome> {
   const answers = new Set<string>();
   for (let attempt = 1; ; attempt += 1) {
-    let answer: Awaited<ReturnType<typeof java>>;
+    let answer: Side;
+    let body: JavaAnswer | undefined;
+    let first = 1;
     try {
       answer = await java(stId);
+      if (answer.status === 200) {
+        body = JSON.parse(answer.text) as JavaAnswer;
+        first = body.diagram.edges[0].id;
+      }
     } catch (error) {
       const name = (error as Error).name;
       return {
         parts: [
-          name === 'SyntaxError'
-            ? "java's answer unreadable (not JSON)"
+          name === 'SyntaxError' || name === 'TypeError'
+            ? `java's answer unreadable (${name})`
             : `java request failed (${name})`,
         ],
       };
     }
-    let first = 1;
+    let made: Side | Error;
     try {
-      if (answer.body) first = answer.body.diagram.edges[0].id;
+      const { answer: node } = await reactionAnswer(stId, first);
+      made = { status: node.status, type: node.type ?? '', text: node.serialised };
     } catch (error) {
-      return { parts: [`java's answer unreadable (${(error as Error).name})`] };
+      made = error as Error;
     }
-    let laid: { inputs: Inputs; diagram: JavaDiagram } | Error;
-    try {
-      const inputs = await readInputs(stId, first);
-      laid = { inputs, diagram: nodeDiagram(inputs) };
-    } catch (error) {
-      laid = error as Error;
-    }
-    if (!answer.body) {
-      if (answer.status === 500 && isJavaException(laid)) return { parts: [], bothFailed: true };
+    if (!body) {
+      if (answer.status === 500 && isJavaException(made)) return { parts: [], bothFailed: true };
       return {
         parts: [
-          laid instanceof Error
-            ? `java ${answer.status}, node threw ${laid.name}`
+          made instanceof Error
+            ? `java ${answer.status}, node threw ${made.name}`
             : `java ${answer.status}, node answered`,
         ],
       };
     }
-    if (laid instanceof Error)
-      return { parts: [`node threw ${laid.name}: ${laid.message.slice(0, 80)}`] };
+    if (made instanceof Error)
+      return { parts: [`node threw ${made.name}: ${made.message.slice(0, 80)}`] };
+    if (made.status !== answer.status || made.type !== answer.type)
+      return {
+        parts: [
+          `status and type (java ${answer.status} ${answer.type}, node ${made.status} ${made.type})`,
+        ],
+      };
     let javaSummary: Summary;
     try {
-      javaSummary = summary(answer.body.diagram, answer.body.graph?.speciesName ?? null);
+      javaSummary = summary(body);
     } catch (error) {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
-    const nodeSummary = summary(laid.diagram, laid.inputs.reaction.data.speciesName);
+    const nodeSummary = summary(JSON.parse(made.text) as JavaAnswer);
     answers.add(fingerprint(javaSummary));
     const parts = differences(javaSummary, nodeSummary);
+    // All else the same, the ids are Java's: the texts must be too.
+    const text = parts.length ? undefined : rawDifference(answer.text, made.text);
+    if (text) return { parts: ['text'], where: text };
     if (!parts.length) return attempt > 1 ? { parts, attempt } : { parts };
-    const last: Outcome = parts.includes('diagram')
+    const shape = parts.find((part) => part === 'diagram' || part === 'graph');
+    const last: Outcome = shape
       ? {
           parts,
-          where: whereDiffers(
-            JSON.parse(javaSummary.diagram) as Json,
-            JSON.parse(nodeSummary.diagram) as Json
-          ),
+          where: `${shape}${whereDiffers(
+            JSON.parse(javaSummary[shape]) as Json,
+            JSON.parse(nodeSummary[shape]) as Json
+          )}`,
         }
       : { parts };
     // Ids alone differing may be another request's ids in between: ask again.
     if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
     // A layout or an order that differs may be one of Java's others -- which of
-    // an entity's roles keeps the glyph and which goes to its copy follows the
-    // roles' random order (D21): ask again, up to ATTEMPTS -- but once Java has
-    // drawn the same STEADY times it is probably not varying, so stop asking
-    // on the shared database and report it (below).
-    const steady = attempt >= STEADY && answers.size === 1;
-    if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS && !steady)
-      continue;
+    // an entity's roles keeps the glyph and which goes to its copy, and the
+    // order of its connectors, follow the roles' random order (D21): ask
+    // again, up to ATTEMPTS -- but once Java has drawn the same STEADY times
+    // it is probably not varying, so stop asking on the shared database and
+    // report it (below). Orders alone are not stopped so: Java draws the
+    // same while they vary, an entity both input and catalyst's connectors
+    // one way or the other on each request.
+    const steady = shape !== undefined && attempt >= STEADY && answers.size === 1;
+    if ((shape || parts.includes('orders')) && attempt < ATTEMPTS && !steady) continue;
     // Stopped early, Java having answered the same each time: most likely
     // node's, but a layout Java gives rarely can hide behind four of its
     // usual one -- to look at by hand, or ask again with
@@ -366,7 +368,7 @@ async function main() {
   const ids = asked.some((arg) => arg.startsWith('R-'))
     ? asked
     : await reactions(Number(asked[0] ?? 200));
-  console.log(`comparing ${ids.length} reactions, steps 1 to 3 (up to ${ATTEMPTS} attempts each)`);
+  console.log(`comparing ${ids.length} reactions, steps 1 to 4 (up to ${ATTEMPTS} attempts each)`);
   let identical = 0;
   let bothFailed = 0;
   let retried = 0;

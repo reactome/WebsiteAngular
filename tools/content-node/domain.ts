@@ -836,7 +836,7 @@ function number(value: number | string): string {
 }
 
 /** A string as Jackson escapes it: as JSON.stringify, with upper-case \u00XX. */
-function javaString(text: string): string {
+export function javaString(text: string): string {
   return JSON.stringify(text).replace(
     /(\\+)u00([0-9a-f]{2})/g,
     (match: string, slashes: string, hex: string) =>
@@ -846,10 +846,11 @@ function javaString(text: string): string {
 
 /**
  * Double.toString: always a decimal point; scientific notation, as `1.0E-4`,
- * below 10^-3 and from 10^7.
+ * below 10^-3 and from 10^7; negative zero keeps its sign, `-0.0`.
  */
 export function javaDouble(value: number): string {
   if (!Number.isFinite(value)) return JSON.stringify(String(value));
+  if (Object.is(value, -0)) return '-0.0';
   const magnitude = Math.abs(value);
   if (magnitude !== 0 && (magnitude < 1e-3 || magnitude >= 1e7)) {
     // toExponential always writes an 'e': both parts are there.

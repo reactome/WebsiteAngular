@@ -665,6 +665,53 @@ it is made, not three steps later.
 4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
    the answer as Java writes it. Compared: the whole answer in canonical
    form, as D21 declares.
+   - Done in #832. The graph's two queries are Java's, unchanged. graph-core
+     maps their rows into diagram-reader's `EntityNodeImpl` and
+     `EventNodeImpl` by field name (`ReflectionUtils.build`, read from the
+     deployed bytecode): a Long with no value is 0, a list with none is
+     empty. So every event's `speciesID` is 0, the query returning no
+     `speciesId`, and its `inhibitors`, `activators` and `requirements` are
+     always empty: the query's `regulations` match no field and are dropped.
+     Node does the same. An entity of the graph the layout does not draw has
+     no `diagramIds`.
+   - The answer is written as ContentService's mapper writes it: Jackson
+     2.13, NON_EMPTY (null, empty text and empty lists left out; 0 and false
+     written), Doubles as JDK 11's `Double.toString`. Each class's field
+     order was read by writing it, every field set, with the deployed jars,
+     and a test holds node's text to Jackson's for a whole answer written
+     that way. `Double.toString` under JDK 11 is not always the shortest
+     form: of 300,000 random doubles node wrote 225 differently, all of them
+     10^16 or more, which no layout reaches. Writing it found `-0.0`, which
+     the service's `javaDouble` wrote `0.0`; fixed there.
+   - **Another order set when the JVM starts.** An event's
+     `entityFunctionalStatus` and `speciesID` are named by getters that match
+     no field, so Jackson writes them after the rest, in the order the JVM
+     lists the class's methods. HotSpot orders those by where their names
+     sit in memory, so the order follows what was loaded before: in a
+     program that wrote an `EntityNodeImpl` first, `speciesID` came first;
+     the deployed service writes `entityFunctionalStatus` first. Node writes
+     the deployed order, and the comparison does not count the order of
+     those two as a difference. Elsewhere such properties are alone in their
+     object or never set: a node's `needDashedBorder`; a compartment's
+     `componentIds` (its `needDashedBorder` is never set); a diagram's
+     `cpicture`, never set.
+   - **The raw text** (D21) is compared once the canonical forms, the ids
+     and the orders agree, when node has made Java's glyphs with Java's ids:
+     the two texts must then be the same byte for byte, but for the two top
+     keys' order, the event's two fields above, and numbers within the
+     declared billionth (step 3), which must still be written as Java writes
+     a double. A number of the same value written another way (`1` for
+     `1.0`, `0.0001` for `1.0E-4`, `0.0` for `-0.0`), a space, a key out of
+     order or a field left out is a difference. Mutating node's writer
+     (a Double written as an integer, two fields swapped, a 0 left out)
+     makes the live comparison fail.
+   - The orders compared now include each node's connectors' types: an
+     entity both input and catalyst has its connectors in its roles' random
+     order (D21), so such a reaction is asked again like any other order,
+     and, Java drawing the same while that order varies, is not stopped
+     after REACTION_LAYOUT_STEADY answers.
+   - One more input assumed stable (D21): the order of the graph query's
+     rows, which is the graph's node order, and which the raw text compares.
 5. **Routing.** `/exporter/reaction/{identifier}/diagram` moves to node,
    errors included:
    - an id, stable or a dbId, that is not a reaction-like event is Java's
