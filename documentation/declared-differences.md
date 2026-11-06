@@ -12,7 +12,7 @@ reports the difference as intended and reports its disappearance as news
 
 This page gathers every declared difference into one register. It does not
 replace the sources: each row links to the place the difference is recorded,
-which stays the authority. Compiled 6 Nov 2026.
+which stays the authority. Compiled 6 Nov 2026, and updated the same day.
 
 **Terms used here**
 
@@ -43,15 +43,15 @@ which stays the authority. Compiled 6 Nov 2026.
 | [ContentService: content and people](#contentservice-content-and-people)              |           6 | Live on beta                                         |
 | [ContentService: graph queries and search](#contentservice-graph-queries-and-search)  |           3 | Live on beta                                         |
 | [ContentService: reaction layout](#contentservice-reaction-layout)                    |           4 | Live on beta                                         |
-| [ContentService: contact form](#contentservice-contact-form)                          |           6 | Live on beta                                         |
+| [ContentService: contact form](#contentservice-contact-form)                          |           7 | Live on beta                                         |
 | [ContentService: images](#contentservice-images)                                      |           2 | One live on beta, one merged                         |
 | [AnalysisService gateway](#analysisservice-gateway)                                   |           2 | Live on beta                                         |
 | [SBML (sbml-exporter)](#sbml-sbml-exporter)                                           |          13 | Website's SBML live on beta; bulk file not switched  |
 | [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint merged, not routed |
-| [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           6 | Spec only (open pull request)                        |
+| [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           6 | Spec merged; not built                               |
 | [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          13 | Being built; not serving the website                 |
 | [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          14 | Spec only                                            |
-| **Total**                                                                             |      **86** |                                                      |
+| **Total**                                                                             |      **87** |                                                      |
 
 Then: [things that look like differences but are not](#not-differences),
 and [decisions still open](#decisions-still-open).
@@ -61,12 +61,12 @@ and [decisions still open](#decisions-still-open).
 These apply to every ContentService operation node answers, not to one
 endpoint.
 
-| What                                  | Java                                       | New                                                                                                                                                           | Why                                                                              | Decided               | Status       | Source                                                                                             |
-| ------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- | --------------------- | ------------ | -------------------------------------------------------------------------------------------------- |
-| Trailing slash                        | Answers `/x/` exactly as `/x`              | A GET or HEAD to `/x/` is a `301` to `/x`, query string kept. POST is not redirected                                                                          | Design: one URL per answer, so the edge cache holds one copy                     | The user, 18 Oct 2026 | Live on beta | [spec 011 R10](../specs/011-api-cache-headers/research.md)                                         |
-| Matrix parameters (`/x;jsessionid=…`) | Strips them and answers as `/x`            | Spring's JSON 404                                                                                                                                             | Design: nothing sends them on purpose, and each spelling is another cache entry  | 18 Oct 2026           | Live on beta | [spec 006 T008](../specs/006-content-service-to-node/tasks.md), #526                               |
-| Caching instruction                   | Sends no `Cache-Control`, only a weak ETag | Each answer is labelled: a request in standard form may be stored by the edge cache; anything else, and every error, is `no-store`. Status and body unchanged | Design: lets the edge cache serve the API, without bots filling it               | The user (CACHING.md) | Live on beta | [spec 011](../specs/011-api-cache-headers/spec.md), [CACHING.md](../tools/content-node/CACHING.md) |
-| Content-Type's charset spelling       | `charset=UTF-8`                            | `charset=utf-8`. The media type itself is Java's. D22 records this for the reaction layout and says node writes it so on every ported endpoint                | Design: the same value in another spelling; charset names are not case-sensitive | Recorded 5 Nov 2026   | Live on beta | [spec 006 D22, step 5](../specs/006-content-service-to-node/research.md)                           |
+| What                                  | Java                                                         | New                                                                                                                                                           | Why                                                                                                              | Decided                                                                                                                                          | Status       | Source                                                                                                             |
+| ------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| Trailing slash                        | Answers `/x/` exactly as `/x`                                | A GET or HEAD to `/x/` is a `301` to `/x`, query string kept. POST is not redirected                                                                          | Design: one URL per answer, so the edge cache holds one copy                                                     | The user, 18 Oct 2026                                                                                                                            | Live on beta | [spec 011 R10](../specs/011-api-cache-headers/research.md)                                                         |
+| Matrix parameters (`/x;jsessionid=…`) | Strips them and answers as `/x`                              | Spring's JSON 404                                                                                                                                             | Design: nothing sends them on purpose, and each spelling is another cache entry                                  | 18 Oct 2026                                                                                                                                      | Live on beta | [spec 006 T008](../specs/006-content-service-to-node/tasks.md), #526                                               |
+| Caching instruction                   | Sends no `Cache-Control`, only a weak ETag                   | Each answer is labelled: a request in standard form may be stored by the edge cache; anything else, and every error, is `no-store`. Status and body unchanged | Design: lets the edge cache serve the API, without bots filling it                                               | The user (CACHING.md)                                                                                                                            | Live on beta | [spec 011](../specs/011-api-cache-headers/spec.md), [CACHING.md](../tools/content-node/CACHING.md)                 |
+| Content-Type's charset spelling       | `application/json;charset=UTF-8`, `text/plain;charset=UTF-8` | `application/json; charset=utf-8`, `text/plain; charset=utf-8`: a space after the `;`, and `utf-8` in lower case. The media type is Java's                    | Platform: the web framework writes the parameter so. The value is the same: charset names are not case-sensitive | Measured 6 Nov 2026 on seven endpoints of different families (lists, an object, an error, search, the reaction layout, a text answer): every one | Live on beta | [spec 006 D22, step 5](../specs/006-content-service-to-node/research.md), which records it for the reaction layout |
 
 ## ContentService: content and people
 
@@ -92,7 +92,9 @@ endpoint.
 `GET /exporter/reaction/{identifier}/diagram` returns a reaction's layout, which
 the reaction page's figure and the render service draw. Java's answer is not the
 same twice for the same request, so it is compared in a canonical form, against
-the layouts Java gives over many requests, not byte for byte.
+the layouts Java gives over many requests, not byte for byte. Node's layout is
+the same every time, so a figure drawn from it repeats exactly: spec 018 T011's
+test of fresh renders passes with no reaction exempted (#846, open).
 
 | What                                                              | Java                                                                                                                                         | New                                                                                                             | Why                                                                                      | Decided                    | Status       | Source                                                                      |
 | ----------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------- | ------------ | --------------------------------------------------------------------------- |
@@ -105,16 +107,17 @@ the layouts Java gives over many requests, not byte for byte.
 
 `POST /contact`, the "contact us" form. Java's parameters, its refusals before
 sending, and the message's subject and body are kept. Done on beta on
-6 Nov 2026 (#836, #838, #840).
+6 Nov 2026 (#836, #838, #840); its limits merged in #844.
 
-| What                     | Java                                                                                                                                       | New                                                                                                                                                                                             | Why                                                                                                                        | Decided                    | Status       | Source                                                                           |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------ | -------------------------------------------------------------------------------- |
-| The human check          | hCaptcha, parameter `h-captcha-response`, checked over a connection that trusted any certificate                                           | Cloudflare Turnstile, parameter `cf-turnstile-response`, over a verified connection; anything but a clear pass fails. An hCaptcha token is refused                                              | Security, and design: the site already uses Turnstile, and the secret now sits with the site                               | The user, 6 Nov 2026 (D23) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
-| How the mail is sent     | Logs in to a mail server with a stored password, over encryption it did not require                                                        | Amazon SES's API, signed with the server's own cloud role: no password stored. Time-limited, one retry                                                                                          | Security                                                                                                                   | The user, 6 Nov 2026 (D23) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #838           |
-| Whom the message is from | From the reader's own name and address                                                                                                     | From the site's support address, with the reader as Reply-To; the body still begins `From: name <address>`                                                                                      | Bug fix: mail from a reader's address sent by our server is refused or filed as spam by receiving mail checks (SPF, DMARC) | The user, 6 Nov 2026 (D23) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #836           |
-| A copy to the reader     | Sent when `sendEmailCopy` was `on` or `true`                                                                                               | Never sent. The parameter is still accepted, and ignored                                                                                                                                        | Security: it would send mail to any address typed in, one per pass of the check                                            | The user, 6 Nov 2026 (D23) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
-| New error answers        | No such answers: an address that is not one plain address was a 500 naming the exception; a failed send a 500 with the exception's message | 503 when the deployment cannot send (checked before anything else); 400 for an address that is not one plain address; 500 "The message could not be sent", without the mail service's own words | Design and security: a clear status, and no internal detail in public answers                                              | The user, 6 Nov 2026 (D23) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
-| A rate limit             | None of its own                                                                                                                            | Six requests a minute per client address, with a burst of three, at the web server                                                                                                              | Security: each request that passes sends a message                                                                         | 6 Nov 2026 (D23)           | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), `deploy/nginx` |
+| What                     | Java                                                                                                                                       | New                                                                                                                                                                                                                                                                                                                                                   | Why                                                                                                                        | Decided                               | Status       | Source                                                                           |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------------ | -------------------------------------------------------------------------------- |
+| The human check          | hCaptcha, parameter `h-captcha-response`, checked over a connection that trusted any certificate                                           | Cloudflare Turnstile, parameter `cf-turnstile-response`, over a verified connection; anything but a clear pass fails. An hCaptcha token is refused                                                                                                                                                                                                    | Security, and design: the site already uses Turnstile, and the secret now sits with the site                               | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| How the mail is sent     | Logs in to a mail server with a stored password, over encryption it did not require                                                        | Amazon SES's API, signed with the server's own cloud role: no password stored. One attempt, no retry (a late answer may be for a message already sent), abandoned after 15 seconds                                                                                                                                                                    | Security                                                                                                                   | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #838           |
+| Whom the message is from | From the reader's own name and address                                                                                                     | From the site's support address, with the reader as Reply-To; the body still begins `From: name <address>`                                                                                                                                                                                                                                            | Bug fix: mail from a reader's address sent by our server is refused or filed as spam by receiving mail checks (SPF, DMARC) | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #836           |
+| A copy to the reader     | Sent when `sendEmailCopy` was `on` or `true`                                                                                               | Never sent. The parameter is still accepted, and ignored                                                                                                                                                                                                                                                                                              | Security: it would send mail to any address typed in, one per pass of the check                                            | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| New error answers        | No such answers: an address that is not one plain address was a 500 naming the exception; a failed send a 500 with the exception's message | 503 when the deployment cannot send (checked before anything else); 400 for an address that is not one plain address or a field past its cap; 413 for a body past 64 KB; 500 "The message could not be sent", without the mail service's own words                                                                                                    | Design and security: a clear status, and no internal detail in public answers                                              | The user, 6 Nov 2026 (D23)            | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md)                 |
+| A rate limit             | None of its own                                                                                                                            | Six requests a minute per client address, with a burst of three, at the web server                                                                                                                                                                                                                                                                    | Security: each request that passes sends a message                                                                         | 6 Nov 2026 (D23)                      | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), `deploy/nginx` |
+| Limits on what is sent   | Any body the server would read, any field length; an address checked by JavaMail                                                           | Body at most 64 KB (413 from the web server and from node); name and subject at most 200 characters, message at most 20,000 (400); the reader's address must be one plain address (no `%`, `!` or encoded word, a domain of two or more labels); header values made one line, and a non-ASCII name written as RFC 2047 words of at most 75 characters | Security: a large body held the service, and a reader's text must not break the message's headers                          | Review of #836 and #838 (D23, Limits) | Live on beta | [spec 006 D23](../specs/006-content-service-to-node/research.md), #844           |
 
 ## ContentService: images
 
@@ -196,10 +199,11 @@ release's bulk file has not switched. Node's website endpoint is merged
 ## SBGN (sbgn-exporter)
 
 SBGN-ML from one TypeScript exporter, for the website and the bulk file.
-**Not merged**: the spec is in
-[sbgn-exporter#3](https://github.com/reactome/sbgn-exporter/pull/3)
-(`specs/001-sbgn-export`, research R3, spec FR-003), which replaces #1 and #2
-there. Each difference is an obvious bug of diagram-exporter's SBGN converter;
+**Spec merged; not built**: the spec was merged as
+[sbgn-exporter#3](https://github.com/reactome/sbgn-exporter/pull/3) on
+6 Nov 2026, replacing #1 and #2 there
+([`specs/001-sbgn-export`](https://github.com/reactome/sbgn-exporter/tree/main/specs/001-sbgn-export),
+research R3, spec FR-003). Each difference is an obvious bug of diagram-exporter's SBGN converter;
 everything else is to match Java byte for byte once order is set aside.
 Anything that would improve the files beyond these becomes an issue for the
 team (FR-006).
@@ -288,16 +292,14 @@ These show up in comparisons but are not differences in what a reader gets.
   ([spec 006 D23](../specs/006-content-service-to-node/research.md)).
 - **The Turnstile check's action and hostname.** `POST /contact` accepts any
   token Turnstile calls a success; it does not check that the token was made
-  for this form (its action) or on this site (its hostname). Raised in review;
-  not yet recorded in D23.
+  for this form (its action) or on this site (its hostname). No widget of the
+  site's posts to it yet, so there is nothing to name (D23, "Open").
 - **Contact parameters in the query string.** Following Java, `POST /contact`
   reads its parameters from the URL's query string as well as the body, so a
-  message sent that way can land in access logs. Raised in review; not yet
-  recorded in D23.
+  message sent that way can land in access logs (D23, "Open").
 - **The contact rate limit's key for IPv6.** The web server limits each full
-  client address; an IPv6 client holds many addresses, where the analysis
-  gateway groups IPv6 clients by their /64. Raised in review; not yet recorded
-  in D23.
+  client address, so an IPv6 client has a key for every address of its /64,
+  where the analysis gateway groups IPv6 clients by their /64 (D23, "Open").
 - **SBML reactions' cross-references** (MONDO, Rhea): why today's file lacks
   them ([sbml-exporter#36](https://github.com/reactome/sbml-exporter/issues/36)).
   SBML for the release and production waits for this and the other open
@@ -309,7 +311,7 @@ These show up in comparisons but are not differences in what a reader gets.
   ([graph-importer#9](https://github.com/reactome/graph-importer/issues/9)),
   and people's display names
   ([graph-importer#10](https://github.com/reactome/graph-importer/issues/10)).
-- **SBGN**: the spec's pull request (sbgn-exporter#3) is open; the bulk file's
+- **SBGN**: the spec is merged and the exporter not yet built; the bulk file's
   text encoding is still to be checked, and a mismatch would come to the user
   as a candidate difference (its task T034).
 - **Diagram images** (`/exporter/diagram/{identifier}.{ext}`, and the
@@ -340,5 +342,3 @@ Found while compiling this register, for the sources' owners to settle.
 - **Spec 015's `contracts/differences.md`, BioPAX table**: "One EC number per
   molecular function" is listed, but BioPAX3Exporter measured that this
   difference is gone at release 98 (its T012, T020).
-- **D23's open items**: the research names one (the two mail paths). The
-  Turnstile, query-string and IPv6 items above are not recorded in the repository.
