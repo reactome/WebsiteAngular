@@ -52,6 +52,7 @@ const perturbation: DeltaSignalPerturbation = {
   name: 'ATM',
   activity: 80,
   nodeUuids: ['a', 'b'],
+  basis: 'root',
 };
 
 const result: DeltaSignalSolveResult = {

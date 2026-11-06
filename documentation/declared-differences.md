@@ -327,18 +327,6 @@ These show up in comparisons but are not differences in what a reader gets.
 
 Found while compiling this register, for the sources' owners to settle.
 
-- **Spec 006's FR-001** says declared exceptions are recorded in research
-  "(D11, D15, D19, D21)" and none is added without a decision recorded there.
-  Several are declared in code with their reason but not in research: the
-  person lists' `[]` for an unreadable id, the publications' order, the
-  in-depth `attributes` refusal, the nested views' reference order, and the
-  search index's 500 message (the last two are in spec 011 R12). FR-001 also
-  does not list D10, D22 or D23, which are in research.
-- **Spec 015's `contracts/differences.md`, SBML table**: its first row says a
-  reaction's model names its first parent pathway. sbml-exporter's own list
-  records the opposite decision (#37 there: matched to today's, "No parent
-  pathway detected"). Spec 015 says sbml-exporter's list supersedes its rows,
-  but the row still reads as current.
-- **Spec 015's `contracts/differences.md`, BioPAX table**: "One EC number per
-  molecular function" is listed, but BioPAX3Exporter measured that this
-  difference is gone at release 98 (its T012, T020).
+None open. The three found while compiling the register (spec 006 FR-001's list of
+exceptions, and spec 015's SBML parent-pathway and BioPAX EC-number rows) were
+corrected in #849.

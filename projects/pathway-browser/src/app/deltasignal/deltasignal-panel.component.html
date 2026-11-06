@@ -33,17 +33,57 @@
         <span class="network-count">{{ network.nodes.length }} logic nodes</span>
       </div>
 
-      @if (selectedNodes().length) {
-        <div class="selected-entity">
+      @if (pinsLoading()) {
+        <div class="selection-help">
+          <mat-spinner [diameter]="20" />
           <div>
-            <span class="label">Selected in diagram</span>
-            <strong>{{ selectedName() || selectedStId() }}</strong>
-            <span class="stable-id">
-              {{ selectedStId() }} · {{ selectedNodes().length }} matching logic
-              {{ selectedNodes().length === 1 ? 'node' : 'nodes' }}
-            </span>
+            <strong>{{ selectedStId() }}</strong>
+            <span>Finding its starting forms in this network…</span>
           </div>
-          <mat-icon>check_circle</mat-icon>
+        </div>
+      } @else if (selectedPins(); as pins) {
+        @if (pins.pins.length) {
+          <div class="selected-entity">
+            <div>
+              <span class="label">Selected in diagram</span>
+              <strong>{{ selectedName() || selectedStId() }}</strong>
+              <span class="stable-id">
+                {{ selectedStId() }} · pins {{ pins.pins.length }} starting
+                {{ pins.pins.length === 1 ? 'form' : 'forms' }}
+                @if (pins.basis === 'root_cycle') {
+                  (its cycle's resting form)
+                }
+                @if (pins.occurrences > pins.pins.length) {
+                  · {{ pins.occurrences - pins.pins.length }} downstream
+                  {{ pins.occurrences - pins.pins.length === 1 ? 'copy' : 'copies' }} computed
+                }
+              </span>
+            </div>
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        } @else {
+          <div class="selection-help">
+            <mat-icon>block</mat-icon>
+            <div>
+              <strong>{{ selectedName() || selectedStId() }} cannot be perturbed here</strong>
+              <span>
+                @if (pins.occurrences) {
+                  Every copy of it in this network is produced by the pathway itself, so there is no starting form to
+                  set. Perturb what makes it instead.
+                } @else {
+                  {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
+                }
+              </span>
+            </div>
+          </div>
+        }
+      } @else if (pinsError(); as message) {
+        <div class="selection-help">
+          <mat-icon>error_outline</mat-icon>
+          <div>
+            <strong>{{ selectedStId() }}</strong>
+            <span>{{ message }}</span>
+          </div>
         </div>
       } @else {
         <div class="selection-help">
@@ -51,17 +91,14 @@
           <div>
             <strong>Select a molecule on the pathway diagram</strong>
             <span>
-              @if (selectedStId()) {
-                {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
-              } @else {
-                The selected Reactome entity will be matched to its logic-network node or nodes.
-              }
+              A perturbation pins the entity's starting forms — the same protocol DeltaSignal's benchmarks were measured
+              under — and the network computes every downstream copy.
             </span>
           </div>
         </div>
       }
 
-      <div class="activity-control" [class.disabled]="!selectedNodes().length">
+      <div class="activity-control" [class.disabled]="!canAdd()">
         <div class="activity-heading">
           <label for="deltasignal-activity">Input activity</label>
           <div class="activity-value">
@@ -72,7 +109,7 @@
               max="100"
               step="1"
               [value]="activity()"
-              [disabled]="!selectedNodes().length"
+              [disabled]="!canAdd()"
               (input)="setActivity($any($event.target).value)"
             />
             <span>× baseline</span>
@@ -86,15 +123,15 @@
           max="100"
           step="1"
           [value]="activity()"
-          [disabled]="!selectedNodes().length"
+          [disabled]="!canAdd()"
           (input)="setActivity($any($event.target).value)"
         />
         <div class="presets">
-          <button mat-button (click)="setActivity(0)" [disabled]="!selectedNodes().length">Knock out · 0</button>
-          <button mat-button (click)="setActivity(1)" [disabled]="!selectedNodes().length">Baseline · 1</button>
-          <button mat-button (click)="setActivity(80)" [disabled]="!selectedNodes().length">Activate · 80</button>
+          <button mat-button (click)="setActivity(0)" [disabled]="!canAdd()">Knock out · 0</button>
+          <button mat-button (click)="setActivity(1)" [disabled]="!canAdd()">Baseline · 1</button>
+          <button mat-button (click)="setActivity(80)" [disabled]="!canAdd()">Activate · 80</button>
         </div>
-        <button mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!selectedNodes().length">
+        <button mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!canAdd()">
           <mat-icon>add</mat-icon>
           Add perturbation
         </button>
@@ -119,8 +156,8 @@
               <div>
                 <strong>{{ item.name }}</strong>
                 <span
-                  >{{ item.reactomeId }} · {{ item.activity }}× · {{ item.nodeUuids.length }} logic
-                  {{ item.nodeUuids.length === 1 ? 'node' : 'nodes' }}</span
+                  >{{ item.reactomeId }} · {{ item.activity }}× · pins {{ item.nodeUuids.length }} starting
+                  {{ item.nodeUuids.length === 1 ? 'form' : 'forms' }}</span
                 >
               </div>
               <button
