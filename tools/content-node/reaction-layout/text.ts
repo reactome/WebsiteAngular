@@ -3,6 +3,7 @@
  * entity's name once fitted into lines at the 7:3 ratio, measured with the
  * widths Java's font metrics give (text-widths.ts).
  */
+import { JavaNullPointerException } from './model.ts';
 import { LINE_HEIGHT, MISSING_WIDTH, WIDTH_RUNS } from './text-widths.ts';
 
 /** TextUtils.RATIO: width to height, (4/3)^3 rounded to 7/3. */
@@ -29,7 +30,9 @@ function codePointWidth(codePoint: number): number {
  * FontMetrics.stringWidth: the sum of the code points' widths -- as Java
  * measures every name in release 98 (D21), complex scripts apart.
  */
-export function textWidth(text: string): number {
+export function textWidth(text: string | null): number {
+  // A name the graph lacks: stringWidth(null) is Java's NullPointerException.
+  if (text === null) throw new JavaNullPointerException();
   let width = 0;
   for (const character of text) width += codePointWidth(character.codePointAt(0) as number);
   return width;
