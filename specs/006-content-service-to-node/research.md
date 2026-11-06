@@ -774,7 +774,14 @@ it is made, not three steps later.
      time, so the variation that would have made Java's uncacheable is not
      there. `view` and `includeRef`, which Java declares and never reads,
      are left out of the standard form, so a URL carrying them is answered
-     the same and not stored.
+     the same and not stored. One consequence, from the review of 6 Nov:
+     the answer is node's own computation, so a change to the layout code
+     between releases is not seen at the edge until the release-day purge.
+     A pull request that changes what the library lays out purges
+     `/ContentService/exporter/reaction/*/diagram` when it is deployed.
+   - A name the graph lacks (a compartment's or an entity's) is measured as
+     Java measures it, a `NullPointerException`, so the answer is Java's
+     500 rather than a failure of node's own (#850).
    - The parity harness compares the error path alone (a pathway's 400):
      it compares answers as data, and Java's layout is not the same twice.
      The layouts are `reaction-layout-check.ts`'s.
