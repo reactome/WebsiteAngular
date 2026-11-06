@@ -17,14 +17,17 @@ import { SESv2Client } from '@aws-sdk/client-sesv2';
 import type { SESv2ClientConfig, SendEmailCommandInput } from '@aws-sdk/client-sesv2';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from './server.ts';
-import type { Request } from './endpoint.ts';
+import type { Endpoint, Request } from './endpoint.ts';
+import { endpoints } from './registry.ts';
 import { contactAnswer, TOKEN_PARAMETER } from './contact-endpoints.ts';
 import type { ContactDependencies } from './contact-endpoints.ts';
 import type { MailSettings, Sender } from './contact.ts';
 import {
   clientConfig,
+  encodedWords,
   javaBlank,
   mailbox,
+  oneLine,
   mailSettings,
   sesClient,
   sesSender,
@@ -197,6 +200,52 @@ describe('POST /contact, through the service', () => {
     );
   });
 
+  it('answers a 10MB body with the 413 without keeping or parsing it', async () => {
+    const started = performance.now();
+    // 10MB, below the 10MiB every other POST may send.
+    const response = await post(`mailAddress=a%40example.org&${'x'.repeat(10_000_000)}`);
+    expect(response.status).toBe(413);
+    expect(await response.text()).toBe(
+      envelope(413, 'PAYLOAD_TOO_LARGE', 'The message is too large')
+    );
+    // Reading 10MB on loopback, nothing more.
+    expect(performance.now() - started).toBeLessThan(2_000);
+  });
+
+  it("stops keeping a body at the endpoint's limit, 64KB for the form", async () => {
+    expect(endpoints.find((each) => each.path === '/ContentService/contact')?.bodyLimit).toBe(
+      64 * 1024
+    );
+    // The server's reader, through an endpoint of its own with a small limit:
+    // past it the handler sees the mark, and what came past it was dropped.
+    const probe: Endpoint = {
+      path: '/ContentService/contact-limit-probe',
+      method: 'post',
+      bodyLimit: 10,
+      handler: (request) => ({
+        status: 200,
+        type: 'application/json',
+        body: {
+          tooLarge: request.tooLarge === true,
+          kept: Buffer.isBuffer(request.body) ? request.body.length : -1,
+        },
+      }),
+    };
+    endpoints.push(probe);
+    const probing = app().listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => probing.once('listening', () => resolve()));
+    try {
+      const at = `http://127.0.0.1:${(probing.address() as AddressInfo).port}${probe.path}`;
+      const read = async (body: string) =>
+        (await fetch(at, { method: 'POST', body })).json() as Promise<unknown>;
+      expect(await read('0123456789')).toEqual({ tooLarge: false, kept: 10 });
+      expect(await read('0123456789a')).toEqual({ tooLarge: true, kept: 0 });
+    } finally {
+      endpoints.splice(endpoints.indexOf(probe), 1);
+      await new Promise<void>((resolve) => probing.close(() => resolve()));
+    }
+  });
+
   it("answers another method with Java's 405", async () => {
     const response = await fetch(`${base}/ContentService/contact`);
     expect(response.status).toBe(405);
@@ -294,6 +343,81 @@ describe('the check and the configuration, before anything is sent', () => {
         (await contactAnswer(request(form({ mailAddress: address })), dependencies)).status,
       ]).toEqual([address, 400]);
     expect(dependencies.sender).not.toHaveBeenCalled();
+  });
+
+  it('takes one plain address: a dot-atom, no % or !, no =?, a domain of labels', () => {
+    for (const address of [
+      'reader@example.org',
+      'first.last+tag@sub.example.org',
+      "o'neil@example.co.uk",
+      'a=?b@example.org',
+      'x@a-b.example',
+    ])
+      expect([address, singleAddress(address)]).toEqual([address, true]);
+    for (const address of [
+      '.a@example.org',
+      'a.@example.org',
+      'a..b@example.org',
+      'a%b@example.org',
+      'a!b@example.org',
+      '=?utf-8?q?x?=@example.org',
+      'a@example',
+      'a@-example.org',
+      'a@example-.org',
+      'a@example..org',
+      'a@.example.org',
+      'a@example.org.',
+      'a@exa_mple.org',
+      `${'a'.repeat(65)}@example.org`,
+      'a@example.org, b@example.org',
+    ])
+      expect([address, singleAddress(address)]).toEqual([address, false]);
+  });
+
+  it('caps each field, before Turnstile is asked, in the envelope', async () => {
+    configure();
+    for (const [name, cap] of [
+      ['contactName', 200],
+      ['subject', 200],
+      ['message', 20_000],
+    ] as const) {
+      const dependencies = stubbed(vi.fn(async (_token: string) => false));
+      // Characters, not UTF-16 units: a name of cap emoji is within it. A
+      // message of 20,000 is ASCII: past it, 64KB of body comes first.
+      const within = await contactAnswer(
+        request(form({ [name]: (name === 'message' ? 'x' : '\ud83d\ude00').repeat(cap) })),
+        dependencies
+      );
+      expect([name, within.status]).toEqual([name, 400]);
+      expect([name, within.body]).toEqual([name, 'captcha verification failed']);
+      const over = await contactAnswer(
+        request(form({ [name]: 'x'.repeat(cap + 1) })),
+        dependencies
+      );
+      expect([name, over.status, String(over.body)]).toEqual([
+        name,
+        400,
+        expect.stringContaining(`"messages":["${name} is longer than ${cap} characters"]`),
+      ]);
+      expect([name, dependencies.verify.mock.calls.length]).toEqual([name, 1]);
+    }
+  });
+
+  it('refuses a body past 64KB with the 413, and parses 64KB quickly', async () => {
+    configure();
+    const dependencies = stubbed(vi.fn(async (_token: string) => false));
+    const filler = 'message=' + 'a%20b+c%C3%A9'.repeat(5000);
+    const big = Buffer.alloc(64 * 1024 + 1, 'a');
+    const refused = await contactAnswer({ ...request(''), body: big }, dependencies);
+    expect(refused.status).toBe(413);
+    // A body of 64KB: parsed whole, every field to hand, well inside 50ms.
+    const body = `${form({ message: undefined })}&${filler}`.slice(0, 64 * 1024);
+    expect(Buffer.byteLength(body)).toBeLessThanOrEqual(64 * 1024);
+    const started = performance.now();
+    const answer = await contactAnswer(request(body), dependencies);
+    expect(performance.now() - started).toBeLessThan(50);
+    // Past the message's cap, after parsing: everything was read.
+    expect(answer.status).toBe(400);
   });
 
   it("reads blank as Java's isBlank does", () => {
@@ -427,19 +551,40 @@ describe('the message', () => {
     }
   });
 
-  it('writes a name so that it cannot end its header: quoted, or encoded', () => {
+  it('writes a name so that it cannot end its header: one line, quoted or encoded', () => {
     expect(mailbox({ name: 'A "B" \\ C', address: 'a@example.org' })).toBe(
       '"A \\"B\\" \\\\ C" <a@example.org>'
     );
-    const encoded = mailbox({ name: 'Name\r\nBcc: victim@example.net', address: 'a@example.org' });
-    expect(encoded).toMatch(/^=\?UTF-8\?B\?[A-Za-z0-9+/=]+\?= <a@example\.org>$/);
-    expect(Buffer.from(encoded.split('?')[3] ?? '', 'base64').toString()).toBe(
-      'Name\r\nBcc: victim@example.net'
+    expect(mailbox({ name: 'Name\r\nBcc: victim@example.net', address: 'a@example.org' })).toBe(
+      '"Name  Bcc: victim@example.net" <a@example.org>'
     );
-    expect(mailbox({ name: 'R\u00e9actome', address: 'a@example.org' })).toBe(
-      `=?UTF-8?B?${Buffer.from('R\u00e9actome').toString('base64')}?= <a@example.org>`
+    const encoded = mailbox({ name: 'R\u00e9\u2028Bcc: x', address: 'a@example.org' });
+    expect(encoded).toBe(
+      `=?UTF-8?B?${Buffer.from('R\u00e9 Bcc: x').toString('base64')}?= <a@example.org>`
     );
     expect(mailbox({ name: ' ', address: 'a@example.org' })).toBe('a@example.org');
+    expect(mailbox({ name: '\r\n', address: 'a@example.org' })).toBe('a@example.org');
+  });
+
+  it('makes a header one line: control characters and line separators become spaces', () => {
+    for (const code of [0x00, 0x09, 0x0a, 0x0d, 0x1f, 0x7f, 0x85, 0x2028, 0x2029])
+      expect([code, oneLine(`a${String.fromCodePoint(code)}b`)]).toEqual([code, 'a b']);
+    expect(oneLine('a\u00a0\u00e9 b')).toBe('a\u00a0\u00e9 b');
+  });
+
+  it('splits a long name into encoded words of 75 characters at most, between characters', () => {
+    const name = `${'\u00e9'.repeat(30)}\ud83d\ude00${'\u4e2d'.repeat(20)}`;
+    const words = encodedWords(name).split(' ');
+    expect(words.length).toBeGreaterThan(1);
+    let decoded = '';
+    for (const word of words) {
+      expect([word, word.length <= 75]).toEqual([word, true]);
+      const text = Buffer.from(/^=\?UTF-8\?B\?(.*)\?=$/.exec(word)?.[1] ?? '', 'base64').toString();
+      // Whole characters: no word ends or starts inside one.
+      expect([word, text.includes('\ufffd')]).toEqual([word, false]);
+      decoded += text;
+    }
+    expect(decoded).toBe(name);
   });
 
   it("answers SES's failure with the 500, logging its name and status alone", async () => {
@@ -518,13 +663,13 @@ describe('through the SDK, answered in this process', () => {
       body.Content.Simple.Subject.Data,
     ])
       expect([header, /[\r\n]/.test(header)]).toEqual([header, false]);
-    expect(body.Content.Simple.Subject.Data).toBe('Subject Bcc: victim@example.net');
+    expect(body.Content.Simple.Subject.Data).toBe('Subject  Bcc: victim@example.net');
   });
 
   it('is given no agent of its own, so HTTPS is verified by the defaults', () => {
     expect(clientConfig('us-east-1')).toEqual({
       region: 'us-east-1',
-      maxAttempts: 2,
+      maxAttempts: 1,
       requestHandler: { connectionTimeout: 5_000, requestTimeout: 10_000 },
     });
     const source = readFileSync(new URL('./contact.ts', import.meta.url), 'utf8');

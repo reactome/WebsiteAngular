@@ -53,6 +53,8 @@ export interface Endpoint {
   normalise?: (java: unknown) => unknown;
   /** The key a list's items are compared by when their order is not part of the answer. */
   unordered?: (item: unknown) => unknown;
+  /** The most a POST's body may hold, in bytes; past it, `tooLarge` (10MB unless set). */
+  bodyLimit?: number;
   /** A deep query: it takes a share of the pool (the deep-query limit). */
   deep?: boolean;
 }
