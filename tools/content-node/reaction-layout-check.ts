@@ -268,8 +268,17 @@ function fingerprint(summary: Summary): string {
   return summary.diagram;
 }
 
-/** Attempts after which, Java having answered the same each time, node's difference is node's. */
+/**
+ * Attempts after which, Java having drawn the same each time, the asking
+ * stops and the reaction is reported to be looked at by hand: most likely
+ * node's difference, though a layout Java gives rarely can hide behind them.
+ * A whole number from 2 (one answer proves nothing) to ATTEMPTS.
+ */
 const STEADY = Number(process.env['REACTION_LAYOUT_STEADY'] || 4);
+if (!Number.isInteger(STEADY) || STEADY < 2) {
+  console.error('REACTION_LAYOUT_STEADY must be a whole number of 2 or more');
+  process.exit(2);
+}
 
 /** One reaction compared. */
 async function compare(stId: string): Promise<Outcome> {
@@ -337,8 +346,8 @@ async function compare(stId: string): Promise<Outcome> {
     // A layout or an order that differs may be one of Java's others -- which of
     // an entity's roles keeps the glyph and which goes to its copy follows the
     // roles' random order (D21): ask again, up to ATTEMPTS -- but once Java has
-    // answered the same STEADY times, it is not varying, and the difference is
-    // node's: no more requests on the shared database.
+    // drawn the same STEADY times it is probably not varying, so stop asking
+    // on the shared database and report it (below).
     const steady = attempt >= STEADY && answers.size === 1;
     if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS && !steady)
       continue;

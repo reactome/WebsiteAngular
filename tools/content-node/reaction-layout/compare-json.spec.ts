@@ -17,6 +17,8 @@ describe('sameWithin', () => {
     expect(sameWithin({ x: 0 }, { x: 1e-6 })).toBe(false);
     // Just past a billionth of the value: two parts in a billion at 1000.
     expect(sameWithin({ x: 1000 }, { x: 1000.000002 })).toBe(false);
+    // And just inside it, so the tolerance is pinned from both sides.
+    expect(sameWithin({ x: 1000 }, { x: 1000.0000009 })).toBe(true);
     expect(sameWithin([1, 2], [1, 2, 3])).toBe(false);
     expect(sameWithin({ a: 1 }, { a: 1, b: null })).toBe(false);
     expect(sameWithin({ a: '1' }, { a: 1 })).toBe(false);
