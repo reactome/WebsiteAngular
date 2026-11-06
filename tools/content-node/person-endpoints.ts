@@ -21,7 +21,7 @@ import { pathId, rawSegment, writerFor } from './spring.ts';
 import { compact, javaError, notFound } from './answers.ts';
 import type { GraphNode } from './graph.ts';
 import { attributeAnswer } from './objects.ts';
-import type { SimpleEvent } from '../../projects/website-angular/src/model/person.model.ts';
+import type { SimpleEvent } from '../../projects/contract/person.ts';
 
 /**
  * How graph-core's PersonService reads a person's id, as a match on `n`:

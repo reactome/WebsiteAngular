@@ -18,7 +18,6 @@
     },
     "/ContentService/citation/pathway/{id}": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -31,7 +30,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PathwayCitation"
+                }
+              }
+            }
           }
         }
       }
@@ -183,7 +189,6 @@
     },
     "/ContentService/data/detail/{id}/locationsInPWB": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -196,7 +201,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PathwayBrowserNode"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -724,7 +739,6 @@
     },
     "/ContentService/data/person/{id}/authoredPathways": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -737,14 +751,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleEvent"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/ContentService/data/person/{id}/authoredReactions": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -757,7 +780,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleEvent"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -784,7 +817,6 @@
     },
     "/ContentService/data/person/{id}/reviewedPathways": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -797,14 +829,23 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleEvent"
+                  }
+                }
+              }
+            }
           }
         }
       }
     },
     "/ContentService/data/person/{id}/reviewedReactions": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -817,7 +858,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SimpleEvent"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -1542,7 +1593,6 @@
     },
     "/ContentService/search/diagram/{pathwayId}/flag": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "pathwayId",
@@ -1555,7 +1605,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramFlagResult"
+                }
+              }
+            }
           }
         }
       }
@@ -1610,10 +1667,16 @@
     },
     "/ContentService/search/fireworks/flag": {
       "get": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpeciesOverviewFlagResult"
+                }
+              }
+            }
           }
         }
       }
@@ -1935,6 +1998,25 @@
         ],
         "additionalProperties": false,
         "description": "One interaction of /interactors/static/molecule/enhanced/{id}/details, with more about the partner. The identifier, URLs, database and display name are written as the text \"null\" when the graph has none, as Java writes them."
+      },
+      "DiagramFlagResult": {
+        "type": "object",
+        "properties": {
+          "occurrences": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interactsWith": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "`/search/diagram/{diagram}/flag`: what the Pathway Browser flags in a diagram for a term, the diagram's entities that match and those whose interactors do. Java's type also has an entity and whether it is in the diagram; this answer never writes them, so they are not described. Each list is left out when it is empty."
       },
       "DiagramResult_SearchEntry": {
         "type": "object",
@@ -2374,6 +2456,62 @@
         "type": "integer",
         "description": "A Java long, written exactly (`JSON.rawJSON`): it may exceed 2^53, beyond which a JavaScript number reads it rounded.",
         "format": "int64"
+      },
+      "PathwayBrowserNode": {
+        "type": "object",
+        "properties": {
+          "stId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "species": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "description": "The Pathway Browser's link to the node."
+          },
+          "type": {
+            "type": "string",
+            "description": "The node's schema class."
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PathwayBrowserNode"
+            },
+            "description": "Left out when there are none."
+          }
+        },
+        "required": [
+          "stId",
+          "name",
+          "url",
+          "type"
+        ],
+        "additionalProperties": false,
+        "description": "One node of a tree, measured over 179 recorded answers (1,694 nodes): no node carries `diagram`, so it is not described, and a species-less object (a SimpleEntity, a ChemicalDrug) has no `species`. `stId`, `name`, `url` and `type` are in every one; the service, as Java, would leave out a null one."
+      },
+      "PathwayCitation": {
+        "type": "object",
+        "properties": {
+          "imageCitation": {
+            "type": "string",
+            "description": "How to cite the pathway's diagram."
+          },
+          "pathwayCitation": {
+            "type": "string",
+            "description": "How to cite the pathway."
+          }
+        },
+        "required": [
+          "imageCitation",
+          "pathwayCitation"
+        ],
+        "additionalProperties": false,
+        "description": "The two citations, written in the order Java's HashMap writes them."
       },
       "PathwayOfEntry": {
         "type": "object",
@@ -2963,6 +3101,53 @@
         "additionalProperties": false,
         "description": "graph-core's SimpleDatabaseObject as the content service writes it: on /schema/{class}/min by simpleObjectJson (tools/content-node/schema-endpoints.ts), on /instance/{id}/referrers by its own mapping (data-query-endpoints.ts). An object of a class without a stable id -- an InstanceEdit, a Species -- has no `stId`, and non_empty leaves it out; an empty displayName is left out the same way, and a missing one is written as the text \"null\". schemaClass is the class the labels name on /schema/{class}/min, always there; on /instance/{id}/referrers it is the object's property, \"null\" when missing and left out when empty."
       },
+      "SimpleEvent": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "speciesName": {
+            "type": "string"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "dateTime": {
+            "type": "string",
+            "description": "The edit's date, as the graph holds it."
+          },
+          "authorDbId": {
+            "type": "number",
+            "description": "The edit's author, the person asked about, by dbId."
+          },
+          "doi": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "displayName",
+          "dateTime",
+          "authorDbId",
+          "labels"
+        ],
+        "additionalProperties": false,
+        "description": "One event and the edit that ties it to the person, measured over the recorded answers (8 distinct requests, 14 events): the edit's date and author and the event's labels are in every one; one had a DOI. Java lists an event once per edit; the service lists it once, at its latest edit (a difference it declares)."
+      },
       "SimplePerson": {
         "type": "object",
         "properties": {
@@ -2989,6 +3174,25 @@
         ],
         "additionalProperties": false,
         "description": "The five fields Java's SimplePerson carries -- three of which are not always there.\n\n`spring.jackson.default-property-inclusion=non_empty` in the content service means a null or empty field is omitted from the JSON rather than sent as null, so an absent value arrives as `undefined` and never as `null`. Measured over all 9,503 person entries the three content endpoints return: `dbId`, `displayName` and `surname` are always present; `firstname` is missing on 619 of them and `orcidId` on 3,961, and neither is ever null.\n\nThe declaration used to say otherwise, and three separate call sites had already worked around it -- `p.firstname?.toLowerCase()` in the contributors, contents and DOI searches, where `?.` on a required `string` is dead syntax that quietly says the author knew better than the type."
+      },
+      "SpeciesOverviewFlagResult": {
+        "type": "object",
+        "properties": {
+          "llps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "interactsWith": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "description": "`/search/fireworks/flag`: what the species overview flags for a term, the lower-level pathways that match and those whose interactors do, kept to the species' own ids. Each list is left out when it is empty."
       },
       "TargetResult": {
         "type": "object",

@@ -303,3 +303,25 @@ export interface DiagramResult<Entry> {
 
 /** `/search/icon/query`: the icon library's page, one ungrouped group of icons. */
 export type IconResult = ResultGroup<IconEntry>;
+
+/**
+ * `/search/diagram/{diagram}/flag`: what the Pathway Browser flags in a diagram
+ * for a term, the diagram's entities that match and those whose interactors
+ * do. Java's type also has an entity and whether it is in the diagram; this
+ * answer never writes them, so they are not described. Each list is left out
+ * when it is empty.
+ */
+export interface DiagramFlagResult {
+  occurrences?: string[];
+  interactsWith?: string[];
+}
+
+/**
+ * `/search/fireworks/flag`: what the species overview flags for a term, the
+ * lower-level pathways that match and those whose interactors do, kept to the
+ * species' own ids. Each list is left out when it is empty.
+ */
+export interface SpeciesOverviewFlagResult {
+  llps?: string[];
+  interactsWith?: string[];
+}
