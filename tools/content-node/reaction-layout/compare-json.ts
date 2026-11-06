@@ -1,6 +1,8 @@
 /**
  * JSON compared as the reaction layout's comparison declares it (research
- * D22): numbers within a billionth of their size, everything else exactly.
+ * D22): numbers within a billionth of Java's value's size, or within 1e-9
+ * of it when its size is below 1 (1e-9 * max(1, |java|)), everything else
+ * exactly.
  * Java's sin and cos are HotSpot's x86 routines, whose last bit differs from
  * Node's on some diagonal connectors and regulator fans; Java's own bits
  * would change on another platform, so they are not a stable target.
