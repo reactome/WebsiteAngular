@@ -6,6 +6,9 @@ import {
   DeltaSignalNetwork,
   DeltaSignalPathway,
   DeltaSignalPerturbation,
+  DeltaSignalPinResult,
+  DeltaSignalPinsResponse,
+  DeltaSignalPinState,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
@@ -21,6 +24,10 @@ export class DeltaSignalService {
   private readonly http = inject(HttpClient);
   private catalogRequest: Promise<DeltaSignalPathway[]> | undefined;
   private loadGeneration = 0;
+  private pinGeneration = 0;
+  // Resolved pins per `${network_id}:${stable id}` — the network_id in the
+  // key keeps one build's answer off another build's network.
+  private readonly pinCache = new Map<string, DeltaSignalPinResult>();
 
   readonly status = signal<DeltaSignalStatus>('idle');
   readonly error = signal<string | null>(null);
@@ -28,6 +35,12 @@ export class DeltaSignalService {
   readonly network = signal<DeltaSignalNetwork | null>(null);
   readonly perturbations = signal<DeltaSignalPerturbation[]>([]);
   readonly result = signal<DeltaSignalSolveResult | null>(null);
+  readonly pinState = signal<DeltaSignalPinState>({
+    status: 'idle',
+    reactomeId: null,
+    result: null,
+    message: null,
+  });
 
   readonly rows = computed(() => resultRows(this.network(), this.result(), this.perturbations()));
   readonly entityRows = computed(() => aggregateRowsByReactomeId(this.rows()));
@@ -53,12 +66,14 @@ export class DeltaSignalService {
     if (this.pathway()?.stable_id === stableId && this.network()) return;
 
     const generation = ++this.loadGeneration;
+    this.pinGeneration += 1;
     this.status.set('loading');
     this.error.set(null);
     this.pathway.set(null);
     this.network.set(null);
     this.perturbations.set([]);
     this.result.set(null);
+    this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
 
     try {
       const catalog = await this.getCatalog();
@@ -83,16 +98,56 @@ export class DeltaSignalService {
     }
   }
 
+  /**
+   * Resolve the selected entity through `/api/pins` — the protocol every
+   * DeltaSignal benchmark ran (deltasignal specs/140). Cached per network and
+   * entity; `pinState` carries the answer for the panel.
+   */
+  async select(reactomeId: string | null): Promise<void> {
+    const generation = ++this.pinGeneration;
+    const network = this.network();
+    const pathway = this.pathway();
+    if (!reactomeId || !network || !pathway) {
+      this.pinState.set({ status: 'idle', reactomeId, result: null, message: null });
+      return;
+    }
+    const cached = this.pinCache.get(`${network.network_id}:${reactomeId}`);
+    if (cached) {
+      this.pinState.set({ status: 'ready', reactomeId, result: cached, message: null });
+      return;
+    }
+    this.pinState.set({ status: 'loading', reactomeId, result: null, message: null });
+    try {
+      const result = await this.resolvePins(network, pathway, reactomeId);
+      this.pinCache.set(`${this.network()?.network_id}:${reactomeId}`, result);
+      if (generation !== this.pinGeneration) return;
+      this.pinState.set({ status: 'ready', reactomeId, result, message: null });
+    } catch (error) {
+      if (generation !== this.pinGeneration) return;
+      // No fallback to pinning every matching node: that is the retired
+      // protocol this endpoint replaces, and no published figure applies to
+      // its answers.
+      this.pinState.set({
+        status: 'error',
+        reactomeId,
+        result: null,
+        message: this.errorMessage(error, 'Could not resolve what this perturbation would pin.'),
+      });
+    }
+  }
+
   addPerturbation(reactomeId: string, activity: number): boolean {
-    const nodes = this.matchingNodes(reactomeId);
-    if (!nodes.length) return false;
+    const network = this.network();
+    const resolved = network ? this.pinCache.get(`${network.network_id}:${reactomeId}`) : undefined;
+    if (!resolved?.pins.length) return false;
 
     const boundedActivity = Math.min(100, Math.max(0, activity));
     const perturbation: DeltaSignalPerturbation = {
       reactomeId,
-      name: [...new Set(nodes.map((node) => node.name))].join(' / '),
+      name: [...new Set(resolved.pins.map((pin) => pin.name))].join(' / '),
       activity: boundedActivity,
-      nodeUuids: nodes.map((node) => node.uuid),
+      nodeUuids: resolved.pins.map((pin) => pin.uuid),
+      basis: resolved.basis,
     };
     this.perturbations.update((items) => [
       ...items.filter((item) => item.reactomeId !== reactomeId),
@@ -119,12 +174,14 @@ export class DeltaSignalService {
 
   reset() {
     this.loadGeneration += 1;
+    this.pinGeneration += 1;
     this.status.set('idle');
     this.error.set(null);
     this.pathway.set(null);
     this.network.set(null);
     this.perturbations.set([]);
     this.result.set(null);
+    this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
   }
 
   async solve(): Promise<void> {
@@ -175,6 +232,38 @@ export class DeltaSignalService {
     );
   }
 
+  /**
+   * One `/api/pins` query, with the solve path's recovery: on a failure that
+   * can mean "the server restarted and lost its network cache", re-parse and
+   * ask once more against the fresh network_id.
+   */
+  private async resolvePins(
+    network: DeltaSignalNetwork,
+    pathway: DeltaSignalPathway,
+    reactomeId: string
+  ): Promise<DeltaSignalPinResult> {
+    try {
+      return await this.requestPins(network.network_id, reactomeId);
+    } catch (error) {
+      if (!this.lostNetworkCache(error)) throw error;
+      const reparsed = await this.parse(pathway);
+      this.network.set(reparsed);
+      return this.requestPins(reparsed.network_id, reactomeId);
+    }
+  }
+
+  private async requestPins(networkId: string, reactomeId: string): Promise<DeltaSignalPinResult> {
+    const response = await firstValueFrom(
+      this.http.post<DeltaSignalPinsResponse>('/api/pins', {
+        network_id: networkId,
+        queries: [{ id: reactomeId, stable_ids: [reactomeId] }],
+      })
+    );
+    const result = response.results[0];
+    if (!result) throw new Error('The pin service answered without a result.');
+    return result;
+  }
+
   private requestSolve(networkId: string, observations: Record<string, [number, number]>) {
     return firstValueFrom(
       this.http.post<DeltaSignalSolveResult>('/api/solve', {
@@ -184,7 +273,19 @@ export class DeltaSignalService {
     );
   }
 
-  private errorMessage(error: unknown, fallback: string) {
+  /** The failure that means "re-parse and retry", as the solve path handles it. */
+  private lostNetworkCache(error: unknown): boolean {
+    if (!(error instanceof HttpErrorResponse)) return false;
+    if (error.status === 404) return true;
+    const body: unknown = error.error;
+    const message =
+      typeof body === 'object' && body !== null && 'message' in body
+        ? (body as { message?: unknown }).message
+        : null;
+    return error.status === 400 && typeof message === 'string' && message.includes('network_id');
+  }
+
+  private errorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
       return typeof error.error?.message === 'string' ? error.error.message : fallback;
     }
