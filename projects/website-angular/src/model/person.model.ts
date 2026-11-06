@@ -1,3 +1,5 @@
+export type { SimpleEvent } from '../../../contract/person.ts';
+
 interface Affiliation {
   dbId: number;
   displayName: string;
@@ -28,20 +30,4 @@ export interface Person {
   project?: string;
   affiliation?: Affiliation[];
   publications?: Publication[];
-}
-
-// As /data/person/{id}/{authored,reviewed}{Pathways,Reactions} writes it,
-// measured over the recorded answers (8 distinct requests, 14 events): the
-// edit's date and author and the event's labels are in every one; one had a
-// DOI.
-export interface SimpleEvent {
-  dbId: number;
-  stId: string;
-  displayName: string;
-  speciesName?: string;
-  schemaClass?: string;
-  dateTime: string;
-  authorDbId: number;
-  doi?: string;
-  labels: string[];
 }

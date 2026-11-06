@@ -11,7 +11,7 @@ import type { Endpoint, Request } from './endpoint.ts';
 import { javaError, notFound, only } from './answers.ts';
 import { asciiDigits, javaNumeric, javaTrim, javaUtf8 } from './java-text.ts';
 import type { JsonWritten } from './answers.ts';
-import type { PathwayBrowserNode as LocationNode } from '../../projects/website-angular/src/model/locations.model.ts';
+import type { PathwayBrowserNode as LocationNode } from '../../projects/contract/locations.ts';
 import {
   attributeOf,
   graphCoreId,

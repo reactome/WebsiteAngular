@@ -183,12 +183,16 @@ describe('recorded answers against the API description', () => {
 
   /** Described routes with no recorded answer, and why. */
   const UNRECORDED: Record<string, string> = {
+    'GET /ContentService/citation/pathway/{id}':
+      'not in the recordings, which never cite a pathway (calls.ts names the gap)',
     'GET /ContentService/data/instance/{id}/referrers':
       'not in the recordings, which never open an instance’s referrers (calls.ts names the gap)',
     'GET /ContentService/data/schema/{id}/min':
       'not in the recordings, which never open a class’s instances (calls.ts names the gap)',
     'GET /ContentService/search/facet':
       'not in the recordings, which always search with a query (calls.ts names the gap)',
+    'GET /ContentService/search/fireworks/flag':
+      'recorded only as aborted requests, which have no answer (calls.ts names the gap)',
     'GET /ContentService/search/query/paginated': 'no call of the site reads it',
   };
 

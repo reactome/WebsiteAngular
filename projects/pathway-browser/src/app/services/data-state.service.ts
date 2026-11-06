@@ -178,7 +178,7 @@ export class DataStateService {
       .pipe(
         // 404 is ContentService's "no match"; anything else is a failure.
         catchError((error: unknown) =>
-          isNotFound(error) ? of({} as SpeciesOverviewFlagResult) : throwError(() => error)
+          isNotFound(error) ? of<SpeciesOverviewFlagResult>({}) : throwError(() => error)
         ),
         map((r) => ({
           matches: r.llps ?? [],
@@ -197,7 +197,7 @@ export class DataStateService {
         // 404 is ContentService's "no match"; anything else is a failure,
         // which the flag banner reports rather than flagging nothing.
         catchError((error: unknown) =>
-          isNotFound(error) ? of({} as DiagramFlagResult) : throwError(() => error)
+          isNotFound(error) ? of<DiagramFlagResult>({}) : throwError(() => error)
         ),
         map((r) => ({
           matches: r.occurrences ?? [],
