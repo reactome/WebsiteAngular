@@ -255,7 +255,8 @@ export function writeResult(response: Written, result: Answer) {
 /**
  * A POST's body, as the bytes that came: not inflated (Tomcat does not
  * inflate a request), and not refused for its type, which the handler checks
- * as Spring does. Past 10MB the rest is read and dropped and the handler
+ * as Spring does. Past the endpoint's limit -- 10MB unless it sets its own
+ * (`bodyLimit`) -- the rest is read and dropped, and the handler
  * answers 413, where Java would read on; no client sends that many ids.
  */
 type BodyReader = (
@@ -264,20 +265,25 @@ type BodyReader = (
   next: (failure?: unknown) => void
 ) => void;
 
-const readBody: BodyReader = (request, _response, next) => {
-  const chunks: Buffer[] = [];
-  let size = 0;
-  request.on('data', (chunk: Buffer) => {
-    size += chunk.length;
-    if (size > 10 * 1024 * 1024) request.tooLarge = true;
-    else chunks.push(chunk);
-  });
-  request.on('end', () => {
-    request.body = Buffer.concat(chunks);
-    next();
-  });
-  request.on('error', next);
-};
+const readBodyUpTo =
+  (limit: number): BodyReader =>
+  (request, _response, next) => {
+    const chunks: Buffer[] = [];
+    let size = 0;
+    request.on('data', (chunk: Buffer) => {
+      size += chunk.length;
+      if (size > limit) request.tooLarge = true;
+      else chunks.push(chunk);
+    });
+    request.on('end', () => {
+      request.body = Buffer.concat(chunks);
+      next();
+    });
+    request.on('error', next);
+  };
+
+/** The reader for an endpoint's POST body, at its limit. */
+const readBody = (endpoint: Endpoint) => readBodyUpTo(endpoint.bodyLimit ?? 10 * 1024 * 1024);
 
 /** The /data/query/{id}/{attribute} names node answers, by their lower case. */
 const QUERY_ATTRIBUTES = new Map([
@@ -422,7 +428,7 @@ export function app() {
     // exactly what the Java service calls it.
     const route = endpoint.path.replace(/\{(\w+)\}/g, ':$1');
     // A POST's body arrives as bytes; its handler decodes them as Java would.
-    const body = endpoint.method === 'post' ? [readBody] : [];
+    const body = endpoint.method === 'post' ? [readBody(endpoint)] : [];
     // answerWith answers every failure of the handler's; a rejection past it
     // reaches the error handler below, which Express 5 waits for.
     server[endpoint.method ?? 'get'](route, ...body, (request, response) =>
@@ -485,7 +491,7 @@ export function app() {
           )
         );
       const body: BodyReader =
-        endpoint.method === 'post' ? readBody : (_request, _response, done) => done();
+        endpoint.method === 'post' ? readBody(endpoint) : (_request, _response, done) => done();
       body(request, response, () => void answerWith(endpoint, request, response).catch(next));
     }
   );

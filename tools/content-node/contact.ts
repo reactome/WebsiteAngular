@@ -44,22 +44,23 @@ export function mailSettings(): MailSettings | undefined {
   return { supportAddress, supportName: settings.contactSupportName().trim(), region };
 }
 
-/** How long one attempt may take, connecting and answering. */
+/** How long the attempt may take, connecting and answering. */
 const CONNECT_TIMEOUT_MS = 5_000;
 const REQUEST_TIMEOUT_MS = 10_000;
-/** The whole send, retry included: the reader's request is never held longer. */
+/** The whole send: the reader's request is never held longer. */
 const SEND_TIMEOUT_MS = 15_000;
 
 /**
- * The SES client's configuration: the region, one retry at most, and
- * timeouts on each attempt. Credentials are left to the SDK's default chain
+ * The SES client's configuration: the region, one attempt and no retry --
+ * an answer that comes late may still have been sent, and a retry would send
+ * the message twice -- and its timeouts. Credentials are left to the SDK's default chain
  * (the instance's role on the host); no agent is given, so HTTPS is verified
  * by Node's defaults.
  */
 export function clientConfig(region: string): SESv2ClientConfig {
   return {
     region,
-    maxAttempts: 2,
+    maxAttempts: 1,
     requestHandler: {
       connectionTimeout: CONNECT_TIMEOUT_MS,
       requestTimeout: REQUEST_TIMEOUT_MS,
@@ -93,6 +94,12 @@ export interface Mail {
   body: string;
 }
 
+/** An atom of a dot-atom local part, without `%` and `!` (source routing of old). */
+const ATOM = "[A-Za-z0-9#$&'*+/=?^_`{|}~-]+";
+/** A domain's label: letters, digits and hyphens, a hyphen at neither end. */
+const LABEL = '[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?';
+const ADDRESS = new RegExp(`^(${ATOM}(?:\\.${ATOM})*)@${LABEL}(?:\\.${LABEL})+$`);
+
 /**
  * One plain address, user@domain, and nothing an address parser could read
  * as more than one, or as a name. Nothing is sent to the reader's address,
@@ -100,12 +107,17 @@ export interface Mail {
  * so a list typed there would be answered as a list. And MailService's `new
  * InternetAddress(..)` refused anything but one address, so this keeps that
  * refusal (a 400 here, Java's 500). The support address is held to it too.
+ *
+ * The local part is a dot-atom -- no dot leading, trailing or doubled --
+ * without `%` or `!`, and not starting `=?`, which a reader could take for an
+ * encoded word; the domain is two or more labels of letters, digits and
+ * hyphens. Printable ASCII only, as an InternetAddress without UTF-8 allowed
+ * takes it.
  */
 export function singleAddress(text: string): boolean {
-  // Printable ASCII only -- no space, no control character -- as an
-  // InternetAddress without UTF-8 allowed takes it.
-  if (text.length > 254 || !/^[!-~]+$/.test(text)) return false;
-  return /^[^@<>,;:"()[\]\\]+@[^@<>,;:"()[\]\\]+$/.test(text);
+  if (text.length > 254) return false;
+  const local = ADDRESS.exec(text)?.[1];
+  return local !== undefined && local.length <= 64 && !local.startsWith('=?');
 }
 
 /**
@@ -125,19 +137,58 @@ export function javaBlank(text: string): boolean {
 }
 
 /**
+ * Text for one header line: a control character (C0, DEL, C1's next line)
+ * or a Unicode line or paragraph separator becomes a space, so nothing a
+ * reader types can end the line or start another.
+ */
+export function oneLine(text: string): string {
+  let line = '';
+  for (const char of text) {
+    const code = char.codePointAt(0) as number;
+    const breaks =
+      code < 0x20 || code === 0x7f || code === 0x85 || code === 0x2028 || code === 0x2029;
+    line += breaks ? ' ' : char;
+  }
+  return line;
+}
+
+/** The most UTF-8 one encoded word carries: 45 bytes, 60 of base64, 75 in all. */
+const WORD_BYTES = 45;
+
+/**
+ * A name as RFC 2047 encoded words, B encoding of its UTF-8: each at most 75
+ * characters, split between characters, never inside one, separated by
+ * spaces.
+ */
+export function encodedWords(name: string): string {
+  const words: string[] = [];
+  let chunk: number[] = [];
+  for (const char of name) {
+    const bytes = [...Buffer.from(char, 'utf8')];
+    if (chunk.length + bytes.length > WORD_BYTES) {
+      words.push(`=?UTF-8?B?${Buffer.from(chunk).toString('base64')}?=`);
+      chunk = [];
+    }
+    chunk.push(...bytes);
+  }
+  if (chunk.length) words.push(`=?UTF-8?B?${Buffer.from(chunk).toString('base64')}?=`);
+  return words.join(' ');
+}
+
+/**
  * An address as a header writes it, from text SES takes as given: the
- * address alone when there is no name; a name of printable ASCII as an RFC
- * 5322 quoted string, its quotes and backslashes escaped; any other name --
- * a line break, a control character, anything past ASCII -- as one RFC 2047
- * encoded word, base64 of its UTF-8, which holds nothing a header could
- * break on. Either way the name cannot end the header or start another.
+ * address alone when there is no name; the name made one line (oneLine),
+ * then, of printable ASCII, an RFC 5322 quoted string, its quotes and
+ * backslashes escaped, or else RFC 2047 encoded words (encodedWords). Either
+ * way the name cannot end the header or start another.
  */
 export function mailbox({ name, address }: Address): string {
-  if (javaBlank(name)) return address;
-  const quoted = /^[ -~]*$/.test(name)
-    ? `"${name.replace(/["\\]/g, (char) => `\\${char}`)}"`
-    : `=?UTF-8?B?${Buffer.from(name, 'utf8').toString('base64')}?=`;
-  return `${quoted} <${address}>`;
+  const line = oneLine(name);
+  if (javaBlank(line)) return address;
+  const written = /^[ -~]*$/.test(line)
+    ? `"${line.replace(/["\\]/g, (char) => `\\${char}`)}"`
+    : encodedWords(line);
+  return `${written} <${address}>`;
 }
 
 /**
@@ -164,9 +215,8 @@ export function contactMail(
 
 /**
  * SendEmail's input for the message: a simple message, its subject and text
- * in UTF-8, which SES encodes into the headers itself. A line break in the
- * subject becomes a space: a subject is one line, and none can start a
- * header.
+ * in UTF-8, which SES encodes into the headers itself. The subject is made
+ * one line (oneLine): none of it can start a header.
  */
 export function sendEmailInput(mail: Mail): SendEmailCommandInput {
   return {
@@ -175,7 +225,7 @@ export function sendEmailInput(mail: Mail): SendEmailCommandInput {
     ReplyToAddresses: [mailbox(mail.replyTo)],
     Content: {
       Simple: {
-        Subject: { Data: mail.subject.replace(/[\r\n]+/g, ' '), Charset: 'UTF-8' },
+        Subject: { Data: oneLine(mail.subject), Charset: 'UTF-8' },
         Body: { Text: { Data: mail.body, Charset: 'UTF-8' } },
       },
     },

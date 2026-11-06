@@ -16,7 +16,7 @@
  */
 import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { javaError } from './answers.ts';
-import { requiredString, servletParameter } from './spring.ts';
+import { requiredString, servletParameters } from './spring.ts';
 import { settings } from './settings.ts';
 import { turnstileVerified } from './turnstile.ts';
 import type { MailSettings, Sender } from './contact.ts';
@@ -28,6 +28,16 @@ import {
   singleAddress,
   sesSender,
 } from './contact.ts';
+
+/**
+ * The most a contact request's body may hold: a form of the fields below at
+ * their caps, three times over. Past it, the 413, before anything is parsed;
+ * nginx holds the route to the same (client_max_body_size).
+ */
+const CONTACT_BODY_LIMIT = 64 * 1024;
+
+/** The most each field may hold, in characters; past it, a 400 (research D23). */
+const FIELD_CAPS = { contactName: 200, subject: 200, message: 20_000 } as const;
 
 /** The field Turnstile's widget adds to a form, in place of Java's `h-captcha-response`. */
 export const TOKEN_PARAMETER = 'cf-turnstile-response';
@@ -48,7 +58,7 @@ const DEPENDENCIES: ContactDependencies = {
  * form body's. Tomcat reads a body for parameters only when it is
  * application/x-www-form-urlencoded, and Spring's multipart resolver one that
  * is multipart/form-data; any other body is not read. A multipart body that
- * cannot be parsed gives no parameters.
+ * cannot be parsed gives no parameters. Each is parsed once, whole.
  */
 async function parametersOf(request: Request): Promise<(name: string) => string[]> {
   const url = String(request.originalUrl ?? '');
@@ -57,10 +67,11 @@ async function parametersOf(request: Request): Promise<(name: string) => string[
   const type = request.get?.('content-type') ?? '';
   const media = (type.split(';')[0] ?? '').trim().toLowerCase();
   const body = Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0);
+  const fromQuery = servletParameters(query);
   let fromBody: (name: string) => string[] = () => [];
   if (media === 'application/x-www-form-urlencoded') {
-    const text = body.toString('utf8');
-    fromBody = (name) => servletParameter(text, name);
+    const parsed = servletParameters(body.toString('utf8'));
+    fromBody = (name) => parsed.get(name) ?? [];
   } else if (media === 'multipart/form-data') {
     try {
       const form = await new Response(new Uint8Array(body), {
@@ -72,7 +83,7 @@ async function parametersOf(request: Request): Promise<(name: string) => string[
       fromBody = () => [];
     }
   }
-  return (name) => [...servletParameter(query, name), ...fromBody(name)];
+  return (name) => [...(fromQuery.get(name) ?? []), ...fromBody(name)];
 }
 
 /** Java's 400 text for a check that failed, as the controller writes it. */
@@ -87,7 +98,12 @@ export async function contactAnswer(
   request: Request,
   dependencies: ContactDependencies = DEPENDENCIES
 ): Promise<Answer> {
-  if (request.tooLarge)
+  // Before anything is parsed: the server stops reading at the limit
+  // (bodyLimit), and a body handed in whole is measured here.
+  if (
+    request.tooLarge ||
+    (Buffer.isBuffer(request.body) && request.body.length > CONTACT_BODY_LIMIT)
+  )
     return javaError(request, 413, 'PAYLOAD_TOO_LARGE', 'The message is too large');
   const parameters = await parametersOf(request);
   // Spring binds the method's parameters in order, and the first missing
@@ -107,6 +123,9 @@ export async function contactAnswer(
     values[name] = given.join(',');
   }
   const field = (name: string) => values[name] ?? '';
+  for (const [name, cap] of Object.entries(FIELD_CAPS))
+    if ([...field(name)].length > cap)
+      return javaError(request, 400, 'BAD_REQUEST', `${name} is longer than ${cap} characters`);
 
   // Nothing is checked with Cloudflare, or sent, by a deployment that could
   // not send it: no support address or SES region, or no Turnstile secret.
@@ -157,6 +176,7 @@ export const contactEndpoints: Endpoint[] = [
   {
     path: '/ContentService/contact',
     method: 'post',
+    bodyLimit: CONTACT_BODY_LIMIT,
     // No sample body: the parity harness sends a POST as text/plain, which
     // neither side reads for parameters, so both answer the missing
     // mailAddress and nothing is sent. A request Java accepts sends mail,
