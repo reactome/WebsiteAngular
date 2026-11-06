@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { map, Observable, Subject } from 'rxjs';
 import { DatabaseObject } from '../model/graph/database-object.model';
-import { JSOGDeserializer } from '../utils/JSOGDeserializer';
+import { JSOGDeserializer, type JsogObject } from '../utils/JSOGDeserializer';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 
@@ -12,7 +12,6 @@ export class DatabaseObjectService {
   private http = inject(HttpClient);
 
   private readonly _ENHANCED_QUERY = `${CONTENT_SERVICE}/data/query/enhanced/v2/`;
-  private readonly _DATA_QUERY = `${CONTENT_SERVICE}/data/query/`;
 
   private _selectedObj: Subject<DatabaseObject> = new Subject<DatabaseObject>();
   public selectedObj$ = this._selectedObj.asObservable();
@@ -27,7 +26,7 @@ export class DatabaseObjectService {
   ): Observable<T> {
     const url = `${this._ENHANCED_QUERY}${stId}`;
     return this.http
-      .get<T>(url, {
+      .get<JsogObject<T>>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -38,23 +37,6 @@ export class DatabaseObjectService {
           fetchIncomingRelationships: true,
         },
       })
-      .pipe(
-        map((response: T) => {
-          const deserializer = new JSOGDeserializer();
-          const resolvedResponse = deserializer.deserialize(response);
-          return resolvedResponse as unknown as T;
-        })
-      );
-  }
-
-  fetchSimpleData<T extends DatabaseObject>(stId: string): Observable<T> {
-    const url = `${this._DATA_QUERY}${stId}`;
-    return this.http.get<T>(url).pipe(
-      map((response: T) => {
-        const deserializer = new JSOGDeserializer();
-        const resolvedResponse = deserializer.deserialize(response);
-        return resolvedResponse as unknown as T;
-      })
-    );
+      .pipe(map((response) => new JSOGDeserializer().deserialize(response)));
   }
 }

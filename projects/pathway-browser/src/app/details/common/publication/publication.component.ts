@@ -1,5 +1,4 @@
 import { Component, computed, input, signal } from '@angular/core';
-import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
 import { Publication } from '../../../model/graph/publication/publication.model';
 import { Person } from '../../../model/graph/person.model';
 import { SafePipe } from '../../../pipes/safe.pipe';
@@ -11,7 +10,7 @@ import { authorNameEntries, composeAuthorByline } from './publication-byline';
 export interface AuthorView {
   name: string;
   dbId?: number;
-  orcidId?: string;
+  orcidId?: string | undefined;
 }
 
 @Component({
@@ -26,16 +25,16 @@ export class PublicationComponent {
   // component never had -- the hrefs came out as "undefined/content/detail/...".
   readonly contentDetail = CONTENT_DETAIL;
 
-  readonly ref = input.required<LiteratureReference | Publication>({ alias: 'publication' });
+  readonly ref = input.required<Publication>({ alias: 'publication' });
   readonly showYear = input<boolean>(false);
 
   private readonly expanded = signal(false);
 
-  /**
-   * The ref widened to the literature-reference attributes. Publications carry an index
-   * signature, so journal/url/year read through cleanly and come back undefined when absent.
-   */
-  private readonly literature = computed<Partial<LiteratureReference>>(() => this.ref());
+  /** The ref when it is a journal article, the one kind with a journal and a link. */
+  private readonly literature = computed(() => {
+    const ref = this.ref();
+    return ref.schemaClass === 'LiteratureReference' ? ref : undefined;
+  });
 
   /** Structured authors, when the ref has them. */
   private readonly authors = computed<Person[]>(() => this.ref().author ?? []);
@@ -96,13 +95,15 @@ export class PublicationComponent {
   readonly toggleIcon = computed<string>(() => (this.expanded() ? 'collapse' : 'expand'));
 
   /** Year to render, or undefined when hidden by the input or missing from the ref. */
-  readonly year = computed<number | undefined>(() =>
-    this.showYear() ? this.literature().year : undefined
-  );
+  readonly year = computed<number | undefined>(() => {
+    const ref = this.ref();
+    // An article and a book have a year; a web page has none.
+    return this.showYear() && 'year' in ref ? ref.year : undefined;
+  });
 
-  readonly journal = computed<string>(() => this.literature().journal ?? '');
+  readonly journal = computed<string>(() => this.literature()?.journal ?? '');
 
-  readonly citationUrl = computed<string>(() => this.literature().url ?? '');
+  readonly citationUrl = computed<string>(() => this.literature()?.url ?? '');
 
   toggleAuthors() {
     this.expanded.update((expanded) => !expanded);

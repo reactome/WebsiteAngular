@@ -15,7 +15,40 @@ import {
   CONTENT_SERVICE,
   CONTENT_DETAIL_PATH,
 } from '../../../../../../pathway-browser/src/environments/environment';
-import { Person, SimpleEvent } from '../../../../model/person.model';
+import {
+  Person,
+  PersonAffiliation,
+  PersonPublication,
+  SimpleEvent,
+} from '../../../../model/person.model';
+
+/** A publication as the page lists it: what each kind has, the rest left out. */
+interface PublicationRow {
+  dbId: number;
+  heading: string;
+  journal?: string;
+  year?: number;
+  volume?: number;
+  pages?: string;
+  pubMedIdentifier?: number;
+}
+
+/** The fields the page shows, by kind: only an article has a journal, a volume and a PubMed id. */
+function publicationRow(pub: PersonPublication): PublicationRow {
+  const row: PublicationRow = { dbId: pub.dbId, heading: pub.title || pub.displayName };
+  if (pub.schemaClass === 'URL') return row;
+  row.year = pub.year;
+  if (pub.pages !== undefined) row.pages = pub.pages;
+  if (pub.schemaClass === 'Book') return row;
+  if (pub.journal !== undefined) row.journal = pub.journal;
+  if (pub.volume !== undefined) row.volume = pub.volume;
+  row.pubMedIdentifier = pub.pubMedIdentifier;
+  return row;
+}
+
+/** The objects of a list, without the dbIds that stand for objects written earlier in the answer. */
+const objects = <T extends object>(list: (T | number)[] | undefined): T[] =>
+  (list ?? []).filter((each): each is T => typeof each === 'object');
 
 type SectionKey =
   'authoredPathways' | 'authoredReactions' | 'reviewedPathways' | 'reviewedReactions';
@@ -59,10 +92,13 @@ export class PersonDetailComponent implements OnInit {
   readonly reviewedPathways = signal<SimpleEvent[]>([]);
   readonly reviewedReactions = signal<SimpleEvent[]>([]);
 
-  readonly publicationsSorted = computed(() => {
-    const pubs = this.person()?.publications ?? [];
-    return [...pubs].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-  });
+  readonly publicationsSorted = computed(() =>
+    objects<PersonPublication>(this.person()?.publications)
+      .map(publicationRow)
+      .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+  );
+
+  readonly affiliations = computed(() => objects<PersonAffiliation>(this.person()?.affiliation));
 
   protected readonly CONTENT_DETAIL_PATH = CONTENT_DETAIL_PATH;
 

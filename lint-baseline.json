@@ -1,15 +1,15 @@
 {
-  "warnings": 1321,
+  "warnings": 1318,
   "rules": {
     "@angular-eslint/no-input-rename": 7,
     "@angular-eslint/no-output-native": 6,
     "@angular-eslint/template/button-has-type": 205,
     "@typescript-eslint/ban-ts-comment": 1,
     "@typescript-eslint/no-empty-object-type": 48,
-    "@typescript-eslint/no-explicit-any": 112,
+    "@typescript-eslint/no-explicit-any": 111,
     "@typescript-eslint/no-namespace": 14,
     "@typescript-eslint/no-non-null-assertion": 208,
-    "@typescript-eslint/no-unsafe-argument": 83,
+    "@typescript-eslint/no-unsafe-argument": 81,
     "@typescript-eslint/no-unsafe-assignment": 186,
     "@typescript-eslint/no-unsafe-call": 174,
     "@typescript-eslint/no-unsafe-member-access": 206,

@@ -36,11 +36,11 @@
           <dt>Project</dt>
           <dd>{{ p.project }}</dd>
         }
-        @if (p.affiliation?.length) {
+        @if (affiliations().length) {
           <dt>Affiliation</dt>
           <dd>
             <ul class="affiliation-list">
-              @for (a of p.affiliation; track a.dbId) {
+              @for (a of affiliations(); track a.dbId) {
                 <li>
                   <span class="affiliation-name">{{ a.displayName }}</span>
                   @if (a.address) {
@@ -214,7 +214,7 @@
           <ol class="publication-list">
             @for (pub of publicationsSorted(); track pub.dbId) {
               <li class="publication">
-                <span class="publication-title">{{ pub.title || pub.displayName }}</span>
+                <span class="publication-title">{{ pub.heading }}</span>
                 @if (pub.journal || pub.year || pub.volume || pub.pages) {
                   <span class="publication-meta">
                     @if (pub.journal) {
