@@ -264,6 +264,20 @@ describe('where nginx sends things', () => {
       ]).toEqual([url, 'node', true]);
     });
 
+  // A form of a few fields: nginx refuses a larger body before node reads it.
+  for (const [where, list] of [
+    ['the deployments', locations],
+    ['local', localLocations],
+  ] as const)
+    for (const url of ['/ContentService/contact', '/ContentService/contact/'])
+      it(`caps the contact body at 64k in ${where}: ${url}`, () => {
+        const location = nginxLocation(url, list);
+        expect([url, /client_max_body_size\s+64k;/.test(location?.body ?? '')]).toEqual([
+          url,
+          true,
+        ]);
+      });
+
   it('defines the contact budget in every deployment', () => {
     for (const name of ['dev.conf', 'release.conf', 'production.conf'])
       expect([

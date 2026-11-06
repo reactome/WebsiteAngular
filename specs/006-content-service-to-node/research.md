@@ -916,12 +916,13 @@ instance's role, through the instance metadata service. Why:
 - The server's identity: the SDK speaks HTTPS to SES's regional endpoint and
   verifies it as Node verifies any HTTPS server, against the system's
   authorities and by name. Nothing here gives it an agent or turns that
-  off (tested: the client's configuration is the region, one retry and the
-  timeouts, and the module names no agent and no verification switch).
+  off (tested: the client's configuration is the region, one attempt and
+  the timeouts, and the module names no agent and no verification switch).
 
-Each attempt has five seconds to connect and ten to answer, there is one
-retry at most, and the whole send is abandoned after fifteen, so a reader's
-request is never held. A failure -- credentials not found, permission
+The one attempt has five seconds to connect and ten to answer, and the
+whole send is abandoned after fifteen, so a reader's request is never held.
+There is no retry: an answer that comes late may come from a message SES
+has sent, and a retry would send it twice. A failure -- credentials not found, permission
 refused, SES unreachable -- is the 500 below, logged by the error's name and
 HTTP status alone, never its message, which can carry the role's or the
 reader's details.
@@ -929,9 +930,12 @@ reader's details.
 The message is a simple one: SES writes the headers from the from, to and
 reply-to addresses and a UTF-8 subject, and the text body. The addresses
 are given as text, so they are written here so that they cannot break a
-header: a display name of printable ASCII as a quoted string, anything
-else -- a line break included -- as one RFC 2047 encoded word; a line break
-in the subject becomes a space (tested on the request the SDK would send).
+header. A display name and the subject are made one line first: every
+control character (C0, DEL, U+0085) and the Unicode line and paragraph
+separators become spaces. Then a display name of printable ASCII is a
+quoted string; any other is RFC 2047 encoded words, each at most 75
+characters, split between characters, separated by spaces (tested, and on
+the request the SDK would send).
 
 **For the deployment:** the role's permission above; and the instance
 metadata service within reach of the container. With host networking, as
@@ -957,12 +961,42 @@ taken, as an optional parameter as Java declares it, and ignored.
 agent) moves onto this endpoint, so there is one mail path. Both stay for
 now.
 
+**Limits** (from the review of #836 and #838). Java read any body Tomcat
+would; node had read up to 10MB, and its decoder re-read the whole body for
+each of the six parameters, a Buffer for every character: about 1.5 s of a
+1MB body, the whole service waiting, before Turnstile or the 503 was
+reached. Now:
+
+- The body is held to 64KB: nginx's `client_max_body_size 64k` on the route,
+  and node's own limit (the endpoint's `bodyLimit`), past which node stops
+  keeping what it reads and answers 413 in the envelope, before parsing.
+- The query and a URL-encoded body are each parsed once, in one linear pass
+  over bytes (spring.ts, `servletParameters`), giving what the old decoder
+  gave on every input (compared on 5,000 random ones, malformed escapes and
+  lone surrogates among them); the other endpoints that read parameters
+  share it. 64KB parses in a few milliseconds, 1MB in about 15.
+- The fields are capped, a 400 in the envelope before Turnstile is asked:
+  `contactName` and `subject` at 200 characters, `message` at 20,000. A
+  message of 20,000 characters past ASCII is more than 64KB once
+  URL-encoded, so for one of those the body's limit comes first.
+- The reader's address is one plain address: a dot-atom local part (no dot
+  leading, trailing or doubled), without `%` or `!`, not starting `=?`, and
+  a domain of two or more labels of letters, digits and hyphens, none at a
+  label's ends.
+
+**Open, not done here:** checking Turnstile's answer for the action and the
+hostname the token was made for -- no widget of the site's posts here yet,
+so there is nothing to name; parameters taken from the query string as well
+as the body, as Java takes them; and nginx's rate limit, keyed on the whole
+address, which gives an IPv6 client a key per address of its /64.
+
 **What Java never answered.** In its envelope: 503 `SERVICE_UNAVAILABLE` when
 the deployment cannot send (no support address, a region that is not one,
 or no Turnstile secret), before Cloudflare is asked
 anything; 400 `BAD_REQUEST` for an address that is not one plain address
 (Java's `InternetAddress` refused those with a 500 naming the exception), so
-the Reply-To is never a list; and 500 `The message could not be sent`,
+the Reply-To is never a list; 400 for a field past its cap and 413 for a
+body past 64KB (Limits, above); and 500 `The message could not be sent`,
 without SES's own words, when the mail could not be handed on (Java's
 500 carried the exception's message).
 
