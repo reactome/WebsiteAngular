@@ -33,7 +33,7 @@ import type { Failure, JsonWritten } from './answers.ts';
 import type {
   DiagramFlagResult,
   SpeciesOverviewFlagResult,
-} from '../../projects/pathway-browser/src/app/model/flag.model.ts';
+} from '../../projects/contract/search.ts';
 import {
   pathId,
   queryValues,
@@ -239,11 +239,9 @@ function diagramFlags(answer: SolrAnswer | null, pathway: string, field: string)
         for (const id of hashSetOf(javaSplit(line[3], ',')).keys()) interactsWith.set(id, true);
     }
   }
-  // The site's DiagramFlagResult; this answer never has the entity fields,
-  // and javaJson leaves an undefined one out.
+  // The contract's DiagramFlagResult; javaJson leaves an undefined one out.
+  // Java's type also has the entity fields, which this answer never writes.
   const result: JsonWritten<DiagramFlagResult> = {
-    diagramEntity: undefined,
-    inDiagram: undefined,
     occurrences: occurrences.size ? [...occurrences.keys()] : undefined,
     interactsWith: interactsWith.size ? [...interactsWith.keys()] : undefined,
   };
@@ -274,7 +272,7 @@ function speciesWideFlags(answer: SolrAnswer | null, abbreviation: string | null
     hashSetOf([...map.keys()].filter((id) => id.startsWith(prefix)));
   const species = kept(llps);
   const interacting = kept(interactsWith);
-  // The site's SpeciesOverviewFlagResult; javaJson leaves an undefined one out.
+  // The contract's SpeciesOverviewFlagResult; javaJson leaves an undefined one out.
   const result: JsonWritten<SpeciesOverviewFlagResult> = {
     llps: species.size ? [...species.keys()] : undefined,
     interactsWith: interacting.size ? [...interacting.keys()] : undefined,

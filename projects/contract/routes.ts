@@ -3,6 +3,7 @@
 // (spec 016, contracts/module.md). The description is generated from this
 // (tools/contract/generate.ts); a route the registry has and this does not
 // is listed there as not yet in the contract.
+import type { PathwayCitation } from './citation.ts';
 import type {
   Contributor,
   DoiPathway,
@@ -17,7 +18,10 @@ import type {
   InteractionWithEntities,
   PsicquicResource,
 } from './interactors.ts';
+import type { PathwayBrowserNode } from './locations.ts';
+import type { SimpleEvent } from './person.ts';
 import type {
+  DiagramFlagResult,
   DiagramResult,
   FacetResponse,
   GroupedResult,
@@ -26,6 +30,7 @@ import type {
   IconResult,
   PathwayOfEntry,
   SearchEntry,
+  SpeciesOverviewFlagResult,
 } from './search.ts';
 
 export interface Routes {
@@ -37,6 +42,12 @@ export interface Routes {
   'GET /ContentService/data/schema/{id}/referrals': SchemaAttribute[];
   'GET /ContentService/data/schema/{id}/min': SimpleDatabaseObject[];
   'GET /ContentService/data/instance/{id}/referrers': InstanceReferrals[];
+  'GET /ContentService/data/detail/{id}/locationsInPWB': PathwayBrowserNode[];
+  'GET /ContentService/data/person/{id}/authoredPathways': SimpleEvent[];
+  'GET /ContentService/data/person/{id}/authoredReactions': SimpleEvent[];
+  'GET /ContentService/data/person/{id}/reviewedPathways': SimpleEvent[];
+  'GET /ContentService/data/person/{id}/reviewedReactions': SimpleEvent[];
+  'GET /ContentService/citation/pathway/{id}': PathwayCitation;
   'GET /ContentService/interactors/psicquic/resources': PsicquicResource[];
   'GET /ContentService/interactors/static/molecule/enhanced/{id}/details': CustomInteraction[];
   'GET /ContentService/interactors/static/molecule/{id}/withEntities': InteractionWithEntities[];
@@ -52,4 +63,6 @@ export interface Routes {
   'GET /ContentService/search/icon/{identifier}': IconEntry;
   'GET /ContentService/search/diagram/{diagram}': DiagramResult<SearchEntry>;
   'GET /ContentService/search/fireworks': DiagramResult<SearchEntry>;
+  'GET /ContentService/search/diagram/{pathwayId}/flag': DiagramFlagResult;
+  'GET /ContentService/search/fireworks/flag': SpeciesOverviewFlagResult;
 }

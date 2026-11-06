@@ -60,9 +60,9 @@ export const TYPES: Record<string, string> = {
   PhysicalEntity: `${PB}/model/graph/physical-entity/physical-entity.model`,
   ReferenceEntity: `${PB}/model/graph/reference-entity/reference-entity.model`,
   Participant: `${PB}/model/participant.model`,
-  PathwayCitation: `${PB}/model/citation.model`,
-  DiagramFlagResult: `${PB}/model/flag.model`,
-  SpeciesOverviewFlagResult: `${PB}/model/flag.model`,
+  PathwayCitation: 'projects/contract/citation',
+  DiagramFlagResult: 'projects/contract/search',
+  SpeciesOverviewFlagResult: 'projects/contract/search',
   ReactionJson: `${PB}/model/reaction-diagram.model`,
   ReferenceEntityIds: `${PB}/model/popup.model`,
   Search: `${PB}/model/search.model`,
@@ -84,8 +84,8 @@ export const TYPES: Record<string, string> = {
   SimpleDatabaseObject: 'projects/contract/content',
   InstanceReferrals: 'projects/contract/content',
   Person: `${WEB}/model/person.model`,
-  SimpleEvent: `${WEB}/model/person.model`,
-  PathwayBrowserNode: `${WEB}/model/locations.model`,
+  SimpleEvent: 'projects/contract/person',
+  PathwayBrowserNode: 'projects/contract/locations',
   InteractionWithEntities: 'projects/contract/interactors',
 };
 
