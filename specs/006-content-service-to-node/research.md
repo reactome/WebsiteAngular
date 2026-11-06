@@ -462,6 +462,10 @@ rather than by its symptoms (D19). It applies to this operation only.
   least 24 requests, at which a layout Java gives one call in six is missed
   about one time in eighty. A rarer layout is missed more often, so across
   thousands of reactions some misses are expected; each is looked at by hand.
+  The comparison stops sooner when Java answers the same four times (D22),
+  so a layout Java gives one call in six is missed about half the time
+  there: such a stop is reported to be looked at by hand, or asked again
+  with 24, D21's rate.
   A reaction whose Java layouts never match node's is a difference, not noise.
 - **Node does not copy the variation.** Where node's one layout matches none
   of Java's for a reaction, because the variation's cause is fixed rather than
@@ -625,6 +629,39 @@ it is made, not three steps later.
    compartment and the layout's bounds, so the two cannot be compared apart.
    Placement can move the reaction into another compartment, the one change
    of containment after step 1. Compared: the whole diagram in canonical form.
+   - Done in #831 (replacing #830). Every position is compared, within the
+     declared tolerance below. Jackson's part, which
+     null and empty fields it leaves out and the order it writes fields in,
+     is step 4's: node's nulls and empty lists are dropped and keys sorted
+     before the comparison.
+   - A connector's end shape is drawn by diagram-reader when its type is set
+     (`ConnectorImpl.setPointer`, `ShapeBuilder`). That code is not in the
+     library's source: it was read from the bytecode of the deployed
+     diagram-reader 1.2.5, and its values were checked against that jar run
+     under JDK 11. `atan` gives Java's bits (Java's goes through StrictMath,
+     fdlibm, as Node's does), but `sin` and `cos` do not: on x86-64 HotSpot
+     uses its own table-driven routines, whose last bit differs from Node's
+     on about 3.5% of arguments. Diagonal catalyst, inhibitor and activator
+     lines, and fans of nine or more regulators, can come out a bit apart
+     (0.35% of 20,000 random connector ends). Decided 5 Nov 2026 (awright),
+     a declared difference (D11): the comparison takes numbers within a
+     billionth of their size as equal. Java's own bits would change on
+     another platform, so they are not a stable target, and no drawing can
+     show the difference.
+   - A reaction moved into a child compartment is held by the child, but
+     keeps the outer compartment as its own (`Box.moveReactionTo`). Its cell
+     is then sized and checked as the outer compartment's.
+   - A box stretched to the height of a taller sibling places its children
+     again, each at row 2, column 2. Of two side by side, the second takes
+     the first's cell, and keeps its own old one: the first is lost, and the
+     second is placed and drawn twice. Node does the same.
+   - An entity with two roles of one type is listed, placed and wired once per
+     role. A connector given a type twice draws its end twice; a catalyst's
+     last segment is shortened twice.
+   - Which glyph of an entity drawn twice keeps which role follows the roles'
+     random order (D21), so the order of the edge's parts can differ while
+     the canonical diagram does not. The comparison asks Java again for an
+     order that differs, as for a layout.
 4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
    the answer as Java writes it. Compared: the whole answer in canonical
    form, as D21 declares.
@@ -718,8 +755,10 @@ sample of reactions (all of them, for the last run).
 
 - It is spaced for the shared database.
 - Each reaction is asked of Java once. Only a reaction that differs is asked
-  again, up to D21's 24 times, so a rare Java layout costs extra requests
-  only where it matters.
+  again, up to D21's 24 times while Java's answers vary, so a rare Java
+  layout costs extra requests only where it matters. Four answers the same
+  stop it, a node bug costing four requests, not 24, and such a reaction is
+  reported to be looked at by hand.
 - The run stops after 20 differences in a row: a bug that hits every
   reaction should not cost 24 requests each.
 - Each step compares only the parts it has built, as listed above.
