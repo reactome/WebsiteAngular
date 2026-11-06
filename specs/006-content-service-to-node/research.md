@@ -625,6 +625,30 @@ it is made, not three steps later.
    compartment and the layout's bounds, so the two cannot be compared apart.
    Placement can move the reaction into another compartment, the one change
    of containment after step 1. Compared: the whole diagram in canonical form.
+   - Done in #830. Every position is compared exact. Jackson's part, which
+     null and empty fields it leaves out and the order it writes fields in,
+     is step 4's: node's nulls and empty lists are dropped and keys sorted
+     before the comparison.
+   - A connector's end shape is drawn by diagram-reader when its type is set
+     (`ConnectorImpl.setPointer`, `ShapeBuilder`). That code is not in the
+     library's source: it was read from the bytecode of the deployed
+     diagram-reader 1.2.5, and its values were checked against that jar run
+     under JDK 11. Java's `Math.sin`, `cos` and `atan` gave the same bits as
+     Node's on every value the comparison met.
+   - A reaction moved into a child compartment is held by the child, but
+     keeps the outer compartment as its own (`Box.moveReactionTo`). Its cell
+     is then sized and checked as the outer compartment's.
+   - A box stretched to the height of a taller sibling places its children
+     again, each at row 2, column 2. Of two side by side, the second takes
+     the first's cell, and keeps its own old one: the first is lost, and the
+     second is placed and drawn twice. Node does the same.
+   - An entity with two roles of one type is listed, placed and wired once per
+     role. A connector given a type twice draws its end twice; a catalyst's
+     last segment is shortened twice.
+   - Which glyph of an entity drawn twice keeps which role follows the roles'
+     random order (D21), so the order of the edge's parts can differ while
+     the canonical diagram does not. The comparison asks Java again for an
+     order that differs, as for a layout.
 4. **The graph and the answer.** The graph JSON (`ReactionGraphFactory`) and
    the answer as Java writes it. Compared: the whole answer in canonical
    form, as D21 declares.

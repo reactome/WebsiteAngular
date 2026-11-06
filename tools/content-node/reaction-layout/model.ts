@@ -5,6 +5,7 @@
  */
 import { JavaHashMap } from '../java-hashmap.ts';
 import { Bounds } from './bounds.ts';
+import type { Connector, Coordinate } from './shapes.ts';
 import type { Segment } from './sizes.ts';
 
 /** EntityRole, by the name the query gives it. */
@@ -85,7 +86,10 @@ export class CompartmentGlyph {
   readonly name: string;
   readonly accession: string;
   parent: CompartmentGlyph | undefined;
-  readonly bounds = new Bounds();
+  /** Replaced by the layout's own once it is laid out (setBounds). */
+  bounds = new Bounds();
+  /** Where its name goes: set when it is laid out. */
+  labelPosition: Coordinate | undefined;
   readonly children = new GlyphSet<CompartmentGlyph>();
   readonly contained = new GlyphSet<ContainedGlyph>();
 
@@ -200,6 +204,8 @@ export class EntityGlyph {
   compartment: CompartmentGlyph | undefined;
   /** A copy starts with bounds of its own, as Java's copy constructor gives it. */
   readonly bounds = new Bounds();
+  /** Its connectors to the reaction, as ConnectorFactory adds them; a copy starts with none. */
+  readonly connectors: Connector[] = [];
 
   constructor(ids: GlyphIds, copyOf?: EntityGlyph) {
     this.id = ids.next();
@@ -237,8 +243,25 @@ export class EntityGlyph {
   }
 }
 
-/** A Java exception the service answers with its message (handleUnclassified). */
-export class JavaRuntimeException extends Error {}
+/**
+ * A Java exception the service answers with its message (handleUnclassified):
+ * `javaMessage`, which is null for an exception made without one.
+ */
+export class JavaRuntimeException extends Error {
+  readonly javaMessage: string | null;
+
+  constructor(message: string | null) {
+    super(message ?? 'null');
+    this.javaMessage = message;
+  }
+}
+
+/** An array index out of bounds, as Java's message gives it. */
+export function checkIndex(index: number, length: number): number {
+  if (index < 0 || index >= length)
+    throw new JavaRuntimeException(`Index ${index} out of bounds for length ${length}`);
+  return index;
+}
 
 /** Java's NullPointerException, answered with the service's fixed 500. */
 export class JavaNullPointerException extends Error {

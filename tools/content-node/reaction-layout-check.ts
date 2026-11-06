@@ -1,384 +1,201 @@
 /**
  * The reaction layout comparison (spec 006 T092, research D22): node's
  * layout against Java's /exporter/reaction/{id}/diagram, on the parts the
- * steps built so far decide. Step 1 compares the inputs, as lists that do
- * not depend on Java's random order of a participant's roles:
- * - each node's identity, flags, attachments and compartment;
+ * steps built so far decide. Node runs in process from the first glyph id
+ * Java's answer shows (its edge's), so the two make the same glyphs with the
+ * same ids. Step 3 compares:
+ * - the whole diagram in the site's canonical form (canonical.ts), with
+ *   every position exact. What Jackson leaves out and the order it writes
+ *   fields in are step 4's, so null and empty fields are dropped from node's
+ *   side, as Java's answer has them, and keys are compared sorted;
  * - each glyph id with what it is: node ids with their entity, compartment
- *   ids with their compartment, the edge's with the reaction -- node runs
- *   from the first id Java's answer shows (its edge's), so a glyph made out
- *   of Java's order shows here;
- * - each role, from the edge: entity, type and stoichiometry;
- * - each compartment's place in the tree, and the headers;
- * - (step 2) each node's size and its attachments' boxes, and the reaction's
- *   backbone, relative to the glyph;
- * - the orders Java's hash sets give the nodes, the compartments and each
- *   compartment's components, when everything else agrees.
+ *   ids with their compartment, the edge's with the reaction -- so a glyph
+ *   made out of Java's order shows here;
+ * - the orders Java's hash sets give the nodes, the compartments, each
+ *   compartment's components and the edge's parts, when everything else
+ *   agrees;
+ * - the reaction's species, from the graph, until step 4 compares the graph.
  *
- *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count]
+ *   JAVA_CONTENT_SERVICE=http://localhost:8080 node tools/content-node/reaction-layout-check.ts [count | stId...]
  *
- * Reactions: `count` at random (default 200), every reaction with no
+ * Reactions: the stable ids given, or `count` at random (default 200), every reaction with no
  * compartment, and some failed reactions, disease ones, ones with drugs among
- * or inside their participants, and ones with heavily modified proteins,
- * genes and cells (step 2's sizes). An answer whose ids differ is asked
- * again (another request may have taken ids in between), up to three times.
- * A Java error must meet an error from node; its text is step 5's. Spaced for
- * the shared database; stops after 20 differences in a row. Prints reaction
- * ids and counts only. Exits 1 on any difference.
+ * or inside their participants, heavily modified proteins, genes and cells,
+ * and ones across many compartments. An answer whose ids alone differ is
+ * asked again (another request may have taken ids in between), up to three
+ * times. One whose diagram or orders differ is asked again up to
+ * REACTION_LAYOUT_ATTEMPTS times (default 24, D21): Java's layout, and which
+ * glyph of an entity drawn twice keeps which role, can follow the random
+ * order of a participant's roles, and a match on any attempt is a match. A Java error
+ * must meet an error from node; its text is step 5's. Spaced for the shared
+ * database; stops after 20 differences in a row. Prints reaction ids, counts
+ * and paths into the diagram only. Exits 1 on any difference.
  */
 import { close, read } from './graph.ts';
-import {
-  readInputs,
-  removeExtracellular,
-  reactionRenderableClass,
-} from './reaction-layout/inputs.ts';
+import { layOut } from './reaction-layout/algorithm.ts';
+import { canonicalReaction } from './reaction-layout/canonical.ts';
+import type { CanonicalDiagram } from './reaction-layout/canonical.ts';
+import { reactionDiagram } from './reaction-layout/diagram.ts';
+import type { ReactionDiagram } from './reaction-layout/diagram.ts';
+import { readInputs } from './reaction-layout/inputs.ts';
 import type { Inputs } from './reaction-layout/inputs.ts';
-import { setEntitySize, setReactionSize } from './reaction-layout/sizes.ts';
 import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
-import type { CompartmentGlyph, EntityGlyph, EntityRole } from './reaction-layout/model.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
+const ATTEMPTS = Number(process.env['REACTION_LAYOUT_ATTEMPTS'] || 24);
 
-/** The parts of a diagram node step 1 decides. */
-interface NodePart {
-  reactomeId: number;
-  schemaClass: string;
-  renderableClass: string;
-  displayName: string;
-  isDisease: boolean | null;
-  needDashedBorder: boolean | null;
-  trivial: boolean | null;
-  attachments: [label: string | null, reactomeId: number][];
-  compartment: string | null;
-}
+/** A JSON value, as the answer is parsed. */
+type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
-interface CompartmentPart {
-  displayName: string;
-  reactomeId: number | null;
-  schemaClass: string | null;
-  parent: string | null;
-}
-
-interface Summary {
-  header: {
-    displayName: string;
-    dbId: number;
-    isDisease: boolean;
-    stableId: string | null;
-    speciesName: string | null;
-  };
-  edge: { reactomeId: number; schemaClass: string; displayName: string };
-  /**
-   * The compartment holding the reaction: Java's, and node's with those
-   * inside it -- placement (step 3) may move the reaction inward, never out.
-   */
-  reactionIn: (string | null)[];
-  nodes: string[];
-  compartments: string[];
-  roles: string[];
-  ids: string[];
-  /** Step 2: each node's size and its attachments' boxes from its corner; the reaction's backbone. */
-  sizes: string[];
-  /**
-   * The orders Java's hash sets and maps give, by glyph id: the nodes, the
-   * compartments, and each compartment's components (its glyphs, then its
-   * children). Compared only when the ids agree and the reaction has not
-   * moved, when the two sides' ids name the same glyphs.
-   */
-  orders: string;
-}
-
-/** The edge's lists, by the role type they hold. */
-const ROLE_LISTS: [
-  list: 'inputs' | 'outputs' | 'catalysts' | 'inhibitors' | 'activators',
-  type: EntityRole,
-][] = [
-  ['inputs', 'input'],
-  ['outputs', 'output'],
-  ['catalysts', 'catalyst'],
-  ['inhibitors', 'negative'],
-  ['activators', 'positive'],
-];
-
-/** Java's answer, as far as step 1 reads it. Jackson leaves out what is null or empty. */
+/** Java's diagram, as far as the comparison reads it. Jackson leaves out what is null or empty. */
 interface JavaPart {
   id: number;
-  stoichiometry?: number;
 }
-interface JavaEdge {
-  id: number;
-  segments: { from: JavaPoint; to: JavaPoint }[];
-  reactomeId: number;
-  schemaClass: string;
-  displayName: string;
-  inputs?: JavaPart[];
-  outputs?: JavaPart[];
-  catalysts?: JavaPart[];
-  inhibitors?: JavaPart[];
-  activators?: JavaPart[];
-}
-interface JavaNode {
+interface JavaPlaced {
   id: number;
   reactomeId: number;
-  schemaClass: string;
   renderableClass: string;
+  position: { x: number; y: number };
+}
+interface JavaDiagram {
   displayName: string;
-  isDisease?: boolean;
-  needDashedBorder?: boolean;
-  trivial?: boolean;
-  nodeAttachments?: { label?: string; reactomeId: number; shape: JavaBox }[];
-  prop: { x: number; y: number; width: number; height: number };
-}
-interface JavaPoint {
-  x: number;
-  y: number;
-}
-interface JavaBox {
-  a: JavaPoint;
-  b: JavaPoint;
-}
-interface JavaCompartment {
-  id: number;
-  reactomeId?: number;
-  schemaClass?: string;
-  displayName: string;
-  componentIds?: number[];
+  nodes?: (JavaPlaced & { connectors?: { edgeId: number; type: string; segments: [] }[] })[];
+  edges: [
+    JavaPlaced & {
+      inputs?: JavaPart[];
+      outputs?: JavaPart[];
+      catalysts?: JavaPart[];
+      inhibitors?: JavaPart[];
+      activators?: JavaPart[];
+    },
+  ];
+  compartments?: (JavaPlaced & { displayName: string; componentIds?: number[] })[];
+  links?: CanonicalDiagram['links'];
 }
 interface JavaAnswer {
-  diagram: {
-    displayName: string;
-    dbId: number;
-    isDisease: boolean;
-    stableId?: string;
-    nodes?: JavaNode[];
-    compartments?: JavaCompartment[];
-    edges: [JavaEdge];
-  };
+  diagram: JavaDiagram;
   graph?: { speciesName?: string };
 }
+
+/** What is compared, part by part. */
+interface Summary {
+  /** The canonical diagram, keys sorted, as JSON. */
+  diagram: string;
+  ids: string[];
+  /** The orders Java's hash sets and maps give, by glyph id. */
+  orders: string;
+  species: string | null;
+}
+
+const PART_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
 
 /** A list compared as a multiset: each item as JSON, sorted. */
 const sorted = (items: unknown[]) => items.map((item) => JSON.stringify(item)).sort();
 
-function javaSummary(answer: JavaAnswer): Summary {
-  const diagram = answer.diagram;
+/**
+ * What Jackson writes of a value (NON_EMPTY): no null fields and no empty
+ * lists, at any depth. Applied to node's diagram, which keeps Java's nulls.
+ */
+function jackson(value: Json): Json {
+  if (Array.isArray(value)) return value.map(jackson);
+  if (value === null || typeof value !== 'object') return value;
+  const kept: { [key: string]: Json } = {};
+  for (const [key, inner] of Object.entries(value)) {
+    if (inner === null || (Array.isArray(inner) && !inner.length)) continue;
+    kept[key] = jackson(inner);
+  }
+  return kept;
+}
+
+/** A value with every object's keys sorted: key order is step 4's. */
+function keysSorted(value: Json): Json {
+  if (Array.isArray(value)) return value.map(keysSorted);
+  if (value === null || typeof value !== 'object') return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map((key) => [key, keysSorted(value[key] as Json)])
+  );
+}
+
+/** The diagram in canonical form, as the site puts it before drawing (its absent lists as empty). */
+function canonical(diagram: JavaDiagram): Json {
+  const complete = {
+    ...diagram,
+    nodes: (diagram.nodes ?? []).map((n) => ({ ...n, connectors: n.connectors ?? [] })),
+    compartments: (diagram.compartments ?? []).map((c) => ({
+      ...c,
+      componentIds: c.componentIds ?? [],
+    })),
+    links: diagram.links ?? [],
+  };
+  const { diagram: form } = canonicalReaction(complete, { nodes: [], edges: [] });
+  return keysSorted(form as unknown as Json);
+}
+
+function summary(diagram: JavaDiagram, species: string | null): Summary {
   const nodes = diagram.nodes ?? [];
   const compartments = diagram.compartments ?? [];
-  const holder = new Map<number, string>();
-  const parentOf = new Map<number, string>();
-  const compartmentIds = new Set<number>(compartments.map((c) => c.id));
-  for (const compartment of compartments)
-    for (const id of compartment.componentIds ?? []) {
-      if (compartmentIds.has(id)) parentOf.set(id, compartment.displayName);
-      else holder.set(id, compartment.displayName);
-    }
   const [edge] = diagram.edges;
-  // An entity by dbId and dashed: Java keeps a dashed and a plain participant
-  // of one entity apart, and only DuplicateManager's copies are alike.
-  const entityOf = new Map<number, [number, boolean]>(
-    nodes.map((node) => [node.id, [node.reactomeId, node.needDashedBorder === true]])
-  );
   return {
-    header: {
-      displayName: diagram.displayName,
-      dbId: diagram.dbId,
-      isDisease: diagram.isDisease,
-      stableId: diagram.stableId ?? null,
-      speciesName: answer.graph?.speciesName ?? null,
-    },
-    edge: {
-      reactomeId: edge.reactomeId,
-      schemaClass: edge.schemaClass,
-      displayName: edge.displayName,
-    },
-    reactionIn: [holder.get(edge.id) ?? null],
-    nodes: sorted(
-      nodes.map((node): NodePart => ({
-        reactomeId: node.reactomeId,
-        schemaClass: node.schemaClass,
-        renderableClass: node.renderableClass,
-        displayName: node.displayName,
-        isDisease: node.isDisease ?? null,
-        needDashedBorder: node.needDashedBorder ?? null,
-        trivial: node.trivial ?? null,
-        attachments: (node.nodeAttachments ?? []).map((a) => [a.label ?? null, a.reactomeId]),
-        compartment: holder.get(node.id) ?? null,
-      }))
-    ),
-    compartments: sorted(
-      compartments.map((c): CompartmentPart => ({
-        displayName: c.displayName,
-        reactomeId: c.reactomeId ?? null,
-        schemaClass: c.schemaClass ?? null,
-        parent: parentOf.get(c.id) ?? null,
-      }))
-    ),
-    // Each glyph's roles, sorted: Java's order within a glyph is random, but
-    // which roles share a glyph is not.
-    roles: sorted(
-      nodes.map((node) => [
-        entityOf.get(node.id),
-        ROLE_LISTS.flatMap(([list, type]) =>
-          (edge[list] ?? [])
-            .filter((part) => part.id === node.id)
-            .map((part) => [type, part.stoichiometry ?? null])
-        )
-          .map((role) => JSON.stringify(role))
-          .sort(),
-      ])
-    ),
+    diagram: JSON.stringify(canonical(diagram)),
+    ids: sorted([
+      ['reaction', edge.id, edge.reactomeId],
+      ...nodes.map((node) => ['entity', node.id, node.reactomeId]),
+      // A compartment only the GO tree supplies has no reactomeId: null in JSON.
+      ...compartments.map((c) => ['compartment', c.id, c.displayName, c.reactomeId]),
+    ]),
     orders: JSON.stringify([
       nodes.map((node) => node.id),
       compartments.map((c) => [c.id, c.componentIds ?? []]),
+      PART_LISTS.map((list) => (edge[list] ?? []).map((part) => part.id)),
     ]),
-    sizes: sorted([
-      ['reaction', backbone(edge.segments)],
-      ...nodes.map((node) => [
-        entityOf.get(node.id),
-        round(node.prop.width),
-        round(node.prop.height),
-        (node.nodeAttachments ?? []).map((a) => [
-          a.label ?? null,
-          round(a.shape.a.x - node.prop.x),
-          round(a.shape.a.y - node.prop.y),
-          round(a.shape.b.x - a.shape.a.x),
-          round(a.shape.b.y - a.shape.a.y),
-        ]),
-      ]),
-    ]),
-    ids: sorted([
-      ['reaction', edge.id, edge.reactomeId],
-      ...nodes.map((node) => ['entity', node.id, node.reactomeId, node.needDashedBorder === true]),
-      ...compartments.map((c) => ['compartment', c.id, c.displayName, c.reactomeId ?? null]),
-    ]),
+    species,
   };
 }
 
-function nodeSummary(inputs: Inputs): Summary {
-  removeExtracellular(inputs);
-  // Step 2: every glyph sized, as the layouts do when they take it in.
-  setReactionSize(inputs.reaction);
-  for (const entity of inputs.entities) setEntitySize(entity);
-  const present = new Set<CompartmentGlyph>(inputs.compartments.values());
-  const shown = (glyph: CompartmentGlyph | undefined) =>
-    glyph && present.has(glyph) ? glyph.name : null;
-  const entities: EntityGlyph[] = [...inputs.entities];
-  const reaction = inputs.reaction.data;
-  // The edge's renderable class is always "Reaction"; its shape, which the
-  // category decides, is step 3's. The category is read here so it is checked.
-  reactionRenderableClass(reaction.category);
-  return {
-    header: {
-      displayName: reaction.displayName,
-      dbId: reaction.dbId,
-      isDisease: reaction.isInDisease === true,
-      stableId: inputs.pathway,
-      speciesName: reaction.speciesName,
-    },
-    edge: {
-      reactomeId: reaction.dbId,
-      schemaClass: reaction.schemaClass,
-      displayName: reaction.displayName,
-    },
-    reactionIn: within(inputs.reaction.compartment).map(shown),
-    nodes: sorted(
-      entities.map((entity): NodePart => ({
-        reactomeId: entity.dbId,
-        schemaClass: entity.schemaClass,
-        renderableClass: entity.renderableClass,
-        displayName: entity.name,
-        isDisease: entity.disease ? true : null,
-        needDashedBorder: entity.dashed ? true : null,
-        trivial: entity.trivial ? true : null,
-        attachments: entity.attachments.map((a) => [a.data.label, a.data.dbId]),
-        compartment: shown(entity.compartment),
-      }))
-    ),
-    compartments: sorted(
-      [...present].map((glyph): CompartmentPart => ({
-        displayName: glyph.name,
-        reactomeId: glyph.dbId ?? null,
-        schemaClass: glyph.schemaClass ?? null,
-        parent: shown(glyph.parent),
-      }))
-    ),
-    roles: sorted(
-      entities.map((entity) => [
-        [entity.dbId, entity.dashed],
-        entity.roles.map((role) => JSON.stringify([role.type, role.n])).sort(),
-      ])
-    ),
-    orders: JSON.stringify([
-      entities.map((entity) => entity.id),
-      [...present].map((glyph) => [
-        glyph.id,
-        [...glyph.contained, ...glyph.children].map((member) => member.id),
-      ]),
-    ]),
-    sizes: sorted([
-      ['reaction', backbone(inputs.reaction.segments)],
-      ...entities.map((entity) => [
-        [entity.dbId, entity.dashed],
-        round(entity.bounds.width),
-        round(entity.bounds.height),
-        entity.attachments.map((a) => [
-          a.data.label,
-          round(a.bounds.x - entity.bounds.x),
-          round(a.bounds.y - entity.bounds.y),
-          round(a.bounds.width),
-          round(a.bounds.height),
-        ]),
-      ]),
-    ]),
-    ids: sorted([
-      ['reaction', inputs.reaction.id, reaction.dbId],
-      ...entities.map((entity) => ['entity', entity.id, entity.dbId, entity.dashed]),
-      ...[...present].map((glyph) => ['compartment', glyph.id, glyph.name, glyph.dbId ?? null]),
-    ]),
-  };
+/** Node's diagram as Java's answer would have it: laid out, then written as Jackson does. */
+function nodeDiagram(inputs: Inputs): JavaDiagram {
+  const diagram: ReactionDiagram = reactionDiagram(layOut(inputs));
+  return jackson(JSON.parse(JSON.stringify(diagram)) as Json) as unknown as JavaDiagram;
 }
-
-/** A compartment and every compartment inside it, depth first. */
-function within(glyph: CompartmentGlyph | undefined): (CompartmentGlyph | undefined)[] {
-  if (!glyph) return [undefined];
-  return [glyph, ...[...glyph.children].flatMap((child) => within(child))];
-}
-
-const PARTS = ['header', 'edge', 'nodes', 'compartments', 'roles', 'ids', 'sizes'] as const;
 
 /**
- * A size or offset to a millionth: placement moves a node and its
- * attachments by the same amount, which can leave a last bit behind in the
- * difference. Exact positions are step 3's.
+ * Where two canonical diagrams first differ: a path into them, with the two
+ * values when they are numbers -- never a name.
  */
-function round(value: number): number {
-  return Math.round(value * 1e6) / 1e6;
+function whereDiffers(java: Json, node: Json, path = ''): string {
+  if (typeof java === 'number' && typeof node === 'number')
+    return `${path} (java ${java}, node ${node})`;
+  if (Array.isArray(java) && Array.isArray(node)) {
+    if (java.length !== node.length)
+      return `${path} (java ${java.length} items, node ${node.length})`;
+    for (let i = 0; i < java.length; i += 1)
+      if (JSON.stringify(java[i]) !== JSON.stringify(node[i]))
+        return whereDiffers(java[i] as Json, node[i] as Json, `${path}[${i}]`);
+  } else if (
+    java &&
+    node &&
+    typeof java === 'object' &&
+    typeof node === 'object' &&
+    !Array.isArray(java) &&
+    !Array.isArray(node)
+  ) {
+    const keys = [...new Set([...Object.keys(java), ...Object.keys(node)])].sort();
+    for (const key of keys)
+      if (JSON.stringify(java[key]) !== JSON.stringify(node[key]))
+        return whereDiffers(java[key] ?? null, node[key] ?? null, `${path}.${key}`);
+  }
+  return path || '.';
 }
 
-/** The reaction's segments, all of them, from the first one's start: its size and backbone. */
-function backbone(segments: { from: JavaPoint; to: JavaPoint }[]): number[][] {
-  const [first] = segments;
-  if (!first) return [];
-  return segments.flatMap(({ from, to }) => [
-    [round(from.x - first.from.x), round(from.y - first.from.y)],
-    [round(to.x - first.from.x), round(to.y - first.from.y)],
-  ]);
-}
-
-/** Which parts of two summaries differ. */
+/** Which parts of two summaries differ; the orders only when all else agrees. */
 function differences(java: Summary, node: Summary): string[] {
-  const parts: string[] = PARTS.filter(
+  const parts: string[] = (['diagram', 'ids', 'species'] as const).filter(
     (key) => JSON.stringify(java[key]) !== JSON.stringify(node[key])
   );
-  if (!node.reactionIn.includes(java.reactionIn[0] ?? null)) parts.push('reaction compartment');
-  if (!parts.length && reactionStayed(java, node) && java.orders !== node.orders)
-    parts.push('orders');
+  if (!parts.length && java.orders !== node.orders) parts.push('orders');
   return parts;
-}
-
-/** Whether Java's reaction sits where step 1 put it, rather than moved inward. */
-function reactionStayed(java: Summary, node: Summary): boolean {
-  return node.reactionIn[0] === (java.reactionIn[0] ?? null);
 }
 
 async function reactions(count: number): Promise<string[]> {
@@ -426,9 +243,14 @@ interface Outcome {
   parts: string[];
   /** Both sides failed: Java with its 500, node with one of the library's Java exceptions. */
   bothFailed?: boolean;
-  /** Placement moved Java's reaction inward from where step 1 put it. */
-  movedInward?: boolean;
+  /** The attempt Java's layout matched on, past the first. */
+  attempt?: number;
+  /** Where the diagrams first differed, on the last attempt. */
+  where?: string;
 }
+
+const isJavaException = (error: unknown) =>
+  error instanceof JavaNullPointerException || error instanceof JavaRuntimeException;
 
 /** One reaction compared. */
 async function compare(stId: string): Promise<Outcome> {
@@ -452,74 +274,79 @@ async function compare(stId: string): Promise<Outcome> {
     } catch (error) {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
-    let inputs: Inputs | Error;
+    let laid: { inputs: Inputs; diagram: JavaDiagram } | Error;
     try {
-      inputs = await readInputs(stId, first);
+      const inputs = await readInputs(stId, first);
+      laid = { inputs, diagram: nodeDiagram(inputs) };
     } catch (error) {
-      inputs = error as Error;
+      laid = error as Error;
     }
     if (!answer.body) {
-      if (
-        answer.status === 500 &&
-        (inputs instanceof JavaNullPointerException || inputs instanceof JavaRuntimeException)
-      )
-        return { parts: [], bothFailed: true };
+      if (answer.status === 500 && isJavaException(laid)) return { parts: [], bothFailed: true };
       return {
         parts: [
-          inputs instanceof Error
-            ? `java ${answer.status}, node threw ${inputs.name}`
+          laid instanceof Error
+            ? `java ${answer.status}, node threw ${laid.name}`
             : `java ${answer.status}, node answered`,
         ],
       };
     }
-    if (inputs instanceof Error)
-      return { parts: [`node threw ${inputs.name}: ${inputs.message.slice(0, 80)}`] };
-    let java_: Summary;
+    if (laid instanceof Error)
+      return { parts: [`node threw ${laid.name}: ${laid.message.slice(0, 80)}`] };
+    let javaSummary: Summary;
     try {
-      java_ = javaSummary(answer.body);
+      javaSummary = summary(answer.body.diagram, answer.body.graph?.speciesName ?? null);
     } catch (error) {
       return { parts: [`java's answer unreadable (${(error as Error).name})`] };
     }
-    let parts: string[];
-    let node_: Summary;
-    try {
-      node_ = nodeSummary(inputs);
-      parts = differences(java_, node_);
-    } catch (error) {
-      return {
-        parts: [`node threw ${(error as Error).name}: ${(error as Error).message.slice(0, 80)}`],
-      };
-    }
+    const nodeSummary = summary(laid.diagram, laid.inputs.reaction.data.speciesName);
+    const parts = differences(javaSummary, nodeSummary);
+    if (!parts.length) return attempt > 1 ? { parts, attempt } : { parts };
+    const last: Outcome = parts.includes('diagram')
+      ? {
+          parts,
+          where: whereDiffers(
+            JSON.parse(javaSummary.diagram) as Json,
+            JSON.parse(nodeSummary.diagram) as Json
+          ),
+        }
+      : { parts };
     // Ids alone differing may be another request's ids in between: ask again.
     if (parts.length === 1 && parts[0] === 'ids' && attempt < 3) continue;
-    return { parts, movedInward: !parts.length && !reactionStayed(java_, node_) };
+    // A layout or an order that differs may be one of Java's others -- which of
+    // an entity's roles keeps the glyph and which goes to its copy follows the
+    // roles' random order (D21): ask again, up to ATTEMPTS.
+    if ((parts.includes('diagram') || parts.includes('orders')) && attempt < ATTEMPTS) continue;
+    return last;
   }
 }
 
 async function main() {
-  const ids = await reactions(Number(process.argv[2] ?? 200));
-  console.log(`comparing ${ids.length} reactions, steps 1 and 2`);
+  const asked = process.argv.slice(2);
+  const ids = asked.some((arg) => arg.startsWith('R-'))
+    ? asked
+    : await reactions(Number(asked[0] ?? 200));
+  console.log(`comparing ${ids.length} reactions, steps 1 to 3 (up to ${ATTEMPTS} attempts each)`);
   let identical = 0;
   let bothFailed = 0;
-  let movedInward = 0;
+  let retried = 0;
   let different = 0;
   let inARow = 0;
   for (const stId of ids) {
-    const { parts, bothFailed: failed, movedInward: moved } = await compare(stId);
+    const { parts, bothFailed: failed, attempt, where } = await compare(stId);
     if (!parts.length) {
       if (failed) bothFailed += 1;
       else identical += 1;
-      if (moved) {
-        // Placement's to explain, at step 3: listed so that many can be looked at.
-        movedInward += 1;
-        console.log(`  ${stId}: the reaction moved inward`);
+      if (attempt) {
+        retried += 1;
+        console.log(`  ${stId}: identical to Java's answer on attempt ${attempt}`);
       }
       inARow = 0;
       continue;
     }
     different += 1;
     inARow += 1;
-    console.log(`  ${stId}: ${parts.join(', ')} differ`);
+    console.log(`  ${stId}: ${parts.join(', ')} differ${where ? ` -- first at ${where}` : ''}`);
     if (inARow >= 20) {
       console.log('stopped: 20 differences in a row');
       break;
@@ -527,7 +354,7 @@ async function main() {
   }
   await close();
   console.log(
-    `compared: ${identical} identical (${movedInward} with the reaction moved inward by placement), ` +
+    `compared: ${identical} identical (${retried} of them on a later attempt), ` +
       `${bothFailed} failing on both sides (texts are step 5's), ${different} different`
   );
   process.exit(different ? 1 : 0);
