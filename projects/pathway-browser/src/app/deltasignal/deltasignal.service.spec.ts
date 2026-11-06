@@ -314,7 +314,8 @@ describe('DeltaSignalService readouts', () => {
 
     const resolving = service.resolveSelectedReadout('R-HSA-3');
     const request = http.expectOne('/api/readouts');
-    expect(request.request.body.queries).toEqual([{ id: 'R-HSA-3', stable_ids: ['R-HSA-3'] }]);
+    const body = request.request.body as { queries: unknown };
+    expect(body.queries).toEqual([{ id: 'R-HSA-3', stable_ids: ['R-HSA-3'] }]);
     request.flush({
       status: 'success',
       protocol,
