@@ -58,6 +58,17 @@
                   {{ pins.occurrences - pins.pins.length === 1 ? 'copy' : 'copies' }} computed
                 }
               </span>
+              @if (selectedReadout(); as readout) {
+                @if (readout.call) {
+                  <span class="stable-id">
+                    Predicted: {{ readout.fold | number: '1.2-2' }}× —
+                    {{ readout.call === 'normal' ? 'no change' : readout.call }}
+                    @if (readout.basis === 'proxy') {
+                      (read from its producing reactions)
+                    }
+                  </span>
+                }
+              }
             </div>
             <mat-icon>check_circle</mat-icon>
           </div>
@@ -74,6 +85,17 @@
                   {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
                 }
               </span>
+              @if (selectedReadout(); as readout) {
+                @if (readout.call) {
+                  <span>
+                    It can still be read: {{ readout.fold | number: '1.2-2' }}× —
+                    {{ readout.call === 'normal' ? 'no change' : readout.call }}
+                    @if (readout.basis === 'proxy') {
+                      (from its producing reactions)
+                    }
+                  </span>
+                }
+              }
             </div>
           </div>
         }
@@ -246,16 +268,21 @@
           <details class="column-help">
             <summary>What do these columns mean?</summary>
             <dl>
-              <dt>Activity</dt>
+              <dt>Predicted level</dt>
               <dd>
-                The entity's predicted activity once the network settles, on the same scale as the input: 1× is normal,
-                0 is none, and higher is more active.
+                The entity's predicted level once the network settles, as a fold over its resting level: 1× is normal,
+                0× is gone, higher is more. It is read exactly the way DeltaSignal's published accuracy was measured:
+                the entity resolves to the network's copies of it, each curated entity counts once (never once per
+                internal copy), and a curated species the network only represents through its reactions is read from
+                those reactions' flux.
               </dd>
-              <dt>Change</dt>
+              <dt>Call</dt>
               <dd>
-                Predicted activity minus the entity's own normal (baseline) activity, on the same scale: below zero it
-                falls, above zero it rises. A fall can reach −1 (switched off); a rise can reach +99, so large rises
-                sort above every fall. The diagram's colours show this.
+                The direction at the validated thresholds
+                @if (service.readoutState().protocol; as protocol) {
+                  (down below {{ protocol.down_cutoff }}×, up at {{ protocol.up_cutoff }}× or more)
+                }
+                — the same rule the benchmark figures used. Between the thresholds the model calls no change.
               </dd>
               <dt>Influence</dt>
               <dd>
@@ -266,37 +293,50 @@
               </dd>
             </dl>
             <p>
-              Rows are sorted by the size of the change; a highlighted row is one you perturbed. Where one entity is
-              several nodes of the logic network, its row shows their average activity and change and their largest
-              influence.
+              Rows are sorted by how far the fold departs from 1×; a highlighted row is one you perturbed. These values
+              come from the same readout service the benchmarks ran, not from averaging the table's rows in the browser.
             </p>
           </details>
 
-          <div class="result-table" role="table" aria-label="DeltaSignal predictions">
-            <div class="result-row header" role="row">
-              <span role="columnheader">Entity</span>
-              <span role="columnheader">Activity</span>
-              <span role="columnheader">Change vs baseline</span>
-              <span role="columnheader">Influence</span>
-            </div>
-            @for (row of visibleRows(); track row.uuid) {
-              <div class="result-row" role="row" [class.perturbed]="row.perturbed">
-                <span class="entity" role="cell">
-                  <strong>{{ row.name }}</strong>
-                  <small>{{ row.reactomeId }}</small>
-                </span>
-                <span role="cell">{{ row.activity | number: '1.1-1' }}×</span>
-                <span role="cell" [class.positive]="row.change > 0" [class.negative]="row.change < 0">
-                  {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
-                </span>
-                <span role="cell">{{ row.influence | number: '1.2-2' }}</span>
-              </div>
-            }
-          </div>
-          @if (service.entityRows().length > visibleRows().length) {
-            <p class="truncated">
-              Showing the 40 largest predicted changes across {{ service.entityRows().length }} Reactome entities.
+          @if (service.readoutState().status === 'loading') {
+            <p class="method-note">Reading entities through the measured protocol…</p>
+          } @else if (service.readoutState().status === 'error') {
+            <p class="method-note">
+              The measured readout protocol is unavailable, so no per-entity values are shown:
+              {{ service.readoutState().message }}
             </p>
+          } @else {
+            <div class="result-table" role="table" aria-label="DeltaSignal predictions">
+              <div class="result-row header" role="row">
+                <span role="columnheader">Entity</span>
+                <span role="columnheader">Predicted level</span>
+                <span role="columnheader">Call</span>
+                <span role="columnheader">Influence</span>
+              </div>
+              @for (row of visibleRows(); track row.reactomeId) {
+                <div class="result-row" role="row" [class.perturbed]="row.perturbed">
+                  <span class="entity" role="cell">
+                    <strong>{{ row.name }}</strong>
+                    <small>
+                      {{ row.reactomeId }}
+                      @if (row.basis === 'proxy') {
+                        · read from its producing reactions
+                      }
+                    </small>
+                  </span>
+                  <span role="cell">{{ row.fold | number: '1.2-2' }}×</span>
+                  <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
+                    {{ row.call === 'normal' ? 'no change' : row.call }}
+                  </span>
+                  <span role="cell">{{ row.influence | number: '1.2-2' }}</span>
+                </div>
+              }
+            </div>
+            @if (service.readoutRows().length > visibleRows().length) {
+              <p class="truncated">
+                Showing the 40 predictions furthest from 1× across {{ service.readoutRows().length }} Reactome entities.
+              </p>
+            }
           }
         } @else {
           <cr-deltasignal-logic-graph />
