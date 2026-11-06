@@ -5,6 +5,7 @@
 // jar under the service's OpenJDK 11, headless). The same run over every
 // first name of release 98's physical entities, 96,310 of them, agreed.
 import { describe, expect, it } from 'vitest';
+import { JavaNullPointerException } from './model.ts';
 import { textDimension, textWidth } from './text.ts';
 
 /** [name, width, height], as the jar measured them. */
@@ -36,5 +37,13 @@ describe('textDimension, as the jar measures a name', () => {
   it('measures a string as the sum of its characters, and a character the font lacks as 6', () => {
     expect(textWidth('ATP')).toBe(textWidth('A') + textWidth('T') + textWidth('P'));
     expect(textWidth('\u{4e00}')).toBe(6);
+  });
+
+  // A name the graph lacks: FontMetrics.stringWidth(null) is Java's
+  // NullPointerException, which the endpoint answers with Java's 500, not a
+  // TypeError of node's own.
+  it('measures a missing name as Java does: a NullPointerException', () => {
+    expect(() => textWidth(null)).toThrow(JavaNullPointerException);
+    expect(() => textDimension(null as unknown as string)).toThrow(JavaNullPointerException);
   });
 });
