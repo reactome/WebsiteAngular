@@ -42,9 +42,33 @@ export class DeltaSignalPanelComponent {
   readonly activity = signal(0);
   readonly resultView = signal<'diagram' | 'logic'>('diagram');
   readonly selectedNodes = computed(() => this.service.matchingNodes(this.selectedStId()));
-  readonly selectedName = computed(() =>
-    [...new Set(this.selectedNodes().map((node) => node.name))].join(' / ')
-  );
+  // The selection's resolution through /api/pins (deltasignal specs/140): the
+  // nodes a perturbation here will pin — the protocol every benchmark figure
+  // was measured under — or the honest "none".
+  readonly selectedPins = computed(() => {
+    const state = this.service.pinState();
+    return state.status === 'ready' && state.reactomeId === this.selectedStId()
+      ? state.result
+      : null;
+  });
+  readonly pinsLoading = computed(() => {
+    const state = this.service.pinState();
+    return state.status === 'loading' && state.reactomeId === this.selectedStId();
+  });
+  readonly pinsError = computed(() => {
+    const state = this.service.pinState();
+    return state.status === 'error' && state.reactomeId === this.selectedStId()
+      ? (state.message ?? 'Could not resolve what this perturbation would pin.')
+      : null;
+  });
+  readonly canAdd = computed(() => (this.selectedPins()?.pins.length ?? 0) > 0);
+  readonly selectedName = computed(() => {
+    const pins = this.selectedPins();
+    const names = pins?.pins.length
+      ? pins.pins.map((pin) => pin.name)
+      : this.selectedNodes().map((node) => node.name);
+    return [...new Set(names)].join(' / ');
+  });
   readonly visibleRows = computed(() => this.service.entityRows().slice(0, 40));
 
   constructor() {
@@ -55,6 +79,13 @@ export class DeltaSignalPanelComponent {
     });
     effect(() => {
       if (this.status() === 'open') void this.service.loadPathway(this.pathwayId());
+    });
+    effect(() => {
+      // Re-resolve when the selection changes AND when the network arrives:
+      // reading network() here is what re-runs this once loading finishes.
+      const stableId = this.selectedStId();
+      const ready = this.service.network() !== null;
+      void this.service.select(ready ? stableId : null);
     });
   }
 
