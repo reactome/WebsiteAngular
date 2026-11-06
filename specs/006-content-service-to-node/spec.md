@@ -59,7 +59,7 @@ Anyone can see, for every published operation, whether node answers it, which pu
 
 ### Functional Requirements
 
-- **FR-001**: Each ported operation MUST answer byte-identically to Java for the same request, compared live before it is routed. Declared exceptions are recorded in research (D11, D15, D19, D21), each for named operations; none is added, or applied to another operation, without a decision recorded there.
+- **FR-001**: Each ported operation MUST answer byte-identically to Java for the same request, compared live before it is routed. Declared exceptions are recorded in research (D10, D11, D15, D19, D21, D22, D23) or, for one operation, beside its comparison rule in the code with its reason (spec 011 R12), each for named operations; none is added, or applied to another operation, without a decision recorded in one of those places. Every one is listed in [the register of declared differences](../../documentation/declared-differences.md).
 - **FR-002**: Each port MUST be test-first, with each behaviour shown failing by mutation.
 - **FR-003**: Routing MUST be per operation, in nginx and the dev proxy alike, kept in agreement by a test; every node route MUST accept a trailing slash.
 - **FR-004**: A route node answers MUST never fall back to Java.
