@@ -72,29 +72,6 @@ export function groupChangesByReactomeId(rows: DeltaSignalResultRow[]): Map<stri
   return grouped;
 }
 
-/** Collapse internal solver duplicates for a readable one-entity-per-row table. */
-export function aggregateRowsByReactomeId(rows: DeltaSignalResultRow[]): DeltaSignalResultRow[] {
-  const grouped = new Map<string, DeltaSignalResultRow[]>();
-  for (const row of rows) {
-    if (!row.reactomeId) continue;
-    grouped.set(row.reactomeId, [...(grouped.get(row.reactomeId) ?? []), row]);
-  }
-
-  const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
-  return [...grouped.entries()]
-    .map(([reactomeId, members]) => ({
-      uuid: reactomeId,
-      reactomeId,
-      name: [...new Set(members.map((member) => member.name))].join(' / '),
-      baseline: mean(members.map((member) => member.baseline)),
-      activity: mean(members.map((member) => member.activity)),
-      change: mean(members.map((member) => member.change)),
-      influence: Math.max(...members.map((member) => member.influence)),
-      perturbed: members.some((member) => member.perturbed),
-    }))
-    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change) || b.influence - a.influence);
-}
-
 /**
  * Keep the largest logic-node responses as separate UUIDs, including every
  * perturbed node even when it falls outside the display limit. Edges are only

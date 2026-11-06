@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aggregateRowsByReactomeId,
   buildLogicGraph,
   buildObservations,
   groupChangesByReactomeId,
@@ -84,20 +83,6 @@ describe('DeltaSignal result mapping', () => {
     const grouped = groupChangesByReactomeId(resultRows(network, result, [perturbation]));
 
     expect(grouped.get('R-HSA-1')).toEqual([24, 79]);
-  });
-
-  it('collapses internal duplicates to one Reactome entity in the result table', () => {
-    const aggregated = aggregateRowsByReactomeId(resultRows(network, result, [perturbation]));
-
-    expect(aggregated).toHaveLength(1);
-    expect(aggregated[0]).toMatchObject({
-      reactomeId: 'R-HSA-1',
-      baseline: 1,
-      activity: 52.5,
-      change: 51.5,
-      influence: 5,
-      perturbed: true,
-    });
   });
 
   it('keeps logic UUIDs separate and retains edges between visible nodes', () => {

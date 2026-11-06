@@ -9,15 +9,20 @@ import {
   DeltaSignalPinResult,
   DeltaSignalPinsResponse,
   DeltaSignalPinState,
+  DeltaSignalReadoutRow,
+  DeltaSignalReadoutsResponse,
+  DeltaSignalReadoutState,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
-import {
-  aggregateRowsByReactomeId,
-  buildObservations,
-  groupChangesByReactomeId,
-  resultRows,
-} from './deltasignal.utils';
+import { buildObservations, groupChangesByReactomeId, resultRows } from './deltasignal.utils';
+
+const IDLE_READOUTS: DeltaSignalReadoutState = {
+  status: 'idle',
+  byId: new Map(),
+  protocol: null,
+  message: null,
+};
 
 @Injectable({ providedIn: 'root' })
 export class DeltaSignalService {
@@ -42,8 +47,43 @@ export class DeltaSignalService {
     message: null,
   });
 
+  readonly readoutState = signal<DeltaSignalReadoutState>(IDLE_READOUTS);
+
   readonly rows = computed(() => resultRows(this.network(), this.result(), this.perturbations()));
-  readonly entityRows = computed(() => aggregateRowsByReactomeId(this.rows()));
+  /**
+   * One row per Reactome entity, valued by `/api/readouts` — the resolution
+   * and entity-mean every benchmark figure was measured under (deltasignal
+   * specs/141). Never a browser-side mean over matching node copies: that is
+   * the retired display rule this replaces.
+   */
+  readonly readoutRows = computed<DeltaSignalReadoutRow[]>(() => {
+    const network = this.network();
+    const state = this.readoutState();
+    const influence = this.result()?.influence_scores ?? {};
+    if (!network || state.status !== 'ready') return [];
+    const nodeByUuid = new Map(network.nodes.map((node) => [node.uuid, node]));
+    const rows: DeltaSignalReadoutRow[] = [];
+    for (const [reactomeId, readout] of state.byId) {
+      if (readout.basis === 'none') continue;
+      if (readout.fold === null || readout.fold === undefined) continue;
+      if (readout.call === null || readout.call === undefined) continue;
+      const uuids = readout.groups.flat();
+      const names = [
+        ...new Set(uuids.map((uuid) => nodeByUuid.get(uuid)?.name).filter((n) => !!n)),
+      ] as string[];
+      rows.push({
+        reactomeId,
+        name: names.length ? names.join(' / ') : reactomeId,
+        basis: readout.basis,
+        fold: readout.fold,
+        call: readout.call,
+        influence: Math.max(0, ...uuids.map((uuid) => influence[uuid] ?? 0)),
+        perturbed: readout.pinned.length > 0,
+      });
+    }
+    const departure = (fold: number) => Math.abs(Math.log(Math.max(fold, 1e-6)));
+    return rows.sort((a, b) => departure(b.fold) - departure(a.fold) || b.influence - a.influence);
+  });
   readonly overlay = computed(() => groupChangesByReactomeId(this.rows()));
   readonly hasOverlay = computed(() => this.overlay().size > 0);
   readonly maxAbsoluteChange = computed(() =>
@@ -74,6 +114,7 @@ export class DeltaSignalService {
     this.perturbations.set([]);
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
+    this.readoutState.set(IDLE_READOUTS);
 
     try {
       const catalog = await this.getCatalog();
@@ -154,22 +195,26 @@ export class DeltaSignalService {
       perturbation,
     ]);
     this.result.set(null);
+    this.readoutState.set(IDLE_READOUTS);
     return true;
   }
 
   removePerturbation(reactomeId: string) {
     this.perturbations.update((items) => items.filter((item) => item.reactomeId !== reactomeId));
     this.result.set(null);
+    this.readoutState.set(IDLE_READOUTS);
   }
 
   clear() {
     this.perturbations.set([]);
     this.result.set(null);
+    this.readoutState.set(IDLE_READOUTS);
     this.error.set(null);
   }
 
   clearResult() {
     this.result.set(null);
+    this.readoutState.set(IDLE_READOUTS);
   }
 
   reset() {
@@ -182,6 +227,7 @@ export class DeltaSignalService {
     this.perturbations.set([]);
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
+    this.readoutState.set(IDLE_READOUTS);
   }
 
   async solve(): Promise<void> {
@@ -191,11 +237,13 @@ export class DeltaSignalService {
 
     this.status.set('solving');
     this.error.set(null);
+    this.readoutState.set(IDLE_READOUTS);
     const observations = buildObservations(this.perturbations());
 
     try {
       this.result.set(await this.requestSolve(network.network_id, observations));
       this.status.set('ready');
+      await this.resolveReadouts(network.network_id, observations);
     } catch (error) {
       let solveError = error;
       if (error instanceof HttpErrorResponse && error.status === 404) {
@@ -204,6 +252,7 @@ export class DeltaSignalService {
           this.network.set(reparsed);
           this.result.set(await this.requestSolve(reparsed.network_id, observations));
           this.status.set('ready');
+          await this.resolveReadouts(reparsed.network_id, observations);
           return;
         } catch (retryError) {
           solveError = retryError;
@@ -214,6 +263,94 @@ export class DeltaSignalService {
         this.errorMessage(solveError, 'DeltaSignal could not solve this perturbation.')
       );
     }
+  }
+
+  /**
+   * Value every entity of the solved network through `/api/readouts` — one
+   * batch request carrying the solve's activities verbatim and the pinned
+   * uuids. On failure the table is UNAVAILABLE, stated as such: there is no
+   * browser-side aggregation to fall back to, because no published figure
+   * applies to such numbers.
+   */
+  private async resolveReadouts(
+    networkId: string,
+    observations: Record<string, [number, number]>
+  ): Promise<void> {
+    const network = this.network();
+    const activities = this.result()?.node_activities;
+    if (!network || !activities) return;
+    const ids = [...new Set(network.nodes.map((node) => node.reactome_id).filter((id) => !!id))];
+    this.readoutState.set({ ...IDLE_READOUTS, status: 'loading' });
+    try {
+      const response = await this.requestReadouts(networkId, ids, activities, observations);
+      if (this.result()?.node_activities !== activities) return; // a newer solve took over
+      this.readoutState.set({
+        status: 'ready',
+        byId: new Map(
+          response.results.flatMap((entry) =>
+            entry.id === null ? [] : [[entry.id, entry] as const]
+          )
+        ),
+        protocol: response.protocol,
+        message: null,
+      });
+    } catch (error) {
+      if (this.result()?.node_activities !== activities) return;
+      this.readoutState.set({
+        ...IDLE_READOUTS,
+        status: 'error',
+        message: this.errorMessage(error, 'The measured readout protocol is unavailable.'),
+      });
+    }
+  }
+
+  /**
+   * A selected entity that was not among the network's node ids (a curated
+   * species the generator expanded into variants resolves through its proxy
+   * reactions; deltasignal specs/141) is asked for on demand and merged into
+   * the batch.
+   */
+  async resolveSelectedReadout(reactomeId: string | null): Promise<void> {
+    const network = this.network();
+    const state = this.readoutState();
+    const activities = this.result()?.node_activities;
+    if (!reactomeId || !network || !activities || state.status !== 'ready') return;
+    if (state.byId.has(reactomeId)) return;
+    const observations = buildObservations(this.perturbations());
+    try {
+      const response = await this.requestReadouts(
+        network.network_id,
+        [reactomeId],
+        activities,
+        observations
+      );
+      const entry = response.results[0];
+      if (this.result()?.node_activities !== activities) return; // a newer solve took over
+      const current = this.readoutState();
+      if (!entry || current.status !== 'ready' || current.byId.has(reactomeId)) return;
+      this.readoutState.set({
+        ...current,
+        byId: new Map([...current.byId, [reactomeId, entry]]),
+      });
+    } catch {
+      // The batch stays valid; the selection block simply has no readout.
+    }
+  }
+
+  private requestReadouts(
+    networkId: string,
+    ids: string[],
+    activities: Record<string, number>,
+    observations: Record<string, [number, number]>
+  ) {
+    return firstValueFrom(
+      this.http.post<DeltaSignalReadoutsResponse>('/api/readouts', {
+        network_id: networkId,
+        activities,
+        pinned: Object.keys(observations),
+        queries: ids.map((id) => ({ id, stable_ids: [id] })),
+      })
+    );
   }
 
   private getCatalog() {
