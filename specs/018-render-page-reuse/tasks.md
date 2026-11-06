@@ -28,7 +28,7 @@ first (constitution III). The PR that completes a task ticks it here with its nu
 
 ## Phase 2: The comparison first (US2, P1)
 
-- [ ] T011 [US2] Fresh renders repeatable (research R7), in the render page.
+- [x] T011 [US2] Fresh renders repeatable (research R7), in the render page.
   - **Fix:**
     - the reaction layout put in a canonical form before it is drawn (nodes in a fixed
       order, ids renumbered in the layout and in the graph's nodes, which refer to it): done in
@@ -58,6 +58,12 @@ first (constitution III). The PR that completes a task ticks it here with its nu
       5 Nov 2026 (awright): the cap is not raised; the reaction layout is ported (spec 006
       T092), whose layout does not vary, so T011 waits on T092 and is ticked with no
       reaction exempted.
+    - **Passed with no reaction exempted, 6 Nov 2026 (#846):** once the reaction layout was
+      answered by node (spec 006 T092 step 5, #834) and the site's proxy routed it there, 100
+      human reactions of release 98 drawn fresh twice by `tools/render/reuse-compare.ts --mode
+fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 differences in
+      200 (T002, #810). Reactions with `R-NUL-` ids time out in the render page itself, whatever
+      the layout: issue #843, outside this test.
 
 - [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
   - **Written (#810):** the script and its tests. Its first run, `--mode fresh` on T001's

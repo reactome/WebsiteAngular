@@ -295,6 +295,8 @@ describe('the dev server proxy', () => {
     '/ContentService/citation/static/25348405',
     '/ContentService/citation/export?id=R-HSA-109581&ext=bib&isPathway=true&dateAccessed=x',
     '/ContentService/data/instance/R-HSA-141433/referrers',
+    // The help-desk form (POST).
+    '/ContentService/contact',
     // The PSICQUIC services the Pathway Browser can draw interactors from.
     '/ContentService/interactors/psicquic/resources',
     // A batch of objects by id (POST), and as a map.
