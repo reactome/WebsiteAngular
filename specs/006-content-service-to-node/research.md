@@ -868,12 +868,12 @@ under the deployed JDK, `diagram` came first 12 times. Node writes `diagram`
 first, and the comparison does not count the order of those two keys as a
 difference.
 
-## D23. The contact form: Java's mail, Turnstile's check, a verified server (T085)
+## D23. The contact form: Java's form, Turnstile's check, mail through SES (T085)
 
 **Decided** by awright, 6 Nov 2026, for `POST /contact`
 (ContactController): Java's parameters and refusals, and four things not
-done as Java does them -- the human check, the mail server's certificate,
-whom the message is from, and the reader's copy.
+done as Java does them -- the human check, how the mail is sent, whom the
+message is from, and the reader's copy.
 
 **What is Java's, unchanged.** The parameters, read from the query and from a
 URL-encoded or multipart form body, as Tomcat reads them; a text/plain body
@@ -899,16 +899,45 @@ hCaptcha token cannot be checked by Turnstile, so a caller still sending one
 is refused as an unverified one is. The site's own form needed no change: it
 already asks with Turnstile, and posts to the site's own route.
 
-**Different: the mail server's certificate.** Java's mail session enabled
-STARTTLS without requiring it, so a server that did not offer it, or a
-connection whose offer was removed on the way, was sent the message and the
-login in clear; and it checked the certificate against the JVM's trust store
-without checking the host name (JavaMail 1.6's defaults). Node requires TLS -- STARTTLS, or TLS from
-the first byte on port 465 -- checks the certificate against the system's
-authorities and the host's name, and has no setting that turns either off. An
-internal authority is added with Node's `NODE_EXTRA_CA_CERTS`, never by
-trusting everything. Whether the deployed server passes is learned by the
-first test message, which needs awright's go-ahead.
+**Different: how the mail is sent** (awright, 6 Nov 2026, replacing the
+SMTP sending of #835 and #836). Java logged in to an SMTP server with a
+stored user name and password, over STARTTLS it did not require, checking
+the certificate without the host name (JavaMail 1.6's defaults). Node sends
+through Amazon SES's API, `SendEmail` (v2), with `@aws-sdk/client-sesv2`,
+signed with the credentials the SDK's default chain finds: on the host, the
+instance's role, through the instance metadata service. Why:
+
+- No password is stored: there is nothing to keep secret, rotate or leak,
+  and the permission is the role's, one statement an administrator grants
+  and can withdraw (`ses:SendEmail`, conditioned on `ses:FromAddress` being
+  the support address).
+- The SMTP credentials the Java configuration holds are refused (535), so
+  that path was not available anyway; the servers it names are SES's.
+- The server's identity: the SDK speaks HTTPS to SES's regional endpoint and
+  verifies it as Node verifies any HTTPS server, against the system's
+  authorities and by name. Nothing here gives it an agent or turns that
+  off (tested: the client's configuration is the region, one retry and the
+  timeouts, and the module names no agent and no verification switch).
+
+Each attempt has five seconds to connect and ten to answer, there is one
+retry at most, and the whole send is abandoned after fifteen, so a reader's
+request is never held. A failure -- credentials not found, permission
+refused, SES unreachable -- is the 500 below, logged by the error's name and
+HTTP status alone, never its message, which can carry the role's or the
+reader's details.
+
+The message is a simple one: SES writes the headers from the from, to and
+reply-to addresses and a UTF-8 subject, and the text body. The addresses
+are given as text, so they are written here so that they cannot break a
+header: a display name of printable ASCII as a quoted string, anything
+else -- a line break included -- as one RFC 2047 encoded word; a line break
+in the subject becomes a space (tested on the request the SDK would send).
+
+**For the deployment:** the role's permission above; and the instance
+metadata service within reach of the container. With host networking, as
+compose runs the content service today, the instance's default hop limit
+of 1 is enough; a bridged container -- the plan once the graph is a
+container (D13) -- is one hop further and needs a hop limit of at least 2.
 
 **Different: whom the message is from, and no copy** (awright, 6 Nov 2026,
 replacing #835's Java shape). Java sent the help desk's message from the
@@ -921,8 +950,7 @@ reader's address, sent by a server that domain does not name, is refused
 or filed as spam by receiving mail checks (SPF, DMARC); one from the site's
 own address is not. No copy goes to the reader: it would send mail to any
 address someone types, a Turnstile pass apiece. `sendEmailCopy` is still
-taken, as an optional parameter as Java declares it, and ignored. Every
-address goes to the library as an object, never as text it parses.
+taken, as an optional parameter as Java declares it, and ignored.
 
 **Open, for awright to decide later:** whether the site's search-page form
 (its own `/contact` route, which sends through the local mail transfer
@@ -930,29 +958,26 @@ agent) moves onto this endpoint, so there is one mail path. Both stay for
 now.
 
 **What Java never answered.** In its envelope: 503 `SERVICE_UNAVAILABLE` when
-the deployment cannot send (no SMTP server, no support address, a login asked
-for and not given, or no Turnstile secret), before Cloudflare is asked
+the deployment cannot send (no support address, a region that is not one,
+or no Turnstile secret), before Cloudflare is asked
 anything; 400 `BAD_REQUEST` for an address that is not one plain address
 (Java's `InternetAddress` refused those with a 500 naming the exception), so
 the Reply-To is never a list; and 500 `The message could not be sent`,
-without the server's own words, when the mail could not be handed on (Java's
+without SES's own words, when the mail could not be handed on (Java's
 500 carried the exception's message).
 
-**The library: nodemailer.** It is the usual way Node sends mail, with no
-dependencies of its own and an MIT-0 licence; it handles STARTTLS, the login,
-and the encoding of names and subjects, so a line break in either starts no
-new header (tested). Writing an SMTP client here would be more code to get
-wrong in the part that must not be. Pinned exactly in the root package, and
-installed into the content service's image from the root lockfile, as
-express and the graph driver are.
+**The library: Amazon's SES client** (`@aws-sdk/client-sesv2`, Apache-2.0,
+as are its AWS and Smithy dependencies; one more, `bowser`, is MIT). Pinned
+exactly, at a release two weeks old when it was added, and installed into
+the content service's image from the root lockfile, as express and the
+graph driver are; about 7 MB more in the image. nodemailer, which #835 and
+#836 used for SMTP, is removed.
 
-**Settings**, in the environment or the credentials file, each Java's:
-`CONTACT_SMTP_HOST` (mail.host), `CONTACT_SMTP_PORT` (mail.port, 587 by
-default), `CONTACT_SMTP_AUTH` (mail.enable.auth), `CONTACT_SMTP_USER`
-(mail.username), `CONTACT_SMTP_PASSWORD` (mail.password),
-`CONTACT_SUPPORT_ADDRESS` (cnf.mail.support.address), `CONTACT_SUPPORT_NAME`
-(cnf.mail.support.name), and Turnstile's `CLOUDFLARE_SECRET_KEY`, the site's
-gate's name for it.
+**Settings**, in the environment or the credentials file:
+`CONTACT_SUPPORT_ADDRESS` (Java's cnf.mail.support.address),
+`CONTACT_SUPPORT_NAME` (cnf.mail.support.name), `CONTACT_SES_REGION` (the
+SES region, `us-east-1` by default), and Turnstile's `CLOUDFLARE_SECRET_KEY`,
+the site's gate's name for it. No credentials: the role supplies them.
 
 **A budget.** Each request that passes sends a message, so nginx gives
 the route its own limit, six a minute per address with a burst of three

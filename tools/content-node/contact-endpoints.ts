@@ -11,7 +11,7 @@
  * rest of the site does, so its token comes as `cf-turnstile-response`, the
  * field Turnstile's widget adds to a form. What Java never answered is
  * answered in its envelope: 503 when this deployment cannot send, 400 for an
- * address that is not one address, and 500, without the server's words, when
+ * address that is not one address, and 500, without SES's words, when
  * the mail could not be handed on.
  */
 import type { Answer, Endpoint, Request } from './endpoint.ts';
@@ -24,9 +24,9 @@ import {
   contactMail,
   javaBlank,
   mailSettings,
-  sendMail,
+  sendEmailInput,
   singleAddress,
-  smtpSender,
+  sesSender,
 } from './contact.ts';
 
 /** The field Turnstile's widget adds to a form, in place of Java's `h-captcha-response`. */
@@ -40,7 +40,7 @@ export interface ContactDependencies {
 
 const DEPENDENCIES: ContactDependencies = {
   verify: (token) => turnstileVerified(token),
-  sender: (mail) => smtpSender(mail),
+  sender: (mail) => sesSender(mail),
 };
 
 /**
@@ -109,7 +109,7 @@ export async function contactAnswer(
   const field = (name: string) => values[name] ?? '';
 
   // Nothing is checked with Cloudflare, or sent, by a deployment that could
-  // not send it: no SMTP server or support address, or no Turnstile secret.
+  // not send it: no support address or SES region, or no Turnstile secret.
   const mail = mailSettings();
   if (!mail || !settings.turnstileSecret())
     return javaError(
@@ -136,12 +136,17 @@ export async function contactAnswer(
   // nothing is sent to an address the reader typed (research D23).
   const sender = dependencies.sender(mail);
   try {
-    await sendMail(sender, contactMail(form, mail));
+    await sender(sendEmailInput(contactMail(form, mail)));
   } catch (failure) {
-    // The code alone: the server's own words can carry the addresses.
-    const { code, responseCode } = (failure ?? {}) as { code?: unknown; responseCode?: unknown };
+    // The error's name and HTTP status alone: its message can carry the
+    // addresses, and a credentials failure's the role's details.
+    const { name, $metadata } = (failure ?? {}) as {
+      name?: unknown;
+      $metadata?: { httpStatusCode?: unknown };
+    };
+    const status = $metadata?.httpStatusCode;
     console.error(
-      `contact: the message could not be sent (${String(code ?? 'unknown')}${responseCode ? ` ${String(responseCode)}` : ''})`
+      `contact: the message could not be sent (${String(name ?? 'unknown')}${status === undefined ? '' : ` ${String(status)}`})`
     );
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'The message could not be sent');
   }

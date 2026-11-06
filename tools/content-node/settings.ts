@@ -41,20 +41,15 @@ export const settings = {
   reportPassword: (): string => envSetting('REPORT_PASSWORD', 'default'),
 
   /**
-   * The help-desk form's mail (POST /contact, contact.ts): the SMTP server,
-   * its port (587, or 465 for TLS from the first byte), whether it asks for a
-   * login, the login, and the support name and address messages go to and
-   * come from. Java's mail.host, mail.port, mail.enable.auth, mail.username,
-   * mail.password, cnf.mail.support.address and cnf.mail.support.name. Without
-   * the server, the address or (asked for) the login, the form answers 503.
+   * The help-desk form's mail (POST /contact, contact.ts): the support
+   * address and name messages go to and come from (Java's
+   * cnf.mail.support.address and cnf.mail.support.name), and the Amazon SES
+   * region they are sent through. No credentials: the AWS SDK finds the
+   * instance's role. Without the address, the form answers 503.
    */
-  contactSmtpHost: (): string => envSetting('CONTACT_SMTP_HOST'),
-  contactSmtpPort: (): string => envSetting('CONTACT_SMTP_PORT', '587'),
-  contactSmtpAuth: (): string => envSetting('CONTACT_SMTP_AUTH', 'false'),
-  contactSmtpUser: (): string => envSetting('CONTACT_SMTP_USER'),
-  contactSmtpPassword: (): string => envSetting('CONTACT_SMTP_PASSWORD'),
   contactSupportAddress: (): string => envSetting('CONTACT_SUPPORT_ADDRESS'),
   contactSupportName: (): string => envSetting('CONTACT_SUPPORT_NAME'),
+  contactSesRegion: (): string => envSetting('CONTACT_SES_REGION', 'us-east-1'),
 
   /**
    * Cloudflare Turnstile's secret, under the names the site's own gate reads

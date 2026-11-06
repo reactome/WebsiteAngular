@@ -1,8 +1,7 @@
 /**
  * The help-desk message of POST /contact (spec 006 T085): who it goes to,
- * what it says, and the SMTP connection that carries it. ContactController
- * and MailService's, with Java's mail settings read from the environment
- * (settings.ts).
+ * what it says, and how it is sent. ContactController's, with the support
+ * address and name read from the environment (settings.ts).
  *
  * One message: the reader's, to the support address. Not Java's shape, by
  * awright's decision (research D23): it is from the support address, with
@@ -13,81 +12,73 @@
  * <address>", a blank line, and the message, so the help desk sees who
  * wrote.
  *
- * The connection is not Java's in one respect, deliberately (research D23):
- * the server's certificate is verified -- against the system's certificate
- * authorities, its name checked -- and TLS is required, by STARTTLS or from
- * the first byte on port 465. Nothing here turns either off: a server that
- * cannot prove who it is is not given the message, or the login.
+ * Sent through Amazon SES's API (SendEmail, v2), not SMTP (research D23):
+ * signed with the credentials the AWS SDK's default chain finds -- on the
+ * host, the instance's role -- so no password is stored anywhere, over HTTPS
+ * the SDK verifies as it verifies any, against the system's authorities and
+ * the endpoint's name.
  */
-import nodemailer from 'nodemailer';
-import type { SendMailOptions, SMTPTransportOptions } from 'nodemailer';
-import type { ConnectionOptions } from 'node:tls';
+import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2';
+import type { SESv2ClientConfig, SendEmailCommandInput } from '@aws-sdk/client-sesv2';
 import { settings } from './settings.ts';
 
-/** Where and how mail is sent, or why it cannot be. */
+/** Where mail goes, and through which SES region. */
 export interface MailSettings {
-  host: string;
-  port: number;
-  /** A login, when the server asks for one (mail.enable.auth). */
-  auth?: { user: string; pass: string };
   supportAddress: string;
   supportName: string;
+  region: string;
 }
+
+/** An AWS region's name: us-east-1, eu-west-2, ap-southeast-1 and the like. */
+const REGION = /^[a-z]{2}(-[a-z]+)+-\d+$/;
 
 /**
  * The mail settings, or undefined when they are not enough to send: no
- * server, no support address, a port that is no port, or a login asked for
- * and not given. Read per request, as the rest of settings.ts is.
+ * support address (or one that is not one address), or a region that is no
+ * region. Read per request, as the rest of settings.ts is.
  */
 export function mailSettings(): MailSettings | undefined {
-  const host = settings.contactSmtpHost().trim();
   const supportAddress = settings.contactSupportAddress().trim();
-  const port = Number(settings.contactSmtpPort().trim());
-  if (!host || !singleAddress(supportAddress)) return undefined;
-  if (!Number.isInteger(port) || port < 1 || port > 65535) return undefined;
-  const supportName = settings.contactSupportName().trim();
-  if (settings.contactSmtpAuth().trim().toLowerCase() !== 'true')
-    return { host, port, supportAddress, supportName };
-  const user = settings.contactSmtpUser();
-  const pass = settings.contactSmtpPassword();
-  if (!user || !pass) return undefined;
-  return { host, port, auth: { user, pass }, supportAddress, supportName };
+  const region = settings.contactSesRegion().trim();
+  if (!singleAddress(supportAddress) || !REGION.test(region)) return undefined;
+  return { supportAddress, supportName: settings.contactSupportName().trim(), region };
 }
+
+/** How long one attempt may take, connecting and answering. */
+const CONNECT_TIMEOUT_MS = 5_000;
+const REQUEST_TIMEOUT_MS = 10_000;
+/** The whole send, retry included: the reader's request is never held longer. */
+const SEND_TIMEOUT_MS = 15_000;
 
 /**
- * The connection's options. TLS always: from the first byte on 465, else by
- * STARTTLS, which is required -- a server that does not offer it, or a
- * connection whose offer was stripped on the way, is refused rather than
- * sent the message in clear. The certificate is checked against the
- * system's authorities and the host's name; `ca` replaces those
- * authorities, for tests only (an internal authority is added to the
- * system's with NODE_EXTRA_CA_CERTS).
+ * The SES client's configuration: the region, one retry at most, and
+ * timeouts on each attempt. Credentials are left to the SDK's default chain
+ * (the instance's role on the host); no agent is given, so HTTPS is verified
+ * by Node's defaults.
  */
-export function transportOptions(
-  mail: MailSettings,
-  ca?: ConnectionOptions['ca']
-): SMTPTransportOptions {
-  const tls: ConnectionOptions = {
-    rejectUnauthorized: true,
-    minVersion: 'TLSv1.2',
-    ...(ca === undefined ? {} : { ca }),
-  };
-  const secure = mail.port === 465;
+export function clientConfig(region: string): SESv2ClientConfig {
   return {
-    host: mail.host,
-    port: mail.port,
-    secure,
-    requireTLS: !secure,
-    tls,
-    ...(mail.auth ? { auth: mail.auth } : {}),
-    // A server that does not answer must not hold the request for minutes.
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 30_000,
+    region,
+    maxAttempts: 2,
+    requestHandler: {
+      connectionTimeout: CONNECT_TIMEOUT_MS,
+      requestTimeout: REQUEST_TIMEOUT_MS,
+    },
   };
 }
 
-/** An address as nodemailer takes it: an object, never text to be parsed. */
+/** One client per region, kept: its credentials are cached between messages. */
+const clients = new Map<string, SESv2Client>();
+export function sesClient(region: string): SESv2Client {
+  let client = clients.get(region);
+  if (!client) {
+    client = new SESv2Client(clientConfig(region));
+    clients.set(region, client);
+  }
+  return client;
+}
+
+/** An address as a message names it. */
 export interface Address {
   name: string;
   address: string;
@@ -104,12 +95,11 @@ export interface Mail {
 
 /**
  * One plain address, user@domain, and nothing an address parser could read
- * as more than one, or as a name. Nothing is sent to the reader's address
- * any more, but it is still the message's Reply-To: a reply from the help
- * desk goes to it, so a list typed there would be answered as a list. And
- * MailService's `new InternetAddress(..)` refused anything but one address,
- * so this keeps that refusal (a 400 here, Java's 500). The support address
- * is held to it too.
+ * as more than one, or as a name. Nothing is sent to the reader's address,
+ * but it is the message's Reply-To: a reply from the help desk goes to it,
+ * so a list typed there would be answered as a list. And MailService's `new
+ * InternetAddress(..)` refused anything but one address, so this keeps that
+ * refusal (a 400 here, Java's 500). The support address is held to it too.
  */
 export function singleAddress(text: string): boolean {
   // Printable ASCII only -- no space, no control character -- as an
@@ -135,6 +125,22 @@ export function javaBlank(text: string): boolean {
 }
 
 /**
+ * An address as a header writes it, from text SES takes as given: the
+ * address alone when there is no name; a name of printable ASCII as an RFC
+ * 5322 quoted string, its quotes and backslashes escaped; any other name --
+ * a line break, a control character, anything past ASCII -- as one RFC 2047
+ * encoded word, base64 of its UTF-8, which holds nothing a header could
+ * break on. Either way the name cannot end the header or start another.
+ */
+export function mailbox({ name, address }: Address): string {
+  if (javaBlank(name)) return address;
+  const quoted = /^[ -~]*$/.test(name)
+    ? `"${name.replace(/["\\]/g, (char) => `\\${char}`)}"`
+    : `=?UTF-8?B?${Buffer.from(name, 'utf8').toString('base64')}?=`;
+  return `${quoted} <${address}>`;
+}
+
+/**
  * The message for one form: from the support address, to it, Reply-To the
  * reader -- named when a name was given -- and Java's body. `sendEmailCopy`
  * plays no part: no copy is sent (research D23).
@@ -156,34 +162,33 @@ export function contactMail(
   };
 }
 
-/** Something that sends a message, as nodemailer's transports do. */
-export interface Sender {
-  sendMail(message: SendMailOptions): Promise<unknown>;
-}
-
-/** An SMTP transport for these settings. */
-export function smtpSender(mail: MailSettings, ca?: ConnectionOptions['ca']): Sender {
-  return nodemailer.createTransport(transportOptions(mail, ca));
-}
-
-/** nodemailer's form of an address: the address alone when there is no name. */
-const addressOf = ({ name, address }: Address) =>
-  javaBlank(name) ? { name: '', address } : { name, address };
-
 /**
- * Sends the message: plain text, as MailService.start did. Every address
- * goes in as an object, never as text to be parsed, and the names and the
- * subject are encoded by the library, so a line break in any of them is no
- * new header.
+ * SendEmail's input for the message: a simple message, its subject and text
+ * in UTF-8, which SES encodes into the headers itself. A line break in the
+ * subject becomes a space: a subject is one line, and none can start a
+ * header.
  */
-export async function sendMail(sender: Sender, mail: Mail) {
-  await sender.sendMail({
-    from: addressOf(mail.from),
-    replyTo: addressOf(mail.replyTo),
-    to: addressOf(mail.to),
-    subject: mail.subject,
-    text: mail.body,
-    // No X-Mailer naming the library and its version.
-    xMailer: false,
-  });
+export function sendEmailInput(mail: Mail): SendEmailCommandInput {
+  return {
+    FromEmailAddress: mailbox(mail.from),
+    Destination: { ToAddresses: [mailbox(mail.to)] },
+    ReplyToAddresses: [mailbox(mail.replyTo)],
+    Content: {
+      Simple: {
+        Subject: { Data: mail.subject.replace(/[\r\n]+/g, ' '), Charset: 'UTF-8' },
+        Body: { Text: { Data: mail.body, Charset: 'UTF-8' } },
+      },
+    },
+  };
+}
+
+/** Sends one SendEmail request; SES's client, or a stand-in in the specs. */
+export type Sender = (input: SendEmailCommandInput) => Promise<unknown>;
+
+/** A sender through the region's SES client, never held past SEND_TIMEOUT_MS. */
+export function sesSender(mail: MailSettings, client = sesClient(mail.region)): Sender {
+  return (input) =>
+    client.send(new SendEmailCommand(input), {
+      abortSignal: AbortSignal.timeout(SEND_TIMEOUT_MS),
+    });
 }
