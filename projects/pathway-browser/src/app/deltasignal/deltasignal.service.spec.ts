@@ -4,7 +4,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { DeltaSignalService } from './deltasignal.service';
 import { buildObservations } from './deltasignal.utils';
-import type { DeltaSignalNetwork, DeltaSignalPinsResponse } from './deltasignal.model';
+import type {
+  DeltaSignalNetwork,
+  DeltaSignalPinsResponse,
+  DeltaSignalReadoutsResponse,
+} from './deltasignal.model';
 
 // A perturbation pins what /api/pins resolves — the protocol every DeltaSignal
 // benchmark figure was measured under (deltasignal specs/140) — never "every
@@ -139,5 +143,238 @@ describe('DeltaSignalService pins', () => {
 
     expect(service.pinState().status).toBe('ready');
     expect(service.pinState().result?.pins).toEqual([{ uuid: 'root-a', name: 'ATM' }]);
+  });
+});
+
+// After a solve, every entity value comes from /api/readouts — the resolution
+// and entity-mean the figures were measured under (deltasignal specs/141) —
+// never a browser-side mean over matching node copies, and never a fallback
+// to one when the endpoint fails.
+describe('DeltaSignalService readouts', () => {
+  let service: DeltaSignalService;
+  let http: HttpTestingController;
+
+  const network: DeltaSignalNetwork = {
+    status: 'success',
+    message: 'ok',
+    network_id: 'pw:test',
+    edges: [],
+    pathways: [],
+    nodes: [
+      {
+        uuid: 'root-a',
+        name: 'ATM',
+        reactome_id: 'R-HSA-1',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+      {
+        uuid: 'mid-a',
+        name: 'ATM',
+        reactome_id: 'R-HSA-1',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+      {
+        uuid: 'node-b',
+        name: 'TP53',
+        reactome_id: 'R-HSA-2',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+    ],
+  };
+
+  const protocol = {
+    ko_agg: 'mean_entity',
+    total_readout: 'abundance_a3',
+    baseline: 0.01,
+    down_cutoff: 0.85,
+    up_cutoff: 1.15,
+  };
+
+  const readoutsAnswer = (): DeltaSignalReadoutsResponse => ({
+    status: 'success',
+    protocol,
+    missing_tables: [],
+    malformed_tables: [],
+    results: [
+      {
+        id: 'R-HSA-1',
+        mode: 'forms',
+        basis: 'direct',
+        groups: [['root-a', 'mid-a']],
+        pinned: ['root-a'],
+        value: 0.005,
+        fold: 0.5,
+        call: 'down',
+      },
+      {
+        id: 'R-HSA-2',
+        mode: 'forms',
+        basis: 'direct',
+        groups: [['node-b']],
+        pinned: [],
+        value: 0.02,
+        fold: 2,
+        call: 'up',
+      },
+    ],
+  });
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(DeltaSignalService);
+    http = TestBed.inject(HttpTestingController);
+    service.pathway.set({ id: 'Test_R-HSA-9', stable_id: 'R-HSA-9', name: 'Test' });
+    service.network.set(network);
+    service.perturbations.set([
+      {
+        reactomeId: 'R-HSA-1',
+        name: 'ATM',
+        activity: 0,
+        nodeUuids: ['root-a'],
+        basis: 'root',
+      },
+    ]);
+  });
+
+  afterEach(() => http.verify());
+
+  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  const solveAnswer = {
+    status: 'success' as const,
+    message: 'ok',
+    node_activities: { 'root-a': 0, 'mid-a': 0.01, 'node-b': 0.02 },
+    influence_scores: { 'mid-a': 0.4, 'node-b': 0.9 },
+    converged: true,
+    iterations: 3,
+    solve_time: 0.1,
+  };
+
+  it('values entities through /api/readouts with the solve activities and pins', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const request = http.expectOne('/api/readouts');
+    expect(request.request.body).toEqual({
+      network_id: 'pw:test',
+      activities: solveAnswer.node_activities,
+      pinned: ['root-a'],
+      queries: [
+        { id: 'R-HSA-1', stable_ids: ['R-HSA-1'] },
+        { id: 'R-HSA-2', stable_ids: ['R-HSA-2'] },
+      ],
+    });
+    request.flush(readoutsAnswer());
+    await solving;
+
+    const rows = service.readoutRows();
+    expect(rows.map((row) => row.reactomeId)).toEqual(['R-HSA-2', 'R-HSA-1']);
+    expect(rows[1]).toMatchObject({
+      name: 'ATM',
+      fold: 0.5,
+      call: 'down',
+      perturbed: true,
+      influence: 0.4,
+    });
+    expect(rows[0]).toMatchObject({ fold: 2, call: 'up', perturbed: false });
+  });
+
+  it('states unavailability on failure instead of falling back to a browser mean', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http
+      .expectOne('/api/readouts')
+      .flush({ status: 'error', message: 'boom' }, { status: 500, statusText: 'Server Error' });
+    await solving;
+
+    expect(service.status()).toBe('ready'); // the solve itself stands
+    expect(service.readoutState().status).toBe('error');
+    expect(service.readoutState().message).toBe('boom');
+    expect(service.readoutRows()).toEqual([]);
+  });
+
+  it('asks for a selected entity missing from the batch (an expanded species)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await solving;
+
+    const resolving = service.resolveSelectedReadout('R-HSA-3');
+    const request = http.expectOne('/api/readouts');
+    const body = request.request.body as { queries: unknown };
+    expect(body.queries).toEqual([{ id: 'R-HSA-3', stable_ids: ['R-HSA-3'] }]);
+    request.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [
+        {
+          id: 'R-HSA-3',
+          mode: 'forms',
+          basis: 'proxy',
+          groups: [['reaction-r']],
+          pinned: [],
+          value: 0.03,
+          fold: 3,
+          call: 'up',
+        },
+      ],
+    });
+    await resolving;
+
+    expect(service.readoutState().byId.get('R-HSA-3')).toMatchObject({ basis: 'proxy', fold: 3 });
+    // an id already in the batch is never re-fetched
+    await service.resolveSelectedReadout('R-HSA-1');
+    http.expectNone('/api/readouts');
+  });
+
+  it('drops an on-demand readout that a newer solve overtook in flight', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await solving;
+
+    const resolving = service.resolveSelectedReadout('R-HSA-3');
+    const request = http.expectOne('/api/readouts');
+    // a newer solve lands while the single query is in flight
+    service.result.set({ ...solveAnswer, node_activities: { 'root-a': 0.01 } });
+    request.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [
+        {
+          id: 'R-HSA-3',
+          mode: 'forms',
+          basis: 'proxy',
+          groups: [['reaction-r']],
+          pinned: [],
+          value: 0.03,
+          fold: 3,
+          call: 'up',
+        },
+      ],
+    });
+    await resolving;
+
+    // the stale fold, computed from the old solve's activities, is never merged
+    expect(service.readoutState().byId.has('R-HSA-3')).toBe(false);
   });
 });

@@ -69,7 +69,15 @@ export class DeltaSignalPanelComponent {
       : this.selectedNodes().map((node) => node.name);
     return [...new Set(names)].join(' / ');
   });
-  readonly visibleRows = computed(() => this.service.entityRows().slice(0, 40));
+  readonly visibleRows = computed(() => this.service.readoutRows().slice(0, 40));
+  // The selection's readout through /api/readouts (deltasignal specs/141):
+  // its measured predicted level, even when the entity has no node of its own
+  // (it then reads through its proxy reactions), or null while none exists.
+  readonly selectedReadout = computed(() => {
+    const id = this.selectedStId();
+    const state = this.service.readoutState();
+    return id && state.status === 'ready' ? (state.byId.get(id) ?? null) : null;
+  });
 
   constructor() {
     effect(() => {
@@ -86,6 +94,13 @@ export class DeltaSignalPanelComponent {
       const stableId = this.selectedStId();
       const ready = this.service.network() !== null;
       void this.service.select(ready ? stableId : null);
+    });
+    effect(() => {
+      // A selected entity missing from the readout batch (an expanded species
+      // with no node of its own) is asked for on demand once a solve exists.
+      const stableId = this.selectedStId();
+      if (this.service.readoutState().status === 'ready')
+        void this.service.resolveSelectedReadout(stableId);
     });
   }
 

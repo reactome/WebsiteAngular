@@ -101,3 +101,56 @@ export interface DeltaSignalResultRow {
 }
 
 export type DeltaSignalStatus = 'idle' | 'loading' | 'ready' | 'solving' | 'error';
+
+/**
+ * How a readout query resolved (deltasignal specs/141): a direct node match;
+ * the flux of the entity's proxy reactions (a curated species the generator
+ * expanded into variants has no node of its own); its set members; or not at
+ * all. Every benchmark figure read entities through this ladder with each
+ * curated entity weighed once — never a flat mean over matching node copies.
+ */
+type DeltaSignalReadoutBasis = 'direct' | 'proxy' | 'set_members' | 'none';
+
+interface DeltaSignalReadoutResult {
+  id: string | null;
+  mode: 'forms' | 'abundance';
+  basis: DeltaSignalReadoutBasis;
+  groups: string[][];
+  pinned: string[];
+  value?: number | null;
+  fold?: number | null;
+  call?: 'up' | 'down' | 'normal' | null;
+}
+
+export interface DeltaSignalReadoutsResponse {
+  status: 'success';
+  protocol: {
+    ko_agg: string;
+    total_readout: string;
+    baseline: number;
+    down_cutoff: number;
+    up_cutoff: number;
+  };
+  missing_tables: string[];
+  malformed_tables: string[];
+  results: DeltaSignalReadoutResult[];
+}
+
+/** One entity row of the results table, built from `/api/readouts`. */
+export interface DeltaSignalReadoutRow {
+  reactomeId: string;
+  name: string;
+  basis: DeltaSignalReadoutBasis;
+  fold: number;
+  call: 'up' | 'down' | 'normal';
+  influence: number;
+  perturbed: boolean;
+}
+
+/** The readout batch for the current solve, or why there is none. */
+export interface DeltaSignalReadoutState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  byId: Map<string, DeltaSignalReadoutResult>;
+  protocol: DeltaSignalReadoutsResponse['protocol'] | null;
+  message: string | null;
+}
