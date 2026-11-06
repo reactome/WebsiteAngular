@@ -340,4 +340,40 @@ describe('DeltaSignalService readouts', () => {
     await service.resolveSelectedReadout('R-HSA-1');
     http.expectNone('/api/readouts');
   });
+
+  it('drops an on-demand readout that a newer solve overtook in flight', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await solving;
+
+    const resolving = service.resolveSelectedReadout('R-HSA-3');
+    const request = http.expectOne('/api/readouts');
+    // a newer solve lands while the single query is in flight
+    service.result.set({ ...solveAnswer, node_activities: { 'root-a': 0.01 } });
+    request.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [
+        {
+          id: 'R-HSA-3',
+          mode: 'forms',
+          basis: 'proxy',
+          groups: [['reaction-r']],
+          pinned: [],
+          value: 0.03,
+          fold: 3,
+          call: 'up',
+        },
+      ],
+    });
+    await resolving;
+
+    // the stale fold, computed from the old solve's activities, is never merged
+    expect(service.readoutState().byId.has('R-HSA-3')).toBe(false);
+  });
 });

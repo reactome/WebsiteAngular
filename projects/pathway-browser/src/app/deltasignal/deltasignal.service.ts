@@ -325,6 +325,7 @@ export class DeltaSignalService {
         observations
       );
       const entry = response.results[0];
+      if (this.result()?.node_activities !== activities) return; // a newer solve took over
       const current = this.readoutState();
       if (!entry || current.status !== 'ready' || current.byId.has(reactomeId)) return;
       this.readoutState.set({
