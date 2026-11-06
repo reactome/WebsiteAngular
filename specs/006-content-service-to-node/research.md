@@ -688,7 +688,7 @@ it is made, not three steps later.
      bits differs far below that: JDK 11 writes 2^-44 as
      `5.6843418860808015E-14`, not the shortest `5.684341886080802E-14`, and
      2^-24 as `5.9604644775390625E-8`, not `5.960464477539063E-8`. Every
-     ported endpoint writes its doubles through `javaDouble`, so since #852
+     ported endpoint writes its doubles through `javaDouble`, so since #853
      it follows JDK 11's algorithm (`java-double.ts`). It was
      compared with JDK 11 on 21,667,178 doubles and none differ; 128,360 of
      them are not written in the shortest form. None lies between 10^-3 and
