@@ -1,5 +1,4 @@
 {
-  "GET /data/participants/{id} as Participant[]": 872,
   "GET /exporter/reaction/{id}/diagram as ReactionJson": 768,
   "POST /interactors/psicquic/molecules/{resource}/details as Interactors": 371
 }

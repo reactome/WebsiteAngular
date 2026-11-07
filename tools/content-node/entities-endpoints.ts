@@ -13,6 +13,7 @@ import { read } from './graph.ts';
 import type { Props } from './objects.ts';
 import { referenceEntityJson } from './reference-entities.ts';
 import type { Failure } from './answers.ts';
+import type { Participant, ParticipantReference } from '../../projects/contract/participants.ts';
 
 /**
  * The driver's Value.asString() as graph-core calls it on a reference
@@ -45,21 +46,34 @@ interface ParticipantRow {
   peDbId: number;
   displayName: string | null;
   schemaClass: string | null;
-  refEntities: Props[] | null;
+  refEntities: ParticipantReferenceRow[] | null;
 }
 
-export function participantJson(row: ParticipantRow) {
+/** One reference entity of a row, each field as the graph has it (or null). */
+interface ParticipantReferenceRow {
+  dbId: number;
+  stId: string | null;
+  identifier: string | null;
+  schemaClass: string | null;
+  displayName: string | null;
+  icon: string | null;
+  url: string | null;
+}
+
+export function participantJson(row: ParticipantRow): Participant {
   return {
     peDbId: row.peDbId,
-    ...only(row, ['displayName', 'schemaClass']),
-    refEntities: (row.refEntities ?? []).map((ref) => ({
-      dbId: ref['dbId'],
-      stId: asJavaString(ref['stId']),
-      identifier: asJavaString(ref['identifier']),
-      schemaClass: asJavaString(ref['schemaClass']),
-      displayName: asJavaString(ref['displayName']),
-      icon: asJavaString(ref['icon']),
-      url: asJavaString(ref['url']),
+    // Left out when the graph has none, as asString(null) leaves them.
+    ...(row.displayName != null && { displayName: row.displayName }),
+    ...(row.schemaClass != null && { schemaClass: row.schemaClass }),
+    refEntities: (row.refEntities ?? []).map((ref): ParticipantReference => ({
+      dbId: ref.dbId,
+      stId: asJavaString(ref.stId),
+      identifier: asJavaString(ref.identifier),
+      schemaClass: asJavaString(ref.schemaClass),
+      displayName: asJavaString(ref.displayName),
+      icon: asJavaString(ref.icon),
+      url: asJavaString(ref.url),
     })),
   };
 }
@@ -223,12 +237,7 @@ export const entitiesEndpoints: Endpoint[] = [
       const { params, byDbId } = id;
       const object = byDbId ? '{dbId: toInteger($id)}' : '{stId: $id}';
       const from = participantsFrom(byDbId);
-      const rows = await read<{
-        peDbId: number;
-        displayName: string | null;
-        schemaClass: string;
-        refEntities: Props[];
-      }>(
+      const rows = await read<ParticipantRow>(
         `MATCH (n:DatabaseObject${object})-[:${from}*]->(m:PhysicalEntity)
          OPTIONAL MATCH (m)-[:referenceEntity]->(re1:ReferenceEntity)
          OPTIONAL MATCH (m)-[:hasMember|hasComponent|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe:PhysicalEntity)-[:referenceEntity]->(re2:ReferenceEntity)

@@ -158,6 +158,9 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  */
 const READER_ALIASES = [
   // The graph's classes (T025): the pathway browser's resolved, the site's plain.
+  // An event's participants (T025f): the molecules tab's view of a reference entity.
+  'Molecule',
+  'TreeMolecule',
   'PlainEvent',
   'PlainGraphObject',
   'PlainPathway',
@@ -275,6 +278,8 @@ const PENDING: string[] = [
 
 /** Declarations that share a contract name but describe something else, and why. */
 const NAMESAKES: Record<string, string> = {
+  'projects/pathway-browser/src/app/services/rhea.service.ts: interface Participant':
+    "a participant of a Rhea reaction, as Rhea's own service answers it",
   'projects/website-angular/src/app/about/release-calendar/release-calendar.component.ts: interface Release':
     "the site's release calendar, written in its own content; not the graph's Release",
   'projects/pathway-browser/src/app/model/analysis.model.ts: interface Analysis.Pathway':

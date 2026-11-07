@@ -62,7 +62,7 @@ export const TYPES: Record<string, string> = {
   Species: `${PB}/model/graph/species.model`,
   PhysicalEntity: `${PB}/model/graph/physical-entity/physical-entity.model`,
   ReferenceEntity: `${PB}/model/graph/reference-entity/reference-entity.model`,
-  Participant: `${PB}/model/participant.model`,
+  Participant: 'projects/contract/participants',
   PathwayCitation: 'projects/contract/citation',
   DiagramFlagResult: 'projects/contract/search',
   SpeciesOverviewFlagResult: 'projects/contract/search',

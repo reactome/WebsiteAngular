@@ -21,6 +21,7 @@ import type {
   PsicquicResource,
 } from './interactors.ts';
 import type { PathwayBrowserNode } from './locations.ts';
+import type { Participant } from './participants.ts';
 import type { SimpleEvent } from './person.ts';
 import type {
   DiagramFlagResult,
@@ -46,6 +47,7 @@ export interface Routes {
   'GET /ContentService/data/instance/{id}/referrers': InstanceReferrals[];
   'GET /ContentService/data/query/enhanced/v2/{id}': GraphObject<JsogReference>;
   'GET /ContentService/data/detail/{id}/locationsInPWB': PathwayBrowserNode[];
+  'GET /ContentService/data/participants/{id}': Participant[];
   'GET /ContentService/data/person/{id}/authoredPathways': SimpleEvent[];
   'GET /ContentService/data/person/{id}/authoredReactions': SimpleEvent[];
   'GET /ContentService/data/person/{id}/reviewedPathways': SimpleEvent[];

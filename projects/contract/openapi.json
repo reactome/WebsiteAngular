@@ -471,7 +471,6 @@
     },
     "/ContentService/data/participants/{id}": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -484,7 +483,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Participant"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -15189,6 +15198,71 @@
         ],
         "additionalProperties": false,
         "description": "A relationship entry, `output`: written whole wherever it appears, with no identity of its own."
+      },
+      "Participant": {
+        "type": "object",
+        "properties": {
+          "peDbId": {
+            "type": "number"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "refEntities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParticipantReference"
+            }
+          }
+        },
+        "required": [
+          "peDbId",
+          "refEntities"
+        ],
+        "additionalProperties": false,
+        "description": "A physical entity taking part in the event, with its reference entities. A name or a class the graph lacks is left out. Measured over 642: both always there."
+      },
+      "ParticipantReference": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "identifier": {
+            "type": "string",
+            "description": "A variant's own identifier where it has one, else the entity's."
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string",
+            "description": "The class to draw it with: the participating entity's, or the member's it was reached through."
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "identifier",
+          "schemaClass",
+          "displayName",
+          "icon",
+          "url"
+        ],
+        "additionalProperties": false,
+        "description": "A reference entity behind a participant. Every field is written, the text \"null\" where the graph has none, as Java's asString writes it. Measured over 1,308 in 6 recorded answers."
       },
       "PathwayBrowserNode": {
         "type": "object",
