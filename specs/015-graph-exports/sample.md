@@ -52,6 +52,8 @@ The class and flags are graph-core's: `diag` is `hasDiagram`, `dis` is `isInDise
 | R-MMU-69620  | 10104426 | Pathway | Cell Cycle Checkpoints (Mus musculus) | Inferred (inf), a mouse diagram |
 | R-BTA-109581 | 10449731 | Pathway | Apoptosis (Bos taurus)                | Inferred (inf), a cow diagram   |
 
+An inferred event's dbId is not kept from one release to the next. At release 98 these two are R-MMU-69620 10117344 and R-BTA-109581 10481031, looked up on the beta host on 7 Nov 2026 (T049); their release-97 dbIds name other objects or none. Every other dbId here is the same at release 98.
+
 ## Reactions and other events (no layout today)
 
 | Stable id     | dbId    | Class            | Name                                                | Why                                                   |

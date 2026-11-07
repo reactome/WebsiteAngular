@@ -47,6 +47,46 @@ The files themselves stay outside the repository: they hold people's names (SBML
 | R-HSA-874079  | 200, 8 KB, 0.14 s      | 200, 27 KB, 0.03 s     |
 | R-HSA-8952903 | 200, 11 KB, 0.14 s     | 200, 25 KB, 0.03 s     |
 
+## BioPAX at release 98 (T049)
+
+Taken again on 7 Nov 2026, once and one at a time, spaced (at least 1 s, or half the request's time, after each), when the legacy service's relational database had moved to release 98 (research R4): the legacy service's answer by dbId, and node's `/ContentService/exporter/event/{stId}.biopax`, the library service's, from beta's graph at release 98. The two inferred events' dbIds are release 98's (sample.md). The files stay outside the repository, as above.
+
+- **Headers.** The legacy service's: `text/plain;charset=UTF-8`, no Content-Disposition, as at release 97. Node's: `application/rdf+xml;charset=UTF-8` and `attachment; filename="{stId}.biopax"` (R6). Both files carry `xml:base="http://www.reactome.org/biopax/98/{dbId}#"`, the same for each event.
+- **Times.** The library service keeps each file per release once made, so an event asked for before answers from that cache (R-HSA-109581, R-HSA-69604); the rest are first conversions, on a host under load from other work (a load average of about 7 on 8 cores). Disease's first conversion took longer than node's 290 s, so node answered its 503 ("took too long"); the service finished and kept the file, and the next request, a minute later, was answered in 33 s.
+
+| Event         | dbId     | Legacy                | Library, through node                    |
+| ------------- | -------- | --------------------- | ---------------------------------------- |
+| R-HSA-162582  | 162582   | 200, 48.9 MB, 56.44 s | 200, 47.5 MB, 262.21 s                   |
+| R-HSA-1640170 | 1640170  | 200, 10.4 MB, 11.25 s | 200, 10.0 MB, 35.22 s                    |
+| R-HSA-1643685 | 1643685  | 200, 74.4 MB, 77.18 s | 503 at 290 s, then 200, 73.3 MB, 32.80 s |
+| R-HSA-5357801 | 5357801  | 200, 3.9 MB, 1.64 s   | 200, 3.8 MB, 14.91 s                     |
+| R-HSA-1474244 | 1474244  | 200, 11.8 MB, 17.72 s | 200, 11.3 MB, 48.36 s                    |
+| R-HSA-69620   | 69620    | 200, 2.7 MB, 0.07 s   | 200, 2.6 MB, 10.58 s                     |
+| R-HSA-109581  | 109581   | 200, 2.7 MB, 2.04 s   | 200, 2.6 MB, 0.03 s                      |
+| R-HSA-109606  | 109606   | 200, 1.1 MB, 1.54 s   | 200, 1.0 MB, 5.82 s                      |
+| R-HSA-112409  | 112409   | 200, 378 KB, 0.01 s   | 200, 366 KB, 1.59 s                      |
+| R-HSA-5683057 | 5683057  | 200, 4.3 MB, 4.23 s   | 200, 4.2 MB, 15.15 s                     |
+| R-HSA-1280215 | 1280215  | 200, 16.3 MB, 24.25 s | 200, 15.8 MB, 61.66 s                    |
+| R-HSA-9006936 | 9006936  | 200, 2.6 MB, 2.93 s   | 200, 2.5 MB, 9.25 s                      |
+| R-HSA-9839373 | 9839373  | 200, 552 KB, 0.67 s   | 200, 535 KB, 1.91 s                      |
+| R-HSA-69481   | 69481    | 200, 1.3 MB, 0.03 s   | 200, 1.2 MB, 4.29 s                      |
+| R-HSA-176187  | 176187   | 200, 376 KB, 0.01 s   | 200, 365 KB, 1.20 s                      |
+| R-HSA-180024  | 180024   | 200, 321 KB, 0.43 s   | 200, 311 KB, 1.20 s                      |
+| R-HSA-5663202 | 5663202  | 200, 17.9 MB, 21.36 s | 200, 17.7 MB, 75.36 s                    |
+| R-HSA-2894858 | 2894858  | 200, 707 KB, 1.35 s   | 200, 689 KB, 2.11 s                      |
+| R-HSA-6802957 | 6802957  | 200, 2.6 MB, 4.39 s   | 200, 2.6 MB, 12.71 s                     |
+| R-MMU-69620   | 10117344 | 200, 2.3 MB, 3.02 s   | 200, 2.2 MB, 14.26 s                     |
+| R-BTA-109581  | 10481031 | 200, 1.8 MB, 2.38 s   | 200, 1.8 MB, 14.20 s                     |
+| R-HSA-69604   | 69604    | 200, 49 KB, 0.01 s    | 200, 47 KB, 0.01 s                       |
+| R-HSA-69562   | 69562    | 200, 51 KB, 0.03 s    | 200, 51 KB, 0.33 s                       |
+| R-HSA-109862  | 109862   | 200, 40 KB, 0.07 s    | 200, 39 KB, 0.27 s                       |
+| R-HSA-1248655 | 1248655  | 200, 55 KB, 0.13 s    | 200, 56 KB, 0.46 s                       |
+| R-HSA-201425  | 201425   | 200, 48 KB, 0.11 s    | 200, 47 KB, 0.30 s                       |
+| R-HSA-8963913 | 8963913  | 200, 12 KB, 0.04 s    | 200, 11 KB, 0.09 s                       |
+| R-HSA-9915356 | 9915356  | 200, 48 KB, 0.14 s    | 200, 47 KB, 0.38 s                       |
+| R-HSA-874079  | 874079   | 200, 22 KB, 0.07 s    | 200, 21 KB, 0.18 s                       |
+| R-HSA-8952903 | 8952903  | 200, 23 KB, 0.09 s    | 200, 23 KB, 0.22 s                       |
+
 ## The release's published bulk files (T033)
 
 Fetched from release 97's download directory on 24 Oct 2026, one file, kept outside the repository (the files hold people's names). Content was read only to identify the generator (research R9).

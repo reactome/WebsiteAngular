@@ -187,8 +187,9 @@ const NOT_YET_ROUTED: Record<string, string> = {
   // Implemented, held back until the exporter log scan (#273).
   '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
   // Routed on beta alone (dev.conf) until FR-009's open differences are
-  // settled, and the release's diagram files are mounted for SBGN elsewhere:
-  // see "SBML and SBGN, on beta alone" below.
+  // settled, the release's diagram files are mounted for SBGN elsewhere, and
+  // BioPAX3Exporter makes the release's BioPAX (T055): see "SBML, SBGN and
+  // BioPAX, on beta alone" below.
   '/ContentService/exporter/event/{id}': 'spec 015 T068',
   '/ContentService/exporter/sbml/{id}': 'spec 015 T068',
   // Routed on beta alone (dev.conf) until the release and production run the
@@ -299,17 +300,21 @@ describe('where nginx sends things', () => {
  * the exporters' budget. The release's files and production keep Java's until
  * FR-009's open differences are settled; neither runs the SBML service yet.
  * An event's SBGN is node's on beta the same way (sbgn-exporter spec 001
- * T018): elsewhere node has no diagram files mounted yet. And an event's PDF
- * (spec 006 T100): elsewhere no PDF service runs yet.
+ * T018): elsewhere node has no diagram files mounted yet. So is its BioPAX
+ * (spec 015 T071), until BioPAX3Exporter makes the release's (T055). And an
+ * event's PDF (spec 006 T100): elsewhere no PDF service runs yet.
  */
-describe('SBML, SBGN and the event PDF, on beta alone', () => {
-  const SBML = [
+describe('SBML, SBGN, BioPAX and the event PDF, on beta alone', () => {
+  const EXPORTS = [
     '/ContentService/exporter/event/R-HSA-109581.sbml',
     '/ContentService/exporter/event/R-HSA-109581.4.sbml/',
     '/ContentService/exporter/sbml/R-HSA-109581.xml',
     '/ContentService/exporter/event/R-HSA-109581.sbgn',
     '/ContentService/exporter/event/R-HSA-109581.4.sbgn/',
     '/ContentService/exporter/event/R-HSA-109581.sbml.sbgn',
+    '/ContentService/exporter/event/R-HSA-109581.biopax',
+    '/ContentService/exporter/event/R-HSA-109581.4.biopax/',
+    '/ContentService/exporter/event/109581.biopax',
     '/ContentService/exporter/document/event/R-HSA-109581.pdf',
     '/ContentService/exporter/document/event/R-HSA-109581.4.pdf/',
     '/ContentService/exporter/document/event/109581.pdf?token=MjAyNjExMDcxNjE3MzZfNA%3D%3D',
@@ -322,21 +327,22 @@ describe('SBML, SBGN and the event PDF, on beta alone', () => {
     if (at === -1) throw new Error(`${name} does not include routes.conf`);
     return [...parse(text.slice(0, at)), ...locations];
   };
-  for (const url of SBML)
+  for (const url of EXPORTS)
     it(`sends ${url} to node on beta, under the render budget`, () => {
       const location = nginxLocation(url, deployment('dev.conf'));
       const budget = /limit_req\s+zone=render_rate/.test(location?.body ?? '');
       expect([url, location?.target, budget]).toEqual([url, 'node', true]);
     });
   for (const name of ['release.conf', 'production.conf'])
-    for (const url of SBML)
+    for (const url of EXPORTS)
       it(`leaves ${url} to Java in ${name}`, () => {
         expect([url, nginxTarget(url, deployment(name))]).toEqual([url, 'tomcat']);
       });
-  it('leaves what is not an event’s SBML, SBGN or PDF to Java on beta', () => {
+  it('leaves what is not an event’s SBML, SBGN, BioPAX or PDF to Java on beta', () => {
     for (const url of [
       // No address of Java's or node's: the PDF is under /document/.
       '/ContentService/exporter/event/R-HSA-109581.sbgn.pdf',
+      '/ContentService/exporter/event/R-HSA-109581.biopax.pdf',
       '/ContentService/exporter/document/event/R-HSA-109581.png',
       '/ContentService/exporter/document/event/R-HSA-109581.pdf/x',
     ])
@@ -344,7 +350,7 @@ describe('SBML, SBGN and the event PDF, on beta alone', () => {
   });
   // Locally and under ng serve, as on beta: the list above keeps them out of
   // the shared checks.
-  for (const url of SBML)
+  for (const url of EXPORTS)
     it(`sends ${url} to node locally and through the dev proxy`, async () => {
       expect([url, nginxTarget(url, localLocations), await proxySendsToNode(url)]).toEqual([
         url,
@@ -370,9 +376,10 @@ const JAVAS = [
   '/ContentService/data/query/R-HSA-109581/more',
   '/ContentService/interactors/psicquic/resourcesx',
   '/ContentService/search/facet_queryx',
-  // An event's other exports, beside its SBML (spec 015 T066) and SBGN.
+  // An event's other exports, beside its SBML (spec 015 T066), SBGN and BioPAX (T071).
   '/ContentService/exporter/event/R-HSA-109581.pdf',
   '/ContentService/exporter/event/R-HSA-109581.sbgn.pdf',
+  '/ContentService/exporter/event/R-HSA-109581.biopax.pdf',
   '/ContentService/exporter/sbml/R-HSA-109581.sbml',
   // A reaction's image, beside its layout (spec 006 T092), until T090 and T091.
   '/ContentService/exporter/reaction/R-HSA-6805479.png',
