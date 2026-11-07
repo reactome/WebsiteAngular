@@ -1,3 +1,61 @@
+// The render service (spec 016, T027): tools/render draws a pathway by driving
+// the site's own render page (/render) in a browser. Two sides meet here:
+// what the page publishes on `window` for the service to read, the shapes a
+// PowerPoint is written from among them; and what the service answers over
+// HTTP in JSON, its health and its refusals (a figure itself is bytes).
+
+// ---- The page's side --------------------------------------------------------
+//
+// What the render page publishes on `window` for whatever drives it: the
+// render service loads the page in a browser and reads these. The page builds
+// them with these types, and the service declares its `window` from them, so
+// neither can change them without the other failing to compile.
+
+/** What the page has drawn, by the view that drew it. */
+export type Drawn =
+  | { view: 'reaction'; instances: 1; elements: number }
+  | { view: 'diagram'; instances: number; elements: number; subpathways: boolean }
+  | { view: 'ehld'; nodes: number }
+  | {
+      view: 'reacfoam';
+      groups: number;
+      box: [number, number];
+      /** The species overview's taxId, so a caller can tell it got the one it asked for. */
+      species: string;
+    };
+
+/** What the page drew, once it has, with what it was asked for. */
+export type Published = {
+  pathway: string | null;
+  /** For a caller labelling the figure: an stId is not a caption. */
+  name: string | null;
+  /**
+   * The analysis coloured on the figure, and the resource it is coloured for:
+   * the result's default, as the pathway browser shows it. Null with none.
+   */
+  analysis: { token: string; resource: string } | null;
+} & Drawn;
+
+/** `window.__renderState`: whether the page is ready, and what it drew if it has. */
+export type RenderState = { ready: boolean; error: string | null } & (
+  Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined }
+);
+
+/** `window.__renderExport`: the artefacts the page can hand over. */
+export interface RenderExport {
+  svg(): string | Promise<string>;
+  /** Null where the view is not made of shapes (an illustration, the genome-wide view). */
+  shapes(): RenderShapes | null;
+  png(scale?: number): Promise<string>;
+  jpeg(scale?: number): Promise<string>;
+  /** The analysis's sample names, for an animation; empty without one. */
+  samples(): string[];
+  showSample(name: string): Promise<void>;
+  frameCanvas(scale?: number): Promise<HTMLCanvasElement>;
+}
+
+// ---- The shapes ------------------------------------------------------------
+
 /**
  * A diagram described as shapes, for exporters that draw shapes rather than
  * pictures.
@@ -113,27 +171,41 @@ export interface RenderShapes {
   shapes: (RenderNodeShape | RenderEdgeShape)[];
 }
 
+// ---- The service's answers -------------------------------------------------
+
+/** /health: what the service is, and how busy. */
+export interface RenderHealth {
+  ok: true;
+  /** A hash of the service's own modules, so two deployments can be told apart. */
+  build: string;
+  modules: number;
+  /** The site whose render page it drives. */
+  base: string;
+  cache: string;
+  /** The cache's version: it changes whenever the figures do. */
+  cacheKey: string;
+  /** Where the page reads the release's diagram files from. */
+  files: 'local' | 'download site';
+  /** Renders running, and waiting. */
+  active: number;
+  waiting: number;
+  /** Counted since the service started. */
+  served: number;
+  hits: number;
+  rendered: number;
+  failed: number;
+  rejected: number;
+  evicted: number;
+}
+
 /**
- * The shapes in drawing order, with each group's shapes brought together at
- * the place of its first one. Within a group, and between ungrouped shapes,
- * the order is unchanged.
+ * A figure refused (400), or one that failed (another status): why, and, for a request it
+ * refuses, what it would take instead: the formats or parameters it knows, and
+ * the request as it would accept it (`canonical`), where there is one.
  */
-export function gatherGroups<T extends RenderGrouping>(shapes: T[]): T[] {
-  const members = new Map<string, T[]>();
-  for (const shape of shapes) {
-    if (!shape.group) continue;
-    const list = members.get(shape.group);
-    if (list) list.push(shape);
-    else members.set(shape.group, [shape]);
-  }
-  const out: T[] = [];
-  const placed = new Set<string>();
-  for (const shape of shapes) {
-    if (!shape.group) out.push(shape);
-    else if (!placed.has(shape.group)) {
-      placed.add(shape.group);
-      out.push(...(members.get(shape.group) ?? []));
-    }
-  }
-  return out;
+export interface RenderRefusal {
+  error: string;
+  formats?: readonly string[];
+  accepted?: readonly string[];
+  canonical?: string;
 }

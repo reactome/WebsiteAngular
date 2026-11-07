@@ -25,15 +25,18 @@ import { SpeciesService } from '../services/species.service';
 import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
 import type {
+  Drawn,
+  Published,
   RenderEdgeShape,
+  RenderExport,
   RenderGrouping,
   RenderNodeShape,
   RenderShapes,
+  RenderState,
   ShapeColour,
   ShapeGeometry,
-} from './render-shapes.model';
-import { gatherGroups } from './render-shapes.model';
-import type { Drawn, Published, RenderExport, RenderState } from './render-api.model';
+} from '../../../../contract/render.ts';
+import { gatherGroups } from './gather-groups';
 import type { Analysis } from '../model/analysis.model';
 
 /**

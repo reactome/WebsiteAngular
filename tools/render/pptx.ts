@@ -34,7 +34,7 @@ import type {
   RenderEdgeShape,
   RenderNodeShape,
   RenderShapes,
-} from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
+} from '../../projects/contract/render.ts';
 
 type Shape = RenderNodeShape | RenderEdgeShape;
 /** A box on the slide, in EMU. */

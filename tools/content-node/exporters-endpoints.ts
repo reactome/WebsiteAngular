@@ -3,6 +3,7 @@
  * diagrams, the species overview and figures drawn by the render service,
  * with the helpers only they use. Moved unchanged from service.ts.
  */
+import type { RenderRefusal } from '../../projects/contract/render.ts';
 import { get as httpGet, type IncomingMessage } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -314,6 +315,14 @@ const FIGURE_TYPE: Record<string, string> = {
   jpeg: 'image/jpeg;charset=UTF-8',
 };
 
+/** Why the render service refused or failed a figure (its RenderRefusal), or null. */
+function refusalReason(body: unknown): RenderRefusal['error'] | null {
+  const field: keyof RenderRefusal = 'error';
+  const error: unknown =
+    typeof body === 'object' && body !== null ? Reflect.get(body, field) : undefined;
+  return typeof error === 'string' ? error : null;
+}
+
 /**
  * Ask the render service for a figure and pass its bytes on. Its 503 -- a
  * full queue -- is passed on with its Retry-After; any other failure is a 500
@@ -346,7 +355,7 @@ async function renderFigure(request: Request, url: string | URL, ext: string) {
   if (!response.ok) {
     const reason = await response
       .json()
-      .then((body: { error?: string }) => body.error ?? null)
+      .then(refusalReason)
       .catch(() => `the figure service answered ${response.status}`);
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', reason);
   }

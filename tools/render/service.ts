@@ -73,6 +73,7 @@ import {
 import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
 import type { Format } from './render-core.ts';
+import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
 const PORT = Number(process.env['RENDER_PORT'] || 4310);
 const HOST = process.env['RENDER_HOST'] || '127.0.0.1';
@@ -524,6 +525,10 @@ app.disable('x-powered-by');
 // parameter named `x`, as every refusal below has always named it (spec 014 R7).
 app.set('query parser', 'extended');
 
+/** A refusal, or a failure, as the contract has it. */
+const refuse = (res: Response, status: number, body: RenderRefusal) =>
+  res.status(status).json(body);
+
 app.get('/health', (_req, res) => {
   res.json({
     ok: true,
@@ -535,7 +540,7 @@ app.get('/health', (_req, res) => {
     active,
     waiting: waiting.length,
     ...stats,
-  });
+  } satisfies RenderHealth);
 });
 
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
@@ -545,12 +550,12 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   // caller moved from that endpoint keeps whichever spelling they already use.
   const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
   if (!isFormat(format)) {
-    return res.status(400).json({ error: `unknown format "${format}"`, formats: FORMATS });
+    return refuse(res, 400, { error: `unknown format "${format}"`, formats: FORMATS });
   }
 
   const twice = repeated(req.query);
   if (twice.length) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: `${twice.map((k) => `"${k}"`).join(', ')} given more than once`,
       canonical: canonicalUrl(name, format, req.query),
     });
@@ -558,7 +563,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
 
   const unknown = Object.keys(req.query).filter((key) => !ACCEPTED.includes(key));
   if (unknown.length) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: `unknown parameter${unknown.length > 1 ? 's' : ''} ${unknown.map((u) => `"${u}"`).join(', ')}`,
       // Said rather than implied: a caller that has just been refused is the one
       // most likely to act on being told what to send instead.
@@ -570,7 +575,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   // After the unknown ones, so `x[y]` is named as the parameter it is not.
   const shaped = bracketed(req.query);
   if (shaped.length) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: shaped.map((k) => `"${k}" given with brackets; send it as ${k}=…`).join('; '),
       canonical: canonicalUrl(name, format, req.query),
     });
@@ -578,7 +583,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
 
   const badValues = badEnums(req.query);
   if (badValues.length) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: badValues.join('; '),
       canonical: canonicalUrl(name, format, req.query),
     });
@@ -586,7 +591,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
 
   const species = speciesProblem(name, req.query);
   if (species) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: species,
       // Without the species is the right URL for a pathway, which is its own
       // species. For the overview it would be the default species' -- a
@@ -607,7 +612,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
   // diagram. Together they would draw a crop with some of it marked, which
   // neither caller asked for.
   if (req.query['select'] && req.query['highlight']) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: '"select" and "highlight" cannot be used together',
       canonical: canonicalUrl(
         name,
@@ -621,7 +626,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
     (key) => key in req.query && !inBounds(key, req.query[key])
   );
   if (outOfRange.length) {
-    return res.status(400).json({
+    return refuse(res, 400, {
       error: outOfRange
         .map(
           (key) => `"${key}" must be a number between ${BOUNDS[key]?.[0]} and ${BOUNDS[key]?.[1]}`
@@ -719,7 +724,7 @@ const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Res
     if (status === 503) res.setHeader('Retry-After', '5');
     else stats.failed++;
     console.error(`failed ${name}.${format}: ${messageOf(error)}`);
-    return res.status(status).json({ error: publicMessage(error) });
+    return refuse(res, status, { error: publicMessage(error) });
   }
 };
 

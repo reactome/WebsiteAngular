@@ -1,10 +1,7 @@
 // What the render page publishes on `window`, as the service's code that runs
-// in the page reads it. The types are the page's own (render-api.model.ts), so
-// the two cannot drift apart.
-import type {
-  RenderExport,
-  RenderState,
-} from '../../projects/pathway-browser/src/app/render/render-api.model.ts';
+// in the page reads it. The types are the contract's, which the page builds
+// with (projects/contract/render.ts), so the two cannot drift apart.
+import type { RenderExport, RenderState } from '../../projects/contract/render.ts';
 
 /** gifenc, injected into the page by gif.ts: the parts of it gif.ts calls. */
 interface GifEnc {
