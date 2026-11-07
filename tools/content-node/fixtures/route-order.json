@@ -73,6 +73,7 @@
   "GET /ContentService/exporter/sbml/{id}",
   "GET /ContentService/exporter/voronoi/{id}",
   "GET /ContentService/exporter/fireworks/{id}",
+  "GET /ContentService/exporter/reaction/{id}",
   "GET /ContentService/exporter/reaction/{id}/diagram",
   "GET /ContentService/search/suggest",
   "GET /ContentService/search/spellcheck",

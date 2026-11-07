@@ -99,6 +99,11 @@ PATH_KINDS['eventExport'] = (text) => {
   const ext = /\.(sbml|biopax|sbgn)$/.exec(text);
   return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
 };
+// A reaction's figure: an id as `oid` takes it, and an extension it is drawn in.
+PATH_KINDS['reactionImage'] = (text) => {
+  const ext = /\.(png|jpg|jpeg|svg|gif)$/.exec(text);
+  return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
+};
 PATH_KINDS['sbmlXml'] = (text) =>
   text.endsWith('.xml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
 
@@ -446,6 +451,19 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { id: 'any' },
     query: [],
     cache: 'private',
+  },
+  // A reaction's figure (spec 006 T092, research D24): one per reaction,
+  // format and quality per release, as the render service draws it. Only the
+  // quality changes the figure; the parameters node accepts and does not draw
+  // are left out, so a URL that names one is answered and never stored. A
+  // change to how the render page draws a reaction purges
+  // /ContentService/exporter/reaction/* when it is deployed, as a change to
+  // the layout does.
+  '/ContentService/exporter/reaction/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/reaction/{identifier}.{ext}; of its parameters only quality changes the figure node answers (spec 006 research D24).',
+    path: { id: 'reactionImage' },
+    query: [{ name: 'quality', in: 'query', type: 'integer' }],
   },
   // A reaction's layout (spec 006 T092). Stored like any graph answer: Java's
   // varies between requests (research D21), but node's is laid out from

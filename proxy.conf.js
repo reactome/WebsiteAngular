@@ -96,6 +96,9 @@ module.exports = {
   // The species overview, the Voronoi map, and the old fireworks exporter's
   // URL, which node redirects to it (spec 006 T093).
   '^/ContentService/exporter/(voronoi|fireworks)/[^/?]+/?(\\?|$)': contentNode,
+  // A reaction's image, drawn by the render service (spec 006 T092, research
+  // D24); not its PowerPoint, `.pptx`, which stays Java's.
+  '^/ContentService/exporter/reaction/(?![^/?]*\\.pptx/?(\\?|$))[^/?]+/?(\\?|$)': contentNode,
   // An event's SBML (spec 015 T066) and SBGN (sbgn-exporter T018); its PDF stays Java's.
   '^/ContentService/exporter/(event/[^/?]+\\.(sbml|sbgn)|sbml/[^/?]+\\.xml)/?(\\?|$)': contentNode,
   // An object with everything around it, for the details panel and the
@@ -201,8 +204,7 @@ module.exports = {
   '^/ContentService/data/schema/model/?(\\?|$)': contentNode,
   '^/ContentService/data/schema/[^/?]+(/(count|min|attributes|referrals|reference))?/?(\\?|$)':
     contentNode,
-  // A reaction's layout, the reaction page's figure (spec 006 T092); not the
-  // reaction's image, /exporter/reaction/{id}.{ext}, which stays Java's.
+  // A reaction's layout, the reaction page's figure (spec 006 T092).
   '^/ContentService/exporter/reaction/[^/?]+/diagram/?(\\?|$)': contentNode,
   ...Object.fromEntries([
     apiPage('/ContentService'),
