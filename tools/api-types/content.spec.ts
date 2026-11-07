@@ -15,8 +15,13 @@ const KNOWN = JSON.parse(
   readFileSync(path.join(import.meta.dirname, 'known-problems.json'), 'utf8')
 ) as Record<string, number>;
 
-/** Paths the recordings hold answers for that no call of the site reads. */
-const NOT_READ = ['/v3/api-docs'];
+/**
+ * Paths the recordings hold answers for that no call of the site reads. Java's
+ * /v3/api-docs was one, read by the API page's Swagger UI; the page reads the
+ * description generated from the contract now, served in the suite from the
+ * committed file (T028).
+ */
+const NOT_READ: string[] = [];
 
 describe('recorded content API answers', () => {
   const matched = matchAnswers();

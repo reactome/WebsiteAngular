@@ -531,6 +531,14 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'never',
   },
+  // The API description (spec 016, T028): it changes with a deployment, not a
+  // release, and the edge's copies are purged only at a release.
+  '/ContentService/openapi.json': {
+    java: null,
+    why: "No Java counterpart: the description generated from the contract (Java's is /v3/api-docs).",
+    query: [],
+    cache: 'never',
+  },
 };
 
 /** The query parameters an endpoint declares: Java's, or the record's own. */

@@ -128,7 +128,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 **Java's `openapi-snapshot.json`**:
 
 - **What it is.** It holds only the parameters, which `parameters.ts` reads to put each URL in its standard form for edge caching (spec 011).
-- **It stays.** The generated description covers answers, and the two sit side by side. The site's API page (`swagger-page.component.ts`) reads Java's live description today; it moves to the generated one when the service publishes it (a later task).
+- **It stays.** The generated description covers answers, and the two sit side by side. The site's API page (`swagger-page.component.ts`) reads Java's live description today; it moves to the generated one when the service publishes it (a later task). (Done in T028: published at `/ContentService/openapi.json`, with Java's documentation of each operation merged in from a snapshot, `tools/contract/java-documentation.json`, so the page loses nothing it showed.)
 
 **Alternatives considered**:
 

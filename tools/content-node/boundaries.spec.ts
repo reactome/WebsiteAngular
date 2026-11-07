@@ -11,6 +11,15 @@ import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
 /**
+ * The files outside this directory a module may read, by module, because the
+ * image copies each in beside the service at the same place (checked below):
+ * the API description it publishes (spec 016, T028).
+ */
+const COPIED: Record<string, string> = {
+  'description-endpoints': '../../projects/contract/openapi.json',
+};
+
+/**
  * The shared modules and what each may import besides the leaves
  * (contracts/boundaries.md): each only those beneath it, as the table names
  * them.
@@ -310,8 +319,25 @@ describe('the content service boundaries', () => {
     ).toEqual([]);
   });
 
-  it('reach outside this directory only for types, which Node erases', () => {
-    expect(valueEscapes(real)).toEqual([]);
+  it('reach outside this directory only for types, which Node erases, or for a file the image copies', () => {
+    expect(
+      valueEscapes(real).filter(
+        (escape) =>
+          !Object.entries(COPIED).some(([module, file]) => escape === `${module} reads ${file}`)
+      )
+    ).toEqual([]);
+  });
+
+  it('copy into the image every file outside this directory a module reads', () => {
+    const dockerfile = readFileSync(
+      path.join(import.meta.dirname, '../../deploy/content-node/Dockerfile'),
+      'utf8'
+    );
+    for (const file of Object.values(COPIED)) {
+      // Named from tools/content-node/, so in the image's /content-node/ at the same place.
+      const inRepository = path.posix.normalize(path.posix.join('tools/content-node', file));
+      expect(dockerfile, inRepository).toContain(`COPY ${inRepository} ./${inRepository}`);
+    }
   });
 
   it('refuse a value import or a read from outside this directory, in any form', () => {

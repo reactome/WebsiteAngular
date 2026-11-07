@@ -26,12 +26,44 @@ describe('the API description', { timeout: 60_000 }, () => {
   it('lists every served route, the ones the contract lacks marked not yet', () => {
     const document = generate();
     const described = new Set(contractRoutes());
+    // A route Java documents under narrower paths (/exporter/diagram/{id} as
+    // /exporter/diagram/{identifier}.{ext}) is listed as those.
+    const narrower = (route: string) => {
+      const [method = '', where = ''] = route.split(' ');
+      const pattern = new RegExp(`^${where.split(/\{[^}]+\}/).join('[^/]+')}$`);
+      return Object.entries(document.paths).filter(
+        ([path, operations]) =>
+          path !== where && pattern.test(path) && operations[method.toLowerCase()]
+      );
+    };
     for (const route of servedRoutes()) {
       const [method = '', where = ''] = route.split(' ');
       const operation = document.paths[where]?.[method.toLowerCase()];
-      expect(operation, route).toBeDefined();
-      expect(operation?.['x-contract'], route).toBe(described.has(route) ? undefined : 'not yet');
+      if (!operation) expect(narrower(route), route).not.toEqual([]);
+      else
+        expect(operation['x-contract'], route).toBe(described.has(route) ? undefined : 'not yet');
     }
+  });
+
+  it('documents each operation as Java does, where Java documents it', () => {
+    const listing = generate().paths['/ContentService/data/pathways/low/entity/{id}']?.['get'];
+    expect(listing?.['operationId']).toBe('getPathwaysFor');
+    expect(listing?.['tags']).toEqual(['pathways']);
+    const parameters = (listing?.['parameters'] ?? []) as { name: string; in: string }[];
+    expect(parameters.map((p) => `${p.in} ${p.name}`)).toEqual([
+      'path id',
+      'query species',
+      'query view',
+      'query includeRef',
+    ]);
+  });
+
+  it('keeps what Java answers with a status besides 200, without its schemas', () => {
+    const responses = generate().paths['/ContentService/data/pathways/low/entity/{id}']?.['get']?.[
+      'responses'
+    ] as Record<string, { description: string; content?: unknown }>;
+    expect(Object.keys(responses).sort()).toContain('404');
+    expect(JSON.stringify(responses)).not.toContain('$ref');
   });
 
   it('is the committed file: regenerate it with `node tools/contract/generate.ts`', () => {
@@ -50,7 +82,9 @@ describe('the API description', { timeout: 60_000 }, () => {
   it('declares every templated path variable, as OpenAPI requires', () => {
     for (const [where, operations] of Object.entries(generate().paths))
       for (const operation of Object.values(operations)) {
-        const declared = ((operation['parameters'] ?? []) as { name: string }[]).map((p) => p.name);
+        const declared = ((operation['parameters'] ?? []) as { name: string; in: string }[])
+          .filter((p) => p.in === 'path')
+          .map((p) => p.name);
         const templated = [...where.matchAll(/\{([^}]+)\}/g)].map(([, name]) => name);
         expect(declared, where).toEqual(templated);
       }

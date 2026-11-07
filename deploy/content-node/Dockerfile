@@ -66,6 +66,9 @@ COPY tools/content-node/ ./tools/content-node/
 # 013): without it Node warns on every start, loads each file twice and the
 # type checker reads them as CommonJS. The one npm writes above has no type.
 COPY tools/package.json ./tools/package.json
+# The API description it publishes at /ContentService/openapi.json (spec 016,
+# T028), generated from the contract, at the path the service reads it from.
+COPY projects/contract/openapi.json ./projects/contract/openapi.json
 
 # Loopback of whatever network namespace it lands in. With `network_mode: host`
 # in compose that is the host's loopback, which is the point: Neo4j binds to

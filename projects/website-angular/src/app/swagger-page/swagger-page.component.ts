@@ -12,6 +12,16 @@ import { isPlatformBrowser } from '@angular/common';
 
 declare const SwaggerUIBundle: any;
 
+/**
+ * Each service's description, under its own root. The content service's is the
+ * one generated from the shared contract (spec 016, T028), which says what each
+ * answer holds; the analysis service's is still its own.
+ */
+const DESCRIPTIONS: Record<string, string> = {
+  ContentService: 'ContentService/openapi.json',
+  AnalysisService: 'AnalysisService/v3/api-docs',
+};
+
 @Component({
   selector: 'app-swagger-page',
   templateUrl: './swagger-page.component.html',
@@ -57,7 +67,7 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     //
     // ngAfterViewInit returns early off-browser, so window is always defined by
     // the time this runs.
-    const url = `${window.location.origin}/${this.serviceName}/v3/api-docs`;
+    const url = `${window.location.origin}/${DESCRIPTIONS[this.serviceName] ?? `${this.serviceName}/v3/api-docs`}`;
     SwaggerUIBundle({
       domNode: this.swaggerContainer().nativeElement,
       url,

@@ -116,6 +116,8 @@ module.exports = {
     contentNode,
   // The PSICQUIC services interactors can be drawn from.
   '^/ContentService/interactors/psicquic/resources/?(\\?|$)': contentNode,
+  // The API description generated from the shared contract, for the API page.
+  '^/ContentService/openapi\\.json/?(\\?|$)': contentNode,
   // The search box's completions and its "did you mean", the facets of
   // everything and of a query, and the icon library (its facets, pages and
   // icons); every other /search endpoint is the pattern below.

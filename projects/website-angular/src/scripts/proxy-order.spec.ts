@@ -299,6 +299,8 @@ describe('the dev server proxy', () => {
     '/ContentService/contact',
     // The PSICQUIC services the Pathway Browser can draw interactors from.
     '/ContentService/interactors/psicquic/resources',
+    // The API description generated from the shared contract (spec 016, T028).
+    '/ContentService/openapi.json',
     // A batch of objects by id (POST), and as a map.
     '/ContentService/data/query/ids',
     '/ContentService/data/query/ids/map',
@@ -349,6 +351,9 @@ describe('the dev server proxy', () => {
     '/ContentService/interactors/static/molecules/pathways',
     '/ContentService/interactors/psicquic/molecules/IntAct/details',
     '/ContentService/interactors/psicquic/resources/x',
+    // Java's own description, and a near miss of node's.
+    '/ContentService/v3/api-docs',
+    '/ContentService/openapi.jsonx',
     '/ContentService/interactors/psicquic/molecule/MINT/P04637/details',
     '/ContentService/interactors/upload/tuple/content',
     '/ContentService/interactors/static/molecule/P04637/details.pdf',
