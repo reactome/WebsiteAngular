@@ -20,9 +20,14 @@ export interface DrawnInteractorEntity extends Omit<InteractorEntity, 'interacto
   interactors?: DrawnInteractor[] | null;
 }
 
-export interface Interactors {
+/**
+ * Interactors as the pathway browser draws them, from any source: Reactome's own
+ * (the contract's `Interactors`), DisGeNET, a PSICQUIC registry, or a custom upload.
+ */
+export interface DrawnInteractors {
   entities?: DrawnInteractorEntity[];
-  resource: string; //STATIC, DisGeNet PSICQUIC resource (e.g. IntAct, MINT, etc) or Custom resource
+  /** "static", DisGeNET, a PSICQUIC resource (IntAct, MINT and the like), or a custom one. */
+  resource: string;
 }
 
 export interface InteractorToken {

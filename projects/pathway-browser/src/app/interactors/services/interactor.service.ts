@@ -5,7 +5,7 @@ import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import {
   CustomInteraction,
   DrawnInteractor,
-  Interactors,
+  DrawnInteractors,
   InteractorToken,
   PsicquicResource,
   ResourceAndType,
@@ -400,13 +400,13 @@ export class InteractorService {
    * is no token, because there is nothing on a server to point at. Choosing one
    * again redraws from here instead of asking for a token that does not exist.
    */
-  private localResources = new Map<string, Interactors>();
+  private localResources = new Map<string, DrawnInteractors>();
 
-  public rememberLocalResource(name: string, interactors: Interactors): void {
+  public rememberLocalResource(name: string, interactors: DrawnInteractors): void {
     this.localResources.set(name, interactors);
   }
 
-  public localResource(name: string | null | undefined): Interactors | undefined {
+  public localResource(name: string | null | undefined): DrawnInteractors | undefined {
     return name ? this.localResources.get(name) : undefined;
   }
 
@@ -495,7 +495,7 @@ export class InteractorService {
     return [...new Set(result)].join(',');
   }
 
-  public fetchInteractorData(cy: cytoscape.Core, resource: string): Observable<Interactors> {
+  public fetchInteractorData(cy: cytoscape.Core, resource: string): Observable<DrawnInteractors> {
     this.updateIdentifiers(cy);
     let url;
     if (resource === ResourceType.STATIC) {
@@ -506,7 +506,7 @@ export class InteractorService {
       url = this._PSICQUIC_URL + resource.toLowerCase() + '/details';
     }
 
-    return this.http.post<Interactors>(url, this.identifiers, {
+    return this.http.post<DrawnInteractors>(url, this.identifiers, {
       headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
     });
   }
@@ -517,7 +517,7 @@ export class InteractorService {
   }
 
   public addInteractorOccurrenceNode(
-    interactors: Interactors,
+    interactors: DrawnInteractors,
     cy: cytoscape.Core,
     resource: string
   ) {
@@ -553,7 +553,7 @@ export class InteractorService {
   }
 
   public createInteractorOccurrenceNode(
-    interactors: Interactors,
+    interactors: DrawnInteractors,
     cy: cytoscape.Core,
     resource: string
   ) {
@@ -990,7 +990,7 @@ export class InteractorService {
     cy: cytoscape.Core
   ): Observable<{
     token: InteractorToken;
-    interactors: Interactors;
+    interactors: DrawnInteractors;
   }> {
     this.updateIdentifiers(cy);
     return this.getInteractorsToken(name, url, body).pipe(
@@ -1003,11 +1003,11 @@ export class InteractorService {
     cy: cytoscape.Core
   ): Observable<{
     token: InteractorToken;
-    interactors: Interactors;
+    interactors: DrawnInteractors;
   }> {
     this.updateIdentifiers(cy);
     return this.http
-      .post<Interactors>(this._TOKEN_URL + token.summary.token, this.identifiers, {
+      .post<DrawnInteractors>(this._TOKEN_URL + token.summary.token, this.identifiers, {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
       })
       .pipe(map((interactors) => ({ token: token, interactors: interactors })));

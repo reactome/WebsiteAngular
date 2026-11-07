@@ -34,7 +34,6 @@ function numbered(scanned: ScannedCall[]): (ScannedCall & { n: number })[] {
 const READ_AS_ANYTHING = [
   'projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › molecules',
   'projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › molecules #2',
-  'projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › interactors',
   'projects/website-angular/src/services/content-data.service.ts › getInstance',
 ];
 

@@ -1421,7 +1421,6 @@
     },
     "/ContentService/interactors/static/molecule/{id}/details": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1434,7 +1433,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Interactors"
+                }
+              }
+            }
           }
         }
       }
@@ -1901,10 +1907,16 @@
     },
     "/ContentService/interactors/static/molecules/details": {
       "post": {
-        "x-contract": "not yet",
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Interactors"
+                }
+              }
+            }
           }
         }
       }
@@ -13448,6 +13460,96 @@
         ],
         "additionalProperties": false,
         "description": "One interaction of /interactors/static/molecule/{id}/withEntities: the partner with its Reactome physical entities joined in."
+      },
+      "Interactor": {
+        "type": "object",
+        "properties": {
+          "acc": {
+            "type": "string"
+          },
+          "accURL": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string",
+            "description": "Left out for some (5 of 388 static)."
+          },
+          "evidences": {
+            "type": "number"
+          },
+          "evidencesURL": {
+            "type": "string"
+          },
+          "id": {
+            "type": "number"
+          },
+          "score": {
+            "type": "number"
+          },
+          "type": {
+            "type": "string",
+            "description": "Not sent by the static set at all."
+          }
+        },
+        "required": [
+          "acc",
+          "accURL",
+          "evidences",
+          "evidencesURL",
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "InteractorEntity": {
+        "type": "object",
+        "properties": {
+          "acc": {
+            "type": "string"
+          },
+          "count": {
+            "type": "number"
+          },
+          "interactors": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Interactor"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Left out when there are none."
+          }
+        },
+        "required": [
+          "acc",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "Interactors": {
+        "type": "object",
+        "properties": {
+          "resource": {
+            "type": "string",
+            "const": "static"
+          },
+          "entities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InteractorEntity"
+            }
+          }
+        },
+        "required": [
+          "resource",
+          "entities"
+        ],
+        "additionalProperties": false,
+        "description": "Reactome's own (static) interactors of the accessions asked about: /interactors/static/molecule/{id}/details for one, and /interactors/static/molecules/details for many, one entry each."
       },
       "IntraChainCrosslinkedResidue_JsogReference": {
         "type": "object",
