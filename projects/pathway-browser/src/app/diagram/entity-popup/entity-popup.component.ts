@@ -21,7 +21,8 @@ import { SchemaClasses } from '../../constants/constants';
 import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
-import { ReferenceEntityIds } from '../../model/popup.model';
+import type { PlainPathway, PlainReferenceEntity } from '../../model/graph/plain.model';
+import { getProperty } from '../../services/utils';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
 
@@ -317,14 +318,14 @@ export class EntityPopupComponent {
       return forkJoin(
         stIds.map((stId) =>
           this.http
-            .get<ReferenceEntityIds[]>(
+            .get<PlainReferenceEntity[]>(
               `${CONTENT_SERVICE}/data/participants/${stId}/referenceEntities`
             )
             .pipe(
-              map((refs) => [stId, refs] as [string, ReferenceEntityIds[]]),
+              map((refs) => [stId, refs] as [string, PlainReferenceEntity[]]),
               // A row we cannot resolve stays unmarked rather than being called
               // absent, which would be a claim we cannot make.
-              catchError(() => of([stId, []] as [string, ReferenceEntityIds[]]))
+              catchError(() => of([stId, []] as [string, PlainReferenceEntity[]]))
             )
         )
       ).pipe(map((pairs) => this.annotate(params.groups, new Map(pairs), params.hits)));
@@ -344,7 +345,7 @@ export class EntityPopupComponent {
    */
   private annotate(
     groups: PopupGroup[],
-    participants: Map<string, ReferenceEntityIds[]>,
+    participants: Map<string, PlainReferenceEntity[]>,
     hits: Map<string, number[]>
   ): PopupGroup[] {
     const byExpression = this.hasExpressionValues();
@@ -354,7 +355,10 @@ export class EntityPopupComponent {
         const refs = row.stId ? (participants.get(row.stId) ?? []) : [];
         if (!refs.length) return row;
 
-        const ids = refs.flatMap((r) => [r.identifier, ...(r.geneName ?? [])].filter(Boolean));
+        // A gene product's gene names too: the other reference entities have none.
+        const ids = refs.flatMap((r) =>
+          [r.identifier, ...(getProperty(r, 'geneName') ?? [])].filter(Boolean)
+        );
         const hit = ids.map((id) => hits.get(String(id).toUpperCase())).find(Boolean);
         return {
           ...row,
@@ -431,21 +435,13 @@ export class EntityPopupComponent {
     stream: ({ params }) =>
       params
         ? this.http
-            .get<
-              {
-                stId: string;
-                displayName: string;
-                speciesName: string;
-                hasDiagram?: boolean;
-                releaseStatus?: string;
-              }[]
-            >(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
+            .get<PlainPathway[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
             .pipe(
               map((items): PopupGroup[] => [
                 {
                   rows: items.map((p) => ({
                     label: p.displayName,
-                    detail: p.speciesName,
+                    ...(p.speciesName !== undefined && { detail: p.speciesName }),
                     stId: p.stId,
                     // As given: absent stays absent, so the diagram keeps the
                     // selection (the #168 default) rather than guessing.
