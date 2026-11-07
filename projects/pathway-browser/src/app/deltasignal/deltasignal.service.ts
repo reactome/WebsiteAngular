@@ -96,12 +96,15 @@ export class DeltaSignalService {
         fold: readout.fold,
         call: readout.call,
         railed: readout.railed === true,
+        confidence: readout.confidence ?? null,
+        untouched: readout.confidence_stratum === 'untouched',
         influence: Math.max(0, ...uuids.map((uuid) => influence[uuid] ?? 0)),
         perturbed: readout.pinned.length > 0,
       });
     }
-    const departure = (fold: number) => Math.abs(Math.log(Math.max(fold, 1e-6)));
-    return rows.sort((a, b) => departure(b.fold) - departure(a.fold) || b.influence - a.influence);
+    const departure = (row: DeltaSignalReadoutRow) =>
+      row.untouched ? -1 : Math.abs(Math.log(Math.max(row.fold, 1e-6)));
+    return rows.sort((a, b) => departure(b) - departure(a) || b.influence - a.influence);
   });
   readonly overlay = computed(() => groupChangesByReactomeId(this.rows()));
   readonly hasOverlay = computed(() => this.overlay().size > 0);
@@ -362,6 +365,7 @@ export class DeltaSignalService {
             this.http.post<DeltaSignalReadoutsResponse>('/api/readouts', {
               network_id: network.network_id,
               activities,
+              converged: this.result()?.converged ?? null,
               pinned: Object.keys(observations),
               queries: [{ id: reactomeId, stable_ids: [reactomeId], members }],
             })
@@ -449,6 +453,8 @@ export class DeltaSignalService {
       this.http.post<DeltaSignalReadoutsResponse>('/api/readouts', {
         network_id: networkId,
         activities,
+        // specs/146: the solve's convergence sharpens the confidence strata
+        converged: this.result()?.converged ?? null,
         pinned: Object.keys(observations),
         queries: ids.map((id) => ({ id, stable_ids: [id] })),
       })

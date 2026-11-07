@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
+import { DecimalPipe, PercentPipe } from '@angular/common';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -23,6 +23,7 @@ import { DeltaSignalLogicGraphComponent } from './deltasignal-logic-graph.compon
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     DecimalPipe,
+    PercentPipe,
     DeltaSignalLogicGraphComponent,
     MatButton,
     MatIconButton,
