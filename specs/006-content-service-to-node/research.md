@@ -1035,6 +1035,90 @@ the route its own limit, six a minute per address with a burst of three
 (`contact_rate`), in each deployment; local, which has no limits, routes it
 without one.
 
+## D24. ContentService's images: node answers, the render service draws (T090–T092)
+
+**Decided** by awright, 8 Nov 2026: ContentService's image URLs,
+`/exporter/diagram/{identifier}.{ext}` and `/exporter/reaction/{identifier}.{ext}`,
+are answered by node, which has the render service draw them. Java's
+exporter is no longer used for them, and callers never see the render
+service: from outside there is one ContentService (#273, "Decided"). There is
+no log scan first: the decision overrides the scan #273 had made a gate.
+Each figure is in the website's look, not the old pathway browser's: a
+declared difference.
+
+**What stays Java's**: each URL's PowerPoint, `/exporter/{diagram,reaction}/{identifier}.pptx`,
+another of Java's exporters (PptxExporterController), whose pattern names its
+extension; nginx and the dev proxy leave a lower-case `.pptx` to Java. Spring
+matches it by case, so `.PPTX` was always the image controller's 500, and is
+node's.
+
+### A reaction's image (T092)
+
+`reactionImage`'s answers, in Java's order, each measured against Java on
+7 Nov 2026 and kept byte for byte but for the `url` field's host:
+
+1. The parameters as Spring converts them, in its order (quality, flg,
+   flgInteractors, sel, title, margin, diagramProfile, token, analysisProfile,
+   resource, expColumn): a value that is not an Integer or a Boolean is
+   Spring's 400.
+2. The id as `getReactionLikeEvent` reads it: an id of dots or a dbId past a
+   long is a 500, no object a 404, an object that is not a ReactionLikeEvent a
+   400, named as sent.
+3. `.pdf`, in any case: the 500 "Unsupported file extension pdf".
+4. The layout, which Java made before anything else was drawn: the library's
+   Java exceptions are the handler's 500s (D22, step 5). Node lays the reaction
+   out here too, then lets the render page fetch the layout again.
+5. A quality outside 1–10: the 500 "quality must be in the range [1-10]"
+   (RasterArgs). A blank quality is the default, 5.
+6. An extension DiagramRenderer does not draw (png, jpg, jpeg, gif and svg
+   are drawn): the 500 "Unsupported file extension" with the extension trimmed
+   and in lower case, `.BMP` as `bmp`. Spring marks it
+   `Content-Disposition: inline;filename=f.txt` where it does not trust the
+   extension, as on every node answer (`server.ts`).
+7. The figure: Java's Content-Type, `image/` and the extension in lower case
+   (`svg+xml` for svg, `jpg` kept as `jpg`), `;charset=UTF-8`, and no
+   Content-Disposition. Nothing of the render service's headers is passed on.
+
+The figure is the render service's reaction view (`layout=reaction`), drawn
+from node's own layout of the reaction (D22). Each of Java's parameters:
+
+| Java's parameter                    | What node does                                                                                                                                                                                                                                                                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ext`                               | png, jpg and jpeg (jpeg to the render service), svg, gif: a still, one frame, as Java's gif without an expression analysis                                                                                                                                                                                                    |
+| `quality` (1–10, default 5)         | The render service's `scale`: Java's factor of the layout's size (RasterArgs: 0.1 at 1, 1 at 5, 3 at 10), within what the render service draws, 0.25 to 2. Qualities 1 and 8–10 are drawn at the nearest it allows. An SVG is the layout's size whatever the quality, where Java's was scaled                                 |
+| `flg`, `flgInteractors`             | Accepted, not drawn: the render service draws no flags. Java searched for the flagged entities and, on a search failure, answered the search's error; node does not search                                                                                                                                                    |
+| `sel`                               | Accepted, not drawn: the reaction view marks no selection                                                                                                                                                                                                                                                                     |
+| `title` (default true)              | Accepted, not drawn: the render service draws no caption under the figure                                                                                                                                                                                                                                                     |
+| `margin` (0–20, default 15)         | Accepted, not drawn: the render page sets its own margin. Java clamped any Integer to 0–20                                                                                                                                                                                                                                    |
+| `diagramProfile`, `analysisProfile` | Accepted, not drawn: there is one look, the website's. Java took any name, an unknown one as its default                                                                                                                                                                                                                      |
+| `token`, `resource`, `expColumn`    | Accepted, not drawn: the reaction view is never coloured by an analysis (the render page's own rule), so node does not pass the token on. Java checked the token, and answered a 500 for one expired or unknown ("Token has expired: …", "Token not valid: …"); node does not read it, so such a token is a figure, not a 500 |
+
+Accepting is what keeps callers working: each of these was a figure in Java
+and is a figure now, the same reaction, where a refusal would break a caller
+for an option that changes only how the figure looks. The difference is
+declared (`documentation/declared-differences.md`) rather than detectable in
+the answer.
+
+**Fixed in the render page**, which the reaction image needs: the reaction
+view's `.jpeg` was a PNG with a transparent background (encoded as JPEG only
+through the diagram, which the view does not have, and the instance's own
+`jpg()` writes PNG where a layer is added), and its `.gif` failed, with no
+frame to capture. The render service's cache key moves to v13, so no reaction
+`.jpeg` cached as a PNG is served.
+
+**Routed** under the render budget in `routes.conf` (every deployment), without
+it in `local.conf`, and in the dev proxy.
+
+**Stored at the edge** (spec 011) in standard form: an `oid` with one of the
+five extensions, and `quality` alone, so one figure per reaction, format and
+quality per release. A URL naming any parameter node does not draw is
+answered the same and never stored, so the unbounded profile and flag values
+cannot fill the cache; one with a token is private, as every answer with
+one. The figure is the render service's, so a change to how the render page
+draws a reaction is not seen at the edge until the release purge: a pull
+request that changes it purges `/ContentService/exporter/reaction/*` when it is
+deployed, as one that changes the layout does (D22, step 5).
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:

@@ -108,7 +108,11 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // v12: the page waits for a token's analysis colouring, for the resource the
 // result settles on, before it is ready: a figure with a token cached under v11
 // may be uncoloured, or coloured for TOTAL where the browser shows another.
-const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v12';
+// v13: the reaction view draws a .jpeg as JPEG and a .gif at all (spec 006
+// research D24), a fix in the app: every reaction .jpeg cached under v12 is a
+// PNG with a transparent background, which ContentService's reaction image
+// would now serve as image/jpeg.
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v13';
 // The release's diagram and illustration files, laid out as the download site,
 // for the page to read instead of the site (local-files.ts). Unset, it fetches
 // them from the site, as a reader's browser does.
