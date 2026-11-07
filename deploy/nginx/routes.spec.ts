@@ -246,7 +246,7 @@ describe('where nginx sends things', () => {
 
   // The exporters share the render budget whichever side draws them
   // (routes.conf); a location that won the match without it would drop it.
-  for (const kind of ['diagram', 'voronoi', 'fireworks', 'document/event', 'event'])
+  for (const kind of ['diagram', 'voronoi', 'fireworks', 'reaction', 'document/event', 'event'])
     for (const ext of ['png', 'svg', 'pdf'])
       it(`keeps the render budget on /ContentService/exporter/${kind}/….${ext}`, () => {
         const url = `/ContentService/exporter/${kind}/R-HSA-109581.${ext}`;
@@ -381,9 +381,10 @@ const JAVAS = [
   '/ContentService/exporter/event/R-HSA-109581.sbgn.pdf',
   '/ContentService/exporter/event/R-HSA-109581.biopax.pdf',
   '/ContentService/exporter/sbml/R-HSA-109581.sbml',
-  // A reaction's image, beside its layout (spec 006 T092), until T090 and T091.
-  '/ContentService/exporter/reaction/R-HSA-6805479.png',
-  '/ContentService/exporter/reaction/R-HSA-6805479.svg?quality=5',
+  // A reaction's PowerPoint, beside its image and layout (spec 006 T092,
+  // research D24): another of Java's exporters.
+  '/ContentService/exporter/reaction/R-HSA-6805479.pptx',
+  '/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?quality=5',
   '/ContentService/exporter/reaction/R-HSA-6805479/diagramx',
 ];
 
