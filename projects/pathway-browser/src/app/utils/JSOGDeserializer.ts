@@ -26,10 +26,12 @@
  */
 
 import type { JsogReference } from '../../../../contract/graph.ts';
+import type { ObjectState } from '../model/graph/object-state.model';
 
 /**
  * A JSOG answer once JSOGDeserializer has resolved it: every reference
- * replaced by the object it refers to (spec 016, research R9). The contract
+ * replaced by the object it refers to (spec 016, research R9), each object
+ * with what the pathway browser may add to it (ObjectState). The contract
  * describes the answer as written, `X<JsogReference>`; the pathway browser
  * reads `Resolved<X<JsogReference>>`.
  */
@@ -38,7 +40,7 @@ export type Resolved<T> = T extends JsogReference
   : T extends (infer E)[]
     ? Resolved<E>[]
     : T extends object
-      ? { [K in keyof T]: Resolved<T[K]> }
+      ? { [K in keyof T]: Resolved<T[K]> } & ObjectState
       : T;
 
 /**

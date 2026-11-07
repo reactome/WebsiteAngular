@@ -255,6 +255,11 @@ export class DescriptionTabComponent implements OnDestroy {
     ];
   });
 
+  /** The selected object's field of that name, whichever kind of object it is; undefined if it has none. */
+  fieldOf(key: string) {
+    return getProperty(this.obj(), key);
+  }
+
   readonly referenceEntity: Signal<ReferenceEntity | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REFERENCE_ENTITY)
   );
@@ -813,7 +818,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case 'otherPathways':
         return this.otherPathways().length > 0 || this.otherPathwaysFailed();
       default:
-        return obj[key] !== undefined && obj[key];
+        return getProperty(obj, key) !== undefined && getProperty(obj, key);
     }
   }
 

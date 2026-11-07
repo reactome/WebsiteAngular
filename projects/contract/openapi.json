@@ -4445,6 +4445,7 @@
         "required": [
           "dbId",
           "displayName",
+          "stId",
           "className",
           "schemaClass"
         ],
@@ -4938,6 +4939,7 @@
         "required": [
           "dbId",
           "displayName",
+          "stId",
           "schemaClass",
           "className"
         ],
@@ -13366,6 +13368,7 @@
         "required": [
           "dbId",
           "displayName",
+          "stId",
           "schemaClass",
           "className"
         ],

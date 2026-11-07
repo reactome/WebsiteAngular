@@ -19,6 +19,7 @@ import {
   isRefEntity,
   isReferenceSummary,
   isRLE,
+  getProperty,
   isSelectableObject,
   firstName,
 } from '../../../services/utils';
@@ -44,7 +45,6 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { ExtractCompartmentPipe } from '../../../pipes/extract-compartment.pipe';
 import { MatIconButton } from '@angular/material/button';
-import { Species } from '../../../model/graph/species.model';
 import { ObjectTreeDetailsComponent } from './object-details/object-tree-details.component';
 import { CONTENT_DETAIL } from '../../../../environments/environment';
 import { AnalysisService } from '../../../services/analysis.service';
@@ -616,7 +616,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   private requireNavigate(node: E) {
     return (
       isPathway(node) &&
-      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species[0]?.abbreviation))
+      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species?.[0]?.abbreviation))
     );
   }
 
@@ -675,7 +675,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const speciesName: string | null | undefined = isSelectableObject(element)
       ? element.speciesName
       : null;
-    const species: Species = isSelectableObject(element) ? element.species : null;
+    // An event's species are a list; the reader declared one Species and read
+    // either through `any`. Read as the object has it, and taken as a list below.
+    const holder: SelectableObject | null = isSelectableObject(element) ? element : null;
+    const species = holder ? getProperty(holder, 'species') : null;
 
     if (!speciesName) return null;
 

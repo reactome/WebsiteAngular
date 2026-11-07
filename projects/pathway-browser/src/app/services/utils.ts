@@ -172,7 +172,7 @@ export function isMolecule(obj: DatabaseObject): obj is Molecule {
 }
 
 export function isPathwayWithDiagram(obj: DatabaseObject): obj is Pathway {
-  return isPathway(obj) && obj.hasDiagram;
+  return isPathway(obj) && obj.hasDiagram === true;
 }
 
 const regulationClasses: Set<string> = new Set([
@@ -277,11 +277,26 @@ export function isSelectableObject(obj: DatabaseObject): obj is Event | Physical
  *  If it does, it returns the value of the property. Otherwise, it returns undefined.
  */
 
-export function getProperty<T extends DatabaseObject, K extends keyof T>(
+/** A key any member of a union has: `inferredTo` on an event, which an entity also has. */
+type KeyOfAny<T> = T extends unknown ? keyof T : never;
+
+/** What the members of a union that have a key hold there; none, for the others. */
+type ValueOfAny<T, K extends PropertyKey> = T extends unknown
+  ? K extends keyof T
+    ? T[K]
+    : undefined
+  : never;
+
+/**
+ * A field of whichever member of a union `obj` is, or undefined when it has
+ * none (a selected object may be an event or an entity). The `in` check is
+ * the boundary: the member that has the key holds that member's value there.
+ */
+export function getProperty<T extends object, K extends KeyOfAny<T>>(
   obj: T,
   key: K
-): T[K] | undefined {
-  return key in obj ? obj[key] : undefined;
+): ValueOfAny<T, K> | undefined {
+  return key in obj ? (obj as Record<K, ValueOfAny<T, K>>)[key] : undefined;
 }
 
 /**

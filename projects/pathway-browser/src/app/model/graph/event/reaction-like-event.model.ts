@@ -1,40 +1,24 @@
-import { Event } from './event.model';
-import { PhysicalEntity } from '../physical-entity/physical-entity.model';
-import type { Relationship } from '../relationship.model';
-import { Anatomy } from '../external-ontology/anatomy.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ReactionLikeEvent extends Event {
-  input: PhysicalEntity[];
-  output: PhysicalEntity[];
-  category: string;
-  reactionType: string;
+/** Any reaction-like event, as the pathway browser reads it (the contract's, resolved). */
+export type ReactionLikeEvent = Resolved<Graph.ReactionLikeEvent<JsogReference>>;
 
-  composedOf: Relationship.Has<Event>[];
-}
+/** A black-box event, as the pathway browser reads it (the contract's, resolved). */
+export type BlackBoxEvent = Resolved<Graph.BlackBoxEvent<JsogReference>>;
 
-export interface BlackBoxEvent extends ReactionLikeEvent {
-  templateEvent: Event;
-  schemaClass: 'BlackBoxEvent';
-}
+/** A cell development step, as the pathway browser reads it (the contract's, resolved). */
+export type CellDevelopmentStep = Resolved<Graph.CellDevelopmentStep<JsogReference>>;
 
-export interface CellDevelopmentStep extends ReactionLikeEvent {
-  tissue: Anatomy;
-  schemaClass: 'CellDevelopmentStep';
-}
+/** A polymerisation, as the pathway browser reads it (the contract's, resolved). */
+export type Polymerisation = Resolved<Graph.Polymerisation<JsogReference>>;
 
-export interface Polymerisation extends ReactionLikeEvent {
-  schemaClass: 'Polymerisation';
-}
+/** A depolymerisation, as the pathway browser reads it (the contract's, resolved). */
+export type Depolymerisation = Resolved<Graph.Depolymerisation<JsogReference>>;
 
-export interface Depolymerisation extends ReactionLikeEvent {
-  schemaClass: 'Depolymerisation';
-}
+/** A failed reaction, as the pathway browser reads it (the contract's, resolved). */
+export type FailedReaction = Resolved<Graph.FailedReaction<JsogReference>>;
 
-export interface FailedReaction extends ReactionLikeEvent {
-  schemaClass: 'FailedReaction';
-}
-
-export interface Reaction extends ReactionLikeEvent {
-  reverseReaction: Reaction;
-  schemaClass: 'Reaction';
-}
+/** A reaction, as the pathway browser reads it (the contract's, resolved). */
+export type Reaction = Resolved<Graph.Reaction<JsogReference>>;

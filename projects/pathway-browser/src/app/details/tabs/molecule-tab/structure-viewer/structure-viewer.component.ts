@@ -24,6 +24,7 @@ import { SelectableObject } from '../../../../services/event.service';
 import { MoleculeType } from '../molecule-tab.component';
 import { StructureService } from '../../../../services/structure.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { getProperty } from '../../../../services/utils';
 
 export interface StructureEntry {
   pdb_id: string;
@@ -140,7 +141,7 @@ export class StructureViewerComponent {
     if (!this.isProtein()) return null;
     const summary = this.alphafoldSummary.value();
     if (summary?.structures?.[0]?.summary?.model_url) {
-      const id = this.obj().identifier;
+      const id = getProperty(this.obj(), 'identifier');
       return `AF-${id}-F1`;
     }
     return null;
@@ -186,7 +187,7 @@ export class StructureViewerComponent {
   readonly isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
   bestPdbStructure = rxResource({
-    params: () => this.obj().identifier,
+    params: () => getProperty(this.obj(), 'identifier'),
     stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
@@ -206,7 +207,7 @@ export class StructureViewerComponent {
   });
 
   alphafoldSummary = rxResource({
-    params: () => this.obj().identifier,
+    params: () => getProperty(this.obj(), 'identifier'),
     stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
@@ -239,8 +240,8 @@ export class StructureViewerComponent {
         this.getProteinStructure();
       } else if (isChemical) {
         const identifier =
-          this.obj().databaseName === 'ChEBI'
-            ? this.obj().identifier
+          getProperty(this.obj(), 'databaseName') === 'ChEBI'
+            ? getProperty(this.obj(), 'identifier')
             : (this.obj().crossReference as DatabaseIdentifier[]).find(
                 (c) => c.databaseName === 'ChEBI'
               )?.identifier;
