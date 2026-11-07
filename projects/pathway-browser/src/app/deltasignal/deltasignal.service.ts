@@ -14,6 +14,8 @@ import {
   DeltaSignalReadoutState,
   DeltaSignalScopeResponse,
   DeltaSignalScopeState,
+  DeltaSignalLeadsResponse,
+  DeltaSignalLeadState,
   ContentServiceEntity,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
@@ -26,6 +28,8 @@ import { CONTENT_SERVICE } from '../../environments/environment';
 // a partial closure is a different protocol than the bench's, so it is never
 // sent.
 const MEMBER_FETCH_CAP = 12;
+
+const IDLE_LEADS: DeltaSignalLeadState = { status: 'idle', byId: new Map() };
 
 const IDLE_READOUTS: DeltaSignalReadoutState = {
   status: 'idle',
@@ -67,6 +71,15 @@ export class DeltaSignalService {
    */
   readonly scopeState = signal<DeltaSignalScopeState>({ status: 'idle', scope: null });
 
+  /**
+   * Curator-drawn leads (deltasignal specs/149): after a solve in a pathway
+   * that has an arrow composite, the same perturbation is run once through
+   * the composite and its answers are kept for the readouts the main solve
+   * left untouched. 'none' says this pathway has no composite.
+   */
+  readonly leadState = signal<DeltaSignalLeadState>(IDLE_LEADS);
+  private leadsTable: DeltaSignalLeadsResponse['leads'] | null | undefined;
+
   readonly rows = computed(() => resultRows(this.network(), this.result(), this.perturbations()));
   /**
    * One row per Reactome entity, valued by `/api/readouts` — the resolution
@@ -96,6 +109,7 @@ export class DeltaSignalService {
         fold: readout.fold,
         call: readout.call,
         railed: readout.railed === true,
+        lead: this.leadState().byId.get(reactomeId) ?? null,
         confidence: readout.confidence ?? null,
         untouched: readout.confidence_stratum === 'untouched',
         influence: Math.max(0, ...uuids.map((uuid) => influence[uuid] ?? 0)),
@@ -137,6 +151,7 @@ export class DeltaSignalService {
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
 
     try {
       const catalog = await this.getCatalog();
@@ -218,6 +233,7 @@ export class DeltaSignalService {
     ]);
     this.result.set(null);
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
     return true;
   }
 
@@ -225,18 +241,21 @@ export class DeltaSignalService {
     this.perturbations.update((items) => items.filter((item) => item.reactomeId !== reactomeId));
     this.result.set(null);
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
   }
 
   clear() {
     this.perturbations.set([]);
     this.result.set(null);
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
     this.error.set(null);
   }
 
   clearResult() {
     this.result.set(null);
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
   }
 
   reset() {
@@ -250,6 +269,7 @@ export class DeltaSignalService {
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
   }
 
   async solve(): Promise<void> {
@@ -260,6 +280,7 @@ export class DeltaSignalService {
     this.status.set('solving');
     this.error.set(null);
     this.readoutState.set(IDLE_READOUTS);
+    this.leadState.set(IDLE_LEADS);
     const observations = buildObservations(this.perturbations());
 
     try {
@@ -317,6 +338,7 @@ export class DeltaSignalService {
         protocol: response.protocol,
         message: null,
       });
+      void this.resolveLeads(activities);
     } catch (error) {
       if (this.result()?.node_activities !== activities) return;
       this.readoutState.set({
@@ -440,6 +462,95 @@ export class DeltaSignalService {
       this.scopeState.set({ status: 'ready', scope });
     } catch {
       this.scopeState.set({ status: 'error', scope: null });
+    }
+  }
+
+  /**
+   * specs/022: the composite run. Existing endpoints only (parse, pins,
+   * solve, readouts on the ctx-arrows_ bundle); guarded against newer solves
+   * exactly as the batch is; any failure leaves the honest "not reached
+   * here" untouched.
+   */
+  private async resolveLeads(activities: Record<string, number>): Promise<void> {
+    const pathway = this.pathway();
+    if (!pathway) return;
+    try {
+      if (this.leadsTable === undefined) {
+        this.leadsTable = (
+          await firstValueFrom(this.http.get<DeltaSignalLeadsResponse>('/api/leads'))
+        ).leads;
+      }
+    } catch {
+      this.leadsTable = undefined; // unknown, not absent: try again next solve
+      this.leadState.set({ status: 'error', byId: new Map() });
+      return;
+    }
+    const centre = this.leadsTable?.centres[pathway.stable_id];
+    if (!centre) {
+      this.leadState.set({ status: 'none', byId: new Map() });
+      return;
+    }
+    const untouchedIds = [...this.readoutState().byId.entries()]
+      .filter(([, r]) => r.confidence_stratum === 'untouched')
+      .map(([id]) => id);
+    if (untouchedIds.length === 0) {
+      this.leadState.set({ status: 'ready', byId: new Map() });
+      return;
+    }
+    const rate =
+      centre.arrows.find((a) => a.rate.class === 'measured')?.rate.statement ??
+      centre.arrows[0]?.rate.statement ??
+      'curator-drawn connection';
+    this.leadState.set({ status: 'loading', byId: new Map() });
+    try {
+      const parsed = await firstValueFrom(
+        this.http.post<DeltaSignalNetwork>('/api/parse', { pathway_id: centre.composite_id })
+      );
+      const perturbations = this.perturbations();
+      const pins = await firstValueFrom(
+        this.http.post<DeltaSignalPinsResponse>('/api/pins', {
+          network_id: parsed.network_id,
+          queries: perturbations.map((p) => ({ id: p.reactomeId, stable_ids: [p.reactomeId] })),
+        })
+      );
+      const obs: Record<string, [number, number]> = {};
+      for (const result of pins.results) {
+        const activity = perturbations.find((p) => p.reactomeId === result.id)?.activity;
+        if (activity === undefined) continue;
+        for (const pin of result.pins) obs[pin.uuid] = [activity, 1];
+      }
+      if (Object.keys(obs).length === 0) return;
+      const solved = await firstValueFrom(
+        this.http.post<DeltaSignalSolveResult>('/api/solve', {
+          network_id: parsed.network_id,
+          observations: obs,
+        })
+      );
+      const readouts = await firstValueFrom(
+        this.http.post<DeltaSignalReadoutsResponse>('/api/readouts', {
+          network_id: parsed.network_id,
+          activities: solved.node_activities,
+          converged: solved.converged,
+          pinned: Object.keys(obs),
+          queries: untouchedIds.map((id) => ({ id, stable_ids: [id] })),
+        })
+      );
+      if (this.result()?.node_activities !== activities) return; // a newer solve took over
+      const byId = new Map(
+        readouts.results.flatMap((r) =>
+          r.id !== null &&
+          r.call &&
+          r.fold !== null &&
+          r.fold !== undefined &&
+          r.confidence_stratum !== 'untouched'
+            ? [[r.id, { call: r.call, fold: r.fold, statement: rate }] as const]
+            : []
+        )
+      );
+      this.leadState.set({ status: 'ready', byId });
+    } catch {
+      if (this.result()?.node_activities === activities)
+        this.leadState.set({ status: 'error', byId: new Map() });
     }
   }
 

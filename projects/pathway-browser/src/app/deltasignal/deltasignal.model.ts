@@ -162,6 +162,7 @@ export interface DeltaSignalReadoutRow {
   fold: number;
   call: 'up' | 'down' | 'normal';
   railed: boolean;
+  lead: DeltaSignalLead | null;
   confidence: number | null;
   /** The perturbation has no route to this readout in this network. */
   untouched: boolean;
@@ -183,6 +184,39 @@ export interface ContentServiceEntity {
   hasMember?: ContentServiceEntity[];
   hasCandidate?: ContentServiceEntity[];
   [key: string]: ContentServiceValue | ContentServiceEntity[] | undefined;
+}
+
+/** The served curator-drawn leads table (deltasignal specs/149), verbatim. */
+export interface DeltaSignalLeadsResponse {
+  status: 'success';
+  leads: {
+    composite_prefix: string;
+    centres: Record<
+      string,
+      {
+        name: string;
+        composite_id: string;
+        arrows: {
+          source_pathway: string;
+          entity: string;
+          rate: { class: 'measured' | 'unrated'; statement: string };
+        }[];
+      }
+    >;
+  };
+}
+
+/** One lead answer for a not-reached readout: the composite's call, with the
+ *  pathway's served rate statement. Presentation only — never a main call. */
+export interface DeltaSignalLead {
+  call: 'up' | 'down' | 'normal';
+  fold: number;
+  statement: string;
+}
+
+export interface DeltaSignalLeadState {
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'none';
+  byId: Map<string, DeltaSignalLead>;
 }
 
 /** The served scope statement (deltasignal specs/143), rendered verbatim. */
