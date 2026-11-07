@@ -370,8 +370,8 @@ const JAVAS = [
   '/ContentService/data/content/toc/X1',
   '/ContentService/data/diseases/X1',
   '/ContentService/data/schema/model/X1',
-  '/ContentService/data/query/abridged/R-HSA-109581',
-  '/ContentService/data/query/R-HSA-109581/more',
+  '/ContentService/data/query/abridged/R-HSA-109581/stId/x',
+  '/ContentService/data/query/R-HSA-109581/more/x',
   '/ContentService/interactors/psicquic/resourcesx',
   '/ContentService/search/facet_queryx',
   // An event's other exports, beside its SBML (spec 015 T066), SBGN and BioPAX (T071).
@@ -445,7 +445,7 @@ describe('a matrix parameter', () => {
 
   it('is not an encoded one, nor one in the query string', async () => {
     for (const url of [
-      '/ContentService/data/query/abridged/R-HSA-109581%3Bx',
+      '/ContentService/data/pathway/R-HSA-109606%3Bx',
       '/ContentService/data/species/9606?a=1;b=2',
     ])
       expect([url, nginxTarget(url), await proxySendsToNode(url)]).toEqual([url, 'tomcat', false]);

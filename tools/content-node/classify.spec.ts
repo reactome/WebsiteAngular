@@ -29,26 +29,27 @@ describe('classify', () => {
 
   it('leaves out writes and what Java still answers', () => {
     expect(classify('POST', '/ContentService/data/query/ids')).toBe(undefined);
-    expect(classify('GET', '/ContentService/data/query/abridged/R-HSA-1')).toBe(undefined);
-    expect(classify('GET', '/ContentService/data/query/R-HSA-1/more')).toBe(undefined);
+    expect(classify('GET', '/ContentService/data/pathways/top/9606/curated')).toBe(undefined);
     expect(classify('GET', '/ContentService/data/query/enhanced/v2/R-HSA-1')?.endpoint).toBe(
       '/ContentService/data/query/enhanced/v2/{id}'
     );
     expect(classify('GET', '/AnalysisService/token/x')).toBe(undefined);
   });
 
-  it("leaves out every form nginx keeps on Java's /query, not node's own", () => {
-    for (const path of [
-      '/ContentService/data/query/abridged/R-HSA-1',
-      '/ContentService/data/query/abridged/stId',
-      '/ContentService/data/query/abridged/R-HSA-1/stId',
-      '/ContentService/data/query/enhanced/R-HSA-1/stId',
-      '/ContentService/data/query/R-HSA-1/more/',
+  it("takes Java's more specific /query paths as their own endpoints, as Express routes them", () => {
+    for (const [path, endpoint] of [
+      ['/ContentService/data/query/abridged/R-HSA-1', '/ContentService/data/query/abridged/{id}'],
+      ['/ContentService/data/query/abridged/stId', '/ContentService/data/query/abridged/{id}'],
+      [
+        '/ContentService/data/query/abridged/R-HSA-1/stId',
+        '/ContentService/data/query/abridged/{id}/{attribute}',
+      ],
+      ['/ContentService/data/query/R-HSA-1/more/', '/ContentService/data/query/{id}/more'],
+      ['/ContentService/data/query/enhanced/R-HSA-1', '/ContentService/data/query/enhanced/{id}'],
     ])
-      expect([path, classify('GET', path)]).toEqual([path, undefined]);
-    expect(classify('GET', '/ContentService/data/query/enhanced/R-HSA-1')?.endpoint).toBe(
-      '/ContentService/data/query/enhanced/{id}'
-    );
+      expect([path, classify('GET', path)?.endpoint]).toEqual([path, endpoint]);
+    // No node route matches the rest of Java's /query.
+    expect(classify('GET', '/ContentService/data/query/enhanced/R-HSA-1/stId')).toBe(undefined);
   });
 
   it('counts a HEAD as its GET', () => {

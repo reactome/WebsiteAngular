@@ -189,6 +189,24 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/query/enhanced/{id}',
     path: { id: 'oid' },
   },
+  '/ContentService/data/query/abridged/{id}/{attribute}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: /data/query/{id}/{attributeName} on the object without its relationships.',
+    path: { id: 'oid', attribute: 'attribute' },
+    query: [],
+  },
+  '/ContentService/data/query/abridged/{id}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: the object without its relationships.',
+    path: { id: 'oid' },
+    query: [],
+  },
+  '/ContentService/data/query/{id}/more': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: /data/query/enhanced/v2/{id} with its flags fixed.',
+    path: { id: 'oid' },
+    query: [],
+  },
   '/ContentService/data/query/{id}/stId': {
     java: '/data/query/{id}/{attributeName}',
     attributeOf: true,

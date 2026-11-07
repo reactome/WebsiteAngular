@@ -5,7 +5,7 @@
  * view and an instance's referrers, with the helpers only they use. Moved
  * unchanged from service.ts.
  */
-import type { Endpoint } from './endpoint.ts';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { asciiDigits, databaseObjectSet, javaNumeric, javaTrim } from './java-text.ts';
 import {
   attributeAnswer,
@@ -35,7 +35,7 @@ import { JavaHashMap } from './java-hashmap.ts';
 import neo4j from 'neo4j-driver';
 import type { Props } from './objects.ts';
 import { databaseVersion } from './release.ts';
-import { cached, javaError, notFound, springNotFound } from './answers.ts';
+import { cached, javaError, notFound } from './answers.ts';
 import { pathId, queryValues, rawSegment, springPrimitiveBoolean, writerFor } from './spring.ts';
 import { orthologyIds, plainText, plainTextProblem } from './body.ts';
 import { schemaClassOf } from './schema.ts';
@@ -275,6 +275,82 @@ export async function schemaDataSet(
   };
 }
 
+/**
+ * graph-core's DatabaseObjectService.findByIdNoRelations: the id as
+ * getIdentifier reads it (graphCoreId), then the node alone by stable id or
+ * dbId -- `MATCH (n:DatabaseObject{stId:$stId}) RETURN n` -- mapped with no
+ * relationship. {object}, or the answer to give instead: Java's 404 naming the
+ * id as sent, or its 500 for dots alone (findByIdFailure). A dbId past a long
+ * is the query's failure, answered as Java's (failureAnswer).
+ */
+async function abridgedObject(
+  request: Request,
+  raw: string
+): Promise<{ object: DomainEntity } | Answer> {
+  const refused = /^\.+$/.test(javaTrim(raw)) ? findByIdFailure([raw]) : undefined;
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+  const id = await graphCoreId(raw);
+  if (!id) return missing();
+  const [row] = await read<{ n: GraphNode }>(
+    `MATCH (n:DatabaseObject${id.object}) RETURN {id: id(n), labels: labels(n), props: properties(n)} AS n`,
+    id.params
+  );
+  if (!row) return missing();
+  const [object] = mapNodes([row.n]);
+  return object ? { object } : missing();
+}
+
+/** QueryObjectController.findEnhancedObjectById's three flags. */
+const ENHANCED_FLAGS = [
+  'fetchIncomingRelationships',
+  'summariseReferenceEntity',
+  'includeDisease',
+] as const;
+type EnhancedFlags = Record<(typeof ENHANCED_FLAGS)[number], boolean>;
+
+/**
+ * QueryObjectController.findEnhancedObjectById, its flags read: graph-core's
+ * findEnhancedObjectById (enhancedQuery), written by the domain serialiser in
+ * the request's view; a reference entity, when asked to summarise, as the
+ * content service's SummaryEntity (summaryEntity). Incoming relationships
+ * only when asked for and needsIncoming agrees; an object found only with its
+ * disease data, asked for without, looked up again with it.
+ *
+ * The id as getIdentifier reads it (inDepthId), after what it throws on
+ * (findByIdFailure): dots alone, Java's 500 indexing an empty split. A dbId
+ * past a long is the query's failure, answered as Java's (failureAnswer).
+ */
+async function enhancedAnswer(request: Request, raw: string, flags: EnhancedFlags) {
+  const refused = /^\.+$/.test(javaTrim(raw)) ? findByIdFailure([raw]) : undefined;
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const id = inDepthId(raw);
+  const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
+  if (!id) return missing();
+  const options = {
+    idType: id.idType,
+    summarise: flags.summariseReferenceEntity,
+    includeDisease: flags.includeDisease,
+    outgoingOnly: !(flags.fetchIncomingRelationships && (await needsIncoming(raw))),
+  };
+  let [row] = await read<MappedRow>(enhancedQuery(options), { id: id.id });
+  if (!row && !options.includeDisease)
+    [row] = await read<MappedRow>(enhancedQuery({ ...options, includeDisease: true }), {
+      id: id.id,
+    });
+  if (!row) return missing();
+  const found = mapResult(row);
+  const object =
+    flags.summariseReferenceEntity && isA(found.schemaClass, 'ReferenceEntity')
+      ? summaryEntity(found)
+      : found;
+  return {
+    status: 200,
+    serialised: writeDomain(object, ...writerFor(request)),
+    type: 'application/json',
+  };
+}
+
 export const dataQueryEndpoints: Endpoint[] = [
   {
     path: '/ContentService/data/database/version',
@@ -332,51 +408,21 @@ export const dataQueryEndpoints: Endpoint[] = [
      *
      * As QueryObjectController: three primitive booleans with defaults
      * (fetchIncomingRelationships true, summariseReferenceEntity false,
-     * includeDisease true); incoming relationships only when asked for and
-     * needsIncoming agrees; an object found only with its disease data,
-     * asked for without, looked up again with it.
+     * includeDisease true), then enhancedAnswer.
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 6));
-      const flags: {
-        fetchIncomingRelationships?: boolean;
-        summariseReferenceEntity?: boolean;
-        includeDisease?: boolean;
-      } = {};
-      for (const [name, fallback] of [
-        ['fetchIncomingRelationships', true],
-        ['summariseReferenceEntity', false],
-        ['includeDisease', true],
-      ] as const) {
-        const parsed = springPrimitiveBoolean(queryValues(request, name), fallback);
+      const flags: EnhancedFlags = {
+        fetchIncomingRelationships: true,
+        summariseReferenceEntity: false,
+        includeDisease: true,
+      };
+      for (const name of ENHANCED_FLAGS) {
+        const parsed = springPrimitiveBoolean(queryValues(request, name), flags[name]);
         if (parsed.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', parsed.error);
         flags[name] = parsed.value;
       }
-      const id = inDepthId(raw);
-      const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
-      if (!id) return missing();
-      const options = {
-        idType: id.idType,
-        summarise: flags.summariseReferenceEntity,
-        includeDisease: flags.includeDisease,
-        outgoingOnly: !(flags.fetchIncomingRelationships && (await needsIncoming(raw))),
-      };
-      let [row] = await read<MappedRow>(enhancedQuery(options), { id: id.id });
-      if (!row && !options.includeDisease)
-        [row] = await read<MappedRow>(enhancedQuery({ ...options, includeDisease: true }), {
-          id: id.id,
-        });
-      if (!row) return missing();
-      const found = mapResult(row);
-      const object =
-        flags.summariseReferenceEntity && isA(found.schemaClass, 'ReferenceEntity')
-          ? summaryEntity(found)
-          : found;
-      return {
-        status: 200,
-        serialised: writeDomain(object, ...writerFor(request)),
-        type: 'application/json',
-      };
+      return enhancedAnswer(request, raw, flags);
     },
   },
   {
@@ -422,6 +468,70 @@ export const dataQueryEndpoints: Endpoint[] = [
         type: 'application/json',
       };
     },
+  },
+  {
+    // Before /query/{id}/stId, /normalPathway and /more, as Spring ranks its
+    // literal `abridged` above their {id}: /query/abridged/more is this, with
+    // id more.
+    path: '/ContentService/data/query/abridged/{id}/{attribute}',
+    sample: 'R-HSA-109581',
+    samplePath: { attribute: 'hasEvent' },
+    differs: [/^\/ContentService\/data\/query\/abridged\/[^/]+\/[^/]+: \.url: /],
+    /**
+     * One attribute of an object loaded without its relationships, as text:
+     * QueryObjectController.getAbridgedProperty -- graph-core's
+     * findByIdNoRelations (abridgedObject), then ControllerUtils.getProperty
+     * as /query/{id}/{attribute} calls it. Nothing is loaded with the object,
+     * so a relationship getter loads its relationship, outgoing ones too, as
+     * graph-core's LazyFetchAspect does (attributeValue, outgoingLoaded
+     * false): `hasEvent` is the pathway's events.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 5));
+      const found = await abridgedObject(request, raw);
+      if ('status' in found) return found;
+      return attributeAnswer(request, found.object, pathId(rawSegment(request, 6)), {
+        outgoingLoaded: false,
+      });
+    },
+  },
+  {
+    path: '/ContentService/data/query/abridged/{id}',
+    sample: 'R-HSA-109581',
+    differs: [/^\/ContentService\/data\/query\/abridged\/[^/]+: \.url: /],
+    /**
+     * An object's own properties, none of its relationships:
+     * QueryObjectController.findByIdNoRelations over graph-core's
+     * findByIdNoRelations (abridgedObject), written by the domain serialiser
+     * as /query/{id} writes an object. Java leaves it out of its published
+     * description; the site does not call it.
+     */
+    handler: async (request) => {
+      const found = await abridgedObject(request, pathId(rawSegment(request, 5)));
+      if ('status' in found) return found;
+      return {
+        status: 200,
+        serialised: writeDomain(found.object, ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/query/{id}/more',
+    sample: 'R-HSA-70486',
+    differs: [/^\/ContentService\/data\/query\/[^/]+\/more: \.url: /],
+    /**
+     * QueryObjectController.findEnhancedObjectByIdMore, kept by Java for old
+     * callers and left out of its description: /query/enhanced/v2/{id} with
+     * its flags fixed (incoming relationships, no summary, no disease data
+     * unless only that finds the object) and no parameter read.
+     */
+    handler: async (request) =>
+      enhancedAnswer(request, pathId(rawSegment(request, 4)), {
+        fetchIncomingRelationships: true,
+        summariseReferenceEntity: false,
+        includeDisease: false,
+      }),
   },
   {
     path: '/ContentService/data/query/{id}/stId',
@@ -668,16 +778,13 @@ export const dataQueryEndpoints: Endpoint[] = [
      * not bring, as graph-core's LazyFetchAspect does (lazyRelationship).
      *
      * No object is Java's 404 naming the id; no getter, or one returning
-     * nothing, its 404 naming the attribute and the object's class. Not
+     * nothing, its 404 naming the attribute and the object's class. Never
      * /query/abridged/{id}, /query/enhanced/{id} or /query/{id}/more, Java's
-     * more specific mappings, which are no attribute: nginx and the dev proxy
-     * never send those here.
+     * more specific mappings, which come first.
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
       const attribute = pathId(rawSegment(request, 5));
-      if (raw === 'abridged' || raw === 'enhanced' || attribute === 'more')
-        return springNotFound(request);
       const object = await findObject(raw);
       if (!object) return notFound(request, `Id: ${raw} has not been found in the System`);
       return attributeAnswer(request, object, attribute);
