@@ -66,6 +66,9 @@
                     @if (readout.basis === 'proxy') {
                       (read from its producing reactions)
                     }
+                    @if (readout.basis === 'set_members') {
+                      (read through its member species)
+                    }
                     @if (readout.railed) {
                       — at the model's bound, a switch state rather than a measured level
                     }
@@ -95,6 +98,9 @@
                     {{ readout.call === 'normal' ? 'no change' : readout.call }}
                     @if (readout.basis === 'proxy') {
                       (from its producing reactions)
+                    }
+                    @if (readout.basis === 'set_members') {
+                      (through its member species)
                     }
                   </span>
                 }

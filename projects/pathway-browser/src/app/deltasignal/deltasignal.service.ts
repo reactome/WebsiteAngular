@@ -14,10 +14,18 @@ import {
   DeltaSignalReadoutState,
   DeltaSignalScopeResponse,
   DeltaSignalScopeState,
+  ContentServiceEntity,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
 import { buildObservations, groupChangesByReactomeId, resultRows } from './deltasignal.utils';
+import { CONTENT_SERVICE } from '../../environments/environment';
+
+// specs/020: the member closure may take one ContentService request per set
+// node in the tree. Past this many, member resolution is abandoned entirely:
+// a partial closure is a different protocol than the bench's, so it is never
+// sent.
+const MEMBER_FETCH_CAP = 12;
 
 const IDLE_READOUTS: DeltaSignalReadoutState = {
   status: 'idle',
@@ -291,6 +299,7 @@ export class DeltaSignalService {
     const activities = this.result()?.node_activities;
     if (!network || !activities) return;
     const ids = [...new Set(network.nodes.map((node) => node.reactome_id).filter((id) => !!id))];
+    this.membersTried.clear(); // a new solve may resolve differently (specs/020)
     this.readoutState.set({ ...IDLE_READOUTS, status: 'loading' });
     try {
       const response = await this.requestReadouts(networkId, ids, activities, observations);
@@ -326,19 +335,45 @@ export class DeltaSignalService {
     const state = this.readoutState();
     const activities = this.result()?.node_activities;
     if (!reactomeId || !network || !activities || state.status !== 'ready') return;
-    if (state.byId.has(reactomeId)) return;
+    const cached = state.byId.get(reactomeId);
+    if (cached && cached.basis !== 'none') return;
+    if (cached && this.membersTried.has(reactomeId)) return;
     const observations = buildObservations(this.perturbations());
     try {
-      const response = await this.requestReadouts(
-        network.network_id,
-        [reactomeId],
-        activities,
-        observations
-      );
-      const entry = response.results[0];
+      let entry = cached ?? null;
+      if (!entry) {
+        const response = await this.requestReadouts(
+          network.network_id,
+          [reactomeId],
+          activities,
+          observations
+        );
+        entry = response.results[0] ?? null;
+      }
+      // specs/020: an entity nothing resolved may be a curated set, which the
+      // measured ladder reads through its member species — the bench got the
+      // member closure from Neo4j; the browser gets the same closure from the
+      // ContentService. Tried at most once per entity per solve.
+      if (entry?.basis === 'none' && !this.membersTried.has(reactomeId)) {
+        this.membersTried.add(reactomeId);
+        const members = await this.fetchMemberClosure(reactomeId);
+        if (members && members.length > 0) {
+          const response = await firstValueFrom(
+            this.http.post<DeltaSignalReadoutsResponse>('/api/readouts', {
+              network_id: network.network_id,
+              activities,
+              pinned: Object.keys(observations),
+              queries: [{ id: reactomeId, stable_ids: [reactomeId], members }],
+            })
+          );
+          entry = response.results[0] ?? entry;
+        }
+      }
       if (this.result()?.node_activities !== activities) return; // a newer solve took over
       const current = this.readoutState();
-      if (!entry || current.status !== 'ready' || current.byId.has(reactomeId)) return;
+      if (!entry || current.status !== 'ready') return;
+      const existing = current.byId.get(reactomeId);
+      if (existing && existing.basis !== 'none') return;
       this.readoutState.set({
         ...current,
         byId: new Map([...current.byId, [reactomeId, entry]]),
@@ -346,6 +381,50 @@ export class DeltaSignalService {
     } catch {
       // The batch stays valid; the selection block simply has no readout.
     }
+  }
+
+  // Entities whose member resolution already ran this solve (specs/020 FR-002).
+  private membersTried = new Set<string>();
+
+  /**
+   * The bench's set-member closure (neo4j_set_member_stids: every node over
+   * hasMember|hasCandidate, every level, distinct), walked through the
+   * ContentService. Only set-classed members are fetched further — in
+   * Reactome only an EntitySet carries those relationships, so the class test
+   * is the edge-presence test. Returns null when the entity is not a set,
+   * when the service fails, or when the walk would exceed the fetch cap —
+   * never a partial closure.
+   */
+  private async fetchMemberClosure(reactomeId: string): Promise<string[] | null> {
+    const members: string[] = [];
+    const seen = new Set<string>([reactomeId]);
+    const queue = [reactomeId];
+    let fetches = 0;
+    let isSet = false;
+    while (queue.length > 0) {
+      if (fetches >= MEMBER_FETCH_CAP) return null; // abandon, never truncate
+      const stId = queue.shift();
+      if (stId === undefined) break;
+      fetches += 1;
+      let entity: ContentServiceEntity;
+      try {
+        entity = await firstValueFrom(
+          this.http.get<ContentServiceEntity>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
+        );
+      } catch {
+        return null;
+      }
+      const children = [...(entity.hasMember ?? []), ...(entity.hasCandidate ?? [])];
+      if (stId === reactomeId && children.length === 0) return null; // not a set
+      if (stId === reactomeId) isSet = true;
+      for (const child of children) {
+        if (!child.stId || seen.has(child.stId)) continue;
+        seen.add(child.stId);
+        members.push(child.stId);
+        if (child.schemaClass?.includes('Set')) queue.push(child.stId);
+      }
+    }
+    return isSet ? members : null;
   }
 
   async loadScope(): Promise<void> {

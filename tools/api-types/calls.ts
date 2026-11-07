@@ -51,6 +51,7 @@ const WEB = 'projects/website-angular/src';
 
 /** Where each name a type uses comes from, repository-relative, without extension. */
 export const TYPES: Record<string, string> = {
+  ContentServiceEntity: `${PB}/deltasignal/deltasignal.model`,
   DatabaseObject: `${PB}/model/graph/database-object.model`,
   JsogObject: `${PB}/utils/JSOGDeserializer`,
   Pathway: `${PB}/model/graph/event/pathway.model`,
@@ -96,6 +97,7 @@ const UPLOAD = 'an upload is stored for good, so none is recorded';
 // prettier-ignore
 export const CALLS: Call[] = [
   // pathway-browser
+  { file: `${PB}/deltasignal/deltasignal.service.ts`, method: 'fetchMemberClosure', http: 'GET', route: '/data/query/enhanced/{id}', type: 'ContentServiceEntity' },
   { file: `${PB}/details/common/reaction-diagram/reaction-diagram.component.ts`, method: 'ngAfterViewInit', http: 'GET', route: '/exporter/reaction/{id}/diagram', type: 'ReactionJson' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', type: 'any' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', n: 2, http: 'GET', route: '/data/query/{id}', type: 'any' },
