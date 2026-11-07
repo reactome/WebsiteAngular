@@ -53,12 +53,12 @@ export type PaletteGroup = 'sequential' | 'diverging' | 'continuous';
 /**
  * The palette an analysis type gets when the user has not chosen one.
  *
- * Every type in Analysis.TYPES needs an entry. GSA_STATISTICS had none, and
+ * Every type in ANALYSIS_TYPES needs an entry. GSA_STATISTICS had none, and
  * because both lookups in `palette` below carried a `!`, the miss produced an
  * undefined palette instead of an error. Every consumer calls .scale() on it,
  * so one missing entry blanked the diagram, the event hierarchy, the Voronoi
  * view and the results table together -- which is what a PADOG run did.
- * analysis-palette.spec.ts walks Analysis.TYPES so the next added type fails a
+ * analysis-palette.spec.ts walks ANALYSIS_TYPES so the next added type fails a
  * test rather than a render.
  */
 export const TYPE_DEFAULT_PALETTE = new Map<Analysis.Type, PaletteName>([

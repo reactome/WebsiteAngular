@@ -266,6 +266,14 @@ const READER_ALIASES = [
   'Search.Result',
   'SearchResult',
   'ShownGroup',
+  // The analysis service's answers (T027), by the names the pathway browser reads them as.
+  'Analysis.FoundEntities',
+  'Analysis.NotFoundIdentifier',
+  'Analysis.Pathway',
+  'Analysis.Resource',
+  'Analysis.Result',
+  'Analysis.Type',
+  'NotFoundIdentifier',
 ];
 
 /**
@@ -282,8 +290,6 @@ const NAMESAKES: Record<string, string> = {
     "a participant of a Rhea reaction, as Rhea's own service answers it",
   'projects/website-angular/src/app/about/release-calendar/release-calendar.component.ts: interface Release':
     "the site's release calendar, written in its own content; not the graph's Release",
-  'projects/pathway-browser/src/app/model/analysis.model.ts: interface Analysis.Pathway':
-    "a pathway of an analysis result, the analysis service's answer",
   'projects/pathway-browser/src/app/reacfoam/svg-exporter.service.ts: interface SvgDecoration.Output':
     'an output arrow drawn on an exported species overview',
 };
