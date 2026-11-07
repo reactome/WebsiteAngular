@@ -333,7 +333,7 @@ export function diagramExportRequest(
  * asked, in lower case, svg's as `svg+xml` (ImageExporterController), with
  * UTF-8 on every type, images included: the service forces the encoding.
  */
-export function javaImageType(ext: string) {
+function javaImageType(ext: string) {
   const type = ext.toLowerCase();
   return `image/${type === 'svg' ? 'svg+xml' : type};charset=UTF-8`;
 }
@@ -342,7 +342,7 @@ export function javaImageType(ext: string) {
  * RasterArgs.scale: a quality of 1 to 10 as a factor of the layout's size,
  * 0.1 at 1, 1 at 5 (the default) and 3 at 10, in a straight line between.
  */
-export function qualityFactor(quality: number) {
+function qualityFactor(quality: number) {
   return quality < 5 ? ((quality - 1) / 4) * 0.9 + 0.1 : ((quality - 5) / 5) * 2 + 1;
 }
 
@@ -352,7 +352,7 @@ export function qualityFactor(quality: number) {
  * scale 1 being its layout's size in the website's look -- within what the
  * render service draws, 0.25 to 2, to three places so one quality is one URL.
  */
-export function renderScale(quality: number) {
+function renderScale(quality: number) {
   return Math.round(Math.min(2, Math.max(0.25, qualityFactor(quality))) * 1000) / 1000;
 }
 
@@ -364,7 +364,7 @@ const REACTION_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
  * (`layout=reaction`), as Java's reaction exporter drew it, and the quality
  * as a scale for the formats with pixels. jpg is jpeg to the render service.
  */
-export function reactionExportRequest(stId: string, format: string, quality: number) {
+function reactionExportRequest(stId: string, format: string, quality: number) {
   const url = new URL(`${RENDER_SERVICE}/render/${stId}.${format === 'jpg' ? 'jpeg' : format}`);
   url.searchParams.set('layout', 'reaction');
   if (format !== 'svg') url.searchParams.set('scale', String(renderScale(quality)));
