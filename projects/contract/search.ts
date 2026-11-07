@@ -205,6 +205,11 @@ interface DeletedEntry extends Omit<EntryBase, 'deleted'> {
   deleted: true;
   type: string;
   stId: Highlighted;
+  /**
+   * Why it was deleted, the display name of its reason. Node's own: Java
+   * reads a field the index does not have, so never writes it.
+   */
+  reason?: string;
   explanation?: string;
   date?: EpochMillis;
   replacementDbIds?: Long[];

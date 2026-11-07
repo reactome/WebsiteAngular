@@ -135,7 +135,10 @@ const SOLR_FIELDS: Record<string, string> = {
   ICON_PHYSICAL_ENTITIES: 'iconPhysicalEntities',
   ICON_EHLDS: 'iconEhlds',
   DELETED: 'deleted',
-  DELETED_REASON: 'deletedReason',
+  // Java names `deletedReason`, which the index does not have; its field is
+  // `reason` (search-indexer's DeletedDocument and schema). A declared
+  // difference: documentation/declared-differences.md.
+  DELETED_REASON: 'reason',
   DELETED_EXPLANATION: 'explanation',
   DELETED_DATE: 'date',
   DELETED_REPLACEMENT_DB_IDS: 'replacementDbIds',
