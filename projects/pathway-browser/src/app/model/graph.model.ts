@@ -7,7 +7,8 @@ export namespace Graph {
   export interface Data {
     dbId: number;
     stId: string;
-    speciesName: string;
+    /** A reaction's layout is without one where the graph has none. */
+    speciesName?: string;
     edges: Edge[];
     nodes: Node[];
     /** Only on a diagram with subpathways (12 of 42). */

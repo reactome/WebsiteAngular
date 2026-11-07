@@ -13,8 +13,9 @@ import { Style } from 'ngx-reactome-cytoscape-style';
 import cytoscape from 'cytoscape';
 import { DiagramService } from '../../../services/diagram.service';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
-import { ReactionJson } from '../../../model/reaction-diagram.model';
+import type { ReactionLayout } from '../../../../../../contract/reaction-layout.ts';
 import { canonicalReaction } from './canonical-reaction';
+import { drawableReaction } from './drawable-reaction';
 
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
@@ -53,20 +54,13 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
     this.reactomeStyle = new Style(container);
 
     this.http
-      .get<ReactionJson>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
-      .subscribe(({ diagram: layout, graph: answered }) => {
+      .get<ReactionLayout>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
+      .subscribe((layout) => {
         // A reaction's layout leaves out the lists it does not have. Its ids and
         // node order vary from request to request, so it is put in one form
         // before it is drawn, and those no longer change the picture.
-        const { diagram, graph } = canonicalReaction(
-          {
-            ...layout,
-            links: layout.links ?? [],
-            shadows: layout.shadows ?? [],
-            compartments: layout.compartments ?? [],
-          },
-          answered
-        );
+        const drawable = drawableReaction(layout);
+        const { diagram, graph } = canonicalReaction(drawable.diagram, drawable.graph);
 
         const elements = this.diagramService.diagramFromData(diagram, graph);
 

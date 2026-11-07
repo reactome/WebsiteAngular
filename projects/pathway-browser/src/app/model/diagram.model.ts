@@ -48,8 +48,6 @@ export interface ReactionShape {
 }
 
 export interface ConnectorHolder {
-  [k: string]: EdgeConnector[] | undefined;
-
   /** Left out by the exporter for a black box event without inputs. */
   inputs?: EdgeConnector[];
   outputs?: EdgeConnector[];
@@ -108,8 +106,15 @@ export interface Node extends Entity {
   trivial?: boolean;
 }
 
-/** A compartment as the diagram draws it: a shape of the layout, not the graph's Compartment. */
-export interface DiagramCompartment extends Entity {
+/**
+ * A compartment as the diagram draws it: a shape of the layout, not the graph's
+ * Compartment. One an exporter's reaction layout adds from the GO tree, to hold
+ * others, has no object in the graph, so no reactomeId or schemaClass.
+ */
+export interface DiagramCompartment
+  extends
+    Omit<Entity, 'reactomeId' | 'schemaClass'>,
+    Partial<Pick<Entity, 'reactomeId' | 'schemaClass'>> {
   componentIds: number[];
   prop: Prop;
   insets?: Prop;
@@ -148,12 +153,15 @@ interface Shape {
   /** Not in the exporter's reaction layouts, which give only a and b. */
   centre?: Position;
   empty: boolean;
-  s: string;
+  /** A box's text: left out by the exporter's reaction layouts where it has none. */
+  s?: string;
 }
 
 interface Attachment {
-  description: string;
-  label: string;
+  /** Not in the exporter's reaction layouts. */
+  description?: string;
+  /** Left out by the exporter's reaction layouts where the modification has none. */
+  label?: string;
   reactomeId: number;
   shape: Shape;
 }

@@ -13,7 +13,7 @@ import type { Bounds } from './bounds.ts';
 import { reactionRenderableClass } from './inputs.ts';
 import type { CompartmentGlyph, EntityGlyph, ReactionGlyph } from './model.ts';
 import { box } from './shapes.ts';
-import type { Coordinate, Shape, Stoichiometry } from './shapes.ts';
+import type { ConnectorType, Coordinate, Shape, Stoichiometry } from './shapes.ts';
 import type { Segment } from './sizes.ts';
 
 /** The (14, 18) every compartment's label is moved by (GWU_CORRECTION). */
@@ -42,7 +42,7 @@ interface DiagramObject {
 
 interface DiagramConnector {
   edgeId: number;
-  type: string | null;
+  type: ConnectorType | null;
   segments: Segment[];
   endShape: Shape | null;
   stoichiometry: Stoichiometry | null;
