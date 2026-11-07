@@ -26,6 +26,13 @@ export const settings = {
    * request; none set, SBML answers 503 rather than another implementation.
    */
   sbmlService: (): string => process.env['SBML_SERVICE'] || '',
+  /**
+   * The release's diagram files, `{stId}.json`, as the content service's
+   * diagramJsonFolder holds them (an event's SBGN, sbgn-exporter spec 001
+   * T018), read per request; none set, a pathway's SBGN answers 503 rather
+   * than another implementation or a fetch.
+   */
+  diagramFiles: (): string => process.env['DIAGRAM_FILES'] || '',
 
   /** The Solr core's URL, without credentials (solr.ts refuses one with them). */
   solrUrl: (): string => envSetting('SOLR_URL'),

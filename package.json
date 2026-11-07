@@ -105,6 +105,7 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "rxjs": "~7.8.0",
+    "sbgn-exporter": "github:reactome/sbgn-exporter#2144a05f6fb60d82d4a32ce6eda6f75db3f3e77a",
     "svg-pan-zoom": "^3.6.1",
     "svgcanvas": "^2.6.0",
     "swagger-ui-dist": "^5.34.0",

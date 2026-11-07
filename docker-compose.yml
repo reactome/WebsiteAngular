@@ -304,6 +304,10 @@ services:
       - CONTENT_NODE_ENV_FILE=/run/secrets/content-node.env
       # The SBML service (java-library, spec 015): node is its only client.
       - SBML_SERVICE=http://127.0.0.1:4360
+      # An event's SBGN (sbgn-exporter spec 001 T018) reads a pathway's layout
+      # from the release's diagram files, {stId}.json, in DIAGRAM_FILES: mount
+      # the release's diagram folder read-only and name it here. Unset, a
+      # pathway's SBGN answers 503; a reaction's needs no file.
     # Runs as the owner of that file, which is 0600 and should stay that way.
     # The image's own `node` user is uid 1000 and cannot read it, so the service
     # started, reported "graph credentials: MISSING", and answered 500 -- a
