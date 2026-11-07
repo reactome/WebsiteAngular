@@ -2,7 +2,7 @@ import { computed, effect, Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { CONTENT_SERVICE } from '../../environments/environment';
-import { OrthologousMap, Species } from '../model/graph/species.model';
+import { ListedSpecies, OrthologousMap, ShownSpecies, Species } from '../model/graph/species.model';
 import { Event } from '../model/graph/event/event.model';
 import { UrlStateService } from './url-state.service';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -19,7 +19,7 @@ export class SpeciesService {
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
   private readonly _ORTHOLOGIES = `${CONTENT_SERVICE}/data/orthologies/ids/species/`;
 
-  defaultSpecies: Species = {
+  defaultSpecies: ShownSpecies = {
     displayName: 'Homo sapiens',
     taxId: '9606',
     dbId: 48887,
@@ -28,7 +28,7 @@ export class SpeciesService {
     schemaClass: 'Species',
   };
 
-  readonly currentSpecies = signal<Species>(this.defaultSpecies);
+  readonly currentSpecies = signal<ShownSpecies>(this.defaultSpecies);
 
   private allSpecies = rxResource({
     params: () => null,
@@ -122,7 +122,7 @@ export class SpeciesService {
     );
   }
 
-  private setShortName(s: Species): Species {
+  private setShortName(s: Species): ListedSpecies {
     // A one-word name has no species part, and used to end in "undefined".
     const [genus = '', species = '', ..._] = s.displayName.split(' ');
     return { ...s, shortName: `${genus.charAt(0)}. ${species}` };

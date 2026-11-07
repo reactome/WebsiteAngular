@@ -7,12 +7,11 @@
   "GET /data/participants/{id}/referenceEntities as ReferenceEntity[]": 138,
   "GET /data/pathways/low/entity/{id} as Pathway[]": 194,
   "GET /data/pathways/low/entity/{id} as { stId: string; displayName: string; speciesName: string; hasDiagram?: boolean; releaseStatus?: string }[]": 1059,
-  "GET /data/pathways/top/{taxId} as TopLevelPathway[]": 170,
+  "GET /data/pathways/top/{taxId} as TopLevelPathway[]": 167,
   "GET /data/person/{id} as { displayName?: string }": 15,
   "GET /data/query/enhanced/v2/{id} as JsogObject<DatabaseObject>": 658,
   "GET /data/query/enhanced/{id} as { summation?: { text?: string }[] }": 61,
   "GET /data/query/{id} as { displayName?: string; name?: string[] }": 221,
-  "GET /data/species/main as Species[]": 16,
   "GET /exporter/reaction/{id}/diagram as ReactionJson": 768,
   "POST /data/orthologies/ids/species/{dbId} as { [p: string]: SelectableObject }": 3,
   "POST /interactors/psicquic/molecules/{resource}/details as Interactors": 371

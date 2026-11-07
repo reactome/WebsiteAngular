@@ -8,13 +8,17 @@ import {
   MatTreeNodeToggle,
 } from '@angular/material/tree';
 import { sortByYearDescending } from '../../../services/utils';
-import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
 import { Publication } from '../../../model/graph/publication/publication.model';
 import { PublicationComponent } from '../publication/publication.component';
 import { MatIcon } from '@angular/material/icon';
 import { MatButton } from '@angular/material/button';
 
-type ReferenceHolder = { literatureReference: (LiteratureReference | Publication)[] };
+/**
+ * What holds references: a summation, a catalyst's or a regulation's
+ * reference. A summation's list is left out of the flat view, and the
+ * callers pass a holder only when its list has entries.
+ */
+type ReferenceHolder = { literatureReference?: Publication[] };
 
 /**
  * A node in the tree: either the holder at the root or one of its references.
@@ -24,7 +28,7 @@ type ReferenceHolder = { literatureReference: (LiteratureReference | Publication
  * //@ts-ignore hid. The suppression only covered the line directly beneath it,
  * so it stopped working the moment the expression was wrapped onto two lines.
  */
-type ReferenceNode = ReferenceHolder | LiteratureReference | Publication;
+type ReferenceNode = ReferenceHolder | Publication;
 
 const hasReferences = (node: ReferenceNode): node is ReferenceHolder =>
   'literatureReference' in node && Array.isArray(node.literatureReference);
@@ -47,12 +51,13 @@ const hasReferences = (node: ReferenceNode): node is ReferenceHolder =>
 export class RefsTreeComponent {
   readonly referenceHolder = input.required<ReferenceHolder, ReferenceHolder>({
     transform: (holder: ReferenceHolder) => {
-      holder.literatureReference = sortByYearDescending(holder.literatureReference);
+      if (holder.literatureReference)
+        holder.literatureReference = sortByYearDescending(holder.literatureReference);
       return holder;
     },
   });
   readonly title = computed(
-    () => `${this.referenceHolder().literatureReference.length} references`
+    () => `${this.referenceHolder().literatureReference?.length ?? 0} references`
   );
 
   dataSource = new MatTreeNestedDataSource<ReferenceNode>();
@@ -62,8 +67,8 @@ export class RefsTreeComponent {
   }
 
   childrenAccessor = (node: ReferenceNode): ReferenceNode[] =>
-    hasReferences(node) ? node.literatureReference : [];
+    hasReferences(node) ? (node.literatureReference ?? []) : [];
 
   hasChild = (_: number, node: ReferenceNode) =>
-    hasReferences(node) && node.literatureReference.length > 0;
+    hasReferences(node) && (node.literatureReference?.length ?? 0) > 0;
 }

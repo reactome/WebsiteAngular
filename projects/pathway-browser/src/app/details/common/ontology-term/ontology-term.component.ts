@@ -3,10 +3,15 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { TitleCasePipe } from '@angular/common';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
 
+/**
+ * A GO term or a term of an external ontology, as this link shows it. A term
+ * of a class never recorded (an anatomy term, a cell type) may lack its link
+ * and its database, as the contract says.
+ */
 export type OntologyTerm = DatabaseObject & {
   name?: string[] | string;
-  url: string;
-  databaseName: string;
+  url?: string;
+  databaseName?: string;
   definition?: string;
   identifier?: string;
   accession?: string;
@@ -23,12 +28,11 @@ export class OntologyTermComponent {
   readonly titleCase = input<boolean>(false);
   readonly displayId = input<boolean>(true);
 
-  readonly name = computed(
-    () =>
-      (this.term().name instanceof Array ? this.term().name![0] : (this.term().name as string)) ||
-      this.term().displayName
-  );
-  readonly id = computed(() => this.term().identifier! || this.term().accession!);
+  readonly name = computed(() => {
+    const name = this.term().name;
+    return (Array.isArray(name) ? name[0] : name) || this.term().displayName;
+  });
+  readonly id = computed(() => this.term().identifier || this.term().accession);
 
   constructor() {}
 }

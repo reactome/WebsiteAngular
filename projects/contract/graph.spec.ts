@@ -70,8 +70,8 @@ function described(file: string, source = readFileSync(file, 'utf8')): Described
         );
     } else if (ts.isTypeAliasDeclaration(statement)) {
       const type = checker.getTypeAtLocation(statement.name);
-      if (!type.isUnion()) continue;
-      const members = type.types.map(schemaClass);
+      // A union cut to one class is no union to the checker, and is held all the same.
+      const members = (type.isUnion() ? type.types : [type]).map(schemaClass);
       if (members.every((member): member is string => member !== undefined))
         unions.set(statement.name.text, [...members].sort());
     }
@@ -83,12 +83,17 @@ function described(file: string, source = readFileSync(file, 'utf8')): Described
 const written = (name: string) =>
   (snapshot.json[name] ?? []).map((at) => snapshot.properties[at]?.[0] ?? `#${at}`).sort();
 
-/** The concrete classes below an abstract one. */
-const below = (name: string) =>
-  snapshot.store
+/**
+ * The concrete classes below a class: an abstract one's, or, for a union named
+ * `Any` and a concrete class (`AnyTaxon`), that class and its subclasses.
+ */
+const below = (union: string) => {
+  const name = union.startsWith('Any') && union.slice(3) in snapshot.json ? union.slice(3) : union;
+  return snapshot.store
     .filter(([, ancestors]) => ancestors.includes(name))
     .map(([concrete]) => concrete)
     .sort();
+};
 
 /** Every way the contract and the snapshot disagree. */
 function disagreements({ classes, unions }: Described): string[] {
@@ -124,6 +129,21 @@ describe("the graph's classes in the contract", () => {
   it('are read: classes and unions both', () => {
     expect([...now.classes.keys()]).toContain('Person');
     expect([...now.unions.keys()]).toContain('Publication');
+  });
+
+  it('are all read: one class for each `schemaClass` the module writes', () => {
+    expect(now.classes.size).toBe(contract.match(/^ {2}schemaClass: '/gm)?.length);
+  });
+
+  it('fail on a union of a class and its subclasses that misses one', () => {
+    expect(
+      disagreements(
+        swap(
+          'AnyTaxon<R extends Ref> = Taxon<R> | Species<R>;',
+          'AnyTaxon<R extends Ref> = Taxon<R>;'
+        )
+      )
+    ).toEqual(['AnyTaxon: holds Taxon; the snapshot has Species, Taxon']);
   });
 
   it('describe exactly what the snapshot writes for each class, and each union exactly its classes', () => {

@@ -142,3 +142,161 @@ export interface ReferenceDatabase<R extends Ref> extends DatabaseObjectFields, 
   resourceIdentifier: string;
   identifiersPrefix: string;
 }
+
+// T025c: what the graph's events and entities are annotated with: species and
+// taxa, compartments and GO terms, the external ontologies, summations,
+// figures and review status. Closed under their relations: none leads to an
+// event or an entity.
+
+/** A taxon, or a species, which is one. */
+interface Taxon<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  schemaClass: 'Taxon';
+  /** Never recorded as a class of its own: as the snapshot writes it, each field may be left out. */
+  name?: string[];
+  taxId?: string;
+  crossReference?: (DatabaseIdentifier<R> | R)[];
+  superTaxon?: AnyTaxon<R> | R;
+}
+
+/**
+ * A species. Measured over 11,134 in the enhanced query's recordings and
+ * 8,580 elsewhere: its names, taxon id and abbreviation always; a
+ * cross-reference on 1,007; never its super-taxon.
+ */
+export interface Species<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  schemaClass: 'Species';
+  name: string[];
+  taxId: string;
+  abbreviation: string;
+  crossReference?: (DatabaseIdentifier<R> | R)[];
+  superTaxon?: AnyTaxon<R> | R;
+}
+
+/** A taxon or a species: what a super-taxon is. @discriminator schemaClass */
+export type AnyTaxon<R extends Ref> = Taxon<R> | Species<R>;
+
+/** What every GO term writes. */
+interface GoTermFields<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  accession: string;
+  databaseName: string;
+  definition: string;
+  name: string;
+  url: string;
+  /** Never recorded. */
+  referenceDatabase?: ReferenceDatabase<R> | R;
+}
+
+/** What a cellular component, and so a compartment, writes besides a GO term's: never recorded, each may be left out. */
+interface CellularComponentFields<R extends Ref> extends GoTermFields<R> {
+  componentOf?: (AnyGO_CellularComponent<R> | R)[];
+  hasPart?: (AnyGO_CellularComponent<R> | R)[];
+  instanceOf?: (AnyGO_CellularComponent<R> | R)[];
+  surroundedBy?: (AnyGO_CellularComponent<R> | R)[];
+}
+
+/**
+ * GO terms. Measured over 3,282 biological processes, 1,767 compartments,
+ * 57 molecular functions and 2 cellular components: accession, database,
+ * definition, name and link always; an EC number on 30 molecular functions.
+ */
+export interface GO_BiologicalProcess<R extends Ref> extends GoTermFields<R> {
+  schemaClass: 'GO_BiologicalProcess';
+}
+
+export interface GO_MolecularFunction<R extends Ref> extends GoTermFields<R> {
+  schemaClass: 'GO_MolecularFunction';
+  ecNumber?: string;
+}
+
+interface GO_CellularComponent<R extends Ref> extends CellularComponentFields<R> {
+  schemaClass: 'GO_CellularComponent';
+}
+
+/** A cellular component a physical entity is in. */
+export interface Compartment<R extends Ref> extends CellularComponentFields<R> {
+  schemaClass: 'Compartment';
+}
+
+/** A cellular component or a compartment. @discriminator schemaClass */
+type AnyGO_CellularComponent<R extends Ref> = GO_CellularComponent<R> | Compartment<R>;
+
+/**
+ * What every term of an external ontology writes. Measured over 77 diseases,
+ * 22 evidence types and 1 PSI-MOD term: a disease's database, identifier,
+ * names and link always, its definition on all but 2, synonyms on 61; an
+ * evidence type has only its names. Anatomy, cell types and Sequence
+ * Ontology terms are never recorded, so for them each field may be left out.
+ */
+interface ExternalOntologyFields<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  databaseName?: string;
+  definition?: string;
+  identifier?: string;
+  name?: string[];
+  synonym?: string[];
+  url?: string;
+  /** Never recorded. */
+  instanceOf?: (ExternalOntology<R> | R)[];
+  /** Never recorded. */
+  referenceDatabase?: ReferenceDatabase<R> | R;
+}
+
+export interface Anatomy<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'Anatomy';
+}
+
+export interface CellType<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'CellType';
+}
+
+export interface Disease<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'Disease';
+  databaseName: string;
+  identifier: string;
+  name: string[];
+  url: string;
+}
+
+interface EvidenceType<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'EvidenceType';
+  name: string[];
+}
+
+/** A PSI-MOD term, as a modification names it. Recorded once, with every field. */
+export interface PsiMod<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'PsiMod';
+  databaseName: string;
+  definition: string;
+  identifier: string;
+  name: string[];
+  url: string;
+  label: string;
+}
+
+interface SequenceOntology<R extends Ref> extends ExternalOntologyFields<R> {
+  schemaClass: 'SequenceOntology';
+}
+
+/** @discriminator schemaClass */
+type ExternalOntology<R extends Ref> =
+  Anatomy<R> | CellType<R> | Disease<R> | EvidenceType<R> | PsiMod<R> | SequenceOntology<R>;
+
+/** An event's or an entity's description. Measured over 914: the text always. */
+export interface Summation<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  schemaClass: 'Summation';
+  text: string;
+  /** In every enhanced answer; left out of the flat view. */
+  literatureReference?: (Publication<R> | R)[];
+}
+
+/** An illustration. Measured over 668: its link always. */
+export interface Figure<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  schemaClass: 'Figure';
+  url: string;
+}
+
+/** How far an event's curation has been reviewed. Measured over 1,100: its definition and names always. */
+export interface ReviewStatus<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+  schemaClass: 'ReviewStatus';
+  definition: string;
+  name: string[];
+}

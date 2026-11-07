@@ -15,7 +15,7 @@ import type { DotLottie } from '@lottiefiles/dotlottie-web';
 import { MatIcon } from '@angular/material/icon';
 import { UrlStateService } from '../../../services/url-state.service';
 import { AnalysisService } from '../../../services/analysis.service';
-import { Species } from '../../../model/graph/species.model';
+import { ListedSpecies } from '../../../model/graph/species.model';
 import { SpeciesService } from '../../../services/species.service';
 import { FormControl } from '@angular/forms';
 import { LottieService } from '../../../services/lottie.service';
@@ -56,12 +56,12 @@ export class SpeciesAnalysisComponent {
   readonly comparableSpecies = computed(() =>
     (this.speciesService.allShortenSpecies() || []).filter((s) => s.taxId !== '9606')
   );
-  readonly selectedSpecies = signal<Species | null>(null);
-  speciesControl = new FormControl<Species | null>(null, (control) =>
+  readonly selectedSpecies = signal<ListedSpecies | null>(null);
+  speciesControl = new FormControl<ListedSpecies | null>(null, (control) =>
     control.getRawValue() !== undefined ? null : { invalid: true }
   );
 
-  toggle(species: Species): void {
+  toggle(species: ListedSpecies): void {
     this.selectedSpecies.update((s) => (s === species ? null : species));
   }
 
@@ -145,7 +145,7 @@ export class SpeciesAnalysisComponent {
     this.close.emit({ status: 'finished' });
   }
 
-  getSpeciesIconName(species: Species): string {
+  getSpeciesIconName(species: ListedSpecies): string {
     const normalizedTaxId = (species.taxId || '').replace(/\D/g, '');
     return this.availableSpeciesIcons.has(normalizedTaxId)
       ? normalizedTaxId
