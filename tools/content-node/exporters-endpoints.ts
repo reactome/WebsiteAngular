@@ -4,10 +4,21 @@
  * with the helpers only they use. Moved unchanged from service.ts.
  */
 import { get as httpGet, type IncomingMessage } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { toSbgn, SBGN_MEDIA_TYPE } from 'sbgn-exporter';
+import { reactionAnswer } from './reaction-layout/answer.ts';
 import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { read } from './graph.ts';
 import { settings } from './settings.ts';
-import { deepShare, javaError, notFound, springNotFound, unexpected } from './answers.ts';
+import {
+  deepShare,
+  javaError,
+  notFound,
+  springNotFound,
+  unexpected,
+  unexpectedFailure,
+} from './answers.ts';
 import {
   pathId,
   queryValues,
@@ -499,13 +510,134 @@ export function biopaxAnswer(
   return exportAnswer(request, 'biopax', BIOPAX, find, headersMs);
 }
 
-/** /exporter/event/{id}: BioPAX for `.biopax`, SBML for the rest (whose other extensions are Java's). */
+/** An event an SBGN file is asked for: as ExportEvent, and whether it is a pathway. */
+export interface SbgnEvent extends ExportEvent {
+  isPathway: boolean;
+}
+
+/** exportEvent, telling a pathway from a reaction: their layouts come from different places. */
+async function sbgnEvent(raw: string): Promise<SbgnEvent | null> {
+  const id = await graphCoreId(raw);
+  if (!id) return null;
+  const [found] = await read<SbgnEvent>(
+    `MATCH (n:DatabaseObject ${id.object}) RETURN n.stId AS stId, (n:Pathway OR n:ReactionLikeEvent) AS isEvent, (n:Pathway) AS isPathway LIMIT 1`,
+    id.params
+  );
+  return found ?? null;
+}
+
+/** Where an SBGN file's layout comes from: injected by the specs. */
+export interface SbgnLayouts {
+  /** The diagram that holds a pathway: graph-core's DiagramService, as Java asks it. */
+  diagramOf: (stId: string) => Promise<string | undefined>;
+  /** A diagram file's text, or null when the file is not there; undefined: no folder set. */
+  diagramFile: (diagramStId: string) => Promise<string | null | undefined>;
+  /** A reaction's layout, as /exporter/reaction/{id}/diagram answers it. */
+  reactionLayout: (stId: string) => Promise<unknown>;
+}
+
+/**
+ * A diagram file's text from DIAGRAM_FILES: null when it is not there,
+ * undefined when no folder is set.
+ */
+export async function readDiagramFile(diagramStId: string): Promise<string | null | undefined> {
+  const folder = settings.diagramFiles();
+  if (!folder) return undefined;
+  // A stable id, from the graph: no path can be built from it but the file's.
+  if (!/^R-[A-Z]{3,4}-\d+$/.test(diagramStId)) return null;
+  try {
+    return await readFile(join(folder, `${diagramStId}.json`), 'utf8');
+  } catch (failure) {
+    if ((failure as Failure).code === 'ENOENT') return null;
+    throw failure;
+  }
+}
+
+const SBGN_LAYOUTS: SbgnLayouts = {
+  diagramOf: async (stId) => (await diagramResult(stId))?.diagramStId,
+  diagramFile: readDiagramFile,
+  reactionLayout: async (stId) =>
+    (JSON.parse((await reactionAnswer(stId)).answer.serialised) as { diagram: unknown }).diagram,
+};
+
+/**
+ * An event's SBGN-ML, as Java's /exporter/event/{id}.sbgn answers it
+ * (SbxxExporterController.eventSBGN; sbgn-exporter spec 001, contracts
+ * website-endpoint.md): Java's 404 and 400, then the document sbgn-exporter
+ * writes from the event's layout -- a pathway's diagram file (the diagram
+ * that holds it), or a reaction's layout from the reaction-layout module --
+ * named by the event's stable id. Never another implementation's: no file
+ * folder set, a pathway's is a 503.
+ *
+ * A diagram file missing is Java's 500 for it: ExportManager.getDiagram
+ * returns null, SbgnConverter's constructor throws a NullPointerException,
+ * and GlobalExceptionHandler answers its own message for one, after the
+ * download's name was set (read from Java's code, T018: provoking it live
+ * would mail Java's error report). A layout the library refuses is the same
+ * unexpected 500: Java's converter would throw.
+ */
+export async function sbgnAnswer(
+  request: Request,
+  find: (raw: string) => Promise<SbgnEvent | null> = sbgnEvent,
+  layouts: SbgnLayouts = SBGN_LAYOUTS
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  if (name?.ext !== 'sbgn') return springNotFound(request);
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!event.isEvent || !event.stId)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a pathway or reaction`
+    );
+  const download = { 'Content-Disposition': `attachment; filename="${event.stId}.sbgn"` };
+  const failed = (): Answer => ({ ...unexpectedFailure(request), headers: download });
+  let layout: unknown;
+  if (event.isPathway) {
+    const diagramStId = await layouts.diagramOf(event.stId);
+    const text = diagramStId === undefined ? null : await layouts.diagramFile(diagramStId);
+    if (text === undefined)
+      return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The diagram files are not configured');
+    if (text === null) {
+      console.error(`SBGN for ${event.stId}: no diagram file for ${diagramStId ?? 'it'}`);
+      return failed();
+    }
+    layout = JSON.parse(text);
+  } else {
+    layout = await layouts.reactionLayout(event.stId);
+  }
+  try {
+    return {
+      status: 200,
+      // Java's type, as written: a Buffer body is sent as it is, a string's
+      // charset Express would rewrite.
+      type: SBGN_MEDIA_TYPE,
+      body: Buffer.from(toSbgn(layout as Parameters<typeof toSbgn>[0]), 'utf8'),
+      headers: download,
+    };
+  } catch (failure) {
+    console.error(`SBGN for ${event.stId}: ${(failure as Error).message}`);
+    return failed();
+  }
+}
+
+/**
+ * /exporter/event/{id}: BioPAX for `.biopax`, SBGN for `.sbgn`, SBML for the
+ * rest (whose other extension, the PDF, is Java's).
+ */
 export function eventExportAnswer(
   request: Request,
   find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
-  headersMs = EXPORT_HEADERS_MS
+  headersMs = EXPORT_HEADERS_MS,
+  sbgn: (request: Request) => Promise<Answer> = sbgnAnswer
 ): Promise<Answer> {
-  return splitExportName(pathId(rawSegment(request, 4)))?.ext === 'biopax'
+  const ext = splitExportName(pathId(rawSegment(request, 4)))?.ext;
+  if (ext === 'sbgn') return sbgn(request);
+  return ext === 'biopax'
     ? biopaxAnswer(request, find, headersMs)
     : sbmlAnswer(request, 'sbml', find, headersMs);
 }
@@ -523,8 +655,8 @@ async function exportAnswer(
   headersMs: number
 ): Promise<Answer> {
   const name = splitExportName(pathId(rawSegment(request, 4)));
-  // Another extension on /exporter/event/ is Java's (SBGN, the PDF), which
-  // nginx never sends here.
+  // Another extension on /exporter/event/ is Java's (the PDF), which nginx
+  // never sends here; SBGN is answered before this (sbgnAnswer).
   if (name?.ext !== ext) return springNotFound(request);
   const refused = longPastRange([name.identifier]);
   if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);

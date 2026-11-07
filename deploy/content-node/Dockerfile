@@ -17,24 +17,47 @@ WORKDIR /content-node
 # (neo4j-driver's ^6.2.0) would take the newest 6.x at build time, untested.
 # Their own dependencies still resolve at build time, within express's and
 # the driver's ranges.
+#
+# sbgn-exporter (an event's SBGN, its spec 001 T018) is no registry package:
+# the root pins a commit of its repository's dist branch, which the lockfile
+# records as a git URL. Its lockfile version, 0.0.0, would ask the registry for
+# a package of that name -- none, or someone else's -- so it is installed from
+# the lockfile's `resolved` commit instead, and anything else is refused. npm
+# writes that URL as git+ssh, and fetches a GitHub commit as its tarball over
+# HTTPS either way; the URL is rewritten to HTTPS and SSH is made to fail, so
+# the build needs no key. The dist branch's package has no dependencies, so
+# nothing of its command line's (the graph driver it lists, the comparison's
+# parser) comes with it: checked below.
 COPY package.json ./root-package.json
 COPY package-lock.json ./root-lock.json
 RUN node -e " \
       const root = require('./root-package.json'); \
       const lock = require('./root-lock.json'); \
       const dependencies = {}; \
-      for (const name of ['express', 'neo4j-driver', '@aws-sdk/client-sesv2']) { \
+      for (const name of ['express', 'neo4j-driver', '@aws-sdk/client-sesv2', 'sbgn-exporter']) { \
         if (!(root.dependencies ?? {})[name]) \
           throw new Error(name + ' is not a dependency of the root package'); \
         const locked = (lock.packages ?? {})['node_modules/' + name]; \
         if (!locked?.version) throw new Error(name + ' is not in the root lockfile'); \
         dependencies[name] = locked.version; \
       } \
+      const commit = /^git\\+(?:ssh:\\/\\/git@|https:\\/\\/)github\\.com\\/reactome\\/sbgn-exporter\\.git#([0-9a-f]{40})$/ \
+        .exec(lock.packages['node_modules/sbgn-exporter'].resolved ?? ''); \
+      if (!commit) throw new Error('sbgn-exporter is not locked to a commit of its repository'); \
+      dependencies['sbgn-exporter'] = 'git+https://github.com/reactome/sbgn-exporter.git#' + commit[1]; \
       require('node:fs').writeFileSync('package.json', JSON.stringify({ \
         name: 'reactome-content-node', private: true, dependencies \
       }, null, 2)); \
     " \
-    && npm install --omit=dev --no-audit --no-fund \
+    && GIT_SSH_COMMAND=false npm install --omit=dev --no-audit --no-fund \
+    && node -e " \
+      const pkg = require('./node_modules/sbgn-exporter/package.json'); \
+      if (Object.keys({ ...pkg.dependencies, ...pkg.optionalDependencies }).length) \
+        throw new Error('sbgn-exporter brings dependencies of its own'); \
+      for (const name of ['saxes', 'xmlchars']) \
+        if (require('node:fs').existsSync('node_modules/' + name)) \
+          throw new Error(name + ', the comparison\\'s, is installed'); \
+    " \
     && npm cache clean --force \
     && rm root-package.json root-lock.json
 
