@@ -158,6 +158,22 @@ export interface DeltaSignalReadoutRow {
   perturbed: boolean;
 }
 
+/**
+ * One level of a Reactome ContentService entity: what the specs/020 member
+ * walk reads (`/data/query/enhanced/{id}`). The answer carries far more; the
+ * index signature says so without naming it.
+ */
+type ContentServiceValue =
+  string | number | boolean | null | ContentServiceValue[] | { [key: string]: ContentServiceValue };
+
+export interface ContentServiceEntity {
+  stId?: string;
+  schemaClass?: string;
+  hasMember?: ContentServiceEntity[];
+  hasCandidate?: ContentServiceEntity[];
+  [key: string]: ContentServiceValue | ContentServiceEntity[] | undefined;
+}
+
 /** The served scope statement (deltasignal specs/143), rendered verbatim. */
 export interface DeltaSignalScopeResponse {
   status: 'success';

@@ -398,6 +398,138 @@ describe('DeltaSignalService readouts', () => {
     expect(service.scopeState().scope).toBeNull();
   });
 
+  const noneEntry = (id: string) => ({
+    status: 'success',
+    protocol,
+    missing_tables: [],
+    malformed_tables: [],
+    results: [{ id, mode: 'forms', basis: 'none', groups: [], pinned: [] }],
+  });
+
+  const enhancedUrl = (id: string) => (req: { url: string }) =>
+    req.url.endsWith(`/data/query/enhanced/${id}`);
+
+  const solveAndBatch = async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await solving;
+  };
+
+  it('resolves a set readout through the bench member closure (specs/020)', async () => {
+    await solveAndBatch();
+
+    const resolving = service.resolveSelectedReadout('R-HSA-SET');
+    http.expectOne('/api/readouts').flush(noneEntry('R-HSA-SET'));
+    await settle();
+    // the closure walk: a leaf member, a duplicated member (hasCandidate too),
+    // and a nested sub-set whose own member joins the closure
+    http.expectOne(enhancedUrl('R-HSA-SET')).flush({
+      stId: 'R-HSA-SET',
+      schemaClass: 'DefinedSet',
+      hasMember: [
+        { stId: 'R-HSA-M1', schemaClass: 'EntityWithAccessionedSequence' },
+        { stId: 'R-HSA-SUB', schemaClass: 'CandidateSet' },
+      ],
+      hasCandidate: [{ stId: 'R-HSA-M1', schemaClass: 'EntityWithAccessionedSequence' }],
+    });
+    await settle();
+    http.expectOne(enhancedUrl('R-HSA-SUB')).flush({
+      stId: 'R-HSA-SUB',
+      schemaClass: 'CandidateSet',
+      hasMember: [{ stId: 'R-HSA-M2', schemaClass: 'EntityWithAccessionedSequence' }],
+    });
+    await settle();
+    const request = http.expectOne('/api/readouts');
+    const body = request.request.body as { queries: { members?: string[] }[] };
+    expect(body.queries[0].members).toEqual(['R-HSA-M1', 'R-HSA-SUB', 'R-HSA-M2']);
+    request.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [
+        {
+          id: 'R-HSA-SET',
+          mode: 'forms',
+          basis: 'set_members',
+          groups: [['node-b']],
+          pinned: [],
+          value: 0.02,
+          fold: 2,
+          call: 'up',
+          railed: false,
+        },
+      ],
+    });
+    await resolving;
+
+    expect(service.readoutState().byId.get('R-HSA-SET')).toMatchObject({
+      basis: 'set_members',
+      fold: 2,
+    });
+  });
+
+  it('a non-set stays honestly unreadable, and is not retried (specs/020)', async () => {
+    await solveAndBatch();
+
+    const resolving = service.resolveSelectedReadout('R-HSA-P');
+    http.expectOne('/api/readouts').flush(noneEntry('R-HSA-P'));
+    await settle();
+    http.expectOne(enhancedUrl('R-HSA-P')).flush({ stId: 'R-HSA-P', schemaClass: 'Protein' });
+    await resolving;
+    expect(service.readoutState().byId.get('R-HSA-P')?.basis).toBe('none');
+
+    // cached none + members already tried: no request of any kind
+    await service.resolveSelectedReadout('R-HSA-P');
+    http.expectNone('/api/readouts');
+    http.expectNone(enhancedUrl('R-HSA-P'));
+  });
+
+  it('a ContentService failure leaves the honest none entry (specs/020)', async () => {
+    await solveAndBatch();
+
+    const resolving = service.resolveSelectedReadout('R-HSA-X');
+    http.expectOne('/api/readouts').flush(noneEntry('R-HSA-X'));
+    await settle();
+    http
+      .expectOne(enhancedUrl('R-HSA-X'))
+      .flush({ message: 'down' }, { status: 500, statusText: 'Server Error' });
+    await resolving;
+    expect(service.readoutState().byId.get('R-HSA-X')?.basis).toBe('none');
+  });
+
+  it('a closure past the fetch cap is abandoned, never truncated (specs/020)', async () => {
+    await solveAndBatch();
+
+    const resolving = service.resolveSelectedReadout('R-HSA-BIG');
+    http.expectOne('/api/readouts').flush(noneEntry('R-HSA-BIG'));
+    await settle();
+    const subsets = Array.from({ length: 12 }, (_, i) => ({
+      stId: `R-HSA-S${i}`,
+      schemaClass: 'DefinedSet',
+    }));
+    http.expectOne(enhancedUrl('R-HSA-BIG')).flush({
+      stId: 'R-HSA-BIG',
+      schemaClass: 'DefinedSet',
+      hasMember: subsets,
+    });
+    await settle();
+    // 11 more fetches reach the cap of 12 with the queue still holding a set
+    for (let i = 0; i < 11; i++) {
+      http
+        .expectOne(enhancedUrl(`R-HSA-S${i}`))
+        .flush({ stId: `R-HSA-S${i}`, schemaClass: 'DefinedSet' });
+      await settle();
+    }
+    await resolving;
+    // abandoned: no second readouts query was made, the none entry stands
+    http.expectNone('/api/readouts');
+    expect(service.readoutState().byId.get('R-HSA-BIG')?.basis).toBe('none');
+  });
+
   it('drops an on-demand readout that a newer solve overtook in flight', async () => {
     const solving = service.solve();
     await settle();
