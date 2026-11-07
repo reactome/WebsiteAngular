@@ -4,10 +4,7 @@ import {
   RENDER_SERVICE,
 } from '../../../../../../pathway-browser/src/environments/environment';
 import { DatabaseObject } from '../../../../../../pathway-browser/src/app/model/graph/database-object.model';
-
-interface PathwayLike extends DatabaseObject {
-  hasDiagram?: boolean;
-}
+import { getProperty } from '../../../../../../pathway-browser/src/app/services/utils';
 
 @Component({
   selector: 'app-detail-diagram',
@@ -35,8 +32,9 @@ export class DetailDiagramComponent {
    * illustration.
    */
   readonly diagramUrl = computed<string | null>(() => {
-    const p = this.obj() as PathwayLike;
-    if (!p.stId || !p.hasDiagram) return null;
+    // Only a pathway has a diagram; any other object reads as having none.
+    const p = this.obj();
+    if (!p.stId || !getProperty(p, 'hasDiagram')) return null;
     return `${RENDER_SERVICE}/render/${p.stId}.svg`;
   });
 
@@ -57,7 +55,7 @@ export class DetailDiagramComponent {
    */
   fallback(event: Event) {
     const image = event.target as HTMLImageElement;
-    const stId = (this.obj() as PathwayLike).stId;
+    const stId = this.obj().stId;
     const exporter = `${CONTENT_SERVICE}/exporter/diagram/${stId}.svg`;
     if (image.src === exporter) return;
     image.src = exporter;

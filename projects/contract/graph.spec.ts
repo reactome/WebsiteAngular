@@ -165,7 +165,10 @@ const swap = (from: string, to: string, file = GRAPH) => {
   return described({ [file]: text.replace(from, to) });
 };
 
-describe("the graph's classes in the contract", () => {
+// Each case builds a TypeScript program over both graph modules: about a
+// second alone, past vitest's 5 s default under the pre-push hook's load. 60 s,
+// as the description's own tests have.
+describe("the graph's classes in the contract", { timeout: 60_000 }, () => {
   const now = described();
 
   it('are read: classes and unions both', () => {

@@ -35,9 +35,11 @@ export class DescriptionOverviewComponent {
   readonly compartment: Signal<HasCompartment[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.COMPARTMENT)
   );
-  readonly name: Signal<string> = computed(
-    () => getProperty(this.obj(), DataKeys.NAME) || [getProperty(this.obj(), DataKeys.DISPLAY_NAME)]
-  );
+  /** The object's names (declared as one string, read as the list it is), or its display name. */
+  readonly name: Signal<string[]> = computed(() => {
+    const names = getProperty(this.obj(), DataKeys.NAME);
+    return Array.isArray(names) ? names : [this.obj().displayName];
+  });
   readonly tissue: Signal<Anatomy | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.TISSUE)
   );
