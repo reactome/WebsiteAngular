@@ -102,10 +102,10 @@ PATH_KINDS['eventExport'] = (text) => {
 // An event's PDF (spec 006 T100): an id as `oid` takes it, and `.pdf`.
 PATH_KINDS['eventPdf'] = (text) =>
   text.endsWith('.pdf') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
-// A diagram's or a reaction's figure: an id as `oid` takes it, and an
+// A diagram's or a reaction's figure or PowerPoint: an id as `oid` takes it, and an
 // extension it is drawn in.
 PATH_KINDS['figure'] = (text) => {
-  const ext = /\.(png|jpg|jpeg|svg|gif)$/.exec(text);
+  const ext = /\.(png|jpg|jpeg|svg|gif|pptx)$/.exec(text);
   return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
 };
 PATH_KINDS['sbmlXml'] = (text) =>

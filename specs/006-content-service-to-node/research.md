@@ -1170,8 +1170,33 @@ render (seconds) where Java answered at once.
 extensions, and `quality` alone. `sel` is drawn, but any text is a figure,
 so a URL with it is answered and never stored; a token makes it private.
 
-**The species overview** (T093) keeps its own refusals of what it does not
-draw: unchanged here.
+### The PowerPoints (T109)
+
+**Decided** by awright, 8 Nov 2026: node answers `/exporter/diagram/{identifier}.pptx`
+and `/exporter/reaction/{identifier}.pptx` too, through the render service's
+PowerPoint export. Spring matches `.pptx` by case, so only a lower-case one is
+PptxExporterController's; `.PPTX` stays the image exporter's 500.
+PptxExporterController's answers, measured against Java on 8 Nov 2026:
+
+- **A diagram's**: graph-core resolves the id as for its image; an id that
+  resolves to nothing is a NullPointerException, the generic 500 (no download
+  guard: the pattern names `.pptx`). The file is the diagram that holds the
+  event, with `sel` and the resolved events marked (none on an illustration).
+- **A reaction's**: Java resolved the id's diagram first and read it only to
+  flag, so with `flg` an id that resolves to nothing is the generic 500; then
+  getReactionLikeEvent's 404, 400 and 500s, and the layout's Java exceptions;
+  then the reaction's own layout.
+- **Both**: `application/vnd.openxmlformats-officedocument.presentationml.presentation;charset=UTF-8`
+  and `Content-Disposition: attachment; filename="[stId] displayName.pptx"`
+  (ExportManager.getPPTXFileName: the diagram's stable id for a diagram,
+  the stable id alone when there is no display name), kept as Java writes it.
+- `diagramProfile`, `flg`, `flgInteractors` and a reaction's `sel` are accepted
+  and not drawn; a URL naming one is not stored at the edge.
+
+**The species overview** now accepts the options it does not draw, as
+diagrams and reactions do, instead of refusing them (#613's 400s): its token
+is drawn, the rest are accepted. A `.gif` of it is still refused, a format
+the genome-wide view cannot capture.
 
 ## What exists already
 

@@ -71,6 +71,7 @@ let safeExtensions: Set<string> | undefined;
  */
 const PATTERN_EXTENSIONS: readonly (readonly [prefix: string, extension: string])[] = [
   ['/ContentService/exporter/document/event/', 'pdf'],
+  ['/ContentService/exporter/diagram/', 'pptx'],
   ['/ContentService/exporter/event/', 'sbgn'],
   ['/ContentService/exporter/event/', 'sbml'],
   ['/ContentService/exporter/reaction/', 'pptx'],
