@@ -22,7 +22,7 @@ import type {
   RenderEdgeShape,
   RenderNodeShape,
   RenderShapes,
-} from '../../projects/pathway-browser/src/app/render/render-shapes.model.ts';
+} from '../../projects/contract/render.ts';
 
 /**
  * Whether the XML parses. jsdom is brought in by hand rather than by the

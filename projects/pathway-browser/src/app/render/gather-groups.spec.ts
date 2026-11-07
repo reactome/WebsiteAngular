@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gatherGroups } from './render-shapes.model';
+import { gatherGroups } from './gather-groups';
 
 describe('gatherGroups', () => {
   it("brings a group's shapes together where its first one was", () => {

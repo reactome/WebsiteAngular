@@ -14,20 +14,14 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 import { app, cacheKey, httpError, isModule, publicMessage, statusOf } from './service.ts';
 
 let base: string;
 let server: Server;
 
-/** The fields of the service's JSON answers these tests read: /health's, and a refusal's. */
-interface Answer {
-  ok?: boolean;
-  build?: string;
-  modules?: number;
-  error?: string;
-  canonical?: string;
-  formats?: string[];
-}
+/** The service's JSON answers: /health's, or a refusal's. */
+type Answer = Partial<RenderHealth & RenderRefusal>;
 const json = async (response: Response) => (await response.json()) as Answer;
 
 beforeAll(async () => {
