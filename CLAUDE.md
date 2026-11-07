@@ -75,6 +75,32 @@ is how a formatting failure reached CI.
   `specs/010-java-services`; the operation-by-operation list is Phase 9 of
   `specs/006-content-service-to-node/tasks.md`.
 
+## The API contract (`projects/contract`)
+
+Spec 016; the rules in full are in [`projects/contract/README.md`](projects/contract/README.md).
+
+- **One type per answer.** A JSON answer the content service writes and the site
+  reads is a type in `projects/contract/`, and both sides use it: the service
+  writes through it (`nonEmptyJson<T>`, `satisfies`) and the site reads it. Not
+  a second interface in the site: `one-description.spec.ts` refuses one under a
+  contract name, and an alias is the way to give it a name of your own. The
+  render service's and the analysis service's types live there too.
+- **Types only**, imported with `import type` by a relative path ending in
+  `.ts`. A value in the contract would pass locally and fail in the service's
+  image, and `contract.spec.ts` refuses one; a value (a list a test walks) goes
+  beside its reader, checked against the contract's union.
+- **The type follows what is written.** A type and the recorded answers that
+  disagree are settled by the answers: measure them, never the other way round.
+  `tools/api-types/known-problems.json` counts what is left, and only falls.
+- **Regenerate the description with any change**: `node tools/contract/generate.ts`
+  writes `projects/contract/openapi.json`, and a check fails while it is stale.
+  The service publishes that file at `/ContentService/openapi.json`, which the
+  site's API page reads; each operation's notes and parameters come from Java's
+  documentation (`tools/contract/java-documentation.json`, rewritten by
+  `snapshot-java-documentation.ts` when Java's documentation changes). A new
+  route the contract describes gets a row in `routes.ts`, and its recordings are
+  then checked against it (`tools/api-types/schema.spec.ts`).
+
 ## nginx
 
 - **Quote a location regex** that contains `;` or `{`: nginx otherwise reads the

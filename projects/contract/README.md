@@ -8,9 +8,9 @@ so a field renamed or retyped here fails the build on both sides.
 
 - **Types only.** Nothing here may emit code: no enum, namespace, constant or
   class. The service runs its `.ts` under Node with type stripping and no build
-  (spec 013), and its image holds only `tools/content-node/` and
-  `tools/package.json`. A value here would pass the checks locally and fail in
-  the image. `contract.spec.ts` holds this, and lint holds the contract to the
+  (spec 013), and its image holds only `tools/content-node/`,
+  `tools/package.json` and this directory's `openapi.json`, which it publishes.
+  A value here would pass the checks locally and fail in the image. `contract.spec.ts` holds this, and lint holds the contract to the
   rules it holds `tools/` to.
 - **Imports.** A contract module imports only other contract modules, with
   `import type` and a relative path ending in `.ts`. Readers import it the
