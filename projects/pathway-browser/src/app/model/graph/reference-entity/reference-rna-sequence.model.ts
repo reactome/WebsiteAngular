@@ -1,6 +1,6 @@
-import { ReferenceSequence } from './reference-sequence.model';
-import { ReferenceDNASequence } from './reference-dna-sequence.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ReferenceRNASequence extends ReferenceSequence {
-  referenceGene: ReferenceDNASequence[];
-}
+/** An RNA sequence, as the pathway browser reads it (the contract's, resolved). */
+export type ReferenceRNASequence = Resolved<Graph.ReferenceRNASequence<JsogReference>>;

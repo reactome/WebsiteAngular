@@ -1,10 +1,8 @@
 {
-  "GET /data/entity/{id}/otherForms as PhysicalEntity[]": 1660,
   "GET /data/event/{id}/ancestors as Pathway[][]": 2,
   "GET /data/event/{id}/ancestors as { stId: string; displayName: string }[][]": 1314,
   "GET /data/participants/{id} as Participant[]": 872,
   "GET /data/participants/{id}/referenceEntities as ReferenceEntityIds[]": 1108,
-  "GET /data/participants/{id}/referenceEntities as ReferenceEntity[]": 138,
   "GET /data/pathways/low/entity/{id} as { stId: string; displayName: string; speciesName: string; hasDiagram?: boolean; releaseStatus?: string }[]": 1059,
   "GET /data/pathways/top/{taxId} as TopLevelPathway[]": 82,
   "GET /data/person/{id} as { displayName?: string }": 15,

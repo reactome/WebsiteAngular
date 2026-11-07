@@ -185,7 +185,7 @@
           <div class="row">
             <div class="label-container">Reference</div>
             <div class="composition-container ref-padding">
-              @for (ref of ref.literatureReference | sortByDate: 'year'; track ref?.dbId ?? $index) {
+              @for (ref of ref.literatureReference ?? [] | sortByDate: 'year'; track ref?.dbId ?? $index) {
                 <cr-publication [publication]="ref" [showYear]="true"></cr-publication>
               }
             </div>

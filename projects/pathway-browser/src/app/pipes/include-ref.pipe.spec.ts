@@ -18,6 +18,8 @@ const sanitizer = {
 
 const reference = (over: Partial<LiteratureReference> = {}) =>
   ({
+    // An article, as every recorded one says it is: the pipe links nothing else.
+    schemaClass: 'LiteratureReference',
     url: 'https://example.org/paper',
     year: 2005,
     author: [{ surname: 'Smith', initial: 'A' }],

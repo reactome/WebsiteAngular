@@ -35,7 +35,7 @@ import { ExpressionTagComponent } from './expression-tag/expression-tag.componen
 import { MatExpansionModule } from '@angular/material/expansion';
 import { FoundTableComponent } from './found-table/found-table.component';
 import { MatSliderModule } from '@angular/material/slider';
-import { getArrayStats } from '../../../services/utils';
+import { fieldByName, getArrayStats } from '../../../services/utils';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDivider } from '@angular/material/divider';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
@@ -113,12 +113,17 @@ export class ResultTabComponent {
   readonly selectedExpression = computed<{ name: string; values: number[] } | undefined>(() => {
     const element = this.data.selectedElement();
     if (!element || this.analysis.samples().length === 0) return undefined;
-    const reference = (element as Record<string, unknown>)['referenceEntity'] as
-      { identifier?: string; variantIdentifier?: string } | undefined;
+    // A molecule's own identifier, or its reference entity's (its isoform's
+    // too); each read as text, which is all the analysis matches on.
+    const text = (from: unknown, key: string) => {
+      const value = typeof from === 'object' && from !== null ? fieldByName(from, key) : undefined;
+      return typeof value === 'string' ? value : undefined;
+    };
+    const reference = fieldByName(element, 'referenceEntity');
     const values = this.analysis.expressionFor([
-      (element as Record<string, unknown>)['identifier'] as string | undefined,
-      reference?.identifier,
-      reference?.variantIdentifier,
+      text(element, 'identifier'),
+      text(reference, 'identifier'),
+      text(reference, 'variantIdentifier'),
     ]);
     return values ? { name: element.displayName, values } : undefined;
   });

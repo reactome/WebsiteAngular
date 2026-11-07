@@ -456,7 +456,7 @@ export interface CatalystActivityReference<R extends Ref> extends JsogFields {
 export interface Cell<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
@@ -1526,7 +1526,7 @@ export interface Ontology<R extends Ref> extends JsogFields {
 export interface OtherEntity<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
@@ -1816,7 +1816,7 @@ export interface PositiveRegulation<R extends Ref> extends JsogFields {
 export interface ProteinDrug<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
@@ -1869,7 +1869,7 @@ export interface ProteinDrug<R extends Ref> extends JsogFields {
 export interface RNADrug<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;

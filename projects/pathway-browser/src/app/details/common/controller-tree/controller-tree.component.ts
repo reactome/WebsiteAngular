@@ -47,7 +47,8 @@ export class ControllerTreeComponent<
 
   readonly depthIndex = signal(1);
   readonly depthChangeSource = signal<'controller' | 'tree' | undefined>(undefined);
-  readonly maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth))!);
+  /** None when no element came from an in-depth answer. */
+  readonly maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth)));
 
   readonly hasPagination = computed(() => this.data().length > this.pageSize());
   readonly currentPage = linkedSignal<PageEvent>(() => ({
@@ -77,15 +78,19 @@ export class ControllerTreeComponent<
   }
 
   nextPage() {
-    if (this.depthIndex() < this.maxDepth()) {
+    const maxDepth = this.maxDepth();
+    if (maxDepth !== undefined && this.depthIndex() < maxDepth) {
       this.depthChangeSource.set('controller');
       this.depthIndex.update((d) => d + 1);
     }
   }
 
   lastPage() {
+    // With no depth to go to, there is no last page: it used to set the depth to undefined.
+    const maxDepth = this.maxDepth();
+    if (maxDepth === undefined) return;
     this.depthChangeSource.set('controller');
-    this.depthIndex.set(this.maxDepth());
+    this.depthIndex.set(maxDepth);
   }
 
   elementToRelationship(element: E, i = 0): R {
