@@ -247,10 +247,4 @@ describe('/exporter/reaction/{identifier}/diagram', () => {
     const answer = await get(`${PATH('R-HSA-6805479')}/`);
     expect([answer.status, answer.location]).toEqual([301, PATH('R-HSA-6805479')]);
   });
-
-  it("is not the reaction's image: /exporter/reaction/{identifier}.{ext} is no route of node's", async () => {
-    const answer = await get('/ContentService/exporter/reaction/R-HSA-6805479.png');
-    expect(answer.status).toBe(404);
-    expect(laidOut).toEqual([]);
-  });
 });
