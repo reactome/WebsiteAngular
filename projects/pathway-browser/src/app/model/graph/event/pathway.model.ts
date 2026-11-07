@@ -1,21 +1,6 @@
-import { Event } from './event.model';
-import type { Relationship } from '../relationship.model';
-type HasEvent = Relationship.HasEvent;
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface Pathway extends Event {
-  /**
-   * Its child events: sent by /data/query/enhanced, but not by
-   * /data/event/{id}/ancestors, whose pathways seed the hierarchy (#344). The
-   * tree copies them across from a fetched pathway, which may have none.
-   */
-  events?: HasEvent[] | undefined;
-  hasDiagram: boolean;
-  hasEHLD: boolean;
-  normalPathway?: Pathway;
-  diseasePathways?: Pathway[];
-  orthologousEvent?: Event[];
-
-  //not from API endpoint but are needed in the tree view; cleared to undefined
-  subpathwayColor?: string | undefined;
-  hitReactionsCount?: string | undefined;
-}
+/** A pathway, a top-level pathway or a cell lineage path, as the pathway browser reads it (the contract's, resolved). */
+export type Pathway = Resolved<Graph.AnyPathway<JsogReference>>;

@@ -14,7 +14,8 @@ export namespace Relationship {
     stoichiometry: number;
     order: number;
     element: O;
-    index: number;
+    /** Its position, which the pathway browser sets: never sent. */
+    index?: number;
     // Participants(Molecules) on Molecule tab
     moleculeView?: boolean;
     highlight?: boolean;
@@ -29,8 +30,6 @@ export namespace Relationship {
   export interface ComponentOf extends Has<PhysicalEntity, Type.COMPONENT_OF> {}
 
   export interface HasEncapsulatedEvent extends Has<Event, Type.ENCAPSULATED_EVENT> {}
-
-  export interface HasEvent extends Has<Event, Type.EVENT> {}
 
   export interface HasMember extends Has<PhysicalEntity, Type.MEMBER> {}
 

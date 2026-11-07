@@ -28,10 +28,8 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { isDefined, isPathway, isPhysicalEntity, isRLE } from './utils';
 import { DatabaseObjectService } from './database-object.service';
 import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
-import type { Relationship } from '../model/graph/relationship.model';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Pathway } from '../model/graph/event/pathway.model';
-type HasEvent = Relationship.HasEvent;
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 
 export type SelectableObject = Event | PhysicalEntity | SummaryEntity;
@@ -668,7 +666,7 @@ export class EventService {
     totalAncestors: number
   ) {
     if (isPathway(object) && isPathway(treeEvent)) {
-      treeEvent.events = object.events?.map((child: HasEvent) => {
+      const events = object.events?.map((child) => {
         const ancestors = treeEvent.ancestors || [];
 
         // Append parent (treeEvent) if not already included
@@ -688,6 +686,9 @@ export class EventService {
           },
         };
       });
+      // An optional field takes no explicit undefined: left out as the answer leaves it out.
+      if (events) treeEvent.events = events;
+      else delete treeEvent.events;
       matTree.expand(treeEvent);
       treeEvent.isSelected = true;
 

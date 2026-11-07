@@ -516,7 +516,7 @@ export interface Cell<R extends Ref> extends JsogFields {
 export interface CellDevelopmentStep<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
@@ -585,7 +585,7 @@ export interface CellDevelopmentStep<R extends Ref> extends JsogFields {
 export interface CellLineagePath<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
@@ -1304,7 +1304,7 @@ export interface InterChainCrosslinkedResidue<R extends Ref> extends JsogFields 
 export interface InteractionEvent<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId?: string;
+  stId: string;
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
