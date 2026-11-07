@@ -12,6 +12,8 @@ import {
   DeltaSignalReadoutRow,
   DeltaSignalReadoutsResponse,
   DeltaSignalReadoutState,
+  DeltaSignalScopeResponse,
+  DeltaSignalScopeState,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
@@ -49,6 +51,14 @@ export class DeltaSignalService {
 
   readonly readoutState = signal<DeltaSignalReadoutState>(IDLE_READOUTS);
 
+  /**
+   * The served scope statement (deltasignal specs/143): what the system is
+   * validated for, with provenance. Fetched once per session on first open;
+   * on failure the view says it is unavailable — no local copy ever
+   * substitutes, because the engine's versioned file is the single source.
+   */
+  readonly scopeState = signal<DeltaSignalScopeState>({ status: 'idle', scope: null });
+
   readonly rows = computed(() => resultRows(this.network(), this.result(), this.perturbations()));
   /**
    * One row per Reactome entity, valued by `/api/readouts` — the resolution
@@ -77,6 +87,7 @@ export class DeltaSignalService {
         basis: readout.basis,
         fold: readout.fold,
         call: readout.call,
+        railed: readout.railed === true,
         influence: Math.max(0, ...uuids.map((uuid) => influence[uuid] ?? 0)),
         perturbed: readout.pinned.length > 0,
       });
@@ -334,6 +345,18 @@ export class DeltaSignalService {
       });
     } catch {
       // The batch stays valid; the selection block simply has no readout.
+    }
+  }
+
+  async loadScope(): Promise<void> {
+    const current = this.scopeState();
+    if (current.status === 'ready' || current.status === 'loading') return;
+    this.scopeState.set({ status: 'loading', scope: null });
+    try {
+      const scope = await firstValueFrom(this.http.get<DeltaSignalScopeResponse>('/api/scope'));
+      this.scopeState.set({ status: 'ready', scope });
+    } catch {
+      this.scopeState.set({ status: 'error', scope: null });
     }
   }
 

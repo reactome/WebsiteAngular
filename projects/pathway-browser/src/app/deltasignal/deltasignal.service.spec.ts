@@ -211,6 +211,7 @@ describe('DeltaSignalService readouts', () => {
         value: 0.005,
         fold: 0.5,
         call: 'down',
+        railed: false,
       },
       {
         id: 'R-HSA-2',
@@ -221,6 +222,7 @@ describe('DeltaSignalService readouts', () => {
         value: 0.02,
         fold: 2,
         call: 'up',
+        railed: false,
       },
     ],
   });
@@ -340,6 +342,60 @@ describe('DeltaSignalService readouts', () => {
     // an id already in the batch is never re-fetched
     await service.resolveSelectedReadout('R-HSA-1');
     http.expectNone('/api/readouts');
+  });
+
+  it('carries the served rail flag into rows and never computes it client-side', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    // The engine says this readout sits at its stop; the row repeats that —
+    // whatever the fold is. A client recomputing the test would be a second
+    // protocol (deltasignal specs/142).
+    answer.results[0] = { ...answer.results[0], fold: 0.5, railed: true };
+    http.expectOne('/api/readouts').flush(answer);
+    await solving;
+
+    const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
+    expect(byId.get('R-HSA-1')?.railed).toBe(true);
+    expect(byId.get('R-HSA-2')?.railed).toBe(false);
+  });
+
+  it('loads the scope statement once, honestly failing with nothing substituted', async () => {
+    const scopeAnswer = {
+      status: 'success',
+      statement: {
+        version: '2026-11-06',
+        provenance_build: 'build-x',
+        summary: ['What this is.'],
+        validated: [],
+        limitations: [],
+        protocols: [],
+      },
+      served_catalog: 'build-y',
+      measured_on_served_catalog: false,
+    };
+    const loading = service.loadScope();
+    http.expectOne('/api/scope').flush(scopeAnswer);
+    await loading;
+    expect(service.scopeState().status).toBe('ready');
+    expect(service.scopeState().scope?.measured_on_served_catalog).toBe(false);
+    expect(service.scopeState().scope?.statement.provenance_build).toBe('build-x');
+
+    // a second open never re-fetches
+    await service.loadScope();
+    http.expectNone('/api/scope');
+  });
+
+  it('reports an unavailable scope statement instead of substituting one', async () => {
+    const loading = service.loadScope();
+    http
+      .expectOne('/api/scope')
+      .flush({ message: 'down' }, { status: 500, statusText: 'Server Error' });
+    await loading;
+    expect(service.scopeState().status).toBe('error');
+    expect(service.scopeState().scope).toBeNull();
   });
 
   it('drops an on-demand readout that a newer solve overtook in flight', async () => {
