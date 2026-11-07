@@ -1305,6 +1305,26 @@
         }
       }
     },
+    "/ContentService/exporter/reaction/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/exporter/reaction/{id}/diagram": {
       "get": {
         "parameters": [

@@ -49,6 +49,15 @@ content-node answers `/ContentService/exporter/voronoi/<species>.<ext>` with it,
 and redirects the old `/exporter/fireworks/<species>.<ext>` there (spec 006
 T093).
 
+## A reaction's own layout
+
+`layout=reaction` draws a reaction's own layout, the figure the reaction page
+shows, rather than the diagram that holds it. content-node answers
+ContentService's `/exporter/reaction/<id>.<ext>` with it, in every format Java
+drew (png, jpg, jpeg, svg and a still gif), with Java's `quality` as `scale`
+(spec 006 research D24). The view is never coloured by an analysis and marks
+no selection, so content-node asks for neither.
+
 ## The theme is an explicit choice
 
 Light unless `?dark=true`. Not a preference to inherit: `DarkService` defaults
@@ -250,7 +259,7 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work                                                        |
 | `RENDER_BASE`        | http://localhost:4200 | site to render against                                                                                                     |
 | `RENDER_CACHE`       | `.render-cache`       |                                                                                                                            |
-| `RENDER_CACHE_KEY`   | the code's (`v12`)    | override only to invalidate by hand; the code bumps it when output changes                                                 |
+| `RENDER_CACHE_KEY`   | the code's (`v13`)    | override only to invalidate by hand; the code bumps it when output changes                                                 |
 | `RENDER_CACHE_MAX`   | 2 GB                  | bytes of figures kept; 0 keeps everything. The cache cannot be turned off: for a cold run, give a fresh `RENDER_CACHE_KEY` |
 | `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                                                                       |
 | `RENDER_QUEUE`       | 8                     | pending renders before 503                                                                                                 |
