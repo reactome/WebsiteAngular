@@ -27,12 +27,12 @@
           (keydown)="onSearchKeydown($event)"
         />
         @if (searchQuery) {
-          <button class="clear-btn" (click)="searchQuery = ''; clearFilters()">
+          <button type="button" class="clear-btn" (click)="searchQuery = ''; clearFilters()">
             <span class="material-symbols-rounded">close</span>
           </button>
         }
       </div>
-      <button class="search-btn" (click)="searchIcons()">Search</button>
+      <button type="button" class="search-btn" (click)="searchIcons()">Search</button>
     </div>
 
     <!-- Category filter chips -->
@@ -40,6 +40,7 @@
       <div class="category-filters">
         @for (cat of categories; track cat.name) {
           <button
+            type="button"
             class="category-chip"
             [class.active]="selectedCategory === cat.name"
             (click)="selectCategory(cat.name)"
@@ -62,7 +63,7 @@
           <span> matching "{{ searchQuery }}"</span>
         }
         @if (selectedCategory || searchQuery) {
-          <button class="clear-link" (click)="clearFilters()">Clear filters</button>
+          <button type="button" class="clear-link" (click)="clearFilters()">Clear filters</button>
         }
       </div>
     }
@@ -94,7 +95,7 @@
 
       <div class="icon-grid">
         @for (icon of icons; track icon.id) {
-          <button class="icon-card" (click)="openDetail(icon)">
+          <button type="button" class="icon-card" (click)="openDetail(icon)">
             <div class="icon-preview">
               <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
               <img
@@ -114,12 +115,12 @@
 
       @if (maxPage > 1) {
         <div class="pagination">
-          <button class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
+          <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
             <span class="material-symbols-rounded">chevron_left</span>
             Previous
           </button>
           <span class="page-info">Page {{ currentPage }} of {{ maxPage }}</span>
-          <button class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
+          <button type="button" class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
             Next
             <span class="material-symbols-rounded">chevron_right</span>
           </button>
@@ -130,7 +131,7 @@
     <!-- Icon detail view -->
     @if (view === 'detail') {
       <div class="detail-header">
-        <button class="back-btn" (click)="backToGrid()">
+        <button type="button" class="back-btn" (click)="backToGrid()">
           <span class="material-symbols-rounded">arrow_back</span>
           Back to Icons
         </button>

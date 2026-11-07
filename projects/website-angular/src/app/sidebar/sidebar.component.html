@@ -1,5 +1,6 @@
 <aside class="sidebar" [class.collapsed]="!sidebarVisible()">
   <button
+    type="button"
     class="sidebar-toggle"
     (click)="toggleSidebar()"
     [attr.aria-label]="sidebarVisible() ? 'Collapse sidebar' : 'Expand sidebar'"

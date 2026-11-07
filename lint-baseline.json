@@ -1,9 +1,9 @@
 {
-  "warnings": 1129,
+  "warnings": 934,
   "rules": {
     "@angular-eslint/no-input-rename": 7,
     "@angular-eslint/no-output-native": 6,
-    "@angular-eslint/template/button-has-type": 205,
+    "@angular-eslint/template/button-has-type": 10,
     "@typescript-eslint/ban-ts-comment": 1,
     "@typescript-eslint/no-empty-object-type": 1,
     "@typescript-eslint/no-explicit-any": 98,

@@ -21,7 +21,9 @@
           [class.has-analysis]="analysis.result()"
           [style.--handle-height.px]="handle.clientHeight"
         >
-          <button id="legend-handle" cdkDragHandle #handle (click)="toggleLegend(legendWidth)">LEGEND</button>
+          <button type="button" id="legend-handle" cdkDragHandle #handle (click)="toggleLegend(legendWidth)">
+            LEGEND
+          </button>
           @if (analysis.result()) {
             <div class="analysis-legend">
               <cr-analysis-legend></cr-analysis-legend>

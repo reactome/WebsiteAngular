@@ -83,7 +83,7 @@
       <ng-container matColumnDef="name">
         <th mat-header-cell *matHeaderCellDef mat-sort-header>
           Pathway
-          <button mat-icon-button (click)="$event.stopPropagation()" [matMenuTriggerFor]="filterMenu">
+          <button type="button" mat-icon-button (click)="$event.stopPropagation()" [matMenuTriggerFor]="filterMenu">
             <mat-icon fontSet="symbols">filter_alt</mat-icon>
           </button>
         </th>
@@ -104,6 +104,7 @@
         <th mat-header-cell *matHeaderCellDef>Matches</th>
         <td mat-cell *matCellDef="let pathway; dataSource: dataSource">
           <button
+            type="button"
             [matTooltip]="'Open matching identifiers of ' + pathway.stId"
             mat-icon-button
             aria-label="expand row"
@@ -307,13 +308,23 @@
 
   <mat-divider></mat-divider>
 
-  <button mat-menu-item (click)="onTogglableFilterClick($event, llp)" [class.filter-active]="includeGrouping()">
+  <button
+    type="button"
+    mat-menu-item
+    (click)="onTogglableFilterClick($event, llp)"
+    [class.filter-active]="includeGrouping()"
+  >
     <mat-checkbox [(ngModel)]="includeGrouping" #llp (click)="$event.stopPropagation()">
       <mat-icon fontSet="symbols">graph_2</mat-icon>
       Pathway grouping
     </mat-checkbox>
   </button>
-  <button mat-menu-item (click)="onTogglableFilterClick($event, disease)" [class.filter-active]="includeDisease()">
+  <button
+    type="button"
+    mat-menu-item
+    (click)="onTogglableFilterClick($event, disease)"
+    [class.filter-active]="includeDisease()"
+  >
     <mat-checkbox [(ngModel)]="includeDisease" #disease (click)="$event.stopPropagation()">
       <mat-icon fontSet="symbols">microbiology</mat-icon>
       Diseases
@@ -364,11 +375,12 @@
     </div>
   }
   @if (analysis.isGSARegulation()) {
-    <button mat-menu-item [matMenuTriggerFor]="gsaMenu" [class.filter-active]="gsaFilterActive()">
+    <button type="button" mat-menu-item [matMenuTriggerFor]="gsaMenu" [class.filter-active]="gsaFilterActive()">
       {{ state.sample() }}
     </button>
   }
   <button
+    type="button"
     mat-menu-item
     [matMenuTriggerFor]="resourcesMenu"
     [disabled]="analysis.resourceOptions().length <= 1"
@@ -377,6 +389,7 @@
     Resources
   </button>
   <button
+    type="button"
     mat-menu-item
     [matMenuTriggerFor]="speciesMenu"
     [disabled]="analysis.speciesOptions().length <= 1"

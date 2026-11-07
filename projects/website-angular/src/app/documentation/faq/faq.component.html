@@ -17,7 +17,7 @@
         <div>
           <h2 class="faq-category-header" (click)="toggleCategory(category)">
             <span class="category-name">{{ formatName(category) }}</span>
-            <button class="expand-button">
+            <button type="button" class="expand-button">
               {{ isCategoryExpanded(category) ? '−' : '+' }}
             </button>
           </h2>
@@ -28,6 +28,7 @@
                 <div class="faq-tabs">
                   @for (sub of getSubcategories(category); track sub) {
                     <button
+                      type="button"
                       class="faq-tab"
                       [class.active]="isActiveTab(category, sub)"
                       (click)="setActiveTab(category, sub)"
