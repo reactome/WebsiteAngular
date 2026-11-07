@@ -101,6 +101,13 @@ describe('/pathways/of/{dbId}', () => {
     ]);
   });
 
+  it("asks Solr for a deleted entry's reason by the index's field, `reason`", async () => {
+    asked = [];
+    answer = solr;
+    await get('227785?fields=DELETED_REASON,DELETED_EXPLANATION');
+    expect(request(1)[1].filter(([name]) => name === 'fl')).toEqual([['fl', 'reason,explanation']]);
+  });
+
   it('keeps only the diagrams it is directly in, through interactors when asked', async () => {
     asked = [];
     answer = (url: string) =>

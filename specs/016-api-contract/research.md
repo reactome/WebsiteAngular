@@ -43,8 +43,8 @@ The check needs the syntax tree. `boundaries.spec.ts` uses `ts.preProcessFile`, 
 - **Six of the 45 fields are never written.**
   - `regulator`, `regulatedEntity`, `regulatorId` and `regulatedEntityId` are in neither the indexer nor the Solr schema.
   - The builder never sets `instanceTypeExplanation`.
-  - `reason`: the service reads Solr's `deletedReason`, as Java does, but the field is named `reason`, so it is never written. It is recorded as a suspected fault; the wire stays as it is. (T029: confirmed in the sources, search-core's `SolrConverter` against search-indexer's `DeletedDocument` and Solr schema; an issue for search-core is drafted.)
-  - None of the six is in the contract.
+  - `reason`: Java reads Solr's `deletedReason`, but the field is named `reason`, so Java never writes it. (T029: confirmed in the sources, search-core's `SolrConverter` against search-indexer's `DeletedDocument` and Solr schema.) **Fixed in node** (T029): node reads `reason` and writes it between `deleted` and `explanation`, where Entry declares it, a declared difference from Java ([register](../../documentation/declared-differences.md)). No issue for search-core: Java's search is retired at the next release, so node's is the fix. The contract's deleted entry has `reason`.
+  - None of the other five is in the contract.
 - **The authored and reviewed counts and `orcidId` are text.** They are Solr text fields, written as stored. No person entry is recorded.
 - **`date` is a number** (epoch milliseconds).
 - **`replacementDbIds` is a list of whole numbers** written exactly. Only one is recorded (`192781`), well inside the safe range.

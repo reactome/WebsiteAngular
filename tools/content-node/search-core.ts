@@ -137,13 +137,17 @@ function referenceIdentifier(doc: SolrDoc) {
 }
 
 /**
- * Entry's properties in Jackson's order, its fields as declared, less six no
+ * Entry's properties in Jackson's order, its fields as declared, less five no
  * document can give: `regulator`, `regulatedEntity`, `regulatorId` and
- * `regulatedEntityId` are in neither the index nor its schema,
- * `instanceTypeExplanation` is never set, and `reason` is read from
- * `deletedReason`, as Java reads it, a field the index does not have (its
- * own is `reason`). Each would be left out as empty, so leaving them out
- * writes the same.
+ * `regulatedEntityId` are in neither the index nor its schema, and
+ * `instanceTypeExplanation` is never set. Each would be left out as empty, so
+ * leaving them out writes the same.
+ *
+ * `reason` is declared between `deleted` and `explanation`, and is written
+ * there. Java reads it from `deletedReason`, a field the index does not have,
+ * so Java never writes it; node reads the index's own field, `reason`
+ * (search-indexer's DeletedDocument and schema) -- a declared difference
+ * (documentation/declared-differences.md).
  */
 const ENTRY_FIELDS = [
   'dbId',
@@ -181,11 +185,21 @@ const ENTRY_FIELDS = [
   'iconPhysicalEntities',
   'iconEhlds',
   'deleted',
+  'reason',
   'explanation',
   'date',
   'replacementDbIds',
   'replacementStIds',
 ] as const satisfies readonly SearchEntryField[];
+
+/**
+ * The one declared difference of every search answer that holds entries: a
+ * deleted entry's `reason`, which node reads from the index and Java never
+ * writes (ENTRY_FIELDS). Reported by the harness as `….reason: extra`, at an
+ * entry in a list or, for a single entry, at the root.
+ */
+export const DELETED_REASON_DIFFERS =
+  /^\/ContentService\/search\/.*: (?:\S*\])?\.reason: extra \(java does not have it\)$/;
 
 /**
  * An entry as written, before it is known which kind it is: the contract's
@@ -309,6 +323,8 @@ export function searchEntry(
   // (DeletedDocument's default). Java would write a false as it is; the
   // recorded answers would show one (tools/api-types).
   entry.deleted = deleted as true | null;
+  // The index's field, not Java's `deletedReason` (see ENTRY_FIELDS).
+  entry.reason = solrText(doc, 'reason');
   entry.explanation = solrText(doc, 'explanation');
   const date = solrValue(doc, 'date');
   entry.date = date === undefined || date === null ? null : Date.parse(String(date));
