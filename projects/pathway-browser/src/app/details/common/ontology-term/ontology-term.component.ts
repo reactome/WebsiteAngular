@@ -8,14 +8,17 @@ import { DatabaseObject } from '../../../model/graph/database-object.model';
  * of a class never recorded (an anatomy term, a cell type) may lack its link
  * and its database, as the contract says.
  */
-export type OntologyTerm = DatabaseObject & {
+/** What the link reads of a term, each field optional as each kind of term has some. */
+interface OntologyFields {
   name?: string[] | string;
   url?: string;
   databaseName?: string;
   definition?: string;
   identifier?: string;
   accession?: string;
-};
+}
+
+export type OntologyTerm = DatabaseObject & OntologyFields;
 
 @Component({
   selector: 'cr-ontology-term',

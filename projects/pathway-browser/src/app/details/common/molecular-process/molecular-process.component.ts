@@ -5,9 +5,9 @@ import type { Relationship } from '../../../model/graph/relationship.model';
 import { Regulation } from '../../../model/graph/Regulation/regulation.model';
 import { IconService } from '../../../services/icon.service';
 import { RegulationReference } from '../../../model/graph/control-reference/regulation-reference.model';
-import { DatabaseObject } from '../../../model/graph/database-object.model';
 import {
-  hasProperty,
+  type Classed,
+  getProperty,
   isCatalystActivity,
   isFragmentModification,
   isHasModifiedResidue,
@@ -55,7 +55,7 @@ export class MolecularProcessComponent {
 
   readonly perspective = input<'entity' | 'event'>('event');
 
-  getSymbol(obj: DatabaseObject) {
+  getSymbol(obj: Classed) {
     return this.iconService.getIconDetails(obj);
   }
 
@@ -114,7 +114,7 @@ export class MolecularProcessComponent {
   }
 
   private getModifiedResidue(entry: HasModifiedResidue) {
-    let psiMods = hasProperty(entry.element, 'psiMod') ? entry.element.psiMod : undefined;
+    let psiMods = getProperty(entry.element, 'psiMod');
 
     if (psiMods) {
       psiMods = Array.isArray(psiMods) ? psiMods : [psiMods]; // Ensure it's always an array
@@ -127,10 +127,8 @@ export class MolecularProcessComponent {
       schemaClass: entry.element.schemaClass,
       name: entry.element.displayName,
       psiMod: psiMods,
-      coordinate: hasProperty(entry.element, 'coordinate') ? entry.element.coordinate : undefined,
-      modification: hasProperty(entry.element, 'modification')
-        ? entry.element.modification
-        : undefined,
+      coordinate: getProperty(entry.element, 'coordinate'),
+      modification: getProperty(entry.element, 'modification'),
       literatureReference: [],
       isModification: true,
     } as unknown as MolecularProcess;

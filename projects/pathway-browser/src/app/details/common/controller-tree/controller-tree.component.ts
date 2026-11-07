@@ -4,6 +4,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { isArray, max } from 'lodash';
 import { InDepth } from '../../../model/graph/in-depth.model';
 import type { Relationship } from '../../../model/graph/relationship.model';
+import { isEntry } from '../../../services/utils';
 import { MatPaginator } from '@angular/material/paginator';
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -34,10 +35,10 @@ export class ControllerTreeComponent<
   readonly data = input.required<R[], (E | R)[] | E | R>({
     transform: (data) =>
       !isArray(data)
-        ? data.element
-          ? [data as R]
-          : [this.elementToRelationship(data as E)]
-        : data.map((e, i) => (e.element ? (e as R) : this.elementToRelationship(e as E, i))),
+        ? isEntry<E, R>(data)
+          ? [data]
+          : [this.elementToRelationship(data)]
+        : data.map((e, i) => (isEntry<E, R>(e) ? e : this.elementToRelationship(e, i))),
   });
 
   readonly scope = input<'entity' | 'event'>('entity');

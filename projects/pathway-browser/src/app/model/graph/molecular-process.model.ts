@@ -1,4 +1,4 @@
-import { DatabaseObject } from './database-object.model';
+import type { Publication } from './publication/publication.model';
 import { GO_MolecularFunction } from './go-term/go-molecular-function.model';
 import { PhysicalEntity } from './physical-entity/physical-entity.model';
 import { PsiMod } from './external-ontology/psi-mod.model';
@@ -16,7 +16,12 @@ import { ReactionLikeEvent } from './event/reaction-like-event.model';
  * Built by copying fields across from the entry, each of which the entry may
  * not have: a field here may be present and undefined.
  */
-export interface MolecularProcess extends DatabaseObject {
+export interface MolecularProcess {
+  /** The entry's own; a modified residue's view has none. */
+  dbId?: number | undefined;
+  displayName: string;
+  schemaClass: string;
+  literatureReference?: Publication[] | undefined;
   reactions?: ReactionLikeEvent[] | undefined;
 
   // CatalystActivity

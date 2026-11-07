@@ -18,7 +18,7 @@ import { ReferenceMolecule } from '../model/graph/reference-entity/reference-mol
 import { Publication } from '../model/graph/publication/publication.model';
 import { Book } from '../model/graph/publication/book.model';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { Molecule } from '../model/participant.model';
+import type { Molecule } from '../model/participant.model';
 import { SimpleEntity } from '../model/graph/physical-entity/simple-entity.model';
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 import { ReferenceSequence } from '../model/graph/reference-entity/reference-sequence.model';
@@ -66,23 +66,30 @@ export function sortByYearDescending(refs: Publication[]) {
 }
 
 // Type guards to narrow the type
-export function isEvent(obj: DatabaseObject): obj is Event {
+/**
+ * Anything told apart by its class: a graph object, or a view the pathway
+ * browser builds of one (a molecule, a molecular process). The guards below
+ * read nothing else.
+ */
+export type Classed = { schemaClass: string };
+
+export function isEvent(obj: Classed): obj is Event {
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj) || isRLE(obj);
 }
 
-export function isExactlyPathway(obj: DatabaseObject): obj is Pathway {
+export function isExactlyPathway(obj: Classed): obj is Pathway {
   return obj.schemaClass === SchemaClasses.PATHWAY;
 }
 
-export function isExactlyTLP(obj: DatabaseObject): obj is TopLevelPathway {
+export function isExactlyTLP(obj: Classed): obj is TopLevelPathway {
   return obj.schemaClass === SchemaClasses.TLP;
 }
 
-export function isExactlyCellLineagePath(obj: DatabaseObject): obj is CellLineagePath {
+export function isExactlyCellLineagePath(obj: Classed): obj is CellLineagePath {
   return obj.schemaClass === SchemaClasses.CELL_LINEAGE_PATH;
 }
 
-export function isPathway(obj: DatabaseObject): obj is Pathway | TopLevelPathway | CellLineagePath {
+export function isPathway(obj: Classed): obj is Pathway | TopLevelPathway | CellLineagePath {
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj);
 }
 
@@ -105,12 +112,12 @@ const physicalEntityClasses: Set<string> = new Set([
   SchemaClasses.SUMMARY_ENTITY,
 ]);
 
-export function isPhysicalEntity(obj: DatabaseObject): obj is PhysicalEntity {
+export function isPhysicalEntity(obj: Classed): obj is PhysicalEntity {
   return physicalEntityClasses.has(obj.schemaClass);
 }
 
-export function isReferenceSummary(obj: DatabaseObject): obj is SummaryEntity {
-  return (obj as Partial<SummaryEntity>).summarisedEntities !== undefined;
+export function isReferenceSummary(obj: object): obj is SummaryEntity {
+  return 'summarisedEntities' in obj && obj.summarisedEntities !== undefined;
 }
 
 const ReferenceEntityClasses: Set<string> = new Set([
@@ -126,18 +133,18 @@ const ReferenceEntityClasses: Set<string> = new Set([
   SchemaClasses.SUMMARY_ENTITY,
 ]);
 
-export function isRefEntity(obj: DatabaseObject): obj is ReferenceEntity {
+export function isRefEntity(obj: Classed): obj is ReferenceEntity {
   return ReferenceEntityClasses.has(obj.schemaClass);
 }
 
 export function isReferenceEntityStId(id: string | undefined | null): boolean {
   return id?.includes(':') || false;
 }
-export function isEWAS(obj: DatabaseObject): obj is EntityWithAccessionedSequence {
+export function isEWAS(obj: Classed): obj is EntityWithAccessionedSequence {
   return obj.schemaClass === SchemaClasses.EWAS;
 }
 
-export function isChemical(obj: DatabaseObject): obj is SimpleEntity {
+export function isChemical(obj: Classed): obj is SimpleEntity {
   return obj.schemaClass === SchemaClasses.SIMPLE_ENTITY;
 }
 
@@ -150,7 +157,7 @@ const reactionLikeEventClasses: Set<string> = new Set([
   SchemaClasses.CELL_DEVELOPMENT_STEP,
 ]);
 
-export function isRLE(obj: DatabaseObject): obj is ReactionLikeEvent {
+export function isRLE(obj: Classed): obj is ReactionLikeEvent {
   return reactionLikeEventClasses.has(obj.schemaClass);
 }
 
@@ -167,7 +174,12 @@ const moleculeClasses: Set<string> = new Set([
   SchemaClasses.REFERENCE_THERAPEUTIC,
 ]);
 
-export function isMolecule(obj: DatabaseObject): obj is Molecule {
+/**
+ * A molecule, as the molecules view holds one: in that view the object tree's
+ * nodes are the participant service's molecules (with their url, identifier
+ * and formatted name), told apart by class like the graph objects they stand for.
+ */
+export function isMolecule<T extends { schemaClass: string }>(obj: T): obj is T & Molecule {
   return moleculeClasses.has(obj.schemaClass);
 }
 
@@ -203,14 +215,6 @@ export function isHasModifiedResidue(
   return 'type' in obj;
 }
 
-// Checks whether a given property exists in an object
-export function hasProperty<K extends keyof DatabaseObject>(
-  obj: DatabaseObject,
-  property: K
-): obj is DatabaseObject & Record<K, unknown> {
-  return property in obj;
-}
-
 const fragmentModificationClasses: Set<string> = new Set([
   SchemaClasses.FRAGMENT_MODIFICATION,
   SchemaClasses.FRAGMENT_DELETION_MODIFICATION,
@@ -218,22 +222,22 @@ const fragmentModificationClasses: Set<string> = new Set([
   SchemaClasses.FRAGMENT_REPLACED_MODIFICATION,
 ]);
 
-export function isFragmentModification(obj: DatabaseObject): obj is FragmentModification {
+export function isFragmentModification(obj: Classed): obj is FragmentModification {
   return fragmentModificationClasses.has(obj.schemaClass);
 }
 
-export function isReplacedResidue(obj: DatabaseObject): obj is ReplacedResidue {
+export function isReplacedResidue(obj: Classed): obj is ReplacedResidue {
   return (
     obj.schemaClass === SchemaClasses.REPLACED_RESIDUE ||
     obj.schemaClass === SchemaClasses.NONSENSE_MUTATION
   );
 }
 
-export function isReferenceGroup(obj: DatabaseObject): obj is ReferenceGroup {
+export function isReferenceGroup(obj: Classed): obj is ReferenceGroup {
   return obj.schemaClass === SchemaClasses.REFERENCE_GROUP;
 }
 
-export function isReferenceMolecule(obj: DatabaseObject): obj is ReferenceMolecule {
+export function isReferenceMolecule(obj: Classed): obj is ReferenceMolecule {
   return obj.schemaClass === SchemaClasses.REFERENCE_MOLECULE;
 }
 
@@ -256,7 +260,7 @@ const referenceGeneProductClasses: Set<string> = new Set([
   SchemaClasses.REFERENCE_ISOFORM,
 ]);
 
-export function isReferenceGeneProduct(obj: DatabaseObject): obj is ReferenceGeneProduct {
+export function isReferenceGeneProduct(obj: Classed): obj is ReferenceGeneProduct {
   return referenceGeneProductClasses.has(obj.schemaClass);
 }
 
@@ -267,7 +271,7 @@ export function isRefOrBook(publication: Publication): publication is Literature
   );
 }
 
-export function isSelectableObject(obj: DatabaseObject): obj is Event | PhysicalEntity {
+export function isSelectableObject(obj: Classed): obj is Event | PhysicalEntity {
   return isEvent(obj) || isPhysicalEntity(obj);
 }
 
@@ -284,6 +288,19 @@ export function isSelectableObject(obj: DatabaseObject): obj is Event | Physical
  */
 export function fieldByName(obj: object, key: string): unknown {
   return key in obj ? Reflect.get(obj, key) : undefined;
+}
+
+/**
+ * A relationship entry (it has an element), as against a graph object, which
+ * never has one: how the trees tell the two apart in what they are given.
+ */
+export const isEntry = <E extends object, R extends object>(value: E | R): value is R =>
+  'element' in value;
+
+/** A field of an object, if it is one, read as text; undefined for anything else. */
+export function textField(from: unknown, key: string): string | undefined {
+  const value = typeof from === 'object' && from !== null ? fieldByName(from, key) : undefined;
+  return typeof value === 'string' ? value : undefined;
 }
 
 /** A key any member of a union has: `inferredTo` on an event, which an entity also has. */

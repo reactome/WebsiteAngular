@@ -5,7 +5,6 @@ import { EntityService } from '../../../../../../pathway-browser/src/app/service
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
 import { PhysicalEntity } from '../../../../../../pathway-browser/src/app/model/graph/physical-entity/physical-entity.model';
 import { Pathway } from '../../../../../../pathway-browser/src/app/model/graph/event/pathway.model';
-import { DatabaseObject } from '../../../../../../pathway-browser/src/app/model/graph/database-object.model';
 import { ReferenceEntity } from '../../../../../../pathway-browser/src/app/model/graph/reference-entity/reference-entity.model';
 import { DataKeys, Labels } from '../../../../../../pathway-browser/src/app/constants/constants';
 import {
@@ -51,10 +50,7 @@ export class DetailEntityService implements Partial<EntityService> {
   }
 
   // Null for an unknown id: see EntityService.getEntityInDepth.
-  getEntityInDepth<E extends DatabaseObject>(
-    id: string | number,
-    depth: number
-  ): Observable<E | null> {
+  getEntityInDepth<E extends object>(id: string | number, depth: number): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
       .get<JsogObject<E> | null>(url, {
@@ -68,7 +64,7 @@ export class DetailEntityService implements Partial<EntityService> {
       .pipe(map((entity) => (entity === null ? null : this.flattenReferences(entity))));
   }
 
-  getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  getEventInDepth<E extends object>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
     return this.http
       .get<JsogObject<E>>(url, {

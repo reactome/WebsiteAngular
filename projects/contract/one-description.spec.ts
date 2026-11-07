@@ -158,7 +158,12 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  */
 const READER_ALIASES = [
   // The graph's classes (T025): the pathway browser's resolved, the site's plain.
-  // Unions of them the pathway browser names (a selection, a fragment change).
+  'DatabaseObject',
+  // Unions and views of them the pathway browser names (a selection, a fragment
+  // change, an ontology term's link, the description tab's tree data).
+  'OntologyTerm',
+  'TreeData',
+  'TreeNode',
   'FragmentModification',
   'SelectableObject',
   'AbstractModifiedResidue',
@@ -256,16 +261,11 @@ const READER_ALIASES = [
 ];
 
 /**
- * The pathway browser's own descriptions of graph classes the contract has
- * (T025d), each to become an alias of the contract's as its readers move onto
- * it (T025e). Held exactly: a new one fails, and one that has moved must leave
- * the list.
+ * The pathway browser's own descriptions of graph classes the contract has,
+ * pending their readers' move (T025d, T025e). Held exactly: a new one fails.
  */
-const PENDING = [
-  'projects/pathway-browser/src/app/model/graph/controlled-vocabulary/deleted-controlled-vocabulary.model.ts: interface DeletedControlledVocabulary',
-  'projects/pathway-browser/src/app/model/graph/interaction/undirected-interaction.model.ts: interface UndirectedInteraction',
-  'projects/pathway-browser/src/app/model/graph/meta-database-object/deleted-instance.model.ts: interface DeletedInstance',
-  'projects/pathway-browser/src/app/model/graph/meta-database-object/deleted.model.ts: interface Deleted',
+const PENDING: string[] = [
+  // Empty since T025e: every graph class the pathway browser reads is the contract's.
 ];
 
 /** Declarations that share a contract name but describe something else, and why. */
