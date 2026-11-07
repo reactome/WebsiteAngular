@@ -93,5 +93,6 @@
   "GET /ContentService/citation/pathway/{id}",
   "GET /ContentService/citation/static/{id}",
   "GET /ContentService/citation/export",
-  "POST /ContentService/contact"
+  "POST /ContentService/contact",
+  "GET /ContentService/openapi.json"
 ]

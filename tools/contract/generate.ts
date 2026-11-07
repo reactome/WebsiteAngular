@@ -2,16 +2,25 @@
  * The API description, generated from the contract (spec 016, US4): an
  * OpenAPI 3.1 document of every route the content service answers, with the
  * answer the contract has for it, and the rest listed as not yet in the
- * contract. Run as a script, it writes projects/contract/openapi.json;
- * generate.spec.ts checks the committed file is what this makes.
+ * contract. What the contract does not hold -- each operation's group,
+ * summary, notes, parameters and request body, and what an error status
+ * means -- is Java's documentation of the operation (java-documentation.json,
+ * snapshot-java-documentation.ts), merged in (T028), so the published
+ * description says everything Java's did. Run as a script, it writes
+ * projects/contract/openapi.json, which the content service publishes at
+ * /ContentService/openapi.json; generate.spec.ts checks the committed file is
+ * what this makes.
  *
  *   node tools/contract/generate.ts
  */
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGenerator } from 'ts-json-schema-generator';
+import { RECORD } from '../content-node/parameters.ts';
 import { endpoints } from '../content-node/registry.ts';
+import { DOCUMENTATION } from './snapshot-java-documentation.ts';
+import type { DocumentedOperation, JavaDocumentation } from './snapshot-java-documentation.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 export const DESCRIPTION = path.join(ROOT, 'projects/contract/openapi.json');
@@ -124,40 +133,151 @@ export function components(definitions: Record<string, unknown>): Record<string,
   return Object.fromEntries(named.sort(([a], [b]) => byCodeUnit(a, b)));
 }
 
+/** Where the content service's routes are, in Java's documentation (its paths carry none). */
+const PREFIX = '/ContentService';
+
+/** Java's documentation of its operations, as kept (snapshot-java-documentation.ts). */
+const javaDocumentation = (): JavaDocumentation =>
+  JSON.parse(readFileSync(DOCUMENTATION, 'utf8')) as JavaDocumentation;
+
+/** A path template as a pattern of the paths it answers, each variable one segment or part of one. */
+const templatePattern = (template: string) =>
+  new RegExp(
+    `^${template
+      .split(/\{[^}]+\}/)
+      .map((part) => part.replace(/[.*+?^$()|[\]\\]/g, '\\$&'))
+      .join('[^/]+')}$`
+  );
+
+/**
+ * The Java operation a served route answers for: the record's (parameters.ts)
+ * for a GET it names one, or the one at the same path, its variables aside.
+ */
+function javaOperationOf(route: string, documented: string[]): string | undefined {
+  const [method = '', where = ''] = route.split(' ');
+  const recorded = method === 'GET' ? RECORD[where] : undefined;
+  if (recorded) return recorded.java === null ? undefined : `GET ${PREFIX}${recorded.java}`;
+  const shape = (path: string) => path.replace(/\{[^}]+\}/g, '{}');
+  return documented.find((each) => {
+    const [verb = '', path = ''] = each.split(' ');
+    return verb === method && shape(path) === shape(where);
+  });
+}
+
+/**
+ * An operation's documentation on a path of the description: Java's
+ * parameters, each path variable named as the path names it (the service's
+ * names are not always Java's), its notes kept by position.
+ */
+function documented(java: DocumentedOperation | undefined, where: string) {
+  const templated = pathParameters(where);
+  if (!java) return { ...(templated.length ? { parameters: templated } : {}) };
+  const { responses: _responses, parameters = [], ...rest } = java;
+  const isPath = (parameter: unknown) =>
+    typeof parameter === 'object' && parameter !== null && Reflect.get(parameter, 'in') === 'path';
+  const javaPath = parameters.filter(isPath);
+  const notes = (at: number): string | undefined => {
+    const note: unknown =
+      javaPath.length === templated.length
+        ? Reflect.get(Object(javaPath[at]), 'description')
+        : undefined;
+    return typeof note === 'string' ? note : undefined;
+  };
+  const named = templated.map((parameter, at) => {
+    const note = notes(at);
+    return note ? { ...parameter, description: note } : parameter;
+  });
+  const all = [...named, ...parameters.filter((parameter) => !isPath(parameter))];
+  return { ...rest, ...(all.length ? { parameters: all } : {}) };
+}
+
+/** What each status Java documents means; its answers' media types where the contract has no schema. */
+function documentedResponses(java: DocumentedOperation | undefined, contract: boolean) {
+  const out: Record<string, Schema> = {};
+  for (const [status, answer] of Object.entries(java?.responses ?? {})) {
+    if (status === '200' && contract) continue;
+    out[status] = {
+      description: status === '200' ? 'Not yet described by the contract.' : answer.description,
+      ...(answer.mediaTypes
+        ? { content: Object.fromEntries(answer.mediaTypes.map((type) => [type, {}])) }
+        : {}),
+    };
+  }
+  return out;
+}
+
 /** The OpenAPI document, as an object. */
 export function generate() {
   const { table, definitions } = contractSchemas();
-  const paths: Record<string, Record<string, Schema>> = {};
+  const java = javaDocumentation();
+  const javaOperations = new Map<string, DocumentedOperation>();
+  for (const [where, methods] of Object.entries(java.paths))
+    for (const [method, operation] of Object.entries(methods))
+      javaOperations.set(`${method.toUpperCase()} ${PREFIX}${where}`, operation);
+  const documentedRoutes = [...javaOperations.keys()];
+
   const served = servedRoutes();
-  for (const route of [...new Set([...served, ...Object.keys(table)])].sort(byCodeUnit)) {
+  const routes = [...new Set([...served, ...Object.keys(table)])];
+  // A served route Java documents under a narrower path (/exporter/diagram/{id}
+  // for /exporter/diagram/{identifier}.{ext}) is listed as Java documents it;
+  // an operation the service leaves to Java is listed too, as it is still the
+  // content service's.
+  const covering = (javaRoute: string) =>
+    routes.find((route) => {
+      const [method = '', where = ''] = route.split(' ');
+      const [verb = '', path = ''] = javaRoute.split(' ');
+      return method === verb && !table[route] && templatePattern(where).test(path);
+    });
+  const answered = new Map<string, string | undefined>();
+  for (const route of routes) answered.set(route, javaOperationOf(route, documentedRoutes));
+  const matched = new Set(answered.values());
+  const listed = new Map<string, string | undefined>();
+  for (const [route, javaRoute] of answered)
+    if (
+      javaRoute ||
+      !documentedRoutes.some((each) => !matched.has(each) && covering(each) === route)
+    )
+      listed.set(route, javaRoute);
+  for (const javaRoute of documentedRoutes)
+    if (!matched.has(javaRoute)) listed.set(javaRoute, javaRoute);
+
+  const paths: Record<string, Record<string, Schema>> = {};
+  for (const route of [...listed.keys()].sort(byCodeUnit)) {
     const [method = '', where = ''] = route.split(' ');
     const answer = table[route];
-    const parameters = pathParameters(where);
+    const javaRoute = listed.get(route);
+    const javaOperation = javaRoute ? javaOperations.get(javaRoute) : undefined;
     (paths[where] ??= {})[method.toLowerCase()] = answer
       ? {
-          ...(parameters.length ? { parameters } : {}),
+          ...documented(javaOperation, where),
           responses: {
             '200': {
               description: 'The answer.',
               content: { 'application/json': { schema: rewriteRefs(answer) } },
             },
+            ...documentedResponses(javaOperation, true),
           },
         }
       : {
           'x-contract': 'not yet',
-          ...(parameters.length ? { parameters } : {}),
-          responses: { '200': { description: 'Not yet described by the contract.' } },
+          ...documented(javaOperation, where),
+          responses: {
+            '200': { description: 'Not yet described by the contract.' },
+            ...documentedResponses(javaOperation, false),
+          },
         };
   }
   const schemas = components(definitions);
   return {
     openapi: '3.1.1',
     info: {
+      ...java.info,
       title: 'Reactome Content Service',
       version: 'contract',
       description:
-        'Generated from the shared contract (projects/contract). A route marked x-contract "not yet" is answered by the service but not yet described here.',
+        'Each answer is generated from the shared contract (projects/contract); each operation, its parameters and its errors as the service documents them. An answer marked x-contract "not yet" is not yet described by the contract.',
     },
+    tags: java.tags,
     paths,
     components: { schemas },
   };

@@ -66,6 +66,7 @@ import { createHash } from 'node:crypto';
 import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
 import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
 import { serveReleaseFiles } from './release-files';
+import { serveDescription } from './description';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -580,6 +581,7 @@ export const test = base.extend({
       // only when it is being recorded.
       // (A limit of 0 means none, and stays none.)
       if (testInfo.timeout) testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
+      await serveDescription(context);
       await use(context);
       // The HAR is written when the context closes, and a response still
       // streaming then is recorded as a 200 with no body -- replayed, a
@@ -703,6 +705,7 @@ export const test = base.extend({
       });
     });
 
+    await serveDescription(context);
     await use(context);
     await angular.check(testInfo);
     gsa.check(testInfo);

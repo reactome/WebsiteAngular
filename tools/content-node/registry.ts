@@ -20,6 +20,7 @@ import { pathwaysEventsEndpoints } from './pathways-events-endpoints.ts';
 import { searchEndpoints } from './search-endpoints.ts';
 import { searchDiagramEndpoints } from './search-diagram-endpoints.ts';
 import { contactEndpoints } from './contact-endpoints.ts';
+import { descriptionEndpoints } from './description-endpoints.ts';
 
 export { refreshPsicquicResources };
 
@@ -45,6 +46,7 @@ export const endpoints: Endpoint[] = [
   ...searchDiagramEndpoints,
   ...citationEndpoints,
   ...contactEndpoints,
+  ...descriptionEndpoints,
 ];
 
 /**

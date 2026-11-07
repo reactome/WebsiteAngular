@@ -73,6 +73,7 @@ describe('the record', () => {
       ['/ContentService/exporter/fireworks/{id}', 'private'],
       ['/ContentService/exporter/voronoi/{id}', 'private'],
       ['/ContentService/interactors/psicquic/resources', 'never'],
+      ['/ContentService/openapi.json', 'never'],
     ]);
   });
 });
