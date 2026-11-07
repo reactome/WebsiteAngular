@@ -42,8 +42,34 @@ describe("the download guard, as Spring's", () => {
   });
 
   it('marks a body without one inline f.txt on an untrusted extension', async () => {
-    expect(await disposition(PATH, { status: 200, type: 'text/plain', body: 'x' })).toBe(
-      'inline;filename=f.txt'
-    );
+    expect(
+      await disposition('/ContentService/data/query/R-HSA-69620.sbgn', {
+        status: 200,
+        type: 'text/plain',
+        body: 'x',
+      })
+    ).toBe('inline;filename=f.txt');
+  });
+
+  // Spring trusts an extension its matched pattern ends in: Java's 404 for an
+  // unknown event's `.sbgn` has no Content-Disposition (measured 8 Nov 2026).
+  it('leaves an error unmarked on a mapping whose pattern names its extension', async () => {
+    expect(
+      await disposition('/ContentService/exporter/event/R-ALL-0000.sbgn', {
+        status: 404,
+        type: 'application/json',
+        body: '{}',
+      })
+    ).toBeNull();
+  });
+
+  it('still marks the same extension on a path no such mapping answers', async () => {
+    expect(
+      await disposition('/ContentService/data/query/R-ALL-0000.sbgn', {
+        status: 404,
+        type: 'application/json',
+        body: '{}',
+      })
+    ).toBe('inline;filename=f.txt');
   });
 });
