@@ -6,7 +6,6 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { catchError, filter, map, Observable, of, take, throwError } from 'rxjs';
 import { DataStateService } from './data-state.service';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { DatabaseObject } from '../model/graph/database-object.model';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { ParticipantService } from './participant.service';
 import { DataKeys, Labels } from '../constants/constants';
@@ -73,10 +72,7 @@ export class EntityService {
    * Null for an id the service does not know: it answers that with 200 and an
    * empty body, unlike the event endpoint's 404.
    */
-  getEntityInDepth<E extends DatabaseObject>(
-    id: string | number,
-    depth: number
-  ): Observable<E | null> {
+  getEntityInDepth<E extends object>(id: string | number, depth: number): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
       .get<JsogObject<E> | null>(url, {
@@ -93,7 +89,7 @@ export class EntityService {
       );
   }
 
-  getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  getEventInDepth<E extends object>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
     return this.http
       .get<JsogObject<E>>(url, {

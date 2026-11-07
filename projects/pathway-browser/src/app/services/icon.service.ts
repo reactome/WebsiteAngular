@@ -4,8 +4,7 @@ import { map, Observable, of, switchMap } from 'rxjs';
 import { CONTENT_SERVICE, ICON_BASE, environment } from '../../environments/environment';
 import { GeneralService } from './general.service';
 import { HttpClient } from '@angular/common/http';
-import { isExactlyCellLineagePath, isRLE } from './utils';
-import { DatabaseObject } from '../model/graph/database-object.model';
+import { type Classed, isExactlyCellLineagePath, isRLE, textField } from './utils';
 import { SchemaClasses } from '../constants/constants';
 
 /**
@@ -283,7 +282,7 @@ export class IconService {
       );
   }
 
-  getIconDetails(obj: DatabaseObject | string): { name: string; tooltip?: string; route?: string } {
+  getIconDetails(obj: Classed | string): { name: string; tooltip?: string; route?: string } {
     const defaultIcon = { name: '?', tooltip: '' + obj };
 
     let key: string | undefined;
@@ -291,8 +290,10 @@ export class IconService {
     if (typeof obj === 'string') {
       key = obj;
     } else {
-      if (obj['referenceType'] !== undefined) {
-        key = obj['referenceType'] as string;
+      // A reference entity's, or a summary's; read as text from anything else.
+      const referenceType = textField(obj, 'referenceType');
+      if (referenceType !== undefined) {
+        key = referenceType;
       } else if (isRLE(obj) && obj.category) {
         key = obj.category;
       } else if (isExactlyCellLineagePath(obj)) {

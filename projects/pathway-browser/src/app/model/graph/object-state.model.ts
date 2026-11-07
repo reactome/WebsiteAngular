@@ -1,4 +1,6 @@
 import type { Event } from './event/event.model';
+import type { DatabaseObject } from './database-object.model';
+import type { Relationship } from './relationship.model';
 
 /**
  * What the pathway browser adds to an object it holds, in its trees and tabs,
@@ -21,6 +23,12 @@ export interface ObjectState {
   /** A pathway's colour and hit count in the tree; cleared to undefined. */
   subpathwayColor?: string | undefined;
   hitReactionsCount?: string | undefined;
+  /**
+   * A node's children in the object tree: the answer's composition where its
+   * class has one, and the tree's own entries otherwise (it sets an empty list
+   * to make a node expandable).
+   */
+  composedOf?: Relationship.Has<DatabaseObject>[];
   /** A composition entry's position, and how the molecules tab shows it. */
   index?: number;
   moleculeView?: boolean;

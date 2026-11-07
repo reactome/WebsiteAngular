@@ -1,6 +1,7 @@
 import type * as Graph from '../../../../../contract/graph-core.ts';
 import type { JsogReference } from '../../../../../contract/graph.ts';
 import { DatabaseObject } from './database-object.model';
+import type { TreeMolecule } from '../participant.model';
 import type { Resolved } from '../../utils/JSOGDeserializer';
 
 export namespace Relationship {
@@ -9,7 +10,7 @@ export namespace Relationship {
    * an element, how many times, in what order, of what type; with the
    * position and display state the trees add.
    */
-  export interface Has<O extends DatabaseObject, Type extends string = string> {
+  export interface Has<O extends DatabaseObject | TreeMolecule, Type extends string = string> {
     type: Type;
     stoichiometry: number;
     order: number;

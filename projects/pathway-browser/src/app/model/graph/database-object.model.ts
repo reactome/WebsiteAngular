@@ -1,18 +1,10 @@
-import { InstanceEdit } from './instance-edit.model';
-import type { Relationship } from './relationship.model';
+import type { GraphObject } from '../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface DatabaseObject {
-  [key: string]: any;
-
-  dbId: number;
-  stId?: string;
-  displayName: string;
-  schemaClass: string;
-  modified?: InstanceEdit;
-  created?: InstanceEdit;
-
-  // tree
-  composedOf?: Relationship.Has<DatabaseObject>[];
-  isLoaded?: boolean;
-  _updateCounter?: number;
-}
+/**
+ * Any object of the graph, as the pathway browser reads it: the contract's
+ * GraphObject, resolved, with what the pathway browser adds to it
+ * (ObjectState). It used to take any field at all (`[key: string]: any`).
+ */
+export type DatabaseObject = Resolved<GraphObject<JsogReference>>;

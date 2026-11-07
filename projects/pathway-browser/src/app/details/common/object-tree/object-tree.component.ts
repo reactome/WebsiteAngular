@@ -19,8 +19,12 @@ import {
   isRefEntity,
   isReferenceSummary,
   isRLE,
+  type Classed,
+  fieldByName,
   getProperty,
+  isEntry,
   isSelectableObject,
+  textField,
   firstName,
 } from '../../../services/utils';
 import {
@@ -34,6 +38,7 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { forkJoin, map, Observable, of } from 'rxjs';
 import { SelectableObject } from '../../../services/event.service';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
+import type { TreeMolecule } from '../../../model/participant.model';
 import { SchemaClasses } from '../../../constants/constants';
 import { IconService } from '../../../services/icon.service';
 import { EntityService } from '../../../services/entity.service';
@@ -69,7 +74,14 @@ type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
   styleUrl: './object-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationship.Has<E>> {
+/**
+ * The tree's nodes are graph objects, or, in the molecules view, the
+ * participant service's molecules (Molecule), which stand for them.
+ */
+export class ObjectTreeComponent<
+  E extends DatabaseObject | TreeMolecule,
+  R extends Relationship.Has<E>,
+> {
   private iconService = inject(IconService);
   private entity = inject(EntityService);
   private dataStateService = inject(DataStateService);
@@ -99,13 +111,12 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    * not what the tag is for.
    */
   expressionOf(element: E): number | undefined {
-    // Both reach the element through its index signature.
-    const reference = element['referenceEntity'] as
-      { identifier?: string; variantIdentifier?: string } | undefined;
+    // A molecule's own identifier, or its reference entity's (its isoform's too), as text.
+    const reference = fieldByName(element, 'referenceEntity');
     const exp = this.analysis.expressionFor([
-      element['identifier'] as string | undefined,
-      reference?.identifier,
-      reference?.variantIdentifier,
+      textField(element, 'identifier'),
+      textField(reference, 'identifier'),
+      textField(reference, 'variantIdentifier'),
     ]);
     return exp?.[this.analysis.sampleIndex()];
   }
@@ -136,12 +147,15 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const highlight = this.highlight();
     if (isArray(data) && data.length === 0) return [];
     if (!isArray(data)) data = [data];
-    if (data[0]?.stoichiometry)
-      return data.map((r, index) => ({
-        ...r,
-        element: { ...r.element, composedOf: r.element.composedOf || [] },
-        index: index,
-      })) as R[];
+    const [first] = data;
+    if (first && isEntry<E, R>(first) && first.stoichiometry)
+      return data
+        .filter((r) => isEntry<E, R>(r))
+        .map((r, index) => ({
+          ...r,
+          element: { ...r.element, composedOf: r.element.composedOf || [] },
+          index: index,
+        })) as R[];
     return (data as E[]).map(
       (e) =>
         ({
@@ -218,6 +232,11 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     },
   });
 
+  /** A node's stable id; a molecule in the molecules view has none. */
+  private stIdOf(node: DatabaseObject | TreeMolecule): string | undefined {
+    return 'stId' in node ? node.stId : undefined;
+  }
+
   inDepth(id: string | number, depth: number): Observable<E | null> {
     return this.scope() === 'entity'
       ? this.entity.getEntityInDepth<E>(id, depth)
@@ -226,7 +245,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   // TODO only query for the required data, no need to know where the molecule is acting in this view
   _selectedTreeNodeData = rxResource({
-    params: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
+    params: () => {
+      const node = this.selectedTreeNode();
+      return node ? this.stIdOf(node) || node.dbId : undefined;
+    },
     stream: (param) => {
       const selectedNode = this.selectedTreeNode();
       // Check the condition to determine which method to call
@@ -301,7 +323,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   fetchTreeAtDepth(node: R, depth: number): Observable<R> {
     const element = node.element as E;
-    const id = element.stId || element.dbId;
+    const id = this.stIdOf(element) || element.dbId;
 
     if (!this.isNestedView(element) || depth === 0) {
       // Return node with composedOf when element is protein
@@ -444,7 +466,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     ]);
   }
 
-  getSymbol(obj: DatabaseObject | string) {
+  getSymbol(obj: Classed | string) {
     return this.iconService.getIconDetails(obj);
   }
 
@@ -590,17 +612,18 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
-    if (!node.stId) return;
+    const stId = this.stIdOf(node);
+    if (!stId) return;
     if (this.requireNavigate(node)) {
-      this.state.pathwayId.set(node.stId);
+      this.state.pathwayId.set(stId);
       this.state.select.set(null);
     } else {
-      this.state.select.set(node.stId);
+      this.state.select.set(stId);
     }
   }
 
   selectTooltip(node: E) {
-    const id = node.stId || node.dbId;
+    const id = this.stIdOf(node) || node.dbId;
     const action = this.requireNavigate(node) ? 'Navigate to' : 'Select ';
     return `${action} ${id}`;
   }
@@ -632,7 +655,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       return element.url;
     }
     // Not proteins/chemical or molecule, linking to details page
-    return `${CONTENT_DETAIL}/${element.stId}`;
+    return `${CONTENT_DETAIL}/${this.stIdOf(element)}`;
   }
 
   getDisplayName(_node: R, element: E): string {
