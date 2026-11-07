@@ -23,7 +23,10 @@ import { MatTree } from '@angular/material/tree';
 import type { Analysis } from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
 import { EhldService } from './ehld.service';
-import { TopLevelPathway } from '../model/graph/event/top-level-pathway.model';
+import {
+  type PlainTopLevelPathway,
+  TopLevelPathway,
+} from '../model/graph/event/top-level-pathway.model';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { isDefined, isPathway, isPhysicalEntity, isRLE } from './utils';
 import { DatabaseObjectService } from './database-object.service';
@@ -33,6 +36,36 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 
 export type SelectableObject = Event | PhysicalEntity | SummaryEntity;
+
+/**
+ * The top-level pathways with each species the plain answer wrote as a dbId
+ * replaced by the species it wrote whole earlier (the writer writes a
+ * pathway's species once, then by dbId, as Java's Jackson does). A species
+ * is the only reference this answer holds: no other related object is
+ * written (6,260 recorded pathways), so with the species resolved each is the
+ * tree's event, which is what the one cast below says.
+ */
+export function resolveSpecies(answer: PlainTopLevelPathway[]): TopLevelPathway[] {
+  const written = new Map<
+    number,
+    Exclude<NonNullable<PlainTopLevelPathway['species']>[number], number>
+  >();
+  for (const pathway of answer)
+    for (const species of pathway.species ?? [])
+      if (typeof species !== 'number') written.set(species.dbId, species);
+  return answer.map(({ species, ...rest }) => {
+    // A pathway without species is left without, as it came.
+    const resolved = species
+      ? {
+          ...rest,
+          species: species
+            .map((each) => (typeof each === 'number' ? written.get(each) : each))
+            .filter(isDefined),
+        }
+      : rest;
+    return resolved as TopLevelPathway;
+  });
+}
 
 @Injectable({
   providedIn: 'root',
@@ -93,7 +126,7 @@ export class EventService {
 
   fetchTlpsBySpecies(taxId: string): Observable<TopLevelPathway[]> {
     const url = `${this._TOP_LEVEL_PATHWAYS}${taxId}`;
-    return this.http.get<TopLevelPathway[]>(url);
+    return this.http.get<PlainTopLevelPathway[]>(url).pipe(map(resolveSpecies));
   }
 
   /** An event's lineages, each from the event itself up to a top-level pathway, reversed here: top first. */
