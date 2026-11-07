@@ -19,12 +19,15 @@ export interface JsogReference {
 }
 
 /** How an answer refers to an object it has written already: JSOG's reference, or the dbId. */
-type Ref = JsogReference | number;
+export type Ref = JsogReference | number;
+
+/** What JSOG adds to an object written whole: its number, on its first appearance; absent elsewhere. */
+export interface JsogFields {
+  '@id'?: string;
+}
 
 /** What every class writes. */
-interface DatabaseObjectFields {
-  /** The object's number in a JSOG answer, on its first appearance; absent elsewhere. */
-  '@id'?: string;
+interface DatabaseObjectFields extends JsogFields {
   dbId: number;
   displayName: string;
   stId?: string;
@@ -110,14 +113,18 @@ export interface Book<R extends Ref> extends PublicationFields<R> {
   isbn?: string;
 }
 
-/** A web page. Measured over 61: the address always. */
-interface URL<R extends Ref> extends PublicationFields<R> {
+/**
+ * A web page: Java's URL. Named apart from it because the description's generator
+ * takes any type named URL for the built-in one (a string). Measured over 61: the
+ * address always.
+ */
+export interface UrlPublication<R extends Ref> extends PublicationFields<R> {
   schemaClass: 'URL';
   uniformResourceLocator: string;
 }
 
 /** @discriminator schemaClass */
-export type Publication<R extends Ref> = LiteratureReference<R> | Book<R> | URL<R>;
+export type Publication<R extends Ref> = LiteratureReference<R> | Book<R> | UrlPublication<R>;
 
 /**
  * An identifier in another database. Measured over 5,682 in the enhanced
@@ -149,7 +156,7 @@ export interface ReferenceDatabase<R extends Ref> extends DatabaseObjectFields, 
 // event or an entity.
 
 /** A taxon, or a species, which is one. */
-interface Taxon<R extends Ref> extends DatabaseObjectFields, Edited<R> {
+export interface Taxon<R extends Ref> extends DatabaseObjectFields, Edited<R> {
   schemaClass: 'Taxon';
   /** Never recorded as a class of its own: as the snapshot writes it, each field may be left out. */
   name?: string[];
@@ -208,7 +215,7 @@ export interface GO_MolecularFunction<R extends Ref> extends GoTermFields<R> {
   ecNumber?: string;
 }
 
-interface GO_CellularComponent<R extends Ref> extends CellularComponentFields<R> {
+export interface GO_CellularComponent<R extends Ref> extends CellularComponentFields<R> {
   schemaClass: 'GO_CellularComponent';
 }
 
@@ -218,7 +225,7 @@ export interface Compartment<R extends Ref> extends CellularComponentFields<R> {
 }
 
 /** A cellular component or a compartment. @discriminator schemaClass */
-type AnyGO_CellularComponent<R extends Ref> = GO_CellularComponent<R> | Compartment<R>;
+export type AnyGO_CellularComponent<R extends Ref> = GO_CellularComponent<R> | Compartment<R>;
 
 /**
  * What every term of an external ontology writes. Measured over 77 diseases,
@@ -256,7 +263,7 @@ export interface Disease<R extends Ref> extends ExternalOntologyFields<R> {
   url: string;
 }
 
-interface EvidenceType<R extends Ref> extends ExternalOntologyFields<R> {
+export interface EvidenceType<R extends Ref> extends ExternalOntologyFields<R> {
   schemaClass: 'EvidenceType';
   name: string[];
 }
@@ -272,7 +279,7 @@ export interface PsiMod<R extends Ref> extends ExternalOntologyFields<R> {
   label: string;
 }
 
-interface SequenceOntology<R extends Ref> extends ExternalOntologyFields<R> {
+export interface SequenceOntology<R extends Ref> extends ExternalOntologyFields<R> {
   schemaClass: 'SequenceOntology';
 }
 

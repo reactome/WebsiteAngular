@@ -68,7 +68,27 @@ function contractSchemas() {
     entry['oneOf'] = entry['anyOf'];
     delete entry['anyOf'];
   }
+  for (const schema of Object.values(definitions)) nameTags(schema);
   return { table: table.properties, definitions };
+}
+
+/**
+ * A discriminated union (the graph's classes) lists its tag as required, here
+ * and wherever it is written inline: name it as a property too, a string, which
+ * is what a required field must be in ajv's strict mode (strictRequired), and
+ * says no more than each class does.
+ */
+function nameTags(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(nameTags);
+    return;
+  }
+  if (value === null || typeof value !== 'object') return;
+  const schema = value as Schema;
+  const tag = (schema['discriminator'] as { propertyName?: unknown } | undefined)?.propertyName;
+  if (typeof tag === 'string' && !schema['properties'])
+    schema['properties'] = { [tag]: { type: 'string' } };
+  Object.values(schema).forEach(nameTags);
 }
 
 /** The route table's routes, as "METHOD /path": what the contract describes. */
