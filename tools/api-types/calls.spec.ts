@@ -27,16 +27,6 @@ function numbered(scanned: ScannedCall[]): (ScannedCall & { n: number })[] {
   });
 }
 
-/**
- * Calls the site reads as anything at all today (research R1). Each is typed
- * by its own task (T010); one may leave this list, never join it.
- */
-const READ_AS_ANYTHING = [
-  'projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › molecules',
-  'projects/pathway-browser/src/app/diagram/entity-popup/entity-popup.component.ts › molecules #2',
-  'projects/website-angular/src/services/content-data.service.ts › getInstance',
-];
-
 const flat = (type: string) => type.replace(/\s+/g, ' ').replace(/;\s*}/g, ' }');
 
 /**
@@ -114,13 +104,13 @@ describe('the call table', () => {
     }
   });
 
-  it('reads no new answer as anything', () => {
+  // The last calls read as anything (research R1) were typed in T026: none
+  // may be again.
+  it('reads no answer as anything', () => {
     const anything = numbered(scanned)
       .filter((c) => /^(any|unknown|\(untyped\))$/.test(c.readAs))
       .map(where);
-    expect(anything.filter((w) => !READ_AS_ANYTHING.includes(w))).toEqual([]);
-    // And the list is kept exact: a call typed since is taken off it.
-    expect(READ_AS_ANYTHING.filter((w) => !anything.includes(w))).toEqual([]);
+    expect(anything).toEqual([]);
   });
 
   it('says where every name a type uses comes from', () => {

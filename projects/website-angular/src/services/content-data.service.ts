@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, timer } from 'rxjs';
 import { retry, timeout } from 'rxjs/operators';
+import type { PlainGraphObject } from '../../../pathway-browser/src/app/model/graph/plain.model';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 import {
   TocPathway,
@@ -78,8 +79,9 @@ export class ContentDataService {
     return this.http.get<number>(url);
   }
 
-  getInstance(id: string | number): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/query/enhanced/${id}`);
+  /** Any object of the graph, plain: asked without includeRef. */
+  getInstance(id: string | number): Observable<PlainGraphObject> {
+    return this.http.get<PlainGraphObject>(`${this.baseUrl}/query/enhanced/${id}`);
   }
 
   getInstanceReferrers(id: string | number): Observable<InstanceReferrals[]> {

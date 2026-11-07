@@ -1,4 +1,4 @@
-import { InstanceReferrals, SchemaAttribute } from '../../../../model/content.model';
+import { InstanceReferrals } from '../../../../model/content.model';
 import {
   Component,
   input,
@@ -13,18 +13,8 @@ import { RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { ContentDataService } from '../../../../services/content-data.service';
-
-interface AttributeRow {
-  name: string;
-  values: AttributeValue[];
-}
-
-interface AttributeValue {
-  type: 'text' | 'link';
-  text: string;
-  dbId?: number;
-  schemaClass?: string;
-}
+import type { PlainGraphObject } from '../../../../../../pathway-browser/src/app/model/graph/plain.model';
+import { AttributeRow, fieldRows, schemaRows } from './instance-rows';
 
 @Component({
   selector: 'app-instance-browser',
@@ -43,7 +33,8 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   readonly instanceId = input.required<number | string>();
   readonly instanceLinkClick = output<number>();
 
-  instance: any = null;
+  /** Plain: an object the answer has written already is its dbId. */
+  instance: PlainGraphObject | null = null;
   schemaClass = '';
   dbId: number | string = '';
   rows: AttributeRow[] = [];
@@ -74,7 +65,7 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
       .subscribe({
         next: (instance) => {
           this.instance = instance;
-          this.schemaClass = instance.schemaClass || instance.className || '';
+          this.schemaClass = instance.schemaClass;
           this.dbId = instance.dbId;
           this.loadAttributes();
           this.loadReferrals();
@@ -109,91 +100,17 @@ export class InstanceBrowserComponent implements OnChanges, OnDestroy {
   private loadAttributes() {
     this.contentDataService.getSchemaAttributes(this.schemaClass).subscribe({
       next: (attrs) => {
-        this.rows = this.buildRows(attrs);
+        this.rows = this.instance ? schemaRows(this.instance, attrs) : [];
         this.loading = false;
         this.cdr.markForCheck();
       },
       error: () => {
         // Fall back to rendering instance keys directly
-        this.rows = this.buildRowsFromInstance();
+        this.rows = this.instance ? fieldRows(this.instance) : [];
         this.loading = false;
         this.cdr.markForCheck();
       },
     });
-  }
-
-  private buildRows(attrs: SchemaAttribute[]): AttributeRow[] {
-    const rows: AttributeRow[] = [];
-    for (const attr of attrs) {
-      const raw = this.instance[attr.name];
-      if (raw === undefined || raw === null) continue;
-
-      const hasDatabaseObjectType = attr.valueTypes.some((vt) => vt.databaseObject);
-      const values = this.resolveValues(raw, hasDatabaseObjectType);
-      if (values.length > 0) {
-        rows.push({ name: attr.name, values });
-      }
-    }
-    return rows;
-  }
-
-  private buildRowsFromInstance(): AttributeRow[] {
-    const rows: AttributeRow[] = [];
-    for (const key of Object.keys(this.instance)) {
-      const raw = this.instance[key];
-      if (raw === undefined || raw === null) continue;
-      const values = this.resolveValues(raw, false);
-      if (values.length > 0) {
-        rows.push({ name: key, values });
-      }
-    }
-    return rows;
-  }
-
-  private resolveValues(raw: any, hasDatabaseObjectType: boolean): AttributeValue[] {
-    if (Array.isArray(raw)) {
-      const result: AttributeValue[] = [];
-      for (const item of raw) {
-        result.push(...this.resolveSingleValue(item, hasDatabaseObjectType));
-      }
-      return result;
-    }
-    return this.resolveSingleValue(raw, hasDatabaseObjectType);
-  }
-
-  private resolveSingleValue(val: any, hasDatabaseObjectType: boolean): AttributeValue[] {
-    // Database object with dbId
-    if (val !== null && typeof val === 'object' && val.dbId) {
-      return [
-        {
-          type: 'link',
-          text: `[${val.schemaClass || val.className || 'Object'}:${
-            val.dbId
-          }] ${val.displayName || ''}`,
-          dbId: val.dbId,
-          schemaClass: val.schemaClass || val.className,
-        },
-      ];
-    }
-
-    // Numeric ID reference (e.g. authored: [109913]) when schema says it's a database object
-    if (typeof val === 'number' && hasDatabaseObjectType) {
-      return [
-        {
-          type: 'link',
-          text: `${val}`,
-          dbId: val,
-        },
-      ];
-    }
-
-    // Primitive
-    return [
-      {
-        type: 'text',
-        text: String(val),
-      },
-    ];
   }
 
   onLinkClick(dbId: number, event: Event) {
