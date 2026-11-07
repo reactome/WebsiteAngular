@@ -66,6 +66,9 @@
                     @if (readout.basis === 'proxy') {
                       (read from its producing reactions)
                     }
+                    @if (readout.railed) {
+                      — at the model's bound, a switch state rather than a measured level
+                    }
                   </span>
                 }
               }
@@ -230,6 +233,16 @@
           </div>
           <span>{{ result.iterations }} iterations · {{ result.solve_time | number: '1.3-3' }} s</span>
         </div>
+        @if (!result.converged) {
+          <p class="method-note nonconverged" role="alert">
+            The solve stopped at its iteration budget before reaching a steady state
+            @if (result.residual !== undefined) {
+              (how far off: {{ result.residual | number: '1.2-4' }})
+            }
+            — the values below are where the iteration stopped, not a settled answer. DeltaSignal's published accuracy
+            was measured on converged solves; treat these calls with caution.
+          </p>
+        }
 
         <div class="view-toggle" role="tablist" aria-label="DeltaSignal result view">
           <button
@@ -284,6 +297,18 @@
                 }
                 — the same rule the benchmark figures used. Between the thresholds the model calls no change.
               </dd>
+              <dt>At the model's bound</dt>
+              <dd>
+                Node levels live between hard stops
+                @if (service.readoutState().protocol; as protocol) {
+                  @if (protocol.rail_low !== undefined && protocol.rail_high !== undefined) {
+                    ({{ protocol.rail_low }}× and {{ protocol.rail_high }}× here)
+                  }
+                }
+                — a prediction at a stop is a switch pushed to one side, not a measured magnitude. The direction call
+                still stands, but read the number as "as far as the model can go", the same rule DeltaSignal's own
+                validation record uses to set such values aside.
+              </dd>
               <dt>Influence</dt>
               <dd>
                 How strongly everything this entity feeds directly in the logic network (the reactions it is an input
@@ -324,7 +349,12 @@
                       }
                     </small>
                   </span>
-                  <span role="cell">{{ row.fold | number: '1.2-2' }}×</span>
+                  <span role="cell">
+                    {{ row.fold | number: '1.2-2' }}×
+                    @if (row.railed) {
+                      <small class="railed-note">at the model's bound</small>
+                    }
+                  </span>
                   <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
                     {{ row.call === 'normal' ? 'no change' : row.call }}
                   </span>
@@ -343,5 +373,49 @@
         }
       </section>
     }
+
+    <details class="column-help scope" (toggle)="onScopeToggle($event)">
+      <summary>What is DeltaSignal validated for?</summary>
+      @if (service.scopeState().status === 'loading' || service.scopeState().status === 'idle') {
+        <p class="method-note">Loading the scope statement…</p>
+      } @else if (service.scopeState().status === 'error') {
+        <p class="method-note">
+          The scope statement is unavailable right now. It is served by the DeltaSignal engine, not stored in this page,
+          so nothing can be shown in its place.
+        </p>
+      } @else if (service.scopeState().scope; as scope) {
+        @if (!scope.measured_on_served_catalog) {
+          <p class="method-note nonconverged" role="alert">
+            These figures were measured on catalog build {{ scope.statement.provenance_build }}; this server is serving
+            {{ scope.served_catalog ?? 'an unrecorded build' }}. Read them as the predecessor's record.
+          </p>
+        }
+        @for (paragraph of scope.statement.summary; track $index) {
+          <p>{{ paragraph }}</p>
+        }
+        <h4>Validated</h4>
+        <dl>
+          @for (axis of scope.statement.validated; track axis.axis) {
+            <dt>{{ axis.value }}</dt>
+            <dd>
+              {{ axis.statement }}
+              <small class="provenance">
+                Measured {{ axis.date }} on {{ axis.catalog_build }} (solver {{ axis.solver_commit }}) —
+                {{ axis.spec }}
+              </small>
+            </dd>
+          }
+        </dl>
+        <h4>Known limits</h4>
+        <dl>
+          @for (limit of scope.statement.limitations; track limit.name) {
+            <dd>
+              {{ limit.statement }}
+              <small class="provenance">{{ limit.spec }}</small>
+            </dd>
+          }
+        </dl>
+      }
+    </details>
   </main>
 }

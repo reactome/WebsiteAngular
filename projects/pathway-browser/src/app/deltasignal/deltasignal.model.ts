@@ -39,6 +39,9 @@ export interface DeltaSignalSolveResult {
   converged: boolean;
   iterations: number;
   solve_time: number;
+  /** How far from steady state the solve stopped (deltasignal specs/142: a
+   *  non-converged answer is cap-decided, not a steady state — say so). */
+  residual?: number;
 }
 
 /**
@@ -120,6 +123,9 @@ interface DeltaSignalReadoutResult {
   value?: number | null;
   fold?: number | null;
   call?: 'up' | 'down' | 'normal' | null;
+  /** deltasignal specs/142: true when the fold is at the model's stop — a
+   *  switch state, not a measured magnitude. Null exactly where fold is. */
+  railed?: boolean | null;
 }
 
 export interface DeltaSignalReadoutsResponse {
@@ -130,6 +136,10 @@ export interface DeltaSignalReadoutsResponse {
     baseline: number;
     down_cutoff: number;
     up_cutoff: number;
+    /** The rail stops the railed flag was computed with (specs/142) —
+     *  rendered, never hardcoded client-side. */
+    rail_low?: number;
+    rail_high?: number;
   };
   missing_tables: string[];
   malformed_tables: string[];
@@ -143,8 +153,38 @@ export interface DeltaSignalReadoutRow {
   basis: DeltaSignalReadoutBasis;
   fold: number;
   call: 'up' | 'down' | 'normal';
+  railed: boolean;
   influence: number;
   perturbed: boolean;
+}
+
+/** The served scope statement (deltasignal specs/143), rendered verbatim. */
+export interface DeltaSignalScopeResponse {
+  status: 'success';
+  statement: {
+    version: string;
+    provenance_build: string;
+    summary: string[];
+    validated: {
+      axis: string;
+      statement: string;
+      value: string;
+      catalog_build: string;
+      solver_commit: string;
+      date: string;
+      spec: string;
+    }[];
+    limitations: { name: string; statement: string; spec: string }[];
+    protocols: { name: string; endpoint: string; statement: string; spec: string }[];
+  };
+  served_catalog: string | null;
+  measured_on_served_catalog: boolean;
+}
+
+/** The scope statement for this session, or why there is none. */
+export interface DeltaSignalScopeState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  scope: DeltaSignalScopeResponse | null;
 }
 
 /** The readout batch for the current solve, or why there is none. */

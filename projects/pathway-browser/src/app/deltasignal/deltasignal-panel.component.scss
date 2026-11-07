@@ -477,3 +477,28 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+.railed-note {
+  display: block;
+  font-size: 11px;
+  color: #b26a00;
+}
+
+.method-note.nonconverged {
+  color: #b26a00;
+  font-weight: 500;
+}
+
+.column-help.scope {
+  margin-top: 16px;
+
+  h4 {
+    margin: 12px 0 4px;
+  }
+
+  .provenance {
+    display: block;
+    color: #6b7280;
+    font-size: 11px;
+  }
+}

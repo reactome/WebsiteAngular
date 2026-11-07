@@ -104,6 +104,13 @@ export class DeltaSignalPanelComponent {
     });
   }
 
+  onScopeToggle(event: Event) {
+    // The scope statement is fetched the first time a user opens the view —
+    // it is the engine's versioned record (deltasignal specs/143), never a
+    // copy kept in this client.
+    if ((event.target as HTMLDetailsElement).open) void this.service.loadScope();
+  }
+
   setActivity(value: string | number) {
     const parsed = typeof value === 'number' ? value : Number(value);
     if (Number.isFinite(parsed)) this.activity.set(Math.min(100, Math.max(0, parsed)));
