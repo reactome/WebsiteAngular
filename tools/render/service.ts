@@ -37,6 +37,8 @@
  *   RENDER_TIMEOUT      ms before a render is abandoned, default 45000
  *   RENDER_FILES        a folder laid out as the download site, read instead of it
  *                       (local-files.ts); unset, the page fetches from the site
+ *   RENDER_REUSE        `on` holds loaded pages between figures (pages.ts, spec
+ *                       018); anything else, default, a fresh page per figure
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
  * highlight=<stId>,<stId>...,
@@ -56,7 +58,7 @@ import {
   inBounds,
   repeated,
 } from './params.ts';
-import { chromium, type Browser } from '@playwright/test';
+import { chromium, type Browser, type Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -72,6 +74,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
+import { Pages } from './pages.ts';
 import type { Format } from './render-core.ts';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
@@ -118,6 +121,9 @@ const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v13';
 // them from the site, as a reader's browser does.
 const FILES = process.env['RENDER_FILES'] || undefined;
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
+// Off until spec 018's comparison (T009) has shown held pages draw what fresh
+// ones draw; then on by default.
+const REUSE = process.env['RENDER_REUSE'] === 'on';
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
 const RENDER_TIMEOUT = Number(process.env['RENDER_TIMEOUT'] || 45_000);
@@ -163,14 +169,44 @@ function clamp(value: unknown, low: number, high: number, fallback: number) {
 }
 
 // ---- browser -------------------------------------------------------------
-// One browser for the process, a fresh page per render. Reusing a page leaks
-// state between renders -- a stale analysis token being the obvious one -- and a
-// page is cheap next to a browser.
+// One browser for the process. A page used as it was left leaks state between
+// renders -- a stale analysis token being the obvious one -- so a page is held
+// for another figure only under RENDER_REUSE, and only because the render page
+// starts every figure afresh: each move recreates its component, and what
+// outlives the component is reset as a fresh page has it (spec 018, research
+// R2). What that reset misses is drawn wrong without a sign, so held pages are
+// compared figure for figure with fresh ones (tools/render/reuse-compare.ts)
+// before reuse is turned on. RENDER_REUSE off is a fresh page per render.
 let browser: Browser | undefined;
 async function getBrowser() {
   if (!browser?.isConnected()) browser = await chromium.launch();
   return browser;
 }
+
+const VIEWPORT = { width: 1600, height: 1000 };
+
+/** A page and what closing it closes: its own context when it may be held. */
+interface RenderPage {
+  page: Page;
+  close(): Promise<void>;
+}
+
+const pages = new Pages<RenderPage>({
+  reuse: REUSE,
+  max: CONCURRENCY,
+  async open(held) {
+    const running = await getBrowser();
+    if (!held) {
+      // Today's page: its own context, closed with it.
+      const page = await running.newPage({ viewport: VIEWPORT });
+      return { page, close: () => page.close() };
+    }
+    // A context of its own, so a held page's storage and cookies go with it.
+    const context = await running.newContext({ viewport: VIEWPORT });
+    const page = await context.newPage();
+    return { page, close: () => context.close() };
+  },
+});
 
 /** An error with the HTTP status it answers with. */
 export function httpError(status: number, message: string): Error & { status: number } {
@@ -444,36 +480,38 @@ async function renderCached(params: RenderParams) {
     );
   }
 
-  const work = schedule(async () => {
-    const page = await (await getBrowser()).newPage({ viewport: { width: 1600, height: 1000 } });
-    try {
-      const started = Date.now();
-      const { bytes, state, problems } = await render(page, {
-        base: BASE,
-        timeout: RENDER_TIMEOUT,
-        ...(FILES ? { files: FILES } : {}),
-        ...params,
-      });
-      await toCache(key, params.format, bytes);
-      stats.rendered++;
-      const drew = [
-        state.view,
-        state.elements && `${state.elements} elements`,
-        state.groups && `${state.groups} groups`,
-        state.frames && `${state.frames} frames`,
-      ]
-        .filter(Boolean)
-        .join(', ');
-      console.log(
-        `rendered ${params.pathway || 'genome-wide'}.${params.format} ` +
-          `${bytes.length}b ${((Date.now() - started) / 1000).toFixed(1)}s [${drew}]` +
-          (problems.length ? ` (${problems.length} browser problem(s))` : '')
-      );
-      return { bytes, cached: false };
-    } finally {
-      await page.close();
-    }
-  });
+  const work = schedule(() =>
+    pages.use(
+      async ({ page }, nav) => {
+        const started = Date.now();
+        const { bytes, state, problems, movable } = await render(page, {
+          base: BASE,
+          timeout: RENDER_TIMEOUT,
+          ...(FILES ? { files: FILES } : {}),
+          ...params,
+          ...(nav === undefined ? {} : { nav }),
+        });
+        await toCache(key, params.format, bytes);
+        stats.rendered++;
+        const drew = [
+          state.view,
+          state.elements && `${state.elements} elements`,
+          state.groups && `${state.groups} groups`,
+          state.frames && `${state.frames} frames`,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        console.log(
+          `rendered ${params.pathway || 'genome-wide'}.${params.format} ` +
+            `${bytes.length}b ${((Date.now() - started) / 1000).toFixed(1)}s [${drew}]` +
+            (problems.length ? ` (${problems.length} browser problem(s))` : '') +
+            (nav === undefined ? '' : ' (held page)')
+        );
+        return { bytes, cached: false, movable };
+      },
+      ({ movable }) => movable
+    )
+  );
 
   inFlight.set(key, work);
   try {
@@ -544,6 +582,8 @@ app.get('/health', (_req, res) => {
     active,
     waiting: waiting.length,
     ...stats,
+    reuse: REUSE,
+    ...(REUSE ? { reused: pages.reused } : {}),
   } satisfies RenderHealth);
 });
 
