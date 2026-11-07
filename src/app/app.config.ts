@@ -4,7 +4,7 @@ import {
   importProvidersFrom,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter } from '@angular/router';
+import { provideRouter, RouteReuseStrategy } from '@angular/router';
 import { StoreModule } from '@ngrx/store';
 import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
 import { EffectsModule } from '@ngrx/effects';
@@ -17,6 +17,7 @@ import { environment } from '../../projects/pathway-browser/src/environments/env
 import { routes } from './app.routes';
 import { UrlStateService } from '../../projects/pathway-browser/src/app/services/url-state.service';
 import { RouterUrlStateService } from '../../projects/pathway-browser/src/app/services/router-url-state.service';
+import { RenderReuseStrategy } from '../../projects/pathway-browser/src/app/render/render-reuse-strategy';
 
 /**
  * Analytics, when the deployment has a property to report to.
@@ -42,6 +43,9 @@ export const appConfig: ApplicationConfig = {
     // template event bindings and explicit markForCheck instead.
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    // Angular's own behaviour everywhere but the render page, whose component
+    // is recreated when the render service moves it to its next figure.
+    { provide: RouteReuseStrategy, useClass: RenderReuseStrategy },
     // The Pathway Browser's state lives in the address bar on the site. The
     // token is router-free so the embeddable diagram can keep it in memory
     // without carrying the router (#356).

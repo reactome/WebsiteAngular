@@ -36,10 +36,30 @@ export type Published = {
   analysis: { token: string; resource: string } | null;
 } & Drawn;
 
-/** `window.__renderState`: whether the page is ready, and what it drew if it has. */
-export type RenderState = { ready: boolean; error: string | null } & (
-  Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined }
-);
+/**
+ * `window.__renderState`: whether the page is ready, and what it drew if it has.
+ *
+ * `nav` is the id the figure was moved to with `__renderNavigate`, absent on a
+ * full load. `build` is the page's main script's name (`main-{hash}.js`), by
+ * which a caller holding the page tells it from a newer build of the site;
+ * null where the page cannot find it.
+ */
+export type RenderState = {
+  ready: boolean;
+  error: string | null;
+  nav?: string;
+  build: string | null;
+} & (Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined });
+
+/**
+ * `window.__renderNavigate(url, nav)` (spec 018, contracts/render-page.md):
+ * moves a loaded render page to the render address `url` without loading it
+ * again, its new component carrying `nav`. Resolves true once the move is made,
+ * which is not the figure being ready: that is `cr-render[data-render-nav=nav]`
+ * ready or in error. Resolves false, and does not move, for anything that is
+ * not a render address.
+ */
+export type RenderNavigate = (url: string, nav: string) => Promise<boolean>;
 
 /** `window.__renderExport`: the artefacts the page can hand over. */
 export interface RenderExport {
