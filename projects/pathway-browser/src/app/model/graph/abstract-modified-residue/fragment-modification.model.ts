@@ -1,6 +1,7 @@
-import { GeneticallyModifiedResidue } from './genetically-modified-residue.model';
+import type { FragmentDeletionModification } from './fragment-deletion-modification.model';
+import type { FragmentInsertionModification } from './fragment-insertion-modification.model';
+import type { FragmentReplacedModification } from './ fragment-replaced-modification.model';
 
-export interface FragmentModification extends GeneticallyModifiedResidue {
-  endPositionInReferenceSequence: number;
-  startPositionInReferenceSequence: number;
-}
+/** A fragment modification of any of its three kinds. */
+export type FragmentModification =
+  FragmentDeletionModification | FragmentInsertionModification | FragmentReplacedModification;

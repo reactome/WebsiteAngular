@@ -46,7 +46,7 @@
         @if (!element.manual) {
           <cr-controller-tree
             [type]="element.key"
-            [data]="fieldOf(element.key)"
+            [data]="treeData(element.key) ?? []"
             [depthControl]="element.hasDepthControl ?? false"
             [scope]="element.scope || 'entity'"
             [disableNavigation]="element.disableNavigation?.() ?? false"
@@ -248,15 +248,14 @@
       @for (row of filteredOtherFormsList(); track row?.entity?.dbId ?? $index) {
         <div class="other-forms-row">
           <a class="other-forms-name" [routerLink]="[CONTENT_DETAIL_PATH, row.entity.stId]">
-            {{ row.entity.name[0] }}
+            {{ row.entity.name?.[0] }}
           </a>
           <div class="other-forms-meta">
             <span class="other-forms-compartment">{{ row.compartment }}</span>
-            <!-- Coordinates are EWAS-specific, so they reach the base
-                 PhysicalEntity type through its index signature. -->
-            @if (row.entity['startCoordinate'] || row.entity['endCoordinate']) {
+            <!-- Coordinates are a sequence entity's, read by the key that class has. -->
+            @if (coordinate(row.entity, 'startCoordinate') || coordinate(row.entity, 'endCoordinate')) {
               <span class="other-forms-coords">
-                {{ row.entity['startCoordinate'] }}&ndash;{{ row.entity['endCoordinate'] }}
+                {{ coordinate(row.entity, 'startCoordinate') }}&ndash;{{ coordinate(row.entity, 'endCoordinate') }}
               </span>
             }
             @if (row.entity.inDisease) {
@@ -279,7 +278,7 @@
         <div class="label-container">{{ item.key }}</div>
         <div class="composition-container">
           @for (pe of item.value; let i = $index; track pe?.dbId ?? $index) {
-            <a [href]="`${CONTENT_DETAIL_PATH}/${pe.stId}`">{{ pe.name[0] }}</a>
+            <a [href]="`${CONTENT_DETAIL_PATH}/${pe.stId}`">{{ pe.name?.[0] }}</a>
             <!-- Add separator except for last item -->
             @if (i < item.value.length - 1) {
               <span class="margin-right">,</span>

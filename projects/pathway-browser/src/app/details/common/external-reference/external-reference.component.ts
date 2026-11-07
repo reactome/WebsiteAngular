@@ -34,7 +34,8 @@ export class ExternalReferenceComponent {
   });
 
   readonly moleculeType = computed(() => {
-    return this.referenceEntity().moleculeType;
+    // The structure viewer takes null for none.
+    return this.referenceEntity().moleculeType ?? null;
   });
 
   readonly hasStructure = computed(() =>

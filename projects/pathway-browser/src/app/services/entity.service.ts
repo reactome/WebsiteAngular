@@ -10,7 +10,7 @@ import { DatabaseObject } from '../model/graph/database-object.model';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { ParticipantService } from './participant.service';
 import { DataKeys, Labels } from '../constants/constants';
-import { isDefined, isRefEntity, isReferenceEntityStId } from './utils';
+import { fieldByName, isDefined, isRefEntity, isReferenceEntityStId } from './utils';
 import type { JsogObject } from '../utils/JSOGDeserializer';
 
 @Injectable({
@@ -119,7 +119,7 @@ export class EntityService {
     ];
     const results: { label: string; value: any }[] = [];
     for (const property of properties) {
-      const value = externalRef[property.key];
+      const value = fieldByName(externalRef, property.key);
       if (!value) continue;
       results.push({
         label: property.label || property.key,
@@ -130,8 +130,8 @@ export class EntityService {
   }
 
   // Generic function to group by any property
-  getGroupedData<T>(data: T[], getKey: (item: T) => string): Map<string, T[]> {
-    const grouped = new Map<string, T[]>();
+  getGroupedData<T, K = string>(data: T[], getKey: (item: T) => K): Map<K, T[]> {
+    const grouped = new Map<K, T[]>();
 
     // Loop over unique keys and group data by the key
     const uniqueKeys = [...new Set(data.map((item) => getKey(item)))];

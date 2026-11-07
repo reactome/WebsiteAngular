@@ -1,9 +1,6 @@
-import { ReferenceEntity } from './reference-entity.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ReferenceTherapeutic extends ReferenceEntity {
-  abbreviation: string;
-  approvalSource: string[];
-  approved: boolean;
-  inn: string;
-  type: string;
-}
+/** A reference therapeutic, as the pathway browser reads it (the contract's, resolved). */
+export type ReferenceTherapeutic = Resolved<Graph.ReferenceTherapeutic<JsogReference>>;

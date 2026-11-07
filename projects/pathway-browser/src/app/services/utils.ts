@@ -199,7 +199,8 @@ export function isCatalystActivity(
 export function isHasModifiedResidue(
   obj: Regulation | CatalystActivity | HasModifiedResidue
 ): obj is HasModifiedResidue {
-  return 'type' in obj && obj.type === 'modifiedResidue';
+  // Of the three, only the modified-residue entry has a type.
+  return 'type' in obj;
 }
 
 // Checks whether a given property exists in an object
@@ -276,6 +277,14 @@ export function isSelectableObject(obj: DatabaseObject): obj is Event | Physical
  *  The function uses key in obj to check if the property exists on the object at runtime.
  *  If it does, it returns the value of the property. Otherwise, it returns undefined.
  */
+
+/**
+ * A field read by a name known only at run time (a tab's configured key):
+ * whatever the object holds there, unknown until the reader checks it.
+ */
+export function fieldByName(obj: object, key: string): unknown {
+  return key in obj ? Reflect.get(obj, key) : undefined;
+}
 
 /** A key any member of a union has: `inferredTo` on an event, which an entity also has. */
 type KeyOfAny<T> = T extends unknown ? keyof T : never;
