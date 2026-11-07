@@ -5166,26 +5166,6 @@
         }
       }
     },
-    "/ContentService/exporter/reaction/{id}": {
-      "get": {
-        "x-contract": "not yet",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Not yet described by the contract."
-          }
-        }
-      }
-    },
     "/ContentService/exporter/reaction/{id}/diagram": {
       "get": {
         "description": "This method accepts identifiers for <a href=\"/content/schema/ReactionLikeEvent\" target=\"_blank\">ReactionLikeEvent class</a> instances.<br/>Returns the diagram layout and graph data as JSON, suitable for client-side rendering.",
