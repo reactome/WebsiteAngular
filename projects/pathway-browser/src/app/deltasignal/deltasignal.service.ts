@@ -14,19 +14,12 @@ import {
   DeltaSignalReadoutState,
   DeltaSignalScopeResponse,
   DeltaSignalScopeState,
+  ContentServiceEntity,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
 import { buildObservations, groupChangesByReactomeId, resultRows } from './deltasignal.utils';
 import { CONTENT_SERVICE } from '../../environments/environment';
-
-/** One level of a ContentService entity: just what the member walk reads. */
-interface ContentServiceEntity {
-  stId?: string;
-  schemaClass?: string;
-  hasMember?: ContentServiceEntity[];
-  hasCandidate?: ContentServiceEntity[];
-}
 
 // specs/020: the member closure may take one ContentService request per set
 // node in the tree. Past this many, member resolution is abandoned entirely:
