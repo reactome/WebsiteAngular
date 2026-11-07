@@ -7,6 +7,7 @@ import { CONTENT_SERVICE } from '../../environments/environment';
 import { JSOGDeserializer, type JsogObject } from '../utils/JSOGDeserializer';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { Pathway } from '../model/graph/event/pathway.model';
+import type { Event } from '../model/graph/event/event.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
 import { SpeciesService } from './species.service';
@@ -250,11 +251,16 @@ export class DataStateService {
       .pipe(map(this.flattenReferences));
   }
 
-  fetchAncestors(stId: string | undefined, path: string[]): Observable<Pathway[]> {
+  /**
+   * The open object's lineage, from it up to its top-level pathway. Written
+   * from the object itself, which can be a reaction (the browser opened at
+   * one), so each step is an event; reversed here, top-level pathway first.
+   */
+  fetchAncestors(stId: string | undefined, path: string[]): Observable<Event[]> {
     const url = `${CONTENT_SERVICE}/data/event/${stId}/ancestors`;
     if (stId === undefined) return of();
     return this.http
-      .get<Pathway[][]>(url, {
+      .get<Event[][]>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -270,7 +276,7 @@ export class DataStateService {
         // parent's diagram cannot find it (see `loadFailed`).
         catchError((error: unknown) =>
           error instanceof HttpErrorResponse && error.status === 404
-            ? of([] as Pathway[])
+            ? of<Event[]>([])
             : throwError(() => error)
         )
       );
@@ -280,13 +286,13 @@ export class DataStateService {
     return new JSOGDeserializer().deserialize(response);
   }
 
-  private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
+  private findBestAncestors(lineages: Event[][], path: string[]): Event[] {
     const [first, ...others] = lineages;
     if (!first) return [];
     if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = first;
+    let bestAncestors: Event[] = first;
     let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
     for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
@@ -298,7 +304,7 @@ export class DataStateService {
     return bestAncestors;
   }
 
-  private getAncestorsMatchingScore(ancestors: Pathway[], path: Set<string>) {
+  private getAncestorsMatchingScore(ancestors: Event[], path: Set<string>) {
     return ancestors.reduce((score, ancestor) => (path.has(ancestor.stId) ? score + 1 : score), 0);
   }
 }
