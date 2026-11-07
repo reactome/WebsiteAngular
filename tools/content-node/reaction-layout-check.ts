@@ -45,7 +45,7 @@ import { reactionAnswer } from './reaction-layout/answer.ts';
 import { canonicalReaction } from './reaction-layout/canonical.ts';
 import type { CanonicalDiagram } from './reaction-layout/canonical.ts';
 import { rawDifference } from './reaction-layout/raw-text.ts';
-import { layoutFailureMessage } from './reaction-layout-endpoints.ts';
+import { layoutFailureMessage } from './objects.ts';
 
 const JAVA = process.env['JAVA_CONTENT_SERVICE'] || 'http://localhost:8080';
 const ATTEMPTS = Number(process.env['REACTION_LAYOUT_ATTEMPTS'] || 24);
