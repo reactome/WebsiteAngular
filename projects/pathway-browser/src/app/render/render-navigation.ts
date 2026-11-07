@@ -1,5 +1,5 @@
 import { PRIMARY_OUTLET, Router, UrlTree } from '@angular/router';
-import type { RenderNavigate } from '../../../../contract/render.ts';
+import type { RenderExport, RenderNavigate, RenderState } from '../../../../contract/render.ts';
 import type { RenderNavigationInfo } from './render-reuse-strategy';
 
 /**
@@ -14,9 +14,12 @@ import type { RenderNavigationInfo } from './render-reuse-strategy';
  * address exactly as on a fresh page (RenderReuseStrategy).
  */
 
+// What the render page puts on `window` (projects/contract/render.ts).
 declare global {
   interface Window {
     __renderNavigate?: RenderNavigate;
+    __renderState?: RenderState;
+    __renderExport?: RenderExport;
   }
 }
 

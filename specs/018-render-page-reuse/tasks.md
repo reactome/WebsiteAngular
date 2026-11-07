@@ -97,8 +97,8 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       reaction rewritten to its pathway, a reaction layout twice, the overview and a
       dark diagram. Each host carried its own `nav` and nothing else was on the page;
       the reaction's SVG matched a fresh page's byte for byte.
-- [ ] T004 [US2] The state of research R2's table, each row settled. A leak found is
-      fixed in the render page:
+- [x] T004 [US2] The state of research R2's table, each row settled. A leak found is
+      fixed in the render page (#881):
   - the readiness wait cancelled on destroy, its queries scoped to its own host, and
     `__renderState` cleared at construction (R2 audit 2);
   - the species reset when `species=` is absent (audit 3);
@@ -109,6 +109,41 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - `body` left with no exporter hosts.
 
   Tests: each R5 order that would show the row.
+
+  - **Settled, 7 Nov 2026,** in a browser, on a scratch `production,beta` build. Each order
+    is one held page drawing a figure, moved with `__renderNavigate` to the next, compared
+    with the next on a fresh page: the SVG, `__renderState` and `body`'s children.
+    - **Found, on T003's build:** 5 of 19 orders differed, each a row above.
+      - Audit 2: a move while a diagram was still drawing published the next figure, an
+        illustration, under the diagram's id.
+      - Audit 3: a mouse pathway or a mouse overview, then the overview with no
+        `species=`, drew mouse's overview.
+      - Audit 4: a dead token, then the same pathway with none, failed with "the analysis
+        result could not be read".
+      - Audit 6: a token holding UNIPROT, then one holding only TOTAL, coloured the second
+        for UNIPROT.
+    - **Fixed:** `startAsFresh` (`render/start-as-fresh.ts`), run at construction, clears
+      `__renderState` and `__renderExport`, dismisses the last load failure, and sets the
+      species a fresh page ends at (the id's, or the default). The wait stops once its
+      component is destroyed, and reads only its own host. The default resource is taken
+      only from the result of the token in the address (`analysis.service.ts`), which on
+      the site is the same: the previous result was kept only while the next loaded.
+    - **After:** 24 of 25 orders the same, adding interactor thresholds, a subpathway with
+      no diagram, and chains of three. The 25th differs only in the page's address after
+      drawing: a reaction layout drawn twice keeps `?layout=reaction`, which a fresh page's
+      address writer drops. The writer runs only when a state value changes, and the
+      second figure changes none. Nothing reads the address after construction (the
+      component's reads are its field initialisers), so the figure and its state are
+      identical; left as it is.
+    - **Settled without a change:** the interactor thresholds and `cyToSelectedResource`
+      (audits 5 and 7) are reached only through an interactor overlay, which the service
+      never asks for, and the orders with one showed no difference; the subpathway race
+      (audit 7) showed none. Exporter hosts are removed after use; Reacfoam's is now
+      removed when measuring throws too.
+    - **Unit tests, seen failing:** `start-as-fresh.spec.ts`, with each of its lines
+      removed in turn; `analysis-default-resource.spec.ts`, without the token check.
+    - **Analysis tokens:** two made on this host's own Analysis Service for this, from five
+      UniProt and four ChEBI identifiers.
 
 ## Phase 4: The service (US1, US3, US4)
 

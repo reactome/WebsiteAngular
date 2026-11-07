@@ -726,12 +726,13 @@ export class SvgExporterService {
     document.body.appendChild(svg);
     svg.appendChild(g);
 
-    const bbox = g.getBBox({ stroke: true, clipped: false, fill: true, markers: true });
-
-    // cleanup
-    svg.remove();
-
-    return bbox;
+    // Removed even when measuring throws: the render service draws many figures
+    // on one page, and every host left on `body` stays for all that follow.
+    try {
+      return g.getBBox({ stroke: true, clipped: false, fill: true, markers: true });
+    } finally {
+      svg.remove();
+    }
   }
 
   private collectPatternContents(
