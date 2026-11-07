@@ -102,8 +102,9 @@ PATH_KINDS['eventExport'] = (text) => {
 // An event's PDF (spec 006 T100): an id as `oid` takes it, and `.pdf`.
 PATH_KINDS['eventPdf'] = (text) =>
   text.endsWith('.pdf') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
-// A reaction's figure: an id as `oid` takes it, and an extension it is drawn in.
-PATH_KINDS['reactionImage'] = (text) => {
+// A diagram's or a reaction's figure: an id as `oid` takes it, and an
+// extension it is drawn in.
+PATH_KINDS['figure'] = (text) => {
   const ext = /\.(png|jpg|jpeg|svg|gif)$/.exec(text);
   return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
 };
@@ -418,13 +419,17 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/interactors/static/molecule/{acc}/withEntities',
     path: { id: 'identifier' },
   },
-  // Takes an analysis token: one person's result.
+  // A diagram's figure (spec 006 T090, T091, research D24): one per event,
+  // format and quality per release, as the render service draws
+  // it. A token makes it private, as on every endpoint; a parameter node does
+  // not draw makes a URL that is answered and never stored. A change to how
+  // the render page draws purges /ContentService/exporter/diagram/* when it is
+  // deployed, as for a reaction's figure.
   '/ContentService/exporter/diagram/{id}': {
     java: null,
-    why: 'Java documents it as /exporter/diagram/{identifier}.{ext}; never stored at the edge anyway.',
-    path: { id: 'any' },
-    query: [],
-    cache: 'private',
+    why: 'Java documents it as /exporter/diagram/{identifier}.{ext}; only quality is standard: sel is drawn, but any text is a figure (an id that names nothing selects nothing), so it is answered and never stored (spec 006 research D24).',
+    path: { id: 'figure' },
+    query: [{ name: 'quality', in: 'query', type: 'integer' }],
   },
   // An event's SBML, BioPAX or SBGN, the same file for every reader of a release (spec 015; sbgn-exporter T018).
   '/ContentService/exporter/event/{id}': {
@@ -473,7 +478,7 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/exporter/reaction/{id}': {
     java: null,
     why: 'Java documents it as /exporter/reaction/{identifier}.{ext}; of its parameters only quality changes the figure node answers (spec 006 research D24).',
-    path: { id: 'reactionImage' },
+    path: { id: 'figure' },
     query: [{ name: 'quality', in: 'query', type: 'integer' }],
   },
   // A reaction's layout (spec 006 T092). Stored like any graph answer: Java's

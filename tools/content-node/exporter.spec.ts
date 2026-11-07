@@ -73,13 +73,12 @@ describe('the parameters, converted before anything is resolved', () => {
     expect((await envelope(await at('XYZ.svg?quality=11')))[2]).toEqual(["'XYZ' is not an event"]);
   });
 
-  it('refuses, by name, a parameter it does not draw yet, rather than ignore it', async () => {
-    // #273: a figure that silently leaves out what was asked for is a 200 no
-    // caller can detect.
-    const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?quality=10&flg=TP53'));
-    expect(status).toBe(400);
-    expect(message).toContain('quality=10');
-    expect(message).toContain('flg=TP53');
+  it('takes a parameter it does not draw on to the resolution, as Java takes it (research D24)', async () => {
+    const response = await at(
+      'XYZ.svg?quality=10&flg=TP53&flgInteractors=false&title=false&margin=3&ehld=false' +
+        '&diagramProfile=Standard&analysisProfile=Strosobar&resource=UNIPROT&expColumn=2'
+    );
+    expect((await envelope(response))[2]).toEqual(["'XYZ' is not an event"]);
   });
 
   it('takes a parameter at its default, which is what every caller gets', async () => {
@@ -108,21 +107,18 @@ describe('the diagram’s parameters, in diagramImage’s order', () => {
 });
 
 describe('repeated and blank values, as Spring binds them', () => {
-  it('joins a repeated String with commas, so flg=&flg=TP53 is not an empty flg', async () => {
-    // Spring joins a String[] for a String parameter: Java flags ",TP53".
-    const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?flg=&flg=TP53'));
-    expect(status).toBe(400);
-    expect(message).toContain('flg=,TP53');
+  it('takes a repeated String, as Spring joins it, on to the resolution', async () => {
+    expect((await envelope(await at('XYZ.svg?flg=&flg=TP53')))[2]).toEqual([
+      "'XYZ' is not an event",
+    ]);
   });
 
   it('takes a blank margin as its default, as RasterArgs.setMargin(null) does', async () => {
     expect((await envelope(await at('XYZ.svg?margin=%20')))[2]).toEqual(["'XYZ' is not an event"]);
   });
 
-  it('reads a blank Boolean as null, which is not its default', async () => {
-    const [status, , [message]] = await envelope(await at('R-HSA-69620.svg?title=%20'));
-    expect(status).toBe(400);
-    expect(message).toContain('title=');
+  it('takes a blank title on, as RasterArgs.setWriteTitle(null) does', async () => {
+    expect((await envelope(await at('XYZ.svg?title=%20')))[2]).toEqual(["'XYZ' is not an event"]);
   });
 });
 
@@ -150,8 +146,8 @@ describe('figureProblem, what diagramImage fails on once the id is resolved', ()
     expect(figureProblem({ ...values, ehld: null }, 'svg')).toBe('unexpected');
   });
 
-  it('draws svg, png and jpeg', () => {
-    for (const ext of ['svg', 'png', 'jpg', 'jpeg'])
+  it('draws svg, png, jpeg and gif', () => {
+    for (const ext of ['svg', 'png', 'jpg', 'jpeg', 'gif'])
       expect(figureProblem(values, ext), ext).toBe(undefined);
   });
 });
@@ -174,6 +170,27 @@ describe('diagramExportRequest, a resolution as the render request', () => {
     );
     expect(url.searchParams.get('highlight')).toBe('R-HSA-1,R-HSA-2,R-HSA-3');
     expect(url.searchParams.get('token')).toBe('abc%3D');
+  });
+
+  it("asks for Java's quality as the render service's scale, for the formats with pixels", () => {
+    const at = (ext: string, quality: number) =>
+      diagramExportRequest({ diagramStId: 'R-HSA-1' }, { ext, quality }).searchParams.get('scale');
+    expect([at('png', 5), at('png', 1), at('jpg', 7), at('gif', 10), at('svg', 9)]).toEqual([
+      '1',
+      '0.25',
+      '1.8',
+      '2',
+      null,
+    ]);
+  });
+
+  it('leaves the selection off an illustration, which the render page does not mark', () => {
+    const url = diagramExportRequest(
+      { diagramStId: 'R-HSA-1640170', events: ['R-HSA-2'] },
+      { ext: 'svg', sel: ['R-HSA-3'], token: 'abc', illustrated: true }
+    );
+    expect(url.searchParams.has('highlight')).toBe(false);
+    expect(url.searchParams.get('token')).toBe('abc');
   });
 
   it('highlights nothing for a pathway drawn as itself', () => {

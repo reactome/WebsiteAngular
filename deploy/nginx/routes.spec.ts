@@ -184,8 +184,6 @@ describe('nginx and the dev proxy agree', () => {
  * service -- is the one thing the routing must never do.
  */
 const NOT_YET_ROUTED: Record<string, string> = {
-  // Implemented, held back until the exporter log scan (#273).
-  '/ContentService/exporter/diagram/{id}': 'spec 006 T090',
   // Routed on beta alone (dev.conf) until FR-009's open differences are
   // settled, the release's diagram files are mounted for SBGN elsewhere, and
   // BioPAX3Exporter makes the release's BioPAX (T055): see "SBML, SBGN and
@@ -384,6 +382,8 @@ const JAVAS = [
   // A reaction's PowerPoint, beside its image and layout (spec 006 T092,
   // research D24): another of Java's exporters.
   '/ContentService/exporter/reaction/R-HSA-6805479.pptx',
+  '/ContentService/exporter/diagram/R-HSA-109606.pptx',
+  '/ContentService/exporter/diagram/R-HSA-109606.1.pptx?quality=5',
   '/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?quality=5',
   '/ContentService/exporter/reaction/R-HSA-6805479/diagramx',
 ];

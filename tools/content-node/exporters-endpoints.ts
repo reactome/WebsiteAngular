@@ -46,10 +46,8 @@ const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
  * What diagramImage fails on once the id is resolved, in its order, or
  * undefined: pdf, by its own literal message; a blank quality, unboxed for
  * the raster budget (the service's generic 500, 'unexpected'); a quality
- * outside 1-10, which RasterArgs refuses; a blank ehld, unboxed. Then what
- * this service does not draw: an extension Java has no check for -- its
- * ImageIO writes nothing and it answers an empty 200; this names it -- and
- * gif, whose renderer draws the expression animation, not a still.
+ * outside 1-10, which RasterArgs refuses; a blank ehld, unboxed; an
+ * extension DiagramRenderer does not draw, its 500 (measured 8 Nov 2026).
  */
 export function figureProblem(values: ExportValues, ext: string) {
   const fail = (message: string) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
@@ -60,13 +58,6 @@ export function figureProblem(values: ExportValues, ext: string) {
   if (quality < 1 || quality > 10) return fail('quality must be in the range [1-10]');
   if (values.ehld === null) return 'unexpected';
   if (!EXPORT_FORMATS.includes(ext)) return fail(`Unsupported file extension ${ext}`);
-  if (ext === 'gif')
-    return {
-      status: 400,
-      reason: 'BAD_REQUEST',
-      message:
-        'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.',
-    };
   return undefined;
 }
 
@@ -274,43 +265,13 @@ function overviewExportRequest(
 }
 
 /**
- * The parameters given at something other than their default that the render
- * service does not draw yet (#273, step 4), as `name=value`.
- */
-function notDrawnYet(values: ExportValues) {
-  const defaults = {
-    quality: 5,
-    flgInteractors: true,
-    title: true,
-    margin: 15,
-    ehld: true,
-    diagramProfile: 'Modern',
-    resource: 'TOTAL',
-    analysisProfile: 'Standard',
-  };
-  // Left for after the resolution, where Java fails on them (figureProblem):
-  // a quality outside 1-10, and a blank quality or ehld.
-  const quality = values.quality as number | null;
-  const later = (name: string) =>
-    (name === 'quality' && (quality === null || quality < 1 || quality > 10)) ||
-    (name === 'ehld' && values.ehld === null) ||
-    // RasterArgs.setMargin(null) keeps its 15: a blank margin is the default.
-    (name === 'margin' && values.margin === null);
-  const named = Object.entries(defaults)
-    .filter(([name, fallback]) => !later(name) && values[name] !== fallback)
-    .map(([name]) => `${name}=${String(values[name] ?? '')}`);
-  // Opt-in: anything given is something not drawn.
-  for (const name of ['flg', 'expColumn'])
-    if (values[name] !== null && values[name] !== undefined)
-      named.push(`${name}=${String(values[name])}`);
-  return named;
-}
-
-/**
- * The render service's request for a resolved figure: the diagram that draws
- * it, with Java's selection -- the resolved events, then `sel` -- as
- * `highlight`, which marks them on the whole diagram and frames nothing, as
- * Java draws a selection. jpg is jpeg to the render service.
+ * The render service's request for a resolved figure (research D24): the
+ * diagram that draws it, with Java's selection -- the resolved events, then
+ * `sel` -- as `highlight`, which marks them on the whole diagram and frames
+ * nothing, as Java draws a selection; an analysis token as it came; and the
+ * quality as a scale for the formats with pixels. An illustration is drawn
+ * without the selection, which the render page does not mark on one. jpg is
+ * jpeg to the render service.
  */
 export function diagramExportRequest(
   result: { diagramStId: string; events?: string[] | null },
@@ -318,12 +279,21 @@ export function diagramExportRequest(
     ext,
     sel,
     token,
-  }: { ext: string; sel?: string[] | undefined; token?: string | null | undefined }
+    quality = 5,
+    illustrated = false,
+  }: {
+    ext: string;
+    sel?: string[] | undefined;
+    token?: string | null | undefined;
+    quality?: number;
+    illustrated?: boolean;
+  }
 ) {
   const format = ext === 'jpg' ? 'jpeg' : ext;
   const url = new URL(`${RENDER_SERVICE}/render/${result.diagramStId}.${format}`);
   const highlight = [...(result.events ?? []), ...(sel ?? [])];
-  if (highlight.length) url.searchParams.set('highlight', highlight.join(','));
+  if (highlight.length && !illustrated) url.searchParams.set('highlight', highlight.join(','));
+  if (format !== 'svg') url.searchParams.set('scale', String(renderScale(quality)));
   if (token) url.searchParams.set('token', token);
   return url;
 }
@@ -1047,31 +1017,23 @@ export const exportersEndpoints: Endpoint[] = [
     samplesOnly: true,
     differs: [/: \.url: /],
     /**
-     * A diagram figure, as ImageExporterController.diagramImage answers it:
-     * graph-core's DiagramService resolves the id to the diagram that draws
-     * it and the events to select there, and the drawing is the render
-     * service's (tools/render) -- the site's own renderer -- asked over
-     * loopback, the whole diagram with those events highlighted.
+     * A diagram figure, as ImageExporterController.diagramImage answers it
+     * (spec 006 T090, T091, research D24): graph-core's DiagramService
+     * resolves the id to the diagram that draws it and the events to select
+     * there, and the drawing is the render service's (tools/render) -- the
+     * site's own renderer -- asked over loopback, the whole diagram with
+     * those events highlighted.
      *
-     * Not routed yet (#273). Every parameter Java takes is converted as Spring
-     * converts it; any this does not draw yet is refused by name at a value
-     * other than its default, because a figure that leaves out what was asked
-     * for is a 200 no caller can detect.
+     * Every parameter Java takes is converted as Spring converts it, Java's
+     * errors kept in Java's order. Quality, sel and token are drawn; the
+     * rest are accepted as Java accepts them and not drawn (D24 says why,
+     * one by one), and a URL that names one is answered but never stored.
      */
     handler: async (request) => {
       const name = splitExportName(pathId(rawSegment(request, 4)));
       if (!name) return springNotFound(request);
       const asked = exporterParameters(request);
       if ('answer' in asked) return asked.answer;
-      const unsupported = notDrawnYet(asked.values);
-      if (unsupported.length)
-        return javaError(
-          request,
-          400,
-          'BAD_REQUEST',
-          `Not drawn by this service yet: ${unsupported.join(', ')}. Ask without them, or at their defaults.`
-        );
-
       const refused = longPastRange([name.identifier]);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       const result = await diagramResult(name.identifier);
@@ -1081,15 +1043,16 @@ export const exportersEndpoints: Endpoint[] = [
       const problem = figureProblem(asked.values, ext);
       if (problem === 'unexpected') return unexpected(request);
       if (problem) return javaError(request, problem.status, problem.reason, problem.message);
-      const figure = diagramExportRequest(result, { ...asked.values, ext });
-      // Java selects on an illustration too; the render page does not yet.
-      if (figure.searchParams.has('highlight') && (await hasIllustration(result.diagramStId)))
-        return javaError(
-          request,
-          400,
-          'BAD_REQUEST',
-          `Not drawn by this service yet: a selection on ${result.diagramStId}'s illustration. Ask with ehld=false once that is drawn, or for the pathway itself.`
-        );
+      const selects = result.events.length > 0 || (asked.values.sel ?? []).length > 0;
+      const figure = diagramExportRequest(result, {
+        ext,
+        sel: asked.values.sel,
+        token: asked.values.token,
+        // figureProblem has refused a blank one.
+        quality: asked.values.quality ?? 5,
+        // Asked only when there is a selection to leave out.
+        illustrated: selects && (await hasIllustration(result.diagramStId)),
+      });
       return renderFigure(request, figure, javaImageType(ext));
     },
   },
@@ -1166,6 +1129,14 @@ export const exportersEndpoints: Endpoint[] = [
       const problem = figureProblem(asked.values, ext);
       if (problem === 'unexpected') return unexpected(request);
       if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      // The genome-wide view has no frames to capture, so no GIF.
+      if (ext === 'gif')
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.'
+        );
       return renderFigure(
         request,
         overviewExportRequest(taxId, { ext, token: asked.values.token }),
