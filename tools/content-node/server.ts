@@ -235,7 +235,15 @@ export function writeResult(response: Written, result: Answer) {
   for (const [name, value] of Object.entries(result.headers ?? {})) response.setHeader(name, value);
   latin1Disposition(response);
   const redirect = result.status >= 300 && result.status < 400;
-  if (body && !redirect && response.req && downloadGuard(response.req))
+  // As Spring's addContentDispositionHeader, which returns early when the answer
+  // already names its own Content-Disposition (a download's `attachment`).
+  if (
+    body &&
+    !redirect &&
+    response.req &&
+    downloadGuard(response.req) &&
+    response.getHeader('Content-Disposition') === undefined
+  )
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');
   if (result.body === undefined && !result.serialised) response.end();
   else if (typeof result.body === 'string') response.send(result.body);
