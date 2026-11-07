@@ -1,3 +1,9 @@
+import type * as Contract from '../../../../contract/analysis.ts';
+
+/**
+ * The analysis service as the pathway browser asks it: how a request sorts and
+ * filters, and the names it reads the service's answers by.
+ */
 export namespace Analysis {
   export type SortBy =
     | 'NAME'
@@ -12,17 +18,7 @@ export namespace Analysis {
     | 'ENTITIES_FDR'
     | 'REACTION_RATIO';
 
-  export type Resource =
-    | 'TOTAL'
-    | 'UNIPROT'
-    | 'ENSEMBL'
-    | 'CHEBI'
-    | 'IUPHAR'
-    | 'MIRBASE'
-    | 'NCBI_PROTEIN'
-    | 'EMBL'
-    | 'COMPOUND'
-    | 'PUBCHEM_COMPOUND';
+  export type Resource = Contract.AnalysisResource;
 
   export interface Parameters {
     /**
@@ -104,133 +100,10 @@ export namespace Analysis {
    */
   export type RequestParameters = { [K in keyof Parameters]?: Parameters[K] | undefined };
 
-  export interface Pathway {
-    dbId: number;
-    stId: string;
-    name: string;
-    /**
-     * Lower Level Pathway
-     */
-    llp: boolean;
-    inDisease: boolean;
-    entities: {
-      resource: Resource;
-      total: number;
-      found: number;
-      ratio: number;
-      pValue: number;
-      fdr: number;
-      exp: number[];
-      curatedFound?: number;
-      curatedTotal?: number;
-      interactorsFound?: number;
-      interactorsTotal?: number;
-    };
-    reactions: {
-      resource: Resource;
-      total: number;
-      found: number;
-      ratio: number;
-    };
-    species: {
-      dbId: number;
-      taxId: string;
-      name: string;
-    };
-  }
-
-  /**
-   * Every analysis type the backend can return.
-   *
-   * This is the AnalysisService's own enum -- `AnalysisSummary.type` in
-   * /AnalysisService/v3/api-docs -- and it is kept as data rather than only as a
-   * union so a test can walk it. GSA_STATISTICS, which is what PADOG produces,
-   * was missing here and from the palette map, and the result was not a type
-   * error but a blank view: see TYPE_DEFAULT_PALETTE in analysis.service.ts.
-   */
-  export const TYPES = [
-    'OVERREPRESENTATION',
-    'EXPRESSION',
-    'GSA_REGULATION',
-    'GSA_STATISTICS',
-    'GSVA',
-    'SPECIES_COMPARISON',
-  ] as const;
-
-  export type Type = (typeof TYPES)[number];
-
-  export interface Result {
-    /** An overrepresentation analysis has no values: no min or max, no columns. */
-    expression: {
-      columnNames: string[];
-      min?: number;
-      max?: number;
-    };
-    identifiersNotFound: number;
-    pathwaysFound: number;
-    warnings?: string[];
-    pathways: Pathway[];
-
-    resourceSummary: {
-      resource: Resource;
-      pathways: number;
-      filtered: number;
-    }[];
-
-    speciesSummary: {
-      dbId: number;
-      taxId: string;
-      name: string;
-      pathways: number;
-      filtered: number;
-    }[];
-
-    summary: {
-      token: string;
-      type: Type | string;
-      /** Absent from a species comparison, which has no sample. */
-      sampleName?: string;
-      text: boolean;
-      projection: boolean;
-      interactors: boolean;
-      includeDisease: boolean;
-
-      species?: number;
-      fileName?: string;
-      gsaMethod?: string;
-      gsaToken?: string;
-    };
-  }
-
-  type Identifiers = {
-    ids: string[];
-    resource: Resource;
-  };
-
-  export interface FoundEntities {
-    pathway: string;
-    foundEntities: number;
-    foundInteractors: number;
-
-    expNames: string[];
-    resources: Resource[];
-    entities: FoundEntity[];
-    interactors?: {
-      id: string;
-      interactsWith: Identifiers;
-      mapsTo: string[];
-      exp: number[];
-    }[];
-  }
-
-  export interface FoundEntity {
-    id: string;
-    mapsTo: Identifiers[];
-    exp: number[];
-  }
-
-  export interface NotFoundIdentifier {
-    id: string;
-    exp: number[];
-  }
+  // The service's answers are the contract's (projects/contract/analysis.ts).
+  export type Type = Contract.AnalysisType;
+  export type Pathway = Contract.AnalysisPathway;
+  export type Result = Contract.AnalysisResult;
+  export type FoundEntities = Contract.FoundEntities;
+  export type NotFoundIdentifier = Contract.NotFoundIdentifier;
 }

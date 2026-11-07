@@ -13,7 +13,7 @@
  */
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import type { Analysis } from '../../projects/pathway-browser/src/app/model/analysis.model.ts';
+import type { AnalysisResult } from '../../projects/contract/analysis.ts';
 
 const HERE = import.meta.dirname;
 const EXAMPLES = path.join(
@@ -53,7 +53,7 @@ async function main([origin = 'http://127.0.0.1:8080']: string[] = []): Promise<
   for (const run of RUNS) {
     const data = readFileSync(path.join(EXAMPLES, run.file), 'utf8');
     const result = await call(origin, 'POST', run.path, data);
-    const { summary, pathways } = JSON.parse(result) as Analysis.Result;
+    const { summary, pathways } = JSON.parse(result) as AnalysisResult;
     // Sent as the service gives it, already escaped, as the site sends it.
     const token = summary.token;
     // One with interactors found, where there is one, so their shape is seen too.

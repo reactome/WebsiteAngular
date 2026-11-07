@@ -183,7 +183,7 @@ Reproduced exactly (11,452) by running `matchAnswers` and `checkAnswers` from `t
 `tools/render` imports the render service's types from `projects/` (4 imports), and `tools/analysis-types` imports the analysis model's (2). Neither is a content-service answer.
 
 - The render service's types are a later family, as for the content service, and stay where they are until then. (Done in T027: `projects/contract/render.ts`, the page's side and the service's JSON answers.)
-- The analysis model holds values (`TYPES`), reached by one dynamic import in a spec. It is split into types and values when the analysis service's family moves (US5), not before.
+- The analysis model holds values (`TYPES`), reached by one dynamic import in a spec. It is split into types and values when the analysis service's family moves (US5), not before. (Done in T027: `projects/contract/analysis.ts`, and the list as `ANALYSIS_TYPES` in the pathway browser.)
 
 ## R9. Graph objects as written
 
