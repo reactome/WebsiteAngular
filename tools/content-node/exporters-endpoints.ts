@@ -608,7 +608,15 @@ export async function sbgnAnswer(
     }
     layout = JSON.parse(text);
   } else {
-    layout = await layouts.reactionLayout(event.stId);
+    // The reaction layout's answer is written as Java's NON_EMPTY mapper
+    // writes it, an empty list left out; Java's converter read the object,
+    // where an empty list is a list (a reaction drawn in no compartment).
+    layout = {
+      compartments: [],
+      nodes: [],
+      edges: [],
+      ...((await layouts.reactionLayout(event.stId)) as object),
+    };
   }
   try {
     return {
