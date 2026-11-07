@@ -62,6 +62,33 @@ export interface RfdSnapshot {
 let safeExtensions: Set<string> | undefined;
 
 /**
+ * The ContentService mappings whose pattern ends in a literal extension
+ * (`@RequestMapping("/event/{identifier}.sbgn")` and the like, under
+ * `/exporter`). Spring's safeExtension trusts the request's extension when the
+ * matched pattern ends in it -- so Java marks none of these answers, errors
+ * included, whatever the extension's media type (measured: Java's 404 for an
+ * unknown event's `.sbgn` has no Content-Disposition).
+ */
+const PATTERN_EXTENSIONS: readonly (readonly [prefix: string, extension: string])[] = [
+  ['/ContentService/exporter/document/event/', 'pdf'],
+  ['/ContentService/exporter/event/', 'sbgn'],
+  ['/ContentService/exporter/event/', 'sbml'],
+  ['/ContentService/exporter/reaction/', 'pptx'],
+  ['/ContentService/exporter/sbml/', 'xml'],
+];
+
+/** Whether the path is one of those mappings, matched with its own extension. */
+function patternTrusts(path: string): boolean {
+  return PATTERN_EXTENSIONS.some(
+    ([prefix, extension]) =>
+      path.startsWith(prefix) &&
+      !path.slice(prefix.length).includes('/') &&
+      path.endsWith(`.${extension}`) &&
+      path.length > prefix.length + extension.length + 1
+  );
+}
+
+/**
  * Whether Java would mark this answer `Content-Disposition:
  * inline;filename=f.txt` -- Spring's guard against a reflected download
  * (AbstractMessageConverterMethodProcessor.addContentDispositionHeader), on
@@ -69,7 +96,8 @@ let safeExtensions: Set<string> | undefined;
  * percent-decoded and its extension -- after the last '.' -- checked. An
  * extension Spring does not trust (rfd-snapshot.json; snapshot-rfd.ts says
  * which it does) on either is marked: a versioned id, `R-HSA-69620.5`, as
- * much as `.exe`.
+ * much as `.exe` -- unless the mapping that answers names the extension in
+ * its own pattern (PATTERN_EXTENSIONS).
  */
 export function downloadGuard(request: Request) {
   const uri = present(String(request.originalUrl ?? '').split('?')[0]);
@@ -93,7 +121,13 @@ export function downloadGuard(request: Request) {
     const extension = decoded.slice(dot + 1);
     return javaTrimAll(extension) === '' || safe.has(extension.toLowerCase());
   };
-  return !trusted(last);
+  let path = uri;
+  try {
+    path = decodeURIComponent(uri);
+  } catch {
+    // As above.
+  }
+  return !trusted(last) && !patternTrusts(path);
 }
 
 /**
