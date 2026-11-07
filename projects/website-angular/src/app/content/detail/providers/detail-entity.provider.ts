@@ -10,7 +10,7 @@ import { ReferenceEntity } from '../../../../../../pathway-browser/src/app/model
 import { DataKeys, Labels } from '../../../../../../pathway-browser/src/app/constants/constants';
 import {
   JSOGDeserializer,
-  JSOGObject,
+  type JsogObject,
 } from '../../../../../../pathway-browser/src/app/utils/JSOGDeserializer';
 
 @Injectable()
@@ -57,7 +57,7 @@ export class DetailEntityService implements Partial<EntityService> {
   ): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
-      .get<E | null>(url, {
+      .get<JsogObject<E> | null>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -71,7 +71,7 @@ export class DetailEntityService implements Partial<EntityService> {
   getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<JsogObject<E>>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -117,9 +117,8 @@ export class DetailEntityService implements Partial<EntityService> {
     this.eventId.set(id);
   }
 
-  private flattenReferences<T>(response: T): T {
-    const deserializer = new JSOGDeserializer();
-    return deserializer.deserialize<T>(response as JSOGObject);
+  private flattenReferences<T>(response: JsogObject<T>): T {
+    return new JSOGDeserializer().deserialize(response);
   }
 }
 

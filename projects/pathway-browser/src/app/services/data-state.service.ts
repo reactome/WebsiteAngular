@@ -4,7 +4,7 @@ import { catchError, forkJoin, map, Observable, of, throwError } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { UrlStateService } from './url-state.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
-import { JSOGDeserializer, JSOGObject } from '../utils/JSOGDeserializer';
+import { JSOGDeserializer, type JsogObject } from '../utils/JSOGDeserializer';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { Pathway } from '../model/graph/event/pathway.model';
 import { SelectableObject } from './event.service';
@@ -237,7 +237,7 @@ export class DataStateService {
     if (!isReferenceEntityStId(id.toString()) && params) params.includeDisease = true; // Always include disease data for non summary elements
 
     return this.http
-      .get<T>(url, {
+      .get<JsogObject<T>>(url, {
         params: {
           fetchIncomingRelationships: true,
           summariseReferenceEntity: true,
@@ -276,10 +276,8 @@ export class DataStateService {
       );
   }
 
-  flattenReferences<T>(response: T): T {
-    const deserializer = new JSOGDeserializer();
-    const resolvedResponse = deserializer.deserialize<T>(response as JSOGObject);
-    return resolvedResponse as T;
+  flattenReferences<T>(response: JsogObject<T>): T {
+    return new JSOGDeserializer().deserialize(response);
   }
 
   private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {

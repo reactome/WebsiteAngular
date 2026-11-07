@@ -11,6 +11,7 @@ import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { ParticipantService } from './participant.service';
 import { DataKeys, Labels } from '../constants/constants';
 import { isDefined, isRefEntity, isReferenceEntityStId } from './utils';
+import type { JsogObject } from '../utils/JSOGDeserializer';
 
 @Injectable({
   providedIn: 'root',
@@ -78,7 +79,7 @@ export class EntityService {
   ): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
-      .get<E | null>(url, {
+      .get<JsogObject<E> | null>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -95,7 +96,7 @@ export class EntityService {
   getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<JsogObject<E>>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',

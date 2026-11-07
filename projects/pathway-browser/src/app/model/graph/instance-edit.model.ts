@@ -1,7 +1,6 @@
-import { DatabaseObject } from './database-object.model';
-import { Person } from './person.model';
+import type * as Graph from '../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface InstanceEdit extends DatabaseObject {
-  dateTime: string;
-  author: Person[];
-}
+/** A curation edit, as the pathway browser reads it (the contract's, resolved). */
+export type InstanceEdit = Resolved<Graph.InstanceEdit<JsogReference>>;

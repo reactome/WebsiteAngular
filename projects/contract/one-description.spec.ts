@@ -86,12 +86,27 @@ function qualifiedName(node: ts.Node & { name: ts.Identifier }): string {
 }
 
 /** The name a type reference names, its last part: `GroupedResult` of `GroupedResult<E>`. */
-const referenced = (type: ts.TypeNode): string | null =>
-  ts.isTypeReferenceNode(type)
-    ? ts.isIdentifier(type.typeName)
-      ? type.typeName.text
-      : type.typeName.right.text
-    : null;
+/**
+ * The readers' wrappers that name a contract type as a reader holds it:
+ * `Resolved<X>` is X with its JSOG references resolved (research R9).
+ */
+const WRAPPERS = new Set(['Resolved']);
+
+/**
+ * The type an alias names: a reference's own name, the type a wrapper wraps,
+ * or, for an intersection, its first member's (the contract's type, then the
+ * reader's named additions: `Resolved<Publication<…>> & CurationPublication`).
+ */
+const referenced = (type: ts.TypeNode): string | null => {
+  if (ts.isIntersectionTypeNode(type)) {
+    const [first] = type.types;
+    return first ? referenced(first) : null;
+  }
+  if (!ts.isTypeReferenceNode(type)) return null;
+  const name = ts.isIdentifier(type.typeName) ? type.typeName.text : type.typeName.right.text;
+  const [wrapped] = type.typeArguments ?? [];
+  return WRAPPERS.has(name) && wrapped ? referenced(wrapped) : name;
+};
 
 /**
  * The names readers give the contract's types by aliasing them in their own
@@ -141,6 +156,16 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  * lose along with the alias. The spec holds this list to the code both ways.
  */
 const READER_ALIASES = [
+  // The graph's classes (T025): the pathway browser's resolved, the site's plain.
+  'Book',
+  'DatabaseIdentifier',
+  'InstanceEdit',
+  'LiteratureReference',
+  'Person',
+  'PersonAffiliation',
+  'PersonPublication',
+  'Publication',
+  'ReferenceDatabase',
   'ResultGroup',
   'Search.Entry',
   'Search.Facet',
@@ -149,6 +174,7 @@ const READER_ALIASES = [
   'Search.PathwayOf',
   'Search.Result',
   'SearchResult',
+  'ShownGroup',
 ];
 
 /** Every declaration in the readers that describes, again, an answer the contract has. */

@@ -213,7 +213,7 @@ Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhan
 - Without JSOG, Jackson writes an object's later appearances as its dbId.
 - Their views differ too: an entity's other forms (1,660 known problems, T026) are written in the flat view, which leaves out fields the readers' `PhysicalEntity` requires.
 
-**Decision**:
+**Decision** (6 Nov 2026, approved in #854's review: points 1, 2 and 6 as proposed, within spec 016's rules that the type follows what is written and the wire does not change):
 
 1. **The contract describes the wire, under Java's class names, generic in the reference form.** One interface per class (`Pathway<Ref>`, `Species<Ref>`, …), where `Ref` is `JsogReference` (`{'@ref': string}`) for the enhanced query and `number` (a dbId) for the plain routes. A related object is `X<Ref> | Ref`.
    - Each concrete class has its `schemaClass` as a literal.
@@ -224,7 +224,9 @@ Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhan
    - the form is `type Pathway = Resolved<C.Pathway<JsogReference>> & ObjectState`, where `Resolved<T>` is the answer with every reference replaced by its object, and `ObjectState` names what the reader adds itself (`isLoaded`, `_updateCounter`; `index`, `moleculeView` and `highlight` on a composition);
    - an alias of the contract's type with a named client part is allowed by the one-description check (T016), so the 98 model files' names and their 133 uses stay;
    - an `interface` may still extend such an alias, as the prototype showed.
-3. **The deserializer's type follows its work.** `deserialize<W>(jsog: W): Resolved<W>`. The readers ask for the wire type and get the resolved one, with no cast at the call. The cast stays inside the deserializer, the one place that does the resolving.
+3. **The deserializer's type follows its work.** The readers ask for what arrives and get the resolved type back, with no cast at the call. The cast stays inside the deserializer, the one place that does the resolving.
+   - **As built (T025b):** `deserialize<T>(jsog: JsogObject<T>): T`, the other way round from `Resolved<W>`. The readers are generic (`fetchEnhancedData<T extends DatabaseObject>`), and `Resolved<T>` of an unresolved `T` is not assignable to `T`, so they could not have returned it. `JsogObject<T>` is the reader's own resolved type as JSOG writes it, each related object perhaps a reference; the readers ask for `get<JsogObject<T>>`. A contract class resolved and written back is the class again, so this meets `Resolved<>` once the readers ask for contract types (T025f).
+   - Its walk is unchanged: over 1,426 recorded answers (958 with references) it gives the same graph as before, values and shared objects alike, and the same for null, primitive, array and dangling-reference roots. Copying a resolved object instead of sharing it differs on all 958.
 4. **`[key: string]: any` goes**, class by class, as each class moves. A reader of a field no class declares fails the type check, and is fixed then, which lowers the lint count too.
 5. **The writer is held by the snapshot, not by types.** `writeDomain` writes any class from the domain snapshot, with no per-class type, so a renamed contract field cannot fail it at compile time. Instead, a spec holds every contract graph class, field by field, to the properties the snapshot writes for that class, in both directions, as `entity-types.spec.ts` holds the entity kinds.
 6. **The site's `Person` is the graph's Person.** The site reads `/data/person/{id}` as its own `Person`. That is the same Java class in the plain form, so it becomes `Person<number>`, and its 42 known problems as `Person` fall with the person family's move.
