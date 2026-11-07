@@ -1,7 +1,9 @@
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
@@ -39,6 +41,7 @@ import type {
 import { gatherGroups } from './gather-groups';
 import { installRenderNavigate, pageBuild } from './render-navigation';
 import { currentRenderNav } from './render-reuse-strategy';
+import { startAsFresh } from './start-as-fresh';
 import type { Analysis } from '../model/analysis.model';
 
 /**
@@ -92,6 +95,20 @@ export class RenderComponent {
   private route = inject(ActivatedRoute);
   private speciesService = inject(SpeciesService);
   private router = inject(Router);
+  private host: HTMLElement = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private destroyRef = inject(DestroyRef);
+
+  /**
+   * Whether the component is gone: on a held page, moved on to the next
+   * figure. Its wait polls on after that unless it asks, and found the next
+   * figure on the page: a move made while a diagram was still drawing
+   * published the next figure, an illustration, as the diagram's pathway
+   * (spec 018, research R2 audit 2). A method, because it changes across the
+   * wait's awaits.
+   */
+  private destroyed(): boolean {
+    return this.destroyRef.destroyed;
+  }
 
   /**
    * The id of the move that made this component (`__renderNavigate`), on its
@@ -193,6 +210,7 @@ export class RenderComponent {
 
   constructor() {
     installRenderNavigate(this.router);
+    startAsFresh(this.analysis, this.speciesService, this.route.snapshot.paramMap.get('pathwayId'));
     this.dark.isDark.set(this.wantsDark);
 
     // The diagram waits on EventService.diagramPathway$ before it will load,
@@ -272,7 +290,7 @@ export class RenderComponent {
     // settled: a slow but valid load is still "loading" and never trips it.
     const giveUpOnMissing = started + 3_000;
 
-    while (Date.now() < deadline) {
+    while (!this.destroyed() && Date.now() < deadline) {
       // A token whose result cannot be read is dropped by the analysis service,
       // which would leave a figure with no colouring at all -- drawn, ready, and
       // wrong. It is the caller's failure to hear about, not a figure.
@@ -305,6 +323,7 @@ export class RenderComponent {
         await document.fonts.ready;
         // Two frames: one to apply the last change, one to paint it.
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        if (this.destroyed()) return;
         this.stateForCaller.set({
           pathway: pathway ?? null,
           // For a caller that puts the figure in a document and needs to label
@@ -402,8 +421,9 @@ export class RenderComponent {
   }
 
   private drawnView(): Drawn | null {
-    const host = document.querySelector('cr-render');
-    if (!host) return null;
+    // Its own host, not the page's first `cr-render`: on a held page that can
+    // be the next figure's (audit 2).
+    const host = this.host;
 
     const reaction = this.reaction();
     if (reaction) {
@@ -477,7 +497,8 @@ export class RenderComponent {
   }
 
   private publish() {
-    const api = window as unknown as Record<string, unknown>;
+    // A destroyed figure's state would be read as the next one's.
+    if (this.destroyed()) return;
     const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
@@ -485,7 +506,7 @@ export class RenderComponent {
       build: pageBuild(),
       ...this.stateForCaller(),
     };
-    api['__renderState'] = state;
+    window.__renderState = state;
     // The caller asks the page for the artefact rather than reaching into
     // cytoscape itself: how a view exports is the view's business, and a
     // caller poking at renderer internals would break the first time they move.
@@ -510,7 +531,7 @@ export class RenderComponent {
       showSample: (name: string) => this.showSample(name),
       frameCanvas: (scale = 1) => this.frameCanvas(scale),
     };
-    api['__renderExport'] = exports;
+    window.__renderExport = exports;
   }
 
   /**
@@ -547,7 +568,7 @@ export class RenderComponent {
    * figure without the selection asked for is a 200 nobody can detect.
    */
   private illustration() {
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.host.querySelector<SVGSVGElement>(EHLD_SVG);
     if (svg && this.highlighted.length) {
       throw new Error('highlight is not drawn on an illustration yet');
     }

@@ -552,8 +552,15 @@ export class AnalysisService {
     // resource, and the guard makes this run once: on the second pass the
     // filter is no longer null. A resource the user picks by hand is never
     // overridden.
+    //
+    // From the token's own result only. `result` keeps the previous token's
+    // while the next one loads, and a default read from that was the previous
+    // result's: a result holding UNIPROT, then one holding only TOTAL, coloured
+    // the second for UNIPROT (spec 018, research R2 audit 6).
     effect(() => {
       if (this.state.resourceFilter() !== null) return;
+      if (decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis()))
+        return;
       const resource = defaultResource(this.resourceOptions());
       if (resource) this.state.resourceFilter.set(resource);
     });
