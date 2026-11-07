@@ -157,6 +157,19 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  */
 const READER_ALIASES = [
   // The graph's classes (T025): the pathway browser's resolved, the site's plain.
+  'Anatomy',
+  'CellType',
+  'Compartment',
+  'Disease',
+  'Figure',
+  'GO_BiologicalProcess',
+  'GO_MolecularFunction',
+  'ListedSpecies',
+  'PsiMod',
+  'ReviewStatus',
+  'Species',
+  'Summation',
+  'Taxon',
   'Book',
   'DatabaseIdentifier',
   'InstanceEdit',

@@ -22,7 +22,7 @@ export interface Diagram {
   displayName: string;
   edges: Edge[];
   nodes: Node[];
-  compartments: Compartment[];
+  compartments: DiagramCompartment[];
   links: Link[];
   /**
    * The list of contained shadows(subpathways)
@@ -108,7 +108,8 @@ export interface Node extends Entity {
   trivial?: boolean;
 }
 
-export interface Compartment extends Entity {
+/** A compartment as the diagram draws it: a shape of the layout, not the graph's Compartment. */
+export interface DiagramCompartment extends Entity {
   componentIds: number[];
   prop: Prop;
   insets?: Prop;

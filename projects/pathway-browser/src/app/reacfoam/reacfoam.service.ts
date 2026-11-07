@@ -3,7 +3,7 @@ import { SpeciesService } from '../services/species.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { map, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { Species } from '../model/graph/species.model';
+import { ShownSpecies } from '../model/graph/species.model';
 import { UrlStateService } from '../services/url-state.service';
 import { FoamTree } from '@carrotsearch/foamtree';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -63,7 +63,7 @@ export class ReacfoamService {
   );
 
   fetchEventsHierarchy(
-    species: Species,
+    species: ShownSpecies,
     params: EventsHierarchy.QueryParams
   ): Observable<EventsHierarchy.Data[]> {
     return this.http.get<EventsHierarchy.Data[]>(
