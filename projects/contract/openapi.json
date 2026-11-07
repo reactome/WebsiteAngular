@@ -29623,6 +29623,10 @@
               "stId": {
                 "$ref": "#/components/schemas/Highlighted"
               },
+              "reason": {
+                "type": "string",
+                "description": "Why it was deleted, the display name of its reason. Node's own: Java reads a field the index does not have, so never writes it."
+              },
               "explanation": {
                 "type": "string"
               },

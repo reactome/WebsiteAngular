@@ -17,6 +17,7 @@ import type {
 } from '../../projects/contract/search.ts';
 import {
   blankBoolean,
+  DELETED_REASON_DIFFERS,
   facetContainer,
   fromSolr,
   rawOccurrence,
@@ -566,6 +567,8 @@ export const searchEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/pathways/of/{dbId}',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.getContainingPathwaysOf, which the Pathway Browser
     // asks for a search result's diagrams: the entity's occurrences from its
     // document (Solr's /get by dbId), then those diagrams' documents by
@@ -630,6 +633,8 @@ export const searchEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/query/paginated',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.getResult: the search by page and rows per page, each
     // type given its share of the rows when clustered. Before /search/query.
     handler: async (request) => {
@@ -695,6 +700,8 @@ export const searchEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/query',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.getSearchResult: the website's search, grouped by
     // type unless asked not to, from "Start row" for "rows".
     handler: async (request) => {
@@ -769,6 +776,8 @@ export const searchEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/icon/query',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.iconQuery: the icon library's page, by name, of the
     // icons in a category and matching a text -- the query search-core is
     // given is the category's facet, then the text, else everything. Before
@@ -813,6 +822,8 @@ export const searchEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/icon/{identifier}',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.iconDetail: one icon by its stable id, the first of
     // what Solr's /search finds for stId:{identifier} among icons; none is
     // Java's 404, naming the id as given.

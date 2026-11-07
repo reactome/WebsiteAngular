@@ -15,6 +15,7 @@ import type { DiagramResult } from '../../projects/contract/search.ts';
 import {
   OCCURRENCE_READS,
   blankBoolean,
+  DELETED_REASON_DIFFERS,
   facetContainer,
   fourParts,
   fromSolr,
@@ -288,6 +289,8 @@ function speciesToString(row: { dbId: number; displayName: string | null }) {
 export const searchDiagramEndpoints: Endpoint[] = [
   {
     path: '/ContentService/search/diagram/summary',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchService.getDiagramSearchSummary, for the Pathway Browser's
     // search: how many match in the diagram and in the whole species overview, for
     // a species and the entries without one -- counts only. Not checked as
@@ -432,6 +435,8 @@ export const searchDiagramEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/diagram/{diagram}',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.getDiagramResult: the Pathway Browser's search within
     // a diagram -- Solr's /diagrams handler, filtered to the diagram as given
     // (so a dbId or a versioned id, which pass the check, find nothing),
@@ -534,6 +539,8 @@ export const searchDiagramEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/search/fireworks',
+    // A deleted entry's reason, which Java never writes (search-core.ts).
+    differs: [DELETED_REASON_DIFFERS],
     // SearchController.getFireworksResult: the species-wide search behind the
     // Pathway Browser's "All pathways" results and its FoamTree, whatever
     // the old widget's name in the path. Finding nothing, it names the terms
