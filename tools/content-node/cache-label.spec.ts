@@ -41,8 +41,8 @@ describe('label', () => {
   it('is private for an endpoint that takes one person’s data, and not stored for one marked never', () => {
     expect(
       of({
-        endpoint: '/ContentService/exporter/diagram/{id}',
-        originalUrl: '/ContentService/exporter/diagram/R-HSA-1',
+        endpoint: '/ContentService/exporter/voronoi/{id}',
+        originalUrl: '/ContentService/exporter/voronoi/9606.png',
       })
     ).toEqual({ cacheControl: 'private, no-store', rule: 'endpoint' });
     expect(
