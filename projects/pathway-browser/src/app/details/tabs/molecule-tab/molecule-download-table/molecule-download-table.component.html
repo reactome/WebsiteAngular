@@ -5,6 +5,7 @@
   <!--  </button>-->
 
   <button
+    type="button"
     class="button"
     mat-flat-button
     [matTooltip]="'Download the data shown in the Molecules tab as a TSV'"
@@ -23,7 +24,7 @@
       <th mat-header-cell mat-sort-header *matHeaderCellDef>
         <div class="header">
           <mat-checkbox [(ngModel)]="includeType" (click)="$event.stopPropagation()">Molecule Type</mat-checkbox>
-          <button mat-icon-button (click)="$event.stopPropagation()" [matMenuTriggerFor]="categoryMenu">
+          <button type="button" mat-icon-button (click)="$event.stopPropagation()" [matMenuTriggerFor]="categoryMenu">
             <mat-icon fontSet="symbols">filter_alt</mat-icon>
           </button>
         </div>

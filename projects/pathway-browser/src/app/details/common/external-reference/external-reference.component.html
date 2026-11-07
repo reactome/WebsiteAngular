@@ -19,6 +19,7 @@
               <a [href]="referenceEntity().url" target="_blank">{{ referenceEntity().displayName }}</a>
               @if (!data.selectIsSummary()) {
                 <button
+                  type="button"
                   mat-icon-button
                   class="button select"
                   (click)="onSelect()"

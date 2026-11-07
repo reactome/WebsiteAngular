@@ -135,7 +135,13 @@
           <div class="top-left">
             <div class="analysis-button-group">
               @if (!isCurator) {
-                <button (click)="toggleAnalysis()" mat-ripple class="primary" [class.loading]="analysisLoading()">
+                <button
+                  type="button"
+                  (click)="toggleAnalysis()"
+                  mat-ripple
+                  class="primary"
+                  [class.loading]="analysisLoading()"
+                >
                   <mat-icon>query_stats</mat-icon>
                   Analyze
                   @if (analysisLoading()) {
@@ -144,6 +150,7 @@
                 </button>
                 @if (showDeltaSignal) {
                   <button
+                    type="button"
                     (click)="toggleDeltaSignal()"
                     mat-ripple
                     class="primary"
@@ -168,6 +175,7 @@
                   </div>
                   <div class="buttons">
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Previous sample"
@@ -177,6 +185,7 @@
                       <mat-icon>skip_previous</mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       (click)="toggleIterate()"
@@ -185,6 +194,7 @@
                       <mat-icon [fontIcon]="interval ? 'pause' : 'play_arrow'"></mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Next sample"
@@ -194,6 +204,7 @@
                       <mat-icon>skip_next</mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Set sample display duration"
@@ -206,7 +217,7 @@
               }
 
               @if (analysis.result()) {
-                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
+                <button type="button" class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
                   <mat-icon>close</mat-icon>
                 </button>
               }
@@ -222,7 +233,7 @@
             </mat-menu>
 
             <mat-menu #an="matMenu">
-              <button mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
+              <button type="button" mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
             </mat-menu>
 
             @if (!isCurator) {
@@ -231,19 +242,24 @@
                    root, which drops the /PathwayBrowser prefix and lands the
                    user on the website app instead of the diagram. -->
               @if (normalPathway(); as normal) {
-                <button mat-stroked-button (click)="compareWith(normal.stId)">
+                <button type="button" mat-stroked-button (click)="compareWith(normal.stId)">
                   <mat-icon>compare</mat-icon>
                   <span>Compare</span>
                   <mat-icon iconPositionEnd>check</mat-icon>
                 </button>
               } @else {
-                <button mat-stroked-button [disabled]="diseasePathways().length === 0" [matMenuTriggerFor]="compare">
+                <button
+                  type="button"
+                  mat-stroked-button
+                  [disabled]="diseasePathways().length === 0"
+                  [matMenuTriggerFor]="compare"
+                >
                   <mat-icon>compare</mat-icon>
                   Compare
                 </button>
                 <mat-menu #compare="matMenu">
                   @for (comparablePathway of diseasePathways(); track comparablePathway.stId) {
-                    <button mat-menu-item (click)="compareWith(comparablePathway.stId)">
+                    <button type="button" mat-menu-item (click)="compareWith(comparablePathway.stId)">
                       {{ comparablePathway.displayName }}
                     </button>
                   }
@@ -259,6 +275,7 @@
           <div class="top-right">
             <!-- reactome.org's Tour and Layout controls, behaving as they did there. -->
             <button
+              type="button"
               mat-icon-button
               class="quote"
               aria-label="Tour"
@@ -268,6 +285,7 @@
               <mat-icon fontSet="symbols">smart_display</mat-icon>
             </button>
             <button
+              type="button"
               mat-icon-button
               class="quote"
               aria-label="Layout"
@@ -278,6 +296,7 @@
             </button>
             <mat-menu #layoutMenu="matMenu">
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="panels().hierarchy"
@@ -289,6 +308,7 @@
                 Hierarchy panel
               </button>
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="panels().details"
@@ -298,6 +318,7 @@
                 Details panel
               </button>
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="!panels().hierarchy && !panels().details"
@@ -337,6 +358,7 @@
               id="dark-toggle"
             ></mat-slide-toggle>
             <button
+              type="button"
               mat-icon-button
               class="quote"
               aria-label="Cite us"

@@ -13,7 +13,7 @@
     } @else {
       <div class="schema-layout">
         <!-- Mobile sidebar toggle -->
-        <button class="sidebar-toggle" (click)="toggleSidebar()">
+        <button type="button" class="sidebar-toggle" (click)="toggleSidebar()">
           <span class="material-symbols-rounded">{{ sidebarOpen ? 'close' : 'account_tree' }}</span>
           Class Hierarchy
         </button>
@@ -32,7 +32,7 @@
               (input)="onTreeSearch($event)"
             />
             @if (treeSearchQuery) {
-              <button class="clear-btn" (click)="clearTreeSearch()">
+              <button type="button" class="clear-btn" (click)="clearTreeSearch()">
                 <span class="material-symbols-rounded">close</span>
               </button>
             }
@@ -45,7 +45,11 @@
                 [class.selected]="node.className === selectedClass"
               >
                 @if (node.hasChildren) {
-                  <button class="expand-btn" (click)="toggleTreeNode(node.className); $event.stopPropagation()">
+                  <button
+                    type="button"
+                    class="expand-btn"
+                    (click)="toggleTreeNode(node.className); $event.stopPropagation()"
+                  >
                     <span class="material-symbols-rounded">
                       {{ node.expanded ? 'expand_more' : 'chevron_right' }}
                     </span>
@@ -53,10 +57,15 @@
                 } @else {
                   <span class="expand-placeholder"></span>
                 }
-                <button class="node-label" (click)="onTreeNodeClick(node.className)">
+                <button type="button" class="node-label" (click)="onTreeNodeClick(node.className)">
                   <span class="node-name">{{ node.className }}</span>
                 </button>
-                <button class="node-count" (click)="onTreeNodeCountClick(node.className, $event)" title="Show entries">
+                <button
+                  type="button"
+                  class="node-count"
+                  (click)="onTreeNodeCountClick(node.className, $event)"
+                  title="Show entries"
+                >
                   [{{ getNodeCount(node.className) }}]
                 </button>
               </div>
@@ -73,10 +82,17 @@
             </div>
 
             <div class="tab-bar">
-              <button class="tab" [class.active]="activeTab === 'properties'" (click)="activeTab = 'properties'">
+              <button
+                type="button"
+                class="tab"
+                [class.active]="activeTab === 'properties'"
+                (click)="activeTab = 'properties'"
+              >
                 Properties
               </button>
-              <button class="tab" [class.active]="activeTab === 'entries'" (click)="switchToEntries()">Entries</button>
+              <button type="button" class="tab" [class.active]="activeTab === 'entries'" (click)="switchToEntries()">
+                Entries
+              </button>
             </div>
 
             @if (activeTab === 'properties') {
@@ -132,7 +148,7 @@
                   <div class="attr-section">
                     <h2>
                       Inherited Attributes
-                      <button class="toggle-inherited" (click)="showInherited = !showInherited">
+                      <button type="button" class="toggle-inherited" (click)="showInherited = !showInherited">
                         {{ showInherited ? 'Hide' : 'Show' }} ({{ inheritedAttributes.length }})
                       </button>
                     </h2>
@@ -255,7 +271,7 @@
               }
             } @else if (activeTab === 'entries') {
               @if (selectedInstanceId) {
-                <button class="back-btn" (click)="clearSelectedInstance()">
+                <button type="button" class="back-btn" (click)="clearSelectedInstance()">
                   <span class="material-symbols-rounded">arrow_back</span>
                   Back to entries
                 </button>
@@ -304,27 +320,43 @@
 
                     @if (totalPages > 1) {
                       <div class="pagination">
-                        <button class="page-btn" [disabled]="entriesPage === 1" (click)="goToPage(1)">
+                        <button type="button" class="page-btn" [disabled]="entriesPage === 1" (click)="goToPage(1)">
                           <span class="material-symbols-rounded">first_page</span>
                         </button>
-                        <button class="page-btn" [disabled]="entriesPage === 1" (click)="goToPage(entriesPage - 1)">
+                        <button
+                          type="button"
+                          class="page-btn"
+                          [disabled]="entriesPage === 1"
+                          (click)="goToPage(entriesPage - 1)"
+                        >
                           <span class="material-symbols-rounded">chevron_left</span>
                         </button>
 
                         @for (p of visiblePages; track p) {
-                          <button class="page-btn" [class.active]="p === entriesPage" (click)="goToPage(p)">
+                          <button
+                            type="button"
+                            class="page-btn"
+                            [class.active]="p === entriesPage"
+                            (click)="goToPage(p)"
+                          >
                             {{ p }}
                           </button>
                         }
 
                         <button
+                          type="button"
                           class="page-btn"
                           [disabled]="entriesPage === totalPages"
                           (click)="goToPage(entriesPage + 1)"
                         >
                           <span class="material-symbols-rounded">chevron_right</span>
                         </button>
-                        <button class="page-btn" [disabled]="entriesPage === totalPages" (click)="goToPage(totalPages)">
+                        <button
+                          type="button"
+                          class="page-btn"
+                          [disabled]="entriesPage === totalPages"
+                          (click)="goToPage(totalPages)"
+                        >
                           <span class="material-symbols-rounded">last_page</span>
                         </button>
                       </div>

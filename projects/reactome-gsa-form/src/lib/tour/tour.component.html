@@ -15,7 +15,7 @@
             }
             {{ step.title }}
           </mat-card-title>
-          <button mat-icon-button (click)="tour.pause()">
+          <button type="button" mat-icon-button (click)="tour.pause()">
             <mat-icon fontSet="gsa" class="reactome-icon">close</mat-icon>
           </button>
         </div>
@@ -26,13 +26,13 @@
       @if (!step.nextOnAnchorClick) {
         <mat-card-actions align="end">
           @if (tour.hasNext(step) && !step.nextOnAnchorClick) {
-            <button class="next" (click)="tour.next()" mat-button>
+            <button type="button" class="next" (click)="tour.next()" mat-button>
               {{ step.nextBtnTitle }}
               <mat-icon iconPositionEnd>chevron_right</mat-icon>
             </button>
           }
           @if (!tour.hasNext(step)) {
-            <button mat-button (click)="tour.end()">
+            <button type="button" mat-button (click)="tour.end()">
               {{ step.endBtnTitle }}
             </button>
           }
@@ -46,16 +46,28 @@
   <div id="tour-controls-wrapper" class="flex-container justify-center">
     <div id="tour-controls" class="flex-container gap-one">
       @if (tour.paused) {
-        <button mat-icon-button class="primary-color" (click)="tour.resume()" matTooltip="Resume guided tour">
+        <button
+          type="button"
+          mat-icon-button
+          class="primary-color"
+          (click)="tour.resume()"
+          matTooltip="Resume guided tour"
+        >
           <mat-icon fontSet="gsa">play_arrow</mat-icon>
         </button>
       }
       @if (!tour.paused) {
-        <button mat-icon-button class="primary-color" (click)="tour.pause()" matTooltip="Pause guided tour">
+        <button
+          type="button"
+          mat-icon-button
+          class="primary-color"
+          (click)="tour.pause()"
+          matTooltip="Pause guided tour"
+        >
           <mat-icon fontSet="gsa">pause</mat-icon>
         </button>
       }
-      <button mat-icon-button class="primary-color" (click)="tour.end()" matTooltip="End guided tour">
+      <button type="button" mat-icon-button class="primary-color" (click)="tour.end()" matTooltip="End guided tour">
         <mat-icon fontSet="gsa">stop</mat-icon>
       </button>
     </div>

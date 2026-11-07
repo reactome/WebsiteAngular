@@ -82,7 +82,7 @@
 
                         @if (canDelete) {
                           <span [style.width.px]="rowHeight()">
-                            <button (click)="deleteColumn(x)" class="bin-button" mat-icon-button>
+                            <button type="button" (click)="deleteColumn(x)" class="bin-button" mat-icon-button>
                               <mat-icon fontSet="gsa">delete</mat-icon>
                             </button>
                           </span>
@@ -104,6 +104,7 @@
               @if (settings.addColumn) {
                 <td class="no-padding add-column-button-container" rowspan="0">
                   <button
+                    type="button"
                     #addCol
                     (click)="addColumn()"
                     (keydown.shift.tab)="focusLastCell($event)"
@@ -126,7 +127,7 @@
                     <th [attr.x]="x" [attr.y]="y" [class.selected]="cell.selected" class="border-right rows">
                       <div class="flex horizontal align-center justify-between">
                         @if (settings.deleteRow) {
-                          <button (click)="deleteRow(y)" class="bin-button" mat-icon-button>
+                          <button type="button" (click)="deleteRow(y)" class="bin-button" mat-icon-button>
                             <mat-icon fontSet="gsa">delete</mat-icon>
                           </button>
                         }
@@ -149,6 +150,7 @@
                 <th class="rows">...</th>
                 <td class="no-padding add-row-button-container" [colSpan]="data[0]?.length ?? 1">
                   <button
+                    type="button"
                     (click)="addRow()"
                     (keydown.shift.tab)="focusLastCell($event)"
                     class="add-row-button flex-container align-start primary-color"

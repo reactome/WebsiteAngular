@@ -17,7 +17,7 @@
           (input)="onSearchInput($event)"
         />
         @if (searchQuery) {
-          <button class="clear-btn" (click)="clearSearch()">
+          <button type="button" class="clear-btn" (click)="clearSearch()">
             <span class="material-symbols-rounded">close</span>
           </button>
         }
@@ -26,10 +26,16 @@
 
     @if (!loading && !error) {
       <div class="status-filters">
-        <button class="status-chip new" [class.active]="statusFilter === 'NEW'" (click)="setStatusFilter('NEW')">
+        <button
+          type="button"
+          class="status-chip new"
+          [class.active]="statusFilter === 'NEW'"
+          (click)="setStatusFilter('NEW')"
+        >
           NEW <span class="chip-count">{{ newCount }}</span>
         </button>
         <button
+          type="button"
           class="status-chip updated"
           [class.active]="statusFilter === 'UPDATED'"
           (click)="setStatusFilter('UPDATED')"
@@ -94,6 +100,7 @@
                   <td class="col-expand">
                     @if (pathway.subpathways?.length) {
                       <button
+                        type="button"
                         class="expand-btn"
                         (click)="toggleExpand(pathway.stId)"
                         [attr.aria-label]="isExpanded(pathway.stId) ? 'Collapse' : 'Expand'"
