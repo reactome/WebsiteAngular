@@ -15,7 +15,7 @@ import { ReactionDiagramComponent } from '../details/common/reaction-diagram/rea
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { AnalysisService, isNotFound } from '../services/analysis.service';
 import { failureMessage } from './failure-message';
@@ -37,6 +37,8 @@ import type {
   ShapeGeometry,
 } from '../../../../contract/render.ts';
 import { gatherGroups } from './gather-groups';
+import { installRenderNavigate, pageBuild } from './render-navigation';
+import { currentRenderNav } from './render-reuse-strategy';
 import type { Analysis } from '../model/analysis.model';
 
 /**
@@ -75,6 +77,7 @@ const EHLD_SVG = 'cr-ehld #ehld svg';
   styleUrl: './render.component.scss',
   host: {
     '[attr.data-render-ready]': 'ready()',
+    '[attr.data-render-nav]': 'nav',
     '[attr.data-render-error]': 'error() || null',
   },
 })
@@ -88,6 +91,15 @@ export class RenderComponent {
   private dark = inject(DarkService);
   private route = inject(ActivatedRoute);
   private speciesService = inject(SpeciesService);
+  private router = inject(Router);
+
+  /**
+   * The id of the move that made this component (`__renderNavigate`), on its
+   * host and in `__renderState`; null on a full load. A caller holding the page
+   * waits for the host with its own id: any other is a previous figure's, and
+   * reading its readiness would hand over the previous figure.
+   */
+  readonly nav = currentRenderNav(this.router);
 
   /**
    * ?subpathways=false leaves the sub-pathway tints and labels out, matching
@@ -180,6 +192,7 @@ export class RenderComponent {
   private readonly stateForCaller = signal<Published | Record<string, never>>({});
 
   constructor() {
+    installRenderNavigate(this.router);
     this.dark.isDark.set(this.wantsDark);
 
     // The diagram waits on EventService.diagramPathway$ before it will load,
@@ -468,6 +481,8 @@ export class RenderComponent {
     const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
+      ...(this.nav === null ? {} : { nav: this.nav }),
+      build: pageBuild(),
       ...this.stateForCaller(),
     };
     api['__renderState'] = state;
