@@ -98,7 +98,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       dark diagram. Each host carried its own `nav` and nothing else was on the page;
       the reaction's SVG matched a fresh page's byte for byte.
 - [x] T004 [US2] The state of research R2's table, each row settled. A leak found is
-      fixed in the render page (#881):
+      fixed in the render page (#885):
   - the readiness wait cancelled on destroy, its queries scoped to its own host, and
     `__renderState` cleared at construction (R2 audit 2);
   - the species reset when `species=` is absent (audit 3);
