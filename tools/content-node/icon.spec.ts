@@ -112,10 +112,43 @@ describe('searchEntry, as SolrConverter.buildEntry builds an Entry', () => {
       regulatorId: 'ri',
       regulatedEntityId: 'ei',
       instanceTypeExplanation: 'x',
-      deletedReason: 'gone',
-      reason: 'gone',
     };
     expect(searchEntry(doc, {})).toEqual({ dbId: '1', id: '1' });
+  });
+
+  it("reads a deleted entry's reason from the index's `reason`, written where Entry declares it", () => {
+    // The indexer writes the reason as `reason` (search-indexer's
+    // DeletedDocument, its schema's field); Java reads `deletedReason`, which
+    // nothing writes, so Java never answers one. Node reads the index's field:
+    // a declared difference (documentation/declared-differences.md).
+    const entry = searchEntry(
+      {
+        dbId: '1',
+        deleted: true,
+        replacementStIds: ['R-HSA-2'],
+        replacementDbIds: ['2'],
+        date: '2020-01-02T00:00:00Z',
+        explanation: 'Merged into R-HSA-2',
+        reason: 'Merged',
+        deletedReason: 'never written',
+      },
+      {}
+    );
+    expect(Object.keys(entry)).toEqual([
+      'dbId',
+      'id',
+      'deleted',
+      'reason',
+      'explanation',
+      'date',
+      'replacementDbIds',
+      'replacementStIds',
+    ]);
+    expect(entry['reason']).toBe('Merged');
+    // Read as Java's (String) cast reads text: another class is its ClassCastException.
+    expect(() => searchEntry({ dbId: '1', reason: 3 }, {})).toThrow(
+      expect.objectContaining({ unexpected: true })
+    );
   });
 
   it('id is the stId when there is one, else the dbId', () => {
