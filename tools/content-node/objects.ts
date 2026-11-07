@@ -6,7 +6,14 @@
  */
 import type { Request } from './endpoint.ts';
 import type { GraphNode, Properties } from './graph.ts';
-import { asciiDigits, databaseObjectSet, javaNumeric, javaTrim, present } from './java-text.ts';
+import {
+  asciiDigits,
+  databaseObjectSet,
+  javaNumeric,
+  javaSplit,
+  javaTrim,
+  present,
+} from './java-text.ts';
 import { notFound, only, unexpected } from './answers.ts';
 import { read } from './graph.ts';
 import type { DomainEntity } from './domain.ts';
@@ -18,6 +25,7 @@ import {
   mapNodes,
 } from './domain.ts';
 import { jsoupText } from './jsoup-text.ts';
+import { JavaNullPointerException, JavaRuntimeException } from './reaction-layout/model.ts';
 import neo4j from 'neo4j-driver';
 
 /** A node's or map's properties, as read gives them. */
@@ -273,4 +281,45 @@ export async function speciesTaxId(filter: SpeciesFilter) {
     filter
   );
   return byName?.taxId ?? undefined;
+}
+
+/**
+ * What graph-core's findById makes of an id, as getReactionLikeEvent reads
+ * it: a failure Java answers with its 500 (the message), or the object's
+ * stable id and whether it is a ReactionLikeEvent, or undefined when there
+ * is no object (Java's null). Its id rules are resolveId's: trimmed, a
+ * version cut, a pre-2016 REACT_ id found by the stable id it became.
+ */
+export async function findById(
+  id: string
+): Promise<{ failure: string } | { stId: string; reaction: boolean } | undefined> {
+  // trimId splits an id without ':' at '.', and Java's split of dots alone
+  // is empty: indexing it is the 500. Then findById's Long.parseLong
+  // refuses a dbId past a long. Both measured against Java.
+  const trimmed = javaTrim(id);
+  if (!trimmed.includes(':') && trimmed !== '' && javaSplit(trimmed, '.').length === 0)
+    return { failure: 'Index 0 out of bounds for length 0' };
+  const pastLong = longPastRange([id]);
+  if (pastLong) return { failure: pastLong };
+  const { where, params } = resolveId(id);
+  if (where === 'false') return undefined;
+  const [row] = await read<{ labels: string[]; stId: string }>(
+    `MATCH (n:DatabaseObject) WHERE ${where} RETURN labels(n) AS labels, n.stId AS stId LIMIT 1`,
+    params
+  );
+  if (!row) return undefined;
+  return { stId: row.stId, reaction: row.labels.includes('ReactionLikeEvent') };
+}
+
+/**
+ * The service's answer to one of the library's Java exceptions (research
+ * D22 step 5): GlobalExceptionHandler's 500, a NullPointerException with its
+ * fixed text, any other exception with its message, null written as null.
+ * Undefined for anything else, which is this service's own failure.
+ */
+export function layoutFailureMessage(failure: unknown): { message: string | null } | undefined {
+  if (failure instanceof JavaNullPointerException)
+    return { message: 'Something unexpected happened and the error has been reported.' };
+  if (failure instanceof JavaRuntimeException) return { message: failure.javaMessage };
+  return undefined;
 }
