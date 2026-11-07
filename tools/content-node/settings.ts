@@ -27,6 +27,12 @@ export const settings = {
    */
   sbmlService: (): string => process.env['SBML_SERVICE'] || '',
   /**
+   * Where the PDF service listens (pdf-export's single-event service,
+   * deploy/pdf-export, spec 006 T100), read per request; none set, an
+   * event's PDF answers 503 rather than another implementation.
+   */
+  pdfService: (): string => process.env['PDF_SERVICE'] || '',
+  /**
    * The release's diagram files, `{stId}.json`, as the content service's
    * diagramJsonFolder holds them (an event's SBGN, sbgn-exporter spec 001
    * T018), read per request; none set, a pathway's SBGN answers 503 rather

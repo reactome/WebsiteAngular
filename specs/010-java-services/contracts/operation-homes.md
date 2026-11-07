@@ -83,7 +83,7 @@ The decision record of FR-001 and FR-002. It covers every operation in the two s
 | GET    | `/data/species/all`                                       | node — ported          | graph or search index                                                                         |
 | GET    | `/data/species/main`                                      | node — ported          | graph or search index                                                                         |
 | GET    | `/exporter/diagram/{identifier}.{ext}`                    | node — exporter (#273) | drawn by the render service; Java exporters not needed                                        |
-| GET    | `/exporter/document/event/{identifier}.pdf`               | java-library           | event-pdf (iText, html2pdf); to be replaced by pdf-export (5 Nov amendment above)             |
+| GET    | `/exporter/document/event/{identifier}.pdf`               | node                   | pdf-export's single-event service (5 Nov amendment above; spec 006 T100), replacing event-pdf |
 | GET    | `/exporter/event/{identifier}.sbgn`                       | java-library           | libSBGN; to follow SBML's pattern, one exporter for bulk and website (5 Nov)                  |
 | GET    | `/exporter/event/{identifier}.sbml`                       | java-library           | JSBML, in sbml-exporter; node answers it through the library service (spec 015, #666)         |
 | GET    | `/exporter/fireworks/{species}.{ext}`                     | node — ported          | drawn by the render service; Java exporters not needed                                        |
