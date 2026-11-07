@@ -7,6 +7,9 @@ import { NavLink } from '../../types/link';
 import { ContentService } from '../../services/content.service';
 import { SearchHistoryService } from '../../services/search-history.service';
 import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import type { PlainGraphObject } from '../../../../pathway-browser/src/app/model/graph/plain.model';
+import { getProperty } from '../../../../pathway-browser/src/app/services/utils';
+import type { Person } from '../../model/person.model';
 
 // Breadcrumb entries used by this component carry an optional set of
 // query params so a link can preserve query-string state (notably the
@@ -104,15 +107,13 @@ export class BreadcrumbComponent implements OnInit {
           const id = path_segments[3] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http
-            .get<{ displayName?: string }>(`${CONTENT_SERVICE}/data/person/${id}`)
-            .subscribe({
-              next: (p) => {
-                if (p.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
-              },
-              // The leaf keeps the id; the page itself says what went wrong.
-              error: () => undefined,
-            });
+          this.http.get<Person>(`${CONTENT_SERVICE}/data/person/${id}`).subscribe({
+            next: (p) => {
+              if (p.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+            },
+            // The leaf keeps the id; the page itself says what went wrong.
+            error: () => undefined,
+          });
         } else if (
           path_segments[0] === 'content' &&
           path_segments[1] === 'detail' &&
@@ -130,16 +131,17 @@ export class BreadcrumbComponent implements OnInit {
           const id = path_segments[2] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http
-            .get<{ displayName?: string; name?: string[] }>(`${CONTENT_SERVICE}/data/query/${id}`)
-            .subscribe({
-              next: (entity) => {
-                const label = entity.displayName || entity.name?.[0] || id;
-                this.replaceLeafBreadcrumb(label, fullPath);
-              },
-              // The leaf keeps the id; the page itself says what went wrong.
-              error: () => undefined,
-            });
+          this.http.get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/${id}`).subscribe({
+            next: (entity) => {
+              // Its names where its class has a list of them (a GO term's name is one text).
+              const names = getProperty(entity, 'name');
+              const label =
+                entity.displayName || (Array.isArray(names) ? names[0] : undefined) || id;
+              this.replaceLeafBreadcrumb(label, fullPath);
+            },
+            // The leaf keeps the id; the page itself says what went wrong.
+            error: () => undefined,
+          });
         } else if (path_segments.includes('faq') && path_segments.length > 2) {
           //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)

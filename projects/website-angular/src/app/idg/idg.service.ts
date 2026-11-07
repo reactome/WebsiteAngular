@@ -6,6 +6,11 @@ import {
   CONTENT_SERVICE,
   IDG_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
+import type {
+  PlainEvent,
+  PlainGraphObject,
+} from '../../../../pathway-browser/src/app/model/graph/plain.model';
+import { getProperty } from '../../../../pathway-browser/src/app/services/utils';
 
 /**
  * One of the interaction datasets the IDG portal knows about.
@@ -311,13 +316,17 @@ export class IdgService {
    */
   pathwayDetail(stId: string): Observable<IdgPathwayDetail> {
     const detail = this.http
-      .get<{ summation?: { text?: string }[] }>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
-      .pipe(map((event) => plainText(event.summation?.[0]?.text)));
+      .get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
+      .pipe(
+        map((object) => {
+          // A pathway's first summation; a summation written earlier comes as its dbId, no text.
+          const [first] = getProperty(object, 'summation') ?? [];
+          return plainText(typeof first === 'object' ? first.text : undefined);
+        })
+      );
 
     const ancestors = this.http
-      .get<{ stId: string; displayName: string }[][]>(
-        `${CONTENT_SERVICE}/data/event/${stId}/ancestors`
-      )
+      .get<PlainEvent[][]>(`${CONTENT_SERVICE}/data/event/${stId}/ancestors`)
       .pipe(
         // The first branch, reversed: the service returns the pathway first and
         // the root last, which is the opposite of how a breadcrumb reads.
