@@ -393,7 +393,7 @@
                   </a>
                 }
                 <!-- Add separator except for last item -->
-                @if (i < ie.author.length - 1) {
+                @if (i < (ie.author?.length ?? 0) - 1) {
                   <span class="margin-right">,</span>
                 }
               }

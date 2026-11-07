@@ -682,9 +682,19 @@ it is made, not three steps later.
      order was read by writing it, every field set, with the deployed jars,
      and a test holds node's text to Jackson's for a whole answer written
      that way. `Double.toString` under JDK 11 is not always the shortest
-     form: of 300,000 random doubles node wrote 225 differently, all of them
-     10^16 or more, which no layout reaches. Writing it found `-0.0`, which
-     the service's `javaDouble` wrote `0.0`; fixed there.
+     form. Of 300,000 random doubles, node's `javaDouble`, which then wrote
+     JavaScript's shortest form, wrote 225 differently. This note said they
+     were all 10^16 or more; that was wrong. A double with few significant
+     bits differs far below that: JDK 11 writes 2^-44 as
+     `5.6843418860808015E-14`, not the shortest `5.684341886080802E-14`, and
+     2^-24 as `5.9604644775390625E-8`, not `5.960464477539063E-8`. Every
+     ported endpoint writes its doubles through `javaDouble`, so since #853
+     it follows JDK 11's algorithm (`java-double.ts`). It was
+     compared with JDK 11 on 21,667,178 doubles and none differ; 128,360 of
+     them are not written in the shortest form. None lies between 10^-3 and
+     10^7, where Java writes plain decimals, and none is a decimal of one to
+     three fraction digits up to 10,000 or a sum or difference of two. Writing
+     it found `-0.0`, which the service's `javaDouble` wrote `0.0`; fixed there.
    - **Another order set when the JVM starts.** An event's
      `entityFunctionalStatus` and `speciesID` are named by getters that match
      no field, so Jackson writes them after the rest, in the order the JVM

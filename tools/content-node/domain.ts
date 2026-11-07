@@ -15,6 +15,7 @@ import { readFileSync } from 'node:fs';
 import type { GraphNode, GraphRelationship } from './graph.ts';
 import { schemaClassOf, supertypes } from './schema.ts';
 import { JavaHashMap } from './java-hashmap.ts';
+import { jdk11DoubleText } from './java-double.ts';
 
 /** A JSON property Jackson writes: its name, what it reads, its views, 'D' for a double. */
 export type SnapshotProperty = [name: string, source: string, views: number, double?: 'D'];
@@ -845,20 +846,14 @@ export function javaString(text: string): string {
 }
 
 /**
- * Double.toString: always a decimal point; scientific notation, as `1.0E-4`,
- * below 10^-3 and from 10^7; negative zero keeps its sign, `-0.0`.
+ * Double.toString as JDK 11 writes it (java-double.ts): always a decimal
+ * point; scientific notation, as `1.0E-4`, below 10^-3 and from 10^7; negative
+ * zero keeps its sign, `-0.0`; and not always the shortest form. NaN and the
+ * infinities are written as Jackson writes them, quoted.
  */
 export function javaDouble(value: number): string {
   if (!Number.isFinite(value)) return JSON.stringify(String(value));
-  if (Object.is(value, -0)) return '-0.0';
-  const magnitude = Math.abs(value);
-  if (magnitude !== 0 && (magnitude < 1e-3 || magnitude >= 1e7)) {
-    // toExponential always writes an 'e': both parts are there.
-    const [mantissa = '', exponent] = value.toExponential().split('e');
-    return `${mantissa.includes('.') ? mantissa : `${mantissa}.0`}E${Number(exponent)}`;
-  }
-  const text = String(value);
-  return text.includes('.') ? text : `${text}.0`;
+  return jdk11DoubleText(value);
 }
 
 /**

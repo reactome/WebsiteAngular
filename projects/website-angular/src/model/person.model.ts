@@ -1,33 +1,13 @@
+import type { Affiliation, Person as GraphPerson, Publication } from '../../../contract/graph.ts';
+
 export type { SimpleEvent } from '../../../contract/person.ts';
 
-interface Affiliation {
-  dbId: number;
-  displayName: string;
-  address?: string;
-  name?: string[];
-}
-
-interface Publication {
-  dbId: number;
-  title?: string;
-  displayName?: string;
-  author?: number[];
-  journal?: string;
-  pages?: string;
-  pubMedIdentifier?: number;
-  url?: string;
-  volume?: number;
-  year?: number;
-}
-
-export interface Person {
-  dbId: number;
-  displayName: string;
-  firstname?: string;
-  surname?: string;
-  initial?: string;
-  orcidId?: string;
-  project?: string;
-  affiliation?: Affiliation[];
-  publications?: Publication[];
-}
+/**
+ * A person, as /data/person/{id} writes it: the graph's Person in the plain
+ * form, where an object the answer has written already is its dbId.
+ */
+export type Person = GraphPerson<number>;
+/** One of a person's affiliations, as that answer writes it. */
+export type PersonAffiliation = Affiliation<number>;
+/** One of a person's publications, as that answer writes it. */
+export type PersonPublication = Publication<number>;

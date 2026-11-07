@@ -125,6 +125,16 @@ Fields every kind carries (`EntryBase`):
 
 Each answer's exact field list comes from the service's writer for it, and is checked against the recorded answers when it moves in (R3).
 
+## Graph objects (T025, research R9)
+
+What the graph routes write: Java's classes, as Jackson writes them, in one of two reference forms.
+
+- **Reference form.** A type argument, `Ref`: `JsogReference` (`{'@ref': string}`) for `/data/query/enhanced/v2/{id}`, which the readers ask for with `includeRef=true`, and `number` (the object's dbId) for the plain routes. A related object is `X<Ref> | Ref`; under JSOG an object written whole also carries `'@id'`.
+- **Classes.** One interface per class, under Java's name, with its `schemaClass` as a literal. An abstract class is the union of its subclasses, tagged `@discriminator schemaClass`. `className` is not the discriminator: it differs from `schemaClass` in 205 recorded objects.
+- **Compositions.** `composedOf` holds `Has<Element, Ref>`: `{type, stoichiometry, order, element}`, with no identity of its own.
+- **Fields.** Held to the domain snapshot's properties for each class, both ways, by a spec: the writer is driven by the snapshot and has no per-class type to fail.
+- **Readers.** The pathway browser's model types become aliases, `Resolved<C.X<JsogReference>> & ObjectState`: the answer with its references resolved, plus a named part for what the reader adds itself. The readers ask for `JsogObject<T>`, their resolved type as JSOG writes it, and `JSOGDeserializer.deserialize<T>` gives back the `T` (R9, as built).
+
 ## Validation rules
 
 - **Exactly one kind.** Every recorded entry matches exactly one kind (FR-004). The ajv check reports an entry that matches none, or more than one.
