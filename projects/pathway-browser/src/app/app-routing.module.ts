@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { ViewportComponent } from './viewport/viewport.component';
 import { RenderComponent } from './render/render.component';
+import { RENDER_FIGURE } from './render/render-reuse-strategy';
 import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -59,8 +60,9 @@ export const routes: Routes = [
     path: 'render',
     providers: [provideEnvironmentInitializer(registerPathwayBrowserIcons)],
     children: [
-      { path: '', component: RenderComponent },
-      { path: ':pathwayId', component: RenderComponent },
+      // A move to the next figure recreates the component (render-navigation.ts).
+      { path: '', component: RenderComponent, data: { [RENDER_FIGURE]: true } },
+      { path: ':pathwayId', component: RenderComponent, data: { [RENDER_FIGURE]: true } },
     ],
   },
   {

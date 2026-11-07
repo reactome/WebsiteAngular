@@ -78,13 +78,25 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 
 ## Phase 3: The render page (US1, US2)
 
-- [ ] T003 [US2] The render page's entry point (contracts/render-page.md).
+- [x] T003 [US2] The render page's entry point (contracts/render-page.md) (#877).
   - **Files:** `render-navigation.ts`; the route reuse strategy in
     `app-routing.module.ts`; `nav` and `build` in `__renderState` and `data-render-nav`
     in `render.component.ts`.
+    - **Built:** the strategy is a module of its own, `render-reuse-strategy.ts`,
+      provided in the site's root config. In `render-navigation.ts` it took the site's
+      initial bundle 67 bytes over its 450 kB budget; on its own the bundle is 449.33 kB.
+    - **A move to the address already shown** reloads it (`onSameUrlNavigation`), or the
+      router ignores it and no component carries the new `nav`.
   - **Tests:** a second navigation recreates the component, and its readiness carries
     the new `nav`. A non-render address is refused. The page's own address rewrite
     after drawing keeps the component (R4 result, 1).
+    - **Seen failing:** with no recreation; with recreation on every render navigation
+      (the prototype's trap: the rewrite test fails); without the same-address reload;
+      and with the address check removed or loosened.
+    - **In a browser** (a scratch build): one page moved through an illustration, a
+      reaction rewritten to its pathway, a reaction layout twice, the overview and a
+      dark diagram. Each host carried its own `nav` and nothing else was on the page;
+      the reaction's SVG matched a fresh page's byte for byte.
 - [ ] T004 [US2] The state of research R2's table, each row settled. A leak found is
       fixed in the render page:
   - the readiness wait cancelled on destroy, its queries scoped to its own host, and
