@@ -5,7 +5,8 @@
 // measured on 7 Nov 2026 from this host's ContentService: the 404 and 400 name
 // the id as given; the parameters are converted first, `level [0 - 1]` by that
 // name (a `level` is not read); the PDF is `application/pdf;charset=UTF-8`,
-// its file name the stable id with the extension outside the quotes.
+// its file name the stable id with the extension outside the quotes, which
+// node puts inside them (declared).
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import express from 'express';
 import type { AddressInfo } from 'node:net';
@@ -152,7 +153,7 @@ describe('what Java answers before any PDF is made', () => {
 });
 
 describe('the PDF', () => {
-  it('passes the service’s PDF on, with Java’s type and file name, from any form of the id', async () => {
+  it('passes the service’s PDF on, with Java’s type and the stable id’s file name, from any form of the id', async () => {
     withService();
     behave = pdf;
     for (const path of ['R-HSA-1.pdf', 'R-HSA-1.4.pdf', '1.pdf']) {
@@ -160,12 +161,12 @@ describe('the PDF', () => {
       expect(answer.status).toBe(200);
       expect(answer.type).toBe('application/pdf;charset=UTF-8');
       expect(answer.headers).toEqual({
-        'Content-Disposition': 'attachment; filename="R-HSA-1".pdf',
+        'Content-Disposition': 'attachment; filename="R-HSA-1.pdf"',
       });
       const { response, text } = await served(answer);
       expect(response.headers.get('content-type')).toBe('application/pdf;charset=UTF-8');
       expect(response.headers.get('content-disposition')).toBe(
-        'attachment; filename="R-HSA-1".pdf'
+        'attachment; filename="R-HSA-1.pdf"'
       );
       expect(text).toBe(PDF);
     }

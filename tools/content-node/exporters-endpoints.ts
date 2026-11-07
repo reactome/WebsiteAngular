@@ -801,7 +801,7 @@ function pdfRefusal(text: string): string | null {
 /**
  * An event's PDF, as Java's /exporter/document/event/{id}.pdf answers it
  * (EventPdfController.eventPdf) -- its parameters converted as Spring converts
- * them, its 404 and 400, its type and download name -- with the PDF made by
+ * them, its 404 and 400, its type -- with the PDF made by
  * pdf-export's single-event service (deploy/pdf-export; pdf-export spec 001,
  * Story 2, FR-014), passed on as it arrives. Never made by another
  * implementation: without the service, a 503.
@@ -916,8 +916,9 @@ export async function eventPdfAnswer(
       status: 200,
       type: 'application/pdf;charset=UTF-8',
       body: response,
-      // Java's header as Java writes it, the extension outside the quotes.
-      headers: { 'Content-Disposition': `attachment; filename="${event.stId}".pdf` },
+      // The extension inside the quotes: Java writes `filename="{stId}".pdf`,
+      // which a browser may save without it (declared differences, Pathway PDFs).
+      headers: { 'Content-Disposition': `attachment; filename="${event.stId}.pdf"` },
     };
   } finally {
     if (!streaming) PDF_SHARE.leave();
