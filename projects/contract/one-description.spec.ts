@@ -158,6 +158,7 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  */
 const READER_ALIASES = [
   // The graph's classes (T025): the pathway browser's resolved, the site's plain.
+  'PlainTopLevelPathway',
   'DatabaseObject',
   // Unions and views of them the pathway browser names (a selection, a fragment
   // change, an ontology term's link, the description tab's tree data).

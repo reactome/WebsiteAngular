@@ -3,7 +3,6 @@
   "GET /data/participants/{id} as Participant[]": 872,
   "GET /data/participants/{id}/referenceEntities as ReferenceEntityIds[]": 1108,
   "GET /data/pathways/low/entity/{id} as { stId: string; displayName: string; speciesName: string; hasDiagram?: boolean; releaseStatus?: string }[]": 1059,
-  "GET /data/pathways/top/{taxId} as TopLevelPathway[]": 82,
   "GET /data/person/{id} as { displayName?: string }": 15,
   "GET /data/query/enhanced/{id} as { summation?: { text?: string }[] }": 61,
   "GET /data/query/{id} as { displayName?: string; name?: string[] }": 221,
