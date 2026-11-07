@@ -117,7 +117,7 @@ Found 19 Oct 2026 by comparing every mapping in the Java source with the publish
 - [ ] T106 `GET /data/pathways/top/{species}/curated`, `/data/pathways/low/diagram/identifier/{id}/allForms`, `/data/diagram/{id}/entities/{instance}`, `/data/database/info`
 - [ ] T107 `GET /data/detail/{id}/direction/…` (four forms), `/data/detail/{id}/getSubGraph`, `/data/detail/{id}/getReverseGraph`
 - [ ] T108 `GET /citation/download`, `POST /download/{format}`
-- [ ] T109 Exporters: `/exporter/diagram/{id}.pptx`, `/exporter/reaction/{id}.pptx`, `/exporter/sbml/{id}.xml` (with Phase 9's exporters). The last is answered by node through `sbml-exporter` since spec 015 T065 (#666), on beta.
+- [x] T109 Exporters: `/exporter/diagram/{id}.pptx`, `/exporter/reaction/{id}.pptx`, `/exporter/sbml/{id}.xml` (with Phase 9's exporters). The last is answered by node through `sbml-exporter` since spec 015 T065 (#666), on beta. The PowerPoints: node answers both, drawn by the render service's PowerPoint export (the user, 8 Nov 2026; research D24), Java's errors (a diagram id that resolves to nothing is its generic 500; a reaction's 404 and 400), type and download name `[stId] name.pptx`, routed in nginx and the dev proxy — #893
 
 ## Phase 10: Last
 

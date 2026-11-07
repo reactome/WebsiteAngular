@@ -219,37 +219,6 @@ const OVERVIEW_EXPORT: ExportField[] = [
 ];
 
 /**
- * The overview's parameters given at something other than their default that
- * the render service does not draw for it yet, as `name=value`: the species
- * overview draws an analysis (`token`) and nothing else asked of it.
- */
-function overviewNotDrawnYet(values: ExportValues) {
-  const defaults = {
-    flgInteractors: true,
-    title: true,
-    margin: 15,
-    resource: 'TOTAL',
-    coverage: false,
-  };
-  const named = Object.entries(defaults)
-    .filter(
-      ([name, fallback]) =>
-        values[name] !== fallback && !(name === 'margin' && values.margin === null)
-    )
-    .map(([name]) => `${name}=${String(values[name] ?? '')}`);
-  // Read with its default, so a number or null here.
-  const quality = values.quality as number | null;
-  if (quality !== null && quality !== 5 && quality >= 1 && quality <= 10)
-    named.push(`quality=${quality}`);
-  for (const name of ['flg', 'diagramProfile', 'expColumn'])
-    if (values[name] !== null && values[name] !== undefined)
-      named.push(`${name}=${String(values[name])}`);
-  const sel = values.sel as string[];
-  if (sel.length) named.push(`sel=${sel.join(',')}`);
-  return named;
-}
-
-/**
  * The render service's request for a species' overview: its genome-wide
  * view, the species by taxId, with an analysis when one is asked for.
  */
@@ -293,7 +262,7 @@ export function diagramExportRequest(
   const url = new URL(`${RENDER_SERVICE}/render/${result.diagramStId}.${format}`);
   const highlight = [...(result.events ?? []), ...(sel ?? [])];
   if (highlight.length && !illustrated) url.searchParams.set('highlight', highlight.join(','));
-  if (format !== 'svg') url.searchParams.set('scale', String(renderScale(quality)));
+  if (RASTER.has(format)) url.searchParams.set('scale', String(renderScale(quality)));
   if (token) url.searchParams.set('token', token);
   return url;
 }
@@ -326,6 +295,9 @@ function renderScale(quality: number) {
   return Math.round(Math.min(2, Math.max(0.25, qualityFactor(quality))) * 1000) / 1000;
 }
 
+/** The render service's formats with pixels, which a quality scales. */
+const RASTER = new Set(['png', 'jpeg', 'gif']);
+
 /** What DiagramRenderer draws a reaction in, and svg. */
 const REACTION_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
 
@@ -337,7 +309,7 @@ const REACTION_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
 function reactionExportRequest(stId: string, format: string, quality: number) {
   const url = new URL(`${RENDER_SERVICE}/render/${stId}.${format === 'jpg' ? 'jpeg' : format}`);
   url.searchParams.set('layout', 'reaction');
-  if (format !== 'svg') url.searchParams.set('scale', String(renderScale(quality)));
+  if (RASTER.has(format)) url.searchParams.set('scale', String(renderScale(quality)));
   return url;
 }
 
@@ -951,6 +923,99 @@ export async function eventPdfAnswer(
   }
 }
 
+/** PptxExporterController's parameters, in its order, with their defaults. */
+const PPTX_EXPORT: ExportField[] = [
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+];
+
+/** The PowerPoint's media type, as Java writes it (the service forces UTF-8). */
+const PPTX_TYPE =
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation;charset=UTF-8';
+
+/**
+ * ExportManager.getPPTXFileName: `[stId] displayName.pptx`, or the stable id
+ * alone when the object has no display name. Written as Java writes it, a
+ * quote in a name included.
+ */
+async function pptxDownload(stId: string) {
+  const [row] = await read<{ name: string | null }>(
+    'MATCH (n:DatabaseObject{stId:$stId}) RETURN n.displayName AS name LIMIT 1',
+    { stId }
+  );
+  const name = row?.name ? `[${stId}] ${row.name}` : stId;
+  return { 'Content-Disposition': `attachment; filename="${name}.pptx"` };
+}
+
+/** The render service's PowerPoint, under Java's type and download name. */
+async function renderPptx(request: Request, url: URL, stId: string): Promise<Answer> {
+  const figure = await renderFigure(request, url, PPTX_TYPE);
+  return figure.status === 200 ? { ...figure, headers: await pptxDownload(stId) } : figure;
+}
+
+/**
+ * A diagram's PowerPoint, as PptxExporterController.diagramPPTX answers it
+ * (spec 006 T109, research D24): the diagram that holds the event, with
+ * Java's selection (`sel`, then the resolved events) marked, drawn by the
+ * render service's PowerPoint export. An id that resolves to no diagram is
+ * Java's NullPointerException, its generic 500. diagramProfile, flg and
+ * flgInteractors are accepted and not drawn.
+ */
+async function diagramPptx(request: Request, identifier: string): Promise<Answer> {
+  const asked = exporterParameters(request, PPTX_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  if (longPastRange([identifier])) return unexpected(request);
+  const result = await diagramResult(identifier);
+  if (!result) return unexpected(request);
+  const sel = asked.values.sel ?? [];
+  const url = diagramExportRequest(result, {
+    ext: 'pptx',
+    sel,
+    illustrated:
+      (sel.length > 0 || result.events.length > 0) && (await hasIllustration(result.diagramStId)),
+  });
+  return renderPptx(request, url, result.diagramStId);
+}
+
+/**
+ * A reaction's PowerPoint, as PptxExporterController.reactionPPTX answers it
+ * (spec 006 T109, research D24): getReactionLikeEvent's answers, the
+ * layout's Java exceptions, then the render service's PowerPoint of the
+ * reaction's own layout. Java resolved the id's diagram first, and read it
+ * only to flag: with a flag, an id that resolves to none is its generic 500.
+ * diagramProfile, flg, flgInteractors and sel are accepted and not drawn.
+ */
+async function reactionPptx(request: Request, identifier: string): Promise<Answer> {
+  const asked = exporterParameters(request, PPTX_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const flag = asked.values['flg'];
+  if (typeof flag === 'string' && flag !== '' && !(await diagramResult(identifier)))
+    return unexpected(request);
+  const found = await findById(identifier);
+  if (found && 'failure' in found)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
+  if (!found) return notFound(request, `Identifier '${identifier}' not found`);
+  if (!found.reaction)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${identifier}' does not correspond to a 'ReactionLikeEvent'`
+    );
+  try {
+    await reactionAnswer(found.stId);
+  } catch (failure) {
+    const java = layoutFailureMessage(failure);
+    if (!java) throw failure;
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', java.message);
+  }
+  const url = new URL(`${RENDER_SERVICE}/render/${found.stId}.pptx`);
+  url.searchParams.set('layout', 'reaction');
+  return renderPptx(request, url, found.stId);
+}
+
 /**
  * A reaction's image, as ImageExporterController.reactionImage answers it
  * (spec 006 T092, research D24): Java's errors in Java's order -- the
@@ -969,6 +1034,8 @@ export async function eventPdfAnswer(
 async function reactionImage(request: Request): Promise<Answer> {
   const name = splitExportName(pathId(rawSegment(request, 4)));
   if (!name) return springNotFound(request);
+  // `{identifier}.pptx`, matched by case, is PptxExporterController's.
+  if (name.ext === 'pptx') return reactionPptx(request, name.identifier);
   const asked = exporterParameters(request, REACTION_EXPORT);
   if ('answer' in asked) return asked.answer;
   const found = await findById(name.identifier);
@@ -1032,6 +1099,8 @@ export const exportersEndpoints: Endpoint[] = [
     handler: async (request) => {
       const name = splitExportName(pathId(rawSegment(request, 4)));
       if (!name) return springNotFound(request);
+      // `{identifier}.pptx`, matched by case, is PptxExporterController's.
+      if (name.ext === 'pptx') return diagramPptx(request, name.identifier);
       const asked = exporterParameters(request);
       if ('answer' in asked) return asked.answer;
       const refused = longPastRange([name.identifier]);
@@ -1105,23 +1174,15 @@ export const exportersEndpoints: Endpoint[] = [
      * '_' for a space ('Homo_sapiens', 'homo_sapiens' and 9606 are all human).
      *
      * Every parameter the old exporter took is converted as Spring converts
-     * it, and one this does not draw is refused by name at a value other than
-     * its default: an overview that leaves out a flag or a profile asked for
-     * is a 200 no caller can detect.
+     * it. The token is drawn; the rest are accepted and not drawn, as for
+     * diagrams and reactions (research D24, the user's decision of 8 Nov
+     * 2026): a caller asking for one keeps getting the overview.
      */
     handler: async (request) => {
       const name = splitExportName(pathId(rawSegment(request, 4)));
       if (!name) return springNotFound(request);
       const asked = exporterParameters(request, OVERVIEW_EXPORT);
       if ('answer' in asked) return asked.answer;
-      const unsupported = overviewNotDrawnYet(asked.values);
-      if (unsupported.length)
-        return javaError(
-          request,
-          400,
-          'BAD_REQUEST',
-          `Not drawn by this service yet: ${unsupported.join(', ')}. Ask without them, or at their defaults.`
-        );
       const taxId = await speciesTaxId(speciesFilter(name.identifier));
       if (!taxId)
         return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not a species`);

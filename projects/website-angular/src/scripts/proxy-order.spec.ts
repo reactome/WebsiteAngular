@@ -63,32 +63,25 @@ describe('the dev server proxy', () => {
     await expectContentNode('/ContentService/exporter/fireworks/9606.png?token=x');
   });
 
-  it("sends a diagram's image to the content service, and leaves its PowerPoint to Java", async () => {
+  it("sends a diagram's image and PowerPoint to the content service", async () => {
     await expectContentNode('/ContentService/exporter/diagram/R-HSA-109606.svg');
     await expectContentNode(
       '/ContentService/exporter/diagram/R-HSA-5205685.png?quality=7&sel=R-HSA-1'
     );
     await expectContentNode('/ContentService/exporter/diagram/109606.PPTX');
-    for (const url of [
-      '/ContentService/exporter/diagram/R-HSA-109606.pptx',
-      '/ContentService/exporter/diagram/R-HSA-109606.pptx/',
-    ])
-      expect([url, await targetOf(url)]).toEqual([url, backend]);
+    await expectContentNode('/ContentService/exporter/diagram/R-HSA-109606.pptx');
+    await expectContentNode('/ContentService/exporter/diagram/R-HSA-109606.1.pptx?sel=R-HSA-1');
   });
 
-  it("sends a reaction's layout and image to the content service, and leaves its PowerPoint to Java", async () => {
+  it("sends a reaction's layout, image and PowerPoint to the content service", async () => {
     for (const id of ['R-HSA-6805479', '6805479', 'R-HSA-6805479.3'])
       await expectContentNode(`/ContentService/exporter/reaction/${id}/diagram`);
     await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.png');
     await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.3.svg?quality=5');
     await expectContentNode('/ContentService/exporter/reaction/6805479.jpg?flg=TP53');
     await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.PPTX');
-    for (const url of [
-      '/ContentService/exporter/reaction/R-HSA-6805479.pptx',
-      '/ContentService/exporter/reaction/R-HSA-6805479.pptx/',
-      '/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?quality=5',
-    ])
-      expect([url, await targetOf(url)]).toEqual([url, backend]);
+    await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.pptx');
+    await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?flg=TP53');
   });
 
   for (const id of ['70486', 'R-HSA-70486.4', 'REACT_1081', 'UniProt:P04637']) {
