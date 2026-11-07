@@ -10,8 +10,8 @@
  * out its first request (D22), so the same reaction gets the same bytes until
  * the graph changes. reaction-layout-check.ts compares it with Java's.
  *
- * `/exporter/reaction/{identifier}.{ext}`, the reaction's image, is not here:
- * it follows what T090 and T091 decide for diagrams' images.
+ * `/exporter/reaction/{identifier}.{ext}`, the reaction's image, is the
+ * exporters family's, with the other figures (research D24).
  */
 import type { Endpoint, Request } from './endpoint.ts';
 import { pathId, rawSegment } from './spring.ts';

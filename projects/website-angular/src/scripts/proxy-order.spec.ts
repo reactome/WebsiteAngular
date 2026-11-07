@@ -63,12 +63,17 @@ describe('the dev server proxy', () => {
     await expectContentNode('/ContentService/exporter/fireworks/9606.png?token=x');
   });
 
-  it("sends a reaction's layout to the content service, and leaves its image to Java", async () => {
+  it("sends a reaction's layout and image to the content service, and leaves its PowerPoint to Java", async () => {
     for (const id of ['R-HSA-6805479', '6805479', 'R-HSA-6805479.3'])
       await expectContentNode(`/ContentService/exporter/reaction/${id}/diagram`);
+    await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.png');
+    await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.3.svg?quality=5');
+    await expectContentNode('/ContentService/exporter/reaction/6805479.jpg?flg=TP53');
+    await expectContentNode('/ContentService/exporter/reaction/R-HSA-6805479.PPTX');
     for (const url of [
-      '/ContentService/exporter/reaction/R-HSA-6805479.png',
-      '/ContentService/exporter/reaction/R-HSA-6805479.svg?quality=5',
+      '/ContentService/exporter/reaction/R-HSA-6805479.pptx',
+      '/ContentService/exporter/reaction/R-HSA-6805479.pptx/',
+      '/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?quality=5',
     ])
       expect([url, await targetOf(url)]).toEqual([url, backend]);
   });

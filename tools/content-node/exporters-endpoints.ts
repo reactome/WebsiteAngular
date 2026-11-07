@@ -1,7 +1,7 @@
 /**
  * The exporter endpoints (spec 014, research R1, a family): /exporter/*,
- * diagrams, the species overview and figures drawn by the render service,
- * with the helpers only they use. Moved unchanged from service.ts.
+ * diagrams, reactions, the species overview and figures drawn by the render
+ * service, with the helpers only they use. Moved from service.ts.
  */
 import type { RenderRefusal } from '../../projects/contract/render.ts';
 import { get as httpGet, type IncomingMessage } from 'node:http';
@@ -27,9 +27,16 @@ import {
   springBoolean,
   springIntegerWithDefault,
 } from './spring.ts';
-import { present } from './java-text.ts';
+import { javaTrim, present } from './java-text.ts';
 import type { Failure } from './answers.ts';
-import { graphCoreId, longPastRange, speciesFilter, speciesTaxId } from './objects.ts';
+import {
+  findById,
+  graphCoreId,
+  layoutFailureMessage,
+  longPastRange,
+  speciesFilter,
+  speciesTaxId,
+} from './objects.ts';
 import { diagramResult } from './search-params.ts';
 
 /** The extensions ImageExporterController answers, pdf aside (its own 500). */
@@ -187,6 +194,21 @@ const DIAGRAM_EXPORT: ExportField[] = [
   ['integer', 'expColumn', null],
 ];
 
+/** reactionImage's parameters, in its order, with their defaults: diagramImage's but ehld. */
+const REACTION_EXPORT: ExportField[] = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'analysisProfile', 'Standard'],
+  ['text', 'resource', 'TOTAL'],
+  ['integer', 'expColumn', null],
+];
+
 /**
  * fireworksImage's parameters, in its order, with their defaults. Its
  * profile has no default in Java's description: any one given is refused.
@@ -306,14 +328,48 @@ export function diagramExportRequest(
   return url;
 }
 
-/** The content type Java sends with each format. */
-// UTF-8 on every type, images included: the service forces the encoding.
-const FIGURE_TYPE: Record<string, string> = {
-  svg: 'image/svg+xml;charset=UTF-8',
-  png: 'image/png;charset=UTF-8',
-  jpg: 'image/jpg;charset=UTF-8',
-  jpeg: 'image/jpeg;charset=UTF-8',
-};
+/**
+ * The Content-Type Java sends with a figure: `image/` and the extension as
+ * asked, in lower case, svg's as `svg+xml` (ImageExporterController), with
+ * UTF-8 on every type, images included: the service forces the encoding.
+ */
+export function javaImageType(ext: string) {
+  const type = ext.toLowerCase();
+  return `image/${type === 'svg' ? 'svg+xml' : type};charset=UTF-8`;
+}
+
+/**
+ * RasterArgs.scale: a quality of 1 to 10 as a factor of the layout's size,
+ * 0.1 at 1, 1 at 5 (the default) and 3 at 10, in a straight line between.
+ */
+export function qualityFactor(quality: number) {
+  return quality < 5 ? ((quality - 1) / 4) * 0.9 + 0.1 : ((quality - 5) / 5) * 2 + 1;
+}
+
+/**
+ * The render service's scale for a quality (research D24): the same factor
+ * of the layout's size -- the render page's scale is one, a reaction's png at
+ * scale 1 being its layout's size in the website's look -- within what the
+ * render service draws, 0.25 to 2, to three places so one quality is one URL.
+ */
+export function renderScale(quality: number) {
+  return Math.round(Math.min(2, Math.max(0.25, qualityFactor(quality))) * 1000) / 1000;
+}
+
+/** What DiagramRenderer draws a reaction in, and svg. */
+const REACTION_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
+
+/**
+ * The render service's request for a reaction's figure: its own layout
+ * (`layout=reaction`), as Java's reaction exporter drew it, and the quality
+ * as a scale for the formats with pixels. jpg is jpeg to the render service.
+ */
+export function reactionExportRequest(stId: string, format: string, quality: number) {
+  const url = new URL(`${RENDER_SERVICE}/render/${stId}.${format === 'jpg' ? 'jpeg' : format}`);
+  url.searchParams.set('layout', 'reaction');
+  if (format !== 'svg') url.searchParams.set('scale', String(renderScale(quality)));
+  return url;
+}
 
 /** Why the render service refused or failed a figure (its RenderRefusal), or null. */
 function refusalReason(body: unknown): RenderRefusal['error'] | null {
@@ -324,11 +380,12 @@ function refusalReason(body: unknown): RenderRefusal['error'] | null {
 }
 
 /**
- * Ask the render service for a figure and pass its bytes on. Its 503 -- a
- * full queue -- is passed on with its Retry-After; any other failure is a 500
- * naming it, and a render service that cannot be reached is a 503.
+ * Ask the render service for a figure and pass its bytes on, under Java's
+ * `type`. Its 503 -- a full queue -- is passed on with its Retry-After; any
+ * other failure is a 500 naming it, and a render service that cannot be
+ * reached is a 503.
  */
-async function renderFigure(request: Request, url: string | URL, ext: string) {
+async function renderFigure(request: Request, url: string | URL, type: string) {
   let response: Response;
   try {
     response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
@@ -362,8 +419,7 @@ async function renderFigure(request: Request, url: string | URL, ext: string) {
   return {
     status: 200,
     body: Buffer.from(await response.arrayBuffer()),
-    // A format checked before the render was asked for.
-    type: FIGURE_TYPE[ext] as string,
+    type,
   };
 }
 
@@ -758,6 +814,61 @@ async function exportAnswer(
   }
 }
 
+/**
+ * A reaction's image, as ImageExporterController.reactionImage answers it
+ * (spec 006 T092, research D24): Java's errors in Java's order -- the
+ * parameters as Spring converts them, the id as getReactionLikeEvent reads it,
+ * a PDF, the layout's own exceptions, a quality outside 1-10, an extension
+ * DiagramRenderer does not draw -- then the figure, drawn by the render
+ * service's reaction view from node's layout of the reaction. The layout is
+ * made here first, as Java made it before anything was drawn, so a reaction
+ * the library fails on is Java's 500 whatever else was asked.
+ *
+ * Of Java's parameters, quality is drawn, as the render service's scale; the
+ * rest are accepted as Java accepts them and not drawn (D24 says why, one by
+ * one): a caller asking for them gets the reaction's figure, as before, and
+ * the URL that names them is answered but never stored (parameters.ts).
+ */
+async function reactionImage(request: Request): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  if (!name) return springNotFound(request);
+  const asked = exporterParameters(request, REACTION_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const found = await findById(name.identifier);
+  if (found && 'failure' in found)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
+  if (!found) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!found.reaction)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a 'ReactionLikeEvent'`
+    );
+  if (name.ext.toLowerCase() === 'pdf')
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Unsupported file extension pdf');
+  try {
+    await reactionAnswer(found.stId);
+  } catch (failure) {
+    const java = layoutFailureMessage(failure);
+    if (!java) throw failure;
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', java.message);
+  }
+  // A blank quality is null, which RasterArgs.setQuality leaves at its 5.
+  const quality = asked.values.quality ?? 5;
+  if (quality < 1 || quality > 10)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'quality must be in the range [1-10]');
+  // RasterArgs's format: trimmed, in lower case.
+  const format = javaTrim(name.ext).toLowerCase();
+  if (!REACTION_FORMATS.includes(format))
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `Unsupported file extension ${format}`);
+  return renderFigure(
+    request,
+    reactionExportRequest(found.stId, format, quality),
+    javaImageType(name.ext)
+  );
+}
+
 export const exportersEndpoints: Endpoint[] = [
   {
     path: '/ContentService/exporter/diagram/{id}',
@@ -812,7 +923,7 @@ export const exportersEndpoints: Endpoint[] = [
           'BAD_REQUEST',
           `Not drawn by this service yet: a selection on ${result.diagramStId}'s illustration. Ask with ehld=false once that is drawn, or for the pathway itself.`
         );
-      return renderFigure(request, figure, ext);
+      return renderFigure(request, figure, javaImageType(ext));
     },
   },
   {
@@ -878,7 +989,7 @@ export const exportersEndpoints: Endpoint[] = [
       return renderFigure(
         request,
         overviewExportRequest(taxId, { ext, token: asked.values.token }),
-        ext
+        javaImageType(ext)
       );
     },
   },
@@ -904,5 +1015,15 @@ export const exportersEndpoints: Endpoint[] = [
         },
       };
     },
+  },
+  {
+    path: '/ContentService/exporter/reaction/{id}',
+    // The error path, a pathway's 400: the figure itself is drawn by another
+    // renderer, in another look (research D24). Never expanded over --ids,
+    // which would have Java draw a figure for every one.
+    sample: 'R-HSA-109581.png',
+    samplesOnly: true,
+    differs: [/^\/ContentService\/exporter\/reaction\/[^/]+: \.url: /],
+    handler: reactionImage,
   },
 ];
