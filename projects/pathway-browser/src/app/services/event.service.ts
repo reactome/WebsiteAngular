@@ -96,16 +96,17 @@ export class EventService {
     return this.http.get<TopLevelPathway[]>(url);
   }
 
-  fetchEventAncestors(stId: string): Observable<Pathway[][]> {
+  /** An event's lineages, each from the event itself up to a top-level pathway, reversed here: top first. */
+  fetchEventAncestors(stId: string): Observable<Event[][]> {
     const url = `${this._ANCESTORS}${stId}/ancestors`;
-    return this.http.get<Pathway[][]>(url).pipe(
+    return this.http.get<Event[][]>(url).pipe(
       map((ancestorsOptions) =>
         ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
       ),
       // The backend 404s instead of returning an empty list for an event with
       // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
       // callers still emit and can render the event on its own.
-      catchError(() => of([] as Pathway[][]))
+      catchError(() => of<Event[][]>([]))
     );
   }
 
@@ -791,7 +792,7 @@ export class EventService {
     }
   }
 
-  getFinalAncestor(ancestors: Pathway[][], pathIds?: string[]): Event[] {
+  getFinalAncestor(ancestors: Event[][], pathIds?: string[]): Event[] {
     pathIds = pathIds || this.state.path();
     let finalAncestor: Event[] | undefined;
     // When path is given through URL, this link is from Location in PWB on detail page
@@ -805,13 +806,13 @@ export class EventService {
     // map over the result, so hand them an empty list rather than undefined.
     return finalAncestor ?? [];
   }
-  private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
+  private findBestAncestors(lineages: Event[][], path: string[]): Event[] {
     const [first, ...others] = lineages;
     if (!first) return [];
     if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = first;
+    let bestAncestors: Event[] = first;
     let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
     for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
@@ -823,7 +824,7 @@ export class EventService {
     return bestAncestors;
   }
 
-  private getAncestorsMatchingScore(ancestors: Pathway[], path: Set<string>) {
+  private getAncestorsMatchingScore(ancestors: Event[], path: Set<string>) {
     return ancestors.reduce((score, ancestor) => (path.has(ancestor.stId) ? score + 1 : score), 0);
   }
 
