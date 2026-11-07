@@ -133,7 +133,7 @@ What the graph routes write: Java's classes, as Jackson writes them, in one of t
 - **Classes.** One interface per class, under Java's name, with its `schemaClass` as a literal. An abstract class is the union of its subclasses, tagged `@discriminator schemaClass`. `className` is not the discriminator: it differs from `schemaClass` in 205 recorded objects.
 - **Compositions.** `composedOf` holds `Has<Element, Ref>`: `{type, stoichiometry, order, element}`, with no identity of its own.
 - **Fields.** Held to the domain snapshot's properties for each class, both ways, by a spec: the writer is driven by the snapshot and has no per-class type to fail.
-- **Readers.** The pathway browser's model types become aliases, `Resolved<C.X<JsogReference>> & ObjectState`: the answer with its references resolved, plus a named part for what the reader adds itself. `JSOGDeserializer.deserialize<W>` returns `Resolved<W>`.
+- **Readers.** The pathway browser's model types become aliases, `Resolved<C.X<JsogReference>> & ObjectState`: the answer with its references resolved, plus a named part for what the reader adds itself. The readers ask for `JsogObject<T>`, their resolved type as JSOG writes it, and `JSOGDeserializer.deserialize<T>` gives back the `T` (R9, as built).
 
 ## Validation rules
 
