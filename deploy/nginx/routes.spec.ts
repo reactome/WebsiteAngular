@@ -379,12 +379,6 @@ const JAVAS = [
   '/ContentService/exporter/event/R-HSA-109581.sbgn.pdf',
   '/ContentService/exporter/event/R-HSA-109581.biopax.pdf',
   '/ContentService/exporter/sbml/R-HSA-109581.sbml',
-  // A reaction's PowerPoint, beside its image and layout (spec 006 T092,
-  // research D24): another of Java's exporters.
-  '/ContentService/exporter/reaction/R-HSA-6805479.pptx',
-  '/ContentService/exporter/diagram/R-HSA-109606.pptx',
-  '/ContentService/exporter/diagram/R-HSA-109606.1.pptx?quality=5',
-  '/ContentService/exporter/reaction/R-HSA-6805479.3.pptx?quality=5',
   '/ContentService/exporter/reaction/R-HSA-6805479/diagramx',
 ];
 

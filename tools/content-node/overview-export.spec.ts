@@ -89,13 +89,15 @@ describe('the species overview, the Voronoi map', () => {
     ]);
   });
 
-  it('refuses, by name, what the overview does not draw yet, rather than leave it out', async () => {
-    const [status, , [message]] = await envelope(
-      await at('Homo_sapiens.svg?flg=TP53&coverage=true&sel=R-HSA-1640170&quality=8')
+  it('accepts what the overview does not draw, and draws the overview without it (research D24)', async () => {
+    asked.length = 0;
+    const response = await at(
+      'Homo_sapiens.svg?flg=TP53&coverage=true&sel=R-HSA-1640170&quality=8&title=false&margin=3' +
+        '&diagramProfile=Standard&resource=UNIPROT&expColumn=2&flgInteractors=false'
     );
-    expect(status).toBe(400);
-    for (const name of ['flg=TP53', 'coverage=true', 'sel=R-HSA-1640170', 'quality=8'])
-      expect(message).toContain(name);
+    expect(response.status).toBe(200);
+    expect(asked).toEqual(['/render/genome-wide.svg?species=9606']);
+    // A format it cannot draw is still refused: the genome-wide view has no frames.
     expect((await envelope(await at('Homo_sapiens.gif')))[2][0]).toContain('gif');
   });
 
@@ -130,18 +132,9 @@ describe('the species overview, the Voronoi map', () => {
     ]);
   });
 
-  it('takes a blank margin as its default, and refuses a title or a profile', async () => {
-    expect((await at('Homo_sapiens.svg?margin=')).status).toBe(200);
-    for (const asked of ['title=false', 'diagramProfile=Copper'])
-      expect([asked, (await envelope(await at(`Homo_sapiens.svg?${asked}`)))[2][0]]).toEqual([
-        asked,
-        expect.stringContaining(asked),
-      ]);
-  });
-
-  it('reads an empty selection as none, and drops empty items from one', async () => {
-    expect((await at('Homo_sapiens.svg?sel=,')).status).toBe(200);
-    expect((await envelope(await at('Homo_sapiens.svg?sel=a,,b')))[2][0]).toContain('sel=a,b');
+  it('takes a blank margin, a title, a profile and a selection, empty or not, as Java takes them', async () => {
+    for (const query of ['margin=', 'title=false', 'diagramProfile=Copper', 'sel=,', 'sel=a,,b'])
+      expect([query, (await at(`Homo_sapiens.svg?${query}`)).status]).toEqual([query, 200]);
   });
 });
 
