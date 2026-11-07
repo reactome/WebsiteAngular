@@ -22,7 +22,11 @@ import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
 import type { Interactors } from '../../../../../contract/interactors.ts';
-import type { PlainPathway, PlainReferenceEntity } from '../../model/graph/plain.model';
+import type {
+  PlainGraphObject,
+  PlainPathway,
+  PlainReferenceEntity,
+} from '../../model/graph/plain.model';
 import { getProperty } from '../../services/utils';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
@@ -203,38 +207,44 @@ export class EntityPopupComponent {
     params: () => (this.tab() === 'molecules' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
-        ? this.http.get<any>(`${CONTENT_SERVICE}/data/query/enhanced/${params}`).pipe(
+        ? this.http.get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/enhanced/${params}`).pipe(
             switchMap((entity) => {
+              // Plain: a component the answer has written already is its dbId,
+              // which is left out, as before.
               const components = [
-                ...(entity?.hasComponent ?? []),
-                ...(entity?.hasMember ?? []),
-                ...(entity?.hasCandidate ?? []),
-              ].filter((c) => c && typeof c === 'object');
+                ...('hasComponent' in entity ? (entity.hasComponent ?? []) : []),
+                ...('hasMember' in entity ? (entity.hasMember ?? []) : []),
+                ...('hasCandidate' in entity ? (entity.hasCandidate ?? []) : []),
+              ].filter((c) => typeof c === 'object');
 
               // A protein or small molecule has no components; show itself so
               // the tab is never mysteriously blank.
-              const source = components.length > 0 ? components : entity ? [entity] : [];
+              const source: PlainGraphObject[] = components.length > 0 ? components : [entity];
 
               // Only EntityWithAccessionedSequence needs a second look, and an
               // entity typically has none or one of those, so this is a request
               // or two rather than one per row.
-              const ambiguous = source.filter(
-                (c: any) => c.schemaClass === SchemaClasses.EWAS && c.stId
+              const ambiguous = source.flatMap((c) =>
+                c.schemaClass === 'EntityWithAccessionedSequence' && c.stId ? [c.stId] : []
               );
               if (ambiguous.length === 0)
                 return of(this.group(source, new Map<string, ComponentRef>()));
 
               return forkJoin(
-                ambiguous.map((c: any) =>
-                  this.http.get<any>(`${CONTENT_SERVICE}/data/query/${c.stId}`).pipe(
+                ambiguous.map((stId) =>
+                  this.http.get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/${stId}`).pipe(
                     map((full) => {
-                      const ref = full?.referenceEntity;
+                      const ref =
+                        full.schemaClass === 'EntityWithAccessionedSequence' &&
+                        typeof full.referenceEntity === 'object'
+                          ? full.referenceEntity
+                          : undefined;
                       // The identifiers come from this lookup too: components
                       // arrive from the enhanced query with no referenceEntity,
                       // so there is nothing to match an analysis against until
                       // this second request is made.
                       return [
-                        c.stId,
+                        stId,
                         {
                           schemaClass: ref?.schemaClass,
                           ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(
@@ -245,7 +255,7 @@ export class EntityPopupComponent {
                     }),
                     // One failed lookup should not empty the whole tab; that
                     // row just falls back to Others.
-                    catchError(() => of([c.stId, {}] as [string, ComponentRef]))
+                    catchError(() => of([stId, {}] as [string, ComponentRef]))
                   )
                 )
               ).pipe(map((pairs) => this.group(source, new Map(pairs))));
@@ -406,21 +416,22 @@ export class EntityPopupComponent {
   });
 
   /** Group components by molecule type, in a stable order, as production does. */
-  private group(components: any[], refs: Map<string, ComponentRef>): PopupGroup[] {
+  private group(components: PlainGraphObject[], refs: Map<string, ComponentRef>): PopupGroup[] {
     const byType = new Map<string, PopupRow[]>();
 
     for (const component of components) {
-      const label = component.displayName ?? component.name?.[0] ?? component.stId;
-      // Components occasionally come back without a name; a blank row is worse
-      // than no row.
+      // Every graph object is written with its displayName; an empty one would
+      // be a blank row, which is worse than no row.
+      const label = component.displayName;
       if (!label) continue;
 
-      const ref = refs.get(component.stId);
+      const stId = component.stId;
+      const ref = stId === undefined ? undefined : refs.get(stId);
       const type =
         typeFromSchemaClass(component.schemaClass) ?? typeFromReferenceClass(ref?.schemaClass);
 
       const rows = byType.get(type) ?? [];
-      rows.push({ label, stId: component.stId });
+      rows.push({ label, ...(stId !== undefined && { stId }) });
       byType.set(type, rows);
     }
 

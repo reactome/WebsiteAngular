@@ -32,7 +32,7 @@
               <td class="attr-value">
                 @for (val of row.values; track $index) {
                   @if (val.type === 'link') {
-                    <a class="instance-link" href="#" (click)="onLinkClick(val.dbId!, $event)">{{ val.text }}</a>
+                    <a class="instance-link" href="#" (click)="onLinkClick(val.dbId, $event)">{{ val.text }}</a>
                   } @else {
                     <span class="text-value">{{ val.text }}</span>
                   }
