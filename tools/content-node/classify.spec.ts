@@ -37,7 +37,7 @@ describe('classify', () => {
   });
 
   it("takes Java's more specific /query paths as their own endpoints, as Express routes them", () => {
-    for (const [path, endpoint] of [
+    const cases: [path: string, endpoint: string][] = [
       ['/ContentService/data/query/abridged/R-HSA-1', '/ContentService/data/query/abridged/{id}'],
       ['/ContentService/data/query/abridged/stId', '/ContentService/data/query/abridged/{id}'],
       [
@@ -46,7 +46,8 @@ describe('classify', () => {
       ],
       ['/ContentService/data/query/R-HSA-1/more/', '/ContentService/data/query/{id}/more'],
       ['/ContentService/data/query/enhanced/R-HSA-1', '/ContentService/data/query/enhanced/{id}'],
-    ])
+    ];
+    for (const [path, endpoint] of cases)
       expect([path, classify('GET', path)?.endpoint]).toEqual([path, endpoint]);
     // No node route matches the rest of Java's /query.
     expect(classify('GET', '/ContentService/data/query/enhanced/R-HSA-1/stId')).toBe(undefined);
