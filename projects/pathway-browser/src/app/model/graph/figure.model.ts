@@ -1,10 +1,11 @@
-import { DatabaseObject } from './database-object.model';
+import type * as Graph from '../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
+/** What an event or a physical entity holds its illustrations in. */
 export interface HasFigure {
   figure?: Figure[];
 }
 
-export interface Figure extends DatabaseObject {
-  url: string;
-  schemaClass: 'Figure';
-}
+/** An illustration, as the pathway browser reads it (the contract's, resolved). */
+export type Figure = Resolved<Graph.Figure<JsogReference>>;

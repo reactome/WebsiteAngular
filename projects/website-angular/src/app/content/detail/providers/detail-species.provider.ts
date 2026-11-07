@@ -1,10 +1,10 @@
 import { computed, Injectable, signal } from '@angular/core';
 import { SpeciesService } from '../../../../../../pathway-browser/src/app/services/species.service';
-import { Species } from '../../../../../../pathway-browser/src/app/model/graph/species.model';
+import { ShownSpecies } from '../../../../../../pathway-browser/src/app/model/graph/species.model';
 
 @Injectable()
 export class DetailSpeciesService implements Partial<SpeciesService> {
-  readonly defaultSpecies: Species = {
+  readonly defaultSpecies: ShownSpecies = {
     displayName: 'Homo sapiens',
     taxId: '9606',
     dbId: 48887,
@@ -13,7 +13,7 @@ export class DetailSpeciesService implements Partial<SpeciesService> {
     schemaClass: 'Species',
   };
 
-  readonly currentSpecies = signal<Species>(this.defaultSpecies);
+  readonly currentSpecies = signal<ShownSpecies>(this.defaultSpecies);
   readonly allShortenSpecies = computed(() => undefined);
 }
 

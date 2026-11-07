@@ -230,6 +230,7 @@ Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhan
 4. **`[key: string]: any` goes**, class by class, as each class moves. A reader of a field no class declares fails the type check, and is fixed then, which lowers the lint count too.
 5. **The writer is held by the snapshot, not by types.** `writeDomain` writes any class from the domain snapshot, with no per-class type, so a renamed contract field cannot fail it at compile time. Instead, a spec holds every contract graph class, field by field, to the properties the snapshot writes for that class, in both directions, as `entity-types.spec.ts` holds the entity kinds.
 6. **The site's `Person` is the graph's Person.** The site reads `/data/person/{id}` as its own `Person`. That is the same Java class in the plain form, so it becomes `Person<number>`, and its 42 known problems as `Person` fall with the person family's move.
+   - **The person page skips a bare dbId, deliberately (T025b).** It lists a person's publications and affiliations through views that leave out a dbId standing for an object the answer has written already. In this answer's order (the person, then its affiliations, its cross-references and its publications, an author written as a dbId), such an entry can only point back to an earlier entry of the same list, so skipping it drops a repeat and loses nothing. No recording has one; `Person<number>` says one can arrive.
 
 **Rationale**: the references are what arrives, so a type without them describes something no client receives; `Resolved<>` states what the deserializer already does. Generic reference forms keep one description per class (FR-003) where two near-copies would drift. Renaming the pathway browser's 98 model types to make room for the contract's, as T023 did for the interactors' one, would touch every file that reads a graph object for no gain in checking.
 
@@ -244,7 +245,9 @@ Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhan
 
 1. this design;
 2. the foundation: the reference form, `Resolved<>`, the typed deserializer and the snapshot check, with the edits and their authors (InstanceEdit, Person, Affiliation, the site's `Person`);
-3. the events: Event, Pathway, TopLevelPathway and the reaction-like events;
-4. what events carry: species, compartments and GO terms, summations, literature, figures, review status, disease, cross-references, catalyst activities and regulations;
-5. the physical entities and reference entities, with compositions;
-6. the route row, as the union of every concrete class, so the schema check reads the recordings; the known problems at zero or explained, and T025 ticked.
+3. what events and entities are annotated with: species, compartments and GO terms, the external ontologies, summations, figures and review status;
+4. the rest of the contract at once, with the route row, so the schema check reads the recordings;
+5. the readers onto it, family by family: the events, then the physical and reference entities with compositions, then the rest;
+6. the known problems at zero or explained, and T025 ticked.
+
+Re-planned in T025c. The order first written (events, then what they carry, then entities) assumed each family could be described before the next. Measured on the snapshot, it cannot: following each class's written properties to their classes, the annotations of step 3 are closed (15 classes, none leading to an event or an entity), but from `Pathway` the rest is one set of 65 classes that reach one another, events and entities both. The contract describes that set in one step; the readers, which can move a class at a time, follow it in several.
