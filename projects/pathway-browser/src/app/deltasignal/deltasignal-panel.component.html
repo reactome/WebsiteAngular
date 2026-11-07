@@ -72,6 +72,11 @@
                     @if (readout.railed) {
                       — at the model's bound, a switch state rather than a measured level
                     }
+                    @if (readout.confidence_stratum === 'untouched') {
+                      — the perturbation does not reach this entity here
+                    } @else if (readout.confidence !== null && readout.confidence !== undefined) {
+                      ({{ readout.confidence | percent: '1.0-0' }} of record calls like this matched)
+                    }
                   </span>
                 }
               }
@@ -303,6 +308,15 @@
                 }
                 — the same rule the benchmark figures used. Between the thresholds the model calls no change.
               </dd>
+              <dt>Confidence</dt>
+              <dd>
+                How often predictions in the same measured class (same direction, size band, resolution and convergence)
+                matched the expert expectations of DeltaSignal's 25,000-case validation record. It is a measured
+                agreement rate with that record, not a probability that an experiment would agree — the record itself
+                shows experts and experiments differ on some classes. "Not reached here" means the perturbation has no
+                route to that entity in this network: the model offers no prediction for it, because the record shows
+                such cases are usually missing knowledge, not real "no change".
+              </dd>
               <dt>At the model's bound</dt>
               <dd>
                 Node levels live between hard stops
@@ -342,6 +356,7 @@
                 <span role="columnheader">Entity</span>
                 <span role="columnheader">Predicted level</span>
                 <span role="columnheader">Call</span>
+                <span role="columnheader">Confidence</span>
                 <span role="columnheader">Influence</span>
               </div>
               @for (row of visibleRows(); track row.reactomeId) {
@@ -355,15 +370,28 @@
                       }
                     </small>
                   </span>
-                  <span role="cell">
-                    {{ row.fold | number: '1.2-2' }}×
-                    @if (row.railed) {
-                      <small class="railed-note">at the model's bound</small>
-                    }
-                  </span>
-                  <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
-                    {{ row.call === 'normal' ? 'no change' : row.call }}
-                  </span>
+                  @if (row.untouched) {
+                    <span role="cell" class="untouched-note">not reached here</span>
+                    <span role="cell" class="untouched-note">—</span>
+                    <span role="cell" class="untouched-note">—</span>
+                  } @else {
+                    <span role="cell">
+                      {{ row.fold | number: '1.2-2' }}×
+                      @if (row.railed) {
+                        <small class="railed-note">at the model's bound</small>
+                      }
+                    </span>
+                    <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
+                      {{ row.call === 'normal' ? 'no change' : row.call }}
+                    </span>
+                    <span role="cell">
+                      @if (row.confidence !== null) {
+                        {{ row.confidence | percent: '1.0-0' }}
+                      } @else {
+                        —
+                      }
+                    </span>
+                  }
                   <span role="cell">{{ row.influence | number: '1.2-2' }}</span>
                 </div>
               }

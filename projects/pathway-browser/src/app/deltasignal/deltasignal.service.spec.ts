@@ -269,6 +269,7 @@ describe('DeltaSignalService readouts', () => {
     expect(request.request.body).toEqual({
       network_id: 'pw:test',
       activities: solveAnswer.node_activities,
+      converged: true, // specs/146: the solve's flag sharpens the confidence strata
       pinned: ['root-a'],
       queries: [
         { id: 'R-HSA-1', stable_ids: ['R-HSA-1'] },
@@ -528,6 +529,35 @@ describe('DeltaSignalService readouts', () => {
     // abandoned: no second readouts query was made, the none entry stands
     http.expectNone('/api/readouts');
     expect(service.readoutState().byId.get('R-HSA-BIG')?.basis).toBe('none');
+  });
+
+  it('maps served confidence and the untouched class into rows (specs/146)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    answer.results[0] = {
+      ...answer.results[0],
+      confidence: 0.86,
+      confidence_stratum: 'no_basis',
+    };
+    // the engine says the perturbation never reaches R-HSA-2 here
+    answer.results[1] = {
+      ...answer.results[1],
+      fold: 1,
+      call: 'normal',
+      confidence: null,
+      confidence_stratum: 'untouched',
+    };
+    http.expectOne('/api/readouts').flush(answer);
+    await solving;
+
+    const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
+    expect(byId.get('R-HSA-1')).toMatchObject({ confidence: 0.86, untouched: false });
+    expect(byId.get('R-HSA-2')).toMatchObject({ confidence: null, untouched: true });
+    // an untouched row has no departure: it sorts last
+    expect(service.readoutRows().at(-1)?.reactomeId).toBe('R-HSA-2');
   });
 
   it('drops an on-demand readout that a newer solve overtook in flight', async () => {

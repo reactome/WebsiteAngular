@@ -126,6 +126,12 @@ interface DeltaSignalReadoutResult {
   /** deltasignal specs/142: true when the fold is at the model's stop — a
    *  switch state, not a measured magnitude. Null exactly where fold is. */
   railed?: boolean | null;
+  /** deltasignal specs/146: the measured share of same-stratum
+   *  validation-record calls that matched the curators. Null for an
+   *  untouched readout (stratum "untouched": the perturbation has no route
+   *  to it here) and when the table is unavailable. */
+  confidence?: number | null;
+  confidence_stratum?: string | null;
 }
 
 export interface DeltaSignalReadoutsResponse {
@@ -143,6 +149,8 @@ export interface DeltaSignalReadoutsResponse {
   };
   missing_tables: string[];
   malformed_tables: string[];
+  /** specs/146: "ok", or why every confidence is null. */
+  confidence_table?: string;
   results: DeltaSignalReadoutResult[];
 }
 
@@ -154,6 +162,9 @@ export interface DeltaSignalReadoutRow {
   fold: number;
   call: 'up' | 'down' | 'normal';
   railed: boolean;
+  confidence: number | null;
+  /** The perturbation has no route to this readout in this network. */
+  untouched: boolean;
   influence: number;
   perturbed: boolean;
 }
