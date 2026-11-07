@@ -99,6 +99,9 @@ PATH_KINDS['eventExport'] = (text) => {
   const ext = /\.(sbml|biopax|sbgn)$/.exec(text);
   return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
 };
+// An event's PDF (spec 006 T100): an id as `oid` takes it, and `.pdf`.
+PATH_KINDS['eventPdf'] = (text) =>
+  text.endsWith('.pdf') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
 PATH_KINDS['sbmlXml'] = (text) =>
   text.endsWith('.xml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
 
@@ -423,6 +426,14 @@ export const RECORD: Record<string, RecordEntry> = {
     java: null,
     why: "Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file, and as /exporter/event/{identifier}.sbgn, with no parameter. The .biopax form is no URL of Java's (spec 015 research R6).",
     path: { id: 'eventExport' },
+    query: [],
+  },
+  // An event's PDF, the same for every reader of a release; with a token (or
+  // any parameter) it is not in standard form, so never stored.
+  '/ContentService/exporter/document/event/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/document/event/{identifier}.pdf, with the level and the analysis options; each makes another PDF, or the same one again.',
+    path: { id: 'eventPdf' },
     query: [],
   },
   '/ContentService/exporter/sbml/{id}': {

@@ -312,6 +312,8 @@ services:
       - CONTENT_NODE_ENV_FILE=/run/secrets/content-node.env
       # The SBML service (java-library, spec 015): node is its only client.
       - SBML_SERVICE=http://127.0.0.1:4360
+      # The PDF service (pdf-export, spec 006 T100): node is its only client.
+      - PDF_SERVICE=http://127.0.0.1:4370
       - DIAGRAM_FILES=${DIAGRAM_FILES_DIR:+/data/diagram}
     # Runs as the owner of that file, which is 0600 and should stay that way.
     # The image's own `node` user is uid 1000 and cannot read it, so the service
@@ -362,6 +364,61 @@ services:
       test: ['CMD', 'curl', '-fs', '-m', '5', '-o', '/dev/null', 'http://127.0.0.1:4360/health']
       interval: 30s
       timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # The PDF service (spec 006 T100): an event's PDF, made on demand by
+  # pdf-export's single-event service (pdf-export spec 001, Story 2) from the
+  # graph, its figures drawn by the render service as the website draws them,
+  # an analysis token's results read from the AnalysisService. It replaces
+  # Java's event-pdf for the website. Node is its only client; nginx never
+  # names it.
+  #
+  # Built here from the commit deploy/java/PINS.md pins, from GitHub's archive
+  # of it, and never pulled from or pushed to a registry: no `image:`.
+  pdf-export:
+    build:
+      context: .
+      dockerfile: deploy/pdf-export/Dockerfile
+    restart: unless-stopped
+    # Host networking, as content-node: the graph, the render service and the
+    # AnalysisService are on the host's loopback. The service binds
+    # 127.0.0.1:4370 itself (BIND_ADDRESS in its image), never 0.0.0.0, so
+    # nothing is published.
+    network_mode: host
+    volumes:
+      # The graph's credentials: the same file content-node reads, mounted
+      # rather than parsed, read literally by the image's entrypoint and run as
+      # its owner for the same reason (see content-node).
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+      # The release's folder, as the download site lays it out: its EHLD
+      # summary, ehld/svgsummary.txt, says which pathways are drawn as their
+      # illustration. RELEASE_FILES_DIR (in .env, which is not committed) names
+      # this host's folder for the release the graph serves, the folder that
+      # holds DIAGRAM_FILES_DIR's diagram/. Unset, an empty folder is mounted
+      # and the service refuses to start. Move it with the graph's release.
+      - ${RELEASE_FILES_DIR:-./deploy/pdf-export/no-release-files}:/files:ro
+    user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
+    environment:
+      - PDF_EXPORT_ENV_FILE=/run/secrets/content-node.env
+      - NEO4J_URI=bolt://127.0.0.1:7687
+      - NEO4J_DATABASE=graph.db
+      # Every figure drawn on request by the render service: no figures'
+      # folder (pdf-export's `figures`, contracts/figures.md) is given yet.
+      - RENDER_SERVICE=http://127.0.0.1:4310
+      # Read for a PDF with an analysis token: the token's results, never a
+      # new analysis, so not through the analysis gateway's queue.
+      - ANALYSIS_SERVICE=http://127.0.0.1:8080/AnalysisService
+      # Where the PDF's links go: the public site, as event-pdf's do.
+      - REACTOME_SITE=${PDF_SITE:-https://reactome.org}
+    # Chromium prints the PDFs; its default 64 MB /dev/shm is too small for a
+    # large page, as for the render service.
+    shm_size: '1gb'
+    mem_limit: 2g
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', '-m', '10', '-o', '/dev/null', 'http://127.0.0.1:4370/health']
+      interval: 30s
+      timeout: 15s
       start_period: 60s
       retries: 3
 
