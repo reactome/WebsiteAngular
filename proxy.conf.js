@@ -96,8 +96,9 @@ module.exports = {
   // The species overview, the Voronoi map, and the old fireworks exporter's
   // URL, which node redirects to it (spec 006 T093).
   '^/ContentService/exporter/(voronoi|fireworks)/[^/?]+/?(\\?|$)': contentNode,
-  // An event's SBML (spec 015 T066), SBGN (sbgn-exporter T018) and PDF (spec 006 T100).
-  '^/ContentService/exporter/(event/[^/?]+\\.(sbml|sbgn)|sbml/[^/?]+\\.xml|document/event/[^/?]+\\.pdf)/?(\\?|$)':
+  // An event's SBML (spec 015 T066), SBGN (sbgn-exporter T018), BioPAX (spec
+  // 015 T071) and PDF (spec 006 T100).
+  '^/ContentService/exporter/(event/[^/?]+\\.(sbml|sbgn|biopax)|sbml/[^/?]+\\.xml|document/event/[^/?]+\\.pdf)/?(\\?|$)':
     contentNode,
   // An object with everything around it, for the details panel and the
   // website's detail pages; a reference entity as a summary of its entities.

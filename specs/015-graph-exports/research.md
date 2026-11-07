@@ -112,6 +112,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 **Measured.**
 
 - **The legacy service runs on the beta host too.** Its Tomcat answers `/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/{dbId}` (200, BioPAX, 0.02 s for a reaction) from the relational database on the same host, release 97. Only nginx does not route it, which is why beta's links answer the site's page. The same reaction from reactome.org has the same size and the same 80 individuals, in another order. **This local service is the reference** for the BioPAX comparison.
+- **Release 98 since (measured 7 Nov 2026).** The relational database behind the legacy service has moved to release 98, the graph's: the service's `/version` answers 98 and `/getDBName` `current`, and its one-event files carry `xml:base="http://www.reactome.org/biopax/98/{dbId}#"`. So the legacy answers and the library's, from beta's own graph, are of one release, as this comparison needs, and no private copy at release 97 is needed (tasks T032, T049).
 - **Production runs `restfulapi_mini`.** `GET /RESTfulWS/biopaxExporter/{level}/{dbId}` uses Pathway-Exchange's `ReactomeToBioPAX3XMLConverter` and writes with JDOM (`Format.getPrettyFormat()`): CRLF line endings, a 2-space indent and trimmed text. Every data property carries `rdf:datatype`.
 - **Samples:** a reaction (109862), a degradation black box (201425), a disease reaction (1248655), a pathway of 14 events (112409) and Apoptosis (109581, 3.2 MB, 4,731 top-level elements).
 - **The answer is identical when asked twice, but the order and ids are not reproducible across runs:**
@@ -241,7 +242,7 @@ Personal data: SBML's History (creators) and BioPAX's citations and curation com
 
 **Decision (T002).**
 
-- **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host. (Since beta moved to release 98, its release-97 volume and image are gone; a copy at 97 now needs that release's image pulled from its registry: tasks T032.)
+- **The copy.** The private graph is a copy of beta's own release-97 volume, made read-only into a new volume by a helper container. Nothing is downloaded, and no request leaves the host. (Since beta moved to release 98, its release-97 volume and image are gone. A copy at 97 is no longer needed for BioPAX: the legacy service's database moved to release 98 too, measured 7 Nov 2026, R4.)
 - **The container.** It is started from the same local image, bound to loopback only, with a smaller memory setting than beta's, so the host's memory is shared safely. Beta's graph is neither stopped nor restarted; its store is not written after the release load, so a copy taken while it runs is consistent in practice, and Neo4j checks the store when the copy starts.
 - **Afterwards.** The copy is stopped once the references are made (T003), and recreated for each comparison that needs it (T032), and its volume is deleted, giving the disk back.
 - **The fallback** is small, spaced runs against the shared graph. It is used only if the copy fails to start cleanly.
