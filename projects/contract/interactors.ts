@@ -7,6 +7,16 @@
 // entities, #344); the others are not served where they can be measured, so a field
 // only the static set always sends stays optional.
 
+/**
+ * Reactome's own (static) interactors of the accessions asked about:
+ * /interactors/static/molecule/{id}/details for one, and
+ * /interactors/static/molecules/details for many, one entry each.
+ */
+export interface Interactors {
+  resource: 'static';
+  entities: InteractorEntity[];
+}
+
 export interface InteractorEntity {
   acc: string;
   count: number;

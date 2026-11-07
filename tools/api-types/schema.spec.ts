@@ -189,6 +189,8 @@ describe('recorded answers against the API description', () => {
       'not in the recordings, which never open an instance’s referrers (calls.ts names the gap)',
     'GET /ContentService/data/schema/{id}/min':
       'not in the recordings, which never open a class’s instances (calls.ts names the gap)',
+    'GET /ContentService/interactors/static/molecule/{id}/details':
+      'not in the recordings, which never open an interactor popup (calls.ts names the gap)',
     'GET /ContentService/search/facet':
       'not in the recordings, which always search with a query (calls.ts names the gap)',
     'GET /ContentService/search/fireworks/flag':

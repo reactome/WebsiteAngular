@@ -33,6 +33,7 @@ import type {
   InteractionWithEntities,
   Interactor,
   InteractorEntity,
+  Interactors,
   PsicquicResource,
 } from '../../projects/contract/interactors.ts';
 import { settings } from './settings.ts';
@@ -176,6 +177,7 @@ export function interactorJson(row: InteractionRow) {
 /**
  * The content service's Interactors: `static`, and an entry for each
  * accession -- its interactors' count, and the list, left out when empty.
+ * The entries are written even when there are none.
  */
 export function interactorsJson(entities: [acc: string, rows: InteractionRow[]][]) {
   const written = entities.map(([acc, rows]) =>
@@ -185,7 +187,10 @@ export function interactorsJson(entities: [acc: string, rows: InteractionRow[]][
       ['interactors', rows.length ? new RawJson(`[${rows.map(interactorJson).join(',')}]`) : []],
     ])
   );
-  return `{"resource":"static","entities":[${written.join(',')}]}`;
+  return nonEmptyJson<Interactors>([
+    ['resource', 'static'],
+    ['entities', new RawJson(`[${written.join(',')}]`)],
+  ]);
 }
 
 /**

@@ -18,6 +18,7 @@ import type {
 import type {
   CustomInteraction,
   InteractionWithEntities,
+  Interactors,
   PsicquicResource,
 } from './interactors.ts';
 import type { PathwayBrowserNode } from './locations.ts';
@@ -55,6 +56,8 @@ export interface Routes {
   'GET /ContentService/data/person/{id}/reviewedReactions': SimpleEvent[];
   'GET /ContentService/citation/pathway/{id}': PathwayCitation;
   'GET /ContentService/exporter/reaction/{id}/diagram': ReactionLayout;
+  'GET /ContentService/interactors/static/molecule/{id}/details': Interactors;
+  'POST /ContentService/interactors/static/molecules/details': Interactors;
   'GET /ContentService/interactors/psicquic/resources': PsicquicResource[];
   'GET /ContentService/interactors/static/molecule/enhanced/{id}/details': CustomInteraction[];
   'GET /ContentService/interactors/static/molecule/{id}/withEntities': InteractionWithEntities[];

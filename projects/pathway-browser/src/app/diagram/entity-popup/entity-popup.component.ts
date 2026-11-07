@@ -21,6 +21,7 @@ import { SchemaClasses } from '../../constants/constants';
 import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
+import type { Interactors } from '../../../../../contract/interactors.ts';
 import type { PlainPathway, PlainReferenceEntity } from '../../model/graph/plain.model';
 import { getProperty } from '../../services/utils';
 
@@ -458,18 +459,15 @@ export class EntityPopupComponent {
     stream: ({ params }) =>
       params
         ? this.http
-            .get<any>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
+            .get<Interactors>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
             .pipe(
               map((result): PopupGroup[] => [
                 {
                   // Production lists evidence count alongside the score, and
                   // both matter when judging an interaction.
-                  rows: (result?.entities?.[0]?.interactors ?? []).map((i: any) => ({
+                  rows: (result.entities[0]?.interactors ?? []).map((i) => ({
                     label: i.alias || i.acc,
-                    detail: [
-                      i.evidences != null ? `${i.evidences} evidence` : null,
-                      i.score != null ? `score ${i.score}` : null,
-                    ]
+                    detail: [`${i.evidences} evidence`, i.score != null ? `score ${i.score}` : null]
                       .filter(Boolean)
                       .join(' · '),
                     href: i.accURL,
