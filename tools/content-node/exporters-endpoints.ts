@@ -824,9 +824,9 @@ export const exportersEndpoints: Endpoint[] = [
     samplesOnly: true,
     /**
      * An event's SBML (spec 015 T065) or BioPAX Level 3 (T070), from the
-     * library service. SBML is routed on beta (dev.conf, T066), locally and
-     * under ng serve; the release and production keep Java's until T068.
-     * BioPAX is routed by T071, and Java has no BioPAX here.
+     * library service. Both are routed on beta (dev.conf; SBML by T066,
+     * BioPAX by T071), locally and under ng serve; the release and production
+     * keep Java's SBML until T068, and take BioPAX at T055 (Java has none here).
      */
     handler: (request) => eventExportAnswer(request),
   },
