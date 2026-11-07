@@ -214,7 +214,7 @@ describe('BioPAX’s own share of two', () => {
 });
 
 describe('/exporter/event/{id}', () => {
-  it('answers .biopax with BioPAX and .sbml with SBML, and leaves .sbgn to Java', async () => {
+  it('answers .biopax with BioPAX and .sbml with SBML, and leaves .sbgn to the SBGN answer', async () => {
     withService();
     behave = (_path, res) => {
       res.writeHead(200);
@@ -226,7 +226,11 @@ describe('/exporter/event/{id}', () => {
     const sbml = await eventExportAnswer(request('event/R-HSA-1.sbml'), find);
     expect(sbml.headers?.['Content-Disposition']).toBe('attachment; filename="R-HSA-1.sbml"');
     await text(sbml);
-    expect((await eventExportAnswer(request('event/R-HSA-1.sbgn'), find)).status).toBe(404);
+    // SBGN is sbgn-exporter's, in node (sbgn-export.spec.ts), never the service's
+    const sbgn = async () => ({ status: 299 });
+    expect((await eventExportAnswer(request('event/R-HSA-1.sbgn'), find, 1000, sbgn)).status).toBe(
+      299
+    );
     expect(asked).toEqual(['/biopax/R-HSA-1', '/sbml/R-HSA-1']);
   });
 

@@ -12,7 +12,7 @@ reports the difference as intended and reports its disappearance as news
 
 This page gathers every declared difference into one register. It does not
 replace the sources: each row links to the place the difference is recorded,
-which stays the authority. Compiled 6 Nov 2026, and updated the same day.
+which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN, 7 Nov 2026).
 
 **Terms used here**
 
@@ -37,21 +37,21 @@ which stays the authority. Compiled 6 Nov 2026, and updated the same day.
 
 ## Summary
 
-| Area                                                                                  | Differences | Status                                               |
-| ------------------------------------------------------------------------------------- | ----------: | ---------------------------------------------------- |
-| [ContentService: every ported endpoint](#contentservice-every-ported-endpoint)        |           4 | Live on beta                                         |
-| [ContentService: content and people](#contentservice-content-and-people)              |           6 | Live on beta                                         |
-| [ContentService: graph queries and search](#contentservice-graph-queries-and-search)  |           3 | Live on beta                                         |
-| [ContentService: reaction layout](#contentservice-reaction-layout)                    |           4 | Live on beta                                         |
-| [ContentService: contact form](#contentservice-contact-form)                          |           7 | Live on beta                                         |
-| [ContentService: images](#contentservice-images)                                      |           2 | One live on beta, one merged                         |
-| [AnalysisService gateway](#analysisservice-gateway)                                   |           2 | Live on beta                                         |
-| [SBML (sbml-exporter)](#sbml-sbml-exporter)                                           |          13 | Website's SBML live on beta; bulk file not switched  |
-| [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint merged, not routed |
-| [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           6 | Spec merged; not built                               |
-| [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          13 | Being built; not serving the website                 |
-| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          14 | Spec only                                            |
-| **Total**                                                                             |      **87** |                                                      |
+| Area                                                                                  | Differences | Status                                                        |
+| ------------------------------------------------------------------------------------- | ----------: | ------------------------------------------------------------- |
+| [ContentService: every ported endpoint](#contentservice-every-ported-endpoint)        |           4 | Live on beta                                                  |
+| [ContentService: content and people](#contentservice-content-and-people)              |           6 | Live on beta                                                  |
+| [ContentService: graph queries and search](#contentservice-graph-queries-and-search)  |           3 | Live on beta                                                  |
+| [ContentService: reaction layout](#contentservice-reaction-layout)                    |           4 | Live on beta                                                  |
+| [ContentService: contact form](#contentservice-contact-form)                          |           7 | Live on beta                                                  |
+| [ContentService: images](#contentservice-images)                                      |           2 | One live on beta, one merged                                  |
+| [AnalysisService gateway](#analysisservice-gateway)                                   |           2 | Live on beta                                                  |
+| [SBML (sbml-exporter)](#sbml-sbml-exporter)                                           |          13 | Website's SBML live on beta; bulk file not switched           |
+| [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint merged, not routed          |
+| [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           8 | Website's SBGN merged, routed on beta; bulk file not switched |
+| [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          13 | Being built; not serving the website                          |
+| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          14 | Spec only                                                     |
+| **Total**                                                                             |      **89** |                                                               |
 
 Then: [things that look like differences but are not](#not-differences),
 and [decisions still open](#decisions-still-open).
@@ -198,24 +198,27 @@ release's bulk file has not switched. Node's website endpoint is merged
 
 ## SBGN (sbgn-exporter)
 
-SBGN-ML from one TypeScript exporter, for the website and the bulk file.
-**Spec merged; not built**: the spec was merged as
-[sbgn-exporter#3](https://github.com/reactome/sbgn-exporter/pull/3) on
-6 Nov 2026, replacing #1 and #2 there
-([`specs/001-sbgn-export`](https://github.com/reactome/sbgn-exporter/tree/main/specs/001-sbgn-export),
-research R3, spec FR-003). Each difference is an obvious bug of diagram-exporter's SBGN converter;
-everything else is to match Java byte for byte once order is set aside.
-Anything that would improve the files beyond these becomes an issue for the
-team (FR-006).
+SBGN-ML from one TypeScript exporter, for the website and the bulk file
+([sbgn-exporter](https://github.com/reactome/sbgn-exporter), its
+[`specs/001-sbgn-export`](https://github.com/reactome/sbgn-exporter/tree/main/specs/001-sbgn-export),
+research R3, spec FR-003). Each difference is an obvious bug of diagram-exporter's
+SBGN converter; everything else matches Java byte for byte once order is set
+aside, which sbgn-exporter's tests check on its fixtures against Java's own
+answers. Anything that would improve the files beyond these becomes an issue
+for the team (FR-006). The website's per-event SBGN is answered by node through
+this library (sbgn-exporter T018, #859), routed on beta alone; the release's
+bulk file has not switched (its T016, T026, T032).
 
-| What                                     | Java                                                                                                                                                                 | New                                                                            | Why                                                     | Decided              |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------- | -------------------- |
-| D1, order                                | Glyphs and arcs in an order that changes from run to run                                                                                                             | A fixed order derived from the layout                                          | Determinism                                             | Spec FR-003          |
-| D2, arc geometry                         | Reverses the reaction's line in place for each product arc, so later arcs read it reversed or not, by chance (7 of 253 arcs differ between two files of one pathway) | Every arc read from the line as the layout gives it                            | Bug fix, determinism                                    | Spec FR-003          |
-| D3, the stoichiometry glyph              | Class `stoichiometry`, which SBGN-ML 0.2 does not have: 550 of 1,390 bulk files are invalid                                                                          | Class `cardinality`, as Java's own comment intends                             | Bug fix                                                 | Spec FR-003          |
-| D4, text widths                          | Arial's widths in the website's answers; other widths in the bulk file                                                                                               | Java's Arial widths always, from a table measured from Java                    | Platform: the bulk file depended on the machine's fonts | The user, 6 Nov 2026 |
-| D5, product arcs run backwards           | Starts at the product and ends at the reaction, with the middle points the other way                                                                                 | Start and end swapped, so the arc runs from the reaction to the product        | Bug fix                                                 | The user, 6 Nov 2026 |
-| D6, product arcs that are a single point | A product arc with no line of its own often starts and ends at one point                                                                                             | Starts at the reaction and ends towards the product, on the segment Java picks | Bug fix                                                 | The user, 6 Nov 2026 |
+| What                                     | Java                                                                                                                                                                 | New                                                                                                                                   | Why                                                                                                            | Decided                   | Status                 | Source                      |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------------------- | --------------------------- |
+| D1, order                                | Glyphs and arcs in an order that changes from run to run                                                                                                             | A fixed order derived from the layout                                                                                                 | Determinism                                                                                                    | Spec FR-003               | Merged, routed on beta | sbgn-exporter spec FR-003   |
+| D2, arc geometry                         | Reverses the reaction's line in place for each product arc, so later arcs read it reversed or not, by chance (7 of 253 arcs differ between two files of one pathway) | Every arc read from the line as the layout gives it                                                                                   | Bug fix, determinism                                                                                           | Spec FR-003               | Merged, routed on beta | sbgn-exporter research R3.2 |
+| D3, the stoichiometry glyph              | Class `stoichiometry`, which SBGN-ML 0.2 does not have: 550 of 1,390 bulk files are invalid                                                                          | Class `cardinality`, as Java's own comment intends                                                                                    | Bug fix                                                                                                        | Spec FR-003               | Merged, routed on beta | sbgn-exporter research R3.4 |
+| D4, text widths                          | Arial's widths in the website's answers; other widths in the bulk file                                                                                               | Java's Arial widths always, from a table measured from Java                                                                           | Platform: the bulk file depended on the machine's fonts                                                        | The user, 6 Nov 2026      | Merged, routed on beta | sbgn-exporter research R3.3 |
+| D5, product arcs run backwards           | Starts at the product and ends at the reaction, with the middle points the other way                                                                                 | Start and end swapped, so the arc runs from the reaction to the product                                                               | Bug fix                                                                                                        | The user, 6 Nov 2026      | Merged, routed on beta | sbgn-exporter research R3.5 |
+| D6, product arcs that are a single point | A product arc with no line of its own often starts and ends at one point, or runs along the segment into the reaction                                                | Runs along the reaction's line from its output port to its end, at the product                                                        | Bug fix                                                                                                        | The user, 6 Nov 2026      | Merged, routed on beta | sbgn-exporter research R3.6 |
+| A label XML 1.0 cannot hold              | Written as it is, into a file no parser reads                                                                                                                        | Refused: the request fails, rather than serve an unreadable file. Release 98 has none (78,527 labels)                                 | Bug fix                                                                                                        | 7 Nov 2026                | Merged, routed on beta | sbgn-exporter research R4   |
+| Website, a reaction's ids                | Laid out by the reaction exporter, whose ids come from a counter shared by every request since the service started                                                   | Node's reaction layout, ids from 1: one file per reaction per release. With Java's offset removed, the files compare only in D1 to D6 | Determinism: as the reaction layout's ids ([ContentService: reaction layout](#contentservice-reaction-layout)) | 5 Nov 2026 (spec 006 D21) | Merged, routed on beta | spec 006 T100, #859         |
 
 ## Pathway PDFs (pdf-export spec 001)
 
@@ -311,9 +314,11 @@ These show up in comparisons but are not differences in what a reader gets.
   ([graph-importer#9](https://github.com/reactome/graph-importer/issues/9)),
   and people's display names
   ([graph-importer#10](https://github.com/reactome/graph-importer/issues/10)).
-- **SBGN**: the spec is merged and the exporter not yet built; the bulk file's
-  text encoding is still to be checked, and a mismatch would come to the user
-  as a candidate difference (its task T034).
+- **SBGN**: the website's answer is merged and routed on beta; on a deployment
+  it needs the release's diagram files mounted for node (`DIAGRAM_FILES`), or a
+  pathway's SBGN is a 503. The bulk file's text encoding is still to be
+  checked, and a mismatch would come to the user as a candidate difference
+  (sbgn-exporter T034).
 - **Diagram images** (`/exporter/diagram/{identifier}.{ext}`, and the
   reaction image `/exporter/reaction/{identifier}.{ext}`) wait for a scan of
   which formats and options callers use (spec 006 T090, T091; #273).

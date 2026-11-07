@@ -94,9 +94,9 @@ export const PATH_KINDS: Record<string, Kind> = {
   // Never stored whatever it is (`cache` below).
   any: () => true,
 };
-// An event's SBML or BioPAX (spec 015): an id as `oid` takes it, and the extension.
+// An event's SBML, BioPAX (spec 015) or SBGN: an id as `oid` takes it, and the extension.
 PATH_KINDS['eventExport'] = (text) => {
-  const ext = /\.(sbml|biopax)$/.exec(text);
+  const ext = /\.(sbml|biopax|sbgn)$/.exec(text);
   return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
 };
 PATH_KINDS['sbmlXml'] = (text) =>
@@ -418,10 +418,10 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'private',
   },
-  // An event's SBML or BioPAX, the same file for every reader of a release (spec 015).
+  // An event's SBML, BioPAX or SBGN, the same file for every reader of a release (spec 015; sbgn-exporter T018).
   '/ContentService/exporter/event/{id}': {
     java: null,
-    why: "Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file. The .biopax form is no URL of Java's (spec 015 research R6).",
+    why: "Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file, and as /exporter/event/{identifier}.sbgn, with no parameter. The .biopax form is no URL of Java's (spec 015 research R6).",
     path: { id: 'eventExport' },
     query: [],
   },
