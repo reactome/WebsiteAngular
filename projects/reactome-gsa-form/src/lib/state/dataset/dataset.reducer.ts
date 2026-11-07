@@ -2,11 +2,41 @@ import { ActionReducer, createReducer, on } from '@ngrx/store';
 import { datasetAdapter, DatasetState, initialState, PDataset } from './dataset.state';
 import { datasetActions } from './dataset.actions';
 import { DataSummary } from '../../model/load-dataset.model';
+import { StatisticalDesign } from '../../model/dataset.model';
 import { Subset } from '../../model/utils.model';
 import { cp, transpose } from 'reactome-table';
 import { EntityHelper, isDefined } from '../../utilities/utils';
 
 const helper = new EntityHelper<PDataset, DatasetState>(datasetAdapter);
+
+/**
+ * A change to a dataset's statistical design, made once it has one
+ * (initStatisticalDesign); before that, as for a dataset there is not, the
+ * state is left as it is.
+ */
+function updateDesign(
+  id: number,
+  state: DatasetState,
+  change: (design: StatisticalDesign, dataset: PDataset) => Partial<StatisticalDesign>
+): DatasetState {
+  const dataset = helper.fetch(id, state);
+  const design = dataset?.statisticalDesign;
+  if (!dataset || !design) return state;
+  return datasetAdapter.updateOne(
+    { id, changes: { statisticalDesign: { ...design, ...change(design, dataset) } } },
+    state
+  );
+}
+
+/** A change made from a dataset's summary, once it has one (it is loaded, or uploaded). */
+function fromSummary(
+  id: number,
+  state: DatasetState,
+  change: (summary: DataSummary) => Partial<PDataset>
+): DatasetState {
+  const summary = helper.fetch(id, state)?.summary;
+  return summary ? datasetAdapter.updateOne({ id, changes: change(summary) }, state) : state;
+}
 
 export const datasetReducer: ActionReducer<DatasetState> = createReducer(
   initialState,
@@ -130,21 +160,25 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
       state.ids
         .map((id) => state.entities[id])
         .filter(isDefined)
-        .map((dataset) => {
-          const annotations = dataset.annotations!;
+        // Each that has its annotations (loaded with its summary).
+        .flatMap((dataset) => {
+          const annotations = dataset.annotations;
+          if (!annotations) return [];
 
           const annotationsWithSimpleIds = cp(annotations);
           const [header] = annotationsWithSimpleIds;
           if (header) header[0] = 'sample_ids';
 
-          return {
-            id: dataset.id,
-            changes: {
-              annotationColumns: new Map<string, string[]>(
-                transpose(annotationsWithSimpleIds).map((col) => [col[0] ?? '', col.slice(1)])
-              ),
+          return [
+            {
+              id: dataset.id,
+              changes: {
+                annotationColumns: new Map<string, string[]>(
+                  transpose(annotationsWithSimpleIds).map((col) => [col[0] ?? '', col.slice(1)])
+                ),
+              },
             },
-          };
+          ];
         }),
       state
     )
@@ -176,8 +210,7 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
   ),
 
   on(datasetActions.initStatisticalDesign, (state, { id }) =>
-    helper.update(id, state, (dataset) => {
-      const summary = dataset.summary!;
+    fromSummary(id, state, (summary) => {
       const defaultCovariances = new Set<string>(
         (summary.default_parameters || [])
           .find((param) => param.name === 'covariates')
@@ -209,102 +242,63 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
   ),
 
   on(datasetActions.initCovariances, (state, { id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        covariances:
-          dataset.annotations?.[0]
-            ?.slice(1) //slice the first element, which is the empty string
-            .filter((name) => name !== dataset.statisticalDesign!.analysisGroup)
-            .map((name) => ({
-              name,
-              value: dataset.statisticalDesign!.defaultCovariances.has(name),
-            })) || [],
-      },
+    updateDesign(id, state, (design, dataset) => ({
+      covariances:
+        dataset.annotations?.[0]
+          ?.slice(1) //slice the first element, which is the empty string
+          .filter((name) => name !== design.analysisGroup)
+          .map((name) => ({
+            name,
+            value: design.defaultCovariances.has(name),
+          })) || [],
     }))
   ),
 
   on(datasetActions.setAnalysisGroup, (state, { group, id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        analysisGroup: group,
-        comparisonGroup1:
-          group === dataset.statisticalDesign!.defaultComparisonFactor
-            ? dataset.statisticalDesign!.defaultGroup1
-            : undefined,
-        comparisonGroup2:
-          group === dataset.statisticalDesign!.defaultComparisonFactor
-            ? dataset.statisticalDesign!.defaultGroup2
-            : undefined,
-      },
+    updateDesign(id, state, (design) => ({
+      analysisGroup: group,
+      comparisonGroup1: group === design.defaultComparisonFactor ? design.defaultGroup1 : undefined,
+      comparisonGroup2: group === design.defaultComparisonFactor ? design.defaultGroup2 : undefined,
     }))
   ),
 
   on(datasetActions.setComparisonGroup1, (state, { group, id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        comparisonGroup1: group,
-      },
-    }))
+    updateDesign(id, state, () => ({ comparisonGroup1: group }))
   ),
 
   on(datasetActions.setComparisonGroup2, (state, { group, id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        comparisonGroup2: group,
-      },
-    }))
+    updateDesign(id, state, () => ({ comparisonGroup2: group }))
   ),
 
   on(datasetActions.setCovariateValue, (state, { group, value, id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        covariances: dataset.statisticalDesign!.covariances.map((cov) =>
-          cov.name === group ? { ...cov, value } : cov
-        ),
-      },
+    updateDesign(id, state, (design) => ({
+      covariances: design.covariances.map((cov) => (cov.name === group ? { ...cov, value } : cov)),
     }))
   ),
 
   on(datasetActions.lockCovariateValue, (state, { group, value, id, locked }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        covariances: dataset.statisticalDesign!.covariances.map((cov) =>
-          cov.name === group ? { ...cov, value, locked } : cov
-        ),
-      },
+    updateDesign(id, state, (design) => ({
+      covariances: design.covariances.map((cov) =>
+        cov.name === group ? { ...cov, value, locked } : cov
+      ),
     }))
   ),
 
   on(datasetActions.setCovariatesValue, (state, { value, id }) =>
-    helper.update(id, state, (dataset) => ({
-      statisticalDesign: {
-        ...dataset.statisticalDesign!,
-        covariances: dataset.statisticalDesign!.covariances.map((cov) => ({
-          ...cov,
-          value: cov.locked ? cov.value : value,
-        })),
-      },
+    updateDesign(id, state, (design) => ({
+      covariances: design.covariances.map((cov) => ({
+        ...cov,
+        value: cov.locked ? cov.value : value,
+      })),
     }))
   ),
 
   on(datasetActions.setSummaryParameters, (state, { id, parameters }) =>
-    helper.update(id, state, (dataset) => ({
-      summary: {
-        ...dataset.summary!,
-        parameters,
-      },
-    }))
+    fromSummary(id, state, (summary) => ({ summary: { ...summary, parameters } }))
   ),
 
   on(datasetActions.resetSummaryParameters, (state, { id }) =>
-    helper.update(id, state, (dataset) => {
-      const summary = dataset.summary!;
+    fromSummary(id, state, (summary) => {
       return {
         summary: {
           ...summary,

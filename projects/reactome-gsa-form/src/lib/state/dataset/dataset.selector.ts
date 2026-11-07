@@ -30,45 +30,42 @@ export const datasetFeature = createFeature({
     selectLoadingComplete: (id: number) =>
       createSelector(
         selectEntities,
-        (entities) => !!(entities[id]?.loadingStatus!.status === 'complete')
+        (entities) => entities[id]?.loadingStatus?.status === 'complete'
       ),
 
     selectSummaryComplete: (id: number) =>
       createSelector(selectEntities, (entities) => !!entities[id]?.summary),
 
     selectAnnotationComplete: (id: number) =>
-      createSelector(
-        selectEntities,
-        (entities) =>
-          !!(
-            entities[id]?.annotations &&
-            transpose(entities[id]!.annotations as string[][]) // column by column
-              .slice(1) // exclude row headers
-              .map((col) => col.slice(1)) // exclude column headers
-              .filter(
-                (col) =>
-                  col
-                    .filter((s) => s) // remove empty string
-                    .filter(
-                      (value, i) => col.indexOf(value) === i
-                    ) // distinct values
-                  .length >= 2 // only columns with at least 2 distinct values
-              ).length > 0
-          )
-      ), // at least 1 column with at least 2 distinct values
+      createSelector(selectEntities, (entities) => {
+        const annotations = entities[id]?.annotations;
+        return (
+          !!annotations &&
+          transpose(annotations) // column by column
+            .slice(1) // exclude row headers
+            .map((col) => col.slice(1)) // exclude column headers
+            .filter(
+              (col) =>
+                col
+                  .filter((s) => s) // remove empty string
+                  .filter(
+                    (value, i) => col.indexOf(value) === i
+                  ) // distinct values
+                .length >= 2 // only columns with at least 2 distinct values
+            ).length > 0
+        );
+      }), // at least 1 column with at least 2 distinct values
 
     selectStatisticalDesignComplete: (id: number) =>
-      createSelector(
-        selectEntities,
-        (entities) =>
-          !!(
-            entities[id]?.statisticalDesign?.analysisGroup &&
-            entities[id]!.statisticalDesign!.comparisonGroup1 &&
-            entities[id]!.statisticalDesign!.comparisonGroup2 &&
-            entities[id]!.statisticalDesign!.comparisonGroup1 !==
-              entities[id]!.statisticalDesign!.comparisonGroup2
-          )
-      ),
+      createSelector(selectEntities, (entities) => {
+        const design = entities[id]?.statisticalDesign;
+        return !!(
+          design?.analysisGroup &&
+          design.comparisonGroup1 &&
+          design.comparisonGroup2 &&
+          design.comparisonGroup1 !== design.comparisonGroup2
+        );
+      }),
 
     selectParametersComplete: (id: number) =>
       createSelector(
@@ -104,10 +101,11 @@ export const datasetFeature = createFeature({
     selectSampleGroups: (id: number) =>
       createSelector(selectEntities, (entities): SampleGroups => {
         const dataset = entities[id];
-        if (!dataset?.annotations) return {};
+        const design = dataset?.statisticalDesign;
+        if (!dataset?.annotations || !design) return {};
 
         const analysisColumn = transpose(dataset.annotations)
-          .find((column) => column[0] === dataset.statisticalDesign?.analysisGroup)
+          .find((column) => column[0] === design.analysisGroup)
           ?.slice(1);
         if (!analysisColumn) return {};
 
@@ -118,17 +116,18 @@ export const datasetFeature = createFeature({
             name: column[0] ?? '',
             values: column.slice(1),
           }))
-          .filter((column) => dataset!.statisticalDesign!.analysisGroup !== column.name) // Remove analysis group
+          .filter((column) => design.analysisGroup !== column.name) // Remove analysis group
           .filter((column) => {
             // A missing value counts as one, as it always has.
             const group1Values = new Set<string | undefined>();
             const group2Values = new Set<string | undefined>();
             for (let i = 0; i < analysisColumn.length; i++) {
               const analysedValue = analysisColumn[i];
-              for (const [comparisonGroup, values] of [
-                [dataset!.statisticalDesign!.comparisonGroup1, group1Values],
-                [dataset!.statisticalDesign!.comparisonGroup2, group2Values],
-              ] as [string, Set<string | undefined>][]) {
+              const groups: [string | undefined, Set<string | undefined>][] = [
+                [design.comparisonGroup1, group1Values],
+                [design.comparisonGroup2, group2Values],
+              ];
+              for (const [comparisonGroup, values] of groups) {
                 if (analysedValue === comparisonGroup) {
                   const value = column.values[i];
                   if (values.has(value)) return false; // remove columns where a "pair" is associated more than once to the same condition

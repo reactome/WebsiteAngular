@@ -175,11 +175,12 @@ export class DatasetEffects {
     this.actions$.pipe(
       ofType(datasetActions.setLoadStatus),
       filter(({ loadingStatus }) => loadingStatus.status === 'complete'),
+      // A finished load names the dataset it made; one that does not cannot be
+      // summarised, and fails as a summary that could not be had.
       map(({ loadingStatus, id }) =>
-        datasetActions.getSummary({
-          datasetId: loadingStatus.dataset_id!,
-          id,
-        })
+        loadingStatus.dataset_id
+          ? datasetActions.getSummary({ datasetId: loadingStatus.dataset_id, id })
+          : datasetActions.getSummaryError({ error: 'no dataset id', id })
       )
     )
   );
@@ -205,14 +206,15 @@ export class DatasetEffects {
       }),
       map(({ summary, id }) => {
         setTimeout(() => (this.tour.paused ? this.tour.resume() : null), 1000);
-        const table: string[][] = !summary.sample_metadata
+        const metadata = summary.sample_metadata;
+        const table: string[][] = !metadata
           ? [[''], ...summary.sample_ids.map((sampleId) => [sampleId])]
           : [
-              ['', ...summary.sample_metadata.map((col) => col.name)],
+              ['', ...metadata.map((col) => col.name)],
               ...summary.sample_ids.map((sampleId, i) => [
                 sampleId,
                 // A missing value stays missing (sent as null), as it always was.
-                ...summary.sample_metadata!.map((column) => column.values[i] as string),
+                ...metadata.map((column) => column.values[i] as string),
               ]),
             ];
         return datasetActions.setAnnotations({ annotations: table, id });

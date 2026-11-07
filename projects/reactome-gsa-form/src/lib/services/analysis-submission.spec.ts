@@ -13,7 +13,7 @@
  * anything to do with the decision being made here.
  */
 import { describe, expect, it } from 'vitest';
-import { submittedParameters } from './analysis.service';
+import { submittedDesign, submittedParameters } from './analysis.service';
 
 describe('what a GSA request carries', () => {
   it('leaves out a field the reader never filled in', () => {
@@ -40,5 +40,65 @@ describe('what a GSA request carries', () => {
     expect(submittedParameters([{ name: 'email', value: 'curator@example.org' } as never])).toEqual(
       [{ name: 'email', value: 'curator@example.org' }]
     );
+  });
+});
+
+describe('the statistical design a GSA request carries', () => {
+  const dataset = (design: object, columns: [string, string[]][]) =>
+    ({
+      summary: { title: 'A dataset' },
+      statisticalDesign: { defaultCovariances: new Set(), covariances: [], ...design },
+      annotationColumns: new Map(columns),
+    }) as never;
+  const columns: [string, string[]][] = [
+    ['sample_ids', ['s1', 's2']],
+    ['condition', ['a', 'b']],
+    ['batch', ['1', '2']],
+  ];
+
+  it('names the columns of a complete design, its chosen covariates with them', () => {
+    expect(
+      submittedDesign(
+        dataset(
+          {
+            analysisGroup: 'condition',
+            comparisonGroup1: 'a',
+            comparisonGroup2: 'b',
+            covariances: [
+              { name: 'batch', value: true },
+              { name: 'unused', value: false },
+            ],
+          },
+          columns
+        )
+      )
+    ).toEqual({
+      analysisGroup: ['a', 'b'],
+      samples: ['s1', 's2'],
+      comparison: { group1: 'a', group2: 'b' },
+      batch: ['1', '2'],
+    });
+  });
+
+  it('says a design without its groups is not complete, rather than sending it', () => {
+    expect(submittedDesign(dataset({ analysisGroup: 'condition' }, columns))).toBe(
+      'The statistical design of "A dataset" is not complete'
+    );
+  });
+
+  it('says so too for a covariate with no column', () => {
+    expect(
+      submittedDesign(
+        dataset(
+          {
+            analysisGroup: 'condition',
+            comparisonGroup1: 'a',
+            comparisonGroup2: 'b',
+            covariances: [{ name: 'missing', value: true }],
+          },
+          columns
+        )
+      )
+    ).toBe('The statistical design of "A dataset" is not complete');
   });
 });
