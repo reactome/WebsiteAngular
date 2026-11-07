@@ -139,7 +139,7 @@ For a page that loads ES modules itself, `https://reactome.org/embed/diagram/v1/
 #### Other ways in
 
 - **A link or a frame** to the Pathway Browser: `https://reactome.org/PathwayBrowser/{stId}`, with `?select=` for an entity.
-- **A static image** from the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`, `.sbgn`).
+- **A static image** from the [Content Service](</documentation/dev/content-service>) diagram exporter — for example, `GET /ContentService/exporter/diagram/{stId}.svg` (also `.png`, `.pdf`, `.pptx`). An event's SBGN-ML is `GET /ContentService/exporter/event/{stId}.sbgn`, not a diagram format.
 
 #### Sites written for the previous widget
 

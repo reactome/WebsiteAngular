@@ -98,7 +98,7 @@ describe('an event’s SBGN', () => {
     expect(a.status).toBe(200);
     expect(a.type).toBe('application/sbgn+xml;charset=UTF-8');
     expect(a.headers).toEqual({ 'Content-Disposition': 'attachment; filename="R-HSA-1.sbgn"' });
-    expect(String(a.body)).toBe(toSbgn(DIAGRAM as Parameters<typeof toSbgn>[0]));
+    expect(String(a.body)).toBe(toSbgn(DIAGRAM as unknown as Parameters<typeof toSbgn>[0]));
   });
 
   it('names the file by the stable id, however the event was asked for', async () => {
@@ -111,13 +111,26 @@ describe('an event’s SBGN', () => {
   it('is the diagram that holds a subpathway, named by the subpathway', async () => {
     const a = await answer('R-HSA-3.sbgn');
     expect(a.headers).toEqual({ 'Content-Disposition': 'attachment; filename="R-HSA-3.sbgn"' });
-    expect(String(a.body)).toBe(toSbgn(DIAGRAM as Parameters<typeof toSbgn>[0]));
+    expect(String(a.body)).toBe(toSbgn(DIAGRAM as unknown as Parameters<typeof toSbgn>[0]));
   });
 
   it('is a reaction’s layout from the reaction-layout module, with no file needed', async () => {
     const a = await answer('R-HSA-5.sbgn', null);
     expect(a.status).toBe(200);
     expect(a.headers).toEqual({ 'Content-Disposition': 'attachment; filename="R-HSA-5.sbgn"' });
+  });
+
+  it('reads a reaction layout whose empty lists were left out, as its answer writes them', async () => {
+    const { compartments, ...noCompartments } = { ...DIAGRAM, stableId: 'R-HSA-5' };
+    void compartments;
+    const a = await sbgnAnswer(request('R-HSA-5.sbgn'), find, {
+      ...layouts(null),
+      reactionLayout: async () => noCompartments,
+    });
+    expect(a.status).toBe(200);
+    expect(String(a.body)).toBe(
+      toSbgn({ ...noCompartments, compartments: [] } as unknown as Parameters<typeof toSbgn>[0])
+    );
   });
 
   it('answers Java’s 400 for an object that is no event, and its 404 for an unknown id', async () => {
