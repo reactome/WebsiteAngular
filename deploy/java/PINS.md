@@ -32,6 +32,14 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
 
 `deploy/java-library/Dockerfile` builds the last four rows from these commits, and checks that its jar carries the libraries it built, byte for byte. `deploy/java-library/pins.spec.ts` checks that the Dockerfile's commits are this table's. Changing `sbml-exporter-lib`'s pin means rerunning spec 015 T067's comparison, not `tools/java-parity`: its body is not Java's. Changing `biopax3-exporter-lib`'s likewise means rerunning spec 015 T049's comparison and T072's check.
 
+## The PDF service (spec 006 T100)
+
+`deploy/pdf-export/Dockerfile` builds pdf-export, TypeScript run by Node 24, from this commit of its `main`; `deploy/pdf-export/pins.spec.ts` checks the two agree. Not Java's answer, so no byte comparison: proven by pdf-export's own checks (its spec 001) and, for the website's endpoint, by node's answers around it (`tools/content-node/event-pdf.spec.ts`). Changing it means rerunning T100's check against the graph, the render service and the AnalysisService (the PR that moves it says so), not `tools/java-parity`.
+
+| Artifact             | Repository            | Commit             | Runtime |
+| -------------------- | --------------------- | ------------------ | ------- |
+| pdf-export (`serve`) | `reactome/pdf-export` | `979b8d6` (`main`) | Node 24 |
+
 ## Changing a pin
 
 1. **Update** the commit here and in the image.

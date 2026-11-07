@@ -191,6 +191,9 @@ const NOT_YET_ROUTED: Record<string, string> = {
   // see "SBML and SBGN, on beta alone" below.
   '/ContentService/exporter/event/{id}': 'spec 015 T068',
   '/ContentService/exporter/sbml/{id}': 'spec 015 T068',
+  // Routed on beta alone (dev.conf) until the release and production run the
+  // PDF service (deploy/pdf-export).
+  '/ContentService/exporter/document/event/{id}': 'spec 006 T100',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
@@ -296,9 +299,10 @@ describe('where nginx sends things', () => {
  * the exporters' budget. The release's files and production keep Java's until
  * FR-009's open differences are settled; neither runs the SBML service yet.
  * An event's SBGN is node's on beta the same way (sbgn-exporter spec 001
- * T018): elsewhere node has no diagram files mounted yet.
+ * T018): elsewhere node has no diagram files mounted yet. And an event's PDF
+ * (spec 006 T100): elsewhere no PDF service runs yet.
  */
-describe('SBML and SBGN, on beta alone', () => {
+describe('SBML, SBGN and the event PDF, on beta alone', () => {
   const SBML = [
     '/ContentService/exporter/event/R-HSA-109581.sbml',
     '/ContentService/exporter/event/R-HSA-109581.4.sbml/',
@@ -306,6 +310,9 @@ describe('SBML and SBGN, on beta alone', () => {
     '/ContentService/exporter/event/R-HSA-109581.sbgn',
     '/ContentService/exporter/event/R-HSA-109581.4.sbgn/',
     '/ContentService/exporter/event/R-HSA-109581.sbml.sbgn',
+    '/ContentService/exporter/document/event/R-HSA-109581.pdf',
+    '/ContentService/exporter/document/event/R-HSA-109581.4.pdf/',
+    '/ContentService/exporter/document/event/109581.pdf?token=MjAyNjExMDcxNjE3MzZfNA%3D%3D',
   ];
   /** A deployment's own locations before its routes.conf include, then the shared ones. */
   const deployment = (name: string) => {
@@ -326,10 +333,12 @@ describe('SBML and SBGN, on beta alone', () => {
       it(`leaves ${url} to Java in ${name}`, () => {
         expect([url, nginxTarget(url, deployment(name))]).toEqual([url, 'tomcat']);
       });
-  it('leaves an event’s PDF to Java on beta, an id ending .sbgn included', () => {
+  it('leaves what is not an event’s SBML, SBGN or PDF to Java on beta', () => {
     for (const url of [
-      '/ContentService/exporter/document/event/R-HSA-109581.pdf',
+      // No address of Java's or node's: the PDF is under /document/.
       '/ContentService/exporter/event/R-HSA-109581.sbgn.pdf',
+      '/ContentService/exporter/document/event/R-HSA-109581.png',
+      '/ContentService/exporter/document/event/R-HSA-109581.pdf/x',
     ])
       expect([url, nginxTarget(url, deployment('dev.conf'))]).toEqual([url, 'tomcat']);
   });

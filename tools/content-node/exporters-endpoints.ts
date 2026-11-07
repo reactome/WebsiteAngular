@@ -644,7 +644,8 @@ export async function sbgnAnswer(
 
 /**
  * /exporter/event/{id}: BioPAX for `.biopax`, SBGN for `.sbgn`, SBML for the
- * rest (whose other extension, the PDF, is Java's).
+ * rest (any other extension Spring's 404). An event's PDF is at another
+ * address, /exporter/document/event/{id}.pdf (eventPdfAnswer).
  */
 export function eventExportAnswer(
   request: Request,
@@ -672,8 +673,8 @@ async function exportAnswer(
   headersMs: number
 ): Promise<Answer> {
   const name = splitExportName(pathId(rawSegment(request, 4)));
-  // Another extension on /exporter/event/ is Java's (the PDF), which nginx
-  // never sends here; SBGN is answered before this (sbgnAnswer).
+  // Another extension on /exporter/event/ is Spring's 404, as Java answers
+  // it; SBGN is answered before this (sbgnAnswer).
   if (name?.ext !== ext) return springNotFound(request);
   const refused = longPastRange([name.identifier]);
   if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
@@ -758,6 +759,172 @@ async function exportAnswer(
   }
 }
 
+/**
+ * The PDF's own share: two at once, as the PDF service makes two at once
+ * (deploy/pdf-export, its --concurrency). Java made four at once and queued
+ * the rest without limit; past this share, a 503 with Retry-After, as SBML's.
+ */
+const PDF_SHARE = deepShare(2);
+
+/**
+ * How long the PDF service has to send its headers: past its own deadline for
+ * a PDF (120 s, pdf-export's LIMITS.deadlineMs), so its own 503 comes first,
+ * and under nginx's 300 s. It sends the whole PDF at once, with its length.
+ */
+const PDF_HEADERS_MS = 130_000;
+
+/** eventPdf's parameters, in Java's order, with its defaults (EventPdfController). */
+const PDF_EXPORT: ExportField[] = [
+  // Java's name for it, brackets and spaces included: `level` is not read.
+  ['integer', 'level [0 - 1]', 1],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['boolean', 'importableOnly', false],
+  ['integer', 'expColumn', null],
+  ['text', 'analysisProfile', 'Standard'],
+];
+
+/** The PDF service's reason for a refusal (pdf-export contracts/service.md), or null. */
+function pdfRefusal(text: string): string | null {
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  const reason: unknown =
+    typeof body === 'object' && body !== null ? Reflect.get(body, 'reason') : undefined;
+  return typeof reason === 'string' ? reason : null;
+}
+
+/**
+ * An event's PDF, as Java's /exporter/document/event/{id}.pdf answers it
+ * (EventPdfController.eventPdf) -- its parameters converted as Spring converts
+ * them, its 404 and 400, its type -- with the PDF made by
+ * pdf-export's single-event service (deploy/pdf-export; pdf-export spec 001,
+ * Story 2, FR-014), passed on as it arrives. Never made by another
+ * implementation: without the service, a 503.
+ *
+ * Where Java answers an empty 200 -- its export failed before writing, and
+ * the controller logs and returns -- this answers what failed (the declared
+ * differences, Pathway PDFs): an analysis token the AnalysisService does not
+ * know (404) or no longer holds (410), and the service unable to make the PDF
+ * (503, or 500). A blank level, on which Java fails the same way, is its
+ * default. The analysis options the website does not send (the profiles, the
+ * resource, the expression column, importable only) are converted as Java
+ * converts them, so a value Java refuses is refused, and are otherwise not
+ * read (pdf-export spec 001, Assumptions).
+ */
+export async function eventPdfAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = PDF_HEADERS_MS
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 5)));
+  if (name?.ext !== 'pdf') return springNotFound(request);
+  const asked = exporterParameters(request, PDF_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `'${name.identifier}' does not exist`);
+  if (!event.isEvent || !event.stId)
+    return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not an event`);
+  const service = settings.pdfService();
+  if (!service)
+    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The PDF service is not configured');
+  if (!PDF_SHARE.enter())
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Too many PDFs are being made; try again shortly'
+      ),
+      headers: { 'Retry-After': '5' },
+    };
+  // Java's getLevel: below 0 is 0, above 1 is 1.
+  const level = asked.values['level [0 - 1]'];
+  const depth = typeof level === 'number' && level < 1 ? 0 : 1;
+  const token = asked.values['token'];
+  const url = new URL(
+    `event/${encodeURIComponent(event.stId)}.pdf`,
+    service.endsWith('/') ? service : `${service}/`
+  );
+  url.searchParams.set('depth', String(depth));
+  // Once encoded, as the service is to receive it: the token as Spring read it.
+  if (typeof token === 'string') url.searchParams.set('token', token);
+  // Held until the body has been passed on, or until no body will be.
+  let streaming = false;
+  try {
+    let response: IncomingMessage;
+    try {
+      response = await exportResponse(url.href, headersMs);
+    } catch (caught) {
+      return javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        caught instanceof Error && caught.message === 'late'
+          ? 'The PDF took too long to make'
+          : 'The PDF service cannot be reached'
+      );
+    }
+    const status = response.statusCode ?? 0;
+    if (status !== 200) {
+      const reason = pdfRefusal(await bodyText(response));
+      // Its reasons carry no path, host or name; the token is never logged.
+      console.error(`PDF for ${event.stId}: the service answered ${status} ${reason ?? '(none)'}`);
+      if (status === 404 && reason === 'unknown-token')
+        return javaError(
+          request,
+          404,
+          'NOT_FOUND',
+          'No analysis result is known for the token; run the analysis again'
+        );
+      if (status === 410 && reason === 'gone-token')
+        return javaError(
+          request,
+          410,
+          'GONE',
+          'The analysis result for the token is no longer held; run the analysis again'
+        );
+      // The event was found above, so the service's no-event or not-an-event
+      // is it out of step -- another release's graph -- not an answer about
+      // the id: unavailable for now, as its own 503 is.
+      return status === 503 || reason === 'no-event' || reason === 'not-an-event'
+        ? {
+            ...javaError(
+              request,
+              503,
+              'SERVICE_UNAVAILABLE',
+              'The PDF cannot be made just now; try again shortly'
+            ),
+            headers: { 'Retry-After': '30' },
+          }
+        : javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            `The PDF of ${event.stId} cannot be made`
+          );
+    }
+    response.once('close', () => PDF_SHARE.leave());
+    streaming = true;
+    return {
+      status: 200,
+      type: 'application/pdf;charset=UTF-8',
+      body: response,
+      // The extension inside the quotes: Java writes `filename="{stId}".pdf`,
+      // which a browser may save without it (declared differences, Pathway PDFs).
+      headers: { 'Content-Disposition': `attachment; filename="${event.stId}.pdf"` },
+    };
+  } finally {
+    if (!streaming) PDF_SHARE.leave();
+  }
+}
+
 export const exportersEndpoints: Endpoint[] = [
   {
     path: '/ContentService/exporter/diagram/{id}',
@@ -829,6 +996,19 @@ export const exportersEndpoints: Endpoint[] = [
      * BioPAX is routed by T071, and Java has no BioPAX here.
      */
     handler: (request) => eventExportAnswer(request),
+  },
+  {
+    path: '/ContentService/exporter/document/event/{id}',
+    // The error path: the PDF itself is pdf-export's, compared by meaning in
+    // its own repository. A small object that is no event, as SBML's.
+    sample: '9626065.pdf',
+    samplesOnly: true,
+    /**
+     * An event's PDF (spec 006 T100), from pdf-export's single-event service.
+     * Routed on beta alone (dev.conf), locally and under ng serve; the release
+     * and production keep Java's until they run the service.
+     */
+    handler: (request) => eventPdfAnswer(request),
   },
   {
     path: '/ContentService/exporter/sbml/{id}',
