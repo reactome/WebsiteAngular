@@ -1,8 +1,6 @@
-import { TranslationalModification } from './translational-modification.model';
-import { ReferenceGroup } from '../reference-entity/reference-group.model';
-import { Polymer } from '../physical-entity/polymer.model';
-import { EntitySet } from '../physical-entity/entity-set.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface GroupModifiedResidue extends TranslationalModification {
-  modification: EntitySet | Polymer | ReferenceGroup;
-}
+/** A residue modified by a group, as the pathway browser reads it (the contract's, resolved). */
+export type GroupModifiedResidue = Resolved<Graph.GroupModifiedResidue<JsogReference>>;

@@ -82,8 +82,8 @@ export class DetailEntityService implements Partial<EntityService> {
       .pipe(map(this.flattenReferences));
   }
 
-  getGroupedData<T>(data: T[], getKey: (item: T) => string): Map<string, T[]> {
-    const grouped = new Map<string, T[]>();
+  getGroupedData<T, K = string>(data: T[], getKey: (item: T) => K): Map<K, T[]> {
+    const grouped = new Map<K, T[]>();
     const uniqueKeys = [...new Set(data.map((item) => getKey(item)))];
     uniqueKeys.forEach((key) => {
       grouped.set(

@@ -1,7 +1,6 @@
-import { GeneticallyModifiedResidue } from './genetically-modified-residue.model';
-import { PsiMod } from '../external-ontology/psi-mod.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ReplacedResidue extends GeneticallyModifiedResidue {
-  coordinate: number;
-  psiMod: PsiMod[];
-}
+/** A replaced residue, as the pathway browser reads it (the contract's, resolved). */
+export type ReplacedResidue = Resolved<Graph.ReplacedResidue<JsogReference>>;

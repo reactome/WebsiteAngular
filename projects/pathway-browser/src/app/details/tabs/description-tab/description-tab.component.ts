@@ -13,6 +13,7 @@ import {
 import type { Analysis } from '../../../model/analysis.model';
 import { IconService } from '../../../services/icon.service';
 import {
+  fieldByName,
   getProperty,
   groupAndSortBy,
   isDefined,
@@ -28,7 +29,7 @@ import { DatabaseObject } from '../../../model/graph/database-object.model';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { InstanceEdit } from '../../../model/graph/instance-edit.model';
-import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
+import { Publication } from '../../../model/graph/publication/publication.model';
 import { SelectableObject } from '../../../services/event.service';
 import { of } from 'rxjs';
 import { PhysicalEntity } from '../../../model/graph/physical-entity/physical-entity.model';
@@ -55,6 +56,14 @@ import { SpeciesService } from '../../../services/species.service';
 import { Summation } from '../../../model/graph/summation.model';
 import { FigureService } from './figure/figure.service';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
+
+/** What the controller tree takes: graph objects or relationship entries, one or a list. */
+type TreeNode = DatabaseObject | Relationship.Has<DatabaseObject>;
+type TreeData = TreeNode | TreeNode[];
+
+/** A graph object (it has a dbId) or a relationship entry (it has an element). */
+const isTreeNode = (value: unknown): value is TreeNode =>
+  typeof value === 'object' && value !== null && ('dbId' in value || 'element' in value);
 import { KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
@@ -230,14 +239,15 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly symbol = computed(() => this.getSymbol(this.obj()));
-  readonly literatureRefs: Signal<LiteratureReference[] | undefined> = computed(() =>
+  readonly literatureRefs: Signal<Publication[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.LITERATURE_REFERENCE)
   );
   readonly groupedReferences = computed(() =>
     groupAndSortBy(
       this.literatureRefs() ?? [],
-      (ref) => ref.year,
-      (key1, key2) => key2 - key1
+      // A web page has no year: its key is undefined, and compares as NaN, as it always did.
+      (ref) => ('year' in ref ? ref.year : undefined),
+      (key1, key2) => (key2 ?? NaN) - (key1 ?? NaN)
     )
   );
 
@@ -246,18 +256,32 @@ export class DescriptionTabComponent implements OnDestroy {
   );
   readonly allRefs = computed(() => {
     const literatureRefs = this.literatureRefs();
-    const summation = getProperty(this.obj(), DataKeys.SUMMATION) as Summation[] | undefined;
+    const summation = getProperty(this.obj(), DataKeys.SUMMATION);
     return [
       ...(literatureRefs || []),
-      ...(summation ?? [])
-        .flatMap((s) => s.literatureReference as LiteratureReference[] | undefined)
-        .filter(isDefined),
+      ...(summation ?? []).flatMap((s) => s.literatureReference).filter(isDefined),
     ];
   });
 
+  /** A sequence entity's start or end coordinate; none for an entity of another class. */
+  coordinate(entity: PhysicalEntity, key: 'startCoordinate' | 'endCoordinate') {
+    return getProperty(entity, key);
+  }
+
   /** The selected object's field of that name, whichever kind of object it is; undefined if it has none. */
-  fieldOf(key: string) {
-    return getProperty(this.obj(), key);
+  fieldOf(key: string): unknown {
+    return fieldByName(this.obj(), key);
+  }
+
+  /**
+   * The selected object's field of that name, as the controller tree takes it:
+   * graph objects or relationship entries, one or a list; undefined for
+   * anything else, which no configured key holds.
+   */
+  treeData(key: string): TreeData | undefined {
+    const value = fieldByName(this.obj(), key);
+    if (Array.isArray(value)) return value.every(isTreeNode) ? value : undefined;
+    return isTreeNode(value) ? value : undefined;
   }
 
   readonly referenceEntity: Signal<ReferenceEntity | undefined> = computed(() =>
@@ -468,9 +492,7 @@ export class DescriptionTabComponent implements OnDestroy {
     getProperty(this.obj(), DataKeys.MARKER_REFERENCE)
   );
 
-  readonly repeatedUnits: Signal<PhysicalEntity[] | undefined> = computed(() =>
-    getProperty(this.obj(), DataKeys.REPEATED_UNIT)
-  );
+  readonly repeatedUnits = computed(() => getProperty(this.obj(), DataKeys.REPEATED_UNIT));
 
   readonly hasRhea = computed(() =>
     ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName ?? '')
@@ -480,8 +502,8 @@ export class DescriptionTabComponent implements OnDestroy {
   // https://reactome.org/beta/PathwayBrowser/R-HSA-9931510?select=R-HSA-9909400&path=R-HSA-9909396#inferredFrom
   readonly inferenceNavigationVisibility = computed(() => {
     const isHuman = this.species.currentSpecies().taxId === this.species.defaultSpecies.taxId;
-    const isInferred = this.obj().isInferred;
-    return isHuman && isRLE(this.obj()) && isInferred;
+    const obj = this.obj();
+    return isHuman && isRLE(obj) && obj.isInferred === true;
   });
 
   readonly overview$ = viewChild<HTMLDivElement>('overview');
@@ -818,7 +840,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case 'otherPathways':
         return this.otherPathways().length > 0 || this.otherPathwaysFailed();
       default:
-        return getProperty(obj, key) !== undefined && getProperty(obj, key);
+        return fieldByName(obj, key) !== undefined && fieldByName(obj, key);
     }
   }
 
@@ -928,7 +950,7 @@ const OTHER_FORMS_CATEGORY_ORDER: [OtherFormsCategory, string][] = [
 ];
 
 function categorizeOtherForm(pe: PhysicalEntity): OtherFormsCategory {
-  const name = (pe.name[0] || pe.displayName || '').toLowerCase();
+  const name = (pe.name?.[0] || pe.displayName || '').toLowerCase();
   if (/^\d?x?p-[styw]\d/.test(name)) return 'phosphorylated';
   if (name.startsWith('ac-')) return 'acetylated';
   if (/^me\d?[-k]/.test(name)) return 'methylated';

@@ -22,7 +22,7 @@ export class CellMarkerComponent {
   readonly refs = computed(() => {
     const map = new Map<number, MarkerReference>();
     // Every marker reference names its marker (557 of 557 sampled).
-    for (const ref of this.markerRefs()) map.set(ref.marker.dbId, ref);
+    for (const ref of this.markerRefs()) if (ref.marker) map.set(ref.marker.dbId, ref);
     return map;
   });
 

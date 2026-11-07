@@ -685,9 +685,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const maxStringLength = 30; // Use Molluscum contagiosum virus's length
     const speciesArr = Array.isArray(species) ? species : [species];
     const firstSpeciesName = speciesArr[0]?.name;
-    const shouldShorten = speciesName.length >= maxStringLength && firstSpeciesName.length > 1;
-
-    return shouldShorten ? this.getShortest(firstSpeciesName) : speciesName;
+    // A species without names (never one recorded) keeps the name as it is.
+    return speciesName.length >= maxStringLength && firstSpeciesName && firstSpeciesName.length > 1
+      ? this.getShortest(firstSpeciesName)
+      : speciesName;
   }
 
   protected readonly isRefEntity = isRefEntity;

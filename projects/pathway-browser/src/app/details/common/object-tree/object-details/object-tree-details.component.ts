@@ -6,7 +6,7 @@ import { MatDivider } from '@angular/material/divider';
 import { DescriptionOverviewComponent } from '../../../tabs/description-tab/description-overview/description-overview.component';
 import { ExternalReferenceComponent } from '../../external-reference/external-reference.component';
 import { CrossReferencesComponent } from '../../cross-references/cross-references.component';
-import { isMolecule, isRefEntity } from '../../../../services/utils';
+import { getProperty, isMolecule, isRefEntity } from '../../../../services/utils';
 import { MoleculeType } from '../../../tabs/molecule-tab/molecule-tab.component';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NoticeInfoComponent } from '../../notice-info/notice-info.component';
@@ -61,11 +61,11 @@ export class ObjectTreeDetailsComponent {
     if (!referenceEntity) return false;
 
     const displayedExternalRef = this.entity.getTransformedExternalRef(referenceEntity);
-    const otherKeys = ['geneName', 'chain', 'referenceGene', 'referenceTranscript'];
+    const otherKeys = ['geneName', 'chain', 'referenceGene', 'referenceTranscript'] as const;
     const onlyDisplayName =
       displayedExternalRef.length === 1 &&
       displayedExternalRef[0]?.label === Labels.EXTERNAL_REFERENCE;
-    const hasOtherFields = otherKeys.some((key) => referenceEntity[key]);
+    const hasOtherFields = otherKeys.some((key) => getProperty(referenceEntity, key));
     const emptyExternalRef = onlyDisplayName && !hasOtherFields;
 
     return (

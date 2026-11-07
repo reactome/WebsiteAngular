@@ -1,7 +1,8 @@
-import { CrosslinkedResidue } from './crosslinked-residue.model';
-import { ReferenceSequence } from '../reference-entity/reference-sequence.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface InterChainCrosslinkedResidue extends CrosslinkedResidue {
-  equivalentTo: InterChainCrosslinkedResidue[];
-  secondReferenceSequence: ReferenceSequence[];
-}
+/** A residue crosslinked between chains, as the pathway browser reads it (the contract's, resolved). */
+export type InterChainCrosslinkedResidue = Resolved<
+  Graph.InterChainCrosslinkedResidue<JsogReference>
+>;
