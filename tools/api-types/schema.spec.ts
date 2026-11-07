@@ -216,8 +216,11 @@ describe('recorded answers against the API description', () => {
       schemas: { ...description.components.schemas, SearchEntry: { ...entry, oneOf: kinds } },
     },
   });
+  // Only the search's answers hold entries: the graph's, 7.8 MB of them, would
+  // be checked once per kind for nothing, which took the test past its limit.
+  const searchAnswers = answers.filter((a) => a.path.startsWith('/search/'));
   const unionProblems = (of: Description) =>
-    check(of, answers).found.filter((p) => p.includes('must match exactly one schema'));
+    check(of, searchAnswers).found.filter((p) => p.includes('must match exactly one schema'));
 
   // The kinds in the union's order (search.ts). No recorded answer has a
   // person's entry, so removing that kind fails nothing. Nor, since the
