@@ -97,9 +97,8 @@ module.exports = {
   // URL, which node redirects to it (spec 006 T093).
   '^/ContentService/exporter/(voronoi|fireworks)/[^/?]+/?(\\?|$)': contentNode,
   // A diagram's and a reaction's image, drawn by the render service (spec 006
-  // T090-T092, research D24); not their PowerPoint, `.pptx`, which stays Java's.
-  '^/ContentService/exporter/(diagram|reaction)/(?![^/?]*\\.pptx/?(\\?|$))[^/?]+/?(\\?|$)':
-    contentNode,
+  // T090-T092, research D24), and their PowerPoint (T109).
+  '^/ContentService/exporter/(diagram|reaction)/[^/?]+/?(\\?|$)': contentNode,
   // An event's SBML (spec 015 T066), SBGN (sbgn-exporter T018), BioPAX (spec
   // 015 T071) and PDF (spec 006 T100).
   '^/ContentService/exporter/(event/[^/?]+\\.(sbml|sbgn|biopax)|sbml/[^/?]+\\.xml|document/event/[^/?]+\\.pdf)/?(\\?|$)':
