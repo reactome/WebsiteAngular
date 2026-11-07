@@ -157,6 +157,10 @@ function localAliases(readers: Record<string, string>, contract: Set<string>): S
  */
 const READER_ALIASES = [
   // The graph's classes (T025): the pathway browser's resolved, the site's plain.
+  // The pathway browser's local names for its own relationship types (T025e).
+  'HasCompartment',
+  'HasEvent',
+  'HasModifiedResidue',
   'Anatomy',
   'CellType',
   'Compartment',
@@ -189,6 +193,95 @@ const READER_ALIASES = [
   'SearchResult',
   'ShownGroup',
 ];
+
+/**
+ * The pathway browser's own descriptions of graph classes the contract has
+ * (T025d), each to become an alias of the contract's as its readers move onto
+ * it (T025e). Held exactly: a new one fails, and one that has moved must leave
+ * the list.
+ */
+const PENDING = [
+  'projects/pathway-browser/src/app/model/graph/Regulation/negative-gene-expression-regulation.model.ts: interface NegativeGeneExpressionRegulation',
+  'projects/pathway-browser/src/app/model/graph/Regulation/negative-regulation.model.ts: interface NegativeRegulation',
+  'projects/pathway-browser/src/app/model/graph/Regulation/positive-gene-expression-regulation.model.ts: interface PositiveGeneExpressionRegulation',
+  'projects/pathway-browser/src/app/model/graph/Regulation/positive-regulation.model.ts: interface PositiveRegulation',
+  'projects/pathway-browser/src/app/model/graph/Regulation/regulation.model.ts: interface Regulation',
+  'projects/pathway-browser/src/app/model/graph/Regulation/requirement.model.ts: interface Requirement',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/ fragment-replaced-modification.model.ts: interface FragmentReplacedModification',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/abstract-modified-residue.model.ts: interface AbstractModifiedResidue',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/fragment-deletion-modification.model.ts: interface FragmentDeletionModification',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/fragment-insertion-modification.model.ts: interface FragmentInsertionModification',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/group-modified-residue.model.ts: interface GroupModifiedResidue',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/inter-chain-crosslinked-residue.model.ts: interface InterChainCrosslinkedResidue',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/intra-chain-crosslinked-residue.model.ts: interface IntraChainCrosslinkedResidue',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/modified-nucleotide.model.ts: interface ModifiedNucleotide',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/modified-residue.model.ts: interface ModifiedResidue',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/nonsense-mutation.model.ts: interface NonsenseMutation',
+  'projects/pathway-browser/src/app/model/graph/abstract-modified-residue/replaced-residue.model.ts: interface ReplacedResidue',
+  'projects/pathway-browser/src/app/model/graph/catalyst-activity.model.ts: interface CatalystActivity',
+  'projects/pathway-browser/src/app/model/graph/control-reference/catalyst-activity-reference.model.ts: interface CatalystActivityReference',
+  'projects/pathway-browser/src/app/model/graph/control-reference/marker-reference.model.ts: interface MarkerReference',
+  'projects/pathway-browser/src/app/model/graph/control-reference/regulation-reference.model.ts: interface RegulationReference',
+  'projects/pathway-browser/src/app/model/graph/controlled-vocabulary/deleted-controlled-vocabulary.model.ts: interface DeletedControlledVocabulary',
+  'projects/pathway-browser/src/app/model/graph/event/cell-lineage-path.model.ts: interface CellLineagePath',
+  'projects/pathway-browser/src/app/model/graph/event/event.model.ts: interface Event',
+  'projects/pathway-browser/src/app/model/graph/event/negative-preceding-event.model.ts: interface NegativePrecedingEvent',
+  'projects/pathway-browser/src/app/model/graph/event/pathway.model.ts: interface Pathway',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface BlackBoxEvent',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface CellDevelopmentStep',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface Depolymerisation',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface FailedReaction',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface Polymerisation',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface Reaction',
+  'projects/pathway-browser/src/app/model/graph/event/reaction-like-event.model.ts: interface ReactionLikeEvent',
+  'projects/pathway-browser/src/app/model/graph/event/top-level-pathway.model.ts: interface TopLevelPathway',
+  'projects/pathway-browser/src/app/model/graph/interaction/undirected-interaction.model.ts: interface UndirectedInteraction',
+  'projects/pathway-browser/src/app/model/graph/meta-database-object/deleted-instance.model.ts: interface DeletedInstance',
+  'projects/pathway-browser/src/app/model/graph/meta-database-object/deleted.model.ts: interface Deleted',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/candidate-set.model.ts: interface CandidateSet',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/cell.model.ts: interface Cell',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/chemical-drug.model.ts: interface ChemicalDrug',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/complex.model.ts: interface Complex',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/defined-set.model.ts: interface DefinedSet',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/entity-set.model.ts: interface EntitySet',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/entity-with-accessioned-sequence.model.ts: interface EntityWithAccessionedSequence',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/genome-encoded-entity.model.ts: interface GenomeEncodedEntity',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/other-entity.model.ts: interface OtherEntity',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/physical-entity.model.ts: interface PhysicalEntity',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/polymer.model.ts: interface Polymer',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/protein-drug.model.ts: interface ProteinDrug',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/simple-entity.model.ts: interface SimpleEntity',
+  'projects/pathway-browser/src/app/model/graph/physical-entity/summary-entity.model.ts: interface SummaryEntity',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-dna-sequence.model.ts: interface ReferenceDNASequence',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-entity.model.ts: interface ReferenceEntity',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-gene-product.model.ts: interface ReferenceGeneProduct',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-group.model.ts: interface ReferenceGroup',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-isoform.model.ts: interface ReferenceIsoform',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-molecule.model.ts: interface ReferenceMolecule',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-rna-sequence.model.ts: interface ReferenceRNASequence',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-sequence.model.ts: interface ReferenceSequence',
+  'projects/pathway-browser/src/app/model/graph/reference-entity/reference-therapeutic.model.ts: interface ReferenceTherapeutic',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.ComponentOf',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasCandidate',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasCompartment',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasComponent',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasEvent',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasMember',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.HasModifiedResidue',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.Input',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.Output',
+  'projects/pathway-browser/src/app/model/graph/relationship.model.ts: interface Relationship.RepeatedUnit',
+];
+
+/** Declarations that share a contract name but describe something else, and why. */
+const NAMESAKES: Record<string, string> = {
+  'projects/website-angular/src/app/about/release-calendar/release-calendar.component.ts: interface Release':
+    "the site's release calendar, written in its own content; not the graph's Release",
+  'projects/pathway-browser/src/app/model/analysis.model.ts: interface Analysis.Pathway':
+    "a pathway of an analysis result, the analysis service's answer",
+  'projects/pathway-browser/src/app/reacfoam/svg-exporter.service.ts: interface SvgDecoration.Output':
+    'an output arrow drawn on an exported species overview',
+};
 
 /** Every declaration in the readers that describes, again, an answer the contract has. */
 function secondDescriptions(readers: Record<string, string>, names: Set<string>): string[] {
@@ -234,8 +327,10 @@ describe('one description per answer', () => {
     expect([...aliases].sort()).toEqual([...READER_ALIASES].sort());
   });
 
-  it('finds no answer described again by the site or the pathway browser', () => {
-    expect(secondDescriptions(readers, names)).toEqual([]);
+  it('finds no answer described again by the site or the pathway browser, but those pending and the namesakes', () => {
+    expect(secondDescriptions(readers, names).sort()).toEqual(
+      [...PENDING, ...Object.keys(NAMESAKES)].sort()
+    );
   });
 
   it('refuses an interface or an object type under a contract name, and allows an alias', () => {

@@ -220,6 +220,7 @@ Measured 6 Nov 2026 for T025, from the 93 recorded answers of `/data/query/enhan
    - Each abstract class is a union of its subclasses, tagged `@discriminator schemaClass`.
    - A composition entry is `Has<Element, Ref>`.
    - Prototyped in scratch with the generator's settings: it writes `Pathway<JsogReference>` and `Pathway<number>` as separate components (`Pathway_JsogReference` once `generate.ts` names them, T018), the union as `oneOf` with `discriminator: {propertyName: schemaClass}`, and a related field as `anyOf` of the object and the reference.
+   - **As built (T025d):** the root union is `GraphObject`; Java's name, DatabaseObject, stays with the pathway browser's resolved model. The relationship entries (`Input`, `HasComponent`, the composition's `Default`) are interfaces with a `type` literal and an `element`, no class.
 2. **The readers keep their names; the shapes become the contract's.** The pathway browser's model files turn, class by class, from interfaces into aliases:
    - the form is `type Pathway = Resolved<C.Pathway<JsogReference>> & ObjectState`, where `Resolved<T>` is the answer with every reference replaced by its object, and `ObjectState` names what the reader adds itself (`isLoaded`, `_updateCounter`; `index`, `moleculeView` and `highlight` on a composition);
    - an alias of the contract's type with a named client part is allowed by the one-description check (T016), so the 98 model files' names and their 133 uses stay;

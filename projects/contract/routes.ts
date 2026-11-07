@@ -4,6 +4,8 @@
 // (tools/contract/generate.ts); a route the registry has and this does not
 // is listed there as not yet in the contract.
 import type { PathwayCitation } from './citation.ts';
+import type { JsogReference } from './graph.ts';
+import type { GraphObject } from './graph-core.ts';
 import type {
   Contributor,
   DoiPathway,
@@ -42,6 +44,7 @@ export interface Routes {
   'GET /ContentService/data/schema/{id}/referrals': SchemaAttribute[];
   'GET /ContentService/data/schema/{id}/min': SimpleDatabaseObject[];
   'GET /ContentService/data/instance/{id}/referrers': InstanceReferrals[];
+  'GET /ContentService/data/query/enhanced/v2/{id}': GraphObject<JsogReference>;
   'GET /ContentService/data/detail/{id}/locationsInPWB': PathwayBrowserNode[];
   'GET /ContentService/data/person/{id}/authoredPathways': SimpleEvent[];
   'GET /ContentService/data/person/{id}/authoredReactions': SimpleEvent[];
