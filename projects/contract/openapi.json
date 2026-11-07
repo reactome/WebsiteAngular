@@ -1307,7 +1307,6 @@
     },
     "/ContentService/exporter/reaction/{id}/diagram": {
       "get": {
-        "x-contract": "not yet",
         "parameters": [
           {
             "name": "id",
@@ -1320,7 +1319,14 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReactionLayout"
+                }
+              }
+            }
           }
         }
       }
@@ -13548,6 +13554,630 @@
         "additionalProperties": false,
         "description": "A later appearance of an object already written whole in the same JSOG answer."
       },
+      "LayoutAttachment": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "reactomeId": {
+            "type": "number"
+          },
+          "shape": {
+            "type": "object",
+            "properties": {
+              "a": {
+                "$ref": "#/components/schemas/LayoutCoordinate"
+              },
+              "b": {
+                "$ref": "#/components/schemas/LayoutCoordinate"
+              },
+              "c": {
+                "$ref": "#/components/schemas/LayoutCoordinate"
+              },
+              "r": {
+                "type": "number"
+              },
+              "r1": {
+                "type": "number"
+              },
+              "s": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string",
+                "const": "BOX"
+              },
+              "empty": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "a",
+              "b",
+              "empty",
+              "type"
+            ],
+            "additionalProperties": false,
+            "description": "A box shape: its corners, and its text where it has one."
+          }
+        },
+        "required": [
+          "reactomeId",
+          "shape"
+        ],
+        "additionalProperties": false,
+        "description": "A modification drawn on a node's edge."
+      },
+      "LayoutCompartment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The object's id in this layout; ids run on from request to request."
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "renderableClass": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/LayoutCoordinate",
+            "description": "The centre."
+          },
+          "minX": {
+            "type": "number"
+          },
+          "minY": {
+            "type": "number"
+          },
+          "maxX": {
+            "type": "number"
+          },
+          "maxY": {
+            "type": "number"
+          },
+          "reactomeId": {
+            "type": "number"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "prop": {
+            "$ref": "#/components/schemas/LayoutProp"
+          },
+          "textPosition": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          },
+          "componentIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "The ids of the nodes and compartments inside it: a compartment is in the layout for what it holds."
+          }
+        },
+        "required": [
+          "componentIds",
+          "displayName",
+          "id",
+          "maxX",
+          "maxY",
+          "minX",
+          "minY",
+          "position",
+          "prop",
+          "renderableClass",
+          "textPosition"
+        ],
+        "additionalProperties": false,
+        "description": "A compartment drawn. One the layout adds to hold others, from the GO tree, has no object in the graph, so no reactomeId or schemaClass."
+      },
+      "LayoutConnector": {
+        "type": "object",
+        "properties": {
+          "edgeId": {
+            "type": "number",
+            "description": "The reaction's id in the layout."
+          },
+          "isDisease": {
+            "type": "boolean",
+            "const": true
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "INPUT",
+              "OUTPUT",
+              "CATALYST",
+              "INHIBITOR",
+              "ACTIVATOR"
+            ],
+            "description": "The role it draws."
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutSegment"
+            }
+          },
+          "endShape": {
+            "$ref": "#/components/schemas/LayoutShape"
+          },
+          "stoichiometry": {
+            "$ref": "#/components/schemas/LayoutStoichiometry"
+          }
+        },
+        "required": [
+          "edgeId",
+          "type",
+          "segments",
+          "stoichiometry"
+        ],
+        "additionalProperties": false,
+        "description": "A node's line to the reaction: one for each role the node takes."
+      },
+      "LayoutCoordinate": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "additionalProperties": false,
+        "description": "A point."
+      },
+      "LayoutEdge": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The object's id in this layout; ids run on from request to request."
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "renderableClass": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/LayoutCoordinate",
+            "description": "The centre."
+          },
+          "minX": {
+            "type": "number"
+          },
+          "minY": {
+            "type": "number"
+          },
+          "maxX": {
+            "type": "number"
+          },
+          "maxY": {
+            "type": "number"
+          },
+          "reactomeId": {
+            "type": "number"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "isDisease": {
+            "type": "boolean"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutSegment"
+            },
+            "description": "The reaction's line, through its shape."
+          },
+          "reactionShape": {
+            "$ref": "#/components/schemas/LayoutShape"
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutPart"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutPart"
+            }
+          },
+          "catalysts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutPart"
+            }
+          },
+          "inhibitors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutPart"
+            }
+          },
+          "activators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutPart"
+            }
+          }
+        },
+        "required": [
+          "displayName",
+          "id",
+          "isDisease",
+          "maxX",
+          "maxY",
+          "minX",
+          "minY",
+          "position",
+          "reactionShape",
+          "reactomeId",
+          "renderableClass",
+          "schemaClass",
+          "segments"
+        ],
+        "additionalProperties": false,
+        "description": "The reaction drawn."
+      },
+      "LayoutEntityNode": {
+        "type": "object",
+        "properties": {
+          "parents": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "identifier": {
+            "type": "string"
+          },
+          "geneNames": {
+            "type": "array",
+            "items": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "description": "A name the graph has as null is written null."
+          },
+          "diagramIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "speciesID": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "displayName",
+          "schemaClass",
+          "speciesID"
+        ],
+        "additionalProperties": false,
+        "description": "A physical entity of the reaction, with the layout's ids drawing it."
+      },
+      "LayoutEventNode": {
+        "type": "object",
+        "properties": {
+          "preceding": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "following": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "inputs": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "catalysts": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "inhibitors": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "activators": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "diagramIds": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "entityFunctionalStatus": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "speciesID": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "displayName",
+          "schemaClass",
+          "speciesID"
+        ],
+        "additionalProperties": false,
+        "description": "The reaction, with the dbIds of what takes part in it."
+      },
+      "LayoutNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "The object's id in this layout; ids run on from request to request."
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "renderableClass": {
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/LayoutCoordinate",
+            "description": "The centre."
+          },
+          "minX": {
+            "type": "number"
+          },
+          "minY": {
+            "type": "number"
+          },
+          "maxX": {
+            "type": "number"
+          },
+          "maxY": {
+            "type": "number"
+          },
+          "reactomeId": {
+            "type": "number"
+          },
+          "schemaClass": {
+            "type": "string"
+          },
+          "isDisease": {
+            "type": "boolean",
+            "const": true
+          },
+          "prop": {
+            "$ref": "#/components/schemas/LayoutProp"
+          },
+          "nodeAttachments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutAttachment"
+            }
+          },
+          "connectors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutConnector"
+            }
+          },
+          "trivial": {
+            "type": "boolean",
+            "const": true
+          },
+          "needDashedBorder": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "connectors",
+          "displayName",
+          "id",
+          "maxX",
+          "maxY",
+          "minX",
+          "minY",
+          "position",
+          "prop",
+          "reactomeId",
+          "renderableClass",
+          "schemaClass"
+        ],
+        "additionalProperties": false,
+        "description": "A participant drawn: a physical entity, once for each place it is drawn."
+      },
+      "LayoutPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "stoichiometry": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "stoichiometry"
+        ],
+        "additionalProperties": false,
+        "description": "A participant of the reaction, by its node's id."
+      },
+      "LayoutProp": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "width": {
+            "type": "number"
+          },
+          "height": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "description": "A box: its top left corner and its size."
+      },
+      "LayoutSegment": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          },
+          "to": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "description": "A straight line of a path."
+      },
+      "LayoutShape": {
+        "type": "object",
+        "properties": {
+          "a": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          },
+          "b": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          },
+          "c": {
+            "$ref": "#/components/schemas/LayoutCoordinate"
+          },
+          "r": {
+            "type": "number"
+          },
+          "r1": {
+            "type": "number"
+          },
+          "s": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "ARROW",
+              "BOX",
+              "CIRCLE",
+              "DOUBLE_CIRCLE",
+              "STOP"
+            ],
+            "description": "The shapes the layout draws."
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "description": "A shape: a box gives its corners a and b, a circle its centre c and radius r, an arrow its three points, a double circle an inner radius r1. `s` is a box's text."
+      },
+      "LayoutStoichiometry": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number"
+          },
+          "shape": {
+            "$ref": "#/components/schemas/LayoutShape"
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false,
+        "description": "How many of a participant a connector carries, and the box it is shown in when more than one."
+      },
       "LiteratureReference_JsogReference": {
         "type": "object",
         "properties": {
@@ -18719,6 +19349,123 @@
         ],
         "additionalProperties": false,
         "description": "Never recorded: as the snapshot writes it, only its identity and class are required."
+      },
+      "ReactionLayout": {
+        "type": "object",
+        "properties": {
+          "diagram": {
+            "$ref": "#/components/schemas/ReactionLayoutDiagram"
+          },
+          "graph": {
+            "$ref": "#/components/schemas/ReactionLayoutGraph"
+          }
+        },
+        "required": [
+          "diagram",
+          "graph"
+        ],
+        "additionalProperties": false,
+        "description": "/exporter/reaction/{id}/diagram's answer."
+      },
+      "ReactionLayoutDiagram": {
+        "type": "object",
+        "properties": {
+          "isDisease": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutEdge"
+            },
+            "description": "The reaction: one."
+          },
+          "compartments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutCompartment"
+            }
+          },
+          "dbId": {
+            "type": "number"
+          },
+          "stableId": {
+            "type": "string",
+            "description": "The stable id of a pathway with a diagram the reaction is in; the text \"null\" where there is none."
+          },
+          "minX": {
+            "type": "number"
+          },
+          "maxX": {
+            "type": "number"
+          },
+          "minY": {
+            "type": "number"
+          },
+          "maxY": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "isDisease",
+          "displayName",
+          "edges",
+          "dbId",
+          "stableId",
+          "minX",
+          "maxX",
+          "minY",
+          "maxY"
+        ],
+        "additionalProperties": false,
+        "description": "The reaction laid out. Its bounds are whole numbers."
+      },
+      "ReactionLayoutGraph": {
+        "type": "object",
+        "properties": {
+          "dbId": {
+            "type": "number"
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "speciesName": {
+            "type": "string"
+          },
+          "nodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutEntityNode"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LayoutEventNode"
+            },
+            "description": "The reaction: one."
+          }
+        },
+        "required": [
+          "dbId",
+          "stId",
+          "displayName",
+          "edges"
+        ],
+        "additionalProperties": false,
+        "description": "The objects behind the layout."
       },
       "ReactionLikeEvent_JsogReference": {
         "type": "object",

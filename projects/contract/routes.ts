@@ -23,6 +23,7 @@ import type {
 import type { PathwayBrowserNode } from './locations.ts';
 import type { Participant } from './participants.ts';
 import type { SimpleEvent } from './person.ts';
+import type { ReactionLayout } from './reaction-layout.ts';
 import type {
   DiagramFlagResult,
   DiagramResult,
@@ -53,6 +54,7 @@ export interface Routes {
   'GET /ContentService/data/person/{id}/reviewedPathways': SimpleEvent[];
   'GET /ContentService/data/person/{id}/reviewedReactions': SimpleEvent[];
   'GET /ContentService/citation/pathway/{id}': PathwayCitation;
+  'GET /ContentService/exporter/reaction/{id}/diagram': ReactionLayout;
   'GET /ContentService/interactors/psicquic/resources': PsicquicResource[];
   'GET /ContentService/interactors/static/molecule/enhanced/{id}/details': CustomInteraction[];
   'GET /ContentService/interactors/static/molecule/{id}/withEntities': InteractionWithEntities[];

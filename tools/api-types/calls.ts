@@ -66,7 +66,7 @@ export const TYPES: Record<string, string> = {
   PathwayCitation: 'projects/contract/citation',
   DiagramFlagResult: 'projects/contract/search',
   SpeciesOverviewFlagResult: 'projects/contract/search',
-  ReactionJson: `${PB}/model/reaction-diagram.model`,
+  ReactionLayout: 'projects/contract/reaction-layout',
   PlainGraphObject: `${PB}/model/graph/plain.model`,
   PlainEvent: `${PB}/model/graph/plain.model`,
   PlainPathway: `${PB}/model/graph/plain.model`,
@@ -102,7 +102,7 @@ const UPLOAD = 'an upload is stored for good, so none is recorded';
 export const CALLS: Call[] = [
   // pathway-browser
   { file: `${PB}/deltasignal/deltasignal.service.ts`, method: 'fetchMemberClosure', http: 'GET', route: '/data/query/enhanced/{id}', type: 'ContentServiceEntity' },
-  { file: `${PB}/details/common/reaction-diagram/reaction-diagram.component.ts`, method: 'ngAfterViewInit', http: 'GET', route: '/exporter/reaction/{id}/diagram', type: 'ReactionJson' },
+  { file: `${PB}/details/common/reaction-diagram/reaction-diagram.component.ts`, method: 'ngAfterViewInit', http: 'GET', route: '/exporter/reaction/{id}/diagram', type: 'ReactionLayout' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', type: 'any' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', n: 2, http: 'GET', route: '/data/query/{id}', type: 'any' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'annotated', http: 'GET', route: '/data/participants/{id}/referenceEntities', type: 'PlainReferenceEntity[]' },

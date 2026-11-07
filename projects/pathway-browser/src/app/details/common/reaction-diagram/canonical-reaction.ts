@@ -1,4 +1,15 @@
 import { Diagram, EdgeConnector, Entity } from '../../../model/diagram.model';
+
+/** What the order is by: a compartment the GO tree adds has no reactomeId. */
+type Placed = Pick<Entity, 'position' | 'renderableClass'> & Partial<Pick<Entity, 'reactomeId'>>;
+
+/**
+ * Two reactomeIds compared; a tie where either is missing. (Subtracting a
+ * missing one gave NaN, which sort takes as a tie, before the type said it
+ * could be missing: kept, so the canonical form does not change.)
+ */
+const byReactomeId = (a: Placed, b: Placed) =>
+  a.reactomeId === undefined || b.reactomeId === undefined ? 0 : a.reactomeId - b.reactomeId;
 import { Graph } from '../../../model/graph.model';
 
 const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
@@ -27,10 +38,10 @@ export function canonicalReaction(
   const diagram = structuredClone(answered);
   const graph = structuredClone(answeredGraph);
 
-  const byPlace = <T extends Entity>(items: T[]) =>
+  const byPlace = <T extends Placed>(items: T[]) =>
     items.sort(
       (a, b) =>
-        a.reactomeId - b.reactomeId ||
+        byReactomeId(a, b) ||
         a.position.x - b.position.x ||
         a.position.y - b.position.y ||
         a.renderableClass.localeCompare(b.renderableClass)

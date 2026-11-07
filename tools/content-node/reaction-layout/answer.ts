@@ -15,7 +15,29 @@
  *
  * The two top keys' order follows a seed Java picks when it starts (D22):
  * `diagram` first, as most starts give.
+ *
+ * Each object is written as the contract's type for it (spec 016,
+ * projects/contract/reaction-layout.ts), the type the site reads it as: a
+ * member's name and value are checked against it, so a field renamed or
+ * retyped there fails here.
  */
+import type {
+  LayoutAttachment,
+  LayoutCompartment,
+  LayoutConnector,
+  LayoutCoordinate,
+  LayoutEdge,
+  LayoutEntityNode,
+  LayoutEventNode,
+  LayoutNode,
+  LayoutPart,
+  LayoutProp,
+  LayoutSegment,
+  LayoutShape,
+  LayoutStoichiometry,
+  ReactionLayoutDiagram,
+  ReactionLayoutGraph,
+} from '../../../projects/contract/reaction-layout.ts';
 import { javaDouble, javaString } from '../domain.ts';
 import type { Answer } from '../endpoint.ts';
 import { layOut } from './algorithm.ts';
@@ -39,30 +61,33 @@ class RawJson {
   }
 }
 
-type Value =
-  string | number | boolean | readonly (string | number | null)[] | RawJson | null | undefined;
-
-/** One member: its name, its value, and whether a number is a Double. */
-type Member = [name: string, value: Value, double?: boolean];
-type Members = Member[];
+/**
+ * One member of T: a name T has, with a value of T's type for it, one left
+ * out (null or undefined), or JSON already written; and whether a number is
+ * a Double. (The service's answers.ts has the same for its families; a
+ * library imports only leaves.)
+ */
+type Member<T> = {
+  [K in keyof T & string]-?: [name: K, value: T[K] | null | undefined | RawJson, double?: boolean];
+}[keyof T & string];
 
 /** A value as Jackson writes it; a null in a list is `null`. */
-function written(value: Exclude<Value, undefined>, double = false): string {
+function written(value: unknown, double = false): string {
   if (value === null) return 'null';
   if (value instanceof RawJson) return value.text;
-  // The one object left is a list (Array.isArray would make its items `any`).
-  if (typeof value === 'object') return `[${value.map((item) => written(item)).join(',')}]`;
+  if (Array.isArray(value)) return `[${value.map((item: unknown) => written(item)).join(',')}]`;
   if (typeof value === 'string') return javaString(value);
   if (typeof value === 'number') return double ? javaDouble(value) : String(value);
-  return String(value);
+  if (typeof value === 'boolean') return String(value);
+  // An object is written already (RawJson): a plain one here is a writer's mistake.
+  throw new TypeError(`A ${typeof value} the layout's writer has no form for`);
 }
 
 /**
- * An object as the NON_EMPTY mapper writes it: the members in order, any
- * null, empty text or empty list left out. (The service's answers.ts has
- * the same for its families; a library imports only leaves.)
+ * An object as the NON_EMPTY mapper writes it, given the contract's type
+ * for it: the members in order, any null, empty text or empty list left out.
  */
-function nonEmptyJson(members: Members): string {
+function nonEmptyJson<T>(members: Member<T>[]): string {
   const out: string[] = [];
   for (const [name, value, double] of members) {
     if (value === null || value === undefined || value === '') continue;
@@ -83,21 +108,21 @@ const object = <T>(value: T | null | undefined, write: (value: T) => string) =>
 
 /** CoordinateImpl: x, y. */
 const coordinate = (c: Coordinate) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutCoordinate>([
     ['x', c.x, DOUBLE],
     ['y', c.y, DOUBLE],
   ]);
 
 /** SegmentImpl: from, to. */
 const segment = (s: Segment) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutSegment>([
     ['from', new RawJson(coordinate(s.from))],
     ['to', new RawJson(coordinate(s.to))],
   ]);
 
 /** ShapeImpl and its kinds: a, b, c, r, r1, s, type, empty. */
 const shape = (s: Shape) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutShape>([
     ['a', object(s.a, coordinate)],
     ['b', object(s.b, coordinate)],
     ['c', object(s.c, coordinate)],
@@ -110,14 +135,14 @@ const shape = (s: Shape) =>
 
 /** StoichiometryImpl: value (an Integer), shape. */
 const stoichiometry = (s: Stoichiometry) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutStoichiometry>([
     ['value', s.value],
     ['shape', object(s.shape, shape)],
   ]);
 
 /** NodePropertiesImpl: x, y, width, height. */
 const prop = (p: { x: number; y: number; width: number; height: number }) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutProp>([
     ['x', p.x, DOUBLE],
     ['y', p.y, DOUBLE],
     ['width', p.width, DOUBLE],
@@ -130,8 +155,15 @@ type Edge = Diagram['edges'][number];
 type Compartment = Diagram['compartments'][number];
 type Placed = Node | Edge | Compartment;
 
+/** What every object drawn has, as the contract names it. */
+type Head = Pick<
+  LayoutCompartment,
+  'id' | 'reactomeId' | 'displayName' | 'schemaClass' | 'renderableClass' | 'position'
+>;
+type Bounds = Pick<LayoutCompartment, 'minX' | 'minY' | 'maxX' | 'maxY'>;
+
 /** DiagramObjectImpl's fields, up to its position. */
-const head = (o: Placed): Members => [
+const head = (o: Placed): Member<Head>[] => [
   ['id', o.id],
   ['reactomeId', o.reactomeId],
   ['displayName', o.displayName],
@@ -141,7 +173,7 @@ const head = (o: Placed): Members => [
 ];
 
 /** DiagramObjectImpl's bounds, doubles. */
-const bounds = (o: Placed): Members => [
+const bounds = (o: Placed): Member<Bounds>[] => [
   ['minX', o.minX, DOUBLE],
   ['minY', o.minY, DOUBLE],
   ['maxX', o.maxX, DOUBLE],
@@ -150,7 +182,7 @@ const bounds = (o: Placed): Members => [
 
 /** ConnectorImpl: edgeId, isDisease, type, isFadeOut (never set), segments, endShape, stoichiometry. */
 const connector = (c: Node['connectors'][number]) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutConnector>([
     ['edgeId', c.edgeId],
     ['isDisease', c.isDisease],
     ['type', c.type],
@@ -161,7 +193,7 @@ const connector = (c: Node['connectors'][number]) =>
 
 /** NodeAttachmentImpl: label, description (never set), reactomeId, shape. */
 const attachment = (a: Node['nodeAttachments'][number]) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutAttachment>([
     ['label', a.label],
     ['reactomeId', a.reactomeId],
     ['shape', new RawJson(shape(a.shape))],
@@ -169,7 +201,7 @@ const attachment = (a: Node['nodeAttachments'][number]) =>
 
 /** NodeImpl. isFadeOut and isCrossed follow `crossed`, which is never set (D22). */
 const node = (n: Node) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutNode>([
     ...head(n),
     ['isDisease', n.isDisease],
     ...bounds(n),
@@ -182,14 +214,14 @@ const node = (n: Node) =>
 
 /** ReactionPartImpl: id, points (never set), stoichiometry (an Integer). */
 const part = (p: { id: number; stoichiometry: number }) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutPart>([
     ['id', p.id],
     ['stoichiometry', p.stoichiometry],
   ]);
 
 /** EdgeImpl. */
 const edge = (e: Edge) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutEdge>([
     ...head(e),
     ['isDisease', e.isDisease],
     ...bounds(e),
@@ -204,7 +236,7 @@ const edge = (e: Edge) =>
 
 /** CompartmentImpl. */
 const compartment = (c: Compartment) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutCompartment>([
     ...head(c),
     ...bounds(c),
     ['prop', new RawJson(prop(c.prop))],
@@ -214,7 +246,7 @@ const compartment = (c: Compartment) =>
 
 /** DiagramImpl: its bounds are ints, (int) of the layout's. */
 const diagramJson = (d: Diagram) =>
-  nonEmptyJson([
+  nonEmptyJson<ReactionLayoutDiagram>([
     ['isDisease', d.isDisease],
     ['displayName', d.displayName],
     ['nodes', list(d.nodes, node)],
@@ -230,7 +262,7 @@ const diagramJson = (d: Diagram) =>
 
 /** EntityNodeImpl. */
 const entityNode = (n: EntityNode) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutEntityNode>([
     ['parents', n.parents],
     ['children', n.children],
     ['identifier', n.identifier],
@@ -251,7 +283,7 @@ const entityNode = (n: EntityNode) =>
  * service writes `entityFunctionalStatus` first.
  */
 const eventNode = (n: EventNode) =>
-  nonEmptyJson([
+  nonEmptyJson<LayoutEventNode>([
     ['preceding', n.preceding],
     ['following', n.following],
     ['inputs', n.inputs],
@@ -269,16 +301,15 @@ const eventNode = (n: EventNode) =>
     ['speciesID', n.speciesId],
   ]);
 
-/** GraphImpl. */
+/** GraphImpl. Its subpathways, a reaction having none, are an empty list, left out. */
 const graphJson = (g: ReactionGraph) =>
-  nonEmptyJson([
+  nonEmptyJson<ReactionLayoutGraph>([
     ['dbId', g.dbId],
     ['stId', g.stId],
     ['displayName', g.displayName],
     ['speciesName', g.speciesName],
     ['nodes', list(g.nodes, entityNode)],
     ['edges', list(g.edges, eventNode)],
-    ['subpathways', g.subpathways],
   ]);
 
 /** The answer's text: Map.of("diagram", diagram, "graph", graph), diagram first. */

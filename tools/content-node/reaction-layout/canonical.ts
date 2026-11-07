@@ -21,7 +21,8 @@ interface Part {
 }
 interface Placed {
   id: number;
-  reactomeId: number;
+  /** A compartment the GO tree adds has none. */
+  reactomeId?: number;
   renderableClass: string;
   position: Point;
 }
@@ -55,6 +56,10 @@ export interface CanonicalGraph {
 
 const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
 
+/** Two reactomeIds compared; a tie where either is missing. */
+const byReactomeId = (a: Placed, b: Placed) =>
+  a.reactomeId === undefined || b.reactomeId === undefined ? 0 : a.reactomeId - b.reactomeId;
+
 export function canonicalReaction<D extends CanonicalDiagram, G extends CanonicalGraph>(
   answered: D,
   answeredGraph: G
@@ -66,7 +71,7 @@ export function canonicalReaction<D extends CanonicalDiagram, G extends Canonica
   const byPlace = <T extends Placed>(items: T[]) =>
     items.sort(
       (a, b) =>
-        a.reactomeId - b.reactomeId ||
+        byReactomeId(a, b) ||
         a.position.x - b.position.x ||
         a.position.y - b.position.y ||
         a.renderableClass.localeCompare(b.renderableClass)
