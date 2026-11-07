@@ -895,4 +895,49 @@ test.describe('The render page, without the render service', () => {
     expect(state.view).toBe('reaction');
     expect(state.analysis).toBeNull();
   });
+
+  // ContentService's reaction image is drawn from here in every format Java
+  // drew it in (spec 006 research D24): a .jpeg was a PNG with a transparent
+  // background, and a .gif failed for want of a frame.
+  test('draws the reaction view as JPEG, and as a frame for a GIF', async ({ page, request }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
+    await page.goto(`/PathwayBrowser/render/${REACTION}?layout=reaction`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const drawn = await page.evaluate(async () => {
+      const api = (
+        window as unknown as {
+          __renderExport: {
+            jpeg: (scale: number) => Promise<string> | string;
+            png: (scale: number) => Promise<string> | string;
+            frameCanvas: (scale: number) => Promise<HTMLCanvasElement>;
+          };
+        }
+      ).__renderExport;
+      const size = async (url: string) => {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return [image.naturalWidth, image.naturalHeight];
+      };
+      const jpeg = await api.jpeg(1);
+      const png = await api.png(1);
+      const frame = await api.frameCanvas(1);
+      return {
+        jpeg: jpeg.slice(0, 'data:image/jpeg'.length),
+        jpegSize: await size(jpeg),
+        pngSize: await size(png),
+        frameSize: [frame.width, frame.height],
+      };
+    });
+    expect(drawn.jpeg).toBe('data:image/jpeg');
+    expect(drawn.pngSize[0]).toBeGreaterThan(100);
+    // One picture in each: the same size whichever way it is asked for.
+    expect(drawn.jpegSize).toEqual(drawn.pngSize);
+    expect(drawn.frameSize).toEqual(drawn.pngSize);
+  });
 });
