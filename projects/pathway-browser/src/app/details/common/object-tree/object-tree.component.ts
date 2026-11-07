@@ -232,11 +232,6 @@ export class ObjectTreeComponent<
     },
   });
 
-  /** A node's stable id; a molecule in the molecules view has none. */
-  private stIdOf(node: DatabaseObject | TreeMolecule): string | undefined {
-    return 'stId' in node ? node.stId : undefined;
-  }
-
   inDepth(id: string | number, depth: number): Observable<E | null> {
     return this.scope() === 'entity'
       ? this.entity.getEntityInDepth<E>(id, depth)
@@ -247,7 +242,7 @@ export class ObjectTreeComponent<
   _selectedTreeNodeData = rxResource({
     params: () => {
       const node = this.selectedTreeNode();
-      return node ? this.stIdOf(node) || node.dbId : undefined;
+      return node ? node.stId || node.dbId : undefined;
     },
     stream: (param) => {
       const selectedNode = this.selectedTreeNode();
@@ -323,7 +318,7 @@ export class ObjectTreeComponent<
 
   fetchTreeAtDepth(node: R, depth: number): Observable<R> {
     const element = node.element as E;
-    const id = this.stIdOf(element) || element.dbId;
+    const id = element.stId || element.dbId;
 
     if (!this.isNestedView(element) || depth === 0) {
       // Return node with composedOf when element is protein
@@ -612,7 +607,7 @@ export class ObjectTreeComponent<
 
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
-    const stId = this.stIdOf(node);
+    const stId = node.stId;
     if (!stId) return;
     if (this.requireNavigate(node)) {
       this.state.pathwayId.set(stId);
@@ -623,7 +618,7 @@ export class ObjectTreeComponent<
   }
 
   selectTooltip(node: E) {
-    const id = this.stIdOf(node) || node.dbId;
+    const id = node.stId || node.dbId;
     const action = this.requireNavigate(node) ? 'Navigate to' : 'Select ';
     return `${action} ${id}`;
   }
@@ -655,7 +650,7 @@ export class ObjectTreeComponent<
       return element.url;
     }
     // Not proteins/chemical or molecule, linking to details page
-    return `${CONTENT_DETAIL}/${this.stIdOf(element)}`;
+    return `${CONTENT_DETAIL}/${element.stId}`;
   }
 
   getDisplayName(_node: R, element: E): string {

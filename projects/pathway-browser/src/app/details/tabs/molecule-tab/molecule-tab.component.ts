@@ -9,7 +9,7 @@ import {
   WritableSignal,
 } from '@angular/core';
 import { ParticipantService } from '../../../services/participant.service';
-import { Molecule, Participant } from '../../../model/participant.model';
+import { Molecule, ShownParticipant } from '../../../model/participant.model';
 import { EntityService } from '../../../services/entity.service';
 import { SelectableObject } from '../../../services/event.service';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -138,7 +138,7 @@ export class MoleculeTabComponent implements OnDestroy {
     return moleculeData;
   });
 
-  getPathwayParticipants(pathwayParticipants: Participant[]) {
+  getPathwayParticipants(pathwayParticipants: ShownParticipant[]) {
     const groupedMap = new Map<string, Map<number, MoleculeData>>();
     const allRefEntities = pathwayParticipants.flatMap((participant) => participant.refEntities);
 

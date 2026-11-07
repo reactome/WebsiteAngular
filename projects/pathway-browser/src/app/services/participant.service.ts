@@ -6,7 +6,8 @@ import { HttpClient } from '@angular/common/http';
 import { PropertyType } from '../model/property-type';
 import { extractFromSpace } from './utils';
 import { SchemaClasses } from '../constants/constants';
-import { Molecule, Participant } from '../model/participant.model';
+import type { Participant, ShownParticipant } from '../model/participant.model';
+import type { ParticipantReference } from '../../../../contract/participants.ts';
 
 @Injectable({
   providedIn: 'root',
@@ -14,7 +15,7 @@ import { Molecule, Participant } from '../model/participant.model';
 export class ParticipantService {
   private http = inject(HttpClient);
 
-  getParticipants(stId: string): Observable<Participant[]> {
+  getParticipants(stId: string): Observable<ShownParticipant[]> {
     const url = `${CONTENT_SERVICE}/data/participants/${stId}`;
     return this.http.get<Participant[]>(url).pipe(
       map((participants) =>
@@ -31,7 +32,7 @@ export class ParticipantService {
     );
   }
 
-  getNameAndType(molecule: Molecule): { type: string; name: string } {
+  getNameAndType(molecule: ParticipantReference): { type: string; name: string } {
     let type = '';
     let name = '';
 
@@ -69,7 +70,7 @@ export class ParticipantService {
     return { type, name };
   }
 
-  getDisplayIcon(molecule: Molecule) {
+  getDisplayIcon(molecule: ParticipantReference) {
     const schemaClass = molecule.schemaClass;
     if (schemaClass === SchemaClasses.REFERENCE_DNA_SEQUENCE) {
       return schemaClass;

@@ -955,21 +955,20 @@ describe('an answer with no body', () => {
 
 describe('participantJson, graph-core Participant as Java writes it', () => {
   // Java's answer for R-HSA-5672965 under /participants, 14 Oct 2026, one row.
+  const reference = {
+    icon: 'EntityWithAccessionedSequence',
+    displayName: 'UniProt:P29353-2 SHC1',
+    url: 'http://purl.uniprot.org/uniprot/P29353-2',
+    schemaClass: 'ReferenceIsoform',
+    identifier: 'P29353-2',
+    stId: 'uniprot:P29353-2',
+    dbId: 248232,
+  };
   const row = {
     peDbId: 5672601,
     displayName: 'RAS GEFs [plasma membrane]',
     schemaClass: 'DefinedSet',
-    refEntities: [
-      {
-        icon: 'EntityWithAccessionedSequence',
-        displayName: 'UniProt:P29353-2 SHC1',
-        url: 'http://purl.uniprot.org/uniprot/P29353-2',
-        schemaClass: 'ReferenceIsoform',
-        identifier: 'P29353-2',
-        stId: 'uniprot:P29353-2',
-        dbId: 248232,
-      },
-    ],
+    refEntities: [reference],
   };
 
   it("writes Java's keys in Java's order, at both levels", () => {
@@ -982,7 +981,7 @@ describe('participantJson, graph-core Participant as Java writes it', () => {
   });
 
   it('writes a missing reference value as the text "null", as the driver\'s asString does', () => {
-    const json = participantJson({ ...row, refEntities: [{ ...row.refEntities[0], url: null }] });
+    const json = participantJson({ ...row, refEntities: [{ ...reference, url: null }] });
     expect(json.refEntities[0]?.url).toBe('null');
   });
 
