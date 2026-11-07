@@ -69,6 +69,20 @@ import type { Analysis } from '../model/analysis.model';
  */
 const EHLD_SVG = 'cr-ehld #ehld svg';
 
+/** A picture, given as a data URL, drawn on a canvas of its own size. */
+async function canvasOf(dataUrl: string): Promise<HTMLCanvasElement> {
+  const image = new Image();
+  image.src = dataUrl;
+  await image.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('the frame canvas has no 2D context');
+  context.drawImage(image, 0, 0);
+  return canvas;
+}
+
 @Component({
   selector: 'cr-render',
   standalone: true,
@@ -628,6 +642,11 @@ export class RenderComponent {
    * assembling it here.
    */
   private async frameCanvas(scale: number): Promise<HTMLCanvasElement> {
+    // A reaction's own layout: its picture, on white as the diagram's frames
+    // are. Without this a .gif of a reaction was a 500 (spec 006 research D24).
+    const reaction = this.reaction()?.core();
+    if (reaction) return await canvasOf(reaction.png({ full: true, scale, bg: '#ffffff' }));
+
     const { diagram, instances } = this.exportableInstances();
     const [instance] = instances;
     if (diagram && instance) {
@@ -1711,13 +1730,14 @@ export class RenderComponent {
     // nothing is lost from the picture, and encode that.
     const asJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL('image/jpeg', 0.9);
 
+    // A reaction's own layout: its picture on white, encoded here, for the
+    // reason above -- its jpg() writes PNG too. It used to be encoded only
+    // through the diagram, which the reaction view does not have, so its .jpeg
+    // was a PNG with a transparent background (spec 006 research D24).
     const reaction = this.reaction()?.core();
     if (reaction) {
-      const { diagram } = this.exportableInstances();
-      if (jpeg && diagram) {
-        return asJpeg(diagram.exportCanvas(reaction, { full: true, scale, bg }));
-      }
-      return reaction.png({ full: true, scale, bg });
+      const png = reaction.png({ full: true, scale, bg });
+      return jpeg ? asJpeg(await canvasOf(png)) : png;
     }
 
     const { diagram, instances } = this.exportableInstances();
