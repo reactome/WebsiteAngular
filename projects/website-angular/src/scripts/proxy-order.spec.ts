@@ -63,6 +63,19 @@ describe('the dev server proxy', () => {
     await expectContentNode('/ContentService/exporter/fireworks/9606.png?token=x');
   });
 
+  it("sends a diagram's image to the content service, and leaves its PowerPoint to Java", async () => {
+    await expectContentNode('/ContentService/exporter/diagram/R-HSA-109606.svg');
+    await expectContentNode(
+      '/ContentService/exporter/diagram/R-HSA-5205685.png?quality=7&sel=R-HSA-1'
+    );
+    await expectContentNode('/ContentService/exporter/diagram/109606.PPTX');
+    for (const url of [
+      '/ContentService/exporter/diagram/R-HSA-109606.pptx',
+      '/ContentService/exporter/diagram/R-HSA-109606.pptx/',
+    ])
+      expect([url, await targetOf(url)]).toEqual([url, backend]);
+  });
+
   it("sends a reaction's layout and image to the content service, and leaves its PowerPoint to Java", async () => {
     for (const id of ['R-HSA-6805479', '6805479', 'R-HSA-6805479.3'])
       await expectContentNode(`/ContentService/exporter/reaction/${id}/diagram`);

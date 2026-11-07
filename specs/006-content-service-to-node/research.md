@@ -1119,6 +1119,60 @@ draws a reaction is not seen at the edge until the release purge: a pull
 request that changes it purges `/ContentService/exporter/reaction/*` when it is
 deployed, as one that changes the layout does (D22, step 5).
 
+### A diagram's image (T090, T091)
+
+`diagramImage`'s answers, in Java's order, measured against Java on 8 Nov
+2026 and kept byte for byte but for `url` (#479 had them; these runs
+confirmed them):
+
+1. The parameters as Spring converts them, in its order (quality, flg,
+   flgInteractors, sel, title, margin, ehld, diagramProfile, token, resource,
+   analysisProfile, expColumn): Spring's 400s.
+2. graph-core's DiagramService resolves the id to the diagram that draws it
+   and the events to select there: a pathway with a diagram is itself, a
+   subpathway is its parent's diagram with its reactions, a reaction is the
+   diagram that holds it with itself. No result (nothing found, or no event)
+   is the 400 "'X' is not an event", whatever else is wrong.
+3. `.pdf`: 500 "Unsupported file extension pdf".
+4. A blank quality (Java unboxes it for its raster budget) and a blank ehld:
+   the service's generic 500.
+5. A quality outside 1–10: 500 "quality must be in the range [1-10]".
+6. An extension it does not draw: 500 "Unsupported file extension xyz", with
+   Spring's `f.txt` where it marks one. (#479's note that Java answered an
+   empty 200 here did not hold on the deployed service.)
+7. The figure: Java's Content-Type, no Content-Disposition.
+
+Each of Java's parameters:
+
+| Java's parameter                                       | What node does                                                                                                                                                                                                                                                         |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ext`                                                  | png, jpg and jpeg, svg, gif: a still without an expression analysis, the animation with one, as Java's                                                                                                                                                                 |
+| `quality`                                              | The render service's `scale`, as for a reaction                                                                                                                                                                                                                        |
+| `sel`                                                  | Drawn: added to the resolved events, as Java's `toSelect.addAll(sel)`, and marked on the whole diagram (`highlight`). An id that names nothing selects nothing, as in Java                                                                                             |
+| `token`                                                | Passed to the render service, which colours the diagram, illustration or overview with the result and waits for it; a result it cannot read is its 500 naming why ("the analysis result is gone…"), where Java answered "Token has expired: …" or "Token not valid: …" |
+| `ehld` (default true)                                  | Accepted, not drawn: the render page draws a pathway's illustration whenever it has one, so `ehld=false` is the illustration too. Java drew the diagram                                                                                                                |
+| `sel` or a resolved selection on an illustration       | Not drawn: the render page marks no selection on an illustration, so the figure is the illustration without it (#479 refused it with a 400)                                                                                                                            |
+| `flg`, `flgInteractors`                                | Accepted, not drawn. Java's flag search swallowed its own failure (#273), so nothing is lost there                                                                                                                                                                     |
+| `title`, `margin`, `diagramProfile`, `analysisProfile` | Accepted, not drawn, as for a reaction                                                                                                                                                                                                                                 |
+| `resource`, `expColumn`                                | Accepted, not drawn: the render page colours by the resource the result settles on, and animates every column of an expression analysis                                                                                                                                |
+
+#479 refused every parameter it did not draw at a value other than its
+default, so a figure could not leave out what was asked for without saying
+so. The decision of 8 Nov 2026 is that callers keep working: the refusals
+are gone, and what is not drawn is declared instead.
+
+**The site's own caller**: the content pages' detail diagram asks for
+`/exporter/diagram/{stId}.svg`. It is now the render service's SVG, in the
+site's own look, stored at the edge once drawn; a first request waits for a
+render (seconds) where Java answered at once.
+
+**Stored at the edge** in standard form: an `oid` with one of the five
+extensions, and `quality` alone. `sel` is drawn, but any text is a figure,
+so a URL with it is answered and never stored; a token makes it private.
+
+**The species overview** (T093) keeps its own refusals of what it does not
+draw: unchanged here.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
