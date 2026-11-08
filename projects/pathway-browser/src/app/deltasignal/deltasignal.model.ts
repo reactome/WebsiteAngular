@@ -208,7 +208,7 @@ export interface DeltaSignalLeadsResponse {
 
 /** One lead answer for a not-reached readout: the composite's call, with the
  *  pathway's served rate statement. Presentation only — never a main call. */
-export interface DeltaSignalLead {
+interface DeltaSignalLead {
   call: 'up' | 'down' | 'normal';
   fold: number;
   statement: string;
