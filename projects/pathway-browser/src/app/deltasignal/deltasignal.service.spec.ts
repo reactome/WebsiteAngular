@@ -277,6 +277,7 @@ describe('DeltaSignalService readouts', () => {
       ],
     });
     request.flush(readoutsAnswer());
+    await flushNoLeads();
     await solving;
 
     const rows = service.readoutRows();
@@ -313,6 +314,7 @@ describe('DeltaSignalService readouts', () => {
     http.expectOne('/api/solve').flush(solveAnswer);
     await settle();
     http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await flushNoLeads();
     await solving;
 
     const resolving = service.resolveSelectedReadout('R-HSA-3');
@@ -356,6 +358,7 @@ describe('DeltaSignalService readouts', () => {
     // protocol (deltasignal specs/142).
     answer.results[0] = { ...answer.results[0], fold: 0.5, railed: true };
     http.expectOne('/api/readouts').flush(answer);
+    await flushNoLeads();
     await solving;
 
     const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
@@ -410,13 +413,25 @@ describe('DeltaSignalService readouts', () => {
   const enhancedUrl = (id: string) => (req: { url: string }) =>
     req.url.endsWith(`/data/query/enhanced/${id}`);
 
+  const flushNoLeads = async () => {
+    // specs/022: a successful batch asks the leads table once; an empty
+    // centres map means this pathway has no composite
+    await settle();
+    http
+      .expectOne('/api/leads')
+      .flush({ status: 'success', leads: { composite_prefix: 'ctx-arrows_', centres: {} } });
+    await settle();
+  };
+
   const solveAndBatch = async () => {
     const solving = service.solve();
     await settle();
     http.expectOne('/api/solve').flush(solveAnswer);
     await settle();
     http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await flushNoLeads();
     await solving;
+    expect(service.leadState().status).toBe('none');
   };
 
   it('resolves a set readout through the bench member closure (specs/020)', async () => {
@@ -551,6 +566,7 @@ describe('DeltaSignalService readouts', () => {
       confidence_stratum: 'untouched',
     };
     http.expectOne('/api/readouts').flush(answer);
+    await flushNoLeads();
     await solving;
 
     const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
@@ -560,12 +576,130 @@ describe('DeltaSignalService readouts', () => {
     expect(service.readoutRows().at(-1)?.reactomeId).toBe('R-HSA-2');
   });
 
+  const leadsTable = {
+    status: 'success',
+    leads: {
+      composite_prefix: 'ctx-arrows_',
+      centres: {
+        'R-HSA-9': {
+          name: 'Test',
+          composite_id: 'ctx-arrows_R-HSA-9',
+          arrows: [
+            {
+              source_pathway: 'PIP3 activates AKT signaling',
+              entity: 'p-AKT',
+              rate: { class: 'measured', statement: 'right 24% on the record' },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  it('runs the composite once and attaches leads to not-reached rows (specs/022)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    // R-HSA-2 is untouched in the main solve
+    answer.results[1] = {
+      ...answer.results[1],
+      fold: 1,
+      call: 'normal',
+      confidence: null,
+      confidence_stratum: 'untouched',
+    };
+    http.expectOne('/api/readouts').flush(answer);
+    await settle();
+    http.expectOne('/api/leads').flush(leadsTable);
+    await settle();
+    http.expectOne((r) => r.url === '/api/parse').flush({ ...network, network_id: 'ctx:test' });
+    await settle();
+    const pinsReq = http.expectOne('/api/pins');
+    expect((pinsReq.request.body as { network_id: string }).network_id).toBe('ctx:test');
+    pinsReq.flush({
+      status: 'success',
+      results: [
+        { id: 'R-HSA-1', basis: 'root', pins: [{ uuid: 'ctx-root', name: 'ATM' }], occurrences: 1 },
+      ],
+    });
+    await settle();
+    const solveReq = http.expectOne('/api/solve');
+    expect((solveReq.request.body as { observations: object }).observations).toEqual({
+      'ctx-root': [0, 1],
+    });
+    solveReq.flush({ ...solveAnswer, node_activities: { 'node-b': 0.0005 } });
+    await settle();
+    const roReq = http.expectOne('/api/readouts');
+    expect((roReq.request.body as { queries: { id: string }[] }).queries).toEqual([
+      { id: 'R-HSA-2', stable_ids: ['R-HSA-2'] },
+    ]);
+    roReq.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [
+        {
+          id: 'R-HSA-2',
+          mode: 'forms',
+          basis: 'direct',
+          groups: [['node-b']],
+          pinned: [],
+          value: 0.0005,
+          fold: 0.05,
+          call: 'down',
+          railed: false,
+          confidence_stratum: 'no_basis',
+        },
+      ],
+    });
+    await solving;
+    await settle();
+
+    expect(service.leadState().status).toBe('ready');
+    const row = service.readoutRows().find((r) => r.reactomeId === 'R-HSA-2');
+    expect(row?.untouched).toBe(true);
+    expect(row?.lead).toMatchObject({ call: 'down', statement: 'right 24% on the record' });
+  });
+
+  it('a composite failure leaves the honest not-reached untouched (specs/022)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    answer.results[1] = {
+      ...answer.results[1],
+      fold: 1,
+      call: 'normal',
+      confidence: null,
+      confidence_stratum: 'untouched',
+    };
+    http.expectOne('/api/readouts').flush(answer);
+    await settle();
+    http.expectOne('/api/leads').flush(leadsTable);
+    await settle();
+    http
+      .expectOne((r) => r.url === '/api/parse')
+      .flush({ message: 'down' }, { status: 500, statusText: 'Server Error' });
+    await solving;
+    await settle();
+
+    expect(service.leadState().status).toBe('error');
+    const row = service.readoutRows().find((r) => r.reactomeId === 'R-HSA-2');
+    expect(row?.untouched).toBe(true);
+    expect(row?.lead).toBeNull();
+  });
+
   it('drops an on-demand readout that a newer solve overtook in flight', async () => {
     const solving = service.solve();
     await settle();
     http.expectOne('/api/solve').flush(solveAnswer);
     await settle();
     http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await flushNoLeads();
     await solving;
 
     const resolving = service.resolveSelectedReadout('R-HSA-3');
