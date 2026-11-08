@@ -64,6 +64,7 @@
         >
           <div class="left">
             <button
+              type="button"
               mat-button
               (click)="onTreeEventSelect(node)"
               [class]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"
@@ -145,6 +146,7 @@
           <!--todo: clean structure, try not use button for the event's displayName and replace click event with (expandedChange)-->
           <div class="left">
             <button
+              type="button"
               #treeControlButton
               mat-icon-button
               class="button-size no-hover-effect"
@@ -157,6 +159,7 @@
             </button>
 
             <button
+              type="button"
               mat-button
               class="button"
               [class]="{ selected: node.isSelected, hovered: node.isHovered, hit: node.hit }"

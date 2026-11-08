@@ -2,6 +2,7 @@
 
 @if ((type$ | async) === 'icon') {
   <button
+    type="button"
     (click)="fileUpload.click()"
     color="accent"
     mat-icon-button
@@ -10,5 +11,5 @@
     <mat-icon fontSet="gsa">cloud_download</mat-icon>
   </button>
 } @else {
-  <button (click)="fileUpload.click()" class="primary-color" mat-stroked-button>Upload table</button>
+  <button type="button" (click)="fileUpload.click()" class="primary-color" mat-stroked-button>Upload table</button>
 }

@@ -11,7 +11,7 @@
         </select>
       </div>
     }
-    <button class="expand-all-btn" (click)="toggleAll()">
+    <button type="button" class="expand-all-btn" (click)="toggleAll()">
       {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
     </button>
   </div>
@@ -22,7 +22,7 @@
       <div class="root-entry">
         @if (hasChildren(root)) {
           <!-- Expandable root -->
-          <button class="root-toggle" (click)="toggleRoot(root.stId)">
+          <button type="button" class="root-toggle" (click)="toggleRoot(root.stId)">
             <mat-icon class="arrow-icon" [svgIcon]="isExpanded(root.stId) ? 'arrow-down' : 'arrow-right'"></mat-icon>
             <mat-icon class="type-icon" [svgIcon]="getIconName(root.type)"></mat-icon>
             <span class="root-name">{{ root.name }}</span>

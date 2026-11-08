@@ -8,7 +8,7 @@
   (keydown.enter)="search(currentSuggest())"
   #inputBox
 >
-  <button mat-icon-button class="search-icon" (click)="search()">
+  <button type="button" mat-icon-button class="search-icon" (click)="search()">
     <mat-icon fontSet="symbols">search</mat-icon>
   </button>
   <div class="text-container">
@@ -24,7 +24,7 @@
     />
   </div>
   @if (scopes[currentScopeName()].found() || searchedNoResult() || searchFailed()) {
-    <button mat-icon-button (click)="clear($event)">
+    <button type="button" mat-icon-button (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
   }

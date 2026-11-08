@@ -55,12 +55,14 @@
     </div>
 
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious disabled>Previous</button>
+      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">Next</button>
+      <button type="button" mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">
+        Next
+      </button>
     </div>
   </mat-step>
   <mat-step label="Analysis">
@@ -79,12 +81,14 @@
       }
     </div>
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious>Previous</button>
+      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">See results</button>
+      <button type="button" mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">
+        See results
+      </button>
     </div>
   </mat-step>
 </mat-stepper>

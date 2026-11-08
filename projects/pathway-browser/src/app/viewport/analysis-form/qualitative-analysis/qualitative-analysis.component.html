@@ -32,17 +32,17 @@
         </div>
 
         <div class="table-controls">
-          <button mat-button (click)="fileUpload.click()">
+          <button type="button" mat-button (click)="fileUpload.click()">
             <mat-icon>cloud_upload</mat-icon>
             Import table
             <input #fileUpload (change)="uploadFile(fileUpload)" class="file-input" type="file" />
           </button>
 
-          <button mat-button (click)="table.clear()">
+          <button type="button" mat-button (click)="table.clear()">
             <mat-icon>delete</mat-icon>
             Clear
           </button>
-          <button mat-button (click)="downloadFile()">
+          <button type="button" mat-button (click)="downloadFile()">
             <mat-icon>cloud_download</mat-icon>
             Export table
           </button>
@@ -51,27 +51,29 @@
       <div class="data-example-column">
         <span class="title">Examples</span>
         <div class="example-buttons">
-          <button mat-raised-button (click)="loadExample('uniprot')">UniProt IDs</button>
-          <button mat-raised-button (click)="loadExample('gene-name')">Gene Name</button>
-          <button mat-raised-button (click)="loadExample('gene-ncbi')">Gene NCBI/Entrez</button>
-          <button mat-raised-button (click)="loadExample('chebi')">ChEBI IDs</button>
-          <button mat-raised-button (click)="loadExample('kegg')">KEGG IDs</button>
-          <button mat-raised-button (click)="loadExample('microarray')">Microarray</button>
-          <button mat-raised-button (click)="loadExample('metabolomics')">Metabolomics</button>
-          <button mat-raised-button (click)="loadExample('cancer-gene-census')">Cancer Gene Census</button>
-          <button mat-raised-button (click)="loadExample('tissue')">Tissue Expression</button>
+          <button type="button" mat-raised-button (click)="loadExample('uniprot')">UniProt IDs</button>
+          <button type="button" mat-raised-button (click)="loadExample('gene-name')">Gene Name</button>
+          <button type="button" mat-raised-button (click)="loadExample('gene-ncbi')">Gene NCBI/Entrez</button>
+          <button type="button" mat-raised-button (click)="loadExample('chebi')">ChEBI IDs</button>
+          <button type="button" mat-raised-button (click)="loadExample('kegg')">KEGG IDs</button>
+          <button type="button" mat-raised-button (click)="loadExample('microarray')">Microarray</button>
+          <button type="button" mat-raised-button (click)="loadExample('metabolomics')">Metabolomics</button>
+          <button type="button" mat-raised-button (click)="loadExample('cancer-gene-census')">
+            Cancer Gene Census
+          </button>
+          <button type="button" mat-raised-button (click)="loadExample('tissue')">Tissue Expression</button>
         </div>
         <span class="space-holder"></span>
       </div>
     </div>
 
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious disabled>Previous</button>
+      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext [disabled]="(table.hasData$ | async) !== true">Next</button>
+      <button type="button" mat-flat-button matStepperNext [disabled]="(table.hasData$ | async) !== true">Next</button>
     </div>
   </mat-step>
 
@@ -171,12 +173,12 @@
     </div>
 
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious>Previous</button>
+      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext (click)="launchAnalysis()">Next</button>
+      <button type="button" mat-flat-button matStepperNext (click)="launchAnalysis()">Next</button>
     </div>
   </mat-step>
 
@@ -193,14 +195,20 @@
         <div class="analysis-error" role="alert">
           <mat-icon class="red">error_outline</mat-icon>
           <p>{{ message }}</p>
-          <button mat-stroked-button (click)="launchAnalysis()">Try again</button>
+          <button type="button" mat-stroked-button (click)="launchAnalysis()">Try again</button>
         </div>
       }
     </div>
 
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-flat-button matStepperNext [disabled]="!analysisAvailable()" (click)="displayAnalysis()">
+      <button type="button" mat-stroked-button matStepperPrevious>Previous</button>
+      <button
+        type="button"
+        mat-flat-button
+        matStepperNext
+        [disabled]="!analysisAvailable()"
+        (click)="displayAnalysis()"
+      >
         See results
       </button>
     </div>

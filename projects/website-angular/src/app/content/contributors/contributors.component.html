@@ -16,7 +16,7 @@
           (input)="onSearchInput($event)"
         />
         @if (searchQuery) {
-          <button class="clear-btn" (click)="clearSearch()">
+          <button type="button" class="clear-btn" (click)="clearSearch()">
             <span class="material-symbols-rounded">close</span>
           </button>
         }
@@ -26,9 +26,16 @@
     <!-- Letter filter bar -->
     @if (!loading && !error) {
       <div class="letter-filter">
-        <button class="letter-chip" [class.active]="!activeLetter && !searchQuery" (click)="selectAll()">All</button>
+        <button type="button" class="letter-chip" [class.active]="!activeLetter && !searchQuery" (click)="selectAll()">
+          All
+        </button>
         @for (letter of letters; track letter) {
-          <button class="letter-chip" [class.active]="activeLetter === letter" (click)="selectLetter(letter)">
+          <button
+            type="button"
+            class="letter-chip"
+            [class.active]="activeLetter === letter"
+            (click)="selectLetter(letter)"
+          >
             {{ letter }}
           </button>
         }
@@ -118,12 +125,12 @@
 
         @if (maxPage > 1) {
           <div class="pagination">
-            <button class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
+            <button type="button" class="page-btn" [disabled]="currentPage <= 1" (click)="prevPage()">
               <span class="material-symbols-rounded">chevron_left</span>
               Previous
             </button>
             <span class="page-info">Page {{ currentPage }} of {{ maxPage }}</span>
-            <button class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
+            <button type="button" class="page-btn" [disabled]="currentPage >= maxPage" (click)="nextPage()">
               Next
               <span class="material-symbols-rounded">chevron_right</span>
             </button>

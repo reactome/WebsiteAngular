@@ -211,7 +211,7 @@ description: 'Tasks for spec 016: one API contract for the content service and t
 - [x] T029 Fix the `reason` / `deletedReason` mismatch, after checking Java's source. — #887
   - **Checked** (#879): the mismatch is real in the sources. search-core's `SolrConverter` reads a deleted entry's reason from the Solr field `deletedReason` (its `DELETED_REASON`, at c3c9936), but the indexer writes it as `reason` (search-indexer's `DeletedDocument`, at 5cea4d6), the field its Solr schema declares; nothing writes `deletedReason`, so no Java answer has ever carried a deleted entry's reason.
   - **Fixed in node** (#887): `searchEntry` (`search-core.ts`) reads `reason` and writes it between `deleted` and `explanation`, where Entry declares it, and `fields=DELETED_REASON` asks Solr for `reason`. The user decided (8 Nov 2026) to fix it in node as a bug fix and a declared difference ([register](../../documentation/declared-differences.md)); the search endpoints that answer entries declare it to the parity harness. No issue for search-core: Java's search is retired at the next release, so this is the fix. No recorded answer holds a deleted entry, and the site's search page shows a deleted entry's date but not its reason or explanation.
-- [ ] T030 Update `CLAUDE.md` with the contract's rule: answer types live in `projects/contract/`, types only, and the description is regenerated with any change.
+- [x] T030 Update `CLAUDE.md` with the contract's rule: answer types live in `projects/contract/`, types only, and the description is regenerated with any change. — #894
 
 ## Dependencies
 
