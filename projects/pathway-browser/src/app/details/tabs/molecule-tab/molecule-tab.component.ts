@@ -61,6 +61,8 @@ export class MoleculeTabComponent implements OnDestroy {
   private state: UrlStateService = inject(UrlStateService);
 
   readonly selectableObject = input.required<SelectableObject>();
+  /** The selection given is a stand-in while a new one loads: no highlighting. */
+  readonly selectionPending = input(false);
   pathwayId = this.state.pathwayId as WritableSignal<string>;
   // Get selected pathway id on Reacfoam view
   readonly objStId = computed(() =>
@@ -76,6 +78,8 @@ export class MoleculeTabComponent implements OnDestroy {
     effect(() => {
       const selectableObjStId = this.selectableObject().stId;
       const pathwayId = this.pathwayId();
+      // A stand-in's molecules are not wanted: it may be another pathway's.
+      if (this.selectionPending()) return;
       if (selectableObjStId && selectableObjStId !== pathwayId) {
         this.entity.loadRefEntities(selectableObjStId);
       }
@@ -123,6 +127,8 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly updating = computed(
     () => this._pathwayParticipants.isLoading() && !!this.pathwayParticipants()
   );
+  /** Busy while either the list or the selection behind its highlighting loads. */
+  readonly busy = computed(() => this.updating() || this.selectionPending());
 
   readonly moleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
@@ -133,7 +139,11 @@ export class MoleculeTabComponent implements OnDestroy {
     const pathwayResults = this.getPathwayParticipants(pathwayParticipants);
 
     if (!this.hasNoMoleculeData()) {
-      if (this.selectableObject().stId === this.pathwayId() || !this.pathwayId()) {
+      if (
+        this.selectionPending() ||
+        this.selectableObject().stId === this.pathwayId() ||
+        !this.pathwayId()
+      ) {
         moleculeData = pathwayResults;
       } else {
         const refEntities = this.entity.refEntities() || [];

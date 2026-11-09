@@ -90,5 +90,9 @@
 .container.updating {
   opacity: 0.5;
   transition: opacity 150ms;
-  pointer-events: none;
+}
+
+.load-error {
+  padding: 8px 16px;
+  color: var(--error);
 }

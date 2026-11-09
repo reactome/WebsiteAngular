@@ -59,7 +59,7 @@
           </div>
         }
         @if (moleculeTabObj(); as selected) {
-          <cr-molecule-tab [selectableObject]="selected"></cr-molecule-tab>
+          <cr-molecule-tab [selectableObject]="selected" [selectionPending]="moleculeTabPending()"></cr-molecule-tab>
         }
       </ng-template>
     </mat-tab>

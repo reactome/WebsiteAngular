@@ -101,7 +101,11 @@ test.describe('Molecules tab', () => {
     });
     const fetchedAgain: string[] = [];
     page.on('request', (request) => {
-      if (request.url().includes('/data/participants/')) fetchedAgain.push(request.url());
+      // This pathway's own list; a selection's molecules
+      // (/data/participants/{id}/referenceEntities) are fetched by design.
+      if (new URL(request.url()).pathname.endsWith(`/data/participants/${PATHWAY}`)) {
+        fetchedAgain.push(request.url());
+      }
     });
 
     // Selected while the tab is open, which is the only order that shows this:

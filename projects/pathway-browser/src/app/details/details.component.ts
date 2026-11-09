@@ -63,6 +63,13 @@ export class DetailsComponent {
     source: () => ({ obj: this.obj(), loading: this.dataState.selectedElementLoading() }),
     computation: (source, previous) => source.obj ?? (source.loading ? previous?.value : undefined),
   });
+  /**
+   * Whether the molecule tab is being given the last selection as a stand-in
+   * while a new one loads. It shows its list then but no highlighting: the
+   * stand-in may belong to another pathway (opening a sub-pathway clears the
+   * selection), and its highlights would mark the new pathway's molecules.
+   */
+  readonly moleculeTabPending = computed(() => !this.obj() && !!this.moleculeTabObj());
   readonly hasResult = computed(() => !!this.analysis.result());
   readonly hasDetail = computed(() => this.dataState.hasDetail());
 
