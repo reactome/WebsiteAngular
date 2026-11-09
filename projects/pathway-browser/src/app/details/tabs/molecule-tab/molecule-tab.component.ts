@@ -4,6 +4,7 @@ import {
   effect,
   inject,
   input,
+  linkedSignal,
   OnDestroy,
   signal,
   WritableSignal,
@@ -103,7 +104,25 @@ export class MoleculeTabComponent implements OnDestroy {
     stream: () => this.participant.getParticipants(this.objStId()),
   });
 
-  pathwayParticipants = this._pathwayParticipants.value;
+  /**
+   * The pathway's molecules, and while another pathway's load, the last ones:
+   * the list stays on screen, marked as updating, rather than vanishing behind
+   * a spinner. Only the first load has nothing to show.
+   */
+  readonly pathwayParticipants = linkedSignal<
+    { value: ShownParticipant[] | undefined; loading: boolean },
+    ShownParticipant[] | undefined
+  >({
+    source: () => ({
+      value: this._pathwayParticipants.hasValue() ? this._pathwayParticipants.value() : undefined,
+      loading: this._pathwayParticipants.isLoading(),
+    }),
+    computation: (source, previous) =>
+      source.value ?? (source.loading ? previous?.value : undefined),
+  });
+  readonly updating = computed(
+    () => this._pathwayParticipants.isLoading() && !!this.pathwayParticipants()
+  );
 
   readonly moleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];

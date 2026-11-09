@@ -84,6 +84,26 @@ test.describe('Molecules tab', () => {
     await openMolecules(page);
     expect(await page.locator('cr-molecule-tab .highlight').count(), 'nothing shaded yet').toBe(0);
 
+    // A new selection inside the open pathway changes only the highlighting.
+    // The tab was destroyed and built again on every selection -- its list
+    // vanished behind a spinner, and the pathway's molecules were fetched
+    // again -- so the same element must survive, with no spinner and no
+    // second fetch.
+    await page.evaluate(() => {
+      const tab = document.querySelector('cr-molecule-tab') as
+        (Element & { kept?: boolean }) | null;
+      if (tab) tab.kept = true;
+      const seen: string[] = [];
+      (window as unknown as { spinnerSeen: string[] }).spinnerSeen = seen;
+      new MutationObserver(() => {
+        if (document.querySelector('cr-molecule-tab .spinner-container')) seen.push('spinner');
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    const fetchedAgain: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/data/participants/')) fetchedAgain.push(request.url());
+    });
+
     // Selected while the tab is open, which is the only order that shows this:
     // arriving with ?select= already set opens the entity's own details instead
     // and the molecule list is not on offer at all.
@@ -97,6 +117,19 @@ test.describe('Molecules tab', () => {
     await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible({
       timeout: 60_000,
     });
+    expect(
+      await page.evaluate(
+        () =>
+          (document.querySelector('cr-molecule-tab') as (Element & { kept?: boolean }) | null)
+            ?.kept === true
+      ),
+      'the same tab, not one built again'
+    ).toBe(true);
+    expect(
+      await page.evaluate(() => (window as unknown as { spinnerSeen: string[] }).spinnerSeen),
+      'no spinner'
+    ).toEqual([]);
+    expect(fetchedAgain, 'the molecule list is not fetched again').toEqual([]);
   });
 });
 

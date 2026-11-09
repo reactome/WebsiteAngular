@@ -1,10 +1,10 @@
-@if (_pathwayParticipants.isLoading()) {
+@if (_pathwayParticipants.isLoading() && !pathwayParticipants()) {
   <div class="spinner-container">
     <mat-spinner />
     <p>Loading data for participating molecules, please wait...</p>
   </div>
 } @else {
-  <div class="container">
+  <div class="container" [class.updating]="updating()" [attr.aria-busy]="updating()">
     <div class="content">
       @for (group of moleculeData() | sortByText: 'category'; track group.category) {
         <cr-molecule-group [group]="group"></cr-molecule-group>
