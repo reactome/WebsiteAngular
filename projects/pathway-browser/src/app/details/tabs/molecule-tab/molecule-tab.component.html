@@ -1,10 +1,15 @@
-@if (_pathwayParticipants.isLoading()) {
+@if (_pathwayParticipants.isLoading() && !pathwayParticipants()) {
   <div class="spinner-container">
     <mat-spinner />
     <p>Loading data for participating molecules, please wait...</p>
   </div>
 } @else {
-  <div class="container">
+  @if (_pathwayParticipants.error()) {
+    <p class="load-error" role="alert">The molecules of this pathway could not be loaded. Please try again later.</p>
+  }
+  <!-- Inert while another pathway's list loads: the old one stays on screen,
+       dimmed, and can be neither clicked nor reached by keyboard. -->
+  <div class="container" [class.updating]="updating()" [attr.inert]="updating() ? '' : null" [attr.aria-busy]="busy()">
     <div class="content">
       @for (group of moleculeData() | sortByText: 'category'; track group.category) {
         <cr-molecule-group [group]="group"></cr-molecule-group>

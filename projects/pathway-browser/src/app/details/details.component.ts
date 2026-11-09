@@ -13,6 +13,7 @@ import { ExpressionTabComponent } from './tabs/expression-tab/expression-tab.com
 import { InfoTabComponent } from './tabs/info-tab/info-tab.component';
 import { DownloadTabComponent } from './tabs/download-tab/download-tab.component';
 import { IS_CURATOR } from '../../environments/environment';
+import type { SelectableObject } from '../services/event.service';
 
 @Component({
   selector: 'cr-details-panel',
@@ -46,6 +47,29 @@ export class DetailsComponent {
   public state: UrlStateService = inject(UrlStateService);
 
   obj = this.dataState.selectedElement;
+
+  /**
+   * The molecule tab's object: the selection, and while a new one loads, the
+   * last one. The selection reads as nothing while it loads, and the tab was
+   * drawn only while there was one, so every change of selection -- even one
+   * inside the open pathway, which changes nothing but the highlighting --
+   * destroyed the tab and built it again: its list vanished behind a spinner,
+   * and the pathway's molecules were fetched again.
+   */
+  readonly moleculeTabObj = linkedSignal<
+    { obj: SelectableObject | undefined; loading: boolean },
+    SelectableObject | undefined
+  >({
+    source: () => ({ obj: this.obj(), loading: this.dataState.selectedElementLoading() }),
+    computation: (source, previous) => source.obj ?? (source.loading ? previous?.value : undefined),
+  });
+  /**
+   * Whether the molecule tab is being given the last selection as a stand-in
+   * while a new one loads. It shows its list then but no highlighting: the
+   * stand-in may belong to another pathway (opening a sub-pathway clears the
+   * selection), and its highlights would mark the new pathway's molecules.
+   */
+  readonly moleculeTabPending = computed(() => !this.obj() && !!this.moleculeTabObj());
   readonly hasResult = computed(() => !!this.analysis.result());
   readonly hasDetail = computed(() => this.dataState.hasDetail());
 
