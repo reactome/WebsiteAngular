@@ -36,7 +36,8 @@ open in a side panel; which one is not yet decided. Home page: improvements to
 be defined from what visitors come to do (search, browse pathways, analyse
 data); not yet designed." Added later the same day: the molecule tab's
 pagination, which sits under the Proteins count and reads as if it were for
-every group.
+every group; then what its highlighting and its "8 / 20" counts mean, which
+nothing on the tab says.
 
 (The input's "the search bar ... does nothing there" proved wrong when the code
 was read: see User Story 3.)
@@ -201,37 +202,70 @@ confirmed or replaced by what the measurement finds.
 
 ---
 
-### User Story 5 - Page through a long group in the molecule tab (Priority: P3)
+### User Story 5 - Understand and move through the molecule tab (Priority: P2)
 
-A reader opens the molecule tab for a large pathway: 345 proteins, of which
-164 belong to what they have selected. They move through the proteins and find
-the ones their selection involves.
+A reader opens the molecule tab for Chromatin organization with ATP-dependent
+chromatin remodelers selected. They can tell what the list is (the pathway's
+molecules), what the blue highlighting means (in their selection), how many of
+each kind are highlighted, and which list a pager belongs to; and they can see
+only the highlighted molecules if that is what they came for.
 
-**What is wrong today**: only a group of more than 50 is paged, so Proteins
-alone has a pager. It sits in the group's label column, under the count, apart
-from the list it pages, and reads as if it were for the whole tab; "1 – 50 of
-345" wraps onto two lines between small arrows. Paging inside a list that
-already scrolls, with links to each group beside it, is a second way to move
-that readers do not expect, and highlighted items on other pages cannot be
-seen at all.
+**What is wrong today** (read from the code and seen on beta):
 
-**Independent Test**: Open the molecule tab for Chromatin organization with
-ATP-dependent chromatin remodelers selected; reach every protein, and every
-highlighted protein, without wondering what a control belongs to.
+- Nothing says what the list is or what the highlighting means. The list is
+  every molecule in the open pathway; a molecule is highlighted when it also
+  takes part in what is selected. The tab never names the selection.
+- Each group's count is a bare fraction, "8 / 20": 8 highlighted of 20, but
+  nothing says so; and a group with none highlighted shows only its total
+  ("5"), exactly as with no selection, so "none highlighted" and "nothing
+  selected" look the same.
+- Each group pages on its own, in pages of 50, and only a group of more than
+  50 has a pager: here only Proteins (345). The pager sits in the label
+  column under the count, apart from the list it pages, so it reads as if it
+  turned a page of the whole tab, and its "1 – 50 of 345" does not say 345 of
+  what. Readers asked whether the drugs had a second page; they do not.
+- Each group lists its highlighted molecules first, then by number of copies,
+  so the later pages of Proteins hold none of the selection; nothing tells
+  the reader that either. (The code comment there says "by name"; it is by
+  count.)
+
+**Principles broken**: 2 (a pager that reads as the tab's own), 5 (nothing
+says what the highlighting means, so the reader must recall it), and the
+plain-language half of 1.
+
+**Why this priority**: P2, raised from P3 once it was clear the story is not
+only paging: the molecule tab is where a reader finds what a selection
+involves, and when its highlighting cannot be read the tab does not do that
+job.
+
+**Independent Test**: Open the molecule tab for a pathway with a group of more
+than 50 and something selected inside it: the tab names the selection and what
+highlighting means; each group's heading gives its total and highlighted count
+in words; only the groups of more than 50 have a pager, inside their own box
+and named for the group; showing only highlighted molecules lists, in each
+group, the number its heading gave as highlighted.
 
 **Acceptance Scenarios**:
 
-1. **Given** a group longer than is shown at once, **When** the reader looks
-   for more, **Then** the control for it is part of that group's list, at the
-   point where the list ends.
-2. **Given** a selection that highlights molecules, **When** the reader looks
-   for them, **Then** every highlighted molecule can be reached without paging
-   blindly.
+1. **Given** a selection inside the open pathway, **When** the reader opens
+   the molecule tab, **Then** it says which pathway's molecules are listed and
+   that highlighted ones take part in the named selection, with a swatch of
+   the highlight.
+2. **Given** a group, **When** the reader reads its heading, **Then** it gives
+   the group's total and, with a selection, how many are highlighted, in words
+   ("345 · 164 highlighted").
+3. **Given** a group of more than 50, **When** the reader looks for the rest,
+   **Then** a pager is inside that group's box, at the end of its list and at
+   its start, and says which molecules it pages and which are shown
+   ("Proteins 1–50 of 345").
+4. **Given** a group of 50 or fewer, **Then** it has no pager, and its heading
+   shows that all of it is listed.
+5. **Given** a selection, **When** the reader chooses to show only highlighted
+   molecules, **Then** every group lists only those, and its heading and any
+   pager count only those.
 
-The form this takes is open: [NEEDS CLARIFICATION: (A) a "show more" control at
-the end of the group's list; (B) every molecule shown, no paging, if 345 rows
-draw quickly enough (to be measured first); or (C) A or B with a switch to show
-only the highlighted molecules?]
+Decided 2026-11-09: paging stays per group, in pages of 50, made plain as
+above, rather than replaced.
 
 ---
 
@@ -247,6 +281,12 @@ Each of these is a requirement below, so that tasks are made for it.
 - A search and a category that together match nothing: FR-026.
 - An icon with no categories, or no related icons: FR-024.
 - Keyboard only: FR-006.
+- The molecule tab with nothing highlighted in a group, the pathway itself
+  selected, a group of exactly 50, and the switch leaving a group empty:
+  FR-040, FR-041, FR-043, FR-044.
+- The molecule tab on page 7 of a group when the selection changes or the
+  switch is turned: FR-046.
+- The molecule tab while a new selection or pathway loads: FR-047.
 
 ## Requirements _(mandatory)_
 
@@ -323,11 +363,40 @@ Each of these is a requirement below, so that tasks are made for it.
 
 **Molecule tab**
 
-- **FR-040**: A control that pages or extends a group's list MUST be part of
-  that list, where the list ends, and MUST NOT appear for groups it does not
-  page.
-- **FR-041**: Every molecule a selection highlights MUST be reachable without
-  paging blindly.
+- **FR-040**: The tab MUST say, in words, which pathway's molecules it lists.
+  When something inside that pathway is selected, it MUST also say that
+  highlighted molecules take part in the selection, naming it, with a swatch
+  of the highlight. When the pathway itself is selected, or nothing is, there
+  is no highlighting and nothing says there is. In the overview of all
+  pathways (no pathway open), it names the selected pathway as the one whose
+  molecules are listed.
+- **FR-041**: Each group's heading MUST give its total and, while something
+  inside the pathway is selected, its highlighted count, in words ("345 · 164
+  highlighted"; "5 · none highlighted").
+- **FR-042**: Each group MUST be a box: a border or background that sets it
+  apart from the panel, holding its heading, its list and any pager.
+- **FR-043**: A group of more than 50 MUST have a pager inside its box: under
+  its heading, before the first row, and again after the last. Each names the
+  group and the range shown ("Proteins 1–50 of 345"); the two show the same
+  page; paging from the lower one brings the group's heading into view. A
+  group of 50 or fewer MUST have none.
+- **FR-044**: While something inside the pathway is selected, a switch MUST
+  let the reader list only the highlighted molecules. With it on, a group with
+  none highlighted keeps its heading ("5 · none highlighted") and lists
+  nothing; headings and pagers count only what is listed. With nothing
+  selected the switch is not shown. The switch is kept in the page's address,
+  so a shared link and Back keep it (principle 5). The download panel is not
+  filtered: it offers the pathway's molecules, as it says.
+- **FR-045**: Within a group, molecules MUST be ordered highlighted first, then
+  by how many of the pathway's participants contain them (the "N ×" shown),
+  then by the name shown, alphabetically; the same on every page, and without
+  reordering the data the download panel reads.
+- **FR-046**: Changing the selection, turning the switch, or opening another
+  pathway MUST return each group to its first page.
+- **FR-047**: Changing the selection inside the open pathway MUST change only
+  the highlighting: the list stays on screen, and it is not fetched again.
+  Opening another pathway keeps the old list on screen, marked as updating,
+  until the new one arrives; only the first load shows a spinner alone.
 
 ### Key Entities
 
@@ -359,9 +428,13 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   from the home page, and their results are added to `home-page-findings.md`.
 - **SC-006**: On each changed page, no element styled as a link, button or
   chip does nothing when activated.
-- **SC-007**: In the molecule tab for a pathway with a group over 50, every
-  highlighted molecule of that group is reached with the group's own control,
-  which sits at the end of its list.
+- **SC-007**: In the molecule tab for a pathway with a group of more than 50
+  and a selection inside it, with the expected counts read from the content
+  service rather than written into the test: each heading gives the right
+  total and highlighted count; exactly the groups of more than 50 have a pager,
+  at both ends of their own box, named for the group; the first page lists the
+  highlighted molecules first; and with the switch on, each group lists its
+  highlighted count and the address carries the switch.
 
 ## Clarifications
 
@@ -373,6 +446,11 @@ Each is checked by an automated end-to-end test unless it says otherwise.
 - Q: The home page: designed within this spec, or in a spec of its own? → A:
   Within this spec, but what visitors come to do is measured first, and the
   design follows from that.
+- Q: The molecule tab's paging: a "show more" control, every molecule shown,
+  or a switch to show only highlighted ones? → A: Paging stays per group, in
+  pages of 50, made plain: each group a box with the pager inside it, named
+  for the group; the tab says what highlighting means; and a switch shows
+  only the highlighted molecules.
 
 ## Assumptions
 
