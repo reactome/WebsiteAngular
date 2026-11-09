@@ -24,6 +24,7 @@ import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import { EventService } from '../services/event.service';
 import { UrlStateService } from '../services/url-state.service';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { GeneralService } from '../services/general.service';
 import { DataStateService } from '../services/data-state.service';
@@ -75,6 +76,7 @@ const DROPDOWN_DURATION = 500;
   standalone: true,
   imports: [
     AngularSplitModule,
+    NgTemplateOutlet,
     SearchComponent,
     MatIcon,
     SpeciesComponent,

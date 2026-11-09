@@ -14,8 +14,48 @@
   flex-direction: column;
 }
 
-.search {
+// The top of the hierarchy panel: the search row, with the way home over its
+// left end. The search's input is inset by the logo's width (--search-inset,
+// read by the search component) rather than the two sharing a row, because the
+// search's results open below its input and should keep the panel's width.
+.left-top {
   flex: 0 0 auto;
+  position: relative;
+  min-height: var(--top-bar-height);
+  background: light-dark(var(--primary), var(--primary-container));
+
+  --home-link-width: 88px;
+  --search-inset: var(--home-link-width);
+
+  .logo {
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: var(--top-bar-height);
+    width: var(--home-link-width);
+    padding-left: 16px;
+    box-sizing: border-box;
+    // Above the search row, which sits above the panel's collapse button.
+    z-index: 1001;
+  }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  color: light-dark(var(--on-primary), var(--on-primary-container));
+
+  mat-icon {
+    height: 44px;
+    margin-left: -6px;
+    color: light-dark(var(--on-primary), var(--primary));
+    width: max-content;
+  }
+
+  .version {
+    vertical-align: top;
+    text-decoration: underline;
+  }
 }
 
 //.sidebar {
@@ -59,6 +99,13 @@
     flex: 0;
     display: flex;
     gap: 20px;
+
+    // The way home, while the hierarchy panel is closed. Held to the buttons'
+    // height: the row's height is theirs, and the analysis group is only as
+    // tall as the row stretches it.
+    > .logo {
+      height: 40px;
+    }
   }
 
   .title {
@@ -86,24 +133,6 @@
     align-items: center;
     font: var(--mat-sys-label-large);
     flex: 0;
-
-    .logo {
-      display: flex;
-      //height: 100%;
-      width: fit-content;
-
-      mat-icon {
-        height: 44px;
-        margin-left: -6px;
-        color: light-dark(var(--on-primary), var(--primary));
-        width: max-content;
-      }
-
-      .version {
-        vertical-align: top;
-        text-decoration: underline;
-      }
-    }
 
     .quote {
       background: var(--surface);

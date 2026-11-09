@@ -20,11 +20,16 @@
         <!-- Hidden from the curator build rather than from everyone: it was
              commented out wholesale in "Remove Overlay feature, feedback, and
              revert to old site", which took it off the public site too. -->
-        @if (!isCurator) {
-          <div class="search">
-            <cr-search />
-          </div>
-        }
+        <div class="left-top">
+          @if (panels().hierarchy) {
+            <ng-container [ngTemplateOutlet]="homeLink" />
+          }
+          @if (!isCurator) {
+            <div class="search">
+              <cr-search />
+            </div>
+          }
+        </div>
         <!--        <div class="sidebar">-->
 
         <div class="species-interactor-container">
@@ -133,6 +138,9 @@
       <div class="right-panel">
         <div class="top">
           <div class="top-left">
+            @if (!panels().hierarchy) {
+              <ng-container [ngTemplateOutlet]="homeLink" />
+            }
             <div class="analysis-button-group">
               @if (!isCurator) {
                 <button
@@ -347,20 +355,6 @@
             >
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
-            <div class="logo" matTooltip="Go to the main page">
-              <a [href]="isCurator ? '' : '/'" id="main">
-                <mat-icon [svgIcon]="'logo'"></mat-icon>
-              </a>
-              <div class="version-container">
-                @if (isCurator) {
-                  <span class="beta">curator</span>
-                } @else {
-                  @if (general.current(); as version) {
-                    <span class="version">v{{ version }}</span>
-                  }
-                }
-              </div>
-            </div>
           </div>
         </div>
         <div class="content" #content>
@@ -440,3 +434,25 @@
     </as-split-area>
   </as-split>
 </div>
+
+<!-- The way home, top left as readers expect it: over the search row while
+     the hierarchy panel is open, at the start of the top bar while it is
+     closed. Drawn in one place at a time, so the id stays unique. -->
+<ng-template #homeLink>
+  <!-- A plain title rather than matTooltip: the Material tooltip opened below
+       the logo, over the species picker, and took the clicks meant for it. -->
+  <div class="logo">
+    <a [href]="isCurator ? '' : '/'" id="main" aria-label="Reactome home" title="Reactome home">
+      <mat-icon [svgIcon]="'logo'"></mat-icon>
+    </a>
+    <div class="version-container">
+      @if (isCurator) {
+        <span class="beta">curator</span>
+      } @else {
+        @if (general.current(); as version) {
+          <span class="version">v{{ version }}</span>
+        }
+      }
+    </div>
+  </div>
+</ng-template>

@@ -17,6 +17,10 @@
   flex-wrap: nowrap;
   align-items: center;
   height: var(--top-bar-height);
+  // Room on the left for whatever the host draws over this row (the viewport's
+  // way home).
+  padding-left: var(--search-inset, 0);
+  box-sizing: border-box;
   position: relative;
   z-index: 1000; // Above collapse button
 
