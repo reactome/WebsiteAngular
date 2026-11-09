@@ -280,8 +280,11 @@ export class ObjectTreeComponent<
     },
   });
 
-  childrenAccessor = (node: R): R[] => {
-    if (!node.element.composedOf) {
+  childrenAccessor = (node: R | undefined): R[] => {
+    // The details' wrapper is a mat-nested-tree-node with no data (it is there
+    // for Firefox's layout, see the template), and the tree asks it for its
+    // children all the same: it has none.
+    if (!node?.element.composedOf) {
       return []; // Return an empty array when composedOf is undefined
     }
     return node.element.composedOf as R[];
