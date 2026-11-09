@@ -27425,7 +27425,6 @@
           "displayName",
           "identifiersPrefix",
           "name",
-          "resourceIdentifier",
           "schemaClass",
           "url"
         ],
@@ -28295,7 +28294,6 @@
           "identifier",
           "url",
           "moleculeType",
-          "geneName",
           "className",
           "schemaClass"
         ],

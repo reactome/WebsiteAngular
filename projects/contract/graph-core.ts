@@ -2149,7 +2149,7 @@ export interface ReferenceRNASequence<R extends Ref> extends JsogFields {
   checksum?: string;
   comment?: string[];
   description?: string[];
-  geneName: string[];
+  geneName?: string[];
   isSequenceChanged?: boolean;
   keyword?: string[];
   secondaryIdentifier?: string[];

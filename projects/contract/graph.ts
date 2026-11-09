@@ -146,7 +146,7 @@ export interface ReferenceDatabase<R extends Ref> extends DatabaseObjectFields, 
   accessUrl: string;
   name: string[];
   url: string;
-  resourceIdentifier: string;
+  resourceIdentifier?: string;
   identifiersPrefix: string;
 }
 
