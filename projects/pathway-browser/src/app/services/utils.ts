@@ -393,12 +393,6 @@ export function extractIdInBrackets(value: string): string {
 }
 
 /**
- * UniProt:P11142 HSPA8 ➡️ (default behavior) HSPA8
- * UniProt:P11142 HSPA8 ➡️ True UniProt:P11142
- * @param input
- * @param getBeforeSpace
- */
-/**
  * A molecule's name from its display name, which carries its database and
  * identifier as well: in front for proteins, DNA and RNA
  * ("UniProt:P78396 CCNA1", "EMBL:X59360 U2 snRNA"), behind for chemicals and
@@ -412,7 +406,9 @@ export function extractIdInBrackets(value: string): string {
 export function nameAfterIdentifier(displayName: string): string {
   if (!displayName) return '';
   const trimmed = displayName.trim();
-  const match = /^\S+:\S+\s+(.+)$/.exec(trimmed);
+  // The database's name may hold spaces ("NCBI Nucleotide:MN908947.3 ..."),
+  // the identifier does not.
+  const match = /^[^:]+:\S+\s+(.+)$/.exec(trimmed);
   return match?.[1] ?? trimmed;
 }
 

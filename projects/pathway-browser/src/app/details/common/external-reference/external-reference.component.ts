@@ -40,7 +40,7 @@ export class ExternalReferenceComponent {
       !this.displayReference() &&
       ref.moleculeType === MoleculeType.ENTITY &&
       names?.length &&
-      !rows.some((row) => row.label === 'Gene Names')
+      !('geneName' in ref && ref.geneName?.length)
     ) {
       return [{ label: 'Name', value: names.join(', ') }, ...rows];
     }
