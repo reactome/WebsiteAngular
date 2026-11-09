@@ -14,8 +14,52 @@
   flex-direction: column;
 }
 
-.search {
+// The top of the hierarchy panel: the search row, with the way home over its
+// left end. The search's input is inset by the logo's width (--search-inset,
+// read by the search component) rather than the two sharing a row, because the
+// search's results open below its input and should keep the panel's width --
+// and the panel's own background: this wraps the results too, so the bar's
+// colour is the search row's, not this block's. Only the curator build, which
+// has no search, needs this block to be the bar itself.
+.left-top {
   flex: 0 0 auto;
+  position: relative;
+
+  &:not(:has(cr-search)) {
+    min-height: var(--top-bar-height);
+    background: light-dark(var(--primary), var(--primary-container));
+  }
+
+  --home-link-width: 64px;
+
+  &.with-home {
+    --search-inset: var(--home-link-width);
+  }
+
+  .logo {
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: var(--top-bar-height);
+    width: var(--home-link-width);
+    padding-left: 16px;
+    box-sizing: border-box;
+    // Above the search row, which sits above the panel's collapse button.
+    z-index: 1001;
+  }
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  color: light-dark(var(--on-primary), var(--on-primary-container));
+
+  mat-icon {
+    height: 44px;
+    margin-left: -6px;
+    color: light-dark(var(--on-primary), var(--primary));
+    width: max-content;
+  }
 }
 
 //.sidebar {
@@ -59,6 +103,13 @@
     flex: 0;
     display: flex;
     gap: 20px;
+
+    // The way home, while the hierarchy panel is closed. Held to the buttons'
+    // height: the row's height is theirs, and the analysis group is only as
+    // tall as the row stretches it.
+    > .logo {
+      height: 40px;
+    }
   }
 
   .title {
@@ -77,54 +128,15 @@
     gap: 20px;
 
     // Tour and Layout made the bar two buttons wider, and at laptop widths the
-    // pathway's name was squeezed to a letter. Feedback gives up its label
-    // first (still its accessible name), and the spacing tightens.
+    // pathway's name was squeezed to a letter, so the spacing tightens.
     @media (max-width: 1280px) {
       gap: 12px;
-
-      .feedback {
-        padding: 8px 12px;
-        margin-left: 0;
-        min-width: 0;
-        // Only the icon is laid out now; the gap would push it off-centre.
-        gap: 0;
-
-        --mat-button-outlined-icon-spacing: 0;
-        --mat-button-outlined-icon-offset: 0;
-      }
-
-      .feedback-label {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-      }
     }
     height: 100%;
     flex-direction: row;
     align-items: center;
     font: var(--mat-sys-label-large);
     flex: 0;
-
-    .logo {
-      display: flex;
-      //height: 100%;
-      width: fit-content;
-
-      mat-icon {
-        height: 44px;
-        margin-left: -6px;
-        color: light-dark(var(--on-primary), var(--primary));
-        width: max-content;
-      }
-
-      .version {
-        vertical-align: top;
-        text-decoration: underline;
-      }
-    }
 
     .quote {
       background: var(--surface);
@@ -496,44 +508,22 @@
   }
 }
 
-.history {
-  border-radius: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-}
-
-.feedback {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 20px;
-  border-radius: 12px;
-
-  background-color: var(--on-primary);
-  color: var(--warn);
-  font-variation-settings: 'FILL' 1;
-  margin-left: -12px;
-
-  @include mat.button-overrides(
-    (
-      outlined-label-text-color: var(--warn),
-      outlined-outline-width: 0,
-    )
-  );
-}
-
-.warn {
-  color: var(--warn);
-}
-
 .version-container {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
   align-items: center;
+  padding-right: 6px;
+
+  // A label, not a link: no underline, small, and a little quieter than the
+  // controls beside it. 85% keeps it above WCAG AA's 4.5:1 on the bar in both
+  // themes (5.1:1 light, 5.8:1 dark); 75% fell to 4.4:1 in light.
+  .version {
+    font: var(--mat-sys-label-medium);
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+    cursor: default;
+  }
 }
 .beta {
   font: var(--mat-sys-label-small);
@@ -593,4 +583,14 @@ cr-interactor-threshold {
 // separator; hidden with the panel so the keyboard cannot land on it.
 :host ::ng-deep .hierarchy-hidden > .as-split-gutter {
   visibility: hidden;
+}
+
+// Read out, not shown: the release in full beside its short form.
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

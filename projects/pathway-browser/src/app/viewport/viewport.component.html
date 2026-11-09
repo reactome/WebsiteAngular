@@ -17,14 +17,19 @@
       [attr.inert]="panels().hierarchy ? null : ''"
     >
       <div class="left-panel">
-        <!-- Hidden from the curator build rather than from everyone: it was
-             commented out wholesale in "Remove Overlay feature, feedback, and
-             revert to old site", which took it off the public site too. -->
-        @if (!isCurator) {
-          <div class="search">
-            <cr-search />
-          </div>
-        }
+        <div class="left-top" [class.with-home]="homeInPanel()">
+          @if (homeInPanel()) {
+            <ng-container [ngTemplateOutlet]="homeLink" />
+          }
+          <!-- Hidden from the curator build rather than from everyone: it was
+               commented out wholesale in "Remove Overlay feature, feedback, and
+               revert to old site", which took it off the public site too. -->
+          @if (!isCurator) {
+            <div class="search">
+              <cr-search />
+            </div>
+          }
+        </div>
         <!--        <div class="sidebar">-->
 
         <div class="species-interactor-container">
@@ -133,6 +138,9 @@
       <div class="right-panel">
         <div class="top">
           <div class="top-left">
+            @if (!homeInPanel()) {
+              <ng-container [ngTemplateOutlet]="homeLink" />
+            }
             <div class="analysis-button-group">
               @if (!isCurator) {
                 <button
@@ -330,26 +338,6 @@
                 Expand the centre view
               </button>
             </mat-menu>
-            @if (!isCurator) {
-              <a
-                [href]="formerPathwayBrowserURL()"
-                mat-icon-button
-                class="quote warn history"
-                matTooltip="Open former Pathway Browser"
-              >
-                <mat-icon fontSet="symbols">history</mat-icon>
-              </a>
-              <a
-                href="https://forms.gle/3238xqbShhF8t9BQA"
-                target="_blank"
-                mat-stroked-button
-                class="feedback warn"
-                matTooltip="Send feedback for the beta version"
-              >
-                <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
-                <span class="feedback-label">Feedback</span>
-              </a>
-            }
             <mat-slide-toggle
               color="primary"
               [(ngModel)]="dark.isDark"
@@ -367,20 +355,19 @@
             >
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
-            <div class="logo" matTooltip="Go to the main page">
-              <a [href]="isCurator ? '' : '/'" id="main">
-                <mat-icon [svgIcon]="'logo'"></mat-icon>
-              </a>
-              <div class="version-container">
-                @if (isCurator) {
-                  <span class="beta">curator</span>
-                } @else {
-                  @if (general.current(); as version) {
-                    <span class="version">v{{ version }}</span>
-                  }
-                  <span class="beta">beta</span>
+            <!-- Which release this is: information, not a control, so it
+                 sits apart from the way home and is styled as a label. -->
+            <div class="version-container">
+              @if (isCurator) {
+                <span class="beta">curator</span>
+              } @else {
+                @if (general.current(); as version) {
+                  <span class="version" [title]="'Reactome release ' + version"
+                    ><span aria-hidden="true">v{{ version }}</span
+                    ><span class="visually-hidden">Reactome release {{ version }}</span></span
+                  >
                 }
-              </div>
+              }
             </div>
           </div>
         </div>
@@ -461,3 +448,16 @@
     </as-split-area>
   </as-split>
 </div>
+
+<!-- The way home, top left as readers expect it: over the search row while
+     the hierarchy panel is open and wide enough, at the start of the top bar
+     otherwise. Drawn in one place at a time, so the id stays unique. -->
+<ng-template #homeLink>
+  <!-- A plain title rather than matTooltip: the Material tooltip opened below
+       the logo, over the species picker, and took the clicks meant for it. -->
+  <div class="logo">
+    <a [href]="isCurator ? '' : '/'" id="main" aria-label="Reactome home" title="Reactome home">
+      <mat-icon [svgIcon]="'logo'"></mat-icon>
+    </a>
+  </div>
+</ng-template>

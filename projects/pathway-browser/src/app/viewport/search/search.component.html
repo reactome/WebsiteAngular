@@ -24,7 +24,7 @@
     />
   </div>
   @if (scopes[currentScopeName()].found() || searchedNoResult() || searchFailed()) {
-    <button type="button" mat-icon-button (click)="clear($event)">
+    <button type="button" mat-icon-button class="clear" aria-label="Clear the search" (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
   }
