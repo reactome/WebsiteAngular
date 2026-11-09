@@ -48,8 +48,8 @@
             <h3>🗺️ Exploring Molecules in the Pathway</h3>
             <p>
               When a pathway is displayed in the panel above, it shows detailed information about all the molecules
-              involved. If an item in the diagram is selected, the corresponding molecules are marked with a 📌 pin
-              icon. Molecules are categorized into subtypes: <b>Protein</b>, <b>Chemical Compound</b>,
+              involved. If an item in the diagram is selected, the molecules that take part in it are highlighted.
+              Molecules are categorized into subtypes: <b>Protein</b>, <b>Chemical Compound</b>,
               <b>Sequences (DNA/RNA)</b>, and <b>Other</b>.
             </p>
             <p>
@@ -58,8 +58,8 @@
             </p>
           </div>
         }
-        @if (obj()) {
-          <cr-molecule-tab [selectableObject]="obj()!"></cr-molecule-tab>
+        @if (moleculeTabObj(); as selected) {
+          <cr-molecule-tab [selectableObject]="selected" [selectionPending]="moleculeTabPending()"></cr-molecule-tab>
         }
       </ng-template>
     </mat-tab>
