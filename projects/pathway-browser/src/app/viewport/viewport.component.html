@@ -355,6 +355,17 @@
             >
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
+            <!-- Which release this is: information, not a control, so it
+                 sits apart from the way home and is styled as a label. -->
+            <div class="version-container">
+              @if (isCurator) {
+                <span class="beta">curator</span>
+              } @else {
+                @if (general.current(); as version) {
+                  <span class="version" [title]="'Reactome release ' + version">v{{ version }}</span>
+                }
+              }
+            </div>
           </div>
         </div>
         <div class="content" #content>
@@ -445,14 +456,5 @@
     <a [href]="isCurator ? '' : '/'" id="main" aria-label="Reactome home" title="Reactome home">
       <mat-icon [svgIcon]="'logo'"></mat-icon>
     </a>
-    <div class="version-container">
-      @if (isCurator) {
-        <span class="beta">curator</span>
-      } @else {
-        @if (general.current(); as version) {
-          <span class="version">v{{ version }}</span>
-        }
-      }
-    </div>
   </div>
 </ng-template>

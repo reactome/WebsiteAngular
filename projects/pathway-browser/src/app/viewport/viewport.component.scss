@@ -24,7 +24,7 @@
   min-height: var(--top-bar-height);
   background: light-dark(var(--primary), var(--primary-container));
 
-  --home-link-width: 88px;
+  --home-link-width: 64px;
   --search-inset: var(--home-link-width);
 
   .logo {
@@ -50,11 +50,6 @@
     margin-left: -6px;
     color: light-dark(var(--on-primary), var(--primary));
     width: max-content;
-  }
-
-  .version {
-    vertical-align: top;
-    text-decoration: underline;
   }
 }
 
@@ -509,6 +504,17 @@
   flex-direction: column;
   justify-content: space-around;
   align-items: center;
+  padding-right: 6px;
+
+  // A label, not a link: no underline, small, and a little quieter than the
+  // controls beside it. 85% keeps it above WCAG AA's 4.5:1 on the bar in both
+  // themes (5.1:1 light, 5.8:1 dark); 75% fell to 4.4:1 in light.
+  .version {
+    font: var(--mat-sys-label-medium);
+    letter-spacing: 0.02em;
+    opacity: 0.85;
+    cursor: default;
+  }
 }
 .beta {
   font: var(--mat-sys-label-small);
