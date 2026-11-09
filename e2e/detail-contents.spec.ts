@@ -51,7 +51,9 @@ test.describe('Molecules tab', () => {
     await row.locator('.toggle-icon-container').click();
     const details = page.locator('cr-molecule-tab cr-object-tree-details').first();
     await expect(details, "the molecule's details open under it").toBeVisible({ timeout: 30_000 });
-    await expect(details).not.toBeEmpty();
+    // Something only ATP's loaded details carry (a cross-reference), not a
+    // spinner or a notice, which would also make the panel non-empty.
+    await expect(details).toContainText('ZINC000004261765');
     expect(thrown).toEqual([]);
   });
 

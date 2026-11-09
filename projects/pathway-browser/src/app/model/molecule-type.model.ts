@@ -8,6 +8,7 @@
  * component was read before it was defined, and expanding a molecule threw
  * NG0919 and drew nothing.
  */
+/** As the content service gives it, in an enhanced query's `moleculeType`. */
 export enum MoleculeType {
   PROTEIN = 'Protein', //Protein
   CHEMICAL_DRUG = 'ChemicalDrug', // Drugs
