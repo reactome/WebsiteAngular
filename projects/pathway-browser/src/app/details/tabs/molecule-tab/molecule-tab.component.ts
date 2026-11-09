@@ -40,7 +40,6 @@ export type MoleculeData = {
   highlight: boolean;
 };
 
-// molecule type from backend when sending enhanced query
 @Component({
   selector: 'cr-molecule-tab',
   templateUrl: './molecule-tab.component.html',
