@@ -4,7 +4,7 @@ import { ReferenceEntity } from '../model/graph/reference-entity/reference-entit
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { PropertyType } from '../model/property-type';
-import { extractFromSpace } from './utils';
+import { nameAfterIdentifier, nameBeforeIdentifier } from './utils';
 import { SchemaClasses } from '../constants/constants';
 import type { Participant, ShownParticipant } from '../model/participant.model';
 import type { ParticipantReference } from '../../../../contract/participants.ts';
@@ -42,24 +42,24 @@ export class ParticipantService {
       case SchemaClasses.REFERENCE_GENE_PRODUCT:
       case SchemaClasses.REFERENCE_ISOFORM:
         type = PropertyType.PROTEINS;
-        name = extractFromSpace(molecule.displayName, false);
+        name = nameAfterIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.REFERENCE_RNA_SEQUENCE:
       case SchemaClasses.REFERENCE_DNA_SEQUENCE:
         type = PropertyType.SEQUENCES;
-        name = extractFromSpace(molecule.displayName, false);
+        name = nameAfterIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.SIMPLE_ENTITY:
       case SchemaClasses.REFERENCE_MOLECULE:
         type = PropertyType.CHEMICAL_COMPOUNDS;
-        name = extractFromSpace(molecule.displayName, true);
+        name = nameBeforeIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.REFERENCE_THERAPEUTIC:
         type = PropertyType.DRUG;
-        name = extractFromSpace(molecule.displayName, true);
+        name = nameBeforeIdentifier(molecule.displayName);
 
         break;
       default:
