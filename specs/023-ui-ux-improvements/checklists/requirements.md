@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -38,7 +38,9 @@
   requirement, an unbounded home-page piece, success criteria needing studies
   nobody had scheduled, hover-only information, and the input abridged. Each
   is addressed in the spec; the items above were re-checked against it.
-- Open: User Story 5's form (the molecule tab's paging), one clarification.
+- Answered 2026-11-09: User Story 5, the molecule tab: paging stays per group,
+  made plain (each group a box, its pager inside and named for it), with the
+  highlighting explained and a switch to show only highlighted molecules.
 - Answered 2026-11-09 (see the spec's Clarifications): the Icon Library's
   smaller fixes first, the side panel decided afterwards; the home page
   designed here, after what visitors come to do is measured.

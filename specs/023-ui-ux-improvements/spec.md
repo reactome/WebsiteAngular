@@ -201,37 +201,62 @@ confirmed or replaced by what the measurement finds.
 
 ---
 
-### User Story 5 - Page through a long group in the molecule tab (Priority: P3)
+### User Story 5 - Understand and move through the molecule tab (Priority: P2)
 
-A reader opens the molecule tab for a large pathway: 345 proteins, of which
-164 belong to what they have selected. They move through the proteins and find
-the ones their selection involves.
+A reader opens the molecule tab for Chromatin organization with ATP-dependent
+chromatin remodelers selected. They can tell what the list is (the pathway's
+molecules), what the blue highlighting means (in their selection), how many of
+each kind are highlighted, and which list a pager belongs to; and they can see
+only the highlighted molecules if that is what they came for.
 
-**What is wrong today**: only a group of more than 50 is paged, so Proteins
-alone has a pager. It sits in the group's label column, under the count, apart
-from the list it pages, and reads as if it were for the whole tab; "1 – 50 of
-345" wraps onto two lines between small arrows. Paging inside a list that
-already scrolls, with links to each group beside it, is a second way to move
-that readers do not expect, and highlighted items on other pages cannot be
-seen at all.
+**What is wrong today** (read from the code and seen on beta):
+
+- Nothing says what the list is or what the highlighting means. The list is
+  every molecule in the open pathway; a molecule is highlighted when it also
+  takes part in what is selected. The tab never names the selection.
+- Each group's count is a bare fraction, "8 / 20": 8 highlighted of 20, but
+  nothing says so.
+- Each group pages on its own, in pages of 50, and only a group of more than
+  50 has a pager: here only Proteins (345). The pager sits in the label
+  column under the count, apart from the list it pages, so it reads as if it
+  turned a page of the whole tab, and its "1 – 50 of 345" does not say 345 of
+  what. Readers asked whether the drugs had a second page; they do not.
+- Each group lists its highlighted molecules first, then by number of copies,
+  so the later pages of Proteins hold none of the selection; nothing tells
+  the reader that either. (The code comment there says "by name"; it is by
+  count.)
+
+**Why this priority**: the molecule tab is where a reader finds what a
+selection involves; when the highlighting cannot be read, the tab does not do
+that job.
 
 **Independent Test**: Open the molecule tab for Chromatin organization with
-ATP-dependent chromatin remodelers selected; reach every protein, and every
-highlighted protein, without wondering what a control belongs to.
+ATP-dependent chromatin remodelers selected: the tab names the selection and
+what highlighting means; each group's heading says its total and how many are
+highlighted, in words; only Proteins has a pager, inside the Proteins group,
+named "Proteins"; showing only highlighted molecules leaves 164 proteins.
 
 **Acceptance Scenarios**:
 
-1. **Given** a group longer than is shown at once, **When** the reader looks
-   for more, **Then** the control for it is part of that group's list, at the
-   point where the list ends.
-2. **Given** a selection that highlights molecules, **When** the reader looks
-   for them, **Then** every highlighted molecule can be reached without paging
-   blindly.
+1. **Given** a selection inside the open pathway, **When** the reader opens
+   the molecule tab, **Then** it says which pathway's molecules are listed and
+   that highlighted ones take part in the named selection, with a swatch of
+   the highlight.
+2. **Given** a group, **When** the reader reads its heading, **Then** it gives
+   the group's total and, with a selection, how many are highlighted, in words
+   ("345 · 164 highlighted").
+3. **Given** a group of more than 50, **When** the reader looks for the rest,
+   **Then** a pager is inside that group's box, at the end of its list and at
+   its start, and says which molecules it pages and which are shown
+   ("Proteins 1–50 of 345").
+4. **Given** a group of 50 or fewer, **Then** it has no pager, and its heading
+   shows that all of it is listed.
+5. **Given** a selection, **When** the reader chooses to show only highlighted
+   molecules, **Then** every group lists only those, and its heading and any
+   pager count only those.
 
-The form this takes is open: [NEEDS CLARIFICATION: (A) a "show more" control at
-the end of the group's list; (B) every molecule shown, no paging, if 345 rows
-draw quickly enough (to be measured first); or (C) A or B with a switch to show
-only the highlighted molecules?]
+Decided 2026-11-09: paging stays per group, in pages of 50, made plain as
+above, rather than replaced.
 
 ---
 
@@ -323,11 +348,21 @@ Each of these is a requirement below, so that tasks are made for it.
 
 **Molecule tab**
 
-- **FR-040**: A control that pages or extends a group's list MUST be part of
-  that list, where the list ends, and MUST NOT appear for groups it does not
-  page.
-- **FR-041**: Every molecule a selection highlights MUST be reachable without
-  paging blindly.
+- **FR-040**: The tab MUST say, in words, which pathway's molecules it lists,
+  and, when something is selected, that highlighted molecules take part in
+  the selection, naming it, with a swatch of the highlight.
+- **FR-041**: Each group's heading MUST give its total and, with a selection,
+  the number highlighted, in words.
+- **FR-042**: Each group MUST be a visibly bounded region holding its heading,
+  its list and any pager.
+- **FR-043**: A group of more than 50 MUST have a pager inside its region, at
+  the end of its list and at its start, naming the group and the range shown
+  ("Proteins 1–50 of 345"); a group of 50 or fewer MUST have none.
+- **FR-044**: With a selection, a control MUST let the reader list only the
+  highlighted molecules in every group; the headings and pagers then count
+  only those.
+- **FR-045**: Within a group, molecules MUST be ordered highlighted first, then
+  by number of copies, then by name, the same on every page.
 
 ### Key Entities
 
@@ -359,9 +394,11 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   from the home page, and their results are added to `home-page-findings.md`.
 - **SC-006**: On each changed page, no element styled as a link, button or
   chip does nothing when activated.
-- **SC-007**: In the molecule tab for a pathway with a group over 50, every
-  highlighted molecule of that group is reached with the group's own control,
-  which sits at the end of its list.
+- **SC-007**: In the molecule tab for Chromatin organization with
+  ATP-dependent chromatin remodelers selected: the selection is named; each
+  group's heading reads its total and highlighted count; Proteins alone has a
+  pager, inside the Proteins region and named for it; showing only
+  highlighted molecules lists 164 proteins.
 
 ## Clarifications
 
@@ -373,6 +410,11 @@ Each is checked by an automated end-to-end test unless it says otherwise.
 - Q: The home page: designed within this spec, or in a spec of its own? → A:
   Within this spec, but what visitors come to do is measured first, and the
   design follows from that.
+- Q: The molecule tab's paging: a "show more" control, every molecule shown,
+  or a switch to show only highlighted ones? → A: Paging stays per group, in
+  pages of 50, made plain: each group a box with the pager inside it, named
+  for the group; the tab says what highlighting means; and a switch shows
+  only the highlighted molecules.
 
 ## Assumptions
 
