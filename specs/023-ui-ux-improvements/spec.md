@@ -36,7 +36,8 @@ open in a side panel; which one is not yet decided. Home page: improvements to
 be defined from what visitors come to do (search, browse pathways, analyse
 data); not yet designed." Added later the same day: the molecule tab's
 pagination, which sits under the Proteins count and reads as if it were for
-every group.
+every group; then what its highlighting and its "8 / 20" counts mean, which
+nothing on the tab says.
 
 (The input's "the search bar ... does nothing there" proved wrong when the code
 was read: see User Story 3.)
@@ -215,7 +216,9 @@ only the highlighted molecules if that is what they came for.
   every molecule in the open pathway; a molecule is highlighted when it also
   takes part in what is selected. The tab never names the selection.
 - Each group's count is a bare fraction, "8 / 20": 8 highlighted of 20, but
-  nothing says so.
+  nothing says so; and a group with none highlighted shows only its total
+  ("5"), exactly as with no selection, so "none highlighted" and "nothing
+  selected" look the same.
 - Each group pages on its own, in pages of 50, and only a group of more than
   50 has a pager: here only Proteins (345). The pager sits in the label
   column under the count, apart from the list it pages, so it reads as if it
@@ -226,15 +229,21 @@ only the highlighted molecules if that is what they came for.
   the reader that either. (The code comment there says "by name"; it is by
   count.)
 
-**Why this priority**: the molecule tab is where a reader finds what a
-selection involves; when the highlighting cannot be read, the tab does not do
-that job.
+**Principles broken**: 2 (a pager that reads as the tab's own), 5 (nothing
+says what the highlighting means, so the reader must recall it), and the
+plain-language half of 1.
 
-**Independent Test**: Open the molecule tab for Chromatin organization with
-ATP-dependent chromatin remodelers selected: the tab names the selection and
-what highlighting means; each group's heading says its total and how many are
-highlighted, in words; only Proteins has a pager, inside the Proteins group,
-named "Proteins"; showing only highlighted molecules leaves 164 proteins.
+**Why this priority**: P2, raised from P3 once it was clear the story is not
+only paging: the molecule tab is where a reader finds what a selection
+involves, and when its highlighting cannot be read the tab does not do that
+job.
+
+**Independent Test**: Open the molecule tab for a pathway with a group of more
+than 50 and something selected inside it: the tab names the selection and what
+highlighting means; each group's heading gives its total and highlighted count
+in words; only the groups of more than 50 have a pager, inside their own box
+and named for the group; showing only highlighted molecules lists, in each
+group, the number its heading gave as highlighted.
 
 **Acceptance Scenarios**:
 
@@ -272,6 +281,12 @@ Each of these is a requirement below, so that tasks are made for it.
 - A search and a category that together match nothing: FR-026.
 - An icon with no categories, or no related icons: FR-024.
 - Keyboard only: FR-006.
+- The molecule tab with nothing highlighted in a group, the pathway itself
+  selected, a group of exactly 50, and the switch leaving a group empty:
+  FR-040, FR-041, FR-043, FR-044.
+- The molecule tab on page 7 of a group when the selection changes or the
+  switch is turned: FR-046.
+- The molecule tab while a new selection or pathway loads: FR-047.
 
 ## Requirements _(mandatory)_
 
@@ -348,21 +363,40 @@ Each of these is a requirement below, so that tasks are made for it.
 
 **Molecule tab**
 
-- **FR-040**: The tab MUST say, in words, which pathway's molecules it lists,
-  and, when something is selected, that highlighted molecules take part in
-  the selection, naming it, with a swatch of the highlight.
-- **FR-041**: Each group's heading MUST give its total and, with a selection,
-  the number highlighted, in words.
-- **FR-042**: Each group MUST be a visibly bounded region holding its heading,
-  its list and any pager.
-- **FR-043**: A group of more than 50 MUST have a pager inside its region, at
-  the end of its list and at its start, naming the group and the range shown
-  ("Proteins 1–50 of 345"); a group of 50 or fewer MUST have none.
-- **FR-044**: With a selection, a control MUST let the reader list only the
-  highlighted molecules in every group; the headings and pagers then count
-  only those.
+- **FR-040**: The tab MUST say, in words, which pathway's molecules it lists.
+  When something inside that pathway is selected, it MUST also say that
+  highlighted molecules take part in the selection, naming it, with a swatch
+  of the highlight. When the pathway itself is selected, or nothing is, there
+  is no highlighting and nothing says there is. In the overview of all
+  pathways (no pathway open), it names the selected pathway as the one whose
+  molecules are listed.
+- **FR-041**: Each group's heading MUST give its total and, while something
+  inside the pathway is selected, its highlighted count, in words ("345 · 164
+  highlighted"; "5 · none highlighted").
+- **FR-042**: Each group MUST be a box: a border or background that sets it
+  apart from the panel, holding its heading, its list and any pager.
+- **FR-043**: A group of more than 50 MUST have a pager inside its box: under
+  its heading, before the first row, and again after the last. Each names the
+  group and the range shown ("Proteins 1–50 of 345"); the two show the same
+  page; paging from the lower one brings the group's heading into view. A
+  group of 50 or fewer MUST have none.
+- **FR-044**: While something inside the pathway is selected, a switch MUST
+  let the reader list only the highlighted molecules. With it on, a group with
+  none highlighted keeps its heading ("5 · none highlighted") and lists
+  nothing; headings and pagers count only what is listed. With nothing
+  selected the switch is not shown. The switch is kept in the page's address,
+  so a shared link and Back keep it (principle 5). The download panel is not
+  filtered: it offers the pathway's molecules, as it says.
 - **FR-045**: Within a group, molecules MUST be ordered highlighted first, then
-  by number of copies, then by name, the same on every page.
+  by how many of the pathway's participants contain them (the "N ×" shown),
+  then by the name shown, alphabetically; the same on every page, and without
+  reordering the data the download panel reads.
+- **FR-046**: Changing the selection, turning the switch, or opening another
+  pathway MUST return each group to its first page.
+- **FR-047**: Changing the selection inside the open pathway MUST change only
+  the highlighting: the list stays on screen, and it is not fetched again.
+  Opening another pathway keeps the old list on screen, marked as updating,
+  until the new one arrives; only the first load shows a spinner alone.
 
 ### Key Entities
 
@@ -394,11 +428,13 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   from the home page, and their results are added to `home-page-findings.md`.
 - **SC-006**: On each changed page, no element styled as a link, button or
   chip does nothing when activated.
-- **SC-007**: In the molecule tab for Chromatin organization with
-  ATP-dependent chromatin remodelers selected: the selection is named; each
-  group's heading reads its total and highlighted count; Proteins alone has a
-  pager, inside the Proteins region and named for it; showing only
-  highlighted molecules lists 164 proteins.
+- **SC-007**: In the molecule tab for a pathway with a group of more than 50
+  and a selection inside it, with the expected counts read from the content
+  service rather than written into the test: each heading gives the right
+  total and highlighted count; exactly the groups of more than 50 have a pager,
+  at both ends of their own box, named for the group; the first page lists the
+  highlighted molecules first; and with the switch on, each group lists its
+  highlighted count and the address carries the switch.
 
 ## Clarifications
 
