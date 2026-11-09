@@ -44,6 +44,7 @@ const UPSTREAMS: Record<string, string> = {
   mcp: 'other',
   chatbot: 'other',
   deltasignal: 'other',
+  gsa: 'other',
 };
 
 type Location = { kind: string; path: string; target: string; body: string };
