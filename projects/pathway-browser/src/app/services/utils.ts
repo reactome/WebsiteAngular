@@ -398,18 +398,30 @@ export function extractIdInBrackets(value: string): string {
  * @param input
  * @param getBeforeSpace
  */
-export function extractFromSpace(input: string, getBeforeSpace: boolean = false): string {
-  if (!input) return '';
+/**
+ * A molecule's name from its display name, which carries its database and
+ * identifier as well: in front for proteins, DNA and RNA
+ * ("UniProt:P78396 CCNA1", "EMBL:X59360 U2 snRNA"), behind for chemicals and
+ * drugs ("carbon dioxide [ChEBI:16526]", "panobinostat [Guide to Pharmacology -
+ * Ligands:7489]").
+ *
+ * The name itself may hold spaces. Cutting at a space, as the molecule tab did,
+ * showed "carbon" for carbon dioxide, "snRNA" for U2 snRNA and
+ * "1D-myo-inositol" for 1D-myo-inositol 1,4,5,6-tetrakisphosphate(8-).
+ */
+export function nameAfterIdentifier(displayName: string): string {
+  if (!displayName) return '';
+  const trimmed = displayName.trim();
+  const match = /^\S+:\S+\s+(.+)$/.exec(trimmed);
+  return match?.[1] ?? trimmed;
+}
 
-  const trimmed = input.trim();
-
-  if (getBeforeSpace) {
-    const index = trimmed.indexOf(' ');
-    return index !== -1 ? trimmed.substring(0, index) : trimmed;
-  } else {
-    const index = trimmed.lastIndexOf(' ');
-    return index !== -1 ? trimmed.substring(index + 1) : trimmed;
-  }
+/** See {@link nameAfterIdentifier}: the name before a trailing "[database:identifier]". */
+export function nameBeforeIdentifier(displayName: string): string {
+  if (!displayName) return '';
+  const trimmed = displayName.trim();
+  const name = trimmed.replace(/\s*\[[^[\]]*:[^[\]]*\]$/, '');
+  return name || trimmed;
 }
 
 export function average(numbers: number[]): number {

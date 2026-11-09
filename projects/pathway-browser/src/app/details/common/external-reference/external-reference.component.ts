@@ -30,7 +30,21 @@ export class ExternalReferenceComponent {
   readonly displayReference = input<boolean>(true);
 
   readonly externalRef = computed(() => {
-    return this.entity.getTransformedExternalRef(this.referenceEntity());
+    const rows = this.entity.getTransformedExternalRef(this.referenceEntity());
+    // In the molecule tab the reference's own row is left out (its name is the
+    // tree row's), so a DNA or RNA sequence with no gene names had nothing at
+    // all to show: its details opened empty. Its names are what it has.
+    const ref = this.referenceEntity();
+    const names = ref.name;
+    if (
+      !this.displayReference() &&
+      ref.moleculeType === MoleculeType.ENTITY &&
+      names?.length &&
+      !rows.some((row) => row.label === 'Gene Names')
+    ) {
+      return [{ label: 'Name', value: names.join(', ') }, ...rows];
+    }
+    return rows;
   });
 
   readonly moleculeType = computed(() => {
