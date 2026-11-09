@@ -38,6 +38,43 @@ async function openMolecules(page: Page) {
 test.describe('Molecules tab', () => {
   test.describe.configure({ timeout: 2 * 60 * 1000 });
 
+  test('expanding a molecule shows its details', async ({ page }) => {
+    // Expanding a row read the details' component before it was defined -- a
+    // runtime import cycle through the molecule tab -- so it threw NG0919 and
+    // drew nothing: the toggle turned to a minus and the list stayed as it was.
+    const thrown: string[] = [];
+    page.on('pageerror', (error) => thrown.push(error.message));
+    await openDiagram(page);
+    await openMolecules(page);
+
+    const row = page.locator('cr-molecule-tab cr-object-tree .mat-tree-node').first();
+    await row.locator('.toggle-icon-container').click();
+    const details = page.locator('cr-molecule-tab cr-object-tree-details').first();
+    await expect(details, "the molecule's details open under it").toBeVisible({ timeout: 30_000 });
+    // Something only ATP's loaded details carry (a cross-reference), not a
+    // spinner or a notice, which would also make the panel non-empty.
+    await expect(details).toContainText('ZINC000004261765');
+    expect(thrown).toEqual([]);
+  });
+
+  test('a molecule keeps its whole name, and an RNA with no gene names shows its own', async ({
+    page,
+  }) => {
+    // Names were cut at a space ("snRNA" for U2 snRNA, "carbon" for carbon
+    // dioxide), and an RNA sequence with no gene names opened empty details.
+    await page.goto('/PathwayBrowser/R-HSA-4839726?tab=molecule');
+    const tab = page.locator('cr-molecule-tab');
+    await expect(tab).toBeVisible({ timeout: BOOT });
+    const row = tab.locator('cr-object-tree .mat-tree-node').filter({ hasText: 'X59360' }).first();
+    await expect(row).toContainText('U2 snRNA', { timeout: 60_000 });
+    await expect(tab).toContainText('carbon dioxide');
+
+    await row.locator('.toggle-icon-container').click();
+    await expect(tab.locator('cr-object-tree-details').first()).toContainText('U2 snRNA', {
+      timeout: 30_000,
+    });
+  });
+
   test('molecules are grouped, counted, and carry their stoichiometry', async ({ page }) => {
     await openDiagram(page);
     await openMolecules(page);

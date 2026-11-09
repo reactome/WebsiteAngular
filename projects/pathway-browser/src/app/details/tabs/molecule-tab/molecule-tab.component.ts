@@ -40,14 +40,6 @@ export type MoleculeData = {
   highlight: boolean;
 };
 
-// molecule type from backend when sending enhanced query
-export enum MoleculeType {
-  PROTEIN = 'Protein', //Protein
-  CHEMICAL_DRUG = 'ChemicalDrug', // Drugs
-  ENTITY = 'Entity', // DRA/RNA
-  CHEMICAL = 'Chemical', //Chemical
-}
-
 @Component({
   selector: 'cr-molecule-tab',
   templateUrl: './molecule-tab.component.html',
