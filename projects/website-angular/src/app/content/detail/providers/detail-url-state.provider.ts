@@ -21,8 +21,7 @@ type NotOnContentPages =
   | 'ensureStId'
   | 'dbIdToStId'
   // The Pathway Browser's viewport reads these to keep old tab names working.
-  | 'oldToNewTab'
-  | 'newToOldTab';
+  | 'oldToNewTab';
 
 /** The state the content pages read, for the Pathway Browser components they reuse. */
 @Injectable()

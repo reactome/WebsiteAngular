@@ -95,8 +95,9 @@
   }
 
   // The clear button, inside the pill's right end; the text's margin already
-  // keeps it clear of the edge.
-  > button:last-child {
+  // keeps it clear of the edge. By class: while suggestions are open they are
+  // the row's last child, and the button slid past the pill.
+  > button.clear {
     margin-left: -10px;
     margin-right: 10px;
   }

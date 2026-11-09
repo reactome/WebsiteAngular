@@ -17,13 +17,13 @@
       [attr.inert]="panels().hierarchy ? null : ''"
     >
       <div class="left-panel">
-        <!-- Hidden from the curator build rather than from everyone: it was
-             commented out wholesale in "Remove Overlay feature, feedback, and
-             revert to old site", which took it off the public site too. -->
-        <div class="left-top">
-          @if (panels().hierarchy) {
+        <div class="left-top" [class.with-home]="homeInPanel()">
+          @if (homeInPanel()) {
             <ng-container [ngTemplateOutlet]="homeLink" />
           }
+          <!-- Hidden from the curator build rather than from everyone: it was
+               commented out wholesale in "Remove Overlay feature, feedback, and
+               revert to old site", which took it off the public site too. -->
           @if (!isCurator) {
             <div class="search">
               <cr-search />
@@ -138,7 +138,7 @@
       <div class="right-panel">
         <div class="top">
           <div class="top-left">
-            @if (!panels().hierarchy) {
+            @if (!homeInPanel()) {
               <ng-container [ngTemplateOutlet]="homeLink" />
             }
             <div class="analysis-button-group">
@@ -362,7 +362,10 @@
                 <span class="beta">curator</span>
               } @else {
                 @if (general.current(); as version) {
-                  <span class="version" [title]="'Reactome release ' + version">v{{ version }}</span>
+                  <span class="version" [title]="'Reactome release ' + version"
+                    ><span aria-hidden="true">v{{ version }}</span
+                    ><span class="visually-hidden">Reactome release {{ version }}</span></span
+                  >
                 }
               }
             </div>
@@ -447,8 +450,8 @@
 </div>
 
 <!-- The way home, top left as readers expect it: over the search row while
-     the hierarchy panel is open, at the start of the top bar while it is
-     closed. Drawn in one place at a time, so the id stays unique. -->
+     the hierarchy panel is open and wide enough, at the start of the top bar
+     otherwise. Drawn in one place at a time, so the id stays unique. -->
 <ng-template #homeLink>
   <!-- A plain title rather than matTooltip: the Material tooltip opened below
        the logo, over the species picker, and took the clicks meant for it. -->

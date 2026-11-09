@@ -128,6 +128,14 @@ export class ViewportComponent {
    * and would put a dragged width back to the default.
    */
   readonly hierarchyShare = signal(20);
+  /**
+   * Whether the way home is drawn in the hierarchy panel, over its search row.
+   * Not when the panel is closed, and not when it has been dragged narrow: the
+   * panel has no minimum, and dragged to nothing it took the logo with it,
+   * leaving no way home on screen. Below this share of the width it moves to
+   * the top bar instead.
+   */
+  readonly homeInPanel = computed(() => this.panels().hierarchy && this.hierarchyShare() >= 12);
 
   onSideDragEnd($event: SplitGutterInteractionEvent) {
     this.hierarchyShare.set($event.sizes[0] as number);

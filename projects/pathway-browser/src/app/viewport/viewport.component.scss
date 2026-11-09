@@ -17,15 +17,24 @@
 // The top of the hierarchy panel: the search row, with the way home over its
 // left end. The search's input is inset by the logo's width (--search-inset,
 // read by the search component) rather than the two sharing a row, because the
-// search's results open below its input and should keep the panel's width.
+// search's results open below its input and should keep the panel's width --
+// and the panel's own background: this wraps the results too, so the bar's
+// colour is the search row's, not this block's. Only the curator build, which
+// has no search, needs this block to be the bar itself.
 .left-top {
   flex: 0 0 auto;
   position: relative;
-  min-height: var(--top-bar-height);
-  background: light-dark(var(--primary), var(--primary-container));
+
+  &:not(:has(cr-search)) {
+    min-height: var(--top-bar-height);
+    background: light-dark(var(--primary), var(--primary-container));
+  }
 
   --home-link-width: 64px;
-  --search-inset: var(--home-link-width);
+
+  &.with-home {
+    --search-inset: var(--home-link-width);
+  }
 
   .logo {
     position: absolute;
@@ -574,4 +583,14 @@ cr-interactor-threshold {
 // separator; hidden with the panel so the keyboard cannot land on it.
 :host ::ng-deep .hierarchy-hidden > .as-split-gutter {
   visibility: hidden;
+}
+
+// Read out, not shown: the release in full beside its short form.
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
