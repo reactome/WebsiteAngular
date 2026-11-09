@@ -47,6 +47,13 @@ const UPSTREAMS: Record<string, string> = {
   gsa: 'other',
 };
 
+/**
+ * The upstream a location's proxy_pass names: `http://site/` names `site`, and
+ * a variable resolved per request (`https://$gsa_upstream`) names `gsa`.
+ */
+const upstreamName = (body: string): string =>
+  (body.match(/proxy_pass\s+https?:\/\/(\$?[\w-]+)/)?.[1] ?? '').replace(/^\$(.*)_upstream$/, '$1');
+
 type Location = { kind: string; path: string; target: string; body: string };
 /** A file's locations, in file order: indented ones too (local.conf's are). */
 const parse = (text: string): Location[] =>
@@ -56,8 +63,7 @@ const parse = (text: string): Location[] =>
     path: m[2].replace(/^"(.*)"$/, '$1'),
     target: m[3].includes('content-node-proxy.conf')
       ? 'node'
-      : (UPSTREAMS[m[3].match(/proxy_pass\s+https?:\/\/([\w-]+)/)?.[1] ?? ''] ??
-        (/proxy_pass/.test(m[3]) ? 'unclassified' : 'none')),
+      : (UPSTREAMS[upstreamName(m[3])] ?? (/proxy_pass/.test(m[3]) ? 'unclassified' : 'none')),
     body: m[3],
   }));
 const locations = parse(conf);
