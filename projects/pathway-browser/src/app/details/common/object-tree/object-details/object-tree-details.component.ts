@@ -7,7 +7,7 @@ import { DescriptionOverviewComponent } from '../../../tabs/description-tab/desc
 import { ExternalReferenceComponent } from '../../external-reference/external-reference.component';
 import { CrossReferencesComponent } from '../../cross-references/cross-references.component';
 import { getProperty, isMolecule, isRefEntity } from '../../../../services/utils';
-import { MoleculeType } from '../../../tabs/molecule-tab/molecule-tab.component';
+import { MoleculeType } from '../../../../model/molecule-type.model';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { NoticeInfoComponent } from '../../notice-info/notice-info.component';
 import { EntityService } from '../../../../services/entity.service';

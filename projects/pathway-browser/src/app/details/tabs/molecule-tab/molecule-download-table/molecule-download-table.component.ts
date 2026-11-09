@@ -8,7 +8,7 @@ import {
   Signal,
   viewChild,
 } from '@angular/core';
-import { MoleculeGroup } from '../molecule-tab.component';
+import type { MoleculeGroup } from '../molecule-tab.component';
 import { MatTable, MatTableModule } from '@angular/material/table';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';

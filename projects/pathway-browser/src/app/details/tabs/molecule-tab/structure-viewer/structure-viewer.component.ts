@@ -21,7 +21,7 @@ import { catchError, map, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SafePipe } from '../../../../pipes/safe.pipe';
 import { SelectableObject } from '../../../../services/event.service';
-import { MoleculeType } from '../molecule-tab.component';
+import { MoleculeType } from '../../../../model/molecule-type.model';
 import { StructureService } from '../../../../services/structure.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { getProperty } from '../../../../services/utils';

@@ -11,7 +11,7 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
 import { Labels } from '../../../constants/constants';
-import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
+import { MoleculeType } from '../../../model/molecule-type.model';
 
 @Component({
   selector: 'cr-external-reference',
