@@ -94,7 +94,7 @@ test('the pathway browser header draws without the release', async ({ page }) =>
   // No pathway: a diagram cannot be had without the release either (its files
   // are named by it), and that is a separate failure from the header's.
   await page.goto('/PathwayBrowser');
-  await expect(page.locator('.version-container .beta')).toBeVisible({ timeout: 60_000 });
+  await expect(page.locator('.logo #main')).toBeVisible({ timeout: 60_000 });
   // Long enough for redraws after the version has failed.
   await page.waitForTimeout(3000);
   expect(thrown).toEqual([]);

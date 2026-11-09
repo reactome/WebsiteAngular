@@ -227,7 +227,6 @@ export abstract class UrlStateService implements StateValues {
   private readonly http = inject(HttpClient);
 
   readonly oldToNewTab = new Map(TABS_COMPATIBILITY);
-  readonly newToOldTab = new Map(TABS_COMPATIBILITY.map(([newTab, oldTab]) => [oldTab, newTab]));
 
   readonly values = createStateValues(this.oldToNewTab);
 

@@ -23,7 +23,7 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import { EventService } from '../services/event.service';
-import { UrlParam, UrlStateService } from '../services/url-state.service';
+import { UrlStateService } from '../services/url-state.service';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { GeneralService } from '../services/general.service';
 import { DataStateService } from '../services/data-state.service';
@@ -32,7 +32,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment, IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
+import { IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
 import { FigureService } from '../details/tabs/description-tab/figure/figure.service';
 // angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
 // shape ({gutterNum, sizes}).
@@ -461,38 +461,6 @@ export class ViewportComponent {
       .openDialog()
       .catch((error) => console.error('Could not open the citation', error));
   }
-
-  readonly formerPathwayBrowserURL = computed(() => {
-    let url = `${environment.host}/PathwayBrowser/#/`;
-    if (this.state.pathwayId() || this.state.select())
-      url += this.state.pathwayId() || this.state.select();
-    if (this.state.select()) url += `&SEL=${this.state.select()}`;
-    if (this.state.analysis()) url += `&ANALYSIS=${this.state.analysis()}`;
-    if (this.state.path().length > 0) url += `&PATH=${this.state.path().join(',')}`;
-    const flags = this.dataState.flagIdentifiers().filter((f) => f.startsWith('R-'));
-    if (flags.length > 0) url += `&FLG=${flags[0]}`;
-    if (this.state.flagInteractors()) url += `&FLGINT`;
-    if (this.state.tab()) {
-      const oldTab = this.state.newToOldTab.get(this.state.tab()!);
-      if (oldTab) url += `&DTAB=${oldTab}`;
-    }
-
-    const filters: [UrlParam<any>, { token: string; checker?: (value: any) => boolean }][] = [
-      [this.state.resourceFilter, { token: 'resource' }],
-      [this.state.speciesFilter, { token: 'species', checker: (species) => species.length > 0 }],
-      [this.state.fdrFilter, { token: 'pValue' }],
-      [this.state.pathwayMinSizeFilter, { token: 'min' }],
-      [this.state.pathwayMaxSizeFilter, { token: 'max' }],
-      [this.state.includeDisease, { token: 'includeDisease' }],
-    ];
-    const filterValue = filters
-      .filter(([value, { checker }]) => (checker ? checker(value()) : value()))
-      .map(([value, { token }]) => `${token}:${value()}`)
-      .join('$');
-    if (filterValue.length > 0) url += `&FILTER=${filterValue}`;
-
-    return url;
-  });
 
   onViewDetailDragEnd($event: SplitGutterInteractionEvent) {
     this.detailDraggedSize.set($event.sizes[1] as number);
