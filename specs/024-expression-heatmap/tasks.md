@@ -6,13 +6,12 @@
 
 **Pull requests** (plan.md, "Delivery order"):
 
-| PR    | Covers                                                    |
-| ----- | --------------------------------------------------------- |
-| PR-A  | Phases 1–2a: contract, pure leaves, refresh step, fixture |
-| PR-B  | Phase 2b: the endpoint family and its routing             |
-| PR-C  | Phases 3–5: the tab, for User Stories 1–3                 |
-| PR-D  | Phase 6: download, User Story 4                           |
-| PR-E… | Phase 7: one PR per further species, User Story 5         |
+| PR    | Covers                                                                                                                                                                                                                                                                              |
+| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR-A  | Phases 1–2: contract, pure leaves, refresh step, fixture, and the endpoint family with its routing. One pull request, because the leaves have no users until the endpoint exists, and the dead-code ratchet never lets that count rise (measured: 104 → 112 with the leaves alone). |
+| PR-C  | Phases 3–5: the tab, for User Stories 1–3                                                                                                                                                                                                                                           |
+| PR-D  | Phase 6: download, User Story 4                                                                                                                                                                                                                                                     |
+| PR-E… | Phase 7: one PR per further species, User Story 5                                                                                                                                                                                                                                   |
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -103,7 +102,7 @@
 - [ ] T012 Test T010's checks in `tools/content-node/snapshot-expression.spec.ts`, offline, on a small TSV and configuration made in the test. A mutated cell, a missing column, an extra group and a decreasing tuple must each be refused, with nothing written. Show the cell case passes wrongly when the sample comparison is removed.
 - [ ] T013 Run the refresh step on the real human table into a local data folder outside the repository. Record the reported gene and tissue counts (expected 61,860 and 29) and the file's size in the PR description, then measure the service's memory with the file loaded (research R5: under 150 MB).
 
-### 2b. The endpoint family and its routing (PR-B)
+### 2b. The endpoint family and its routing (PR-A, continued)
 
 - [ ] T014 Write `tools/content-node/expression-endpoints.ts`, the family, for `GET /ContentService/expression/{id}`:
   1. resolve the selection: pathway, reaction, complex, set, protein or reference entity, by stId or dbId, as the other `{id}` routes do;
@@ -233,7 +232,7 @@
   - T014 needs T003, T004, T006 and T008;
   - T016–T021 need T014.
 - **US1 (Phase 3) needs Phase 2.** US2 and US3 need US1's tab and heatmap. US4 needs US1. US5 needs Phase 2 and US1, and is independent of US2–US4.
-- T040 needs PR-B merged, or a preview on beta. T041 needs T040.
+- T040 needs PR-A merged, or a preview on beta. T041 needs T040.
 
 ## Parallel examples
 

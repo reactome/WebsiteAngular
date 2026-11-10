@@ -1,0 +1,11 @@
+{
+  "Homo sapiens": {
+    "accession": "E-MTAB-2836",
+    "design": "29 tissues from 122 individuals",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Uhlén M, et al. Tissue-based map of the human proteome. Science 347(6220):1260419 (2015). doi:10.1126/science.1260419"
+    ],
+    "licence": "CC BY 4.0"
+  }
+}

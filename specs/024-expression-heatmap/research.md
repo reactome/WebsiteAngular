@@ -98,9 +98,11 @@ It runs by hand, when Expression Atlas updates an experiment (E-MTAB-2836 was la
 - **The tissues**: in display order, each with its label and its number of samples.
 - **The genes**: an object keyed by versionless Ensembl gene id, holding the table's gene name and, per tissue, the five quantiles as published, or `null` where the table has none.
 
-Loaded once, lazily, on the first request for that species. Measured for human: 25.2 MB of JSON for the 55,370 genes expressed in at least one tissue. Genes with no expression anywhere (6,490) are kept too, as "expressed nowhere", so that they aren't reported as "not in the experiment".
+Loaded once, lazily, on the first request for that species. Measured for human (2026-11-10, T013): the file is 28.6 MB for all 61,860 genes, written in 3.9 s. Genes with no expression anywhere (6,490) are kept too, as "expressed nowhere", so that they aren't reported as "not in the experiment".
 
-**Rationale**: values stay exactly as published (FR-003), and the format reads with the standard library. A binary format would save memory but add a decoder to test. Holding it in memory is affordable: the service runs with no memory limit and keeps its caches for its lifetime. Planning budget: under 150 MB per loaded species, to be measured in implementation (constitution II).
+Held in memory, the values are packed into one `Float64Array`, five per tissue per gene: 15 MB of heap plus 72 MB of buffer, 87 MB in all, loaded in 2.5 s. As plain objects the same table took 184 MB of heap. Double precision keeps every published value exact; single precision would turn 0.3 into 0.30000001.
+
+**Rationale**: values stay exactly as published (FR-003), and the format reads with the standard library. A binary format would save memory but add a decoder to test. Holding it in memory is affordable: the service runs with no memory limit and keeps its caches for its lifetime. Planning budget: under 150 MB per loaded species, and the packed human table measures 87 MB (constitution II).
 
 **Alternatives considered**: keeping the TSV as is (needs parsing at start-up, and its comma-in-cell quantiles are awkward); medians only (loses the spread FR-004 shows).
 

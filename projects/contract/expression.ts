@@ -1,0 +1,99 @@
+// The Expression tab's heatmap (spec 024): what
+// /ContentService/expression/{id} answers, node only. Expression Atlas's own
+// widget, which the tab embedded, ignores the genes it is asked about (asked
+// for BCL2 or a pathway, it drew the same 29 of 9,570 default genes), so the
+// service looks the selection's genes up in the experiment's published table.
+
+/**
+ * One gene in one tissue, as the table publishes it: the minimum, lower
+ * quartile, median, upper quartile and maximum TPM across the tissue's samples.
+ * With one sample all five are that sample's value.
+ */
+export type Quantiles = [min: number, q1: number, median: number, q3: number, max: number];
+
+/** A column: the table's group id, its label, and how many samples it holds. */
+export interface ExpressionTissue {
+  id: string;
+  label: string;
+  samples: number;
+}
+
+/** The experiment the values come from, with what the tab must say about it. */
+export interface ExpressionExperiment {
+  /** Expression Atlas's accession, such as E-MTAB-2836. */
+  accession: string;
+  title: string;
+  /** One line for the tab: "29 tissues from 122 individuals". */
+  design: string;
+  species: string;
+  /** The experiment's page on Expression Atlas. */
+  source: string;
+  /** When Expression Atlas last updated the experiment (ISO date). */
+  updated: string;
+  /** When the table was fetched from Expression Atlas (ISO date). */
+  fetched: string;
+  /** The citations its licence asks for. */
+  citation: string[];
+  licence: string;
+  tissues: ExpressionTissue[];
+}
+
+/** One of the selection's entities, as the tab names it. */
+export interface ExpressionEntity {
+  /** UniProt accession, or Ensembl gene id for a gene. */
+  identifier: string;
+  stId: string;
+  displayName: string;
+}
+
+/** One heatmap row: a gene, its values per tissue, and the entities that led to it. */
+export interface ExpressionRow {
+  /** Versionless Ensembl gene id. */
+  gene: string;
+  /** The table's gene name. */
+  name: string;
+  /** One per `experiment.tissues` entry; null where the table has no value. */
+  values: (Quantiles | null)[];
+  from: ExpressionEntity[];
+}
+
+/**
+ * Why one of the selection's genes or gene products has no row: no Ensembl gene
+ * and no name to match by; its gene is not in the experiment (Ensembl renamed
+ * SOD2's after the table was built); or the table has no value for it.
+ */
+export type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured';
+
+export interface ExpressionNotShown extends ExpressionEntity {
+  reason: NotShownReason;
+}
+
+/** How many of the selection's genes and gene products have a row. */
+export interface ExpressionCounts {
+  shown: number;
+  genes: number;
+}
+
+export interface ExpressionHeatmap {
+  kind: 'heatmap';
+  experiment: ExpressionExperiment;
+  /** In the service's order: genes expressed alike side by side. */
+  rows: ExpressionRow[];
+  notShown: ExpressionNotShown[];
+  counts: ExpressionCounts;
+}
+
+/** The selection has no genes or gene products: a chemical, say. */
+export interface ExpressionNoGenes {
+  kind: 'no-genes';
+  experiment: ExpressionExperiment;
+}
+
+/** No tissue experiment is listed for the selection's species. */
+export interface ExpressionSpeciesNotAvailable {
+  kind: 'species-not-available';
+  species: string;
+}
+
+export type ExpressionAnswer =
+  ExpressionHeatmap | ExpressionNoGenes | ExpressionSpeciesNotAvailable;
