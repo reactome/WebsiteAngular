@@ -14,7 +14,9 @@
   padding-top: var(--half-gap);
   display: grid;
   align-items: start;
-  grid-template-columns: repeat(var(--columns), 1fr);
+  // The list of molecule types takes the width its entries need, each on one
+  // line: as a sixth of the tab, "Chemical Compounds" broke over two.
+  grid-template-columns: minmax(0, 1fr) max-content;
   padding-right: 6px;
 }
 
@@ -23,7 +25,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--half-gap);
-  grid-column: span 5;
+  grid-column: 1;
 }
 
 /* TOC */
@@ -47,6 +49,7 @@
   .toc-item {
     padding-right: 8px;
     cursor: pointer;
+    white-space: nowrap;
   }
 
   .selected {
