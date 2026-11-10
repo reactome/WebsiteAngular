@@ -8,8 +8,10 @@
     <p class="load-error" role="alert">The molecules of this pathway could not be loaded. Please try again later.</p>
   }
   <!-- Inert while another pathway's list loads: the old one stays on screen,
-       dimmed, and can be neither clicked nor reached by keyboard. -->
-  <div class="container" [class.updating]="updating()" [attr.inert]="updating() ? '' : null" [attr.aria-busy]="busy()">
+       dimmed, and can be neither clicked nor reached by keyboard. Inert, not
+       dimmed, while a new selection's molecules load: the header already names
+       it, and the download would write the list held from before. -->
+  <div class="container" [class.updating]="updating()" [attr.inert]="busy() ? '' : null" [attr.aria-busy]="busy()">
     <div class="content">
       <!-- The tab's header: which molecules these are, the way to the rest, and
            the action on them. Download was a panel at the foot of the list and

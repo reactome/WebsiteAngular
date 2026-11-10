@@ -203,6 +203,33 @@ test.describe('Molecules tab', () => {
     await expect(header.locator('.swatch'), 'a key to the shading').toBeVisible();
     await expect(download).not.toContainText('Download 2 molecules');
     await expectCountsInWords(page);
+
+    // Another selection: the list on screen stays until the new one's molecules
+    // are in (FR-047). It showed the whole pathway, unshaded, under the new
+    // selection's name for as long as the selection took to load, and a
+    // download then wrote that into a file named for the selection.
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as { unshadedPathway: string[] }).unshadedPathway = seen;
+      new MutationObserver(() => {
+        const tab = document.querySelector('cr-molecule-tab');
+        const rows = tab?.querySelectorAll('cr-object-tree').length ?? 0;
+        if (rows > 2 && !tab?.querySelector('.highlight')) seen.push(`${rows} rows, none shaded`);
+      }).observe(document.body, { childList: true, subtree: true, attributes: true });
+    });
+    await page.locator('cr-search input').first().fill('BCL2');
+    await page.locator('cr-search .search-icon').first().click();
+    const result = page.locator('cr-search .result-row').first();
+    await expect(result).toBeVisible({ timeout: 60_000 });
+    await result.click();
+    await expect(header).toContainText(/highlighted: .*BCL2/, { timeout: 60_000 });
+    await expect(tab.locator('.highlight').first()).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { unshadedPathway: string[] }).unshadedPathway
+      ),
+      'the whole pathway never shown unshaded on the way'
+    ).toEqual([]);
   });
 });
 

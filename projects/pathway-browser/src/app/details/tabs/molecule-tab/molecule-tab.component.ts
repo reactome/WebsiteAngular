@@ -208,10 +208,15 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly updating = computed(
     () => this._pathwayParticipants.isLoading() && !!this.pathwayParticipants()
   );
+  /**
+   * A new selection is on its way, first the selection itself and then its
+   * molecules: the last list is held until both are in (FR-047). Held through
+   * the first part too, which otherwise listed the whole pathway, unshaded,
+   * under the new selection's name.
+   */
+  readonly holding = computed(() => this.selectionPending() || this.selectionMoleculesLoading());
   /** Busy while either the list or the selection behind its highlighting loads. */
-  readonly busy = computed(
-    () => this.updating() || this.selectionPending() || this.selectionMoleculesLoading()
-  );
+  readonly busy = computed(() => this.updating() || this.holding());
 
   private readonly freshMoleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
@@ -247,8 +252,10 @@ export class MoleculeTabComponent implements OnDestroy {
     { loading: boolean; data: MoleculeGroup[] },
     MoleculeGroup[]
   >({
-    source: () => ({ loading: this.selectionMoleculesLoading(), data: this.freshMoleculeData() }),
-    computation: (source, previous) => (source.loading && previous ? previous.value : source.data),
+    source: () => ({ loading: this.holding(), data: this.freshMoleculeData() }),
+    // Nothing to hold on the first load: the fresh list, whatever it is.
+    computation: (source, previous) =>
+      source.loading && previous?.value.length ? previous.value : source.data,
   });
 
   getPathwayParticipants(pathwayParticipants: ShownParticipant[]) {
