@@ -11,6 +11,30 @@
        dimmed, and can be neither clicked nor reached by keyboard. -->
   <div class="container" [class.updating]="updating()" [attr.inert]="updating() ? '' : null" [attr.aria-busy]="busy()">
     <div class="content">
+      @if (selectionInside()) {
+        <!-- Which molecules these are, and the way to the rest. -->
+        <div class="scope">
+          @if (showAll()) {
+            <span class="scope-text"
+              >All molecules in <b>{{ pathwayName() }}</b
+              >; highlighted: those in <b>{{ selectionName() }}</b></span
+            >
+            <button type="button" class="scope-toggle" (click)="showAll.set(false)">
+              Show only {{ selectionName() }}
+            </button>
+          } @else {
+            <span class="scope-text"
+              >Molecules in <b>{{ selectionName() }}</b></span
+            >
+            <button type="button" class="scope-toggle" (click)="showAll.set(true)">
+              Show all molecules in {{ pathwayName() }}
+            </button>
+          }
+        </div>
+        @if (moleculeData().length === 0 && !busy()) {
+          <p class="scope-empty">No molecules are listed for {{ selectionName() }}.</p>
+        }
+      }
       @for (group of moleculeData() | sortByText: 'category'; track group.category) {
         <cr-molecule-group [group]="group"></cr-molecule-group>
       }

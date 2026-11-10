@@ -24,6 +24,7 @@ import {
 } from '@angular/material/expansion';
 import { MoleculeDownloadTableComponent } from './molecule-download-table/molecule-download-table.component';
 import { UrlStateService } from '../../../services/url-state.service';
+import { DataStateService } from '../../../services/data-state.service';
 import { isPathway, observeSections } from '../../../services/utils';
 import { MoleculeGroupComponent } from './molecule-group/molecule-group.component';
 
@@ -58,6 +59,7 @@ export type MoleculeData = {
 export class MoleculeTabComponent implements OnDestroy {
   private participant: ParticipantService = inject(ParticipantService);
   private entity: EntityService = inject(EntityService);
+  private dataState = inject(DataStateService);
   private state: UrlStateService = inject(UrlStateService);
 
   readonly selectableObject = input.required<SelectableObject>();
@@ -71,6 +73,28 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
 
   readonly selectedKey = signal<string>('');
+
+  /**
+   * Whether something inside the open pathway is selected: then the tab lists
+   * that selection's molecules, not the whole pathway's with the selection's
+   * highlighted, which read as an unexplained mix of blue and white rows.
+   */
+  readonly selectionInside = computed(
+    () =>
+      !this.hasNoMoleculeData() &&
+      !this.selectionPending() &&
+      !!this.pathwayId() &&
+      this.selectableObject().stId !== this.pathwayId()
+  );
+  /** The reader asked for the whole pathway's molecules; a new selection asks again. */
+  readonly showAll = linkedSignal({
+    source: () => this.selectableObject().stId,
+    computation: () => false,
+  });
+  readonly selectionName = computed(() => this.selectableObject().displayName);
+  readonly pathwayName = computed(
+    () => this.dataState.currentPathway()?.displayName ?? 'this pathway'
+  );
   private manualSelection = false;
   private observer?: () => void;
 
@@ -148,6 +172,7 @@ export class MoleculeTabComponent implements OnDestroy {
       } else {
         const refEntities = this.entity.refEntities() || [];
         moleculeData = this.getReactionParticipants(pathwayResults, refEntities);
+        if (!this.showAll()) moleculeData = onlyTheSelection(moleculeData);
       }
     } else {
       if (isPathway(this.selectableObject())) {
@@ -234,4 +259,16 @@ export class MoleculeTabComponent implements OnDestroy {
       .replace(/\s+/g, '-') // Replace spaces with dashes
       .replace(/[^a-z0-9-_]/g, ''); // Remove special characters
   }
+}
+
+/** The selection's molecules alone: highlighting them all would mark nothing. */
+function onlyTheSelection(groups: MoleculeGroup[]): MoleculeGroup[] {
+  return groups
+    .map((group) => ({
+      category: group.category,
+      data: group.data
+        .filter((molecule) => molecule.highlight)
+        .map((molecule) => ({ ...molecule, highlight: false })),
+    }))
+    .filter((group) => group.data.length > 0);
 }

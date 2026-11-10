@@ -96,3 +96,28 @@
   padding: 8px 16px;
   color: var(--error);
 }
+
+// The line that says whose molecules are listed, with the way to the rest.
+.scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+  padding: 8px 0 12px;
+  font: var(--mat-sys-body-medium);
+}
+
+.scope-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.scope-empty {
+  font: var(--mat-sys-body-medium);
+  opacity: 0.8;
+}
