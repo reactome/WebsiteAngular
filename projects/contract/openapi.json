@@ -5272,6 +5272,44 @@
         }
       }
     },
+    "/ContentService/expression/{id}": {
+      "get": {
+        "tags": [
+          "expression"
+        ],
+        "summary": "A selection's genes across the tissues of its species (spec 024)",
+        "description": "The genes of a pathway, reaction, complex, set, protein or reference entity, each with five values per tissue (minimum, quartiles, maximum TPM) exactly as Expression Atlas publishes them for the species' tissue experiment (E-MTAB-2836 for Homo sapiens), ordered so that genes expressed alike sit together; the genes that have no row, and why; and the experiment, with the citations its CC BY 4.0 licence asks for. A selection with no genes is `no-genes`; a species with no listed experiment is `species-not-available`. The genes are found from the selection, not passed: a pathway's thousands would not fit in an address.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "A stable id or dbId of the selection, or a reference entity (uniprot:P10415)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpressionAnswer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No object has this id."
+          },
+          "503": {
+            "description": "The expression data is not available here."
+          }
+        }
+      }
+    },
     "/ContentService/interactors/psicquic/molecule/{resource}/{acc}/details": {
       "get": {
         "x-contract": "not yet",
@@ -16955,6 +16993,273 @@
         ],
         "additionalProperties": false
       },
+      "ExpressionAnswer": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "heatmap"
+              },
+              "experiment": {
+                "$ref": "#/components/schemas/ExpressionExperiment"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExpressionRow"
+                },
+                "description": "In the service's order: genes expressed alike side by side."
+              },
+              "notShown": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ExpressionNotShown"
+                }
+              },
+              "counts": {
+                "type": "object",
+                "properties": {
+                  "shown": {
+                    "type": "number"
+                  },
+                  "genes": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "shown",
+                  "genes"
+                ],
+                "additionalProperties": false,
+                "description": "How many of the selection's genes and gene products have a row."
+              }
+            },
+            "required": [
+              "kind",
+              "experiment",
+              "rows",
+              "notShown",
+              "counts"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "no-genes"
+              },
+              "experiment": {
+                "$ref": "#/components/schemas/ExpressionExperiment"
+              }
+            },
+            "required": [
+              "kind",
+              "experiment"
+            ],
+            "additionalProperties": false,
+            "description": "The selection has no genes or gene products: a chemical, say."
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "species-not-available"
+              },
+              "species": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "species"
+            ],
+            "additionalProperties": false,
+            "description": "No tissue experiment is listed for the selection's species."
+          }
+        ]
+      },
+      "ExpressionEntity": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "description": "UniProt accession, or Ensembl gene id for a gene."
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identifier",
+          "stId",
+          "displayName"
+        ],
+        "additionalProperties": false,
+        "description": "One of the selection's entities, as the tab names it."
+      },
+      "ExpressionExperiment": {
+        "type": "object",
+        "properties": {
+          "accession": {
+            "type": "string",
+            "description": "Expression Atlas's accession, such as E-MTAB-2836."
+          },
+          "title": {
+            "type": "string"
+          },
+          "design": {
+            "type": "string",
+            "description": "One line for the tab: \"29 tissues from 122 individuals\"."
+          },
+          "species": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "description": "The experiment's page on Expression Atlas."
+          },
+          "updated": {
+            "type": "string",
+            "description": "When Expression Atlas last updated the experiment (ISO date)."
+          },
+          "fetched": {
+            "type": "string",
+            "description": "When the table was fetched from Expression Atlas (ISO date)."
+          },
+          "citation": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The citations its licence asks for."
+          },
+          "licence": {
+            "type": "string"
+          },
+          "tissues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionTissue"
+            }
+          }
+        },
+        "required": [
+          "accession",
+          "title",
+          "design",
+          "species",
+          "source",
+          "updated",
+          "fetched",
+          "citation",
+          "licence",
+          "tissues"
+        ],
+        "additionalProperties": false,
+        "description": "The experiment the values come from, with what the tab must say about it."
+      },
+      "ExpressionNotShown": {
+        "type": "object",
+        "properties": {
+          "identifier": {
+            "type": "string",
+            "description": "UniProt accession, or Ensembl gene id for a gene."
+          },
+          "stId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "no-gene",
+              "not-in-experiment",
+              "not-measured",
+              "other-species"
+            ],
+            "description": "Why one of the selection's genes or gene products has no row: no Ensembl gene and no name to match by; its gene is not in the experiment (Ensembl renamed SOD2's after the table was built); the table has no value for it; or it is another species' (HIV infection holds 9 HIV-1 proteins), whose expression this experiment does not measure."
+          }
+        },
+        "required": [
+          "displayName",
+          "identifier",
+          "reason",
+          "stId"
+        ],
+        "additionalProperties": false
+      },
+      "ExpressionRow": {
+        "type": "object",
+        "properties": {
+          "gene": {
+            "type": "string",
+            "description": "Versionless Ensembl gene id."
+          },
+          "name": {
+            "type": "string",
+            "description": "The table's gene name."
+          },
+          "values": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Quantiles"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "description": "One per `experiment.tissues` entry; null where the table has no value."
+          },
+          "from": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExpressionEntity"
+            }
+          }
+        },
+        "required": [
+          "gene",
+          "name",
+          "values",
+          "from"
+        ],
+        "additionalProperties": false,
+        "description": "One heatmap row: a gene, its values per tissue, and the entities that led to it."
+      },
+      "ExpressionTissue": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "samples": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "samples"
+        ],
+        "additionalProperties": false,
+        "description": "A column: the table's group id, its label, and how many samples it holds."
+      },
       "Facet": {
         "type": "object",
         "properties": {
@@ -25931,6 +26236,13 @@
             "type": "string"
           }
         }
+      },
+      "Quantiles": {
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "description": "One gene in one tissue, as the table publishes it: five numbers, the minimum, lower quartile, median, upper quartile and maximum TPM across the tissue's samples. With one sample all five are that sample's value. A list rather than a tuple: the description's validator (JSON Schema 2020-12) refused the tuple's generated schema."
       },
       "RNADrug_JsogReference": {
         "type": "object",

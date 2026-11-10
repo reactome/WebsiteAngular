@@ -573,6 +573,12 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'never',
   },
+  '/ContentService/expression/{id}': {
+    java: null,
+    why: "No Java counterpart: the Expression tab's heatmap of a selection's genes, from Expression Atlas's published tables (spec 024).",
+    path: { id: 'oid' },
+    query: [],
+  },
 };
 
 /** The query parameters an endpoint declares: Java's, or the record's own. */

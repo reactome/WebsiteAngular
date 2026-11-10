@@ -21,6 +21,7 @@ import { searchEndpoints } from './search-endpoints.ts';
 import { searchDiagramEndpoints } from './search-diagram-endpoints.ts';
 import { contactEndpoints } from './contact-endpoints.ts';
 import { descriptionEndpoints } from './description-endpoints.ts';
+import { expressionEndpoints } from './expression-endpoints.ts';
 
 export { refreshPsicquicResources };
 
@@ -47,6 +48,7 @@ export const endpoints: Endpoint[] = [
   ...citationEndpoints,
   ...contactEndpoints,
   ...descriptionEndpoints,
+  ...expressionEndpoints,
 ];
 
 /**
