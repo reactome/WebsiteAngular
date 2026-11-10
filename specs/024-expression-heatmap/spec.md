@@ -13,7 +13,7 @@
 The Expression tab embeds Expression Atlas's heatmap widget. Expression Atlas now ignores the genes it is asked about. Asked for BCL2, for a pathway's genes, or for nothing, its reference experiment answers the same "Showing 29 of 9,570 genes found" (LINCADL, MIR1302-7, DEFA1B …), on the production site and on beta alike. PR #911 brought beta back to production's behaviour, so neither site shows the selection's genes. The experiment's full table is published (on EBI's FTP, measured 2026-11-10):
 
 - one row per gene, about 61,900 of them, each keyed by its Ensembl gene id and gene name;
-- 27 tissue columns;
+- 29 tissue columns, matching the 29 tissue groups the experiment's configuration names;
 - each cell holds five values across the tissue's individuals: minimum, lower quartile, median, upper quartile and maximum TPM.
 
 What Reactome holds for a selection (measured on Intrinsic Pathway for Apoptosis, R-HSA-109606):
@@ -95,7 +95,7 @@ A researcher downloads the selection's expression table (genes × tissues, with 
 
 ### User Story 5 - Other species, from their own tissues (Priority: P3)
 
-A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse tissue experiment: that experiment's own tissues, named, with the experiment and its design stated (six tissues, say, where human has 27). A species with no suitable tissue experiment says so. It gets no heatmap of something else, such as strains at one embryonic stage, and no heatmap of human data.
+A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse tissue experiment: that experiment's own tissues, named, with the experiment and its design stated (six tissues, say, where human has 29). A species with no suitable tissue experiment says so. It gets no heatmap of something else, such as strains at one embryonic stage, and no heatmap of human data.
 
 **Why this priority**: most readers open human pathways, and the human heatmap stands on its own. Each further species needs its own experiment chosen and checked.
 
@@ -135,6 +135,7 @@ A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse
 - **FR-011**: The experiment's data MUST be served by this site and loaded only when the Expression tab is opened. No request goes to a third party when the tab is used, and nothing is loaded for readers who never open the tab.
 - **FR-012**: The tab MUST name its source: the experiment (its accession, such as E-MTAB-2836, and its title), with a link to it on Expression Atlas, and the data's release date.
 - **FR-013**: The data MUST be refreshable from the published table by a documented step, and the step MUST check what it produces: the gene and tissue counts, and a sample of genes compared with the published values.
+- **FR-014**: The heatmap, its legend, its labels and its hover details MUST follow the site's light and dark themes. Its shades MUST stay distinguishable in both, and "not expressed" MUST read as such in both. (Expression Atlas's widget keeps its own background in dark mode, as the requester saw on beta, 2026-11-10.)
 
 ### Key Entities
 
