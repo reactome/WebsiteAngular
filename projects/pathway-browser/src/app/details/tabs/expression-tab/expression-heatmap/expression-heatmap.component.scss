@@ -59,6 +59,12 @@
     position: absolute;
     top: 12px;
     transform: translateX(-50%);
+
+    // The first tick, 0, sits at the bar's start: centred, it hung off it.
+    .bar + & {
+      transform: none;
+    }
+
     font: var(--mat-sys-label-small);
     color: var(--on-surface-variant);
   }

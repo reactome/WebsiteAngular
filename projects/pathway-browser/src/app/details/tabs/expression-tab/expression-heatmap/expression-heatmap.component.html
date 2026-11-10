@@ -60,8 +60,10 @@
         <canvas
           #canvas
           tabindex="0"
+          role="application"
           aria-label="Expression heatmap: use the arrow keys to move between genes and tissues"
           (mousemove)="onPointer($event)"
+          (mousedown)="onPress($event)"
           (mouseleave)="hovered.set(null)"
           (keydown)="onKey($event)"
           (focus)="onFocus()"
@@ -73,7 +75,8 @@
 </div>
 
 <!-- What the cell under the pointer or the focus holds (FR-004). -->
-<div class="details" aria-live="polite">
+<!-- Announced for the keyboard's focus, not for every cell the pointer crosses. -->
+<div class="details" [attr.aria-live]="hovered() ? 'off' : 'polite'">
   @if (details(); as d) {
     <b>{{ d.row.name || d.row.gene }}</b> in <b>{{ d.tissue.label }}</b
     >:

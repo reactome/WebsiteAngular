@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { DarkService } from '../../../../services/dark.service';
+import { formatTpm } from './expression-format';
 import type {
   ExpressionHeatmapAnswer,
   ExpressionRow,
@@ -73,7 +74,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
       for (const cell of row.values) if (cell && (cell[2] ?? 0) > top) top = cell[2] ?? top;
     return top;
   });
-  readonly ticks = computed(() => TICKS.filter((tick) => tick <= this.top() * 1.5));
+  // Only ticks on the bar: one past the top would claim the scale reaches it.
+  readonly ticks = computed(() => TICKS.filter((tick) => tick <= this.top()));
 
   readonly scroller = viewChild.required<ElementRef<HTMLElement>>('scroller');
   readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
@@ -82,6 +84,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
   readonly first = linkedSignal({ source: this.answer, computation: () => 0 });
   readonly offset = linkedSignal({ source: this.answer, computation: () => 0 });
   readonly visible = signal(30);
+  /** The scroller's height and the pixel ratio, so the canvas is redrawn whenever either changes. */
+  readonly size = signal({ height: 0, ratio: 1 });
   readonly shownRows = computed(() =>
     this.rows()
       .slice(this.first(), this.first() + this.visible() + 1)
@@ -116,6 +120,7 @@ export class ExpressionHeatmapComponent implements OnDestroy {
       if (this.resize) return;
       this.resize = new ResizeObserver(() => {
         this.visible.set(Math.ceil(scroller.clientHeight / ROW) + 1);
+        this.size.set({ height: scroller.clientHeight, ratio: window.devicePixelRatio || 1 });
       });
       this.resize.observe(scroller);
     });
@@ -123,6 +128,7 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     // colours the canvas reads from the page (FR-014).
     afterRenderEffect(() => {
       this.dark.isDark();
+      this.size();
       this.draw(this.shownRows(), this.described());
     });
     // A new selection starts at the top (its order, focus and first row reset
@@ -141,6 +147,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     const top = (event.target as HTMLElement).scrollTop;
     this.first.set(Math.max(0, Math.floor(top / ROW)));
     this.offset.set(top % ROW);
+    // The pointer has not moved, but the rows under it have.
+    this.hovered.set(null);
   }
 
   /** The cell at a pointer position over the canvas, if any. */
@@ -157,6 +165,12 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     this.hovered.set(this.cellAt(event));
   }
 
+  /** A click puts the keyboard's focus on the cell clicked, not the first row. */
+  onPress(event: MouseEvent) {
+    const cell = this.cellAt(event);
+    if (cell) this.focused.set(cell);
+  }
+
   /** Arrow keys move the focus; Home and End go to a row's ends (FR-004). */
   onKey(event: KeyboardEvent) {
     const cell = this.focused() ?? { row: this.first(), tissue: 0 };
@@ -168,6 +182,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
       ArrowRight: { ...cell, tissue: Math.min(last.tissue, cell.tissue + 1) },
       Home: { ...cell, tissue: 0 },
       End: { ...cell, tissue: last.tissue },
+      PageUp: { ...cell, row: Math.max(0, cell.row - this.visible() + 1) },
+      PageDown: { ...cell, row: Math.min(last.row, cell.row + this.visible() - 1) },
     };
     const next = moves[event.key];
     if (!next) return;
@@ -186,12 +202,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     if (!this.focused()) this.focused.set({ row: this.first(), tissue: 0 });
   }
 
-  /** How a value reads in the details: whole numbers above 10, else two figures. */
-  format(value: number | undefined): string {
-    if (value === undefined) return '';
-    if (value >= 10) return Math.round(value).toLocaleString();
-    return value.toPrecision(2).replace(/\.?0+$/, '');
-  }
+  /** How a value reads in the details (expression-format.ts). */
+  readonly format = formatTpm;
 
   /** The scale position of a median: log10(m + 1) against the top's. */
   position(median: number): number {
@@ -230,9 +242,10 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     const ratio = window.devicePixelRatio || 1;
     const width = this.tissues().length * COLUMN;
     const height = Math.max(ROW, scroller.clientHeight);
-    if (canvas.width !== width * ratio || canvas.height !== height * ratio) {
-      canvas.width = width * ratio;
-      canvas.height = height * ratio;
+    const [pixelsWide, pixelsHigh] = [Math.round(width * ratio), Math.round(height * ratio)];
+    if (canvas.width !== pixelsWide || canvas.height !== pixelsHigh) {
+      canvas.width = pixelsWide;
+      canvas.height = pixelsHigh;
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
     }

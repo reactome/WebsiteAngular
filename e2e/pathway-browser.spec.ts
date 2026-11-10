@@ -195,7 +195,8 @@ test.describe('Expression tab (spec 024)', () => {
     });
     await heatmap(page).getByRole('button', { name: 'By name' }).click();
     const shown = await names(page);
-    for (const gene of ['APAF1', 'BAX', 'BCL2']) expect(shown, `${gene} is drawn`).toContain(gene);
+    for (const gene of ['APAF1', 'BAX', 'BCL2', 'CASP9'])
+      expect(shown, `${gene} is drawn`).toContain(gene);
     expect(shown, "none of Atlas's default genes").not.toContain('LINCADL');
     await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-2836');
     expect(ebi, 'nothing asked of Expression Atlas').toEqual([]);
@@ -211,6 +212,26 @@ test.describe('Expression tab (spec 024)', () => {
       /^\S+ in adrenal gland:\s+median [\d.,]+ TPM \(range [\d.,]+–[\d.,]+, quartiles [\d.,]+–[\d.,]+, \d+ samples\)$/
     );
     await expect(heatmap(page).locator('.legend')).toContainText('Median TPM');
+  });
+
+  test('says what a cell holds when pointed at', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await canvas.scrollIntoViewIfNeeded();
+    // The first row's first tissue: the cell spans 17 by 13 pixels.
+    await canvas.hover({ position: { x: 5, y: 5 } });
+    await expect(heatmap(page).locator('.details')).toHaveText(
+      /^\S+ in adipose tissue:\s+median [\d.,]+ TPM \(range/
+    );
+  });
+
+  test('draws one protein, chosen by its reference, as one row', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?select=uniprot:P10415&tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toHaveText('1 of 1 genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    expect(await names(page)).toEqual(['BCL2']);
   });
 
   test("draws a complex's genes alone", async ({ page }) => {

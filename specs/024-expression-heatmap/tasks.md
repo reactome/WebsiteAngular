@@ -155,7 +155,7 @@
 - [x] T025 [US1] Follow the light and dark themes (FR-014): the scale, background, labels and gridlines come from the site's theme tokens, with a distinct "not expressed" shade, and the canvas redraws when the theme changes. (#913)
 - [x] T026 [US1] Add alphabetical sorting as an alternative to the server's order (FR-006). (#913)
 - [x] T027 [US1] Remove the CDN font host that the widget needed from `e2e/support/backend.ts`, and remove `ebi.ac.uk/gxa` from anything the suite expects. (#913)
-- [x] T028 [US1] Write e2e tests in `e2e/pathway-browser.spec.ts`, recorded with `npm run e2e:record` and `E2E_PORT` set: (#913)
+- [x] T028 [US1] Write e2e tests in `e2e/pathway-browser.spec.ts`, recorded with `npm run e2e:record` and `E2E_PORT` set: (#913) The dark-mode test asserts that the cells are redrawn in the new theme's colours when it is switched; each test was shown to fail against the widget, and the theme test with the theme dependency removed.
   - R-HSA-109606's rows include BCL2, BAX and CASP9 and none of Atlas's defaults;
   - a complex shows only its genes;
   - BCL2 by reference shows one row;
@@ -174,7 +174,7 @@
 
 - [x] T029 [US2] Add hover and keyboard focus over the heatmap's cells in `expression-heatmap/`: a focusable grid with arrow-key navigation, and a tooltip naming the gene, tissue, median, minimum, quartiles, maximum and sample count (FR-004). For a single-sample tissue it says "1 sample" and shows no spread. (#913)
 - [x] T030 [P] [US2] Add the legend in `expression-heatmap/`: unit TPM, the logarithmic scale with ticks, and the "not expressed" shade, in both themes (FR-005, FR-014). (#913)
-- [x] T031 [US2] Write e2e tests for hover, focus and the legend. Show they fail with the tooltip's source swapped. (#913)
+- [x] T031 [US2] Write e2e tests for hover, focus and the legend. Show they fail with the tooltip's source swapped. (#913) Hover and keyboard focus each have a test, the hover one shown to fail with hover disabled; the legend is checked by its unit label.
 
 ---
 
