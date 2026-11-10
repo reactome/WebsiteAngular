@@ -1,5 +1,6 @@
 import { Component, effect, inject, input, signal } from '@angular/core';
 import { EntityService } from '../../../services/entity.service';
+import { DataStateService } from '../../../services/data-state.service';
 import { SelectableObject } from '../../../services/event.service';
 
 /** The EBI widget attaches itself to the page as a global. */
@@ -60,8 +61,20 @@ function loadWidget(): Promise<void> {
   return widgetLoad;
 }
 
-/** Reference entities that are not genes or gene products: no expression to show. */
-const NOT_GENES = new Set(['ReferenceMolecule', 'ReferenceTherapeutic']);
+/**
+ * Genes and their products: the reference entities with expression to show.
+ * Named rather than the others excluded: a molecule chosen in the Molecules tab
+ * arrives as a SummaryEntity, its class only in `referenceType`, and passed a
+ * list of what to leave out.
+ */
+const GENES = new Set([
+  'ReferenceGeneProduct',
+  'ReferenceIsoform',
+  'ReferenceDNASequence',
+  'ReferenceRNASequence',
+]);
+
+type RefEntityLike = { schemaClass?: string; referenceType?: string; identifier?: string };
 
 @Component({
   selector: 'cr-expression-tab',
@@ -72,6 +85,7 @@ const NOT_GENES = new Set(['ReferenceMolecule', 'ReferenceTherapeutic']);
 })
 export class ExpressionTabComponent {
   private entity = inject(EntityService);
+  private dataState = inject(DataStateService);
 
   readonly obj = input.required<SelectableObject>();
   readonly failed = signal(false);
@@ -87,9 +101,9 @@ export class ExpressionTabComponent {
       // Genes and their products only: a chemical's identifier is a ChEBI
       // number, which is no gene, and with them in the query Expression Atlas
       // could not settle on a species.
-      const genes = data
-        .filter((entity: { schemaClass?: string }) => !NOT_GENES.has(entity.schemaClass ?? ''))
-        .map((entity: { identifier?: string }) => entity.identifier)
+      const genes = (data as RefEntityLike[])
+        .filter((entity) => GENES.has(entity.referenceType ?? entity.schemaClass ?? ''))
+        .map((entity) => entity.identifier)
         .filter((id): id is string => !!id)
         .map((value) => ({ value }));
 
@@ -97,6 +111,15 @@ export class ExpressionTabComponent {
       // no genes -- and needs saying rather than leaving an empty panel.
       this.empty.set(genes.length === 0);
       if (!genes.length) return;
+
+      // The selection's species, or else the open pathway's: a molecule chosen
+      // by its reference (uniprot:...) carries none, and a mouse protein was
+      // sent as human. Read now, with the genes, not when the bundles arrive.
+      const species = (
+        this.obj().speciesName ??
+        this.dataState.currentPathway()?.speciesName ??
+        'Homo sapiens'
+      ).toLowerCase();
 
       loadWidget()
         .then(() => {
@@ -107,10 +130,7 @@ export class ExpressionTabComponent {
           expressionAtlasHeatmapHighcharts.render({
             target: 'expressionContainer',
             experiment: 'reference',
-            query: {
-              gene: genes,
-              species: (this.obj().speciesName ?? 'Homo sapiens').toLowerCase(),
-            },
+            query: { gene: genes, species },
           });
         })
         .catch((error) => {

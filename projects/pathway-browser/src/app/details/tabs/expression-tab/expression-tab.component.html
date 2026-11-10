@@ -3,4 +3,6 @@
 } @else if (empty()) {
   <p class="padding">This entry has no genes with expression data.</p>
 }
-<div id="expressionContainer" class="padding"></div>
+<!-- Hidden, not removed, when there is nothing to draw: the widget renders into
+     it, and the last selection's heatmap stayed under "no genes". -->
+<div id="expressionContainer" class="padding" [hidden]="failed() || empty()"></div>

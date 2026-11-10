@@ -221,13 +221,61 @@ test('the Expression tab renders the Expression Atlas heatmap', async ({ page, r
 
   await tab.click();
   await expect(page.locator('#expressionContainer *').first()).toBeAttached({ timeout: 45_000 });
-  // The heatmap itself, which says how many genes it found. "expression" alone
+  // The heatmap itself, which says how many genes it shows ("Showing 29 of
+  // 9,570 genes found:"). Expression Atlas draws its reference experiment's
+  // default genes whatever genes are asked for, as it does for the production
+  // site; what is tested is that it draws rather than refusing. "expression" alone
   // matched while the widget sat on its loading image: Expression Atlas had
   // refused the request ("No reference baseline experiment for species "), as
   // the tab named no species and sent chemicals' ChEBI numbers as genes.
-  await expect(page.locator('cr-expression-tab')).toContainText(/genes found/i, {
-    timeout: 45_000,
+  await expect(page.locator('cr-expression-tab')).toContainText(
+    /Showing [\d,]+ (of [\d,]+ )?genes/i,
+    {
+      timeout: 45_000,
+    }
+  );
+});
+
+test('a chemical chosen by its reference has no genes, and no request is made', async ({
+  page,
+}) => {
+  // ATP(4-), as the Molecules tab's locate button chooses it: a SummaryEntity,
+  // its class only in referenceType. A list of what to leave out let it through,
+  // and its ChEBI number went to Expression Atlas as a gene.
+  const asked: string[] = [];
+  page.on('request', (r) => {
+    if (r.url().includes('ebi.ac.uk/gxa/json')) asked.push(r.url());
   });
+  await page.goto('/PathwayBrowser/R-HSA-109606?select=chebi:30616&tab=expression');
+  const tab = page.locator('cr-expression-tab');
+  await expect(tab).toContainText('no genes with expression data', { timeout: BOOT_TIMEOUT });
+  await expect(page.locator('#expressionContainer'), 'nothing under the message').toBeHidden();
+  expect(asked, 'nothing asked of Expression Atlas').toEqual([]);
+});
+
+test('a heatmap does not stay under the next selection\'s "no genes"', async ({
+  page,
+  request,
+}) => {
+  test.skip(
+    !(await expressionAtlasAnswers(request)),
+    'EBI Expression Atlas is not answering from here'
+  );
+  // BCL2 by its reference, which carries no species: the open pathway's is
+  // sent (it was "homo sapiens" by default, whatever the pathway).
+  await page.goto('/PathwayBrowser/R-HSA-109606?select=uniprot:P10415&tab=expression');
+  const tab = page.locator('cr-expression-tab');
+  await expect(tab).toContainText(/Showing [\d,]+ (of [\d,]+ )?genes/i, { timeout: 90_000 });
+
+  // Then a chemical, chosen in the same page: the widget had drawn into the
+  // container, and nothing cleared it.
+  await page.locator('cr-search input').first().fill('ATP');
+  await page.locator('cr-search .search-icon').first().click();
+  const result = page.locator('cr-search .result-row', { hasText: 'ATP(4-)' }).first();
+  await expect(result).toBeVisible({ timeout: 60_000 });
+  await result.click();
+  await expect(tab).toContainText('no genes with expression data', { timeout: 60_000 });
+  await expect(page.locator('#expressionContainer'), 'the last heatmap hidden').toBeHidden();
 });
 
 test.describe('Illustrations', () => {
