@@ -608,10 +608,28 @@ export class ObjectTreeComponent<
     return arr.reduce((a, b) => (a.length <= b.length ? a : b));
   }
 
+  /**
+   * Whether the open pathway is drawn as an illustration (or not drawn at all,
+   * the overview): it has no shape for a molecule to select, so selecting one
+   * there changed the address and nothing on screen.
+   */
+  private readonly noMoleculeShapes = computed(() => {
+    const pathway = this.dataStateService.currentPathway();
+    return !pathway || pathway.hasEHLD === true;
+  });
+
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
     const stId = node.stId;
     if (!stId) return;
+    // In the molecule tab the button shows the molecule above: a diagram selects
+    // its every shape (and the complexes holding it) and zooms to them; an
+    // illustration has none, so the molecule is flagged instead, which outlines
+    // each sub-pathway it occurs in -- the reader picks one to go into.
+    if (this.moleculeView() && !this.requireNavigate(node) && this.noMoleculeShapes()) {
+      this.state.flag.set([stId]);
+      return;
+    }
     if (this.requireNavigate(node)) {
       this.state.pathwayId.set(stId);
       this.state.select.set(null);
@@ -621,9 +639,23 @@ export class ObjectTreeComponent<
   }
 
   selectTooltip(node: E) {
+    if (this.moleculeView() && !this.requireNavigate(node)) {
+      // The name the row shows (the molecule tab's formattedName), not the
+      // display name, which carries its database and identifier as well.
+      const shown =
+        'formattedName' in node && typeof node.formattedName === 'string' ? node.formattedName : '';
+      const name = shown || node.displayName;
+      return this.noMoleculeShapes() ? `Show where ${name} occurs` : `Show ${name} in the diagram`;
+    }
     const id = node.stId || node.dbId;
     const action = this.requireNavigate(node) ? 'Navigate to' : 'Select ';
     return `${action} ${id}`;
+  }
+
+  /** The button's icon in the molecule tab: a target, for "show it to me". */
+  locateIcon(node: E): string | undefined {
+    if (!this.moleculeView() || this.requireNavigate(node)) return undefined;
+    return this.noMoleculeShapes() ? 'flag' : 'my_location';
   }
 
   /**
