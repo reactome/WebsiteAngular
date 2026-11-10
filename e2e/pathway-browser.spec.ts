@@ -221,7 +221,11 @@ test('the Expression tab renders the Expression Atlas heatmap', async ({ page, r
 
   await tab.click();
   await expect(page.locator('#expressionContainer *').first()).toBeAttached({ timeout: 45_000 });
-  await expect(page.locator('cr-expression-tab')).toContainText(/genes found|RNA-seq|expression/i, {
+  // The heatmap itself, which says how many genes it found. "expression" alone
+  // matched while the widget sat on its loading image: Expression Atlas had
+  // refused the request ("No reference baseline experiment for species "), as
+  // the tab named no species and sent chemicals' ChEBI numbers as genes.
+  await expect(page.locator('cr-expression-tab')).toContainText(/genes found/i, {
     timeout: 45_000,
   });
 });

@@ -7,7 +7,7 @@ declare const expressionAtlasHeatmapHighcharts: {
   render(options: {
     target: string;
     experiment: string;
-    query: { gene: { value: string }[] };
+    query: { gene: { value: string }[]; species?: string };
   }): void;
 };
 
@@ -60,6 +60,9 @@ function loadWidget(): Promise<void> {
   return widgetLoad;
 }
 
+/** Reference entities that are not genes or gene products: no expression to show. */
+const NOT_GENES = new Set(['ReferenceMolecule', 'ReferenceTherapeutic']);
+
 @Component({
   selector: 'cr-expression-tab',
   standalone: true,
@@ -81,7 +84,11 @@ export class ExpressionTabComponent {
       const data = this.entity.refEntities();
       if (!Array.isArray(data)) return;
 
+      // Genes and their products only: a chemical's identifier is a ChEBI
+      // number, which is no gene, and with them in the query Expression Atlas
+      // could not settle on a species.
       const genes = data
+        .filter((entity: { schemaClass?: string }) => !NOT_GENES.has(entity.schemaClass ?? ''))
         .map((entity: { identifier?: string }) => entity.identifier)
         .filter((id): id is string => !!id)
         .map((value) => ({ value }));
@@ -94,10 +101,16 @@ export class ExpressionTabComponent {
       loadWidget()
         .then(() => {
           this.failed.set(false);
+          // The species is said rather than left to Expression Atlas to infer:
+          // without it the widget's request was refused ("No reference baseline
+          // experiment for species ") and the tab stayed on "Loading" for good.
           expressionAtlasHeatmapHighcharts.render({
             target: 'expressionContainer',
             experiment: 'reference',
-            query: { gene: genes },
+            query: {
+              gene: genes,
+              species: (this.obj().speciesName ?? 'Homo sapiens').toLowerCase(),
+            },
           });
         })
         .catch((error) => {

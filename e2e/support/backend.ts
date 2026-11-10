@@ -124,6 +124,10 @@ const ALLOWED = new Map<string, string>([
     "Reactome's own download host: images and links. What a page reads from it is served from saved copies (release-files.ts)",
   ],
   ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
+  [
+    'maxcdn.bootstrapcdn.com',
+    "an icon font the Expression Atlas widget's stylesheet asks for once its heatmap draws",
+  ],
   ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],
   ['rest.uniprot.org', 'protein records the detail pages resolve'],
   [
