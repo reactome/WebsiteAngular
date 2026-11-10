@@ -17,7 +17,9 @@
  * every five values in order, and 20 cells read back against the table's text.
  * `--source` reads `<accession>-tpms.tsv`, `<accession>-configuration.xml` and
  * `<accession>-info.json` from a folder instead of fetching them; `--fixture`
- * cuts the few genes the specs use (FIXTURE_GENES) from the human table.
+ * cuts the few genes the specs use (FIXTURE_GENES) from the human table;
+ * run Prettier on the fixture after, as the format check holds it to Prettier's
+ * layout.
  */
 import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
