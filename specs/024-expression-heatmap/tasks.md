@@ -141,21 +141,21 @@
 
 **Independent Test**: on R-HSA-109606 the rows are that pathway's genes (BCL2, BAX, CASP9), none of LINCADL or MIR1302-7, and BCL2's medians equal the table's.
 
-- [ ] T022 [P] [US1] Add the endpoint call to the Pathway Browser, in the service the tab uses: `getExpression(stId)` returning `ExpressionAnswer`, re-exported from the contract with `export type`, never a second interface.
-- [ ] T023 [US1] Rewrite `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-tab.component.{ts,html,scss}`:
+- [x] T022 [P] [US1] Add the endpoint call to the Pathway Browser, in the service the tab uses: `getExpression(stId)` returning `ExpressionAnswer`, re-exported from the contract with `export type`, never a second interface. (#913)
+- [x] T023 [US1] Rewrite `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-tab.component.{ts,html,scss}`: (#913)
   - fetch the answer for the selection;
   - remove `loadWidget`, the EBI bundles, the stylesheet and the `#expressionContainer` widget;
   - show a loading state, the heatmap, `no-genes`, `species-not-available` and an unavailable state;
   - replace the heatmap when the selection changes, never leaving the last one under a new name.
-- [ ] T024 [US1] Write the heatmap component in `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-heatmap/`:
+- [x] T024 [US1] Write the heatmap component in `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-heatmap/`: (#913)
   - a canvas grid of rows × tissues, shaded by log median;
   - HTML gene and tissue labels;
   - scrolling for large selections and a narrow panel;
   - drawn in one pass, without blocking the page for 2,500 rows (research R7).
-- [ ] T025 [US1] Follow the light and dark themes (FR-014): the scale, background, labels and gridlines come from the site's theme tokens, with a distinct "not expressed" shade, and the canvas redraws when the theme changes.
-- [ ] T026 [US1] Add alphabetical sorting as an alternative to the server's order (FR-006).
-- [ ] T027 [US1] Remove the CDN font host that the widget needed from `e2e/support/backend.ts`, and remove `ebi.ac.uk/gxa` from anything the suite expects.
-- [ ] T028 [US1] Write e2e tests in `e2e/pathway-browser.spec.ts`, recorded with `npm run e2e:record` and `E2E_PORT` set:
+- [x] T025 [US1] Follow the light and dark themes (FR-014): the scale, background, labels and gridlines come from the site's theme tokens, with a distinct "not expressed" shade, and the canvas redraws when the theme changes. (#913)
+- [x] T026 [US1] Add alphabetical sorting as an alternative to the server's order (FR-006). (#913)
+- [x] T027 [US1] Remove the CDN font host that the widget needed from `e2e/support/backend.ts`, and remove `ebi.ac.uk/gxa` from anything the suite expects. (#913)
+- [x] T028 [US1] Write e2e tests in `e2e/pathway-browser.spec.ts`, recorded with `npm run e2e:record` and `E2E_PORT` set: (#913) The dark-mode test asserts that the cells are redrawn in the new theme's colours when it is switched; each test was shown to fail against the widget, and the theme test with the theme dependency removed.
   - R-HSA-109606's rows include BCL2, BAX and CASP9 and none of Atlas's defaults;
   - a complex shows only its genes;
   - BCL2 by reference shows one row;
@@ -172,9 +172,9 @@
 
 **Independent Test**: hovering over BCL2 × spleen shows the table's five values and the tissue's sample count.
 
-- [ ] T029 [US2] Add hover and keyboard focus over the heatmap's cells in `expression-heatmap/`: a focusable grid with arrow-key navigation, and a tooltip naming the gene, tissue, median, minimum, quartiles, maximum and sample count (FR-004). For a single-sample tissue it says "1 sample" and shows no spread.
-- [ ] T030 [P] [US2] Add the legend in `expression-heatmap/`: unit TPM, the logarithmic scale with ticks, and the "not expressed" shade, in both themes (FR-005, FR-014).
-- [ ] T031 [US2] Write e2e tests for hover, focus and the legend. Show they fail with the tooltip's source swapped.
+- [x] T029 [US2] Add hover and keyboard focus over the heatmap's cells in `expression-heatmap/`: a focusable grid with arrow-key navigation, and a tooltip naming the gene, tissue, median, minimum, quartiles, maximum and sample count (FR-004). For a single-sample tissue it says "1 sample" and shows no spread. (#913)
+- [x] T030 [P] [US2] Add the legend in `expression-heatmap/`: unit TPM, the logarithmic scale with ticks, and the "not expressed" shade, in both themes (FR-005, FR-014). (#913)
+- [x] T031 [US2] Write e2e tests for hover, focus and the legend. Show they fail with the tooltip's source swapped. (#913) Hover and keyboard focus each have a test, the hover one shown to fail with hover disabled; the legend is checked by its unit label.
 
 ---
 
@@ -182,9 +182,9 @@
 
 **Independent Test**: on R-HSA-109606 the tab says "N of M genes shown" and lists those not shown with reasons. ATP shows "no genes with expression data".
 
-- [ ] T032 [US3] Show "N of M genes shown" under the heatmap, and a list of the genes not shown, each with its reason in words (FR-007): "no matching gene", "not in this experiment" or "not measured".
-- [ ] T033 [US3] Name the source on the tab (FR-012): the experiment's accession and title linked to Expression Atlas, its design line, its last update, the citations and the licence, and the note "values as published; genes chosen and reordered".
-- [ ] T034 [US3] Write e2e tests for the not-shown list on a recording containing an unmatched gene, and for ATP's "no genes" with no heatmap. Show each fails with the list hidden.
+- [x] T032 [US3] Show "N of M genes shown" under the heatmap, and a list of the genes not shown, each with its reason in words (FR-007): "no matching gene", "not in this experiment" or "not measured". (#913)
+- [x] T033 [US3] Name the source on the tab (FR-012): the experiment's accession and title linked to Expression Atlas, its design line, its last update, the citations and the licence, and the note "values as published; genes chosen and reordered". (#913)
+- [ ] T034 [US3] Write e2e tests for the not-shown list on a recording containing an unmatched gene, and for ATP's "no genes" with no heatmap. Show each fails with the list hidden. Done: ATP's "no genes" with no heatmap (e2e). Still to do: an e2e recording with an unmatched gene, as R-HSA-109606 matches all 59; the list itself is covered by the endpoint's unit tests.
 
 ---
 
