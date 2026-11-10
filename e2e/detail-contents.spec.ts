@@ -35,6 +35,20 @@ async function openMolecules(page: Page) {
   await page.waitForTimeout(3000);
 }
 
+/**
+ * Each group's heading says in words which number is which (FR-041): "8 / 20"
+ * did not, and a group with nothing shaded said only its total.
+ */
+async function expectCountsInWords(page: Page) {
+  const counts = await page.locator('cr-molecule-tab cr-molecule-group .count').allInnerTexts();
+  expect(counts.length, 'groups').toBeGreaterThan(1);
+  for (const count of counts) {
+    expect(count.trim(), 'a total and how many are shaded').toMatch(
+      /^\d+ · (\d+|none) highlighted$/
+    );
+  }
+}
+
 test.describe('Molecules tab', () => {
   test.describe.configure({ timeout: 2 * 60 * 1000 });
 
@@ -139,16 +153,21 @@ test.describe('Molecules tab', () => {
     await result.click();
 
     await expect(page.locator('cr-molecule-tab'), 'the tab stays open').toBeVisible();
-    // Spec 023: a selection inside the pathway lists its own molecules, named
-    // in the tab's header, rather than the pathway's with some shaded; the
-    // download says how many it writes.
+    // Spec 023: one molecule (the search's hit is a reference entity) is shown
+    // among the pathway's, highlighted, rather than listed alone as a one-row
+    // tab; the header names it, with a swatch of the shading (FR-040, FR-044).
     const header = page.locator('cr-molecule-tab .scope');
-    await expect(header).toContainText(/Molecules in .*BCL2/, { timeout: 60_000 });
-    expect(await countOf(), 'fewer molecules than the whole pathway').toBeLessThan(pathwayCount);
+    await expect(header).toContainText(/All molecules in .*highlighted: .*BCL2/, {
+      timeout: 60_000,
+    });
+    await expect(header.locator('.swatch'), 'a key to the shading').toBeVisible();
+    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible();
+    expect(await countOf(), 'the whole pathway').toBe(pathwayCount);
     expect(
-      await page.locator('cr-molecule-tab .highlight').count(),
-      'none shaded: all are the selection'
+      await header.getByRole('button', { name: /Show (only|all)/ }).count(),
+      'no way to a one-row list'
     ).toBe(0);
+    await expectCountsInWords(page);
     expect(
       await page.evaluate(
         () =>
@@ -162,11 +181,28 @@ test.describe('Molecules tab', () => {
       'no spinner'
     ).toEqual([]);
     expect(fetchedAgain, 'the molecule list is not fetched again').toEqual([]);
+  });
 
-    // The whole pathway is a click away, with the selection's molecules shaded.
+  test('a selection inside the pathway lists its own molecules', async ({ page }) => {
+    // BAD:BCL-2, a complex of two proteins in the pathway.
+    await openDiagram(page, PATHWAY, '?select=R-HSA-114268&tab=molecule');
+    const tab = page.locator('cr-molecule-tab');
+    await expect(tab).toBeVisible({ timeout: 60_000 });
+    // Its own molecules, named in the header, unshaded: they are all the
+    // selection. The download says how many it writes (FR-044, FR-048).
+    const header = tab.locator('.scope');
+    await expect(header).toContainText(/Molecules in .*BAD:BCL-2/, { timeout: 60_000 });
+    const download = tab.locator('.download-button');
+    await expect(download).toContainText('Download 2 molecules');
+    expect(await tab.locator('.highlight').count(), 'none shaded').toBe(0);
+
+    // The whole pathway is a click away, with the selection's molecules shaded,
+    // the shading keyed in the header, and each group's count in words.
     await header.getByRole('button', { name: /Show all molecules in/ }).click();
-    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible();
-    expect(await countOf(), 'the whole pathway again').toBe(pathwayCount);
+    await expect(tab.locator('.highlight')).toHaveCount(2);
+    await expect(header.locator('.swatch'), 'a key to the shading').toBeVisible();
+    await expect(download).not.toContainText('Download 2 molecules');
+    await expectCountsInWords(page);
   });
 });
 

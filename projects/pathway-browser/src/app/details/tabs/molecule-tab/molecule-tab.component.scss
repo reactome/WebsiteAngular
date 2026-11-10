@@ -74,20 +74,6 @@
   }
 }
 
-.download-container {
-  width: 100%;
-
-  @include mat.expansion-overrides(
-    (
-      header-indicator-color: var(--primary),
-    )
-  );
-
-  mat-expansion-panel {
-    margin-bottom: 8px; // make shadow visible
-  }
-}
-
 // Another pathway's molecules are loading: the last list stays, dimmed, until
 // they arrive.
 .container.updating {
@@ -134,4 +120,15 @@
   margin-left: 4px;
   font: var(--mat-sys-label-medium);
   opacity: 0.75;
+}
+
+// The key to the highlighting, in the header while all are shown.
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin: 0 2px 0 6px;
+  vertical-align: -2px;
+  border-radius: 50px;
+  background-color: var(--primary-container);
 }

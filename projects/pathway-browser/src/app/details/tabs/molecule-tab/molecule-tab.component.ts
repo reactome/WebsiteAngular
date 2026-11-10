@@ -83,17 +83,41 @@ export class MoleculeTabComponent implements OnDestroy {
 
   readonly selectedKey = signal<string>('');
 
-  /**
-   * Whether something inside the open pathway is selected: then the tab lists
-   * that selection's molecules, not the whole pathway's with the selection's
-   * highlighted, which read as an unexplained mix of blue and white rows.
-   */
-  readonly selectionInside = computed(
+  /** Whether something inside the open pathway, other than the pathway itself, is selected. */
+  private readonly selectedInPathway = computed(
     () =>
       !this.hasNoMoleculeData() &&
       !this.selectionPending() &&
       !!this.pathwayId() &&
       this.selectableObject().stId !== this.pathwayId()
+  );
+  /**
+   * Whether that selection lists its own molecules: then the tab lists them,
+   * not the whole pathway's with the selection's highlighted, which read as an
+   * unexplained mix of blue and white rows (FR-044).
+   */
+  readonly selectionInside = computed(
+    () => this.selectedInPathway() && !this.dataState.selectIsSummary()
+  );
+  /**
+   * One molecule is selected (from search, or with its locate button): it is
+   * shown among the pathway's, highlighted, not listed alone as a one-row tab.
+   */
+  readonly oneMolecule = computed(
+    () => this.selectedInPathway() && this.dataState.selectIsSummary()
+  );
+  /**
+   * The selection's molecules are on their way: the tab keeps what it showed
+   * rather than filtering against nothing, which emptied it ("No molecules are
+   * listed") for the length of the request.
+   */
+  readonly selectionMoleculesLoading = computed(
+    () =>
+      this.selectedInPathway() &&
+      // Not only while the request runs: until the service holds this
+      // selection's molecules, it holds none or the last selection's.
+      (this.entity.eventId() !== this.selectableObject().stId ||
+        this.entity._refEntities.isLoading())
   );
   /** The reader asked for the whole pathway's molecules; a new selection asks again. */
   readonly showAll = linkedSignal({
@@ -150,7 +174,9 @@ export class MoleculeTabComponent implements OnDestroy {
 
     effect(() => {
       const ids = this.moleculeData().map((e) => this.sanitizeId(e.category));
-      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, true);
+      // The last observer goes first: one was added on every change of the list.
+      this.observer?.();
+      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, false);
     });
   }
 
@@ -183,9 +209,11 @@ export class MoleculeTabComponent implements OnDestroy {
     () => this._pathwayParticipants.isLoading() && !!this.pathwayParticipants()
   );
   /** Busy while either the list or the selection behind its highlighting loads. */
-  readonly busy = computed(() => this.updating() || this.selectionPending());
+  readonly busy = computed(
+    () => this.updating() || this.selectionPending() || this.selectionMoleculesLoading()
+  );
 
-  readonly moleculeData = computed(() => {
+  private readonly freshMoleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
 
     const pathwayParticipants = this.pathwayParticipants();
@@ -203,7 +231,8 @@ export class MoleculeTabComponent implements OnDestroy {
       } else {
         const refEntities = this.entity.refEntities() || [];
         moleculeData = this.getReactionParticipants(pathwayResults, refEntities);
-        if (!this.showAll()) moleculeData = onlyTheSelection(moleculeData);
+        if (this.selectionInside() && !this.showAll())
+          moleculeData = onlyTheSelection(moleculeData);
       }
     } else {
       if (isPathway(this.selectableObject())) {
@@ -213,6 +242,13 @@ export class MoleculeTabComponent implements OnDestroy {
 
     moleculeData.sort((a, b) => a.category.localeCompare(b.category));
     return moleculeData;
+  });
+  readonly moleculeData = linkedSignal<
+    { loading: boolean; data: MoleculeGroup[] },
+    MoleculeGroup[]
+  >({
+    source: () => ({ loading: this.selectionMoleculesLoading(), data: this.freshMoleculeData() }),
+    computation: (source, previous) => (source.loading && previous ? previous.value : source.data),
   });
 
   getPathwayParticipants(pathwayParticipants: ShownParticipant[]) {
