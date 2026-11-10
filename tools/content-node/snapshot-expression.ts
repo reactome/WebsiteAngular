@@ -17,10 +17,10 @@
  * `<accession>-info.json` from a folder instead of fetching them; `--fixture`
  * cuts the few genes the specs use (FIXTURE_GENES) from the human table.
  */
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import type { ExpressionTissue, Quantiles } from '../../projects/contract/expression.ts';
-import { isEntry } from '../../scripts/is-entry.mjs';
 import { listedSpecies, problemsOf } from './expression-data.ts';
 import type { ExperimentFile, ExperimentGene, ListedSpecies } from './expression-data.ts';
 
@@ -280,7 +280,23 @@ async function main(args: string[]) {
   if (failed) process.exitCode = 1;
 }
 
-if (isEntry(import.meta.url)) {
+/**
+ * Run, not imported: compared as real paths, as scripts/is-entry.mjs does (the
+ * service may import nothing outside this directory), since a path through a
+ * symlink would otherwise never match and the step would silently do nothing.
+ */
+function isEntry(): boolean {
+  try {
+    return (
+      !!process.argv[1] &&
+      realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+    );
+  } catch {
+    return false;
+  }
+}
+
+if (isEntry()) {
   main(process.argv.slice(2)).catch((error: unknown) => {
     console.error((error as Error).message);
     process.exitCode = 1;
