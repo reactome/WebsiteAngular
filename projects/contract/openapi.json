@@ -31035,6 +31035,9 @@
                 "$ref": "#/components/schemas/ReferenceSequence_JsogReference"
               },
               {
+                "$ref": "#/components/schemas/ReferenceMolecule_JsogReference"
+              },
+              {
                 "$ref": "#/components/schemas/JsogReference"
               }
             ]
@@ -31123,37 +31126,20 @@
           "stId",
           "name",
           "crossReference",
-          "inferredTo",
           "summarisedEntities",
           "moleculeType",
           "databaseName",
           "identifier",
           "url",
           "referenceDatabase",
-          "checksum",
-          "comment",
-          "description",
-          "geneName",
-          "isSequenceChanged",
-          "keyword",
-          "secondaryIdentifier",
-          "sequenceLength",
-          "species",
-          "chain",
-          "referenceGene",
-          "referenceTranscript",
           "referenceType",
           "referenceEntity",
           "className",
           "hasCompartment",
-          "componentOfComplexes",
-          "memberOfSet",
-          "inputFor",
-          "outputFor",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded 2 times."
+        "description": "Recorded 3 times, a protein's summary and a chemical's: a chemical's has no sequence fields."
       },
       "Summation_JsogReference": {
         "type": "object",
