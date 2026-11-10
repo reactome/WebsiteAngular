@@ -269,6 +269,47 @@ above, rather than replaced.
 
 ---
 
+### User Story 6 - See where an entry sits without opening the tree (Priority: P2)
+
+A reader on a content page (a pathway, reaction or molecule) wants to see
+where it sits in Reactome and go there. The **Locations** tree shows them at
+once, and each place leads into the Pathway Browser.
+
+**What is wrong today**: the tree opens closed, at its top-level pathways
+(for PKA activation, one line: "Signal Transduction"), so every reader must
+open it, or press "Expand all", before it shows anything they came for. A
+curator reported this as a wasted step, and recalled a Scientific Advisory
+Board recommendation from the first redesign that the hierarchy be shown open.
+(Its links opened an empty Pathway Browser, fixed in #907.)
+
+**Principles broken**: 4 (an extra step before the page's content is
+reachable) and 1 (a tree that hides its only answer is not the convention for
+a short list of places).
+
+**Why this priority**: every content page has Locations, and most trees are
+short: measured on release 98, PKA activation has 2 locations (18 rows fully
+open), a reaction 3 (28 rows); a protein such as BCL2 has 16 (67 rows); ATP has
+14,645 (42,159 rows). Opening everything is right for most entries and
+impossible for the largest, so the rule depends on size.
+
+**Independent Test**: Open the content page of PKA activation: every location
+is visible and linked with no click. Open ATP's: the page stays usable, the
+tree shows its top levels with how many locations each holds, and "Expand all"
+remains.
+
+**Acceptance Scenarios**:
+
+1. **Given** an entry whose tree, fully open for the species shown, is 40 rows
+   or fewer, **When** its content page loads, **Then** the tree is fully open.
+2. **Given** a larger tree, **When** the page loads, **Then** its top-level
+   pathways are shown, each with the number of locations under it, and
+   "Expand all" opens the rest.
+3. **Given** an open tree, **When** the reader collapses a branch or changes
+   species, **Then** the tree does what they asked; the default applies only
+   when the page loads or the species changes.
+
+---
+
 ### Edge Cases
 
 Each of these is a requirement below, so that tasks are made for it.
@@ -287,6 +328,7 @@ Each of these is a requirement below, so that tasks are made for it.
 - The molecule tab on page 7 of a group when the selection changes or the
   switch is turned: FR-046.
 - The molecule tab while a new selection or pathway loads: FR-047.
+- A Locations tree of tens of thousands of rows (ATP): FR-051.
 
 ## Requirements _(mandatory)_
 
@@ -398,6 +440,17 @@ Each of these is a requirement below, so that tasks are made for it.
   Opening another pathway keeps the old list on screen, marked as updating,
   until the new one arrives; only the first load shows a spinner alone.
 
+**Content pages: Locations**
+
+- **FR-050**: A Locations tree that, fully open for the species shown, is 40
+  rows or fewer MUST be shown fully open when the page loads and when the
+  species shown changes.
+- **FR-051**: A larger tree MUST show its top-level pathways, each with the
+  number of locations under it, with "Expand all" to open the rest; the page
+  MUST stay responsive with the largest tree (ATP's, 14,645 locations).
+- **FR-052**: The reader's own expanding and collapsing MUST be kept until the
+  page or the species changes.
+
 ### Key Entities
 
 - **Icon Library view state**: the reader's search term, chosen category and
@@ -435,6 +488,10 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   at both ends of their own box, named for the group; the first page lists the
   highlighted molecules first; and with the switch on, each group lists its
   highlighted count and the address carries the switch.
+- **SC-008**: On the content page of PKA activation every location link is
+  visible with no click. On ATP's, whose answer is 8.4 MB and takes about 3.5 s
+  (measured on beta, release 98), the top levels and their counts show within
+  1 s of the answer arriving, and "Expand all" is available.
 
 ## Clarifications
 
