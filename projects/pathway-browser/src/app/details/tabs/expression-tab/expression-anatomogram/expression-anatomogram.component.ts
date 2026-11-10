@@ -8,6 +8,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
   ViewEncapsulation,
 } from '@angular/core';
@@ -75,8 +76,6 @@ export class ExpressionAnatomogramComponent {
   private readonly tissueByUberon = computed(
     () => new Map(this.answer().experiment.tissues.map((tissue, i) => [tissue.uberon, i]))
   );
-  /** Which tissues the figure shown draws, for the label under it. */
-  readonly drawn = signal(0);
 
   constructor() {
     // Put a newly loaded figure in place, and find the experiment's organs in it.
@@ -96,8 +95,10 @@ export class ExpressionAnatomogramComponent {
         if (index === undefined) continue;
         this.organs.set(index, [...(this.organs.get(index) ?? []), element]);
       }
-      this.drawn.set(this.organs.size);
-      this.paint();
+      // Painted once in place, untracked: tracked, this effect read the gene
+      // and tissue through paint(), and every move over the heatmap parsed
+      // and inserted the figure again (85 ms for the male one).
+      untracked(() => this.paint());
     });
     // Shade again when the gene, the tissue or the theme changes.
     afterRenderEffect(() => {
@@ -119,10 +120,11 @@ export class ExpressionAnatomogramComponent {
     const picked = this.tissue();
     for (const [index, elements] of this.organs) {
       const median = row?.values[index]?.[2];
+      // No value: the heatmap's "no value" background, not a hole in the figure.
       const fill = row
         ? median !== undefined
           ? shade(median, top, low, high)
-          : 'transparent'
+          : `rgb(${tokenRgb(host, '--surface', [255, 255, 255]).join(', ')})`
         : '';
       for (const element of elements) {
         for (const shape of [element, ...Array.from(element.querySelectorAll('*'))]) {

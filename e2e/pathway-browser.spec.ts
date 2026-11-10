@@ -296,6 +296,33 @@ test.describe('Expression tab (spec 024)', () => {
     );
   });
 
+  test('keeps the figure in place while the pointer moves over the heatmap', async ({ page }) => {
+    // It was parsed and inserted again on every move to a new cell (85 ms for
+    // the male figure), stuttering a sweep across the tissues.
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.locator('cr-expression-anatomogram svg')).toBeAttached({ timeout: 60_000 });
+    await page.evaluate(() => {
+      const svg = document.querySelector('cr-expression-anatomogram svg') as
+        (SVGElement & { kept?: boolean }) | null;
+      if (svg) svg.kept = true;
+    });
+    await canvas.scrollIntoViewIfNeeded();
+    for (const x of [5, 23, 41, 59]) await canvas.hover({ position: { x, y: 5 } });
+    await expect(page.locator('cr-expression-anatomogram .caption')).toContainText('Shaded by');
+    expect(
+      await page.evaluate(
+        () =>
+          (
+            document.querySelector('cr-expression-anatomogram svg') as
+              (SVGElement & { kept?: boolean }) | null
+          )?.kept === true
+      ),
+      'the same figure, not one inserted again'
+    ).toBe(true);
+  });
+
   test("picks out an organ's column when the organ is pointed at (FR-016)", async ({ page }) => {
     await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
     const spleen = page.locator('cr-expression-anatomogram #UBERON_0002106');

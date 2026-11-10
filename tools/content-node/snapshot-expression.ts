@@ -75,7 +75,11 @@ export function anatomyOf(sdrf: string): Map<string, string> {
     const cells = line.split('\t');
     if (cells[3] === 'factor' && cells[4] === 'organism part' && cells[2]) {
       const id = (cells[6] ?? '').split('/').pop() ?? '';
-      if (/^UBERON_\d+$/.test(id)) ids.set(cells[2], id);
+      if (!/^UBERON_\d+$/.test(id)) continue;
+      const known = ids.get(cells[2]);
+      if (known && known !== id)
+        throw new Error(`assay ${cells[2]} names two anatomy ids: ${known}, ${id}`);
+      ids.set(cells[2], id);
     }
   }
   return ids;
@@ -132,6 +136,13 @@ export function buildExperiment(input: {
       throw new Error(`${group.label} (${id}) has ${ids.size} anatomy ids: ${[...ids].join(', ')}`);
     return { id, label: group.label, samples: group.samples, uberon };
   });
+  // Two tissues on one organ: the anatomogram could draw only one of them.
+  const seen = new Map<string, string>();
+  for (const tissue of tissues) {
+    const other = seen.get(tissue.uberon);
+    if (other) throw new Error(`${other} and ${tissue.label} are both ${tissue.uberon}`);
+    seen.set(tissue.uberon, tissue.label);
+  }
   const order = tissues
     .map((_, i) => i)
     .sort((a, b) => (tissues[a]?.label ?? '').localeCompare(tissues[b]?.label ?? ''));

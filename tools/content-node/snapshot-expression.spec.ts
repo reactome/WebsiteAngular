@@ -103,6 +103,20 @@ describe('buildExperiment', () => {
     ]);
   });
 
+  it('refuses two tissues on one organ', () => {
+    const same = SDRF.replace(/UBERON_0000955/g, 'UBERON_0002106');
+    expect(() => build(TABLE, CONFIGURATION, LISTED, same)).toThrow(
+      'spleen and brain & spine are both UBERON_0002106'
+    );
+  });
+
+  it('refuses a sample that names two anatomy ids', () => {
+    const twice = `${SDRF}\nE-TEST-1\t\tA\tfactor\torganism part\tliver\thttp://purl.obolibrary.org/obo/UBERON_0002107`;
+    expect(() => build(TABLE, CONFIGURATION, LISTED, twice)).toThrow(
+      'assay A names two anatomy ids: UBERON_0002106, UBERON_0002107'
+    );
+  });
+
   it('refuses a tissue whose samples name two anatomy ids', () => {
     const mixed = SDRF.replace(
       'obo/UBERON_0002106\nE-TEST-1\t\tB',
