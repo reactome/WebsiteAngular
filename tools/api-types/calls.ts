@@ -133,6 +133,7 @@ export const CALLS: Call[] = [
   { file: `${PB}/services/general.service.ts`, method: 'version', n: 2, http: 'GET', route: '/data/database/version', type: 'number', indirect: 'another deployment, named by the profile' },
   { file: `${PB}/services/icon.service.ts`, method: 'fetchIcon', http: 'GET', route: '/search/query', query: { types: 'Icon' }, type: 'Search.Icon.Result' },
   { file: `${PB}/services/participant.service.ts`, method: 'getParticipants', http: 'GET', route: '/data/participants/{id}', type: 'Participant[]' },
+  { file: `${PB}/details/tabs/expression-tab/expression-tab.component.ts`, method: 'expression', http: 'GET', route: '/expression/{id}', type: 'ExpressionAnswer' },
   { file: `${PB}/services/participant.service.ts`, method: 'getReferenceEntities', http: 'GET', route: '/data/participants/{id}/referenceEntities', type: 'ReferenceEntity[]' },
   { file: `${PB}/services/species.service.ts`, method: 'allSpecies', http: 'GET', route: '/data/species/main', type: 'Species[]' },
   { file: `${PB}/services/species.service.ts`, method: 'getOrtholog', http: 'GET', route: '/data/orthology/{id}/species/{dbId}', type: 'Event', gap: 'its reader has no callers' },
