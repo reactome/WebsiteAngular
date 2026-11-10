@@ -438,13 +438,14 @@ Each of these is a requirement below, so that tasks are made for it.
   group and the range shown ("Proteins 1–50 of 345"); the two show the same
   page; paging from the lower one brings the group's heading into view. A
   group of 50 or fewer MUST have none.
-- **FR-044**: While something inside the pathway is selected, a switch MUST
-  let the reader list only the highlighted molecules. With it on, a group with
-  none highlighted keeps its heading ("5 · none highlighted") and lists
-  nothing; headings and pagers count only what is listed. With nothing
-  selected the switch is not shown. The switch is kept in the page's address,
-  so a shared link and Back keep it (principle 5). The download panel is not
-  filtered: it offers the pathway's molecules, as it says.
+- **FR-044**: While something inside the pathway is selected, the tab MUST list
+  that selection's molecules alone, unhighlighted, under a header naming it,
+  with "Show all molecules in <pathway>" to list the pathway's molecules with
+  the selection's highlighted, and a way back; a new selection starts from its
+  own molecules again. (Decided on beta, 2026-11-10: this replaces a switch to
+  show only highlighted molecules, which listed the whole pathway by default.)
+  With nothing selected, or the pathway itself, the pathway's molecules are
+  listed and nothing is highlighted.
 - **FR-045**: Within a group, molecules MUST be ordered highlighted first, then
   by how many of the pathway's participants contain them (the "N ×" shown),
   then by the name shown, alphabetically; the same on every page, and without
@@ -455,6 +456,18 @@ Each of these is a requirement below, so that tasks are made for it.
   the highlighting: the list stays on screen, and it is not fetched again.
   Opening another pathway keeps the old list on screen, marked as updating,
   until the new one arrives; only the first load shows a spinner alone.
+
+- **FR-048**: The tab MUST have a header holding what is listed (FR-040,
+  FR-044) and a button that says what it downloads ("Download 196
+  molecules"), opening the download's options; the file holds what is listed.
+  The list of molecule types beside the molecules is for finding a type, each
+  with its count, each on one line, and holds no action.
+- **FR-049**: Each molecule's locate button MUST keep its icon and say, by the
+  molecule's name, what it does. In a pathway drawn as a diagram it selects the
+  molecule there. In one drawn as an illustration it finds the diagrams inside
+  the open pathway that draw the molecule: one opens with the molecule
+  selected, several are listed by name to choose from, none is said; within
+  about 2 s for any molecule (measured 0.5 to 1.6 s on release 98).
 
 **Content pages: Locations**
 
@@ -504,6 +517,12 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   from the home page, and their results are added to `home-page-findings.md`.
 - **SC-006**: On each changed page, no element styled as a link, button or
   chip does nothing when activated.
+- **SC-009**: In Cellular responses to stimuli, zinc's locate button reads
+  "Find zinc(2+) in a diagram" and offers the diagrams inside the pathway that
+  draw it; choosing one opens it with zinc selected. With ATP-dependent
+  chromatin remodelers selected in Chromatin organization, the tab lists that
+  selection's molecules under a header naming it, and its download count is
+  less than the pathway's.
 - **SC-007**: In the molecule tab for a pathway with a group of more than 50
   and a selection inside it, with the expected counts read from the content
   service rather than written into the test: each heading gives the right
@@ -526,6 +545,13 @@ Each is checked by an automated end-to-end test unless it says otherwise.
 - Q: The home page: designed within this spec, or in a spec of its own? → A:
   Within this spec, but what visitors come to do is measured first, and the
   design follows from that.
+- Q: With something lower down selected, the whole pathway's molecules with the
+  selection's highlighted, or the selection's alone? → A: The selection's alone,
+  with a way to show all; and the tab's header carries the download (decided on
+  beta, 2026-11-10).
+- Q: In an illustration, what should a molecule's locate button do? → A: Take
+  the reader to a diagram that draws it, offering a choice when there are
+  several; its icon stays as it was.
 - Q: The molecule tab's paging: a "show more" control, every molecule shown,
   or a switch to show only highlighted ones? → A: Paging stays per group, in
   pages of 50, made plain: each group a box with the pager inside it, named
