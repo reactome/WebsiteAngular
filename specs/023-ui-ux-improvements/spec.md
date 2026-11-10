@@ -37,7 +37,8 @@ be defined from what visitors come to do (search, browse pathways, analyse
 data); not yet designed." Added later the same day: the molecule tab's
 pagination, which sits under the Proteins count and reads as if it were for
 every group; then what its highlighting and its "8 / 20" counts mean, which
-nothing on the tab says.
+nothing on the tab says. Added after that: the content pages' Locations
+tree, which a curator asked to be shown open rather than closed.
 
 (The input's "the search bar ... does nothing there" proved wrong when the code
 was read: see User Story 3.)
@@ -275,38 +276,50 @@ A reader on a content page (a pathway, reaction or molecule) wants to see
 where it sits in Reactome and go there. The **Locations** tree shows them at
 once, and each place leads into the Pathway Browser.
 
-**What is wrong today**: the tree opens closed, at its top-level pathways
-(for PKA activation, one line: "Signal Transduction"), so every reader must
-open it, or press "Expand all", before it shows anything they came for. A
-curator reported this as a wasted step, and recalled a Scientific Advisory
-Board recommendation from the first redesign that the hierarchy be shown open.
-(Its links opened an empty Pathway Browser, fixed in #907.)
+**What is wrong today** (read from the code): the tree opens closed, at its
+top-level pathways (for PKA activation, one line: "Signal Transduction"), so
+every reader must open it, or press "Expand all", before it shows anything
+they came for. A curator reported this as a wasted step, and recalled a
+Scientific Advisory Board recommendation from the first redesign that the
+hierarchy be shown open. (Its links opened an empty Pathway Browser, fixed in
+#907.) Also: an opened top-level pathway shows its whole subtree in a box
+capped at 300px high, so even an open tree hides most of itself; only the
+top level has toggles; "Expand all" does not change its label after a single
+pathway is opened by hand; and the toggles carry no expanded state for a
+screen reader.
 
 **Principles broken**: 4 (an extra step before the page's content is
-reachable) and 1 (a tree that hides its only answer is not the convention for
-a short list of places).
+reachable), 1 (a tree that hides its only answer is not the convention for a
+short list of places), and 7 (the toggles' state is not announced).
 
-**Why this priority**: every content page has Locations, and most trees are
-short: measured on release 98, PKA activation has 2 locations (18 rows fully
-open), a reaction 3 (28 rows); a protein such as BCL2 has 16 (67 rows); ATP has
-14,645 (42,159 rows). Opening everything is right for most entries and
-impossible for the largest, so the rule depends on size.
+**Why this priority**: every content page has Locations, and most entries have
+few. Measured on release 98, for Homo sapiens (the species the tree starts on):
+PKA activation has 2 locations, a reaction (R-HSA-111930) 3, BCL2 16, and ATP
+2,182 under 24 top-level pathways. Most rows are the path, not places: PKA
+activation's 2 locations sit at the end of single-child chains 12 levels deep.
+So the rule counts locations, not rows.
 
-**Independent Test**: Open the content page of PKA activation: every location
-is visible and linked with no click. Open ATP's: the page stays usable, the
-tree shows its top levels with how many locations each holds, and "Expand all"
-remains.
+**Scope**: content pages. The same tree appears in the Pathway Browser's
+details, where the reader is already in a pathway and the panel is narrow; it
+stays as it is there.
+
+**Independent Test**: Open the content page of PKA activation: both locations
+are visible and linked with no click and no scrolling inside the tree. Open
+ATP's: the page stays usable, the tree shows its 24 top-level pathways for
+Homo sapiens, each with its number of locations, and opening one shows it.
 
 **Acceptance Scenarios**:
 
-1. **Given** an entry whose tree, fully open for the species shown, is 40 rows
-   or fewer, **When** its content page loads, **Then** the tree is fully open.
-2. **Given** a larger tree, **When** the page loads, **Then** its top-level
-   pathways are shown, each with the number of locations under it, and
-   "Expand all" opens the rest.
-3. **Given** an open tree, **When** the reader collapses a branch or changes
-   species, **Then** the tree does what they asked; the default applies only
-   when the page loads or the species changes.
+1. **Given** an entry with 20 locations or fewer for the species shown,
+   **When** its content page loads, **Then** every top-level pathway is open
+   and every location is visible without scrolling inside the tree.
+2. **Given** an entry with more, **When** the page loads, **Then** its
+   top-level pathways are shown, each with the number of locations under it,
+   and each opens on its own.
+3. **Given** the tree, **When** the reader opens or closes a top-level
+   pathway, or uses "Expand all" / "Collapse all", **Then** the control's
+   label matches what is shown, and a screen reader hears whether each
+   pathway is open.
 
 ---
 
@@ -328,7 +341,10 @@ Each of these is a requirement below, so that tasks are made for it.
 - The molecule tab on page 7 of a group when the selection changes or the
   switch is turned: FR-046.
 - The molecule tab while a new selection or pathway loads: FR-047.
-- A Locations tree of tens of thousands of rows (ATP): FR-051.
+- A Locations tree of thousands of locations (ATP, 2,182 for Homo sapiens):
+  FR-051.
+- Locations at the end of long single-child chains (PKA activation, 12 levels):
+  FR-050.
 
 ## Requirements _(mandatory)_
 
@@ -442,14 +458,21 @@ Each of these is a requirement below, so that tasks are made for it.
 
 **Content pages: Locations**
 
-- **FR-050**: A Locations tree that, fully open for the species shown, is 40
-  rows or fewer MUST be shown fully open when the page loads and when the
-  species shown changes.
-- **FR-051**: A larger tree MUST show its top-level pathways, each with the
-  number of locations under it, with "Expand all" to open the rest; the page
-  MUST stay responsive with the largest tree (ATP's, 14,645 locations).
-- **FR-052**: The reader's own expanding and collapsing MUST be kept until the
-  page or the species changes.
+- **FR-050**: On a content page, an entry with 20 locations or fewer for the
+  species shown MUST show its tree with every top-level pathway open, when the
+  page loads and when the species changes, and every location MUST be visible
+  without scrolling inside the tree (no fixed-height box for a tree shown
+  open).
+- **FR-051**: An entry with more MUST show its top-level pathways, each with the
+  number of locations under it, each opening on its own; a closed pathway's
+  subtree is not rendered, so the page stays responsive with the largest tree
+  (ATP's).
+- **FR-052**: The reader's own opening and closing of top-level pathways MUST
+  be kept until the page or the species changes; "Expand all" reads "Collapse
+  all" whenever every top-level pathway is open, and each toggle announces
+  whether it is open.
+- **FR-053**: In the Pathway Browser's details, the tree MUST stay as it is
+  (closed until opened).
 
 ### Key Entities
 
@@ -488,10 +511,10 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   at both ends of their own box, named for the group; the first page lists the
   highlighted molecules first; and with the switch on, each group lists its
   highlighted count and the address carries the switch.
-- **SC-008**: On the content page of PKA activation every location link is
-  visible with no click. On ATP's, whose answer is 8.4 MB and takes about 3.5 s
-  (measured on beta, release 98), the top levels and their counts show within
-  1 s of the answer arriving, and "Expand all" is available.
+- **SC-008**: On the content page of PKA activation, both location links are
+  visible with no click and no scrolling inside the tree. On ATP's, the tree
+  shows 24 top-level pathways for Homo sapiens with their counts, renders no
+  closed subtree, and opening one shows its locations.
 
 ## Clarifications
 
