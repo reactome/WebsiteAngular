@@ -7,6 +7,8 @@ import {
   linkedSignal,
   OnDestroy,
   signal,
+  TemplateRef,
+  viewChild,
   WritableSignal,
 } from '@angular/core';
 import { ParticipantService } from '../../../services/participant.service';
@@ -17,14 +19,18 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import {
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
-} from '@angular/material/expansion';
 import { MoleculeDownloadTableComponent } from './molecule-download-table/molecule-download-table.component';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DataStateService } from '../../../services/data-state.service';
+import {
+  MatDialog,
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogContent,
+  MatDialogTitle,
+} from '@angular/material/dialog';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import { isPathway, observeSections } from '../../../services/utils';
 import { MoleculeGroupComponent } from './molecule-group/molecule-group.component';
 
@@ -48,10 +54,13 @@ export type MoleculeData = {
   imports: [
     SortByTextPipe,
     MatProgressSpinner,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
     MoleculeDownloadTableComponent,
+    MatDialogTitle,
+    MatDialogContent,
+    MatDialogActions,
+    MatDialogClose,
+    MatButton,
+    MatIcon,
     MoleculeGroupComponent,
   ],
   styleUrl: './molecule-tab.component.scss',
@@ -92,6 +101,24 @@ export class MoleculeTabComponent implements OnDestroy {
     computation: () => false,
   });
   readonly selectionName = computed(() => this.selectableObject().displayName);
+  /** Whose molecules the tab lists when nothing inside the pathway is selected. */
+  readonly listedName = computed(
+    () => this.dataState.currentPathway()?.displayName ?? this.selectionName()
+  );
+  /** How many molecules are listed: what the download writes. */
+  readonly listedCount = computed(() =>
+    this.moleculeData().reduce((sum, group) => sum + group.data.length, 0)
+  );
+  private dialog = inject(MatDialog);
+  private readonly downloadDialog = viewChild.required<TemplateRef<unknown>>('downloadDialog');
+
+  openDownload() {
+    this.dialog.open(this.downloadDialog(), {
+      width: '720px',
+      maxWidth: '95vw',
+      autoFocus: 'dialog',
+    });
+  }
   readonly pathwayName = computed(
     () => this.dataState.currentPathway()?.displayName ?? 'this pathway'
   );
