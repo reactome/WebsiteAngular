@@ -15,6 +15,14 @@ const answer = {
       type: 'Pathway',
       url: '/PathwayBrowser/#/R-HSA-163615&amp;PATH=R-HSA-111997,R-HSA-111933,R-HSA-111931',
     },
+    {
+      // Most locations carry two escaped ampersands: a selection and a path
+      // (R-HSA-114269's, release 98).
+      stId: 'R-HSA-109606',
+      name: 'Intrinsic Pathway for Apoptosis',
+      type: 'Pathway',
+      url: '/PathwayBrowser/#/R-HSA-109606&amp;SEL=R-HSA-114269&amp;PATH=R-HSA-5357801,R-HSA-109581',
+    },
   ],
 };
 
@@ -22,6 +30,9 @@ describe("the locations tree's links", () => {
   it('can be read by the Pathway Browser: no escaped ampersands, at any depth', () => {
     const tree = withBrowserLinks(answer);
     expect(tree.url).toBe('/PathwayBrowser/#/R-HSA-162582');
+    expect(tree.children?.[1]?.url).toBe(
+      '/PathwayBrowser/#/R-HSA-109606&SEL=R-HSA-114269&PATH=R-HSA-5357801,R-HSA-109581'
+    );
     expect(tree.children?.[0]?.url).toBe(
       '/PathwayBrowser/#/R-HSA-163615&PATH=R-HSA-111997,R-HSA-111933,R-HSA-111931'
     );

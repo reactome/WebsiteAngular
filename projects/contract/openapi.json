@@ -22964,7 +22964,7 @@
           },
           "url": {
             "type": "string",
-            "description": "The Pathway Browser's link to the node."
+            "description": "The Pathway Browser's link to the node, in the old browser's form and HTML-escaped as Java writes it (`#/R-HSA-1&amp;SEL=R-HSA-2&amp;PATH=...`): unescape it before using it as an address (the site's locations tree does, in `withBrowserLinks`), or the browser cannot read it and opens empty."
           },
           "type": {
             "type": "string",
