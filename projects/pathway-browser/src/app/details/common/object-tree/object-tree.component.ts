@@ -652,12 +652,6 @@ export class ObjectTreeComponent<
     return `${action} ${id}`;
   }
 
-  /** The button's icon in the molecule tab: a target, for "show it to me". */
-  locateIcon(node: E): string | undefined {
-    if (!this.moleculeView() || this.requireNavigate(node)) return undefined;
-    return this.noMoleculeShapes() ? 'flag' : 'my_location';
-  }
-
   /**
    * Whether the open pathway's id carries this species abbreviation. With none
    * this is false, as `includes(undefined)` was: it looks for "undefined".

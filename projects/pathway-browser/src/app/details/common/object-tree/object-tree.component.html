@@ -113,11 +113,7 @@
               [matTooltip]="selectTooltip(element)"
               [attr.aria-label]="selectTooltip(element)"
             >
-              @if (locateIcon(element); as icon) {
-                <mat-icon class="custom-icon" fontSet="symbols">{{ icon }}</mat-icon>
-              } @else {
-                <mat-icon class="custom-icon" svgIcon="select"></mat-icon>
-              }
+              <mat-icon class="custom-icon" svgIcon="select"></mat-icon>
             </button>
           </div>
 
