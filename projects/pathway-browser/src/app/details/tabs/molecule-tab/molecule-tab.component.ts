@@ -7,6 +7,8 @@ import {
   linkedSignal,
   OnDestroy,
   signal,
+  TemplateRef,
+  viewChild,
   WritableSignal,
 } from '@angular/core';
 import { ParticipantService } from '../../../services/participant.service';
@@ -17,13 +19,18 @@ import { rxResource } from '@angular/core/rxjs-interop';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
-import {
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle,
-} from '@angular/material/expansion';
 import { MoleculeDownloadTableComponent } from './molecule-download-table/molecule-download-table.component';
 import { UrlStateService } from '../../../services/url-state.service';
+import { DataStateService } from '../../../services/data-state.service';
+import {
+  MatDialog,
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogContent,
+  MatDialogTitle,
+} from '@angular/material/dialog';
+import { MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
 import { isPathway, observeSections } from '../../../services/utils';
 import { MoleculeGroupComponent } from './molecule-group/molecule-group.component';
 
@@ -47,10 +54,13 @@ export type MoleculeData = {
   imports: [
     SortByTextPipe,
     MatProgressSpinner,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
     MoleculeDownloadTableComponent,
+    MatDialogTitle,
+    MatDialogContent,
+    MatDialogActions,
+    MatDialogClose,
+    MatButton,
+    MatIcon,
     MoleculeGroupComponent,
   ],
   styleUrl: './molecule-tab.component.scss',
@@ -58,6 +68,7 @@ export type MoleculeData = {
 export class MoleculeTabComponent implements OnDestroy {
   private participant: ParticipantService = inject(ParticipantService);
   private entity: EntityService = inject(EntityService);
+  private dataState = inject(DataStateService);
   private state: UrlStateService = inject(UrlStateService);
 
   readonly selectableObject = input.required<SelectableObject>();
@@ -71,6 +82,74 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly hasNoMoleculeData = computed(() => !(this.state.select() || this.state.pathwayId()));
 
   readonly selectedKey = signal<string>('');
+
+  /** Whether something inside the open pathway, other than the pathway itself, is selected. */
+  private readonly selectedInPathway = computed(
+    () =>
+      !this.hasNoMoleculeData() &&
+      !this.selectionPending() &&
+      !!this.pathwayId() &&
+      this.selectableObject().stId !== this.pathwayId()
+  );
+  /**
+   * Whether that selection lists its own molecules: then the tab lists them,
+   * not the whole pathway's with the selection's highlighted, which read as an
+   * unexplained mix of blue and white rows (FR-044).
+   */
+  readonly selectionInside = computed(
+    () => this.selectedInPathway() && !this.dataState.selectIsSummary()
+  );
+  /**
+   * One molecule is selected (from search, or with its locate button): it is
+   * shown among the pathway's, highlighted, not listed alone as a one-row tab.
+   */
+  readonly oneMolecule = computed(
+    () => this.selectedInPathway() && this.dataState.selectIsSummary()
+  );
+  /**
+   * The selection's molecules are on their way: the tab keeps what it showed
+   * rather than filtering against nothing, which emptied it ("No molecules are
+   * listed") for the length of the request.
+   */
+  readonly selectionMoleculesLoading = computed(
+    () =>
+      this.selectedInPathway() &&
+      // Not only while the request runs: until the service holds this
+      // selection's molecules, it holds none or the last selection's.
+      (this.entity.eventId() !== this.selectableObject().stId ||
+        this.entity._refEntities.isLoading())
+  );
+  /** The reader asked for the whole pathway's molecules; a new selection asks again. */
+  readonly showAll = linkedSignal({
+    source: () => this.selectableObject().stId,
+    computation: () => false,
+  });
+  readonly selectionName = computed(() => this.selectableObject().displayName);
+  /** Whose molecules the tab lists when nothing inside the pathway is selected. */
+  readonly listedName = computed(
+    () => this.dataState.currentPathway()?.displayName ?? this.selectionName()
+  );
+  /** Whose molecules are listed: the file the download writes is named for it. */
+  readonly listedId = computed(() =>
+    this.selectionInside() && !this.showAll() ? this.selectableObject().stId : this.objStId()
+  );
+  /** How many molecules are listed: what the download writes. */
+  readonly listedCount = computed(() =>
+    this.moleculeData().reduce((sum, group) => sum + group.data.length, 0)
+  );
+  private dialog = inject(MatDialog);
+  private readonly downloadDialog = viewChild.required<TemplateRef<unknown>>('downloadDialog');
+
+  openDownload() {
+    this.dialog.open(this.downloadDialog(), {
+      width: '720px',
+      maxWidth: '95vw',
+      autoFocus: 'dialog',
+    });
+  }
+  readonly pathwayName = computed(
+    () => this.dataState.currentPathway()?.displayName ?? 'this pathway'
+  );
   private manualSelection = false;
   private observer?: () => void;
 
@@ -95,7 +174,9 @@ export class MoleculeTabComponent implements OnDestroy {
 
     effect(() => {
       const ids = this.moleculeData().map((e) => this.sanitizeId(e.category));
-      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, true);
+      // The last observer goes first: one was added on every change of the list.
+      this.observer?.();
+      this.observer = observeSections(ids, this.selectedKey, this.manualSelection, false);
     });
   }
 
@@ -127,10 +208,17 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly updating = computed(
     () => this._pathwayParticipants.isLoading() && !!this.pathwayParticipants()
   );
+  /**
+   * A new selection is on its way, first the selection itself and then its
+   * molecules: the last list is held until both are in (FR-047). Held through
+   * the first part too, which otherwise listed the whole pathway, unshaded,
+   * under the new selection's name.
+   */
+  readonly holding = computed(() => this.selectionPending() || this.selectionMoleculesLoading());
   /** Busy while either the list or the selection behind its highlighting loads. */
-  readonly busy = computed(() => this.updating() || this.selectionPending());
+  readonly busy = computed(() => this.updating() || this.holding());
 
-  readonly moleculeData = computed(() => {
+  private readonly freshMoleculeData = computed(() => {
     let moleculeData: MoleculeGroup[] = [];
 
     const pathwayParticipants = this.pathwayParticipants();
@@ -148,6 +236,8 @@ export class MoleculeTabComponent implements OnDestroy {
       } else {
         const refEntities = this.entity.refEntities() || [];
         moleculeData = this.getReactionParticipants(pathwayResults, refEntities);
+        if (this.selectionInside() && !this.showAll())
+          moleculeData = onlyTheSelection(moleculeData);
       }
     } else {
       if (isPathway(this.selectableObject())) {
@@ -157,6 +247,15 @@ export class MoleculeTabComponent implements OnDestroy {
 
     moleculeData.sort((a, b) => a.category.localeCompare(b.category));
     return moleculeData;
+  });
+  readonly moleculeData = linkedSignal<
+    { loading: boolean; data: MoleculeGroup[] },
+    MoleculeGroup[]
+  >({
+    source: () => ({ loading: this.holding(), data: this.freshMoleculeData() }),
+    // Nothing to hold on the first load: the fresh list, whatever it is.
+    computation: (source, previous) =>
+      source.loading && previous?.value.length ? previous.value : source.data,
   });
 
   getPathwayParticipants(pathwayParticipants: ShownParticipant[]) {
@@ -234,4 +333,16 @@ export class MoleculeTabComponent implements OnDestroy {
       .replace(/\s+/g, '-') // Replace spaces with dashes
       .replace(/[^a-z0-9-_]/g, ''); // Remove special characters
   }
+}
+
+/** The selection's molecules alone: highlighting them all would mark nothing. */
+function onlyTheSelection(groups: MoleculeGroup[]): MoleculeGroup[] {
+  return groups
+    .map((group) => ({
+      category: group.category,
+      data: group.data
+        .filter((molecule) => molecule.highlight)
+        .map((molecule) => ({ ...molecule, highlight: false })),
+    }))
+    .filter((group) => group.data.length > 0);
 }
