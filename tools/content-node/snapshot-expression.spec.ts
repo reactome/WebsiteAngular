@@ -28,6 +28,22 @@ const CONFIGURATION = `<configuration experimentType="rnaseq_mrna_baseline">
     </assay_groups>
   </analytics>
 </configuration>`;
+/** Each assay's organism part, as the condensed sample file writes it. */
+const SDRF = [
+  ['A', 'UBERON_0002106'],
+  ['B', 'UBERON_0002106'],
+  ['C', 'UBERON_0000955'],
+  ['D', 'UBERON_0001013'],
+  ['E', 'UBERON_0001013'],
+  ['F', 'UBERON_0001013'],
+]
+  .map(([assay, id]) =>
+    [
+      `E-TEST-1\t\t${assay}\tcharacteristic\torganism\tHomo sapiens\thttp://purl.obolibrary.org/obo/NCBITaxon_9606`,
+      `E-TEST-1\t\t${assay}\tfactor\torganism part\tsome tissue\thttp://purl.obolibrary.org/obo/${id}`,
+    ].join('\n')
+  )
+  .join('\n');
 const TABLE = [
   'GeneID\tGene Name\tg1\tg2\tg3',
   'ENSG00000000001\tONE\t1,2,3,4,5\t0.3,0.4,0.5,0.6,0.7\t10,20,30,40,50',
@@ -41,22 +57,23 @@ function geneOf(file: ExperimentFile, id: string): ExperimentGene {
   return gene;
 }
 
-const build = (table = TABLE, configuration = CONFIGURATION, listed = LISTED) =>
+const build = (table = TABLE, configuration = CONFIGURATION, listed = LISTED, sdrf = SDRF) =>
   buildExperiment({
     species: 'Homo sapiens',
     listed,
     info: INFO,
     table,
     configuration,
+    sdrf,
     fetched: '2026-11-10',
   });
 
 describe('the sources', () => {
   it("reads a configuration's groups, labels decoded, samples counted", () => {
     expect(groupsOf(CONFIGURATION)).toEqual([
-      { id: 'g1', label: 'spleen', samples: 2 },
-      { id: 'g2', label: 'brain & spine', samples: 1 },
-      { id: 'g3', label: 'adipose tissue', samples: 3 },
+      { id: 'g1', label: 'spleen', samples: 2, assays: ['A', 'B'] },
+      { id: 'g2', label: 'brain & spine', samples: 1, assays: ['C'] },
+      { id: 'g3', label: 'adipose tissue', samples: 3, assays: ['D', 'E', 'F'] },
     ]);
   });
 
@@ -78,6 +95,27 @@ describe('the sources', () => {
 });
 
 describe('buildExperiment', () => {
+  it("gives each tissue its samples' anatomy id", () => {
+    expect(build().tissues.map((t) => [t.label, t.uberon])).toEqual([
+      ['adipose tissue', 'UBERON_0001013'],
+      ['brain & spine', 'UBERON_0000955'],
+      ['spleen', 'UBERON_0002106'],
+    ]);
+  });
+
+  it('refuses a tissue whose samples name two anatomy ids', () => {
+    const mixed = SDRF.replace(
+      'obo/UBERON_0002106\nE-TEST-1\t\tB',
+      'obo/UBERON_0002106\nE-TEST-1\t\tB'
+    ).replace(
+      /(\tB\tfactor\torganism part\tsome tissue\thttp:\/\/purl.obolibrary.org\/obo\/)UBERON_0002106/,
+      '$1UBERON_0002107'
+    );
+    expect(() => build(TABLE, CONFIGURATION, LISTED, mixed)).toThrow(
+      'spleen (g1) has 2 anatomy ids'
+    );
+  });
+
   it('orders tissues by label and keeps each value as the table has it', () => {
     const file = build();
     expect(file.tissues.map((t) => t.label)).toEqual(['adipose tissue', 'brain & spine', 'spleen']);

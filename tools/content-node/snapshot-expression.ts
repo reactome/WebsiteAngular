@@ -15,8 +15,9 @@
  * It refuses to write a file that does not match its source: the gene count,
  * the tissue count against both the table and the experiment's configuration,
  * every five values in order, and 20 cells read back against the table's text.
- * `--source` reads `<accession>-tpms.tsv`, `<accession>-configuration.xml` and
- * `<accession>-info.json` from a folder instead of fetching them; `--fixture`
+ * `--source` reads `<accession>-tpms.tsv`, `<accession>-configuration.xml`,
+ * `<accession>.condensed-sdrf.tsv` and `<accession>-info.json` from a folder
+ * instead of fetching them; `--fixture`
  * cuts the few genes the specs use (FIXTURE_GENES) from the human table;
  * run Prettier on the fixture after, as the format check holds it to Prettier's
  * layout.
@@ -40,8 +41,10 @@ export interface AtlasInfo {
 }
 
 /** A configuration's tissue groups: id, label, and the assays in each. */
-export function groupsOf(configuration: string): { id: string; label: string; samples: number }[] {
-  const groups: { id: string; label: string; samples: number }[] = [];
+export function groupsOf(
+  configuration: string
+): { id: string; label: string; samples: number; assays: string[] }[] {
+  const groups: { id: string; label: string; samples: number; assays: string[] }[] = [];
   const decode = (text: string) =>
     text
       .replace(/&amp;/g, '&')
@@ -54,13 +57,28 @@ export function groupsOf(configuration: string): { id: string; label: string; sa
     const id = /\bid="([^"]*)"/.exec(attributes)?.[1];
     const label = /\blabel="([^"]*)"/.exec(attributes)?.[1];
     if (!id || label === undefined) continue;
-    groups.push({
-      id,
-      label: decode(label),
-      samples: [...(match[2] ?? '').matchAll(/<assay\b/g)].length,
-    });
+    const assays = [...(match[2] ?? '').matchAll(/<assay\b[^>]*>([^<]*)<\/assay>/g)].map((assay) =>
+      (assay[1] ?? '').trim()
+    );
+    groups.push({ id, label: decode(label), samples: assays.length, assays });
   }
   return groups;
+}
+
+/**
+ * Each assay's anatomy id, from the experiment's condensed sample file: the
+ * UBERON id of its "organism part" factor (spec 024, research R10).
+ */
+export function anatomyOf(sdrf: string): Map<string, string> {
+  const ids = new Map<string, string>();
+  for (const line of sdrf.split('\n')) {
+    const cells = line.split('\t');
+    if (cells[3] === 'factor' && cells[4] === 'organism part' && cells[2]) {
+      const id = (cells[6] ?? '').split('/').pop() ?? '';
+      if (/^UBERON_\d+$/.test(id)) ids.set(cells[2], id);
+    }
+  }
+  return ids;
 }
 
 /**
@@ -93,9 +111,12 @@ export function buildExperiment(input: {
   info: AtlasInfo;
   table: string;
   configuration: string;
+  /** The condensed sample file, for each tissue's anatomy id. */
+  sdrf: string;
   fetched: string;
 }): ExperimentFile {
-  const { species, listed, info, table, configuration, fetched } = input;
+  const { species, listed, info, table, configuration, sdrf, fetched } = input;
+  const anatomy = anatomyOf(sdrf);
   const [header = '', ...lines] = table.split('\n').filter((line) => line.trim() !== '');
   const columns = header.split('\t');
   if (columns[0] !== 'GeneID' || columns[1] !== 'Gene Name')
@@ -104,7 +125,12 @@ export function buildExperiment(input: {
   const tissues: ExpressionTissue[] = columns.slice(2).map((id) => {
     const group = groups.get(id);
     if (!group) throw new Error(`column ${id} is not a group in the configuration`);
-    return { id, label: group.label, samples: group.samples };
+    // One anatomy id per tissue: a group whose samples name two is two tissues.
+    const ids = new Set(group.assays.flatMap((assay) => anatomy.get(assay) ?? []));
+    const [uberon] = ids;
+    if (ids.size !== 1 || !uberon)
+      throw new Error(`${group.label} (${id}) has ${ids.size} anatomy ids: ${[...ids].join(', ')}`);
+    return { id, label: group.label, samples: group.samples, uberon };
   });
   const order = tissues
     .map((_, i) => i)
@@ -232,6 +258,7 @@ async function sourcesFor(accession: string, folder?: string) {
     return {
       table: read('tpms.tsv'),
       configuration: read('configuration.xml'),
+      sdrf: readFileSync(join(folder, `${accession}.condensed-sdrf.tsv`), 'utf8'),
       info: JSON.parse(read('info.json')) as AtlasInfo,
     };
   }
@@ -239,6 +266,7 @@ async function sourcesFor(accession: string, folder?: string) {
   return {
     table: await fetchText(`${base}-tpms.tsv`),
     configuration: await fetchText(`${base}-configuration.xml`),
+    sdrf: await fetchText(`${base}.condensed-sdrf.tsv`),
     info: JSON.parse(await fetchText(`${ATLAS}/json/experiments/${accession}/info`)) as AtlasInfo,
   };
 }
@@ -264,12 +292,20 @@ async function main(args: string[]) {
   let failed = false;
   for (const [species, listed] of Object.entries(listedSpecies())) {
     if (only && species !== only) continue;
-    const { table, configuration, info } = await sourcesFor(listed.accession, source);
+    const { table, configuration, sdrf, info } = await sourcesFor(listed.accession, source);
     if (info.experimentAccession !== listed.accession || info.species !== species)
       throw new Error(
         `${listed.accession}: Expression Atlas describes ${info.experimentAccession} in ${info.species}`
       );
-    const file = buildExperiment({ species, listed, info, table, configuration, fetched });
+    const file = buildExperiment({
+      species,
+      listed,
+      info,
+      table,
+      configuration,
+      sdrf,
+      fetched,
+    });
     const problems = checkAgainstSource(file, table, configuration);
     if (problems.length) {
       failed = true;

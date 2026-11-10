@@ -17250,15 +17250,20 @@
           },
           "samples": {
             "type": "number"
+          },
+          "uberon": {
+            "type": "string",
+            "description": "Its UBERON id (UBERON_0002106 for spleen), which the anatomogram's organs carry."
           }
         },
         "required": [
           "id",
           "label",
-          "samples"
+          "samples",
+          "uberon"
         ],
         "additionalProperties": false,
-        "description": "A column: the table's group id, its label, and how many samples it holds."
+        "description": "A column: the table's group id, its label, how many samples it holds, and its anatomy id."
       },
       "Facet": {
         "type": "object",
