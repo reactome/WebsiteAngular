@@ -22,8 +22,8 @@
 
 ## Phase 1: Setup (PR-A)
 
-- [ ] T001 Install dependencies and build the libraries in the worktree (`npm ci`, `npm run build:libs`). Confirm at least 2 GB free on `/` before downloading any experiment table (research R5; the disk was at 540 MB on 2026-11-10).
-- [ ] T002 [P] Add the hand-kept species list to `tools/content-node/expression-species.json`. For now it holds the Homo sapiens entry only:
+- [x] T001 Install dependencies and build the libraries in the worktree (`npm ci`, `npm run build:libs`). Confirm at least 2 GB free on `/` before downloading any experiment table (research R5; the disk was at 540 MB on 2026-11-10). (#912)
+- [x] T002 [P] Add the hand-kept species list to `tools/content-node/expression-species.json`. For now it holds the Homo sapiens entry only: (#912)
   - accession `E-MTAB-2836`;
   - its title and design line;
   - the FTP base URL `https://ftp.ebi.ac.uk/pub/databases/microarray/data/atlas/experiments/E-MTAB-2836/`;
@@ -38,8 +38,8 @@
 
 ### 2a. Contract, pure leaves and the refresh step (PR-A)
 
-- [ ] T003 [P] Write the answer types in `projects/contract/expression.ts`, types only, imported by relative `.ts` paths (`Quantiles`, `ExpressionTissue`, `ExpressionExperiment`, `ExpressionRow`, `NotShownReason`, `ExpressionNotShown`, `ExpressionAnswer`, as in contracts/expression-endpoint.md). Every type argument must be named. Check that `projects/contract/contract.spec.ts` and `one-description.spec.ts` pass.
-- [ ] T004 [P] Write `tools/content-node/expression-data.ts`, a shared leaf. It loads an experiment file from a directory given by `EXPRESSION_FILES`, lazily, once per species, and validates its shape:
+- [x] T003 [P] Write the answer types in `projects/contract/expression.ts`, types only, imported by relative `.ts` paths (`Quantiles`, `ExpressionTissue`, `ExpressionExperiment`, `ExpressionRow`, `NotShownReason`, `ExpressionNotShown`, `ExpressionAnswer`, as in contracts/expression-endpoint.md). Every type argument must be named. Check that `projects/contract/contract.spec.ts` and `one-description.spec.ts` pass. (#912)
+- [x] T004 [P] Write `tools/content-node/expression-data.ts`, a shared leaf. It loads an experiment file from a directory given by `EXPRESSION_FILES`, lazily, once per species, and validates its shape: (#912)
   - each gene's `values` has the same length as `tissues`;
   - each tuple has five numbers and is non-decreasing;
   - a missing directory or file answers "not available";
@@ -47,8 +47,8 @@
 
   It must import only shared modules (`boundaries.spec.ts`).
 
-- [ ] T005 [P] Test T004 in `tools/content-node/expression-data.spec.ts`, using `tools/content-node/fixtures/expression-fixture.json`. Cover: a good file, a missing directory, a missing species, a short `values`, and a decreasing tuple. Show each case fails by mutating the validator.
-- [ ] T006 [P] Write `tools/content-node/expression-genes.ts`, a shared leaf with pure matching rules, as in data-model.md and research R2:
+- [x] T005 [P] Test T004 in `tools/content-node/expression-data.spec.ts`, using `tools/content-node/fixtures/expression-fixture.json`. Cover: a good file, a missing directory, a missing species, a short `values`, and a decreasing tuple. Show each case fails by mutating the validator. (#912)
+- [x] T006 [P] Write `tools/content-node/expression-genes.ts`, a shared leaf with pure matching rules, as in data-model.md and research R2: (#912)
   1. gene references used directly;
   2. `referenceGene` Ensembl ids, kept only if in the table;
   3. when several remain, the one carrying `geneName` is preferred, else one row each;
@@ -59,7 +59,7 @@
 
   The input is a list of `{stId, displayName, identifier, schemaClass, geneName[], ensemblGenes[]}` and the experiment's gene index.
 
-- [ ] T007 [P] Test T006 in `tools/content-node/expression-genes.spec.ts` with measured cases:
+- [x] T007 [P] Test T006 in `tools/content-node/expression-genes.spec.ts` with measured cases: (#912)
   - SOD2: P04179's referenceGene is ENSG00000291237, not in the table, so it is rescued by name to ENSG00000112096;
   - DEFB4A/DEFB4B: two genes, two rows;
   - MSH5 with MSH5-SAPCD1: the one carrying the `geneName` wins;
@@ -69,14 +69,14 @@
 
   Show the SOD2 and MSH5 cases fail with the fallback and the name preference removed.
 
-- [ ] T008 [P] Write `tools/content-node/expression-order.ts`, a shared leaf (research R6):
+- [x] T008 [P] Write `tools/content-node/expression-order.ts`, a shared leaf (research R6): (#912)
   - each row as log₁₀(median+1) across tissues;
   - average-linkage clustering on correlation distance, with stable leaf order and ties broken by gene name;
   - above 3,000 rows, ordered by the tissue of maximum expression, then by that value.
 
   A pure function, with no I/O.
 
-- [ ] T009 [P] Test T008 in `tools/content-node/expression-order.spec.ts`:
+- [x] T009 [P] Test T008 in `tools/content-node/expression-order.spec.ts`: (#912)
   - two blocks of co-expressed genes come out contiguous;
   - the order is identical across runs and input orders;
   - the fallback above the threshold;
@@ -84,7 +84,7 @@
 
   Time 2,500 synthetic rows, record the measured time in the test's comment (constitution V), and keep it under 1 s. Show the contiguity test fails with clustering replaced by name order.
 
-- [ ] T010 Write the refresh step, `tools/content-node/snapshot-expression.ts`, an entry-guarded TypeScript module (`isEntry(import.meta.url)`), so that `tools/load.spec.ts` loads it without running it. For each species in `expression-species.json`, or the one given by `--species`, it:
+- [x] T010 Write the refresh step, `tools/content-node/snapshot-expression.ts`, an entry-guarded TypeScript module (`isEntry(import.meta.url)`), so that `tools/load.spec.ts` loads it without running it. For each species in `expression-species.json`, or the one given by `--species`, it: (#912)
   1. downloads `<acc>-tpms.tsv`, `<acc>-configuration.xml` and `<acc>.condensed-sdrf.tsv` into a temporary folder (research R4, R5);
   2. maps group ids to labels and sample counts;
   3. writes `<acc>.json` to `--out`.
@@ -98,13 +98,13 @@
 
   A "WHEN TO RUN IT" header says: when Expression Atlas updates a listed experiment.
 
-- [ ] T011 Add a `--fixture` mode to T010, cutting the fixture `tools/content-node/fixtures/expression-fixture.json` from the real human table. It keeps the human tissues and about 20 genes: BCL2, BAX, CASP9, SOD2 (both ids), DEFB4A, DEFB4B, MSH5, MSH5-SAPCD1, a gene expressed nowhere, and a few more. Generate and commit the fixture, which must stay under 50 KB.
-- [ ] T012 Test T010's checks in `tools/content-node/snapshot-expression.spec.ts`, offline, on a small TSV and configuration made in the test. A mutated cell, a missing column, an extra group and a decreasing tuple must each be refused, with nothing written. Show the cell case passes wrongly when the sample comparison is removed.
-- [ ] T013 Run the refresh step on the real human table into a local data folder outside the repository. Record the reported gene and tissue counts (expected 61,860 and 29) and the file's size in the PR description, then measure the service's memory with the file loaded (research R5: under 150 MB).
+- [x] T011 Add a `--fixture` mode to T010, cutting the fixture `tools/content-node/fixtures/expression-fixture.json` from the real human table. It keeps the human tissues and about 20 genes: BCL2, BAX, CASP9, SOD2 (both ids), DEFB4A, DEFB4B, MSH5, MSH5-SAPCD1, a gene expressed nowhere, and a few more. Generate and commit the fixture, which must stay under 50 KB. (#912)
+- [x] T012 Test T010's checks in `tools/content-node/snapshot-expression.spec.ts`, offline, on a small TSV and configuration made in the test. A mutated cell, a missing column, an extra group and a decreasing tuple must each be refused, with nothing written. Show the cell case passes wrongly when the sample comparison is removed. (#912)
+- [x] T013 Run the refresh step on the real human table into a local data folder outside the repository. Record the reported gene and tissue counts (expected 61,860 and 29) and the file's size in the PR description, then measure the service's memory with the file loaded (research R5: under 150 MB). (#912)
 
 ### 2b. The endpoint family and its routing (PR-A, continued)
 
-- [ ] T014 Write `tools/content-node/expression-endpoints.ts`, the family, for `GET /ContentService/expression/{id}`:
+- [x] T014 Write `tools/content-node/expression-endpoints.ts`, the family, for `GET /ContentService/expression/{id}`: (#912)
   1. resolve the selection: pathway, reaction, complex, set, protein or reference entity, by stId or dbId, as the other `{id}` routes do;
   2. gather its reference entities, with each gene product's `geneName` and `referenceGene` ENSEMBL identifiers, in one Neo4j query;
   3. take the species from the selection, or from a reference entity's proteins;
@@ -113,7 +113,7 @@
 
   The errors: 404 for an unknown id in the service's envelope, and 503 when the data is not available. Mark it `samplesOnly: true`, with the comment "No sample: Java has no such URL". It imports only shared modules.
 
-- [ ] T015 Test T014 in `tools/content-node/expression-endpoints.spec.ts`, with a stubbed graph and the fixture. Cover:
+- [x] T015 Test T014 in `tools/content-node/expression-endpoints.spec.ts`, with a stubbed graph and the fixture. Cover: (#912)
   - a pathway gives a heatmap with the fixture's genes, ordered;
   - a complex gives only its genes;
   - `uniprot:P10415` gives one row, in human;
@@ -124,12 +124,12 @@
 
   Show the complex case fails with the selection ignored.
 
-- [ ] T016 Register the family in `tools/content-node/registry.ts`, in match order, and update `tools/content-node/fixtures/route-order.json`. Check that `registry.spec.ts` and `boundaries.spec.ts` pass.
-- [ ] T017 Add the route's entry to `tools/content-node/parameters.ts` RECORD (`java: null`, a `why` saying Java has no counterpart, `query: []`). Check that `parameters.spec.ts` and `invalid-inputs.spec.ts` pass.
-- [ ] T018 Route it in nginx, `deploy/nginx/common/routes-core.conf`: a node location for `^/ContentService/expression/[^/]+/?$`, quoted if it contains `;` or `{`, and including `content-node-proxy.conf`. Add the matching row in `proxy.conf.js`. Check `deploy/nginx/routes.spec.ts` and `projects/website-angular/src/scripts/proxy-order.spec.ts`, and run `deploy/nginx/test-config.sh`.
-- [ ] T019 Add the mount to the content service's compose definition: `${EXPRESSION_FILES_DIR:-./deploy/content-node/no-expression-files}:/data/expression:ro` and `EXPRESSION_FILES=/data/expression`, as `DIAGRAM_FILES` is. Add the empty `deploy/content-node/no-expression-files/` folder with a README saying how to fill it. No server path is committed.
-- [ ] T020 Add the route to `projects/contract/routes.ts` as `'GET /ContentService/expression/{id}': ExpressionAnswer`, then regenerate with `node tools/contract/generate.ts`. Check that `generate.spec.ts`, `tools/api-types/schema.spec.ts` and `known-problems.json` (which must not rise) pass.
-- [ ] T021 Write the operation's description for the API page in the generator's node-only notes: what it answers, the experiment and licence, and why the gene list is not a parameter. `/ContentService/openapi.json` must show it.
+- [x] T016 Register the family in `tools/content-node/registry.ts`, in match order, and update `tools/content-node/fixtures/route-order.json`. Check that `registry.spec.ts` and `boundaries.spec.ts` pass. (#912)
+- [x] T017 Add the route's entry to `tools/content-node/parameters.ts` RECORD (`java: null`, a `why` saying Java has no counterpart, `query: []`). Check that `parameters.spec.ts` and `invalid-inputs.spec.ts` pass. (#912)
+- [x] T018 Route it in nginx, `deploy/nginx/common/routes-core.conf`: a node location for `^/ContentService/expression/[^/]+/?$`, quoted if it contains `;` or `{`, and including `content-node-proxy.conf`. Add the matching row in `proxy.conf.js`. Check `deploy/nginx/routes.spec.ts` and `projects/website-angular/src/scripts/proxy-order.spec.ts`, and run `deploy/nginx/test-config.sh`. (#912)
+- [x] T019 Add the mount to the content service's compose definition: `${EXPRESSION_FILES_DIR:-./deploy/content-node/no-expression-files}:/data/expression:ro` and `EXPRESSION_FILES=/data/expression`, as `DIAGRAM_FILES` is. Add the empty `deploy/content-node/no-expression-files/` folder with a README saying how to fill it. No server path is committed. (#912)
+- [x] T020 Add the route to `projects/contract/routes.ts` as `'GET /ContentService/expression/{id}': ExpressionAnswer`, then regenerate with `node tools/contract/generate.ts`. Check that `generate.spec.ts`, `tools/api-types/schema.spec.ts` and `known-problems.json` (which must not rise) pass. (#912)
+- [x] T021 Write the operation's description for the API page in the generator's node-only notes: what it answers, the experiment and licence, and why the gene list is not a parameter. `/ContentService/openapi.json` must show it. (#912)
 
 **Checkpoint**: `curl /ContentService/expression/R-HSA-109606` answers a heatmap on a local service with the real file (quickstart §2).
 
