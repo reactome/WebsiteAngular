@@ -168,3 +168,21 @@ Source: Expression Atlas's experiment list (4,562 experiments, 256 baseline RNA-
   Each new assertion is shown to fail first (constitution III).
 
 - **SC-003**: a check comparing 20 sampled cells of a live answer with the published table. It is part of the refresh step and runnable against beta.
+
+## R10. Anatomograms (FR-015 to FR-017, User Story 6)
+
+**Decision**: Expression Atlas's own figures, from the `@ebi-gene-expression-group/anatomogram` package (2.4.0, Apache-2.0; the figures are CC BY 4.0 under Expression Atlas's licence, which names them). They are served from the site's assets and loaded when the tab opens. Each experiment tissue is matched to an organ by its UBERON id, read by the refresh step from the experiment's condensed sample file into each tissue's entry. Our own component draws the SVG inline and sets each matched organ's fill from the heatmap's scale and the theme's tokens; it does not embed Atlas's widget.
+
+**Measured** (2026-11-10):
+
+- **Coverage:** all 29 of E-MTAB-2836's tissues have an organ in the human figures.
+  - In both the male and female figures: 23 tissues.
+  - Female figure only: endometrium, fallopian tube, ovary and placenta.
+  - Male figure only: prostate gland and testis.
+  - Brain figure: cerebral cortex, which is also in both of the others.
+- **Sizes:** male 952 KB, female 429 KB and brain 354 KB, before compression. Each figure marks 76 UBERON ids, as plain `fill` styles.
+- **Other species:** there are figures for mouse, rat, cow, chicken and frog, which covers the species list in R8 except pig.
+
+**Rationale**: the production tab had the figure. The ids match without a hand-kept table, and the figures are licensed for reuse with attribution.
+
+**Alternatives considered**: drawing figures of our own (much work, no gain); embedding Atlas's anatomogram widget (its colours ignore the theme, and it needs its bundles).
