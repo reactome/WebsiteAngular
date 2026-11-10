@@ -48,3 +48,12 @@
     margin-top: 4px;
   }
 }
+
+// The heatmap and the anatomogram side by side, the figure under the heatmap
+// when the panel is narrow.
+.views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 32px;
+}

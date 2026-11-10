@@ -37,9 +37,12 @@
   <div class="corner"></div>
   <div class="tissues" [style.width.px]="tissues().length * COLUMN">
     @for (tissue of tissues(); track tissue.id; let i = $index) {
-      <span class="tissue" [class.current]="described()?.tissue === i" [style.left.px]="i * COLUMN + COLUMN / 2">{{
-        tissue.label
-      }}</span>
+      <span
+        class="tissue"
+        [class.current]="described()?.tissue === i || pickedTissue() === i"
+        [style.left.px]="i * COLUMN + COLUMN / 2"
+        >{{ tissue.label }}</span
+      >
     }
   </div>
 

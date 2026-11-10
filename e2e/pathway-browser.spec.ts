@@ -262,6 +262,58 @@ test.describe('Expression tab (spec 024)', () => {
     await expect(heatmap(page)).toHaveCount(0);
   });
 
+  /** An organ's computed fill on the anatomogram, as "rgb(r, g, b)". */
+  const organFill = (page: Page, uberon: string) =>
+    page.evaluate((id) => {
+      const organ = document.querySelector(`cr-expression-anatomogram #${id}`);
+      const shape = organ?.matches('path, polygon, ellipse, circle, rect')
+        ? organ
+        : organ?.querySelector('path, polygon, ellipse, circle, rect');
+      return shape ? getComputedStyle(shape).fill : '';
+    }, uberon);
+  const brightness = (rgb: string) =>
+    (rgb.match(/\d+/g) ?? []).slice(0, 3).reduce((sum, part) => sum + Number(part), 0);
+
+  test('shades the body by the gene pointed at (FR-015)', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('is-dark', 'false'));
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0002106')).toBeAttached({
+      timeout: 60_000,
+    });
+    // BCL2 is higher in spleen than in liver in E-MTAB-2836.
+    await heatmap(page).getByRole('button', { name: 'By name' }).click();
+    const row = (await names(page)).indexOf('BCL2');
+    expect(row, 'BCL2 is in view').toBeGreaterThanOrEqual(0);
+    await canvas.scrollIntoViewIfNeeded();
+    await canvas.hover({ position: { x: 5, y: 14 * row + 5 } });
+    await expect(page.locator('cr-expression-anatomogram .caption')).toHaveText('Shaded by BCL2');
+    const spleen = await organFill(page, 'UBERON_0002106');
+    const liver = await organFill(page, 'UBERON_0002107');
+    expect(brightness(spleen), `spleen ${spleen} darker than liver ${liver}`).toBeLessThan(
+      brightness(liver)
+    );
+  });
+
+  test("picks out an organ's column when the organ is pointed at (FR-016)", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const spleen = page.locator('cr-expression-anatomogram #UBERON_0002106');
+    await expect(spleen).toBeAttached({ timeout: BOOT_TIMEOUT });
+    await spleen.dispatchEvent('mouseover');
+    await expect(page.locator('cr-expression-anatomogram .caption')).toHaveText('spleen');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('spleen');
+  });
+
+  test("draws each figure's own organs", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const figure = page.locator('cr-expression-anatomogram');
+    await expect(figure.locator('#UBERON_0000473')).toBeAttached({ timeout: BOOT_TIMEOUT });
+    await figure.getByRole('button', { name: 'female' }).click();
+    await expect(figure.locator('#UBERON_0000992'), 'an ovary').toBeAttached();
+    await expect(figure.locator('#UBERON_0000473'), 'no testis').toHaveCount(0);
+  });
+
   test('follows the theme when it is switched (FR-014)', async ({ page }) => {
     // Expression Atlas's widget kept its own background in dark mode.
     await page.addInitScript(() => localStorage.setItem('is-dark', 'false'));
@@ -276,10 +328,14 @@ test.describe('Expression tab (spec 024)', () => {
         ).join(',');
       });
     const light = await firstCell();
+    const body = () => organFill(page, 'UBERON_0001013');
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0001013')).toBeAttached();
+    const lightBody = await body();
     await page.locator('#dark-toggle button').click();
     await expect
       .poll(firstCell, { message: 'the cells are redrawn in the dark theme' })
       .not.toBe(light);
+    await expect.poll(body, { message: 'the anatomogram is recoloured too' }).not.toBe(lightBody);
   });
 });
 

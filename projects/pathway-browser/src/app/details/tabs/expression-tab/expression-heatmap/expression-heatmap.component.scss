@@ -96,6 +96,9 @@
 
 .grid {
   display: grid;
+  // Room for the last tissue labels, which are turned and reach past the last
+  // column ("zone of skin" was cut short beside the anatomogram).
+  padding-right: 80px;
   grid-template-columns: var(--names) auto;
   grid-template-rows: var(--header) auto;
   max-width: 100%;

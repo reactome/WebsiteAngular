@@ -1,8 +1,13 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, computed, inject, input, signal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
-import type { ExpressionAnswer, ExpressionNotShown } from '../../../model/expression.model';
+import type {
+  ExpressionAnswer,
+  ExpressionNotShown,
+  ExpressionPointed,
+} from '../../../model/expression.model';
+import { ExpressionAnatomogramComponent } from './expression-anatomogram/expression-anatomogram.component';
 import { SelectableObject } from '../../../services/event.service';
 import { ExpressionHeatmapComponent } from './expression-heatmap/expression-heatmap.component';
 
@@ -25,12 +30,17 @@ const REASONS: Record<ExpressionNotShown['reason'], string> = {
   selector: 'cr-expression-tab',
   templateUrl: './expression-tab.component.html',
   styleUrl: './expression-tab.component.scss',
-  imports: [ExpressionHeatmapComponent],
+  imports: [ExpressionHeatmapComponent, ExpressionAnatomogramComponent],
 })
 export class ExpressionTabComponent {
   private readonly http = inject(HttpClient);
 
   readonly obj = input.required<SelectableObject>();
+
+  /** What is pointed at on the heatmap, for the anatomogram (FR-015). */
+  readonly pointed = signal<ExpressionPointed>({ row: null, tissue: null });
+  /** The tissue whose organ is pointed at on the anatomogram, for the heatmap (FR-016). */
+  readonly pickedTissue = signal<number | null>(null);
 
   readonly expression = rxResource({
     params: () => this.obj().stId,
