@@ -101,6 +101,9 @@ test.describe('Molecules tab', () => {
     await openDiagram(page);
     await openMolecules(page);
     expect(await page.locator('cr-molecule-tab .highlight').count(), 'nothing shaded yet').toBe(0);
+    const download = page.locator('cr-molecule-tab .download-button');
+    const countOf = async () => Number((await download.innerText()).match(/\d+/)?.[0]);
+    const pathwayCount = await countOf();
 
     // A new selection inside the open pathway changes only the highlighting.
     // The tab was destroyed and built again on every selection -- its list
@@ -136,9 +139,16 @@ test.describe('Molecules tab', () => {
     await result.click();
 
     await expect(page.locator('cr-molecule-tab'), 'the tab stays open').toBeVisible();
-    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible({
-      timeout: 60_000,
-    });
+    // Spec 023: a selection inside the pathway lists its own molecules, named
+    // in the tab's header, rather than the pathway's with some shaded; the
+    // download says how many it writes.
+    const header = page.locator('cr-molecule-tab .scope');
+    await expect(header).toContainText(/Molecules in .*BCL2/, { timeout: 60_000 });
+    expect(await countOf(), 'fewer molecules than the whole pathway').toBeLessThan(pathwayCount);
+    expect(
+      await page.locator('cr-molecule-tab .highlight').count(),
+      'none shaded: all are the selection'
+    ).toBe(0);
     expect(
       await page.evaluate(
         () =>
@@ -152,6 +162,11 @@ test.describe('Molecules tab', () => {
       'no spinner'
     ).toEqual([]);
     expect(fetchedAgain, 'the molecule list is not fetched again').toEqual([]);
+
+    // The whole pathway is a click away, with the selection's molecules shaded.
+    await header.getByRole('button', { name: /Show all molecules in/ }).click();
+    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible();
+    expect(await countOf(), 'the whole pathway again').toBe(pathwayCount);
   });
 });
 
