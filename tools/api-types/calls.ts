@@ -64,6 +64,7 @@ export const TYPES: Record<string, string> = {
   ReferenceEntity: `${PB}/model/graph/reference-entity/reference-entity.model`,
   Participant: 'projects/contract/participants',
   PathwayCitation: 'projects/contract/citation',
+  ExpressionAnswer: 'projects/contract/expression',
   DiagramFlagResult: 'projects/contract/search',
   SpeciesOverviewFlagResult: 'projects/contract/search',
   ReactionLayout: 'projects/contract/reaction-layout',

@@ -2,10 +2,8 @@ import type { ExpressionAnswer } from '../../../../contract/expression.ts';
 
 export type {
   ExpressionAnswer,
-  ExpressionExperiment,
   ExpressionNotShown,
   ExpressionRow,
-  ExpressionTissue,
   Quantiles,
 } from '../../../../contract/expression.ts';
 
