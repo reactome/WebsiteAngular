@@ -105,6 +105,10 @@ export class MoleculeTabComponent implements OnDestroy {
   readonly listedName = computed(
     () => this.dataState.currentPathway()?.displayName ?? this.selectionName()
   );
+  /** Whose molecules are listed: the file the download writes is named for it. */
+  readonly listedId = computed(() =>
+    this.selectionInside() && !this.showAll() ? this.selectableObject().stId : this.objStId()
+  );
   /** How many molecules are listed: what the download writes. */
   readonly listedCount = computed(() =>
     this.moleculeData().reduce((sum, group) => sum + group.data.length, 0)

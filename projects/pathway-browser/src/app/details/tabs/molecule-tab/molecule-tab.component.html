@@ -64,7 +64,7 @@
 <ng-template #downloadDialog>
   <h2 mat-dialog-title>Download {{ listedCount() }} molecule{{ listedCount() === 1 ? '' : 's' }}</h2>
   <mat-dialog-content>
-    <cr-molecule-download-table [moleculeData]="moleculeData()" [objId]="objStId()"></cr-molecule-download-table>
+    <cr-molecule-download-table [moleculeData]="moleculeData()" [objId]="listedId()"></cr-molecule-download-table>
   </mat-dialog-content>
   <mat-dialog-actions align="end">
     <button type="button" mat-button mat-dialog-close>Close</button>
