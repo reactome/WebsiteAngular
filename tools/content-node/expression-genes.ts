@@ -22,7 +22,7 @@ export interface SelectionEntity {
 }
 
 /** A gene the selection has, by its row in the experiment. */
-export interface MatchedGene {
+interface MatchedGene {
   row: number;
   from: ExpressionEntity[];
 }

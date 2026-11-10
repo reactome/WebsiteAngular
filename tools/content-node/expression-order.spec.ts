@@ -31,7 +31,7 @@ const namesOf = (inputs: OrderInput[], order: number[]) => order.map((i) => inpu
 describe('orderRows', () => {
   it('puts genes expressed alike side by side', () => {
     const names = namesOf(MIXED, orderRows(MIXED));
-    const pattern = names.map((n) => (['A1', 'C1', 'E1'].includes(n) ? 'early' : 'late'));
+    const pattern = names.map((n) => (['A1', 'C1', 'E1'].includes(n ?? '') ? 'early' : 'late'));
     // One run of each: early genes together, late genes together.
     expect(pattern.filter((p, i) => i === 0 || p !== pattern[i - 1])).toHaveLength(2);
   });

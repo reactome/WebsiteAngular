@@ -38,12 +38,17 @@ export interface ListedSpecies {
   licence: string;
 }
 
-const LISTED: Record<string, ListedSpecies> = JSON.parse(
-  readFileSync(new URL('./expression-species.json', import.meta.url), 'utf8')
-) as Record<string, ListedSpecies>;
+let listed: Record<string, ListedSpecies> | undefined;
 
-/** The species list, read once. */
-export const listedSpecies = (): Record<string, ListedSpecies> => LISTED;
+/**
+ * The species list, read on first use: read on import, it broke every spec
+ * that imports the registry in a browser-like environment, where the module's
+ * URL is not a file.
+ */
+export const listedSpecies = (): Record<string, ListedSpecies> =>
+  (listed ??= JSON.parse(
+    readFileSync(new URL('./expression-species.json', import.meta.url), 'utf8')
+  ) as Record<string, ListedSpecies>);
 
 /**
  * An experiment as the service holds it: its description, and every value in
@@ -55,6 +60,8 @@ export interface LoadedExperiment {
   experiment: ExpressionExperiment;
   /** Row of each gene, by versionless Ensembl id. */
   index: Map<string, number>;
+  /** The genes' Ensembl ids, by row. */
+  ids: string[];
   /** The table's gene names, by row; repeated names are the table's. */
   names: string[];
   /** Rows of genes by name, for the gene-name fallback (spec 024, research R2). */
@@ -93,7 +100,7 @@ export function pack(file: ExperimentFile): LoadedExperiment {
       values.set(cell ?? [NaN, NaN, NaN, NaN, NaN], (row * tissues + t) * 5)
     );
   });
-  return { experiment, index, names, byName, values };
+  return { experiment, index, ids, names, byName, values };
 }
 
 export type Experiment =
@@ -172,8 +179,8 @@ export function experimentFor(
   species: string,
   directory = process.env['EXPRESSION_FILES']
 ): Experiment {
-  const listed = LISTED[species];
-  if (!listed) return { kind: 'not-listed' };
+  const entry = listedSpecies()[species];
+  if (!entry) return { kind: 'not-listed' };
   if (!directory) return { kind: 'unavailable', why: 'no expression data directory is configured' };
   const key = `${directory}\n${species}`;
   const known = loaded.get(key);
@@ -182,26 +189,26 @@ export function experimentFor(
   let answer: Experiment;
   try {
     const file: unknown = JSON.parse(
-      readFileSync(join(directory, `${listed.accession}.json`), 'utf8')
+      readFileSync(join(directory, `${entry.accession}.json`), 'utf8')
     );
     const problems = problemsOf(file);
     if (problems.length)
       answer = {
         kind: 'unavailable',
-        why: `${listed.accession}: ${problems.slice(0, 3).join('; ')}`,
+        why: `${entry.accession}: ${problems.slice(0, 3).join('; ')}`,
       };
     else if (
-      (file as ExperimentFile).accession !== listed.accession ||
+      (file as ExperimentFile).accession !== entry.accession ||
       (file as ExperimentFile).species !== species
     )
       answer = {
         kind: 'unavailable',
-        why: `${listed.accession}.json describes another experiment`,
+        why: `${entry.accession}.json describes another experiment`,
       };
     else answer = { kind: 'experiment', loaded: pack(file as ExperimentFile) };
   } catch (error) {
     // Not cached: the folder may be mounted after the service starts.
-    return { kind: 'unavailable', why: `${listed.accession}: ${(error as Error).message}` };
+    return { kind: 'unavailable', why: `${entry.accession}: ${(error as Error).message}` };
   }
   if (answer.kind === 'experiment') loaded.set(key, answer);
   return answer;

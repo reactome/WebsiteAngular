@@ -5,11 +5,13 @@
 // service looks the selection's genes up in the experiment's published table.
 
 /**
- * One gene in one tissue, as the table publishes it: the minimum, lower
- * quartile, median, upper quartile and maximum TPM across the tissue's samples.
- * With one sample all five are that sample's value.
+ * One gene in one tissue, as the table publishes it: five numbers, the
+ * minimum, lower quartile, median, upper quartile and maximum TPM across the
+ * tissue's samples. With one sample all five are that sample's value. A list
+ * rather than a tuple: the description's validator (JSON Schema 2020-12)
+ * refused the tuple's generated schema.
  */
-export type Quantiles = [min: number, q1: number, median: number, q3: number, max: number];
+export type Quantiles = number[];
 
 /** A column: the table's group id, its label, and how many samples it holds. */
 export interface ExpressionTissue {
@@ -62,19 +64,19 @@ export interface ExpressionRow {
  * and no name to match by; its gene is not in the experiment (Ensembl renamed
  * SOD2's after the table was built); or the table has no value for it.
  */
-export type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured';
+type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured';
 
 export interface ExpressionNotShown extends ExpressionEntity {
   reason: NotShownReason;
 }
 
 /** How many of the selection's genes and gene products have a row. */
-export interface ExpressionCounts {
+interface ExpressionCounts {
   shown: number;
   genes: number;
 }
 
-export interface ExpressionHeatmap {
+interface ExpressionHeatmap {
   kind: 'heatmap';
   experiment: ExpressionExperiment;
   /** In the service's order: genes expressed alike side by side. */
@@ -84,13 +86,13 @@ export interface ExpressionHeatmap {
 }
 
 /** The selection has no genes or gene products: a chemical, say. */
-export interface ExpressionNoGenes {
+interface ExpressionNoGenes {
   kind: 'no-genes';
   experiment: ExpressionExperiment;
 }
 
 /** No tissue experiment is listed for the selection's species. */
-export interface ExpressionSpeciesNotAvailable {
+interface ExpressionSpeciesNotAvailable {
   kind: 'species-not-available';
   species: string;
 }
