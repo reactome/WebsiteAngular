@@ -64,6 +64,17 @@ describe('the sources', () => {
     expect(cellOf('0.3,0.4,0.5,0.6,0.7')).toEqual([0.3, 0.4, 0.5, 0.6, 0.7]);
     expect(cellOf('')).toBeNull();
   });
+
+  it('refuses a cell of any other form, rather than reading it as no value', () => {
+    for (const text of ['NA', '3', '1,2,3', '1,2,,4,5'])
+      expect(() => cellOf(text)).toThrow('is not five numbers');
+  });
+
+  it('refuses a row with a cell missing', () => {
+    expect(() => build(TABLE.replace('\t10,20,30,40,50', ''))).toThrow(
+      'ENSG00000000001 has 4 cells for 5 columns'
+    );
+  });
 });
 
 describe('buildExperiment', () => {

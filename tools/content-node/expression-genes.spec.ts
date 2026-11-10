@@ -120,4 +120,11 @@ describe('matchGenes', () => {
     const { genes } = matchGenes([product('Q14773', ['ICAM4'], ['ENSG00000105371'])], loaded);
     expect(genes.map((g) => g.row)).toEqual([row('ENSG00000105371')]);
   });
+
+  it("never draws another species' protein, not even by a shared gene name", () => {
+    const cow = { ...product('P01317', ['BCL2'], ['ENSBTAG00000017404']), species: 'Bos taurus' };
+    const { genes, notShown } = matchGenes([cow], loaded);
+    expect(genes).toEqual([]);
+    expect(notShown.map((n) => [n.identifier, n.reason])).toEqual([['P01317', 'other-species']]);
+  });
 });

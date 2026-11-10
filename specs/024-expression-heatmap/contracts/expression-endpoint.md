@@ -54,7 +54,7 @@ export interface ExpressionRow {
   from: { identifier: string; stId: string; displayName: string }[];
 }
 
-export type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured';
+export type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured' | 'other-species';
 export interface ExpressionNotShown {
   identifier: string;
   stId: string;

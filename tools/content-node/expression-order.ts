@@ -18,8 +18,10 @@ export interface OrderInput {
 
 export const MAX_CLUSTERED = 3000;
 
+/** By code unit, not locale, so the service orders alike wherever it runs. */
+const codeUnits = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 const byName = (a: OrderInput | undefined, b: OrderInput | undefined) =>
-  (a?.name ?? '').localeCompare(b?.name ?? '') || (a?.gene ?? '').localeCompare(b?.gene ?? '');
+  codeUnits(a?.name ?? '', b?.name ?? '') || codeUnits(a?.gene ?? '', b?.gene ?? '');
 
 /** Centred, unit-length profiles, so a dot product is a correlation; null for a flat one. */
 function profiles(inputs: OrderInput[]): (Float64Array | null)[] {

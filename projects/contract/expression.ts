@@ -62,9 +62,11 @@ export interface ExpressionRow {
 /**
  * Why one of the selection's genes or gene products has no row: no Ensembl gene
  * and no name to match by; its gene is not in the experiment (Ensembl renamed
- * SOD2's after the table was built); or the table has no value for it.
+ * SOD2's after the table was built); the table has no value for it; or it is
+ * another species' (HIV infection holds 9 HIV-1 proteins), whose expression
+ * this experiment does not measure.
  */
-type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured';
+type NotShownReason = 'no-gene' | 'not-in-experiment' | 'not-measured' | 'other-species';
 
 export interface ExpressionNotShown extends ExpressionEntity {
   reason: NotShownReason;

@@ -31,7 +31,8 @@ Any failure means nothing is written.
 - **Not shown**: `{ entity (accession or id, display name), reason }`, where `reason` is one of:
   - `no-gene`: no Ensembl gene, and no unique name match;
   - `not-in-experiment`: its Ensembl gene(s) are absent from the table, and no unique name match;
-  - `not-measured`: present, but the table has no value for it in any tissue. Kept apart from "expressed nowhere", which is drawn as zeros.
+  - `not-measured`: present, but the table has no value for it in any tissue. Kept apart from "expressed nowhere", which is drawn as zeros;
+  - `other-species`: the entity is another species' (HIV infection holds 9 HIV-1 proteins), never drawn with this experiment's data, not even by a shared gene name (FR-010).
 
 **Matching rules** (research R2), in order:
 

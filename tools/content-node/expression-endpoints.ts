@@ -134,8 +134,31 @@ function rowOf(loaded: LoadedExperiment, row: number, from: ExpressionRow['from'
   };
 }
 
+/**
+ * Answers already written, newest last, within MEMO_BYTES: ordering a large
+ * pathway's genes takes up to 0.8 s on the event loop every endpoint shares
+ * (Signal Transduction, 2,763 genes), and its answer is 1.65 MB. Cleared by
+ * the restart that follows a refresh of the data.
+ */
+const MEMO_BYTES = 64e6;
+const memo = new Map<string, string>();
+let memoBytes = 0;
+
+function remember(key: string, serialised: string) {
+  memo.set(key, serialised);
+  memoBytes += serialised.length;
+  for (const [oldest, text] of memo) {
+    if (memoBytes <= MEMO_BYTES) break;
+    memo.delete(oldest);
+    memoBytes -= text.length;
+  }
+}
+
 async function handler(request: Request) {
-  const selection = await selectionOf(rawSegment(request, 3));
+  const raw = rawSegment(request, 3);
+  const known = memo.get(raw);
+  if (known) return { status: 200, type: 'application/json', serialised: known };
+  const selection = await selectionOf(raw);
   if (!selection) return notFound(request, 'No entries found for the given identifier');
   const species = speciesOf(selection);
   const answer = answerFor(selection, experimentFor(species));
@@ -143,7 +166,9 @@ async function handler(request: Request) {
     console.error(`expression data unavailable for ${species}: ${answer.unavailable}`);
     return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'Expression data is not available');
   }
-  return { status: 200, type: 'application/json', body: answer satisfies ExpressionAnswer };
+  const serialised = JSON.stringify(answer satisfies ExpressionAnswer);
+  remember(raw, serialised);
+  return { status: 200, type: 'application/json', serialised };
 }
 
 export const expressionEndpoints: Endpoint[] = [

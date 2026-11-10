@@ -9,7 +9,7 @@
  * whose file is missing, or whose file does not hold together, is unavailable,
  * and never answered from another species' file.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import type {
   ExpressionExperiment,
@@ -168,11 +168,14 @@ export function problemsOf(value: unknown): string[] {
   return problems;
 }
 
-const loaded = new Map<string, Experiment>();
+const loaded = new Map<string, { modified: number; answer: Experiment }>();
 
 /**
  * The experiment for a species, loaded and checked on first use and kept: the
  * service is restarted when the files are refreshed, as for any data update.
+ * A file that is there but wrong is kept as wrong until it changes, so that a
+ * bad file costs one 28 MB read, not one per request; a missing one is looked
+ * for again, as the folder may be mounted after the service starts.
  * `directory` defaults to EXPRESSION_FILES; tests pass their own.
  */
 export function experimentFor(
@@ -182,15 +185,20 @@ export function experimentFor(
   const entry = listedSpecies()[species];
   if (!entry) return { kind: 'not-listed' };
   if (!directory) return { kind: 'unavailable', why: 'no expression data directory is configured' };
+  const path = join(directory, `${entry.accession}.json`);
+  let modified: number;
+  try {
+    modified = statSync(path).mtimeMs;
+  } catch (error) {
+    return { kind: 'unavailable', why: `${entry.accession}: ${(error as Error).message}` };
+  }
   const key = `${directory}\n${species}`;
   const known = loaded.get(key);
-  if (known) return known;
+  if (known?.modified === modified) return known.answer;
 
   let answer: Experiment;
   try {
-    const file: unknown = JSON.parse(
-      readFileSync(join(directory, `${entry.accession}.json`), 'utf8')
-    );
+    const file: unknown = JSON.parse(readFileSync(path, 'utf8'));
     const problems = problemsOf(file);
     if (problems.length)
       answer = {
@@ -201,15 +209,11 @@ export function experimentFor(
       (file as ExperimentFile).accession !== entry.accession ||
       (file as ExperimentFile).species !== species
     )
-      answer = {
-        kind: 'unavailable',
-        why: `${entry.accession}.json describes another experiment`,
-      };
+      answer = { kind: 'unavailable', why: `${entry.accession}.json describes another experiment` };
     else answer = { kind: 'experiment', loaded: pack(file as ExperimentFile) };
   } catch (error) {
-    // Not cached: the folder may be mounted after the service starts.
-    return { kind: 'unavailable', why: `${entry.accession}: ${(error as Error).message}` };
+    answer = { kind: 'unavailable', why: `${entry.accession}: ${(error as Error).message}` };
   }
-  if (answer.kind === 'experiment') loaded.set(key, answer);
+  loaded.set(key, { modified, answer });
   return answer;
 }

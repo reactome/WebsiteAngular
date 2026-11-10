@@ -19,6 +19,8 @@ export interface SelectionEntity {
   geneName: string[];
   /** Its `referenceGene` links' Ensembl identifiers. */
   ensemblGenes: string[];
+  /** Its own species, where it has one (chemicals have none). */
+  species?: string | null;
 }
 
 /** A gene the selection has, by its row in the experiment. */
@@ -67,6 +69,7 @@ function measured(loaded: LoadedExperiment, row: number): boolean {
  * An isoform shares its parent's accession, so the two are one product.
  */
 export function matchGenes(entities: SelectionEntity[], loaded: LoadedExperiment): Matched {
+  const drawn = loaded.experiment.species;
   const products = new Map<string, SelectionEntity[]>();
   for (const entity of entities) {
     if (!GENES.has(entity.schemaClass)) continue;
@@ -83,6 +86,12 @@ export function matchGenes(entities: SelectionEntity[], loaded: LoadedExperiment
       stId: entity.stId,
       displayName: entity.displayName,
     });
+    // Another species' product is never drawn with this experiment's data, not
+    // even by a gene name the two species happen to share (FR-010).
+    if (sharing.some((entity) => entity.species && entity.species !== drawn)) {
+      notShown.push({ ...named(first), reason: 'other-species' });
+      continue;
+    }
     const linked = new Set<string>();
     const names = new Set<string>();
     for (const entity of sharing) {

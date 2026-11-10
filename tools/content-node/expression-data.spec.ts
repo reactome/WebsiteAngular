@@ -3,7 +3,7 @@
 // The expression tables (spec 024, T004-T005): a listed species' file is
 // loaded, checked and packed; anything else is "not listed" or "unavailable",
 // never another species' file.
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, utimesSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -95,5 +95,30 @@ describe('experimentFor', () => {
       kind: 'unavailable',
       why: 'E-MTAB-2836.json describes another experiment',
     });
+  });
+
+  it('reads a bad file once, and again only when it changes', () => {
+    const bad = fixture();
+    geneOf(bad, 'ENSG00000171791').values.pop();
+    const folder = folderWith(bad);
+    const path = join(folder, 'E-MTAB-2836.json');
+    const then = new Date('2026-01-01T00:00:00Z');
+    utimesSync(path, then, then);
+    expect(experimentFor('Homo sapiens', folder).kind).toBe('unavailable');
+    // Mended with the time unchanged: not read again, so still the bad answer
+    // (a bad file cost a 28 MB read and parse on every request).
+    writeFileSync(path, FIXTURE);
+    utimesSync(path, then, then);
+    expect(experimentFor('Homo sapiens', folder).kind).toBe('unavailable');
+    // Changed: read again.
+    utimesSync(path, new Date(), new Date());
+    expect(experimentFor('Homo sapiens', folder).kind).toBe('experiment');
+  });
+
+  it('finds a file that appears after a first look', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'expression-'));
+    expect(experimentFor('Homo sapiens', folder).kind).toBe('unavailable');
+    writeFileSync(join(folder, 'E-MTAB-2836.json'), FIXTURE);
+    expect(experimentFor('Homo sapiens', folder).kind).toBe('experiment');
   });
 });

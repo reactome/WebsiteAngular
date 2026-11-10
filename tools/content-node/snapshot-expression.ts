@@ -5,7 +5,9 @@
  * named for the experiment, which the service reads from EXPRESSION_FILES.
  *
  * WHEN TO RUN IT: when Expression Atlas updates a listed experiment, or a
- * species is added to the list. Then restart the content service.
+ * species is added to the list. Then restart the content service, and purge
+ * the edge cache of /ContentService/expression/*: its answers are stored at
+ * the edge as the service's others are, until the next release's purge.
  *
  *   node tools/content-node/snapshot-expression.ts --out <dir> [--species "Homo sapiens"] [--source <dir>]
  *   node tools/content-node/snapshot-expression.ts --fixture <file> --source <dir>
@@ -59,13 +61,18 @@ export function groupsOf(configuration: string): { id: string; label: string; sa
   return groups;
 }
 
-/** A table cell, "min,q1,median,q3,max" or empty, as five numbers or null. */
+/**
+ * A table cell, "min,q1,median,q3,max" or empty, as five numbers or null.
+ * Anything else is refused, not read as "no value": a column of another form
+ * would otherwise be written as empty, and 20 sampled cells miss one column in
+ * 29 about half the time.
+ */
 export function cellOf(text: string): Quantiles | null {
   if (text === '') return null;
-  const values = text.split(',').map(Number);
-  return values.length === 5 && values.every((v) => Number.isFinite(v))
-    ? (values as Quantiles)
-    : null;
+  const values = text.split(',').map((v) => (v.trim() === '' ? NaN : Number(v)));
+  if (values.length !== 5 || !values.every((v) => Number.isFinite(v)))
+    throw new Error(`"${text}" is not five numbers`);
+  return values;
 }
 
 /** Expression Atlas's dates are day-month-year; the file's are ISO. */
@@ -104,6 +111,8 @@ export function buildExperiment(input: {
   for (const line of lines) {
     const cells = line.split('\t');
     const id = cells[0] ?? '';
+    if (cells.length !== columns.length)
+      throw new Error(`${id} has ${cells.length} cells for ${columns.length} columns`);
     if (genes[id]) throw new Error(`${id} appears twice`);
     genes[id] = { name: cells[1] ?? '', values: order.map((i) => cellOf(cells[i + 2] ?? '')) };
   }

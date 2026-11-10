@@ -167,8 +167,32 @@ describe('GET /ContentService/expression/{id}', () => {
     ]);
     const answer = await ask('R-HSA-109606');
     expect(answer?.status).toBe(200);
-    const body = answer?.body as ExpressionAnswer;
+    const body = JSON.parse(answer?.serialised ?? '{}') as ExpressionAnswer;
     expect(body.kind).toBe('heatmap');
     expect(body.kind === 'heatmap' && body.rows.map((r) => r.name)).toEqual(['BCL2']);
+  });
+
+  it('answers a selection again without asking the graph again', async () => {
+    const folder = mkdtempSync(join(tmpdir(), 'expression-'));
+    writeFileSync(join(folder, 'E-MTAB-2836.json'), FIXTURE);
+    process.env['EXPRESSION_FILES'] = folder;
+    read.mockResolvedValue([
+      {
+        species: 'Homo sapiens',
+        m: {
+          stId: 'R-HSA-P10415',
+          displayName: 'UniProt:P10415 BCL2',
+          identifier: 'P10415',
+          geneName: ['BCL2'],
+        },
+        labels: ['ReferenceGeneProduct'],
+        genes: ['ENSG00000171791'],
+        mSpecies: 'Homo sapiens',
+      },
+    ]);
+    const first = await ask('R-HSA-114268');
+    const again = await ask('R-HSA-114268');
+    expect(read).toHaveBeenCalledTimes(1);
+    expect(again?.serialised).toBe(first?.serialised);
   });
 });
