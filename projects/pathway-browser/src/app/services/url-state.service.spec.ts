@@ -48,6 +48,14 @@ describe('a legacy pathway link in the fragment', () => {
     expect(params).toEqual({ PATH: 'R-HSA-1643685,R-HSA-5663205' });
   });
 
+  // The form a content page's Locations tree links to: a pathway, the
+  // selection within it, and the way to it (once its HTML escaping is undone).
+  it('keeps a selection and a path together', () => {
+    const { id, params } = route('/R-HSA-109606&SEL=R-HSA-114269&PATH=R-HSA-5357801,R-HSA-109581');
+    expect(id).toBe('R-HSA-109606');
+    expect(params).toEqual({ SEL: 'R-HSA-114269', PATH: 'R-HSA-5357801,R-HSA-109581' });
+  });
+
   // A token is base64 and usually ends in "=": split on every "=", the value
   // lost its padding, and the result it named read as never loaded.
   it('keeps an analysis token whole', () => {

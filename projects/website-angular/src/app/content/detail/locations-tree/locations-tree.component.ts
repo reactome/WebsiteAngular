@@ -53,7 +53,8 @@ export class LocationsTreeComponent {
     this.selectedSpecies.set(null);
     const url = `${CONTENT_SERVICE}/data/detail/${id}/locationsInPWB`;
     this.http.get<PathwayBrowserNode[]>(url).subscribe({
-      next: (data) => {
+      next: (answer) => {
+        const data = answer.map(withBrowserLinks);
         this.trees.set(data);
         const species = new Set<string>();
         for (const tree of data) {
@@ -121,4 +122,18 @@ export class LocationsTreeComponent {
   isLastChild(parent: PathwayBrowserNode[], node: PathwayBrowserNode): boolean {
     return parent[parent.length - 1] === node;
   }
+}
+
+/**
+ * The tree with links a browser can follow. The content service writes each
+ * node's address for the old site, which put it into HTML as it was, so its
+ * ampersands are HTML-escaped: `/PathwayBrowser/#/R-HSA-163615&amp;PATH=...`.
+ * Bound to an href as data, that `&amp;` stays literal, and the Pathway Browser
+ * could not read the address: every location reached through a parent (any
+ * pathway with more than one, such as PKA activation) opened the browser with
+ * no pathway at all. The answer itself is Java's, byte for byte, and stays so.
+ */
+export function withBrowserLinks(node: PathwayBrowserNode): PathwayBrowserNode {
+  const linked = { ...node, url: node.url.replaceAll('&amp;', '&') };
+  return node.children ? { ...linked, children: node.children.map(withBrowserLinks) } : linked;
 }

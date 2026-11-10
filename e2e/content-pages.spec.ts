@@ -457,6 +457,21 @@ test.describe('Entity detail: pathway locations', () => {
     await page.goto('/content/detail/R-HSA-114269');
     await expect(page.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
     await expect(page.locator('.no-locations')).toHaveCount(0);
+
+    // Its links must be ones the Pathway Browser can read. The content service
+    // writes them HTML-escaped (`#/R-HSA-...&amp;PATH=...`), and bound as they
+    // were, every location reached through a parent opened the browser with no
+    // pathway at all (reported for PKA activation).
+    await page.getByText('Expand all').first().click();
+    const hrefs = await page
+      .locator('a.leaf-link')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
+    expect(hrefs.length, 'locations to follow').toBeGreaterThan(0);
+    expect(hrefs.filter((href) => href.includes('&amp;'))).toEqual([]);
+    expect(
+      hrefs.some((href) => href.includes('&PATH=')),
+      'a location reached through a parent'
+    ).toBe(true);
   });
 });
 
