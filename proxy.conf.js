@@ -156,18 +156,18 @@ module.exports = {
   '^/ContentService/data/people/name/[^/?]+(/exact)?/?(\\?|$)': contentNode,
   // One object with everything it points to, in any of Java's views
   // (?view=, ?includeRef=). Only the plain path: /query/{id}/... and Java's
-  // /query/enhanced|abridged/{id} are other endpoints.
+  // /query/enhanced|abridged/{id} are other endpoints, below.
   // Including POST /query/ids, a batch of objects by id, and its map form.
   '^/ContentService/data/query/[^/?]+/?(\\?|$)': contentNode,
   '^/ContentService/data/query/ids/map/?(\\?|$)': contentNode,
   // Every disease, whole and as a DOID list.
   '^/ContentService/data/diseases(/doid)?/?(\\?|$)': contentNode,
   // Any attribute of an object, as Java's /data/query/{id}/{attributeName}
-  // writes it. `abridged` and `enhanced` are not ids, nor `more` an attribute:
-  // Java's more specific /query/abridged/{id}, /query/enhanced/{id} and
-  // /query/{id}/more take those paths.
-  '^/ContentService/data/query/(?!(abridged|enhanced)/)[^/?]+/(?!more/?(\\?|$))[^/?]+/?(\\?|$)':
-    contentNode,
+  // writes it, and Java's more specific /query/abridged/{id},
+  // /query/enhanced/{id} and /query/{id}/more, which node answers too. Then an
+  // attribute of an object without its relationships. Same patterns as nginx's.
+  '^/ContentService/data/query/[^/?]+/[^/?]+/?(\\?|$)': contentNode,
+  '^/ContentService/data/query/abridged/[^/?]+/[^/?]+/?(\\?|$)': contentNode,
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors/?(\\?|$)': contentNode,

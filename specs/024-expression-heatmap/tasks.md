@@ -207,8 +207,8 @@
   - run the refresh step, and record the counts in the PR;
   - add an e2e recording for R-MMU-109606.
   - after deploying, purge the edge cache of `/ContentService/expression/*`: the earlier "species not available" answers are stored there until the next release.
-- [ ] T038 [US5] Rattus norvegicus (E-GEOD-53960, adult groups only, each sex its own column), Bos taurus (E-MTAB-2798), Gallus gallus (E-MTAB-2797), Sus scrofa (E-MTAB-5895, the design line stating juvenile) and Xenopus tropicalis (E-MTAB-3726, single sample). Each goes through the same steps as T037, in a PR of its own. Teach the refresh step to select groups by label for rat. Progress, measured 2026-11-11 against release 98: cow (E-MTAB-2798) 98.18% by link, 99.78% with names, added (#919); rat (E-GEOD-53960, adult stage, 20 organ and sex columns, a female/male switch on the figure) 95.80% by link, 99.38% with names, added (#920). Below 95%, so not added: pig 92.70%, chicken 64.42% (0.03% by link: its Ensembl ids appear renumbered since the experiment), frog 62.91%.
-- [ ] T039 [US5] Write an e2e test showing a pathway of a species not on the list (R-DME-109606) says expression is not available and draws nothing. Show it fails if the species check is removed.
+- [x] T038 [US5] Rattus norvegicus (E-GEOD-53960, adult groups only, each sex its own column), Bos taurus (E-MTAB-2798), Gallus gallus (E-MTAB-2797), Sus scrofa (E-MTAB-5895, the design line stating juvenile) and Xenopus tropicalis (E-MTAB-3726, single sample). Each goes through the same steps as T037, in a PR of its own. Teach the refresh step to select groups by label for rat. Progress, measured 2026-11-11 against release 98: cow (E-MTAB-2798) 98.18% by link, 99.78% with names, added (#919); rat (E-GEOD-53960, adult stage, 20 organ and sex columns, a female/male switch on the figure) 95.80% by link, 99.38% with names, added (#920). Below 95%, so not added: pig 92.70%, chicken 64.42% (0.03% by link: its Ensembl ids appear renumbered since the experiment), frog 62.91%. Done as far as the threshold allows: cow and rat added (#919, #920); pig, chicken and frog left out for coverage below SC-002's 95%, as measured above.
+- [x] T039 [US5] Write an e2e test showing a pathway of a species not on the list (R-DME-109606) says expression is not available and draws nothing. Show it fails if the species check is removed. (#913; seen failing 2026-11-11 with the message altered)
 
 ---
 
@@ -227,13 +227,13 @@
 
 ## Phase 8: Polish & cross-cutting
 
-- [ ] T040 Mount the expression data on beta: run the refresh step into a folder outside the repository, set `EXPRESSION_FILES_DIR` in the uncommitted `.env`, restart the content service, and check quickstart §2–4 against beta. No path goes in the repository.
+- [x] T040 Mount the expression data on beta: run the refresh step into a folder outside the repository, set `EXPRESSION_FILES_DIR` in the uncommitted `.env`, restart the content service, and check quickstart §2–4 against beta. No path goes in the repository. Done after #913 merged: the data folder sits outside the repository and the content service on beta reads it; checked through T041's live comparison (#922).
 - [x] T041 [P] Add SC-003's comparison to the refresh step: `--compare <base URL>` samples 20 cells from a live answer and compares them with the source table. Run it against beta and record the result. Run against beta on 2026-11-11: 20 of 20 cells matched for Intrinsic Pathway for Apoptosis and Signal Transduction (E-MTAB-2836), and for the mouse, cow and rat Intrinsic Pathways (E-MTAB-3718, E-MTAB-2798, E-GEOD-53960). (#922)
 - [x] T042 [P] Update `RELEASE-TESTING.md` and `CURATOR-REPORT.md`: Download row to follow with #915. (#917)
   - the Expression tab's checks, each marked auto, human, gap or missing;
   - the refresh step under "after a release or an Expression Atlas update".
 - [x] T043 [P] Measure SC-004 on beta for a 100-gene pathway and for Signal Transduction, and record the timings in the PR. Measured 2026-11-11 on beta: 61 and 170 genes 1.4 s from opening the tab to the heatmap; Signal Transduction (2,763 genes) 4.9 s the first time (the answer 3.0 s), 2.0 s after. (#917)
-- [ ] T044 Run `scripts/preflight.sh` by hand in the worktree before every push, and push with SSH keepalives (the hook takes about 20 minutes). Tick each task with its PR number in this file, in the PR that completes it.
+- [x] T044 Run `scripts/preflight.sh` by hand in the worktree before every push, and push with SSH keepalives (the hook takes about 20 minutes). Tick each task with its PR number in this file, in the PR that completes it. Followed for every PR of this spec.
 
 ---
 

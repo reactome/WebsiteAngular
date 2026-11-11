@@ -172,10 +172,15 @@ export function lazyCollectionQuery(type: string, direction: string, schemaClass
  * ControllerUtils.getProperty on a loaded object, as an answer: the getter
  * found by name, its value, and toTSV's text of it (domain.ts); Java's 404
  * naming the attribute and the object's class when there is no getter or it
- * returns nothing.
+ * returns nothing. `outgoingLoaded` as attributeValue takes it.
  */
-export async function attributeAnswer(request: Request, object: DomainEntity, attribute: string) {
-  const answer = await attributeOf(request, object, attribute);
+export async function attributeAnswer(
+  request: Request,
+  object: DomainEntity,
+  attribute: string,
+  { outgoingLoaded = true } = {}
+) {
+  const answer = await attributeOf(request, object, attribute, { outgoingLoaded });
   if ('status' in answer) return answer;
   return { status: 200, body: answer.text, type: 'text/plain;charset=UTF-8' };
 }
