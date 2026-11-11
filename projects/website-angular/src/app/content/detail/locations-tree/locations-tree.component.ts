@@ -51,16 +51,33 @@ export class LocationsTreeComponent {
     return expandable.length > 0 && expandable.every((tree) => this.expanded().has(tree.stId));
   });
 
+  /** Each top-level pathway's number of locations, counted once per tree, not per redraw. */
+  readonly countsByRoot = computed(
+    () => new Map(this.filteredTrees().map((tree) => [tree.stId, countLocations(tree)]))
+  );
+
   /** How many locations the species shown has: the places, not the path to them. */
   readonly locationCount = computed(() =>
-    this.filteredTrees().reduce((sum, tree) => sum + countLocations(tree), 0)
+    [...this.countsByRoot().values()].reduce((sum, n) => sum + n, 0)
   );
+
+  /** Whether any top-level pathway has something to open: if none, "Expand all" has nothing to do. */
+  readonly anyExpandable = computed(() =>
+    this.filteredTrees().some((tree) => this.hasChildren(tree))
+  );
+
+  /**
+   * Whether each top-level pathway says how many locations it holds: on a
+   * content page, for a tree too long to show open (FR-051). The Pathway
+   * Browser's details stay as they were (FR-053).
+   */
+  readonly showCounts = computed(() => this.openByDefault() && !this.shownOpen());
 
   /**
    * Whether this tree was opened for the reader: short enough to show whole
    * (FR-050), so shown without the scrolling box a long subtree needs.
    */
-  readonly shownOpen = computed(() => this.openByDefault() && this.locationCount() <= OPEN_AT_MOST);
+  readonly shownOpen = computed(() => this.openByDefault() && opensWhole(this.locationCount()));
 
   constructor() {
     effect(() => {
@@ -121,9 +138,9 @@ export class LocationsTreeComponent {
     if (this.shownOpen()) this.expanded.set(new Set(this.filteredTrees().map((tree) => tree.stId)));
   }
 
-  /** The number of locations under a top-level pathway, shown when the tree is not opened for the reader. */
+  /** The number of locations under a top-level pathway, shown on a content page when the tree is too long to open (FR-051). */
   locationsUnder(tree: PathwayBrowserNode): number {
-    return countLocations(tree);
+    return this.countsByRoot().get(tree.stId) ?? 0;
   }
 
   isExpanded(stId: string): boolean {
@@ -168,8 +185,13 @@ export function withBrowserLinks(node: PathwayBrowserNode): PathwayBrowserNode {
 /** FR-050's limit: measured on release 98, PKA activation has 2, a reaction 3, BCL2 16, ATP 2,182 (Homo sapiens). */
 const OPEN_AT_MOST = 20;
 
+/** Whether a tree with this many locations is shown open on a content page (FR-050). */
+export function opensWhole(locations: number): boolean {
+  return locations <= OPEN_AT_MOST;
+}
+
 /** The places under a node: its leaves, each a link into the Pathway Browser. */
-function countLocations(node: PathwayBrowserNode): number {
+export function countLocations(node: PathwayBrowserNode): number {
   return node.children?.length
     ? node.children.reduce((sum, child) => sum + countLocations(child), 0)
     : 1;
