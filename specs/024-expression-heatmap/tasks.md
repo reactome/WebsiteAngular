@@ -207,7 +207,7 @@
   - run the refresh step, and record the counts in the PR;
   - add an e2e recording for R-MMU-109606.
   - after deploying, purge the edge cache of `/ContentService/expression/*`: the earlier "species not available" answers are stored there until the next release.
-- [ ] T038 [US5] Rattus norvegicus (E-GEOD-53960, adult groups only, each sex its own column), Bos taurus (E-MTAB-2798), Gallus gallus (E-MTAB-2797), Sus scrofa (E-MTAB-5895, the design line stating juvenile) and Xenopus tropicalis (E-MTAB-3726, single sample). Each goes through the same steps as T037, in a PR of its own. Teach the refresh step to select groups by label for rat.
+- [ ] T038 [US5] Rattus norvegicus (E-GEOD-53960, adult groups only, each sex its own column), Bos taurus (E-MTAB-2798), Gallus gallus (E-MTAB-2797), Sus scrofa (E-MTAB-5895, the design line stating juvenile) and Xenopus tropicalis (E-MTAB-3726, single sample). Each goes through the same steps as T037, in a PR of its own. Teach the refresh step to select groups by label for rat. Progress, measured 2026-11-11 against release 98: cow (E-MTAB-2798) 98.18% by link, 99.78% with names, added (#919); rat 99.38%, to follow. Below 95%, so not added: pig 92.70%, chicken 64.42% (0.03% by link: its Ensembl ids appear renumbered since the experiment), frog 62.91%.
 - [ ] T039 [US5] Write an e2e test showing a pathway of a species not on the list (R-DME-109606) says expression is not available and draws nothing. Show it fails if the species check is removed.
 
 ---

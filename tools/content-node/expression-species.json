@@ -16,5 +16,14 @@
       "Brawand D, et al. The evolution of gene expression levels in mammalian organs. Nature (2011). doi:10.1038/nature10532"
     ],
     "licence": "CC BY 4.0"
+  },
+  "Bos taurus": {
+    "accession": "E-MTAB-2798",
+    "design": "9 tissues, 3 samples each",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Merkin J, Russell C, Chen P, Burge CB. Evolutionary dynamics of gene and isoform regulation in Mammalian tissues. Science (2012). doi:10.1126/science.1228186"
+    ],
+    "licence": "CC BY 4.0"
   }
 }

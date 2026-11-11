@@ -264,6 +264,25 @@ test.describe('Expression tab (spec 024)', () => {
     await expect(heatmap(page)).toHaveCount(0);
   });
 
+  test('draws a cow pathway from cow tissues, with its one figure (US5)', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-BTA-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-2798');
+    expect(await heatmap(page).locator('.tissue').allInnerTexts()).toHaveLength(9);
+    const figure = page.locator('cr-expression-anatomogram');
+    await expect(figure.locator('#UBERON_0002107'), 'the liver').toBeAttached();
+    await expect(
+      figure.locator('.figure-switch'),
+      'one figure, so no choice of figure'
+    ).toHaveCount(0);
+    // Skeletal muscle is UBERON_0001134 in the experiment, UBERON_0014892 in
+    // the cow figure: matched all the same.
+    await expect(figure.locator('#UBERON_0014892.measured'), 'skeletal muscle').toBeAttached();
+    await expect(figure.locator('.licence')).toHaveText('Figure: Expression Atlas, CC BY 4.0');
+  });
+
   test('draws a mouse pathway from mouse tissues (US5)', async ({ page }) => {
     await page.goto('/PathwayBrowser/R-MMU-109606?tab=expression');
     await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {

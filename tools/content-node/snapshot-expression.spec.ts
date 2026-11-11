@@ -192,4 +192,19 @@ describe('checkAgainstSource', () => {
       'the design line "27 tissues from 4 individuals" does not name 3 tissues'
     );
   });
+
+  it('refuses a design line whose sample counts the tissues do not hold', () => {
+    const each = { ...LISTED, design: '3 tissues, 2 samples each' };
+    expect(checkAgainstSource(build(TABLE, CONFIGURATION, each), TABLE, CONFIGURATION)).toContain(
+      'the design line says 2 samples each, the tissues do not all have 2'
+    );
+    const total = { ...LISTED, design: '3 tissues, 7 samples' };
+    expect(checkAgainstSource(build(TABLE, CONFIGURATION, total), TABLE, CONFIGURATION)).toContain(
+      'the design line says 7 samples, the tissues hold 6'
+    );
+    const right = { ...LISTED, design: '3 tissues, 6 samples' };
+    expect(checkAgainstSource(build(TABLE, CONFIGURATION, right), TABLE, CONFIGURATION)).toEqual(
+      []
+    );
+  });
 });

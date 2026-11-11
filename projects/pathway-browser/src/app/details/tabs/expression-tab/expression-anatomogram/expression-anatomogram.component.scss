@@ -60,6 +60,12 @@ cr-expression-anatomogram {
     }
   }
 
+  // The figures' licence asks for attribution, given wherever one is drawn.
+  .licence {
+    font: var(--mat-sys-label-small);
+    color: var(--on-surface-variant);
+  }
+
   .caption {
     min-height: 1.4em;
     color: var(--on-surface-variant);

@@ -1,24 +1,29 @@
 @if (figures().length) {
-  <div class="figure-switch" role="group" aria-label="Choose the figure">
-    @for (choice of figures(); track choice) {
-      <button
-        type="button"
-        [class.on]="figure() === choice"
-        [attr.aria-pressed]="figure() === choice"
-        (click)="figure.set(choice)"
-      >
-        {{ choice }}
-      </button>
-    }
-  </div>
+  @if (figures().length > 1) {
+    <div class="figure-switch" role="group" aria-label="Choose the figure">
+      @for (choice of figures(); track choice) {
+        <button
+          type="button"
+          [class.on]="figure() === choice"
+          [attr.aria-pressed]="figure() === choice"
+          (click)="figure.set(choice)"
+        >
+          {{ choice }}
+        </button>
+      }
+    </div>
+  }
   <div
     #figureHost
     class="figure"
     role="img"
-    [attr.aria-label]="'Anatomogram, ' + figure() + ': the experiment\'s tissues drawn as organs'"
+    [attr.aria-label]="
+      'Anatomogram' + (figure() ? ', ' + figure() : '') + ': the experiment\'s tissues drawn as organs'
+    "
     (mouseover)="onPointer($event)"
     (mouseleave)="onLeave()"
   ></div>
+  <div class="licence">Figure: Expression Atlas, CC BY 4.0</div>
   <div class="caption">
     @if (organName(); as name) {
       <b>{{ name }}</b>

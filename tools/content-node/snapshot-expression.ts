@@ -204,6 +204,14 @@ export function checkAgainstSource(
     problems.push(`${columns.length} columns for ${groups} groups in the configuration`);
   if (!file.design.startsWith(`${file.tissues.length} `))
     problems.push(`the design line "${file.design}" does not name ${file.tissues.length} tissues`);
+  // "3 samples each" and "20 samples" are checked against the tissues too.
+  const each = /(\d+) samples each/.exec(file.design)?.[1];
+  if (each && file.tissues.some((tissue) => tissue.samples !== Number(each)))
+    problems.push(`the design line says ${each} samples each, the tissues do not all have ${each}`);
+  const total = /(\d+) samples(?! each)/.exec(file.design)?.[1];
+  const sum = file.tissues.reduce((n, tissue) => n + tissue.samples, 0);
+  if (total && Number(total) !== sum)
+    problems.push(`the design line says ${total} samples, the tissues hold ${sum}`);
   const next = sampler(rows * 31 + columns.length);
   for (let n = 0; n < cells && rows > 0 && columns.length > 0; n++) {
     const source = (lines[1 + next(rows)] ?? '').split('\t');

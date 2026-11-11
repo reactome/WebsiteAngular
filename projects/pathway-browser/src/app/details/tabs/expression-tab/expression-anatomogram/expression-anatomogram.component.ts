@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -18,13 +19,27 @@ import type { ExpressionHeatmapAnswer, ExpressionRow } from '../../../../model/e
 import { DarkService } from '../../../../services/dark.service';
 import { shade, tokenRgb, topOf } from '../expression-heatmap/expression-scale';
 
-/** The figures shipped for each species (assets/anatomogram), by file prefix. */
+/**
+ * The figures shipped for each species (assets/anatomogram), by file prefix:
+ * a species with one figure has '' (bos_taurus.svg), with several their names
+ * (homo_sapiens.male.svg).
+ */
 const FIGURES: Record<string, Figure[]> = {
   homo_sapiens: ['male', 'female', 'brain'],
   mus_musculus: ['male', 'female', 'brain'],
+  bos_taurus: [''],
 };
 
-type Figure = 'male' | 'female' | 'brain';
+type Figure = 'male' | 'female' | 'brain' | '';
+
+/**
+ * Other ids a figure draws a tissue under: the experiments call skeletal
+ * muscle UBERON_0001134, which the human figure draws, and the mouse and cow
+ * figures draw it as UBERON_0014892 (skeletal muscle organ).
+ */
+const FIGURE_IDS: Record<string, string[]> = {
+  UBERON_0001134: ['UBERON_0014892'],
+};
 
 /**
  * Expression Atlas's anatomogram beside the heatmap (spec 024, FR-015 to
@@ -59,13 +74,17 @@ export class ExpressionAnatomogramComponent {
     this.answer().experiment.species.toLowerCase().replace(/ /g, '_')
   );
   readonly figures = computed(() => FIGURES[this.prefix()] ?? []);
-  readonly figure = signal<Figure>('male');
+  /** The figure shown: the species' first, until the reader chooses another. */
+  readonly figure = linkedSignal<Figure[], Figure>({
+    source: this.figures,
+    computation: (figures) => figures[0] ?? '',
+  });
   readonly organName = signal<string | null>(null);
 
   readonly svg = rxResource({
     params: () =>
       this.figures().includes(this.figure())
-        ? `assets/anatomogram/${this.prefix()}.${this.figure()}.svg`
+        ? `assets/anatomogram/${this.prefix()}${this.figure() ? `.${this.figure()}` : ''}.svg`
         : undefined,
     stream: ({ params }) => (params ? this.http.get(params, { responseType: 'text' }) : of('')),
   });
@@ -75,7 +94,12 @@ export class ExpressionAnatomogramComponent {
   /** Each tissue's organ elements in the figure shown, by tissue index. */
   private organs = new Map<number, Element[]>();
   private readonly tissueByUberon = computed(
-    () => new Map(this.answer().experiment.tissues.map((tissue, i) => [tissue.uberon, i]))
+    () =>
+      new Map(
+        this.answer().experiment.tissues.flatMap((tissue, i) =>
+          [tissue.uberon, ...(FIGURE_IDS[tissue.uberon] ?? [])].map((id) => [id, i] as const)
+        )
+      )
   );
 
   constructor() {
