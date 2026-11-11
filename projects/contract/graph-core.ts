@@ -2324,7 +2324,7 @@ export interface SimpleEntity<R extends Ref> extends JsogFields {
   schemaClass: 'SimpleEntity';
 }
 
-/** Recorded 2 times. */
+/** Recorded 3 times, a protein's summary and a chemical's: a chemical's has no sequence fields. */
 export interface SummaryEntity<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -2346,7 +2346,7 @@ export interface SummaryEntity<R extends Ref> extends JsogFields {
   edited?: (InstanceEdit<R> | R)[];
   figure?: (Figure<R> | R)[];
   goCellularComponent?: AnyGO_CellularComponent<R> | R;
-  inferredTo: (PhysicalEntity<R> | R)[];
+  inferredTo?: (PhysicalEntity<R> | R)[];
   inferredFrom?: (PhysicalEntity<R> | R)[];
   isRequired?: (Requirement<R> | R)[];
   literatureReference?: (Publication<R> | R)[];
@@ -2371,22 +2371,22 @@ export interface SummaryEntity<R extends Ref> extends JsogFields {
   otherIdentifier?: string[];
   url: string;
   referenceDatabase: ReferenceDatabase<R> | R;
-  checksum: string;
-  comment: string[];
-  description: string[];
-  geneName: string[];
-  isSequenceChanged: boolean;
-  keyword: string[];
-  secondaryIdentifier: string[];
-  sequenceLength: number;
-  species: Species<R> | R;
-  chain: string[];
-  referenceGene: (ReferenceDNASequence<R> | R)[];
-  referenceTranscript: (ReferenceRNASequence<R> | R)[];
+  checksum?: string;
+  comment?: string[];
+  description?: string[];
+  geneName?: string[];
+  isSequenceChanged?: boolean;
+  keyword?: string[];
+  secondaryIdentifier?: string[];
+  sequenceLength?: number;
+  species?: Species<R> | R;
+  chain?: string[];
+  referenceGene?: (ReferenceDNASequence<R> | R)[];
+  referenceTranscript?: (ReferenceRNASequence<R> | R)[];
   variantIdentifier?: string;
   isoformParent?: (AnyReferenceGeneProduct<R> | R)[];
   referenceType: string;
-  referenceEntity: ReferenceSequence<R> | R;
+  referenceEntity: ReferenceSequence<R> | ReferenceMolecule<R> | R;
   endCoordinate?: number;
   startCoordinate?: number;
   hasModifiedResidue?: (AbstractModifiedResidue<R> | R)[];
@@ -2395,11 +2395,11 @@ export interface SummaryEntity<R extends Ref> extends JsogFields {
   hasCompartment: HasCompartment<R>[];
   inDisease?: boolean;
   repeatedUnitOfPolymers?: RepeatedUnitForPhysicalEntity<R>[];
-  componentOfComplexes: ComponentOf<R>[];
-  memberOfSet: MemberOf<R>[];
+  componentOfComplexes?: ComponentOf<R>[];
+  memberOfSet?: MemberOf<R>[];
   candidateOfSet?: CandidateOf<R>[];
-  inputFor: InputForReactionLikeEvent<R>[];
-  outputFor: OutputForReactionLikeEvent<R>[];
+  inputFor?: InputForReactionLikeEvent<R>[];
+  outputFor?: OutputForReactionLikeEvent<R>[];
   schemaClass: 'SummaryEntity';
 }
 

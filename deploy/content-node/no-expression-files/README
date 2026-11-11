@@ -1,0 +1,5 @@
+Mounted when EXPRESSION_FILES_DIR is unset (docker-compose.yml), so that the
+Expression tab's heatmap answers 503 rather than reading any other folder.
+Fill a folder of your own with
+node tools/content-node/snapshot-expression.ts --out <folder>
+and name it in .env as EXPRESSION_FILES_DIR.

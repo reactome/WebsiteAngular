@@ -14,7 +14,9 @@
   padding-top: var(--half-gap);
   display: grid;
   align-items: start;
-  grid-template-columns: repeat(var(--columns), 1fr);
+  // The list of molecule types takes the width its entries need, each on one
+  // line: as a sixth of the tab, "Chemical Compounds" broke over two.
+  grid-template-columns: minmax(0, 1fr) max-content;
   padding-right: 6px;
 }
 
@@ -23,7 +25,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: var(--half-gap);
-  grid-column: span 5;
+  grid-column: 1;
 }
 
 /* TOC */
@@ -47,6 +49,7 @@
   .toc-item {
     padding-right: 8px;
     cursor: pointer;
+    white-space: nowrap;
   }
 
   .selected {
@@ -71,20 +74,6 @@
   }
 }
 
-.download-container {
-  width: 100%;
-
-  @include mat.expansion-overrides(
-    (
-      header-indicator-color: var(--primary),
-    )
-  );
-
-  mat-expansion-panel {
-    margin-bottom: 8px; // make shadow visible
-  }
-}
-
 // Another pathway's molecules are loading: the last list stays, dimmed, until
 // they arrive.
 .container.updating {
@@ -95,4 +84,51 @@
 .load-error {
   padding: 8px 16px;
   color: var(--error);
+}
+
+// The line that says whose molecules are listed, with the way to the rest.
+.scope {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 8px 0 12px;
+  font: var(--mat-sys-body-medium);
+}
+
+.scope-toggle {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.scope-empty {
+  font: var(--mat-sys-body-medium);
+  opacity: 0.8;
+}
+
+// The header's action sits at its right end.
+.download-button {
+  margin-left: auto;
+}
+
+.toc-count {
+  margin-left: 4px;
+  font: var(--mat-sys-label-medium);
+  opacity: 0.75;
+}
+
+// The key to the highlighting, in the header while all are shown.
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  margin: 0 2px 0 6px;
+  vertical-align: -2px;
+  border-radius: 50px;
+  background-color: var(--primary-container);
 }

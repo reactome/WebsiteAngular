@@ -206,6 +206,30 @@ function documentedResponses(java: DocumentedOperation | undefined, contract: bo
   return out;
 }
 
+/**
+ * What the service documents of the routes Java never had, where Java's
+ * documentation would be: without it the API page shows such a route bare.
+ */
+const NODE_OPERATIONS: Record<string, DocumentedOperation> = {
+  'GET /ContentService/expression/{id}': {
+    tags: ['expression'],
+    summary: "A selection's genes across the tissues of its species (spec 024)",
+    description:
+      "The genes of a pathway, reaction, complex, set, protein or reference entity, each with five values per tissue (minimum, quartiles, maximum TPM) exactly as Expression Atlas publishes them for the species' tissue experiment (E-MTAB-2836 for Homo sapiens), ordered so that genes expressed alike sit together; the genes that have no row, and why; and the experiment, with the citations its CC BY 4.0 licence asks for. A selection with no genes is `no-genes`; a species with no listed experiment is `species-not-available`. The genes are found from the selection, not passed: a pathway's thousands would not fit in an address.",
+    parameters: [
+      {
+        in: 'path',
+        name: 'id',
+        description: 'A stable id or dbId of the selection, or a reference entity (uniprot:P10415)',
+      },
+    ],
+    responses: {
+      '404': { description: 'No object has this id.' },
+      '503': { description: 'The expression data is not available here.' },
+    },
+  },
+};
+
 /** The OpenAPI document, as an object. */
 export function generate() {
   const { table, definitions } = contractSchemas();
@@ -246,7 +270,7 @@ export function generate() {
     const [method = '', where = ''] = route.split(' ');
     const answer = table[route];
     const javaRoute = listed.get(route);
-    const javaOperation = javaRoute ? javaOperations.get(javaRoute) : undefined;
+    const javaOperation = javaRoute ? javaOperations.get(javaRoute) : NODE_OPERATIONS[route];
     (paths[where] ??= {})[method.toLowerCase()] = answer
       ? {
           ...documented(javaOperation, where),
