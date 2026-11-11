@@ -1,4 +1,4 @@
-import { type Page, type Download } from '@playwright/test';
+import { type Page, type Download, type Locator } from '@playwright/test';
 import { test, expect } from './support/backend';
 import { readFileSync } from 'node:fs';
 
@@ -184,21 +184,37 @@ test.describe('Analysis results', () => {
     ];
     const colon = available.getByText('Colon', { exact: true });
     await colon.waitFor({ timeout: READY });
-    const from = await colon.boundingBox();
-    const to = await selected.boundingBox();
-    if (!from || !to) throw new Error('the tissue lists are not on screen');
-    // A drag as a person makes one: press, pause, then move in small steps.
-    // CDK does not start a drag from a single jump of the pointer.
-    const [x0, y0] = [from.x + from.width / 2, from.y + from.height / 2];
-    const [x1, y1] = [to.x + to.width / 2, to.y + 30];
-    await colon.hover();
-    await page.mouse.down();
-    await page.waitForTimeout(150);
-    for (let step = 1; step <= 25; step++) {
-      await page.mouse.move(x0 + ((x1 - x0) * step) / 25, y0 + ((y1 - y0) * step) / 25);
-      await page.waitForTimeout(20);
-    }
+    // The drag follows what the page shows, not the clock. The panel can still
+    // be opening when the drag begins, moving the lists down under the
+    // pointer: a target measured once, before the drag, was then the heading
+    // above the selected list, and the drop went nowhere (CI, Nov 2026).
+    const centre = async (target: Locator) => {
+      const box = await target.boundingBox();
+      if (!box) throw new Error('not on screen');
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    // CDK starts a drag once the pointer has moved a few pixels, which its
+    // preview shows. Pressed again, on Colon as it is now, until it has.
+    const preview = page.locator('.cdk-drag-preview');
+    await expect(async () => {
+      await page.mouse.up();
+      // The list scrolls, and Colon starts below its fold.
+      await colon.scrollIntoViewIfNeeded();
+      const start = await centre(colon);
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(start.x + 10, start.y + 10, { steps: 5 });
+      await expect(preview).toHaveText('Colon', { timeout: 500 });
+    }).toPass({ timeout: READY });
+    // Over the selected list as it is now; measured again until CDK places the
+    // tissue in it, which its placeholder shows.
+    await expect(async () => {
+      const over = await centre(selected);
+      await page.mouse.move(over.x, over.y, { steps: 10 });
+      await expect(selected.locator('.cdk-drag-placeholder')).toBeAttached({ timeout: 500 });
+    }).toPass({ timeout: READY });
     await page.mouse.up();
+    await expect(preview).toHaveCount(0);
     await expect(selected.getByText('Colon', { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: /^Next$/ }).click();
