@@ -284,6 +284,28 @@ test.describe('Expression tab (spec 024)', () => {
     await figure.locator('.sex-switch').getByRole('button', { name: 'male', exact: true }).click();
     await figure.locator('#UBERON_0002107').dispatchEvent('mouseover');
     await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+
+    // Back on female, the heatmap's "liver (male)" column still outlines the
+    // liver: the twelfth column, reached from the first by the keyboard.
+    await figure
+      .locator('.sex-switch')
+      .getByRole('button', { name: 'female', exact: true })
+      .click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseleave');
+    const canvas = heatmap(page).locator('canvas');
+    await canvas.focus();
+    for (let i = 0; i < 11; i++) await page.keyboard.press('ArrowRight');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+    await expect
+      .poll(() =>
+        figure.locator('#UBERON_0002107').evaluate((organ) => {
+          const shape = organ.matches('path, polygon, ellipse, circle, rect')
+            ? organ
+            : organ.querySelector('path, polygon, ellipse, circle, rect');
+          return shape ? (shape as SVGElement).style.getPropertyValue('stroke-width') : '';
+        })
+      )
+      .toBe('1');
   });
 
   test('draws a cow pathway from cow tissues, with its one figure (US5)', async ({ page }) => {

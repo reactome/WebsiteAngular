@@ -32,7 +32,7 @@
     "design": "20 organ and sex groups of adult rats, 163 samples",
     "citation": [
       "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
-      "Yu Y, et al. A rat RNA-Seq transcriptomic BodyMap across 11 organs and 4 developmental stages. Nature Communications (2014). doi:10.1038/ncomms4230"
+      "Yu Y, et al. A rat RNA-Seq transcriptomic BodyMap across 11 organs and 4 developmental stages. Nature Communications 5:3230 (2014). doi:10.1038/ncomms4230"
     ],
     "licence": "CC BY 4.0"
   }
