@@ -17254,6 +17254,14 @@
           "uberon": {
             "type": "string",
             "description": "Its UBERON id (UBERON_0002106 for spleen), which the anatomogram's organs carry."
+          },
+          "sex": {
+            "type": "string",
+            "enum": [
+              "female",
+              "male"
+            ],
+            "description": "Where an experiment measures each sex apart (rat): the sex of this column."
           }
         },
         "required": [

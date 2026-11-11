@@ -281,6 +281,50 @@ test.describe('Expression tab (spec 024)', () => {
     await expect(heatmap(page)).toHaveCount(0);
   });
 
+  test('draws a rat pathway by organ and sex, the figure shaded by either sex (US5)', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-RNO-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-GEOD-53960');
+    const tissues = await heatmap(page).locator('.tissue').allInnerTexts();
+    expect(tissues).toHaveLength(20);
+    expect(tissues).toContain('liver (female)');
+    expect(tissues).toContain('liver (male)');
+    const figure = page.locator('cr-expression-anatomogram');
+    const liver = figure.locator('#UBERON_0002107');
+    await expect(liver).toBeAttached();
+    await liver.dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (female)');
+    await figure.locator('.sex-switch').getByRole('button', { name: 'male', exact: true }).click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+
+    // Back on female, the heatmap's "liver (male)" column still outlines the
+    // liver: the twelfth column, reached from the first by the keyboard.
+    await figure
+      .locator('.sex-switch')
+      .getByRole('button', { name: 'female', exact: true })
+      .click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseleave');
+    const canvas = heatmap(page).locator('canvas');
+    await canvas.focus();
+    for (let i = 0; i < 11; i++) await page.keyboard.press('ArrowRight');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+    await expect
+      .poll(() =>
+        figure.locator('#UBERON_0002107').evaluate((organ) => {
+          const shape = organ.matches('path, polygon, ellipse, circle, rect')
+            ? organ
+            : organ.querySelector('path, polygon, ellipse, circle, rect');
+          return shape ? (shape as SVGElement).style.getPropertyValue('stroke-width') : '';
+        })
+      )
+      .toBe('1');
+  });
+
   test('draws a cow pathway from cow tissues, with its one figure (US5)', async ({ page }) => {
     await page.goto('/PathwayBrowser/R-BTA-109606?tab=expression');
     await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
