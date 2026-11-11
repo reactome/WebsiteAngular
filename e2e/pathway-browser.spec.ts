@@ -234,6 +234,23 @@ test.describe('Expression tab (spec 024)', () => {
     expect(await names(page)).toEqual(['BCL2']);
   });
 
+  test('lists the genes not shown, each with its reason (FR-007)', async ({ page }) => {
+    // Regulated Necrosis holds two viral proteins (influenza's NS, a poxvirus's
+    // RIR1): another species', never drawn with human data, and said so.
+    await page.goto('/PathwayBrowser/R-HSA-5218859?tab=expression');
+    const tab = page.locator('cr-expression-tab');
+    await expect(tab.locator('.counts')).toHaveText('61 of 63 genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    const notShown = tab.locator('.not-shown');
+    await notShown.locator('summary').click();
+    await expect(notShown.locator('summary')).toHaveText('2 not shown, and why');
+    expect((await notShown.locator('li').allInnerTexts()).sort()).toEqual([
+      'UniProt:P03496 NS: another species',
+      'UniProt:P08543 RIR1: another species',
+    ]);
+  });
+
   test("draws a complex's genes alone", async ({ page }) => {
     await page.goto('/PathwayBrowser/R-HSA-109606?select=R-HSA-114268&tab=expression');
     await expect(page.locator('cr-expression-tab .counts')).toHaveText('2 of 2 genes shown', {
