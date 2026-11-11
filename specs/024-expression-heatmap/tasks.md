@@ -201,7 +201,7 @@
 
 **Independent Test**: R-MMU-109606 shows mouse genes × the mouse experiment's tissues and names E-MTAB-3718. A species not on the list says expression is not available.
 
-- [ ] T037 [US5] Mus musculus, E-MTAB-3718:
+- [x] T037 [US5] Mus musculus, E-MTAB-3718: Measured 2026-11-11: 9,362 mouse gene products, 84.64% by referenceGene (Ensembl renumbered many mouse genes after this 2015 experiment) and 99.38% with the gene-name fallback; 45,513 genes, 6 tissues; the mouse anatomograms draw all six. (#918)
   - measure its matching coverage the way research R2 did for human, with Reactome's referenceGene to ENSMUSG for mouse gene products;
   - add it to `expression-species.json` only if coverage is at least 95%;
   - run the refresh step, and record the counts in the PR;

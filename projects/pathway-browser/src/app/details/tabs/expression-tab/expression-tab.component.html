@@ -56,7 +56,7 @@
       Expression from <a [href]="experiment.source" target="_blank" rel="noopener">{{ experiment.accession }}</a
       >: {{ experiment.title }} ({{ experiment.design }}; updated {{ experiment.updated }}). Values as published by
       Expression Atlas; genes chosen and reordered here. Licence: {{ experiment.licence }}.
-      @if (experiment.species === 'Homo sapiens') {
+      @if (experiment.species === 'Homo sapiens' || experiment.species === 'Mus musculus') {
         Anatomograms: Expression Atlas (CC BY 4.0).
       }
       @for (citation of experiment.citation; track citation) {
