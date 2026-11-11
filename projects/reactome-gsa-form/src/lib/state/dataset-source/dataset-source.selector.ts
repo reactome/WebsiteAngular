@@ -27,8 +27,9 @@ export const datasetSourceFeature = createFeature({
           .filter(
             (datasetSource) =>
               datasetSource.data_types?.some((type) => method.data_types.includes(type)) ||
-              method.data_types.includes(datasetSource.type!) ||
-              method.data_types.includes(datasetSource.id!)
+              (datasetSource.type !== undefined &&
+                method.data_types.includes(datasetSource.type)) ||
+              method.data_types.includes(datasetSource.id)
           );
       }),
     selectDatasetSource: (id: string) => createSelector(selectEntities, (entities) => entities[id]),

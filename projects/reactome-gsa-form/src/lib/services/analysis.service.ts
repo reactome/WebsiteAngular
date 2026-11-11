@@ -27,6 +27,46 @@ export function submittedParameters(parameters: Parameter[] | undefined) {
     .map((param) => ({ name: param.name, value: String(param.value) }));
 }
 
+/**
+ * A dataset's statistical design as the analysis is asked for it: the
+ * annotation columns its design names, and the two groups compared. The form
+ * asks for a complete design before it submits (selectStatisticalDesignComplete);
+ * one that is not is said, rather than sent without its groups for the service
+ * to refuse.
+ */
+export function submittedDesign(dataset: Dataset): Request.DataInformation | string {
+  const design = dataset.statisticalDesign;
+  const column = (name: string | undefined) =>
+    name === undefined ? undefined : dataset.annotationColumns.get(name);
+  const analysisGroup = column(design.analysisGroup);
+  const samples = column('sample_ids');
+  const { comparisonGroup1: group1, comparisonGroup2: group2 } = design;
+  const incomplete = `The statistical design of "${dataset.summary.title}" is not complete`;
+  // A name the design holds and the samples have no column for: the default
+  // analysis group comes from the service, not from the annotation header, so
+  // the form can show a design complete that names a column the samples lack.
+  const noColumn = (name: string) =>
+    `The statistical design of "${dataset.summary.title}" names "${name}", which its samples have no column for`;
+  if (design.analysisGroup && !analysisGroup) return noColumn(design.analysisGroup);
+  if (!analysisGroup || !samples || !group1 || !group2) return incomplete;
+  const covariates: Record<string, string[]> = {};
+  for (const covariate of design.covariances.filter((cov) => cov.value)) {
+    const values = column(covariate.name);
+    if (!values) return covariate.name ? noColumn(covariate.name) : incomplete;
+    covariates[covariate.name] = values;
+  }
+  return { analysisGroup, samples, comparison: { group1, group2 }, ...covariates };
+}
+
+/**
+ * A design the form will not send, as a refused request: a 400 with its reason
+ * in `detail`, where extractErrorMessage reads the service's. Never a 503,
+ * which the effect retries every minute as the service being busy.
+ */
+export function refusal(reason: string): HttpErrorResponse {
+  return new HttpErrorResponse({ status: 400, error: { detail: reason } });
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -41,34 +81,26 @@ export class AnalysisService {
   readonly reportStatusUrl = computed(() => `${this.config().apiRoot}/report_status/`);
 
   submitQuery(method: Method, parameters: Parameter[], datasets: Dataset[]): Observable<string> {
+    const submitted: Request.Dataset[] = [];
+    for (const dataset of datasets) {
+      const design = submittedDesign(dataset);
+      // As a refused request is, its reason where the service puts one: the
+      // effect answers it with loadFailure, which shows the reason.
+      if (typeof design === 'string') return throwError(() => refusal(design));
+      submitted.push({
+        data: dataset.summary.id,
+        name: dataset.summary.title,
+        type: dataset.summary.type,
+        parameters: submittedParameters(
+          dataset.summary.parameters?.filter((para) => para.scope !== 'common')
+        ),
+        design,
+      });
+    }
     const query: Request.Query = {
       methodName: method.name || 'Method name',
       parameters: submittedParameters(parameters),
-      datasets: datasets.map((dataset: Dataset) => ({
-        data: dataset.summary!.id,
-        name: dataset.summary!.title,
-        type: dataset.summary!.type,
-        parameters: submittedParameters(
-          dataset.summary!.parameters?.filter((para) => para.scope !== 'common')
-        ),
-        design: {
-          analysisGroup: dataset.annotationColumns.get(dataset.statisticalDesign.analysisGroup!)!,
-          samples: dataset.annotationColumns.get('sample_ids')!,
-          comparison: {
-            group1: dataset.statisticalDesign!.comparisonGroup1 as string,
-            group2: dataset.statisticalDesign!.comparisonGroup2 as string,
-          },
-          ...dataset
-            .statisticalDesign!.covariances.filter((cov) => cov.value)
-            .reduce(
-              (covs, cov) => ({
-                ...covs,
-                [cov.name]: dataset.annotationColumns.get(cov.name!)!,
-              }),
-              {}
-            ),
-        },
-      })),
+      datasets: submitted,
     };
     return this.http.post(this.submitAnalysisUrl(), query, { responseType: 'text' });
   }

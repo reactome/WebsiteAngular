@@ -5,7 +5,7 @@ export namespace Request {
     parameters: Parameter[];
   }
 
-  interface Dataset {
+  export interface Dataset {
     data: string;
     design: DataInformation;
     name: string;
@@ -13,7 +13,7 @@ export namespace Request {
     parameters?: Parameter[];
   }
 
-  interface DataInformation {
+  export interface DataInformation {
     analysisGroup: string[];
     comparison: Comparison;
     samples: string[];
