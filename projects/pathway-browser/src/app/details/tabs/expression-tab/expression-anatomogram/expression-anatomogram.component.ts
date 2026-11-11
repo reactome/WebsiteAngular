@@ -33,6 +33,15 @@ const FIGURES: Record<string, Figure[]> = {
 type Figure = 'male' | 'female' | 'brain' | '';
 
 /**
+ * Other ids a figure draws a tissue under: the experiments call skeletal
+ * muscle UBERON_0001134, which the human figure draws, and the mouse and cow
+ * figures draw it as UBERON_0014892 (skeletal muscle organ).
+ */
+const FIGURE_IDS: Record<string, string[]> = {
+  UBERON_0001134: ['UBERON_0014892'],
+};
+
+/**
  * Expression Atlas's anatomogram beside the heatmap (spec 024, FR-015 to
  * FR-017): the species' figure, each of the experiment's tissues matched to
  * its organ by its UBERON id. With a gene pointed at on the heatmap, its
@@ -85,7 +94,12 @@ export class ExpressionAnatomogramComponent {
   /** Each tissue's organ elements in the figure shown, by tissue index. */
   private organs = new Map<number, Element[]>();
   private readonly tissueByUberon = computed(
-    () => new Map(this.answer().experiment.tissues.map((tissue, i) => [tissue.uberon, i]))
+    () =>
+      new Map(
+        this.answer().experiment.tissues.flatMap((tissue, i) =>
+          [tissue.uberon, ...(FIGURE_IDS[tissue.uberon] ?? [])].map((id) => [id, i] as const)
+        )
+      )
   );
 
   constructor() {

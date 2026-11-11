@@ -277,6 +277,10 @@ test.describe('Expression tab (spec 024)', () => {
       figure.locator('.figure-switch'),
       'one figure, so no choice of figure'
     ).toHaveCount(0);
+    // Skeletal muscle is UBERON_0001134 in the experiment, UBERON_0014892 in
+    // the cow figure: matched all the same.
+    await expect(figure.locator('#UBERON_0014892.measured'), 'skeletal muscle').toBeAttached();
+    await expect(figure.locator('.licence')).toHaveText('Figure: Expression Atlas, CC BY 4.0');
   });
 
   test('draws a mouse pathway from mouse tissues (US5)', async ({ page }) => {
