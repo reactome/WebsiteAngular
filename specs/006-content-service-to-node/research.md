@@ -1227,14 +1227,20 @@ that holds their aliases too, so a partner whose identifier is another's alias
 is merged into whichever was made first: hash-map iteration and Neo4j's order
 of equal scores, which the graph cannot reproduce.
 
-**Decision: the sizes, and the `pathwaysOnly` tree, come from the data file
-itself.** A small Java step at each release loads the AnalysisService's data
-file with analysis-core, the AnalysisService's own reader, and writes each
-species' hierarchy with its sizes as JSON for node. Exact for every species,
-and the tree follows the file as Java's does, even if the graph and the file
-were ever a release apart. Rejected: computing from the graph and declaring the
-79 (not byte-identical); reading the totals from an analysis of every
-identifier (`result.json`, 134 MB, a hack).
+**Decision: node computes the sizes from the graph, once per release, and
+the 79 are a recorded difference.** The gap is one or two entities on pathways
+holding hundreds or thousands (Signal Transduction 10,318 against 10,316), far
+below anything a reader of the Reacfoam can see, and the alternative -- a Java
+step at each release reading the data file with analysis-core -- adds a library
+build the project is not set up to keep current. The 79 are listed as an
+expected difference, so the comparison with Java fails on any other; the cause
+is reported to analysis-core (reactome/analysis-core#13, fix in
+reactome/analysis-core#14: InteractorsBuilder.getOrCreate looks a new partner
+up among every interactor's aliases), and once fixed there, Java's
+numbers become node's. The `pathwaysOnly` tree is built from the graph by the
+analysis hierarchy's rules. Rejected: a release-time snapshot of the data file
+(exact, but a Java library step to maintain); reading the totals from an
+analysis of every identifier (`result.json`, 134 MB, a hack).
 
 **The overlay.** With a token, Java adds `llp`, `entities` and `reactions` to
 each node the stored result names. Node reads them through the analysis

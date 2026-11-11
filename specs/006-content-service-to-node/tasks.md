@@ -107,11 +107,10 @@ These were held in Java because their substance is a Java library or Java numeri
 - [ ] T101 `GET /interactors/psicquic/molecule/{resource}/{acc}/details` and `/summary`, `POST /interactors/psicquic/molecules/{resource}/details` and `/summary`
 - [ ] T102 `POST /interactors/upload/tuple/content`, `/tuple/form`, `/tuple/url`, `POST /interactors/upload/psicquic/url`, `POST /interactors/token/{token}`
 - [ ] T103 `GET /data/eventsHierarchy/{species}`, the Reacfoam's tree (research D25). In this order, a PR each:
-  - [ ] T103a The release-time snapshot: a small Java step (beside `deploy/java-library`, its own image) that loads the AnalysisService's data file with analysis-core, at the AnalysisService's pinned commit, and writes each species' `PathwayHierarchy` with every pathway's `totalEntity` and `totalEntityAndInteractors` (and the importable-only counts) as JSON. Checked against Java's live `pathwaysOnly=true` answer for every species; no path of the data file in the repository.
-  - [ ] T103b Node answers `pathwaysOnly=true` without a token from the snapshot, byte-identical, errors and `Content-Disposition` included; routed in nginx and the proxy, contract type and recordings.
+  - [ ] T103a The sizes from the graph, per species, as analysis-core counts them: `totalEntity` and `totalEntityAndInteractors`, importable-only too, computed once per release and cached; checked against Java's live `pathwaysOnly=true` answer for every species, the 79 human `totalEntityAndInteractors` recorded as the expected difference (D25) and nothing else allowed to differ.
+  - [ ] T103b Node answers `pathwaysOnly=true` without a token, the tree built by the analysis hierarchy's rules, byte-identical but for the recorded 79, errors and `Content-Disposition` included; routed in nginx and the proxy, contract type and recordings.
   - [ ] T103c The token overlay, through the analysis gateway (`result.json`, `/token?importableOnly=true`); the diff harness compares a token answer without regard to the order below a hit node, as Java's own order changes.
-  - [ ] T103d The full form: graph-core's event hierarchy (`parseHierarchy`) with the snapshot's sizes by stId.
-  - [ ] T103e The release step: the snapshot run with the release, its file where the content service reads it (as the expression files are).
+  - [ ] T103d The full form: graph-core's event hierarchy (`parseHierarchy`) with the sizes by stId.
 
 ## Phase 9b: Endpoints Java does not publish
 
