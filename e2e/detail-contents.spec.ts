@@ -119,6 +119,31 @@ test.describe('Molecules tab', () => {
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
   });
 
+  test("says so when the diagrams cannot be looked for, rather than 'not drawn'", async ({
+    page,
+  }) => {
+    // Any failure read as "not drawn in any diagram", or as every diagram in
+    // Reactome under this pathway's name. Only a 404 means none.
+    await page.route('**/ContentService/data/pathways/low/diagram/entity/*/allForms*', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-8953897?tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+    await expect(zinc.locator('.diagram-choices')).toContainText(
+      'Could not look for the diagrams that show zinc(2+)',
+      { timeout: 30_000 }
+    );
+    await expect(zinc.locator('.diagram-choices')).not.toContainText('is not drawn');
+  });
+
   test('molecules are grouped, counted, and carry their stoichiometry', async ({ page }) => {
     await openDiagram(page);
     await openMolecules(page);
