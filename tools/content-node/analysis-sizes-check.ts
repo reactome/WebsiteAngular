@@ -1,6 +1,7 @@
 /**
  * Node's analysis sizes against Java's (spec 006 T103a, research D25): for
- * every species Java has a pathway hierarchy for, each pathway's
+ * every species with a top-level pathway in the graph -- those Java has a
+ * hierarchy for, each of which must answer -- each pathway's
  * totalEntity and totalEntityAndInteractors in Java's
  * /data/eventsHierarchy/{taxId}?pathwaysOnly=true, against analysisSizes.
  *
@@ -9,12 +10,15 @@
  * Passes when the only differences are those recorded in
  * fixtures/analysis-size-differences.json (analysis-core's alias merge,
  * reactome/analysis-core#13), each with the values recorded; fails on any
- * other difference, a pathway one side lacks, or a recorded difference gone
- * -- as when analysis-core is fixed, and the record should go with it.
+ * other difference, a pathway one side lacks, a species that does not answer,
+ * or a recorded difference gone -- as when analysis-core is fixed, and the
+ * record should go with it. Which interactor analysis-core's merge keeps
+ * depends on its build order, so a rebuilt data file may move a recorded Java
+ * value: the record is then measured again.
  */
 import { readFileSync } from 'node:fs';
 import { analysisSizes } from './analysis-sizes.ts';
-import { close } from './graph.ts';
+import { close, read } from './graph.ts';
 
 type JavaNode = {
   stId: string;
@@ -32,18 +36,19 @@ const recorded = (
 ).differences;
 
 const problems: string[] = [];
-const species = (await (await fetch(`${JAVA}/ContentService/data/species/all`)).json()) as {
-  taxId: string | null;
-  displayName: string;
-}[];
+const species = await read<{ taxId: string; name: string }>(
+  `MATCH (:TopLevelPathway)-[:species]->(s:Species)
+   RETURN DISTINCT s.taxId AS taxId, s.displayName AS name ORDER BY name`
+);
 let checked = 0;
-for (const { taxId, displayName } of species) {
-  if (!taxId) continue;
+for (const { taxId, name: displayName } of species) {
   const answer = await fetch(
     `${JAVA}/ContentService/data/eventsHierarchy/${taxId}?pathwaysOnly=true`
   );
-  // Java has no hierarchy for most species, and answers those with a 500.
-  if (answer.status !== 200) continue;
+  if (answer.status !== 200) {
+    problems.push(`${taxId} ${displayName}: Java answered ${answer.status}`);
+    continue;
+  }
   const tree = (await answer.json()) as JavaNode[];
   const sizes = await analysisSizes(taxId);
   const expected = recorded[taxId] ?? {};
@@ -73,15 +78,24 @@ for (const { taxId, displayName } of species) {
     for (const child of node.children ?? []) walk(child);
   };
   for (const node of tree) walk(node);
+  const javas = new Set<string>();
+  const collect = (node: JavaNode) => {
+    javas.add(node.stId);
+    for (const child of node.children ?? []) collect(child);
+  };
+  for (const node of tree) collect(node);
+  for (const stId of sizes.keys())
+    if (!javas.has(stId)) problems.push(`${taxId} ${stId}: in node's tree, not Java's`);
   for (const stId of Object.keys(expected))
     if (!seen.has(stId)) problems.push(`${taxId} ${stId}: recorded, but not in Java's tree`);
   checked++;
   console.log(`${taxId} ${displayName}: ${sizes.size} pathways`);
 }
 for (const taxId of Object.keys(recorded))
-  if (!species.some((s) => s.taxId === taxId)) problems.push(`${taxId}: recorded, no such species`);
+  if (!species.some((s) => s.taxId === taxId))
+    problems.push(`${taxId}: recorded, but no top-level pathway`);
 await close();
 
-if (checked === 0) problems.push('no species answered: is Java running?');
+if (species.length === 0) problems.push('no species with a top-level pathway: is the graph there?');
 console.log(problems.length ? problems.join('\n') : `${checked} species: as recorded.`);
 process.exitCode = problems.length ? 1 : 0;

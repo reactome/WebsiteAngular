@@ -20,11 +20,17 @@
  * - Resources: ResourceFactory's main and auxiliary ones, under its
  *   equivalences; any other is not counted.
  *
+ * Entities and targets are read for the pathways in the tree, whatever their
+ * own species: analysis-core attaches each pathway's counts to every place it
+ * holds in any hierarchy (pathwayLocation, by dbId).
+ *
  * One known difference (research D25): analysis-core merges a partner whose
  * identifier is another interactor's alias into that interactor
- * (reactome/analysis-core#13), so 79 human pathways' totalEntityAndInteractors
- * are one or two lower in Java than here. Computed once per species while the
- * process lives: the graph is a release's, and changes only with it.
+ * (reactome/analysis-core#13), so in release 98 76 human pathways'
+ * totalEntityAndInteractors are 1 to 6 lower in Java than here, and 8 yeast
+ * pathways' 1 lower; fixtures/analysis-size-differences.json records them.
+ * Computed once per species while the process lives: the graph is a
+ * release's, and changes only with it.
  */
 import { read } from './graph.ts';
 
@@ -75,18 +81,19 @@ UNION
 MATCH (t:TopLevelPathway)-[:species]->(:Species {taxId: $taxId})
 RETURN t.stId AS parent, null AS child`;
 
-/** EntitiesBuilder: each species pathway's own reactions' identifiers. */
+/** EntitiesBuilder: each tree pathway's own reactions' identifiers. */
 const ENTITIES_QUERY = `
-MATCH (:Species {taxId: $taxId})<-[:species]-(p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent),
-      (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
+MATCH (p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent)
+WHERE p.stId IN $pathways
+MATCH (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
 WITH DISTINCT p, re
 RETURN p.stId AS pathway, collect(DISTINCT [re.databaseName, coalesce(re.variantIdentifier, re.identifier)]) AS ids`;
 
-/** InteractorsBuilder's targets: what a pathway's reactions reach that may interact. */
+/** InteractorsBuilder's targets: what a tree pathway's reactions reach that may interact. */
 const TARGETS_QUERY = `
-MATCH (:Species {taxId: $taxId})<-[:species]-(p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent),
-      (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
-WHERE (p:TopLevelPathway) OR (:TopLevelPathway)-[:hasEvent*]->(p)
+MATCH (p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent)
+WHERE p.stId IN $pathways
+MATCH (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
 WITH DISTINCT p, [re.databaseName, coalesce(re.variantIdentifier, re.identifier)] AS target
 RETURN p.stId AS pathway, collect(target) AS ids`;
 
@@ -168,10 +175,13 @@ export function computeSizes({ tree, entities, targets, partners }: SizeInputs) 
 
 /** The graph's inputs for one species. */
 async function sizeInputs(taxId: string): Promise<SizeInputs> {
-  const [tree, entities, targets] = await Promise.all([
-    read<SizeInputs['tree'][number]>(TREE_QUERY, { taxId }),
-    read<IdRow>(ENTITIES_QUERY, { taxId }),
-    read<IdRow>(TARGETS_QUERY, { taxId }),
+  const tree = await read<SizeInputs['tree'][number]>(TREE_QUERY, { taxId });
+  const pathways = [
+    ...new Set(tree.flatMap(({ parent, child }) => (child === null ? [parent] : [parent, child]))),
+  ];
+  const [entities, targets] = await Promise.all([
+    read<IdRow>(ENTITIES_QUERY, { pathways }),
+    read<IdRow>(TARGETS_QUERY, { pathways }),
   ]);
   const accs = [...new Set(targets.flatMap((row) => row.ids.map(([, id]) => id)))];
   const partners = await read<SizeInputs['partners'][number]>(PARTNERS_QUERY, { accs });

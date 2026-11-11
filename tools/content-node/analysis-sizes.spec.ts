@@ -55,9 +55,21 @@ describe('analysis sizes', () => {
   it("adds a target's partners under the target's resource", () => {
     const got = sizes({
       entities: [{ pathway: 'B', ids: [['UniProt', 'P1']] }],
-      targets: [{ pathway: 'B', ids: [['UniProtKB', 'P1']] }],
+      // A target in a resource that does not count brings no partners.
+      targets: [
+        {
+          pathway: 'B',
+          ids: [
+            ['UniProtKB', 'P1'],
+            ['UCSC', 'U1'],
+          ],
+        },
+      ],
       // P1 is its own partner, and already counted; Q9 is new.
-      partners: [{ acc: 'P1', partners: ['P1', 'Q9'] }],
+      partners: [
+        { acc: 'P1', partners: ['P1', 'Q9'] },
+        { acc: 'U1', partners: ['Z1'] },
+      ],
     });
     expect(got['B']).toEqual({ totalEntity: 1, totalEntityAndInteractors: 2 });
     expect(got['TOP']).toEqual({ totalEntity: 1, totalEntityAndInteractors: 2 });

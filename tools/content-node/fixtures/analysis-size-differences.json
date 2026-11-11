@@ -1,5 +1,5 @@
 {
-  "_about": "Pathways whose totalEntityAndInteractors node computes higher than Java, release 98: analysis-core merges an interaction partner whose identifier is another interactor's alias into it (reactome/analysis-core#13; spec 006 research D25). By taxId, then stId. analysis-sizes-check.ts fails on any other difference, or on one of these gone.",
+  "_about": "Pathways whose totalEntityAndInteractors node computes higher than Java, release 98: analysis-core merges an interaction partner whose identifier is another interactor's alias into it (reactome/analysis-core#13; spec 006 research D25). By taxId, then stId. analysis-sizes-check.ts fails on any other difference, or on one of these gone. Which interactor the merge keeps depends on analysis-core's build order, so a rebuilt data file may move a Java value; measure the record again then.",
   "differences": {
     "4932": {
       "R-SCE-199991": {
