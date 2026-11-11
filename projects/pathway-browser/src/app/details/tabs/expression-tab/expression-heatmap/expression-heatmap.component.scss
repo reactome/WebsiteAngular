@@ -1,0 +1,190 @@
+// The heatmap's colours are the theme's (FR-014): every colour here is a
+// token, and the canvas reads the same tokens when it draws.
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--on-surface);
+  font: var(--mat-sys-body-small);
+  --names: 120px;
+  --header: 110px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+}
+
+.order {
+  display: inline-flex;
+  border: 1px solid var(--outline-variant);
+  border-radius: 16px;
+  overflow: hidden;
+
+  button {
+    border: none;
+    background: none;
+    color: var(--on-surface);
+    font: var(--mat-sys-label-medium);
+    padding: 4px 12px;
+    cursor: pointer;
+
+    &.on {
+      background: var(--primary-container);
+      color: var(--on-primary-container);
+    }
+  }
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px 12px;
+  flex-wrap: wrap;
+
+  .scale {
+    position: relative;
+    width: 180px;
+    height: 26px;
+  }
+
+  .bar {
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .tick {
+    position: absolute;
+    top: 12px;
+    transform: translateX(-50%);
+
+    // The first tick, 0, sits at the bar's start: centred, it hung off it.
+    .bar + & {
+      transform: none;
+    }
+
+    font: var(--mat-sys-label-small);
+    color: var(--on-surface-variant);
+  }
+
+  .key {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--on-surface-variant);
+  }
+}
+
+.swatch {
+  display: inline-block;
+  width: 14px;
+  height: 12px;
+  background: var(--surface);
+  border: 1px solid var(--outline-variant);
+
+  &.no-value {
+    background: linear-gradient(
+      to top right,
+      var(--surface) 45%,
+      var(--outline-variant) 47% 53%,
+      var(--surface) 55%
+    );
+  }
+}
+
+.grid {
+  display: grid;
+  // Room for the last tissue labels, which are turned and reach past the last
+  // column ("zone of skin" was cut short beside the anatomogram).
+  padding-right: 80px;
+  grid-template-columns: var(--names) auto;
+  grid-template-rows: var(--header) auto;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+// The tissue labels, turned so 29 fit over 18-pixel columns.
+.tissues {
+  position: relative;
+  height: var(--header);
+
+  .tissue {
+    position: absolute;
+    bottom: 4px;
+    transform-origin: left bottom;
+    transform: rotate(-60deg);
+    white-space: nowrap;
+    font: var(--mat-sys-label-small);
+    color: var(--on-surface-variant);
+
+    &.current {
+      color: var(--on-surface);
+      font-weight: 600;
+    }
+  }
+}
+
+.scroller {
+  grid-column: 1 / -1;
+  max-height: 60vh;
+  min-height: 60px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.spacer {
+  position: relative;
+}
+
+// Stays in view while the spacer scrolls past it; only what it shows is drawn.
+.view {
+  position: sticky;
+  top: 0;
+  display: grid;
+  grid-template-columns: var(--names) auto;
+  height: min(60vh, 100%);
+  max-height: 60vh;
+  overflow: hidden;
+}
+
+.names {
+  position: relative;
+  overflow: hidden;
+
+  .name {
+    position: absolute;
+    left: 0;
+    right: 6px;
+    height: var(--row);
+    line-height: var(--row);
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: var(--mat-sys-label-small);
+
+    &.current {
+      font-weight: 600;
+    }
+  }
+}
+
+canvas {
+  display: block;
+  outline-offset: 2px;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+  }
+}
+
+.details {
+  min-height: 2.6em;
+
+  .spread,
+  .hint {
+    color: var(--on-surface-variant);
+  }
+}

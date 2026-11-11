@@ -8,28 +8,47 @@
     <p class="load-error" role="alert">The molecules of this pathway could not be loaded. Please try again later.</p>
   }
   <!-- Inert while another pathway's list loads: the old one stays on screen,
-       dimmed, and can be neither clicked nor reached by keyboard. -->
-  <div class="container" [class.updating]="updating()" [attr.inert]="updating() ? '' : null" [attr.aria-busy]="busy()">
+       dimmed, and can be neither clicked nor reached by keyboard. Inert, not
+       dimmed, while a new selection's molecules load: the header already names
+       it, and the download would write the list held from before. -->
+  <div class="container" [class.updating]="updating()" [attr.inert]="busy() ? '' : null" [attr.aria-busy]="busy()">
     <div class="content">
+      <!-- The tab's header: which molecules these are, the way to the rest, and
+           the action on them. Download was a panel at the foot of the list and
+           an entry in the list of molecule types beside it, which is for
+           finding a type, not for doing something. -->
+      <div class="scope">
+        <span class="scope-text">
+          @if (selectionInside() && showAll()) {
+            All molecules in <b>{{ pathwayName() }}</b
+            >; <span class="swatch" aria-hidden="true"></span> highlighted: those in <b>{{ selectionName() }}</b>
+          } @else if (oneMolecule()) {
+            All molecules in <b>{{ pathwayName() }}</b
+            >; <span class="swatch" aria-hidden="true"></span> highlighted: <b>{{ selectionName() }}</b>
+          } @else if (selectionInside()) {
+            Molecules in <b>{{ selectionName() }}</b>
+          } @else {
+            Molecules in <b>{{ listedName() }}</b>
+          }
+        </span>
+        @if (selectionInside()) {
+          <button type="button" class="scope-toggle" (click)="showAll.set(!showAll())">
+            {{ showAll() ? 'Show only ' + selectionName() : 'Show all molecules in ' + pathwayName() }}
+          </button>
+        }
+        @if (listedCount() > 0) {
+          <button type="button" mat-stroked-button class="download-button" (click)="openDownload()">
+            <mat-icon fontSet="symbols">download</mat-icon>
+            Download {{ listedCount() }} molecule{{ listedCount() === 1 ? '' : 's' }}
+          </button>
+        }
+      </div>
+      @if (selectionInside() && moleculeData().length === 0 && !busy()) {
+        <p class="scope-empty">No molecules are listed for {{ selectionName() }}.</p>
+      }
       @for (group of moleculeData() | sortByText: 'category'; track group.category) {
         <cr-molecule-group [group]="group"></cr-molecule-group>
       }
-
-      <div id="download" class="download-container">
-        @if (moleculeData().length > 0) {
-          <mat-expansion-panel>
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <h3 class="badge">Download Molecules Data</h3>
-              </mat-panel-title>
-            </mat-expansion-panel-header>
-            <cr-molecule-download-table
-              [moleculeData]="moleculeData()"
-              [objId]="objStId()"
-            ></cr-molecule-download-table>
-          </mat-expansion-panel>
-        }
-      </div>
     </div>
 
     <div class="toc">
@@ -39,15 +58,20 @@
           (click)="scrollTo(group.category)"
           [class.selected]="selectedKey() === sanitizeId(group.category)"
         >
-          {{ group.category }}
-        </a>
-      }
-      @if (moleculeData().length > 0) {
-        <!-- Add download link -->
-        <a class="toc-item" (click)="scrollTo('download')" [class.selected]="selectedKey() === sanitizeId('download')"
-          >Download
+          {{ group.category }} <span class="toc-count">{{ group.data.length }}</span>
         </a>
       }
     </div>
   </div>
 }
+
+<!-- The download's options, opened from the header's button. -->
+<ng-template #downloadDialog>
+  <h2 mat-dialog-title>Download molecules</h2>
+  <mat-dialog-content>
+    <cr-molecule-download-table [moleculeData]="moleculeData()" [objId]="listedId()"></cr-molecule-download-table>
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button type="button" mat-button mat-dialog-close>Close</button>
+  </mat-dialog-actions>
+</ng-template>

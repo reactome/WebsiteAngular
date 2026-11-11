@@ -11,6 +11,7 @@
         <mat-paginator
           [pageSize]="pageSize()"
           [length]="group().data.length"
+          [pageIndex]="currentPage().pageIndex"
           (page)="currentPage.set($event)"
           hidePageSize
         ></mat-paginator>
