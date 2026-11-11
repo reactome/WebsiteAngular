@@ -452,6 +452,24 @@ test.describe('Entity detail: pathway locations', () => {
     await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
   });
 
+  test('a long tree on a content page gives each top-level pathway its count (FR-051)', async ({
+    page,
+  }) => {
+    // SC-008 names ATP, whose answer is 8.4 MB; TP53 in the nucleoplasm is the
+    // same case at 92 KB: 9 top-level pathways, 109 locations (release 98).
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-69488');
+    const tree = page.locator('app-locations-tree');
+    await expect(tree.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
+    const roots = await tree.locator('.root-entry').count();
+    expect(roots, 'top-level pathways').toBeGreaterThan(1);
+    await expect(tree.locator('.location-count')).toHaveCount(roots);
+    await expect(tree.locator('[aria-expanded="true"]'), 'too long to show open').toHaveCount(0);
+    // Opening one shows its locations.
+    await tree.locator('.root-entry').first().click();
+    await expect(tree.locator('a.leaf-link').first()).toBeVisible();
+  });
+
   test("a top-level pathway's own page offers no Expand all", async ({ page }) => {
     // Nothing is under a top-level pathway in its own Locations tree: the
     // button was there and did nothing.

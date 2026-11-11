@@ -138,7 +138,7 @@ export class LocationsTreeComponent {
     if (this.shownOpen()) this.expanded.set(new Set(this.filteredTrees().map((tree) => tree.stId)));
   }
 
-  /** The number of locations under a top-level pathway, shown when the tree is not opened for the reader. */
+  /** The number of locations under a top-level pathway, shown on a content page when the tree is too long to open (FR-051). */
   locationsUnder(tree: PathwayBrowserNode): number {
     return this.countsByRoot().get(tree.stId) ?? 0;
   }
