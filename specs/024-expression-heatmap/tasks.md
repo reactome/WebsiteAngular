@@ -192,8 +192,8 @@
 
 **Independent Test**: the download from R-HSA-109606 has one row per shown gene with the five values per cell, and names E-MTAB-2836.
 
-- [ ] T035 [US4] Write `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-download.ts`. It writes a TSV of the shown rows in the shown order: Ensembl id, gene name, then per tissue the five values. A header comment block names the experiment, source, last update, licence and citations, and the selection. Add the button to the tab.
-- [ ] T036 [US4] Write a unit test for the TSV, and an e2e download test comparing the file with the answer. Show it fails with a column dropped.
+- [x] T035 [US4] Write `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-download.ts`. It writes a TSV of the shown rows in the shown order: Ensembl id, gene name, then per tissue the five values. A header comment block names the experiment, source, last update, licence and citations, and the selection. Add the button to the tab. (#915)
+- [x] T036 [US4] Write a unit test for the TSV, and an e2e download test comparing the file with the answer. Show it fails with a column dropped. (#915)
 
 ---
 
@@ -229,10 +229,10 @@
 
 - [ ] T040 Mount the expression data on beta: run the refresh step into a folder outside the repository, set `EXPRESSION_FILES_DIR` in the uncommitted `.env`, restart the content service, and check quickstart §2–4 against beta. No path goes in the repository.
 - [ ] T041 [P] Add SC-003's comparison to the refresh step: `--compare <base URL>` samples 20 cells from a live answer and compares them with the source table. Run it against beta and record the result.
-- [ ] T042 [P] Update `RELEASE-TESTING.md` and `CURATOR-REPORT.md`:
+- [x] T042 [P] Update `RELEASE-TESTING.md` and `CURATOR-REPORT.md`: Download row to follow with #915. (#917)
   - the Expression tab's checks, each marked auto, human, gap or missing;
   - the refresh step under "after a release or an Expression Atlas update".
-- [ ] T043 [P] Measure SC-004 on beta for a 100-gene pathway and for Signal Transduction, and record the timings in the PR.
+- [x] T043 [P] Measure SC-004 on beta for a 100-gene pathway and for Signal Transduction, and record the timings in the PR. Measured 2026-11-11 on beta: 61 and 170 genes 1.4 s from opening the tab to the heatmap; Signal Transduction (2,763 genes) 4.9 s the first time (the answer 3.0 s), 2.0 s after. (#917)
 - [ ] T044 Run `scripts/preflight.sh` by hand in the worktree before every push, and push with SSH keepalives (the hook takes about 20 minutes). Tick each task with its PR number in this file, in the PR that completes it.
 
 ---

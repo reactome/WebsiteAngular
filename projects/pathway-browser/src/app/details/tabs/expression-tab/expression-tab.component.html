@@ -18,6 +18,7 @@
         <div class="views">
           <cr-expression-heatmap
             [answer]="answer"
+            [selection]="selection()"
             [pickedTissue]="pickedTissue()"
             (pointed)="pointed.set($event)"
           ></cr-expression-heatmap>

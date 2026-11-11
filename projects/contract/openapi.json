@@ -21630,14 +21630,12 @@
           "className",
           "dbId",
           "displayName",
-          "pubMedIdentifier",
           "schemaClass",
           "title",
-          "url",
           "year"
         ],
         "additionalProperties": false,
-        "description": "A journal article. Measured over 33,014 in the enhanced query's recordings and 231 elsewhere: the PubMed id, year and link always; a journal on all but 31, pages on all but 920, a volume on all but 215."
+        "description": "A journal article. Measured over 33,014 in the enhanced query's recordings and 231 elsewhere: the year always; a journal on all but 31, pages on all but 920, a volume on all but 215. The PubMed id and link on all but one, recorded on 2026-11-11: dbId 6798584, a review with no PubMed id."
       },
       "Long": {
         "type": "integer",

@@ -38,6 +38,16 @@
   }
 }
 
+.download {
+  border: 1px solid var(--outline-variant);
+  border-radius: 16px;
+  background: none;
+  color: var(--primary);
+  font: var(--mat-sys-label-medium);
+  padding: 4px 12px;
+  cursor: pointer;
+}
+
 .legend {
   display: flex;
   align-items: center;
