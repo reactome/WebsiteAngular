@@ -99,6 +99,16 @@ export function cellOf(text: string): Quantiles | null {
   return values;
 }
 
+/**
+ * A multi-factor group's label, "adult; liver; female": its stage, organ and
+ * sex. Rat's experiment crosses four stages with organs and sex; only one
+ * stage is kept (expression-species.json's `stage`).
+ */
+export function stageOf(label: string): { stage: string; organ: string; sex?: 'female' | 'male' } {
+  const [stage = '', organ = '', sex] = label.split('; ');
+  return { stage, organ, ...((sex === 'female' || sex === 'male') && { sex }) };
+}
+
 /** Expression Atlas's dates are day-month-year; the file's are ISO. */
 const isoDate = (atlas: string) => {
   const [day, month, year] = atlas.split('-');
@@ -126,22 +136,37 @@ export function buildExperiment(input: {
   if (columns[0] !== 'GeneID' || columns[1] !== 'Gene Name')
     throw new Error(`unexpected table header: ${columns.slice(0, 3).join(', ')}`);
   const groups = new Map(groupsOf(configuration).map((group) => [group.id, group]));
-  const tissues: ExpressionTissue[] = columns.slice(2).map((id) => {
-    const group = groups.get(id);
+  for (const id of columns.slice(2))
+    if (!groups.has(id)) throw new Error(`column ${id} is not a group in the configuration`);
+  // The columns kept, with where each is in a row: all of them, or one stage's.
+  const kept = columns
+    .slice(2)
+    .map((id, at) => ({ id, at, group: groups.get(id) }))
+    .filter(({ group }) => !listed.stage || stageOf(group?.label ?? '').stage === listed.stage);
+  const tissues: ExpressionTissue[] = kept.map(({ id, group }) => {
     if (!group) throw new Error(`column ${id} is not a group in the configuration`);
     // One anatomy id per tissue: a group whose samples name two is two tissues.
     const ids = new Set(group.assays.flatMap((assay) => anatomy.get(assay) ?? []));
     const [uberon] = ids;
     if (ids.size !== 1 || !uberon)
       throw new Error(`${group.label} (${id}) has ${ids.size} anatomy ids: ${[...ids].join(', ')}`);
-    return { id, label: group.label, samples: group.samples, uberon };
+    if (!listed.stage) return { id, label: group.label, samples: group.samples, uberon };
+    const { organ, sex } = stageOf(group.label);
+    return {
+      id,
+      label: sex ? `${organ} (${sex})` : organ,
+      samples: group.samples,
+      uberon,
+      ...(sex && { sex }),
+    };
   });
-  // Two tissues on one organ: the anatomogram could draw only one of them.
+  // Two tissues on one organ, of one sex: the anatomogram could draw only one.
   const seen = new Map<string, string>();
   for (const tissue of tissues) {
-    const other = seen.get(tissue.uberon);
+    const key = `${tissue.uberon} ${tissue.sex ?? ''}`;
+    const other = seen.get(key);
     if (other) throw new Error(`${other} and ${tissue.label} are both ${tissue.uberon}`);
-    seen.set(tissue.uberon, tissue.label);
+    seen.set(key, tissue.label);
   }
   const order = tissues
     .map((_, i) => i)
@@ -153,7 +178,10 @@ export function buildExperiment(input: {
     if (cells.length !== columns.length)
       throw new Error(`${id} has ${cells.length} cells for ${columns.length} columns`);
     if (genes[id]) throw new Error(`${id} appears twice`);
-    genes[id] = { name: cells[1] ?? '', values: order.map((i) => cellOf(cells[i + 2] ?? '')) };
+    genes[id] = {
+      name: cells[1] ?? '',
+      values: order.map((i) => cellOf(cells[(kept[i]?.at ?? -3) + 2] ?? '')),
+    };
   }
   return {
     accession: listed.accession,
@@ -189,7 +217,8 @@ export function checkAgainstSource(
   file: ExperimentFile,
   table: string,
   configuration: string,
-  cells = 20
+  cells = 20,
+  stage?: string
 ): string[] {
   const problems = problemsOf(file);
   const lines = table.split('\n').filter((line) => line.trim() !== '');
@@ -197,9 +226,14 @@ export function checkAgainstSource(
   const rows = lines.length - 1;
   const genes = Object.keys(file.genes).length;
   if (genes !== rows) problems.push(`${genes} genes written for ${rows} in the table`);
-  const groups = groupsOf(configuration).length;
-  if (file.tissues.length !== columns.length)
-    problems.push(`${file.tissues.length} tissues written for ${columns.length} columns`);
+  const all = groupsOf(configuration);
+  const groups = all.length;
+  const labels = new Map(all.map((group) => [group.id, group.label]));
+  const keptColumns = columns.filter(
+    (id) => !stage || stageOf(labels.get(id) ?? '').stage === stage
+  );
+  if (file.tissues.length !== keptColumns.length)
+    problems.push(`${file.tissues.length} tissues written for ${keptColumns.length} columns`);
   if (columns.length !== groups)
     problems.push(`${columns.length} columns for ${groups} groups in the configuration`);
   if (!file.design.startsWith(`${file.tissues.length} `))
@@ -215,7 +249,7 @@ export function checkAgainstSource(
   const next = sampler(rows * 31 + columns.length);
   for (let n = 0; n < cells && rows > 0 && columns.length > 0; n++) {
     const source = (lines[1 + next(rows)] ?? '').split('\t');
-    const column = next(columns.length);
+    const column = columns.indexOf(keptColumns[next(keptColumns.length)] ?? '');
     const id = source[0] ?? '';
     const tissue = file.tissues.findIndex((t) => t.id === columns[column]);
     const written = file.genes[id]?.values[tissue];
@@ -325,7 +359,7 @@ async function main(args: string[]) {
       sdrf,
       fetched,
     });
-    const problems = checkAgainstSource(file, table, configuration);
+    const problems = checkAgainstSource(file, table, configuration, 20, listed.stage);
     if (problems.length) {
       failed = true;
       console.error(

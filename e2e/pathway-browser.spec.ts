@@ -264,6 +264,28 @@ test.describe('Expression tab (spec 024)', () => {
     await expect(heatmap(page)).toHaveCount(0);
   });
 
+  test('draws a rat pathway by organ and sex, the figure shaded by either sex (US5)', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-RNO-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-GEOD-53960');
+    const tissues = await heatmap(page).locator('.tissue').allInnerTexts();
+    expect(tissues).toHaveLength(20);
+    expect(tissues).toContain('liver (female)');
+    expect(tissues).toContain('liver (male)');
+    const figure = page.locator('cr-expression-anatomogram');
+    const liver = figure.locator('#UBERON_0002107');
+    await expect(liver).toBeAttached();
+    await liver.dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (female)');
+    await figure.locator('.sex-switch').getByRole('button', { name: 'male', exact: true }).click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+  });
+
   test('draws a cow pathway from cow tissues, with its one figure (US5)', async ({ page }) => {
     await page.goto('/PathwayBrowser/R-BTA-109606?tab=expression');
     await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {

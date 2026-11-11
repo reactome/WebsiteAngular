@@ -13,6 +13,20 @@
       }
     </div>
   }
+  @if (sexes().length > 1) {
+    <div class="sex-switch figure-switch" role="group" aria-label="Shade the figure by the female or the male samples">
+      @for (choice of sexes(); track choice) {
+        <button
+          type="button"
+          [class.on]="sex() === choice"
+          [attr.aria-pressed]="sex() === choice"
+          (click)="sex.set(choice)"
+        >
+          {{ choice }}
+        </button>
+      }
+    </div>
+  }
   <div
     #figureHost
     class="figure"

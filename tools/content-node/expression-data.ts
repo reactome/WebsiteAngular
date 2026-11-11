@@ -33,6 +33,8 @@ export interface ExperimentFile extends ExpressionExperiment {
 /** What expression-species.json says of a species (the rest is fetched). */
 export interface ListedSpecies {
   accession: string;
+  /** For an experiment crossing stages with organs: the stage kept ("adult"). */
+  stage?: string;
   design: string;
   citation: string[];
   licence: string;
@@ -144,6 +146,7 @@ export function problemsOf(value: unknown): string[] {
       typeof tissue.id !== 'string' ||
       typeof tissue.label !== 'string' ||
       typeof tissue.uberon !== 'string' ||
+      (tissue.sex !== undefined && tissue.sex !== 'female' && tissue.sex !== 'male') ||
       !/^UBERON_\d+$/.test(tissue.uberon) ||
       !((tissue.samples ?? 0) >= 1)
     )

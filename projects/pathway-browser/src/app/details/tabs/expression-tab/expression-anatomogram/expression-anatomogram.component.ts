@@ -28,6 +28,7 @@ const FIGURES: Record<string, Figure[]> = {
   homo_sapiens: ['male', 'female', 'brain'],
   mus_musculus: ['male', 'female', 'brain'],
   bos_taurus: [''],
+  rattus_norvegicus: [''],
 };
 
 type Figure = 'male' | 'female' | 'brain' | '';
@@ -93,14 +94,33 @@ export class ExpressionAnatomogramComponent {
 
   /** Each tissue's organ elements in the figure shown, by tissue index. */
   private organs = new Map<number, Element[]>();
-  private readonly tissueByUberon = computed(
-    () =>
-      new Map(
-        this.answer().experiment.tissues.flatMap((tissue, i) =>
-          [tissue.uberon, ...(FIGURE_IDS[tissue.uberon] ?? [])].map((id) => [id, i] as const)
-        )
-      )
-  );
+  /**
+   * The sexes the experiment measures apart (rat's: female, male), and the one
+   * the figure is shaded by: each organ is drawn from that sex's column, an
+   * organ of one sex only (testis, uterus) from its own.
+   */
+  readonly sexes = computed(() => [
+    ...new Set(this.answer().experiment.tissues.flatMap((tissue) => tissue.sex ?? [])),
+  ]);
+  readonly sex = linkedSignal<string[], string | null>({
+    source: this.sexes,
+    computation: (sexes) => sexes[0] ?? null,
+  });
+
+  private readonly tissueByUberon = computed(() => {
+    const chosen = this.sex();
+    const byId = new Map<string, number>();
+    const tissues = this.answer().experiment.tissues;
+    const add = (preferred: boolean) =>
+      tissues.forEach((tissue, i) => {
+        if (preferred !== (!tissue.sex || tissue.sex === chosen)) return;
+        for (const id of [tissue.uberon, ...(FIGURE_IDS[tissue.uberon] ?? [])])
+          if (!byId.has(id)) byId.set(id, i);
+      });
+    add(true);
+    add(false);
+    return byId;
+  });
 
   constructor() {
     // Put a newly loaded figure in place, and find the experiment's organs in it.

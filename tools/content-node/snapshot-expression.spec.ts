@@ -5,7 +5,13 @@
 // one that does not match them.
 import { describe, expect, it } from 'vitest';
 import type { ExperimentFile, ExperimentGene, ListedSpecies } from './expression-data.ts';
-import { buildExperiment, cellOf, checkAgainstSource, groupsOf } from './snapshot-expression.ts';
+import {
+  buildExperiment,
+  cellOf,
+  checkAgainstSource,
+  groupsOf,
+  stageOf,
+} from './snapshot-expression.ts';
 
 const LISTED: ListedSpecies = {
   accession: 'E-TEST-1',
@@ -205,6 +211,64 @@ describe('checkAgainstSource', () => {
     const right = { ...LISTED, design: '3 tissues, 6 samples' };
     expect(checkAgainstSource(build(TABLE, CONFIGURATION, right), TABLE, CONFIGURATION)).toEqual(
       []
+    );
+  });
+});
+
+describe('an experiment crossing stages with organs and sex (rat)', () => {
+  const configuration = `<configuration><analytics><assay_groups>
+    <assay_group id="g1" label="adult; liver; female"><assay>A</assay></assay_group>
+    <assay_group id="g2" label="juvenile; liver; female"><assay>B</assay></assay_group>
+    <assay_group id="g3" label="adult; liver; male"><assay>C</assay><assay>D</assay></assay_group>
+  </assay_groups></analytics></configuration>`;
+  const sdrf = ['A', 'B', 'C', 'D']
+    .map(
+      (assay) =>
+        `E-TEST-2\t\t${assay}\tfactor\torganism part\tliver\thttp://purl.obolibrary.org/obo/UBERON_0002107`
+    )
+    .join('\n');
+  const table = [
+    'GeneID\tGene Name\tg1\tg2\tg3',
+    'ENSRNOG00000000001\tONE\t1,1,1,1,1\t9,9,9,9,9\t3,3,3,3,3',
+  ].join('\n');
+  const listed = { ...LISTED, stage: 'adult', design: '2 organ and sex groups, 3 samples' };
+  const file = buildExperiment({
+    species: 'Rattus norvegicus',
+    listed,
+    info: INFO,
+    table,
+    configuration,
+    sdrf,
+    fetched: '2026-11-11',
+  });
+
+  it('reads a label as its stage, organ and sex', () => {
+    expect(stageOf('adult; liver; female')).toEqual({
+      stage: 'adult',
+      organ: 'liver',
+      sex: 'female',
+    });
+    expect(stageOf('adult; testis')).toEqual({ stage: 'adult', organ: 'testis' });
+  });
+
+  it("keeps one stage's columns, named by organ and sex, one organ once per sex", () => {
+    expect(file.tissues.map((t) => [t.label, t.sex, t.uberon])).toEqual([
+      ['liver (female)', 'female', 'UBERON_0002107'],
+      ['liver (male)', 'male', 'UBERON_0002107'],
+    ]);
+  });
+
+  it("takes each value from its own column, not the dropped stage's", () => {
+    expect(file.genes['ENSRNOG00000000001']?.values).toEqual([
+      [1, 1, 1, 1, 1],
+      [3, 3, 3, 3, 3],
+    ]);
+  });
+
+  it('checks the kept columns against the table', () => {
+    expect(checkAgainstSource(file, table, configuration, 50, 'adult')).toEqual([]);
+    expect(checkAgainstSource(file, table, configuration, 50)).toContain(
+      '2 tissues written for 3 columns'
     );
   });
 });
