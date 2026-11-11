@@ -6,6 +6,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
   untracked,
@@ -18,13 +19,18 @@ import type { ExpressionHeatmapAnswer, ExpressionRow } from '../../../../model/e
 import { DarkService } from '../../../../services/dark.service';
 import { shade, tokenRgb, topOf } from '../expression-heatmap/expression-scale';
 
-/** The figures shipped for each species (assets/anatomogram), by file prefix. */
+/**
+ * The figures shipped for each species (assets/anatomogram), by file prefix:
+ * a species with one figure has '' (bos_taurus.svg), with several their names
+ * (homo_sapiens.male.svg).
+ */
 const FIGURES: Record<string, Figure[]> = {
   homo_sapiens: ['male', 'female', 'brain'],
   mus_musculus: ['male', 'female', 'brain'],
+  bos_taurus: [''],
 };
 
-type Figure = 'male' | 'female' | 'brain';
+type Figure = 'male' | 'female' | 'brain' | '';
 
 /**
  * Expression Atlas's anatomogram beside the heatmap (spec 024, FR-015 to
@@ -59,13 +65,17 @@ export class ExpressionAnatomogramComponent {
     this.answer().experiment.species.toLowerCase().replace(/ /g, '_')
   );
   readonly figures = computed(() => FIGURES[this.prefix()] ?? []);
-  readonly figure = signal<Figure>('male');
+  /** The figure shown: the species' first, until the reader chooses another. */
+  readonly figure = linkedSignal<Figure[], Figure>({
+    source: this.figures,
+    computation: (figures) => figures[0] ?? '',
+  });
   readonly organName = signal<string | null>(null);
 
   readonly svg = rxResource({
     params: () =>
       this.figures().includes(this.figure())
-        ? `assets/anatomogram/${this.prefix()}.${this.figure()}.svg`
+        ? `assets/anatomogram/${this.prefix()}${this.figure() ? `.${this.figure()}` : ''}.svg`
         : undefined,
     stream: ({ params }) => (params ? this.http.get(params, { responseType: 'text' }) : of('')),
   });
