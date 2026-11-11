@@ -39,7 +39,8 @@ import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SelectableObject } from '../../../services/event.service';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
-import type { TreeMolecule } from '../../../model/participant.model';
+import type { Participant, TreeMolecule } from '../../../model/participant.model';
+import type { PlainPathway } from '../../../model/graph/plain.model';
 import { SchemaClasses } from '../../../constants/constants';
 import { IconService } from '../../../services/icon.service';
 import { EntityService } from '../../../services/entity.service';
@@ -674,9 +675,7 @@ export class ObjectTreeComponent<
     this.diagramChoices.set({ dbId: node.dbId, name, diagrams: 'loading' });
     forkJoin({
       diagrams: this.http
-        .get<{ peDbId: number; schemaClass: string; refEntities: { dbId: number }[] }[]>(
-          `${CONTENT_SERVICE}/data/participants/${pathwayId ?? stId}`
-        )
+        .get<Participant[]>(`${CONTENT_SERVICE}/data/participants/${pathwayId ?? stId}`)
         .pipe(
           map((participants) =>
             participants
@@ -684,7 +683,7 @@ export class ObjectTreeComponent<
                 participant.refEntities.some((reference) => reference.dbId === node.dbId)
               )
               // Free forms first: their diagrams draw the molecule itself.
-              .sort((a, b) => +isAssembly(a.schemaClass) - +isAssembly(b.schemaClass))
+              .sort((a, b) => +isAssembly(a.schemaClass ?? '') - +isAssembly(b.schemaClass ?? ''))
               .slice(0, FORMS_ASKED)
           ),
           switchMap((forms) =>
@@ -692,7 +691,7 @@ export class ObjectTreeComponent<
               ? forkJoin(
                   forms.map((form) =>
                     this.http
-                      .get<{ stId: string; displayName: string }[]>(
+                      .get<PlainPathway[]>(
                         `${CONTENT_SERVICE}/data/pathways/low/diagram/entity/${form.peDbId}/allForms`,
                         { params: { species } }
                       )
