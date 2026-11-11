@@ -21,6 +21,7 @@ import type {
   Interactors,
   PsicquicResource,
 } from './interactors.ts';
+import type { ExpressionAnswer } from './expression.ts';
 import type { PathwayBrowserNode } from './locations.ts';
 import type { Participant } from './participants.ts';
 import type { SimpleEvent } from './person.ts';
@@ -75,4 +76,5 @@ export interface Routes {
   'GET /ContentService/search/fireworks': DiagramResult<SearchEntry>;
   'GET /ContentService/search/diagram/{pathwayId}/flag': DiagramFlagResult;
   'GET /ContentService/search/fireworks/flag': SpeciesOverviewFlagResult;
+  'GET /ContentService/expression/{id}': ExpressionAnswer;
 }

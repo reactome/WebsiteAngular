@@ -37,7 +37,8 @@ be defined from what visitors come to do (search, browse pathways, analyse
 data); not yet designed." Added later the same day: the molecule tab's
 pagination, which sits under the Proteins count and reads as if it were for
 every group; then what its highlighting and its "8 / 20" counts mean, which
-nothing on the tab says.
+nothing on the tab says. Added after that: the content pages' Locations
+tree, which a curator asked to be shown open rather than closed.
 
 (The input's "the search bar ... does nothing there" proved wrong when the code
 was read: see User Story 3.)
@@ -269,6 +270,59 @@ above, rather than replaced.
 
 ---
 
+### User Story 6 - See where an entry sits without opening the tree (Priority: P2)
+
+A reader on a content page (a pathway, reaction or molecule) wants to see
+where it sits in Reactome and go there. The **Locations** tree shows them at
+once, and each place leads into the Pathway Browser.
+
+**What is wrong today** (read from the code): the tree opens closed, at its
+top-level pathways (for PKA activation, one line: "Signal Transduction"), so
+every reader must open it, or press "Expand all", before it shows anything
+they came for. A curator reported this as a wasted step, and recalled a
+Scientific Advisory Board recommendation from the first redesign that the
+hierarchy be shown open. (Its links opened an empty Pathway Browser, fixed in
+#907.) Also: an opened top-level pathway shows its whole subtree in a box
+capped at 300px high, so even an open tree hides most of itself; only the
+top level has toggles; "Expand all" does not change its label after a single
+pathway is opened by hand; and the toggles carry no expanded state for a
+screen reader.
+
+**Principles broken**: 4 (an extra step before the page's content is
+reachable), 1 (a tree that hides its only answer is not the convention for a
+short list of places), and 7 (the toggles' state is not announced).
+
+**Why this priority**: every content page has Locations, and most entries have
+few. Measured on release 98, for Homo sapiens (the species the tree starts on):
+PKA activation has 2 locations, a reaction (R-HSA-111930) 3, BCL2 16, and ATP
+2,182 under 24 top-level pathways. Most rows are the path, not places: PKA
+activation's 2 locations sit at the end of single-child chains 12 levels deep.
+So the rule counts locations, not rows.
+
+**Scope**: content pages. The same tree appears in the Pathway Browser's
+details, where the reader is already in a pathway and the panel is narrow; it
+stays as it is there.
+
+**Independent Test**: Open the content page of PKA activation: both locations
+are visible and linked with no click and no scrolling inside the tree. Open
+ATP's: the page stays usable, the tree shows its 24 top-level pathways for
+Homo sapiens, each with its number of locations, and opening one shows it.
+
+**Acceptance Scenarios**:
+
+1. **Given** an entry with 20 locations or fewer for the species shown,
+   **When** its content page loads, **Then** every top-level pathway is open
+   and every location is visible without scrolling inside the tree.
+2. **Given** an entry with more, **When** the page loads, **Then** its
+   top-level pathways are shown, each with the number of locations under it,
+   and each opens on its own.
+3. **Given** the tree, **When** the reader opens or closes a top-level
+   pathway, or uses "Expand all" / "Collapse all", **Then** the control's
+   label matches what is shown, and a screen reader hears whether each
+   pathway is open.
+
+---
+
 ### Edge Cases
 
 Each of these is a requirement below, so that tasks are made for it.
@@ -287,6 +341,10 @@ Each of these is a requirement below, so that tasks are made for it.
 - The molecule tab on page 7 of a group when the selection changes or the
   switch is turned: FR-046.
 - The molecule tab while a new selection or pathway loads: FR-047.
+- A Locations tree of thousands of locations (ATP, 2,182 for Homo sapiens):
+  FR-051.
+- Locations at the end of long single-child chains (PKA activation, 12 levels):
+  FR-050.
 
 ## Requirements _(mandatory)_
 
@@ -380,13 +438,14 @@ Each of these is a requirement below, so that tasks are made for it.
   group and the range shown ("Proteins 1–50 of 345"); the two show the same
   page; paging from the lower one brings the group's heading into view. A
   group of 50 or fewer MUST have none.
-- **FR-044**: While something inside the pathway is selected, a switch MUST
-  let the reader list only the highlighted molecules. With it on, a group with
-  none highlighted keeps its heading ("5 · none highlighted") and lists
-  nothing; headings and pagers count only what is listed. With nothing
-  selected the switch is not shown. The switch is kept in the page's address,
-  so a shared link and Back keep it (principle 5). The download panel is not
-  filtered: it offers the pathway's molecules, as it says.
+- **FR-044**: While something inside the pathway is selected, the tab MUST list
+  that selection's molecules alone, unhighlighted, under a header naming it,
+  with "Show all molecules in <pathway>" to list the pathway's molecules with
+  the selection's highlighted, and a way back; a new selection starts from its
+  own molecules again. (Decided on beta, 2026-11-10: this replaces a switch to
+  show only highlighted molecules, which listed the whole pathway by default.)
+  With nothing selected, or the pathway itself, the pathway's molecules are
+  listed and nothing is highlighted.
 - **FR-045**: Within a group, molecules MUST be ordered highlighted first, then
   by how many of the pathway's participants contain them (the "N ×" shown),
   then by the name shown, alphabetically; the same on every page, and without
@@ -397,6 +456,36 @@ Each of these is a requirement below, so that tasks are made for it.
   the highlighting: the list stays on screen, and it is not fetched again.
   Opening another pathway keeps the old list on screen, marked as updating,
   until the new one arrives; only the first load shows a spinner alone.
+
+- **FR-048**: The tab MUST have a header holding what is listed (FR-040,
+  FR-044) and a button that says what it downloads ("Download 196
+  molecules"), opening the download's options; the file holds what is listed.
+  The list of molecule types beside the molecules is for finding a type, each
+  with its count, each on one line, and holds no action.
+- **FR-049**: Each molecule's locate button MUST keep its icon and say, by the
+  molecule's name, what it does. In a pathway drawn as a diagram it selects the
+  molecule there. In one drawn as an illustration it finds the diagrams inside
+  the open pathway that draw the molecule: one opens with the molecule
+  selected, several are listed by name to choose from, none is said; within
+  about 2 s for any molecule (measured 0.5 to 1.6 s on release 98).
+
+**Content pages: Locations**
+
+- **FR-050**: On a content page, an entry with 20 locations or fewer for the
+  species shown MUST show its tree with every top-level pathway open, when the
+  page loads and when the species changes, and every location MUST be visible
+  without scrolling inside the tree (no fixed-height box for a tree shown
+  open).
+- **FR-051**: An entry with more MUST show its top-level pathways, each with the
+  number of locations under it, each opening on its own; a closed pathway's
+  subtree is not rendered, so the page stays responsive with the largest tree
+  (ATP's).
+- **FR-052**: The reader's own opening and closing of top-level pathways MUST
+  be kept until the page or the species changes; "Expand all" reads "Collapse
+  all" whenever every top-level pathway is open, and each toggle announces
+  whether it is open.
+- **FR-053**: In the Pathway Browser's details, the tree MUST stay as it is
+  (closed until opened).
 
 ### Key Entities
 
@@ -428,6 +517,12 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   from the home page, and their results are added to `home-page-findings.md`.
 - **SC-006**: On each changed page, no element styled as a link, button or
   chip does nothing when activated.
+- **SC-009**: In Cellular responses to stimuli, zinc's locate button reads
+  "Find zinc(2+) in a diagram" and offers the diagrams inside the pathway that
+  draw it; choosing one opens it with zinc selected. With ATP-dependent
+  chromatin remodelers selected in Chromatin organization, the tab lists that
+  selection's molecules under a header naming it, and its download count is
+  less than the pathway's.
 - **SC-007**: In the molecule tab for a pathway with a group of more than 50
   and a selection inside it, with the expected counts read from the content
   service rather than written into the test: each heading gives the right
@@ -435,6 +530,10 @@ Each is checked by an automated end-to-end test unless it says otherwise.
   at both ends of their own box, named for the group; the first page lists the
   highlighted molecules first; and with the switch on, each group lists its
   highlighted count and the address carries the switch.
+- **SC-008**: On the content page of PKA activation, both location links are
+  visible with no click and no scrolling inside the tree. On ATP's, the tree
+  shows 24 top-level pathways for Homo sapiens with their counts, renders no
+  closed subtree, and opening one shows its locations.
 
 ## Clarifications
 
@@ -446,6 +545,13 @@ Each is checked by an automated end-to-end test unless it says otherwise.
 - Q: The home page: designed within this spec, or in a spec of its own? → A:
   Within this spec, but what visitors come to do is measured first, and the
   design follows from that.
+- Q: With something lower down selected, the whole pathway's molecules with the
+  selection's highlighted, or the selection's alone? → A: The selection's alone,
+  with a way to show all; and the tab's header carries the download (decided on
+  beta, 2026-11-10).
+- Q: In an illustration, what should a molecule's locate button do? → A: Take
+  the reader to a diagram that draws it, offering a choice when there are
+  several; its icon stays as it was.
 - Q: The molecule tab's paging: a "show more" control, every molecule shown,
   or a switch to show only highlighted ones? → A: Paging stays per group, in
   pages of 50, made plain: each group a box with the pager inside it, named

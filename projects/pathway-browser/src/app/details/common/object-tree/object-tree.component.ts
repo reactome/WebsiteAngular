@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   input,
   model,
   signal,
   TrackByFunction,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import {
@@ -34,11 +36,13 @@ import {
   MatTreeNodeDef,
   MatTreeNodeOutlet,
 } from '@angular/material/tree';
-import { rxResource } from '@angular/core/rxjs-interop';
-import { forkJoin, map, Observable, of } from 'rxjs';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, forkJoin, map, Observable, of, switchMap, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { SelectableObject } from '../../../services/event.service';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
-import type { TreeMolecule } from '../../../model/participant.model';
+import type { Participant, TreeMolecule } from '../../../model/participant.model';
+import type { PlainPathway } from '../../../model/graph/plain.model';
 import { SchemaClasses } from '../../../constants/constants';
 import { IconService } from '../../../services/icon.service';
 import { EntityService } from '../../../services/entity.service';
@@ -51,7 +55,7 @@ import { MatIcon } from '@angular/material/icon';
 import { ExtractCompartmentPipe } from '../../../pipes/extract-compartment.pipe';
 import { MatIconButton } from '@angular/material/button';
 import { ObjectTreeDetailsComponent } from './object-details/object-tree-details.component';
-import { CONTENT_DETAIL } from '../../../../environments/environment';
+import { CONTENT_DETAIL, CONTENT_SERVICE } from '../../../../environments/environment';
 import { AnalysisService } from '../../../services/analysis.service';
 import { ExpressionTagComponent } from '../../tabs/result-tab/expression-tag/expression-tag.component';
 
@@ -85,6 +89,8 @@ export class ObjectTreeComponent<
   private iconService = inject(IconService);
   private entity = inject(EntityService);
   private dataStateService = inject(DataStateService);
+  private http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
   private state = inject(UrlStateService);
   private extractCompartmentPipe = inject(ExtractCompartmentPipe);
   private analysis = inject(AnalysisService);
@@ -173,6 +179,14 @@ export class ObjectTreeComponent<
   dataSource = new MatTreeNestedDataSource<R>();
 
   constructor() {
+    // Another pathway opened: a molecule's diagrams were the last one's.
+    effect(() => {
+      const pathwayId = this.state.pathwayId() ?? null;
+      untracked(() => {
+        const choices = this.diagramChoices();
+        if (choices && choices.pathwayId !== pathwayId) this.diagramChoices.set(undefined);
+      });
+    });
     // Initial tree data
     effect(() => {
       if (this.treeData().length > 0) {
@@ -608,10 +622,33 @@ export class ObjectTreeComponent<
     return arr.reduce((a, b) => (a.length <= b.length ? a : b));
   }
 
+  /**
+   * Whether the open pathway is drawn as an illustration (or not drawn at all,
+   * the overview): it has no shape for a molecule to select, so selecting one
+   * there changed the address and nothing on screen.
+   */
+  private readonly noMoleculeShapes = computed(() => {
+    // While the pathway loads (or fails to), it is not taken for an
+    // illustration: the button selects, as it always did, rather than claim a
+    // diagram pathway draws the molecule nowhere.
+    const pathway = this.dataStateService.currentPathway();
+    if (!this.state.pathwayId()) return true;
+    return pathway?.hasEHLD === true;
+  });
+
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
     const stId = node.stId;
     if (!stId) return;
+    // In the molecule tab the button shows the molecule above. A diagram selects
+    // its every shape (and the complexes holding it) and zooms to them. An
+    // illustration has none -- selecting there changed the address and nothing
+    // on screen -- so the button finds the diagrams inside the open pathway
+    // that draw the molecule: one opens, several are offered by name.
+    if (this.moleculeView() && !this.requireNavigate(node) && this.noMoleculeShapes()) {
+      this.findDiagrams(node, stId);
+      return;
+    }
     if (this.requireNavigate(node)) {
       this.state.pathwayId.set(stId);
       this.state.select.set(null);
@@ -620,7 +657,133 @@ export class ObjectTreeComponent<
     }
   }
 
+  /**
+   * The name a molecule's row shows (the molecule tab's formattedName), not its
+   * display name, which carries its database and identifier as well.
+   */
+  private shownName(node: E): string {
+    const shown =
+      'formattedName' in node && typeof node.formattedName === 'string' ? node.formattedName : '';
+    return shown || node.displayName;
+  }
+
+  /** The diagrams offered under a molecule's row, while it has several. */
+  readonly diagramChoices = signal<DiagramChoices | undefined>(undefined);
+
+  /**
+   * The diagrams inside the open pathway that draw a molecule. One free form
+   * of it is taken from the pathway's participants (which go all the way
+   * down, so a molecule drawn only bound still has one), and the diagrams
+   * drawing any of its variants are asked for, then kept to those inside the
+   * open pathway. A complex is asked about only when there is no free form:
+   * its answer is every diagram drawing any of its parts (449 for one holding
+   * cortisol, and for a cortisol receptor complex one that draws its other
+   * ligand only), and every free form answers the same (measured, release 98).
+   * Asking by identifier answers in one request but took 16 s for every
+   * molecule measured; this takes about 1 s. Only a 404 means "none": any
+   * other failure says so, rather than "not drawn" or an unfiltered list.
+   */
+  private findDiagrams(node: E, stId: string) {
+    if (this.diagramChoices()?.dbId === node.dbId) {
+      this.diagramChoices.set(undefined);
+      return;
+    }
+    const name = this.shownName(node);
+    const pathwayId = this.state.pathwayId();
+    const species = this.dataStateService.currentPathway()?.speciesName ?? 'Homo sapiens';
+    const asked = (diagrams: DiagramChoices['diagrams']): DiagramChoices => ({
+      dbId: node.dbId,
+      name,
+      diagrams,
+      pathwayId: pathwayId ?? null,
+    });
+    this.diagramChoices.set(asked('loading'));
+    forkJoin({
+      diagrams: this.http
+        .get<Participant[]>(`${CONTENT_SERVICE}/data/participants/${pathwayId ?? stId}`)
+        .pipe(
+          map((participants) =>
+            participants.filter((participant) =>
+              participant.refEntities.some((reference) => reference.dbId === node.dbId)
+            )
+          ),
+          map((forms) => {
+            const free = forms.filter((form) => !isAssembly(form.schemaClass ?? ''));
+            return free.length ? free.slice(0, 1) : forms.slice(0, FORMS_ASKED);
+          }),
+          switchMap((forms) =>
+            forms.length
+              ? forkJoin(
+                  forms.map((form) =>
+                    this.http
+                      .get<PlainPathway[]>(
+                        `${CONTENT_SERVICE}/data/pathways/low/diagram/entity/${form.peDbId}/allForms`,
+                        { params: { species } }
+                      )
+                      // A 404 is "drawn in no diagram"; anything else is a failure.
+                      .pipe(
+                        catchError((error: unknown) =>
+                          error instanceof HttpErrorResponse && error.status === 404
+                            ? of([])
+                            : throwError(() => error)
+                        )
+                      )
+                  )
+                ).pipe(
+                  map((answers) => [...new Map(answers.flat().map((d) => [d.stId, d])).values()])
+                )
+              : of([])
+          ),
+          catchError(() => of('error' as const))
+        ),
+      inside: pathwayId
+        ? this.http
+            .get(`${CONTENT_SERVICE}/data/pathway/${pathwayId}/containedEvents/stId`, {
+              responseType: 'text',
+            })
+            .pipe(
+              map((text) => new Set(text.match(/R-[A-Z]{3}-\d+/g) ?? [])),
+              // Unknown, the diagrams cannot be kept to the open pathway: a
+              // list of every diagram in Reactome would read as this one's.
+              catchError(() => of('error' as const))
+            )
+        : of(undefined),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ diagrams, inside }) => {
+        // Another row was asked since, or another pathway opened: an answer for
+        // the one left must not take the reader back to it.
+        if (this.diagramChoices()?.dbId !== node.dbId) return;
+        if ((this.state.pathwayId() ?? null) !== (pathwayId ?? null)) return;
+        if (diagrams === 'error' || inside === 'error') {
+          this.diagramChoices.set(asked('error'));
+          return;
+        }
+        const here = (
+          inside ? diagrams.filter((diagram) => inside.has(diagram.stId)) : diagrams
+        ).sort((a, b) => a.displayName.localeCompare(b.displayName));
+        const [only] = here;
+        if (here.length === 1 && only) this.openDiagram(only.stId, stId);
+        else this.diagramChoices.set(asked(here.length ? here : 'none'));
+      });
+  }
+
+  /** Opens a diagram with the molecule selected: its every shape highlighted. */
+  openDiagram(diagram: string, molecule: string) {
+    this.diagramChoices.set(undefined);
+    this.state.pathwayId.set(diagram);
+    this.state.select.set(molecule);
+  }
+
+  readonly openPathwayName = computed(
+    () => this.dataStateService.currentPathway()?.displayName ?? 'this pathway'
+  );
+
   selectTooltip(node: E) {
+    if (this.moleculeView() && !this.requireNavigate(node)) {
+      const name = this.shownName(node);
+      return this.noMoleculeShapes() ? `Find ${name} in a diagram` : `Show ${name} in the diagram`;
+    }
     const id = node.stId || node.dbId;
     const action = this.requireNavigate(node) ? 'Navigate to' : 'Select ';
     return `${action} ${id}`;
@@ -713,4 +876,21 @@ export class ObjectTreeComponent<
   }
 
   protected readonly isRefEntity = isRefEntity;
+}
+
+/** The diagrams a molecule's row offers: still being found, none, or a list. */
+interface DiagramChoices {
+  dbId: number;
+  name: string;
+  diagrams: 'loading' | 'none' | 'error' | { stId: string; displayName: string }[];
+  /** The pathway open when the diagrams were asked for: an answer for another is dropped. */
+  pathwayId: string | null;
+}
+
+/** How many of a molecule's forms are asked about at once. */
+const FORMS_ASKED = 6;
+
+/** A complex, set or polymer: a form holding the molecule, not the molecule alone. */
+function isAssembly(schemaClass: string): boolean {
+  return /Complex|Set|Polymer/.test(schemaClass);
 }
