@@ -462,7 +462,10 @@ test.describe('Entity detail: pathway locations', () => {
     // writes them HTML-escaped (`#/R-HSA-...&amp;PATH=...`), and bound as they
     // were, every location reached through a parent opened the browser with no
     // pathway at all (reported for PKA activation).
-    await page.getByText('Expand all').first().click();
+    // A short tree is shown open on a content page (spec 023, FR-050): its
+    // locations are there with no click, and the button offers to collapse.
+    await expect(page.locator('app-locations-tree [aria-expanded="true"]').first()).toBeVisible();
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveText('Collapse all');
     const hrefs = await page
       .locator('a.leaf-link')
       .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
