@@ -228,7 +228,7 @@
 ## Phase 8: Polish & cross-cutting
 
 - [ ] T040 Mount the expression data on beta: run the refresh step into a folder outside the repository, set `EXPRESSION_FILES_DIR` in the uncommitted `.env`, restart the content service, and check quickstart §2–4 against beta. No path goes in the repository.
-- [ ] T041 [P] Add SC-003's comparison to the refresh step: `--compare <base URL>` samples 20 cells from a live answer and compares them with the source table. Run it against beta and record the result.
+- [x] T041 [P] Add SC-003's comparison to the refresh step: `--compare <base URL>` samples 20 cells from a live answer and compares them with the source table. Run it against beta and record the result. Run against beta on 2026-11-11: 20 of 20 cells matched for Intrinsic Pathway for Apoptosis and Signal Transduction (E-MTAB-2836), and for the mouse, cow and rat Intrinsic Pathways (E-MTAB-3718, E-MTAB-2798, E-GEOD-53960). (#922)
 - [x] T042 [P] Update `RELEASE-TESTING.md` and `CURATOR-REPORT.md`: Download row to follow with #915. (#917)
   - the Expression tab's checks, each marked auto, human, gap or missing;
   - the refresh step under "after a release or an Expression Atlas update".
