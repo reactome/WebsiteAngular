@@ -110,6 +110,9 @@ export type Experiment =
   | { kind: 'not-listed' }
   | { kind: 'unavailable'; why: string };
 
+/** A tissue's sex as a file may hold it: absent, or one of the two. */
+const isSex = (sex: unknown) => sex === undefined || sex === 'female' || sex === 'male';
+
 const isQuantiles = (value: unknown): value is Quantiles =>
   Array.isArray(value) &&
   value.length === 5 &&
@@ -146,7 +149,7 @@ export function problemsOf(value: unknown): string[] {
       typeof tissue.id !== 'string' ||
       typeof tissue.label !== 'string' ||
       typeof tissue.uberon !== 'string' ||
-      (tissue.sex !== undefined && tissue.sex !== 'female' && tissue.sex !== 'male') ||
+      !isSex(tissue.sex as unknown) ||
       !/^UBERON_\d+$/.test(tissue.uberon) ||
       !((tissue.samples ?? 0) >= 1)
     )
