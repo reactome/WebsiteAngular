@@ -1,109 +1,65 @@
-import { Component, effect, inject, input, signal } from '@angular/core';
-import { EntityService } from '../../../services/entity.service';
+import { HttpClient } from '@angular/common/http';
+import { Component, computed, inject, input, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
+import { CONTENT_SERVICE } from '../../../../environments/environment';
+import type {
+  ExpressionAnswer,
+  ExpressionNotShown,
+  ExpressionPointed,
+} from '../../../model/expression.model';
+import { ExpressionAnatomogramComponent } from './expression-anatomogram/expression-anatomogram.component';
 import { SelectableObject } from '../../../services/event.service';
+import { ExpressionHeatmapComponent } from './expression-heatmap/expression-heatmap.component';
 
-/** The EBI widget attaches itself to the page as a global. */
-declare const expressionAtlasHeatmapHighcharts: {
-  render(options: {
-    target: string;
-    experiment: string;
-    query: { gene: { value: string }[] };
-  }): void;
+/** Why a gene has no row, in words (FR-007). */
+const REASONS: Record<ExpressionNotShown['reason'], string> = {
+  'no-gene': 'no matching gene',
+  'not-in-experiment': 'not in this experiment',
+  'not-measured': 'not measured',
+  'other-species': 'another species',
 };
 
 /**
- * Expression Atlas bundles, loaded on demand.
- *
- * The standalone pathway-browser build puts these in its index.html, which is
- * why this tab works there and rendered an empty box in the deployed app -- that
- * one has its own index.html and never loaded them. Copying the tags across
- * would have put two render-blocking EBI bundles on every page of the site,
- * including the ones that will never show a heatmap, so they are fetched when
- * the tab is first opened instead.
+ * The Expression tab (spec 024): a heatmap of the selection's own genes across
+ * the tissues of its species' experiment, from the content service's
+ * /expression/{id}. It embedded Expression Atlas's widget, which ignores the
+ * genes it is asked about: every pathway showed the same 29 marker genes, one
+ * per tissue, none of them the pathway's.
  */
-const GXA_BUNDLES = [
-  'https://www.ebi.ac.uk/gxa/resources/js-bundles/vendorCommons.bundle.js',
-  'https://www.ebi.ac.uk/gxa/resources/js-bundles/expressionAtlasHeatmapHighcharts.bundle.js',
-];
-const GXA_STYLES = 'https://www.ebi.ac.uk/gxa/resources/css/customized-bootstrap-3.3.5.css';
-
-let widgetLoad: Promise<void> | undefined;
-
-/** Load the bundles once per page, in order -- the heatmap needs its vendor bundle first. */
-function loadWidget(): Promise<void> {
-  if (widgetLoad) return widgetLoad;
-
-  widgetLoad = (async () => {
-    if (!document.querySelector(`link[href="${GXA_STYLES}"]`)) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = GXA_STYLES;
-      document.head.appendChild(link);
-    }
-
-    for (const src of GXA_BUNDLES) {
-      await new Promise<void>((resolve, reject) => {
-        const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
-        if (existing) return resolve();
-        const script = document.createElement('script');
-        script.src = src;
-        script.async = false;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error(`could not load ${src}`));
-        document.body.appendChild(script);
-      });
-    }
-  })();
-
-  // A failed load must not be cached as done, or the tab stays broken until reload.
-  widgetLoad.catch(() => (widgetLoad = undefined));
-  return widgetLoad;
-}
-
 @Component({
   selector: 'cr-expression-tab',
-  standalone: true,
   templateUrl: './expression-tab.component.html',
   styleUrl: './expression-tab.component.scss',
-  imports: [],
+  imports: [ExpressionHeatmapComponent, ExpressionAnatomogramComponent],
 })
 export class ExpressionTabComponent {
-  private entity = inject(EntityService);
+  private readonly http = inject(HttpClient);
 
   readonly obj = input.required<SelectableObject>();
-  readonly failed = signal(false);
-  readonly empty = signal(false);
 
-  constructor() {
-    effect(() => {
-      const selected = this.obj().stId;
-      this.entity.loadRefEntities(selected);
-      const data = this.entity.refEntities();
-      if (!Array.isArray(data)) return;
+  /** What is pointed at on the heatmap, for the anatomogram (FR-015). */
+  readonly pointed = signal<ExpressionPointed>({ row: null, tissue: null });
+  /** The tissue whose organ is pointed at on the anatomogram, for the heatmap (FR-016). */
+  readonly pickedTissue = signal<number | null>(null);
 
-      const genes = data
-        .map((entity: { identifier?: string }) => entity.identifier)
-        .filter((id): id is string => !!id)
-        .map((value) => ({ value }));
+  readonly expression = rxResource({
+    params: () => this.obj().stId,
+    stream: ({ params }) =>
+      this.http.get<ExpressionAnswer>(
+        `${CONTENT_SERVICE}/expression/${encodeURIComponent(params)}`
+      ),
+  });
 
-      // Nothing to plot is a normal outcome -- a complex of small molecules has
-      // no genes -- and needs saying rather than leaving an empty panel.
-      this.empty.set(genes.length === 0);
-      if (!genes.length) return;
+  /** The answer, or nothing while it loads or when it failed. */
+  readonly answer = computed(() =>
+    this.expression.hasValue() && !this.expression.isLoading() ? this.expression.value() : undefined
+  );
+  readonly experiment = computed(() => {
+    const answer = this.answer();
+    return answer && answer.kind !== 'species-not-available' ? answer.experiment : undefined;
+  });
 
-      loadWidget()
-        .then(() => {
-          this.failed.set(false);
-          expressionAtlasHeatmapHighcharts.render({
-            target: 'expressionContainer',
-            experiment: 'reference',
-            query: { gene: genes },
-          });
-        })
-        .catch((error) => {
-          this.failed.set(true);
-          console.error('Could not load the Expression Atlas widget', error);
-        });
-    });
+  reason(notShown: ExpressionNotShown): string {
+    return REASONS[notShown.reason];
   }
 }
