@@ -18,9 +18,15 @@ export class LocationsTreeComponent {
   private iconService = inject(IconService);
 
   readonly id = input.required<string>();
+  /**
+   * Content pages show a short tree open (spec 023, FR-050): closed, it showed
+   * only its top-level pathways, and every reader had to open it to reach the
+   * one thing the section is for. The Pathway Browser's details keep it closed
+   * (FR-053): the reader is already in a pathway there, in a narrow panel.
+   */
+  readonly openByDefault = input(false);
   readonly trees = signal<PathwayBrowserNode[]>([]);
   readonly expanded = signal<Set<string>>(new Set());
-  readonly allExpanded = signal(false);
   readonly loading = signal(false);
   readonly selectedSpecies = signal<string | null>(null);
 
@@ -39,6 +45,23 @@ export class LocationsTreeComponent {
     return all.filter((t) => t.species === selected);
   });
 
+  /** Every top-level pathway with something under it is open: the button then collapses. */
+  readonly allExpanded = computed(() => {
+    const expandable = this.filteredTrees().filter((tree) => this.hasChildren(tree));
+    return expandable.length > 0 && expandable.every((tree) => this.expanded().has(tree.stId));
+  });
+
+  /** How many locations the species shown has: the places, not the path to them. */
+  readonly locationCount = computed(() =>
+    this.filteredTrees().reduce((sum, tree) => sum + countLocations(tree), 0)
+  );
+
+  /**
+   * Whether this tree was opened for the reader: short enough to show whole
+   * (FR-050), so shown without the scrolling box a long subtree needs.
+   */
+  readonly shownOpen = computed(() => this.openByDefault() && this.locationCount() <= OPEN_AT_MOST);
+
   constructor() {
     effect(() => {
       const id = this.id();
@@ -49,7 +72,6 @@ export class LocationsTreeComponent {
   private fetchLocations(id: string) {
     this.loading.set(true);
     this.expanded.set(new Set());
-    this.allExpanded.set(false);
     this.selectedSpecies.set(null);
     const url = `${CONTENT_SERVICE}/data/detail/${id}/locationsInPWB`;
     this.http.get<PathwayBrowserNode[]>(url).subscribe({
@@ -66,6 +88,7 @@ export class LocationsTreeComponent {
           const first = [...species].sort()[0];
           if (first) this.selectedSpecies.set(first);
         }
+        this.openIfShort();
         this.loading.set(false);
       },
       error: () => {
@@ -88,15 +111,19 @@ export class LocationsTreeComponent {
   toggleAll() {
     if (this.allExpanded()) {
       this.expanded.set(new Set());
-      this.allExpanded.set(false);
     } else {
-      const all = new Set<string>();
-      for (const tree of this.filteredTrees()) {
-        all.add(tree.stId);
-      }
-      this.expanded.set(all);
-      this.allExpanded.set(true);
+      this.expanded.set(new Set(this.filteredTrees().map((tree) => tree.stId)));
     }
+  }
+
+  /** FR-050: on a content page, a short tree opens whole, on load and on a change of species. */
+  private openIfShort() {
+    if (this.shownOpen()) this.expanded.set(new Set(this.filteredTrees().map((tree) => tree.stId)));
+  }
+
+  /** The number of locations under a top-level pathway, shown when the tree is not opened for the reader. */
+  locationsUnder(tree: PathwayBrowserNode): number {
+    return countLocations(tree);
   }
 
   isExpanded(stId: string): boolean {
@@ -116,7 +143,7 @@ export class LocationsTreeComponent {
     const value = (event.target as HTMLSelectElement).value;
     this.selectedSpecies.set(value);
     this.expanded.set(new Set());
-    this.allExpanded.set(false);
+    this.openIfShort();
   }
 
   isLastChild(parent: PathwayBrowserNode[], node: PathwayBrowserNode): boolean {
@@ -136,4 +163,14 @@ export class LocationsTreeComponent {
 export function withBrowserLinks(node: PathwayBrowserNode): PathwayBrowserNode {
   const linked = { ...node, url: node.url.replaceAll('&amp;', '&') };
   return node.children ? { ...linked, children: node.children.map(withBrowserLinks) } : linked;
+}
+
+/** FR-050's limit: measured on release 98, PKA activation has 2, a reaction 3, BCL2 16, ATP 2,182 (Homo sapiens). */
+const OPEN_AT_MOST = 20;
+
+/** The places under a node: its leaves, each a link into the Pathway Browser. */
+function countLocations(node: PathwayBrowserNode): number {
+  return node.children?.length
+    ? node.children.reduce((sum, child) => sum + countLocations(child), 0)
+    : 1;
 }

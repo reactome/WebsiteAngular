@@ -12,6 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { DarkService } from '../../../../services/dark.service';
+import { expressionFileName, expressionTsv } from '../expression-download';
+import type { ExpressionSelection } from '../expression-download';
 import { formatTpm } from './expression-format';
 import { scalePosition, shade, tokenRgb, topOf } from './expression-scale';
 import type {
@@ -53,6 +55,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly answer = input.required<ExpressionHeatmapAnswer>();
+  /** The selection, which the download names (FR-009). */
+  readonly selection = input.required<ExpressionSelection>();
   /** A tissue picked out from elsewhere: the organ pointed at on the anatomogram (FR-016). */
   readonly pickedTissue = input<number | null>(null);
   /** The gene and tissue pointed at or focused, for the anatomogram (FR-015). */
@@ -147,6 +151,18 @@ export class ExpressionHeatmapComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.resize?.disconnect();
+  }
+
+  /** The rows shown, in the order shown, as a file (FR-009). */
+  download() {
+    const answer = this.answer();
+    const selection = this.selection();
+    const text = expressionTsv(answer, this.rows(), selection);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(new Blob([text], { type: 'text/tab-separated-values' }));
+    link.download = expressionFileName(answer, selection);
+    link.click();
+    URL.revokeObjectURL(link.href);
   }
 
   onScroll(event: Event) {
