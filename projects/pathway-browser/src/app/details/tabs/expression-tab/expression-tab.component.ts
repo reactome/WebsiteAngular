@@ -37,6 +37,12 @@ export class ExpressionTabComponent {
 
   readonly obj = input.required<SelectableObject>();
 
+  /** The selection, as the download names it. */
+  readonly selection = computed(() => ({
+    stId: this.obj().stId,
+    displayName: this.obj().displayName,
+  }));
+
   /** What is pointed at on the heatmap, for the anatomogram (FR-015). */
   readonly pointed = signal<ExpressionPointed>({ row: null, tissue: null });
   /** The tissue whose organ is pointed at on the anatomogram, for the heatmap (FR-016). */
