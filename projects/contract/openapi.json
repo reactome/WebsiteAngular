@@ -13911,7 +13911,8 @@
             "type": "number"
           },
           "speciesName": {
-            "type": "string"
+            "type": "string",
+            "description": "The partner's species; absent when the graph has none for it: 7 of 445 recorded (2026-11-11), such as SV40's large T antigen (P03070) among TP53's."
           },
           "displayName": {
             "type": "string"
@@ -13930,7 +13931,6 @@
           "evidenceURL",
           "databaseName",
           "entitiesCount",
-          "speciesName",
           "displayName"
         ],
         "additionalProperties": false,
