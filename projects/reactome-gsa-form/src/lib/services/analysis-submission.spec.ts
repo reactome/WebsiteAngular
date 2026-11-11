@@ -13,7 +13,7 @@
  * anything to do with the decision being made here.
  */
 import { describe, expect, it } from 'vitest';
-import { submittedDesign, submittedParameters } from './analysis.service';
+import { refusal, submittedDesign, submittedParameters } from './analysis.service';
 
 describe('what a GSA request carries', () => {
   it('leaves out a field the reader never filled in', () => {
@@ -99,6 +99,24 @@ describe('the statistical design a GSA request carries', () => {
           columns
         )
       )
-    ).toBe('The statistical design of "A dataset" is not complete');
+    ).toBe(
+      'The statistical design of "A dataset" names "missing", which its samples have no column for'
+    );
+  });
+
+  it('names an analysis group the samples have no column for', () => {
+    // The default group comes from the service, not the annotation header.
+    expect(
+      submittedDesign(
+        dataset({ analysisGroup: 'tissue', comparisonGroup1: 'a', comparisonGroup2: 'b' }, columns)
+      )
+    ).toBe(
+      'The statistical design of "A dataset" names "tissue", which its samples have no column for'
+    );
+  });
+
+  it('is refused as a 400 with its reason, never the 503 the form retries', () => {
+    const refused = refusal('why');
+    expect([refused.status, refused.error]).toEqual([400, { detail: 'why' }]);
   });
 });

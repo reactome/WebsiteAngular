@@ -42,14 +42,29 @@ export function submittedDesign(dataset: Dataset): Request.DataInformation | str
   const samples = column('sample_ids');
   const { comparisonGroup1: group1, comparisonGroup2: group2 } = design;
   const incomplete = `The statistical design of "${dataset.summary.title}" is not complete`;
+  // A name the design holds and the samples have no column for: the default
+  // analysis group comes from the service, not from the annotation header, so
+  // the form can show a design complete that names a column the samples lack.
+  const noColumn = (name: string) =>
+    `The statistical design of "${dataset.summary.title}" names "${name}", which its samples have no column for`;
+  if (design.analysisGroup && !analysisGroup) return noColumn(design.analysisGroup);
   if (!analysisGroup || !samples || !group1 || !group2) return incomplete;
   const covariates: Record<string, string[]> = {};
   for (const covariate of design.covariances.filter((cov) => cov.value)) {
     const values = column(covariate.name);
-    if (!values) return incomplete;
+    if (!values) return covariate.name ? noColumn(covariate.name) : incomplete;
     covariates[covariate.name] = values;
   }
   return { analysisGroup, samples, comparison: { group1, group2 }, ...covariates };
+}
+
+/**
+ * A design the form will not send, as a refused request: a 400 with its reason
+ * in `detail`, where extractErrorMessage reads the service's. Never a 503,
+ * which the effect retries every minute as the service being busy.
+ */
+export function refusal(reason: string): HttpErrorResponse {
+  return new HttpErrorResponse({ status: 400, error: { detail: reason } });
 }
 
 @Injectable({
@@ -71,8 +86,7 @@ export class AnalysisService {
       const design = submittedDesign(dataset);
       // As a refused request is, its reason where the service puts one: the
       // effect answers it with loadFailure, which shows the reason.
-      if (typeof design === 'string')
-        return throwError(() => new HttpErrorResponse({ status: 400, error: { detail: design } }));
+      if (typeof design === 'string') return throwError(() => refusal(design));
       submitted.push({
         data: dataset.summary.id,
         name: dataset.summary.title,
