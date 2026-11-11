@@ -20,6 +20,8 @@ export interface ExpressionTissue {
   samples: number;
   /** Its UBERON id (UBERON_0002106 for spleen), which the anatomogram's organs carry. */
   uberon: string;
+  /** Where an experiment measures each sex apart (rat): the sex of this column. */
+  sex?: 'female' | 'male';
 }
 
 /** The experiment the values come from, with what the tab must say about it. */
