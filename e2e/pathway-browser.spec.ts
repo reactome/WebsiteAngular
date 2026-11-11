@@ -1,4 +1,5 @@
 import { test, expect } from './support/backend';
+import type { Page } from '@playwright/test';
 
 // Smoke coverage for the Pathway Browser shell.
 //
@@ -171,58 +172,349 @@ test.describe('Details panel deep links', () => {
   });
 });
 
-/**
- * Whether EBI's Expression Atlas is answering at all.
- *
- * Deliberately not `serves()`: that helper treats a timeout as a failure,
- * because for *our* backend a slow response is a broken service and must not
- * read as a missing feature. This is somebody else's service on the public
- * internet, where unreachable is an ordinary Tuesday and not evidence about this
- * repository.
- *
- * The test below was reported flaky in CI and retried into green. A third party
- * being down should stand the test down with a reason, not spend three attempts
- * and pass on the one that got through.
- */
-async function expressionAtlasAnswers(
-  request: import('@playwright/test').APIRequestContext
-): Promise<boolean> {
-  try {
-    const response = await request.get('https://www.ebi.ac.uk/gxa/json/suggestions?query=BRCA2', {
-      timeout: 20_000,
+test("the Pathway Browser's Locations tree is as it was: no counts (spec 023, FR-053)", async ({
+  page,
+}) => {
+  // The count beside each top-level pathway is for content pages, where a long
+  // tree is not shown open; it appeared in the Pathway Browser's details too.
+  await page.goto('/PathwayBrowser/R-HSA-109606?select=R-HSA-114268&tab=details');
+  const tree = page.locator('app-locations-tree');
+  await expect(tree.locator('.root-entry').first()).toBeVisible({ timeout: BOOT_TIMEOUT });
+  await expect(tree.locator('.location-count')).toHaveCount(0);
+});
+
+test.describe('Expression tab (spec 024)', () => {
+  test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  const heatmap = (page: Page) => page.locator('cr-expression-heatmap');
+  const names = (page: Page) => heatmap(page).locator('.name').allInnerTexts();
+
+  test("draws the pathway's own genes, asking EBI nothing", async ({ page }) => {
+    // Expression Atlas's widget drew the same 29 genes, one marker per tissue
+    // (LINCADL, MIR1302-7 ...), for every pathway: it ignores the genes it is
+    // asked about. The heatmap is now the selection's own genes.
+    const ebi: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().includes('ebi.ac.uk/gxa')) ebi.push(r.url());
     });
-    return response.status() < 500;
-  } catch {
-    return false;
-  }
-}
-
-test('the Expression tab renders the Expression Atlas heatmap', async ({ page, request }) => {
-  test.skip(
-    !(await expressionAtlasAnswers(request)),
-    'EBI Expression Atlas is not answering from here'
-  );
-
-  // It rendered an empty box because the EBI widget's bundles live in the
-  // standalone pathway-browser index.html, and the deployed app has its own,
-  // which never loaded them. They are fetched when the tab opens now, so the
-  // rest of the site does not pay for two external bundles it never uses.
-  const gxa: string[] = [];
-  page.on('request', (r) => {
-    if (r.url().includes('ebi.ac.uk/gxa')) gxa.push(r.url());
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
+    const tab = page.locator('.label-text', { hasText: /^Expression$/ }).first();
+    await expect(tab).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await tab.click();
+    await expect(page.locator('cr-expression-tab .counts')).toHaveText('59 of 59 genes shown', {
+      timeout: 60_000,
+    });
+    await heatmap(page).getByRole('button', { name: 'By name' }).click();
+    const shown = await names(page);
+    for (const gene of ['APAF1', 'BAX', 'BCL2', 'CASP9'])
+      expect(shown, `${gene} is drawn`).toContain(gene);
+    expect(shown, "none of Atlas's default genes").not.toContain('LINCADL');
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-2836');
+    expect(ebi, 'nothing asked of Expression Atlas').toEqual([]);
   });
 
-  await page.goto('/PathwayBrowser/R-HSA-109606?tab=details');
-  const tab = page.locator('.label-text', { hasText: /^Expression$/ }).first();
-  await expect(tab).toBeVisible({ timeout: BOOT_TIMEOUT });
+  test('says what a cell holds, to the keyboard too', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await canvas.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(heatmap(page).locator('.details')).toHaveText(
+      /^\S+ in adrenal gland:\s+median [\d.,]+ TPM \(range [\d.,]+–[\d.,]+, quartiles [\d.,]+–[\d.,]+, \d+ samples\)$/
+    );
+    await expect(heatmap(page).locator('.legend')).toContainText('Median TPM');
+  });
 
-  // nothing external until it is asked for
-  expect(gxa, 'the widget must not load until the tab is opened').toHaveLength(0);
+  test('says what a cell holds when pointed at', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await canvas.scrollIntoViewIfNeeded();
+    // The first row's first tissue: the cell spans 17 by 13 pixels.
+    await canvas.hover({ position: { x: 5, y: 5 } });
+    await expect(heatmap(page).locator('.details')).toHaveText(
+      /^\S+ in adipose tissue:\s+median [\d.,]+ TPM \(range/
+    );
+  });
 
-  await tab.click();
-  await expect(page.locator('#expressionContainer *').first()).toBeAttached({ timeout: 45_000 });
-  await expect(page.locator('cr-expression-tab')).toContainText(/genes found|RNA-seq|expression/i, {
-    timeout: 45_000,
+  test('draws one protein, chosen by its reference, as one row', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?select=uniprot:P10415&tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toHaveText('1 of 1 genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    expect(await names(page)).toEqual(['BCL2']);
+  });
+
+  test('lists the genes not shown, each with its reason (FR-007)', async ({ page }) => {
+    // Regulated Necrosis holds two viral proteins (influenza's NS, a poxvirus's
+    // RIR1): another species', never drawn with human data, and said so.
+    await page.goto('/PathwayBrowser/R-HSA-5218859?tab=expression');
+    const tab = page.locator('cr-expression-tab');
+    await expect(tab.locator('.counts')).toHaveText('61 of 63 genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    const notShown = tab.locator('.not-shown');
+    await notShown.locator('summary').click();
+    await expect(notShown.locator('summary')).toHaveText('2 not shown, and why');
+    expect((await notShown.locator('li').allInnerTexts()).sort()).toEqual([
+      'UniProt:P03496 NS: another species',
+      'UniProt:P08543 RIR1: another species',
+    ]);
+  });
+
+  test("draws a complex's genes alone", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?select=R-HSA-114268&tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toHaveText('2 of 2 genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    expect((await names(page)).sort()).toEqual(['BAD', 'BCL2']);
+  });
+
+  test('says a chemical has no genes, and draws nothing', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?select=chebi:30616&tab=expression');
+    await expect(page.locator('cr-expression-tab')).toContainText(
+      'This entry has no genes with expression data',
+      { timeout: BOOT_TIMEOUT }
+    );
+    await expect(heatmap(page)).toHaveCount(0);
+  });
+
+  test('says expression is not available for a species with no tissue experiment', async ({
+    page,
+  }) => {
+    // The fly's baseline experiments are strains and embryonic stages, not
+    // tissues: none is listed (spec 024, research R8).
+    await page.goto('/PathwayBrowser/R-DME-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab')).toContainText(
+      'Expression data is not available for Drosophila melanogaster',
+      { timeout: BOOT_TIMEOUT }
+    );
+    await expect(heatmap(page)).toHaveCount(0);
+  });
+
+  test('draws a rat pathway by organ and sex, the figure shaded by either sex (US5)', async ({
+    page,
+  }) => {
+    await page.goto('/PathwayBrowser/R-RNO-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-GEOD-53960');
+    const tissues = await heatmap(page).locator('.tissue').allInnerTexts();
+    expect(tissues).toHaveLength(20);
+    expect(tissues).toContain('liver (female)');
+    expect(tissues).toContain('liver (male)');
+    const figure = page.locator('cr-expression-anatomogram');
+    const liver = figure.locator('#UBERON_0002107');
+    await expect(liver).toBeAttached();
+    await liver.dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (female)');
+    await figure.locator('.sex-switch').getByRole('button', { name: 'male', exact: true }).click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseover');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+
+    // Back on female, the heatmap's "liver (male)" column still outlines the
+    // liver: the twelfth column, reached from the first by the keyboard.
+    await figure
+      .locator('.sex-switch')
+      .getByRole('button', { name: 'female', exact: true })
+      .click();
+    await figure.locator('#UBERON_0002107').dispatchEvent('mouseleave');
+    const canvas = heatmap(page).locator('canvas');
+    await canvas.focus();
+    for (let i = 0; i < 11; i++) await page.keyboard.press('ArrowRight');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('liver (male)');
+    await expect
+      .poll(() =>
+        figure.locator('#UBERON_0002107').evaluate((organ) => {
+          const shape = organ.matches('path, polygon, ellipse, circle, rect')
+            ? organ
+            : organ.querySelector('path, polygon, ellipse, circle, rect');
+          return shape ? (shape as SVGElement).style.getPropertyValue('stroke-width') : '';
+        })
+      )
+      .toBe('1');
+  });
+
+  test('draws a cow pathway from cow tissues, with its one figure (US5)', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-BTA-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-2798');
+    expect(await heatmap(page).locator('.tissue').allInnerTexts()).toHaveLength(9);
+    const figure = page.locator('cr-expression-anatomogram');
+    await expect(figure.locator('#UBERON_0002107'), 'the liver').toBeAttached();
+    await expect(
+      figure.locator('.figure-switch'),
+      'one figure, so no choice of figure'
+    ).toHaveCount(0);
+    // Skeletal muscle is UBERON_0001134 in the experiment, UBERON_0014892 in
+    // the cow figure: matched all the same.
+    await expect(figure.locator('#UBERON_0014892.measured'), 'skeletal muscle').toBeAttached();
+    await expect(figure.locator('.licence')).toHaveText('Figure: Expression Atlas, CC BY 4.0');
+  });
+
+  test('draws a mouse pathway from mouse tissues (US5)', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-MMU-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-3718');
+    expect(await heatmap(page).locator('.tissue').allInnerTexts()).toEqual([
+      'brain',
+      'cerebellum',
+      'heart',
+      'kidney',
+      'liver',
+      'testis',
+    ]);
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0002107')).toBeAttached();
+  });
+
+  /** An organ's computed fill on the anatomogram, as "rgb(r, g, b)". */
+  const organFill = (page: Page, uberon: string) =>
+    page.evaluate((id) => {
+      const organ = document.querySelector(`cr-expression-anatomogram #${id}`);
+      const shape = organ?.matches('path, polygon, ellipse, circle, rect')
+        ? organ
+        : organ?.querySelector('path, polygon, ellipse, circle, rect');
+      return shape ? getComputedStyle(shape).fill : '';
+    }, uberon);
+  const brightness = (rgb: string) =>
+    (rgb.match(/\d+/g) ?? []).slice(0, 3).reduce((sum, part) => sum + Number(part), 0);
+
+  test('shades the body by the gene pointed at (FR-015)', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('is-dark', 'false'));
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0002106')).toBeAttached({
+      timeout: 60_000,
+    });
+    // BCL2 is higher in spleen than in liver in E-MTAB-2836.
+    await heatmap(page).getByRole('button', { name: 'By name' }).click();
+    const row = (await names(page)).indexOf('BCL2');
+    expect(row, 'BCL2 is in view').toBeGreaterThanOrEqual(0);
+    await canvas.scrollIntoViewIfNeeded();
+    await canvas.hover({ position: { x: 5, y: 14 * row + 5 } });
+    await expect(page.locator('cr-expression-anatomogram .caption')).toHaveText('Shaded by BCL2');
+    const spleen = await organFill(page, 'UBERON_0002106');
+    const liver = await organFill(page, 'UBERON_0002107');
+    expect(brightness(spleen), `spleen ${spleen} darker than liver ${liver}`).toBeLessThan(
+      brightness(liver)
+    );
+  });
+
+  test('keeps the figure in place while the pointer moves over the heatmap', async ({ page }) => {
+    // It was parsed and inserted again on every move to a new cell (85 ms for
+    // the male figure), stuttering a sweep across the tissues.
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    await expect(page.locator('cr-expression-anatomogram svg')).toBeAttached({ timeout: 60_000 });
+    await page.evaluate(() => {
+      const svg = document.querySelector('cr-expression-anatomogram svg') as
+        (SVGElement & { kept?: boolean }) | null;
+      if (svg) svg.kept = true;
+    });
+    await canvas.scrollIntoViewIfNeeded();
+    for (const x of [5, 23, 41, 59]) await canvas.hover({ position: { x, y: 5 } });
+    await expect(page.locator('cr-expression-anatomogram .caption')).toContainText('Shaded by');
+    expect(
+      await page.evaluate(
+        () =>
+          (
+            document.querySelector('cr-expression-anatomogram svg') as
+              (SVGElement & { kept?: boolean }) | null
+          )?.kept === true
+      ),
+      'the same figure, not one inserted again'
+    ).toBe(true);
+  });
+
+  test("picks out an organ's column when the organ is pointed at (FR-016)", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const spleen = page.locator('cr-expression-anatomogram #UBERON_0002106');
+    await expect(spleen).toBeAttached({ timeout: BOOT_TIMEOUT });
+    await spleen.dispatchEvent('mouseover');
+    await expect(page.locator('cr-expression-anatomogram .caption')).toHaveText('spleen');
+    await expect(heatmap(page).locator('.tissue.current')).toHaveText('spleen');
+  });
+
+  test("draws each figure's own organs", async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const figure = page.locator('cr-expression-anatomogram');
+    await expect(figure.locator('#UBERON_0000473')).toBeAttached({ timeout: BOOT_TIMEOUT });
+    await figure.getByRole('button', { name: 'female' }).click();
+    await expect(figure.locator('#UBERON_0000992'), 'an ovary').toBeAttached();
+    await expect(figure.locator('#UBERON_0000473'), 'no testis').toHaveCount(0);
+  });
+
+  test('downloads the table shown, every value as the service answered it (FR-009)', async ({
+    page,
+  }) => {
+    const answered = page.waitForResponse((r) =>
+      r.url().includes('/ContentService/expression/R-HSA-109606')
+    );
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const answer = (await (await answered).json()) as {
+      rows: { gene: string; name: string; values: (number[] | null)[] }[];
+      experiment: { accession: string; tissues: unknown[] };
+    };
+    await expect(heatmap(page).locator('canvas')).toBeVisible({ timeout: BOOT_TIMEOUT });
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      heatmap(page).getByRole('button', { name: 'Download table' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('expression-R-HSA-109606-E-MTAB-2836.tsv');
+    const text = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8');
+    expect(text).toContain('# Licence: CC BY 4.0');
+    const columns = text
+      .split('\n')
+      .find((line) => line.startsWith('Ensembl gene'))
+      ?.split('\t');
+    expect(columns?.length, 'five columns per tissue').toBe(
+      2 + 5 * answer.experiment.tissues.length
+    );
+    const rows = text
+      .trimEnd()
+      .split('\n')
+      .filter((line) => line.startsWith('ENSG'))
+      .map((line) => line.split('\t'));
+    expect(
+      rows.map((row) => row[0]),
+      'the rows in the order shown'
+    ).toEqual(answer.rows.map((r) => r.gene));
+    for (const [i, row] of rows.entries()) {
+      const expected =
+        answer.rows[i]?.values.flatMap((v) => (v ? v.map(String) : ['', '', '', '', ''])) ?? [];
+      expect(row.slice(2), `${row[1]}'s values`).toEqual(expected);
+    }
+  });
+
+  test('follows the theme when it is switched (FR-014)', async ({ page }) => {
+    // Expression Atlas's widget kept its own background in dark mode.
+    await page.addInitScript(() => localStorage.setItem('is-dark', 'false'));
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const canvas = heatmap(page).locator('canvas');
+    await expect(canvas).toBeVisible({ timeout: BOOT_TIMEOUT });
+    const firstCell = () =>
+      canvas.evaluate((c: HTMLCanvasElement) => {
+        const ratio = window.devicePixelRatio || 1;
+        return Array.from(
+          c.getContext('2d')?.getImageData(5 * ratio, 5 * ratio, 1, 1).data ?? []
+        ).join(',');
+      });
+    const light = await firstCell();
+    const body = () => organFill(page, 'UBERON_0001013');
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0001013')).toBeAttached();
+    const lightBody = await body();
+    await page.locator('#dark-toggle button').click();
+    await expect
+      .poll(firstCell, { message: 'the cells are redrawn in the dark theme' })
+      .not.toBe(light);
+    await expect.poll(body, { message: 'the anatomogram is recoloured too' }).not.toBe(lightBody);
   });
 });
 

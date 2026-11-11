@@ -452,11 +452,58 @@ test.describe('Entity detail: pathway locations', () => {
     await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
   });
 
+  test('a long tree on a content page gives each top-level pathway its count (FR-051)', async ({
+    page,
+  }) => {
+    // SC-008 names ATP, whose answer is 8.4 MB; TP53 in the nucleoplasm is the
+    // same case at 92 KB: 9 top-level pathways, 109 locations (release 98).
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-69488');
+    const tree = page.locator('app-locations-tree');
+    await expect(tree.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
+    const roots = await tree.locator('.root-entry').count();
+    expect(roots, 'top-level pathways').toBeGreaterThan(1);
+    await expect(tree.locator('.location-count')).toHaveCount(roots);
+    await expect(tree.locator('[aria-expanded="true"]'), 'too long to show open').toHaveCount(0);
+    // Opening one shows its locations.
+    await tree.locator('.root-entry').first().click();
+    await expect(tree.locator('a.leaf-link').first()).toBeVisible();
+  });
+
+  test("a top-level pathway's own page offers no Expand all", async ({ page }) => {
+    // Nothing is under a top-level pathway in its own Locations tree: the
+    // button was there and did nothing.
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-109582');
+    await expect(page.locator('app-locations-tree .root-entry').first()).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveCount(0);
+  });
+
   test('still renders the tree when locations do exist', async ({ page }) => {
     test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
     await page.goto('/content/detail/R-HSA-114269');
     await expect(page.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
     await expect(page.locator('.no-locations')).toHaveCount(0);
+
+    // Its links must be ones the Pathway Browser can read. The content service
+    // writes them HTML-escaped (`#/R-HSA-...&amp;PATH=...`), and bound as they
+    // were, every location reached through a parent opened the browser with no
+    // pathway at all (reported for PKA activation).
+    // A short tree is shown open on a content page (spec 023, FR-050): its
+    // locations are there with no click, and the button offers to collapse.
+    await expect(page.locator('app-locations-tree [aria-expanded="true"]').first()).toBeVisible();
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveText('Collapse all');
+    const hrefs = await page
+      .locator('a.leaf-link')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
+    expect(hrefs.length, 'locations to follow').toBeGreaterThan(0);
+    expect(hrefs.filter((href) => href.includes('&amp;'))).toEqual([]);
+    expect(
+      hrefs.some((href) => href.includes('&PATH=')),
+      'a location reached through a parent'
+    ).toBe(true);
   });
 });
 

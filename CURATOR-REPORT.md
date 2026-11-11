@@ -519,5 +519,11 @@ notice:
   there is a **Release verification** workflow that takes the site as an input. It
   ran nightly against beta until 2026-09-15, which was a poor proxy for a
   quarterly event and had quietly stopped reporting.
+- **Expression data** (the Expression tab, spec 024): the tissue tables are not
+  in the repository. `node tools/content-node/snapshot-expression.ts --out <folder>`
+  fetches each listed experiment from Expression Atlas and refuses to write one
+  that does not match its source; the folder is `EXPRESSION_FILES_DIR` in the
+  host's `.env`. Run it when Expression Atlas updates an experiment or a species
+  is added, then restart the content service and purge `/ContentService/expression/*`.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.

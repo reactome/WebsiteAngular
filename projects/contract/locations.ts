@@ -12,7 +12,12 @@ export interface PathwayBrowserNode {
   stId: string;
   name: string;
   species?: string;
-  /** The Pathway Browser's link to the node. */
+  /**
+   * The Pathway Browser's link to the node, in the old browser's form and
+   * HTML-escaped as Java writes it (`#/R-HSA-1&amp;SEL=R-HSA-2&amp;PATH=...`):
+   * unescape it before using it as an address (the site's locations tree does,
+   * in `withBrowserLinks`), or the browser cannot read it and opens empty.
+   */
   url: string;
   /** The node's schema class. */
   type: string;

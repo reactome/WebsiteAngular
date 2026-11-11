@@ -11,9 +11,13 @@
         </select>
       </div>
     }
-    <button type="button" class="expand-all-btn" (click)="toggleAll()">
-      {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
-    </button>
+    <!-- Not when no top-level pathway has anything under it (a top-level
+         pathway's own page): the button then did nothing. -->
+    @if (anyExpandable()) {
+      <button type="button" class="expand-all-btn" (click)="toggleAll()">
+        {{ allExpanded() ? 'Collapse all' : 'Expand all' }}
+      </button>
+    }
   </div>
 
   <!-- Tree roots -->
@@ -22,17 +26,27 @@
       <div class="root-entry">
         @if (hasChildren(root)) {
           <!-- Expandable root -->
-          <button type="button" class="root-toggle" (click)="toggleRoot(root.stId)">
+          <button
+            type="button"
+            class="root-toggle"
+            [attr.aria-expanded]="isExpanded(root.stId)"
+            (click)="toggleRoot(root.stId)"
+          >
             <mat-icon class="arrow-icon" [svgIcon]="isExpanded(root.stId) ? 'arrow-down' : 'arrow-right'"></mat-icon>
             <mat-icon class="type-icon" [svgIcon]="getIconName(root.type)"></mat-icon>
             <span class="root-name">{{ root.name }}</span>
+            @if (showCounts()) {
+              <span class="location-count"
+                >{{ locationsUnder(root) }} location{{ locationsUnder(root) === 1 ? '' : 's' }}</span
+              >
+            }
             @if (root.species && availableSpecies().length <= 1) {
               <span class="node-species">({{ root.species }})</span>
             }
           </button>
           <!-- Subtree -->
           @if (isExpanded(root.stId)) {
-            <div class="subtree-container">
+            <div class="subtree-container" [class.scrolls]="!shownOpen()">
               <ul class="tree">
                 @for (child of root.children; track child.url || child.stId; let last = $last) {
                   <ng-container

@@ -1,0 +1,104 @@
+<div class="toolbar">
+  <div class="order" role="group" aria-label="Order the genes">
+    <button
+      type="button"
+      [class.on]="order() === 'clustered'"
+      [attr.aria-pressed]="order() === 'clustered'"
+      (click)="order.set('clustered')"
+    >
+      Alike together
+    </button>
+    <button
+      type="button"
+      [class.on]="order() === 'name'"
+      [attr.aria-pressed]="order() === 'name'"
+      (click)="order.set('name')"
+    >
+      By name
+    </button>
+  </div>
+
+  <button type="button" class="download" (click)="download()">Download table</button>
+
+  <!-- The key to the shading (FR-005): TPM on a logarithmic scale, and the two
+       cells that are not a shade of it. -->
+  <div class="legend">
+    <span class="unit">Median TPM</span>
+    <div class="scale">
+      <div class="bar" [style.background]="legendGradient()"></div>
+      @for (tick of ticks(); track tick) {
+        <span class="tick" [style.left.%]="position(tick) * 100">{{ tick.toLocaleString() }}</span>
+      }
+    </div>
+    <span class="key"><i class="swatch not-expressed"></i>not expressed</span>
+    <span class="key"><i class="swatch no-value"></i>no value</span>
+  </div>
+</div>
+
+<div class="grid" [style.--columns]="tissues().length" [style.--column.px]="COLUMN" [style.--row.px]="ROW">
+  <div class="corner"></div>
+  <div class="tissues" [style.width.px]="tissues().length * COLUMN">
+    @for (tissue of tissues(); track tissue.id; let i = $index) {
+      <span
+        class="tissue"
+        [class.current]="described()?.tissue === i || pickedTissue() === i"
+        [style.left.px]="i * COLUMN + COLUMN / 2"
+        >{{ tissue.label }}</span
+      >
+    }
+  </div>
+
+  <div class="scroller" #scroller (scroll)="onScroll($event)">
+    <div class="spacer" [style.height.px]="rows().length * ROW">
+      <div class="view">
+        <div class="names" aria-hidden="true">
+          @for (shown of shownRows(); track shown.row.gene) {
+            <span
+              class="name"
+              [class.current]="described()?.row === shown.index"
+              [style.top.px]="(shown.index - first()) * ROW - offset()"
+              [title]="shown.row.name || shown.row.gene"
+              >{{ shown.row.name || shown.row.gene }}</span
+            >
+          }
+        </div>
+        <canvas
+          #canvas
+          tabindex="0"
+          role="application"
+          aria-label="Expression heatmap: use the arrow keys to move between genes and tissues"
+          (mousemove)="onPointer($event)"
+          (mousedown)="onPress($event)"
+          (mouseleave)="hovered.set(null)"
+          (keydown)="onKey($event)"
+          (focus)="onFocus()"
+          (blur)="focused.set(null)"
+        ></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- What the cell under the pointer or the focus holds (FR-004). -->
+<!-- Announced for the keyboard's focus, not for every cell the pointer crosses. -->
+<div class="details" [attr.aria-live]="hovered() ? 'off' : 'polite'">
+  @if (details(); as d) {
+    <b>{{ d.row.name || d.row.gene }}</b> in <b>{{ d.tissue.label }}</b
+    >:
+    @if (d.values; as v) {
+      median {{ format(v[2]) }} TPM
+      @if (d.tissue.samples > 1) {
+        <span class="spread"
+          >(range {{ format(v[0]) }}–{{ format(v[4]) }}, quartiles {{ format(v[1]) }}–{{ format(v[3]) }},
+          {{ d.tissue.samples }} samples)</span
+        >
+      } @else {
+        <span class="spread">(1 sample)</span>
+      }
+    } @else {
+      no value in this experiment
+    }
+  } @else {
+    <span class="hint">Point at a cell, or focus the heatmap and use the arrow keys, for its values.</span>
+  }
+</div>
