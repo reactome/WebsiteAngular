@@ -42,7 +42,7 @@ function publicationRow(pub: PersonPublication): PublicationRow {
   if (pub.schemaClass === 'Book') return row;
   if (pub.journal !== undefined) row.journal = pub.journal;
   if (pub.volume !== undefined) row.volume = pub.volume;
-  row.pubMedIdentifier = pub.pubMedIdentifier;
+  if (pub.pubMedIdentifier !== undefined) row.pubMedIdentifier = pub.pubMedIdentifier;
   return row;
 }
 
