@@ -192,8 +192,8 @@
 
 **Independent Test**: the download from R-HSA-109606 has one row per shown gene with the five values per cell, and names E-MTAB-2836.
 
-- [ ] T035 [US4] Write `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-download.ts`. It writes a TSV of the shown rows in the shown order: Ensembl id, gene name, then per tissue the five values. A header comment block names the experiment, source, last update, licence and citations, and the selection. Add the button to the tab.
-- [ ] T036 [US4] Write a unit test for the TSV, and an e2e download test comparing the file with the answer. Show it fails with a column dropped.
+- [x] T035 [US4] Write `projects/pathway-browser/src/app/details/tabs/expression-tab/expression-download.ts`. It writes a TSV of the shown rows in the shown order: Ensembl id, gene name, then per tissue the five values. A header comment block names the experiment, source, last update, licence and citations, and the selection. Add the button to the tab. (#915)
+- [x] T036 [US4] Write a unit test for the TSV, and an e2e download test comparing the file with the answer. Show it fails with a column dropped. (#915)
 
 ---
 

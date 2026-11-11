@@ -341,6 +341,48 @@ test.describe('Expression tab (spec 024)', () => {
     await expect(figure.locator('#UBERON_0000473'), 'no testis').toHaveCount(0);
   });
 
+  test('downloads the table shown, every value as the service answered it (FR-009)', async ({
+    page,
+  }) => {
+    const answered = page.waitForResponse((r) =>
+      r.url().includes('/ContentService/expression/R-HSA-109606')
+    );
+    await page.goto('/PathwayBrowser/R-HSA-109606?tab=expression');
+    const answer = (await (await answered).json()) as {
+      rows: { gene: string; name: string; values: (number[] | null)[] }[];
+      experiment: { accession: string; tissues: unknown[] };
+    };
+    await expect(heatmap(page).locator('canvas')).toBeVisible({ timeout: BOOT_TIMEOUT });
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      heatmap(page).getByRole('button', { name: 'Download table' }).click(),
+    ]);
+    expect(download.suggestedFilename()).toBe('expression-R-HSA-109606-E-MTAB-2836.tsv');
+    const text = await (await import('node:fs/promises')).readFile(await download.path(), 'utf8');
+    expect(text).toContain('# Licence: CC BY 4.0');
+    const columns = text
+      .split('\n')
+      .find((line) => line.startsWith('Ensembl gene'))
+      ?.split('\t');
+    expect(columns?.length, 'five columns per tissue').toBe(
+      2 + 5 * answer.experiment.tissues.length
+    );
+    const rows = text
+      .trimEnd()
+      .split('\n')
+      .filter((line) => line.startsWith('ENSG'))
+      .map((line) => line.split('\t'));
+    expect(
+      rows.map((row) => row[0]),
+      'the rows in the order shown'
+    ).toEqual(answer.rows.map((r) => r.gene));
+    for (const [i, row] of rows.entries()) {
+      const expected =
+        answer.rows[i]?.values.flatMap((v) => (v ? v.map(String) : ['', '', '', '', ''])) ?? [];
+      expect(row.slice(2), `${row[1]}'s values`).toEqual(expected);
+    }
+  });
+
   test('follows the theme when it is switched (FR-014)', async ({ page }) => {
     // Expression Atlas's widget kept its own background in dark mode.
     await page.addInitScript(() => localStorage.setItem('is-dark', 'false'));
