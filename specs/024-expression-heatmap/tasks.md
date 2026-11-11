@@ -184,7 +184,7 @@
 
 - [x] T032 [US3] Show "N of M genes shown" under the heatmap, and a list of the genes not shown, each with its reason in words (FR-007): "no matching gene", "not in this experiment" or "not measured". (#913)
 - [x] T033 [US3] Name the source on the tab (FR-012): the experiment's accession and title linked to Expression Atlas, its design line, its last update, the citations and the licence, and the note "values as published; genes chosen and reordered". (#913)
-- [ ] T034 [US3] Write e2e tests for the not-shown list on a recording containing an unmatched gene, and for ATP's "no genes" with no heatmap. Show each fails with the list hidden. Done: ATP's "no genes" with no heatmap (e2e). Still to do: an e2e recording with an unmatched gene, as R-HSA-109606 matches all 59; the list itself is covered by the endpoint's unit tests.
+- [x] T034 [US3] Write e2e tests for the not-shown list on a recording containing an unmatched gene, and for ATP's "no genes" with no heatmap. Show each fails with the list hidden. Recorded on Regulated Necrosis (R-HSA-5218859), whose two viral proteins are listed as another species'; shown to fail with the reason's wording changed. (#921)
 
 ---
 
