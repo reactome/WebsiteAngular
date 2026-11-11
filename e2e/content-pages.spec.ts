@@ -452,6 +452,17 @@ test.describe('Entity detail: pathway locations', () => {
     await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
   });
 
+  test("a top-level pathway's own page offers no Expand all", async ({ page }) => {
+    // Nothing is under a top-level pathway in its own Locations tree: the
+    // button was there and did nothing.
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-109582');
+    await expect(page.locator('app-locations-tree .root-entry').first()).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveCount(0);
+  });
+
   test('still renders the tree when locations do exist', async ({ page }) => {
     test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
     await page.goto('/content/detail/R-HSA-114269');
