@@ -1,0 +1,345 @@
+{
+  "_about": "Pathways whose totalEntityAndInteractors node computes higher than Java, release 98: analysis-core merges an interaction partner whose identifier is another interactor's alias into it (reactome/analysis-core#13; spec 006 research D25). By taxId, then stId. analysis-sizes-check.ts fails on any other difference, or on one of these gone.",
+  "differences": {
+    "4932": {
+      "R-SCE-199991": {
+        "java": 214,
+        "node": 215
+      },
+      "R-SCE-5653656": {
+        "java": 214,
+        "node": 215
+      },
+      "R-SCE-6791226": {
+        "java": 204,
+        "node": 205
+      },
+      "R-SCE-72312": {
+        "java": 204,
+        "node": 205
+      },
+      "R-SCE-8856825": {
+        "java": 26,
+        "node": 27
+      },
+      "R-SCE-8856828": {
+        "java": 33,
+        "node": 34
+      },
+      "R-SCE-8868773": {
+        "java": 204,
+        "node": 205
+      },
+      "R-SCE-8953854": {
+        "java": 441,
+        "node": 442
+      }
+    },
+    "9606": {
+      "R-HSA-1236974": {
+        "java": 318,
+        "node": 319
+      },
+      "R-HSA-1236975": {
+        "java": 340,
+        "node": 341
+      },
+      "R-HSA-1266738": {
+        "java": 6862,
+        "node": 6864
+      },
+      "R-HSA-1280215": {
+        "java": 5735,
+        "node": 5736
+      },
+      "R-HSA-1280218": {
+        "java": 3712,
+        "node": 3714
+      },
+      "R-HSA-1430728": {
+        "java": 7165,
+        "node": 7167
+      },
+      "R-HSA-1502540": {
+        "java": 169,
+        "node": 170
+      },
+      "R-HSA-159236": {
+        "java": 448,
+        "node": 451
+      },
+      "R-HSA-162582": {
+        "java": 10316,
+        "node": 10318
+      },
+      "R-HSA-1643685": {
+        "java": 9773,
+        "node": 9776
+      },
+      "R-HSA-168249": {
+        "java": 3937,
+        "node": 3939
+      },
+      "R-HSA-168256": {
+        "java": 8802,
+        "node": 8806
+      },
+      "R-HSA-170834": {
+        "java": 1394,
+        "node": 1395
+      },
+      "R-HSA-1989781": {
+        "java": 691,
+        "node": 692
+      },
+      "R-HSA-201451": {
+        "java": 134,
+        "node": 135
+      },
+      "R-HSA-212436": {
+        "java": 6977,
+        "node": 6980
+      },
+      "R-HSA-2173789": {
+        "java": 554,
+        "node": 555
+      },
+      "R-HSA-2173793": {
+        "java": 1026,
+        "node": 1027
+      },
+      "R-HSA-2173795": {
+        "java": 582,
+        "node": 583
+      },
+      "R-HSA-2173796": {
+        "java": 628,
+        "node": 629
+      },
+      "R-HSA-2262752": {
+        "java": 4756,
+        "node": 4758
+      },
+      "R-HSA-2682334": {
+        "java": 816,
+        "node": 817
+      },
+      "R-HSA-2990846": {
+        "java": 2553,
+        "node": 2554
+      },
+      "R-HSA-3108214": {
+        "java": 539,
+        "node": 540
+      },
+      "R-HSA-3108232": {
+        "java": 2515,
+        "node": 2516
+      },
+      "R-HSA-373760": {
+        "java": 1147,
+        "node": 1148
+      },
+      "R-HSA-392499": {
+        "java": 7623,
+        "node": 7625
+      },
+      "R-HSA-3928664": {
+        "java": 548,
+        "node": 549
+      },
+      "R-HSA-400206": {
+        "java": 728,
+        "node": 729
+      },
+      "R-HSA-4090294": {
+        "java": 719,
+        "node": 720
+      },
+      "R-HSA-422475": {
+        "java": 2503,
+        "node": 2504
+      },
+      "R-HSA-447043": {
+        "java": 336,
+        "node": 337
+      },
+      "R-HSA-5213460": {
+        "java": 517,
+        "node": 518
+      },
+      "R-HSA-5218859": {
+        "java": 609,
+        "node": 610
+      },
+      "R-HSA-5357801": {
+        "java": 1948,
+        "node": 1949
+      },
+      "R-HSA-556833": {
+        "java": 3670,
+        "node": 3671
+      },
+      "R-HSA-5621481": {
+        "java": 674,
+        "node": 676
+      },
+      "R-HSA-5621575": {
+        "java": 236,
+        "node": 237
+      },
+      "R-HSA-5663202": {
+        "java": 2660,
+        "node": 2661
+      },
+      "R-HSA-5663205": {
+        "java": 7132,
+        "node": 7134
+      },
+      "R-HSA-5675482": {
+        "java": 511,
+        "node": 512
+      },
+      "R-HSA-5688426": {
+        "java": 1152,
+        "node": 1153
+      },
+      "R-HSA-5689880": {
+        "java": 453,
+        "node": 454
+      },
+      "R-HSA-597592": {
+        "java": 5891,
+        "node": 5893
+      },
+      "R-HSA-72165": {
+        "java": 224,
+        "node": 225
+      },
+      "R-HSA-72172": {
+        "java": 1319,
+        "node": 1322
+      },
+      "R-HSA-72202": {
+        "java": 594,
+        "node": 597
+      },
+      "R-HSA-72203": {
+        "java": 1654,
+        "node": 1658
+      },
+      "R-HSA-73857": {
+        "java": 7187,
+        "node": 7190
+      },
+      "R-HSA-74160": {
+        "java": 7990,
+        "node": 7993
+      },
+      "R-HSA-877300": {
+        "java": 632,
+        "node": 633
+      },
+      "R-HSA-8862803": {
+        "java": 1513,
+        "node": 1514
+      },
+      "R-HSA-8863678": {
+        "java": 1513,
+        "node": 1514
+      },
+      "R-HSA-8864260": {
+        "java": 1524,
+        "node": 1525
+      },
+      "R-HSA-8866910": {
+        "java": 756,
+        "node": 757
+      },
+      "R-HSA-8953854": {
+        "java": 3817,
+        "node": 3823
+      },
+      "R-HSA-8953897": {
+        "java": 5180,
+        "node": 5182
+      },
+      "R-HSA-9006936": {
+        "java": 1570,
+        "node": 1571
+      },
+      "R-HSA-913531": {
+        "java": 2626,
+        "node": 2627
+      },
+      "R-HSA-9635486": {
+        "java": 982,
+        "node": 983
+      },
+      "R-HSA-9637628": {
+        "java": 62,
+        "node": 63
+      },
+      "R-HSA-9645723": {
+        "java": 1619,
+        "node": 1620
+      },
+      "R-HSA-9675108": {
+        "java": 2759,
+        "node": 2760
+      },
+      "R-HSA-9679506": {
+        "java": 2877,
+        "node": 2879
+      },
+      "R-HSA-9694516": {
+        "java": 1932,
+        "node": 1933
+      },
+      "R-HSA-9707564": {
+        "java": 321,
+        "node": 322
+      },
+      "R-HSA-9711123": {
+        "java": 1585,
+        "node": 1586
+      },
+      "R-HSA-9734009": {
+        "java": 1515,
+        "node": 1516
+      },
+      "R-HSA-9772573": {
+        "java": 985,
+        "node": 986
+      },
+      "R-HSA-9824439": {
+        "java": 1796,
+        "node": 1797
+      },
+      "R-HSA-9824446": {
+        "java": 5747,
+        "node": 5752
+      },
+      "R-HSA-983169": {
+        "java": 719,
+        "node": 720
+      },
+      "R-HSA-983170": {
+        "java": 235,
+        "node": 236
+      },
+      "R-HSA-9839923": {
+        "java": 2672,
+        "node": 2675
+      },
+      "R-HSA-9918481": {
+        "java": 1558,
+        "node": 1560
+      },
+      "R-HSA-9920588": {
+        "java": 344,
+        "node": 346
+      }
+    }
+  }
+}

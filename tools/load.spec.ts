@@ -34,6 +34,7 @@ const SERVICES = [
 const RUN_ON_LOAD = new Set([
   'tools/analysis-types/record',
   'tools/content-node/diff',
+  'tools/content-node/analysis-sizes-check',
   'tools/content-node/people-name-check',
   'tools/content-node/reaction-layout-check',
   'tools/content-node/snapshot-case',
