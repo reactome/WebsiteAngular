@@ -61,7 +61,8 @@ describe('which Locations trees open by themselves', () => {
           };
     const pka = { ...answer, children: [chain(5, 'R-HSA-163615'), chain(11, 'R-HSA-163615')] };
     expect(countLocations(pka)).toBe(2);
-    expect(countLocations({ ...answer.children[0]! })).toBe(1);
+    const [first] = answer.children;
+    expect(first && countLocations({ ...first })).toBe(1);
   });
 
   it('opens at 20 locations or fewer, and not above', () => {
