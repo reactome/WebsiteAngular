@@ -89,6 +89,61 @@ test.describe('Molecules tab', () => {
     });
   });
 
+  test("in an illustration, a molecule's button finds the diagrams that draw it", async ({
+    page,
+  }) => {
+    // Cellular responses to stimuli is drawn as an illustration: the button had
+    // no shape to select, and changed the address and nothing on screen. It now
+    // offers the diagrams inside the pathway that draw the molecule.
+    await page.goto('/PathwayBrowser/R-HSA-8953897?tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+
+    const choices = zinc.locator('.diagram-choice');
+    await expect(choices.filter({ hasText: 'Metallothioneins bind metals' })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Only diagrams inside the open pathway: zinc is drawn in some 150 overall.
+    expect(await choices.count()).toBeLessThan(20);
+
+    await choices.filter({ hasText: 'Metallothioneins bind metals' }).click();
+    await expect(page).toHaveURL(/\/PathwayBrowser\/R-HSA-5661231\?.*select=chebi:29105/);
+    // The diagram opens with zinc selected, drawn rather than only addressed.
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
+  });
+
+  test("says so when the diagrams cannot be looked for, rather than 'not drawn'", async ({
+    page,
+  }) => {
+    // Any failure read as "not drawn in any diagram", or as every diagram in
+    // Reactome under this pathway's name. Only a 404 means none.
+    await page.route('**/ContentService/data/pathways/low/diagram/entity/*/allForms*', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-8953897?tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+    await expect(zinc.locator('.diagram-choices')).toContainText(
+      'Could not look for the diagrams that show zinc(2+)',
+      { timeout: 30_000 }
+    );
+    await expect(zinc.locator('.diagram-choices')).not.toContainText('is not drawn');
+  });
+
   test('molecules are grouped, counted, and carry their stoichiometry', async ({ page }) => {
     await openDiagram(page);
     await openMolecules(page);

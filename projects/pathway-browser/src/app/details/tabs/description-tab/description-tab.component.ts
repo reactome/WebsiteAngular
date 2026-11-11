@@ -202,6 +202,8 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
   readonly showLocations = input(false);
+  /** Open a short Locations tree for the reader: content pages do, the browser's details do not. */
+  readonly openLocations = input(false);
   readonly showReactionDiagram = input(true);
 
   static referenceTypeToNameSuffix = new Map<string, string>([

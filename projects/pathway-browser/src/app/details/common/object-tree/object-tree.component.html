@@ -111,6 +111,7 @@
               class="select button"
               (click)="onSelectClick($event, element)"
               [matTooltip]="selectTooltip(element)"
+              [attr.aria-label]="selectTooltip(element)"
             >
               <mat-icon class="custom-icon" svgIcon="select"></mat-icon>
             </button>
@@ -129,6 +130,36 @@
         }
       </div>
     </div>
+    @if (moleculeView() && diagramChoices()?.dbId === element.dbId) {
+      @let choice = diagramChoices()!;
+      <!-- The diagrams that draw this molecule, when there is more than one. -->
+      <div
+        class="diagram-choices"
+        role="status"
+        aria-live="polite"
+        [attr.aria-label]="'Diagrams that show ' + choice.name"
+      >
+        @if (choice.diagrams === 'loading') {
+          <span>Finding the diagrams that show {{ choice.name }}…</span>
+        } @else if (choice.diagrams === 'error') {
+          <span>Could not look for the diagrams that show {{ choice.name }}. Try again in a moment.</span>
+        } @else if (choice.diagrams === 'none') {
+          <span>{{ choice.name }} is not drawn in any diagram in {{ openPathwayName() }}.</span>
+        } @else {
+          <span>{{ choice.name }} is drawn in {{ choice.diagrams.length }} diagrams in {{ openPathwayName() }}:</span>
+          <ul>
+            @for (diagram of choice.diagrams; track diagram.stId) {
+              <li>
+                <button type="button" class="diagram-choice" (click)="openDiagram(diagram.stId, element.stId)">
+                  {{ diagram.displayName }}
+                </button>
+              </li>
+            }
+          </ul>
+        }
+        <button type="button" class="diagram-choices-close" (click)="diagramChoices.set(undefined)">Close</button>
+      </div>
+    }
     <!--      </div>-->
 
     @if (tree.isExpanded(node)) {
