@@ -3076,6 +3076,54 @@
         }
       }
     },
+    "/ContentService/data/query/abridged/{id}": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/abridged/{id}/{attribute}": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "attribute",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/data/query/enhanced/v2/{id}": {
       "get": {
         "description": "Based on the given identifier, i.e. stable id or database id, this method queries for an entry in Reactome knowledgebase providing more information. In particular, the retrieved database object has all its properties and direct relationships (relationships of depth 1) filled, while it also includes any second level relationships regarding regulations and catalysts.",
@@ -3361,6 +3409,32 @@
             "description": "Internal Server Error",
             "content": {
               "application/json": {}
+            }
+          }
+        }
+      }
+    },
+    "/ContentService/data/query/{id}/more": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphObject_JsogReference"
+                }
+              }
             }
           }
         }

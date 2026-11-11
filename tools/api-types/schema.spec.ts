@@ -187,6 +187,8 @@ describe('recorded answers against the API description', () => {
       'not in the recordings, which never cite a pathway (calls.ts names the gap)',
     'GET /ContentService/data/instance/{id}/referrers':
       'not in the recordings, which never open an instance’s referrers (calls.ts names the gap)',
+    'GET /ContentService/data/query/{id}/more':
+      'no call of the site reads it: Java keeps it for old callers (spec 006 T104)',
     'GET /ContentService/data/schema/{id}/min':
       'not in the recordings, which never open a class’s instances (calls.ts names the gap)',
     'GET /ContentService/interactors/static/molecule/{id}/details':

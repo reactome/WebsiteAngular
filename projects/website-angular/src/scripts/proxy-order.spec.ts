@@ -178,6 +178,15 @@ describe('the dev server proxy', () => {
     '/ContentService/data/query/70486/NORMALPATHWAY',
     '/ContentService/data/query/70486/normalPathways',
     '/ContentService/data/query/R-HSA-109581/hasEvent/',
+    // Java's more specific /query/abridged/{id} takes this, reading the
+    // attribute's name as the id, as /query/enhanced/{id} does.
+    '/ContentService/data/query/abridged/stId',
+    '/ContentService/data/query/abridged/70486',
+    '/ContentService/data/query/abridged/70486/hasEvent',
+    '/ContentService/data/query/abridged/70486/more/',
+    // Java's own /query/{id}/more, not an attribute called more.
+    '/ContentService/data/query/70486/more',
+    '/ContentService/data/query/70486/more/',
     '/ContentService/data/person/68285/firstname',
     '/ContentService/data/person/68285/authoredPathwaysAndMore',
   ]) {
@@ -332,16 +341,9 @@ describe('the dev server proxy', () => {
   }
 
   for (const other of [
-    // Java's more specific /query/abridged/{id} takes this, reading the
-    // attribute's name as the id. (/query/enhanced/{id} does the same, and
-    // is node's now: see above.)
-    '/ContentService/data/query/abridged/stId',
-    '/ContentService/data/query/abridged/70486',
-    // Java's own /query/{id}/more, not an attribute called more.
-    '/ContentService/data/query/70486/more',
-    '/ContentService/data/query/70486/more/',
     // Below an attribute: no mapping.
     '/ContentService/data/query/70486/displayName/x',
+    '/ContentService/data/query/abridged/70486/displayName/x',
     '/ContentService/data/person/68285/firstname/x',
     // The search endpoints node does not serve yet.
     '/ContentService/search/query/x?query=apoptosis',

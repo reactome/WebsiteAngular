@@ -167,16 +167,6 @@ describe('stId and normalPathway in any case', () => {
 });
 
 describe("Java's other answers", () => {
-  it("leaves Java's own /query/abridged/{id}, /query/enhanced/{id} and /query/{id}/more alone", async () => {
-    root = pathway;
-    for (const path of ['query/abridged/R-HSA-9', 'query/R-HSA-9/more']) {
-      const response = await get(path);
-      expect([path, response.status, ((await response.json()) as { error: string }).error]).toEqual(
-        [path, 404, 'Not Found']
-      );
-    }
-  });
-
   it("is Java's 500 for a getter that fails, and its 404s for no object or no attribute", async () => {
     root = {
       id: 3,

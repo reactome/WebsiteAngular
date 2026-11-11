@@ -50,7 +50,7 @@ function overlapping(list: string[]): string[] {
   return pairs;
 }
 
-/** The 15 pairs whose order decides which answers, measured (research R3), each the first first. */
+/** The 21 pairs whose order decides which answers, measured (research R3), each the first first. */
 const PAIRS = [
   '/data/person/{id}/publications before /data/person/{id}/{attribute}',
   '/data/person/{id}/authoredPathways before /data/person/{id}/{attribute}',
@@ -59,6 +59,14 @@ const PAIRS = [
   '/data/person/{id}/reviewedReactions before /data/person/{id}/{attribute}',
   '/data/query/enhanced/{id} before /data/query/{id}/stId',
   '/data/query/enhanced/{id} before /data/query/{id}/normalPathway',
+  // Java answers /query/abridged/more and /query/enhanced/more as the
+  // object called more (measured), not as /query/{id}/more.
+  '/data/query/enhanced/{id} before /data/query/{id}/more',
+  '/data/query/abridged/{id} before /data/query/{id}/more',
+  '/data/query/abridged/{id} before /data/query/{id}/stId',
+  '/data/query/abridged/{id} before /data/query/{id}/normalPathway',
+  '/data/query/abridged/{id} before /data/query/{id}/{attribute}',
+  '/data/query/{id}/more before /data/query/{id}/{attribute}',
   '/data/query/enhanced/{id} before /data/query/{id}/{attribute}',
   '/data/query/{id}/stId before /data/query/{id}/{attribute}',
   '/data/query/ids/map before /data/query/{id}/{attribute}',

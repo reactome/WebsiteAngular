@@ -318,7 +318,10 @@ describe('serve-prod and the API roots', () => {
     ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'content-node'],
     ['/ContentService/data/person/68285/displayName/x', 'backend'],
     ['/ContentService/data/query/70486/displayName', 'content-node'],
-    ['/ContentService/data/query/70486/more', 'backend'],
+    ['/ContentService/data/query/70486/more', 'content-node'],
+    ['/ContentService/data/query/abridged/70486', 'content-node'],
+    ['/ContentService/data/query/abridged/70486/displayName', 'content-node'],
+    ['/ContentService/data/query/abridged/70486/displayName/x', 'backend'],
     ['/ContentService/data/query/70486/moreover', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486', 'content-node'],
     ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],
@@ -358,9 +361,9 @@ describe('serve-prod and the API roots', () => {
 
   for (const api of [
     // A path still answered by Java. /database/version, then
-    // /query/{id}/displayName, were the example until each moved to the node
-    // content service.
-    '/ContentService/data/query/abridged/70486',
+    // /query/{id}/displayName, then /query/abridged/{id}, were the example
+    // until each moved to the node content service.
+    '/ContentService/data/pathways/top/9606/curated',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',
