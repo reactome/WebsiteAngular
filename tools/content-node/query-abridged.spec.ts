@@ -224,13 +224,25 @@ describe('/query/{id}/more', () => {
     expect(lookups.map((cypher) => cypher.includes('isInDisease = false'))).toEqual([true, false]);
   });
 
+  it("asks the graph what v2 asks with /more's flags", async () => {
+    asked.length = 0;
+    await get('R-HSA-70486/more');
+    const more = [...asked];
+    asked.length = 0;
+    await get(
+      'enhanced/v2/R-HSA-70486?fetchIncomingRelationships=true&summariseReferenceEntity=false&includeDisease=false'
+    );
+    expect(more).toEqual(asked);
+    expect(more.length).toBeGreaterThan(0);
+  });
+
   it('reads no parameter: a value v2 would refuse is no 400', async () => {
     expect((await get('R-HSA-70486/more?includeDisease=x')).status).toBe(404);
     expect((await get('enhanced/v2/R-HSA-70486?includeDisease=x')).status).toBe(400);
   });
 
   it("is Java's 500 for dots alone, as v2 is", async () => {
-    for (const path of ['.../more', 'enhanced/v2/...'])
+    for (const path of ['.../more', 'enhanced/v2/...', 'enhanced/...'])
       expect(await messages(await get(path))).toEqual([
         500,
         ['Index 0 out of bounds for length 0'],
@@ -238,9 +250,15 @@ describe('/query/{id}/more', () => {
   });
 
   it('is an attribute called MORE in another case', async () => {
-    // Spring's literal `more` is matched by case; the attribute route takes it.
+    // Spring's literal `more` is matched by case; the attribute route takes it,
+    // asking and answering just as it does for any other attribute name.
     asked.length = 0;
-    await get('R-HSA-70486/MORE');
-    expect(asked.some((cypher) => cypher.includes('NOT m:UpdateTracker'))).toBe(false);
+    const more = await messages(await get('R-HSA-70486/MORE'));
+    const moreAsked = [...asked];
+    asked.length = 0;
+    const other = await messages(await get('R-HSA-70486/foo'));
+    expect([more, moreAsked]).toEqual([other, [...asked]]);
+    expect(moreAsked.length).toBeGreaterThan(0);
+    expect(moreAsked.some((cypher) => cypher.includes('NOT m:UpdateTracker'))).toBe(false);
   });
 });

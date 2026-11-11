@@ -454,6 +454,9 @@ export const dataQueryEndpoints: Endpoint[] = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 5));
+      // Dots alone, as enhancedAnswer: Java's 500, measured 11 Nov 2026.
+      const refused = /^\.+$/.test(javaTrim(raw)) ? findByIdFailure([raw]) : undefined;
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       const id = inDepthId(raw);
       const missing = () => notFound(request, `Id: ${raw} has not been found in the System`);
       if (!id) return missing();
@@ -470,9 +473,7 @@ export const dataQueryEndpoints: Endpoint[] = [
     },
   },
   {
-    // Before /query/{id}/stId, /normalPathway and /more, as Spring ranks its
-    // literal `abridged` above their {id}: /query/abridged/more is this, with
-    // id more.
+    // Three segments after /query, so it shares no path with another route.
     path: '/ContentService/data/query/abridged/{id}/{attribute}',
     sample: 'R-HSA-109581',
     samplePath: { attribute: 'hasEvent' },
@@ -496,6 +497,9 @@ export const dataQueryEndpoints: Endpoint[] = [
     },
   },
   {
+    // Before /query/{id}/stId, /normalPathway and /more, as Spring ranks its
+    // literal `abridged` above their {id}: /query/abridged/more is this, with
+    // id more.
     path: '/ContentService/data/query/abridged/{id}',
     sample: 'R-HSA-109581',
     differs: [/^\/ContentService\/data\/query\/abridged\/[^/]+: \.url: /],
