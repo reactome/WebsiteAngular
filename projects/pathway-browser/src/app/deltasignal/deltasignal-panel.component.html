@@ -317,6 +317,14 @@
                 route to that entity in this network: the model offers no prediction for it, because the record shows
                 such cases are usually missing knowledge, not real "no change".
               </dd>
+              <dt>Lead via curator-drawn connections</dt>
+              <dd>
+                Reactome's diagrams carry arrows curators drew from other pathways into this one. Where this pathway
+                alone cannot reach a readout, DeltaSignal can run your perturbation through those drawn connections and
+                show the result as a lead — always with how often such calls matched the measured record, or "no
+                measured rate yet" when no dataset has tested that connection. A lead is a pointer to follow up, never a
+                prediction of this pathway's own model.
+              </dd>
               <dt>At the model's bound</dt>
               <dd>
                 Node levels live between hard stops
@@ -371,7 +379,16 @@
                     </small>
                   </span>
                   @if (row.untouched) {
-                    <span role="cell" class="untouched-note">not reached here</span>
+                    <span role="cell" class="untouched-note">
+                      not reached here
+                      @if (row.lead) {
+                        <small class="lead-note">
+                          Lead via curator-drawn connections:
+                          {{ row.lead.call === 'normal' ? 'no change' : row.lead.call }} —
+                          {{ row.lead.statement }}
+                        </small>
+                      }
+                    </span>
                     <span role="cell" class="untouched-note">—</span>
                     <span role="cell" class="untouched-note">—</span>
                   } @else {

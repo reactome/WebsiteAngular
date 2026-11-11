@@ -35,8 +35,114 @@ async function openMolecules(page: Page) {
   await page.waitForTimeout(3000);
 }
 
+/**
+ * Each group's heading says in words which number is which (FR-041): "8 / 20"
+ * did not, and a group with nothing shaded said only its total.
+ */
+async function expectCountsInWords(page: Page) {
+  const counts = await page.locator('cr-molecule-tab cr-molecule-group .count').allInnerTexts();
+  expect(counts.length, 'groups').toBeGreaterThan(1);
+  for (const count of counts) {
+    expect(count.trim(), 'a total and how many are shaded').toMatch(
+      /^\d+ · (\d+|none) highlighted$/
+    );
+  }
+}
+
 test.describe('Molecules tab', () => {
   test.describe.configure({ timeout: 2 * 60 * 1000 });
+
+  test('expanding a molecule shows its details', async ({ page }) => {
+    // Expanding a row read the details' component before it was defined -- a
+    // runtime import cycle through the molecule tab -- so it threw NG0919 and
+    // drew nothing: the toggle turned to a minus and the list stayed as it was.
+    const thrown: string[] = [];
+    page.on('pageerror', (error) => thrown.push(error.message));
+    await openDiagram(page);
+    await openMolecules(page);
+
+    const row = page.locator('cr-molecule-tab cr-object-tree .mat-tree-node').first();
+    await row.locator('.toggle-icon-container').click();
+    const details = page.locator('cr-molecule-tab cr-object-tree-details').first();
+    await expect(details, "the molecule's details open under it").toBeVisible({ timeout: 30_000 });
+    // Something only ATP's loaded details carry (a cross-reference), not a
+    // spinner or a notice, which would also make the panel non-empty.
+    await expect(details).toContainText('ZINC000004261765');
+    expect(thrown).toEqual([]);
+  });
+
+  test('a molecule keeps its whole name, and an RNA with no gene names shows its own', async ({
+    page,
+  }) => {
+    // Names were cut at a space ("snRNA" for U2 snRNA, "carbon" for carbon
+    // dioxide), and an RNA sequence with no gene names opened empty details.
+    await page.goto('/PathwayBrowser/R-HSA-4839726?tab=molecule');
+    const tab = page.locator('cr-molecule-tab');
+    await expect(tab).toBeVisible({ timeout: BOOT });
+    const row = tab.locator('cr-object-tree .mat-tree-node').filter({ hasText: 'X59360' }).first();
+    await expect(row).toContainText('U2 snRNA', { timeout: 60_000 });
+    await expect(tab).toContainText('carbon dioxide');
+
+    await row.locator('.toggle-icon-container').click();
+    await expect(tab.locator('cr-object-tree-details').first()).toContainText('U2 snRNA', {
+      timeout: 30_000,
+    });
+  });
+
+  test("in an illustration, a molecule's button finds the diagrams that draw it", async ({
+    page,
+  }) => {
+    // Cellular responses to stimuli is drawn as an illustration: the button had
+    // no shape to select, and changed the address and nothing on screen. It now
+    // offers the diagrams inside the pathway that draw the molecule.
+    await page.goto('/PathwayBrowser/R-HSA-8953897?tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+
+    const choices = zinc.locator('.diagram-choice');
+    await expect(choices.filter({ hasText: 'Metallothioneins bind metals' })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Only diagrams inside the open pathway: zinc is drawn in some 150 overall.
+    expect(await choices.count()).toBeLessThan(20);
+
+    await choices.filter({ hasText: 'Metallothioneins bind metals' }).click();
+    await expect(page).toHaveURL(/\/PathwayBrowser\/R-HSA-5661231\?.*select=chebi:29105/);
+    // The diagram opens with zinc selected, drawn rather than only addressed.
+    await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
+  });
+
+  test("says so when the diagrams cannot be looked for, rather than 'not drawn'", async ({
+    page,
+  }) => {
+    // Any failure read as "not drawn in any diagram", or as every diagram in
+    // Reactome under this pathway's name. Only a 404 means none.
+    await page.route('**/ContentService/data/pathways/low/diagram/entity/*/allForms*', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{}' })
+    );
+    await page.goto('/PathwayBrowser/R-HSA-8953897?tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+    await expect(zinc.locator('.diagram-choices')).toContainText(
+      'Could not look for the diagrams that show zinc(2+)',
+      { timeout: 30_000 }
+    );
+    await expect(zinc.locator('.diagram-choices')).not.toContainText('is not drawn');
+  });
 
   test('molecules are grouped, counted, and carry their stoichiometry', async ({ page }) => {
     await openDiagram(page);
@@ -64,6 +170,33 @@ test.describe('Molecules tab', () => {
     await openDiagram(page);
     await openMolecules(page);
     expect(await page.locator('cr-molecule-tab .highlight').count(), 'nothing shaded yet').toBe(0);
+    const download = page.locator('cr-molecule-tab .download-button');
+    const countOf = async () => Number((await download.innerText()).match(/\d+/)?.[0]);
+    const pathwayCount = await countOf();
+
+    // A new selection inside the open pathway changes only the highlighting.
+    // The tab was destroyed and built again on every selection -- its list
+    // vanished behind a spinner, and the pathway's molecules were fetched
+    // again -- so the same element must survive, with no spinner and no
+    // second fetch.
+    await page.evaluate(() => {
+      const tab = document.querySelector('cr-molecule-tab') as
+        (Element & { kept?: boolean }) | null;
+      if (tab) tab.kept = true;
+      const seen: string[] = [];
+      (window as unknown as { spinnerSeen: string[] }).spinnerSeen = seen;
+      new MutationObserver(() => {
+        if (document.querySelector('cr-molecule-tab .spinner-container')) seen.push('spinner');
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+    const fetchedAgain: string[] = [];
+    page.on('request', (request) => {
+      // This pathway's own list; a selection's molecules
+      // (/data/participants/{id}/referenceEntities) are fetched by design.
+      if (new URL(request.url()).pathname.endsWith(`/data/participants/${PATHWAY}`)) {
+        fetchedAgain.push(request.url());
+      }
+    });
 
     // Selected while the tab is open, which is the only order that shows this:
     // arriving with ?select= already set opens the entity's own details instead
@@ -75,9 +208,83 @@ test.describe('Molecules tab', () => {
     await result.click();
 
     await expect(page.locator('cr-molecule-tab'), 'the tab stays open').toBeVisible();
-    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible({
+    // Spec 023: one molecule (the search's hit is a reference entity) is shown
+    // among the pathway's, highlighted, rather than listed alone as a one-row
+    // tab; the header names it, with a swatch of the shading (FR-040, FR-044).
+    const header = page.locator('cr-molecule-tab .scope');
+    await expect(header).toContainText(/All molecules in .*highlighted: .*BCL2/, {
       timeout: 60_000,
     });
+    await expect(header.locator('.swatch'), 'a key to the shading').toBeVisible();
+    await expect(page.locator('cr-molecule-tab .highlight').first()).toBeVisible();
+    expect(await countOf(), 'the whole pathway').toBe(pathwayCount);
+    expect(
+      await header.getByRole('button', { name: /Show (only|all)/ }).count(),
+      'no way to a one-row list'
+    ).toBe(0);
+    await expectCountsInWords(page);
+    expect(
+      await page.evaluate(
+        () =>
+          (document.querySelector('cr-molecule-tab') as (Element & { kept?: boolean }) | null)
+            ?.kept === true
+      ),
+      'the same tab, not one built again'
+    ).toBe(true);
+    expect(
+      await page.evaluate(() => (window as unknown as { spinnerSeen: string[] }).spinnerSeen),
+      'no spinner'
+    ).toEqual([]);
+    expect(fetchedAgain, 'the molecule list is not fetched again').toEqual([]);
+  });
+
+  test('a selection inside the pathway lists its own molecules', async ({ page }) => {
+    // BAD:BCL-2, a complex of two proteins in the pathway.
+    await openDiagram(page, PATHWAY, '?select=R-HSA-114268&tab=molecule');
+    const tab = page.locator('cr-molecule-tab');
+    await expect(tab).toBeVisible({ timeout: 60_000 });
+    // Its own molecules, named in the header, unshaded: they are all the
+    // selection. The download says how many it writes (FR-044, FR-048).
+    const header = tab.locator('.scope');
+    await expect(header).toContainText(/Molecules in .*BAD:BCL-2/, { timeout: 60_000 });
+    const download = tab.locator('.download-button');
+    await expect(download).toContainText('Download 2 molecules');
+    expect(await tab.locator('.highlight').count(), 'none shaded').toBe(0);
+
+    // The whole pathway is a click away, with the selection's molecules shaded,
+    // the shading keyed in the header, and each group's count in words.
+    await header.getByRole('button', { name: /Show all molecules in/ }).click();
+    await expect(tab.locator('.highlight')).toHaveCount(2);
+    await expect(header.locator('.swatch'), 'a key to the shading').toBeVisible();
+    await expect(download).not.toContainText('Download 2 molecules');
+    await expectCountsInWords(page);
+
+    // Another selection: the list on screen stays until the new one's molecules
+    // are in (FR-047). It showed the whole pathway, unshaded, under the new
+    // selection's name for as long as the selection took to load, and a
+    // download then wrote that into a file named for the selection.
+    await page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as { unshadedPathway: string[] }).unshadedPathway = seen;
+      new MutationObserver(() => {
+        const tab = document.querySelector('cr-molecule-tab');
+        const rows = tab?.querySelectorAll('cr-object-tree').length ?? 0;
+        if (rows > 2 && !tab?.querySelector('.highlight')) seen.push(`${rows} rows, none shaded`);
+      }).observe(document.body, { childList: true, subtree: true, attributes: true });
+    });
+    await page.locator('cr-search input').first().fill('BCL2');
+    await page.locator('cr-search .search-icon').first().click();
+    const result = page.locator('cr-search .result-row').first();
+    await expect(result).toBeVisible({ timeout: 60_000 });
+    await result.click();
+    await expect(header).toContainText(/highlighted: .*BCL2/, { timeout: 60_000 });
+    await expect(tab.locator('.highlight').first()).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => (window as unknown as { unshadedPathway: string[] }).unshadedPathway
+      ),
+      'the whole pathway never shown unshaded on the way'
+    ).toEqual([]);
   });
 });
 

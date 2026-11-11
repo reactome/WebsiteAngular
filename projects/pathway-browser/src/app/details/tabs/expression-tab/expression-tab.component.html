@@ -1,6 +1,64 @@
-@if (failed()) {
-  <p class="padding">The Expression Atlas widget could not be loaded, so there is no heatmap to show.</p>
-} @else if (empty()) {
-  <p class="padding">This entry has no genes with expression data.</p>
+@if (expression.isLoading()) {
+  <p class="padding status">Loading expression data…</p>
+} @else if (expression.error()) {
+  <p class="padding status">Expression data could not be loaded, so there is no heatmap to show.</p>
+} @else if (answer(); as answer) {
+  @switch (answer.kind) {
+    @case ('species-not-available') {
+      <p class="padding status">
+        Expression data is not available for <i>{{ answer.species }}</i
+        >: no tissue experiment is listed for it.
+      </p>
+    }
+    @case ('no-genes') {
+      <p class="padding status">This entry has no genes with expression data.</p>
+    }
+    @case ('heatmap') {
+      <div class="padding heatmap">
+        <div class="views">
+          <cr-expression-heatmap
+            [answer]="answer"
+            [selection]="selection()"
+            [pickedTissue]="pickedTissue()"
+            (pointed)="pointed.set($event)"
+          ></cr-expression-heatmap>
+          <cr-expression-anatomogram
+            [answer]="answer"
+            [row]="pointed().row"
+            [tissue]="pointed().tissue ?? pickedTissue()"
+            (pointedTissue)="pickedTissue.set($event)"
+          ></cr-expression-anatomogram>
+        </div>
+
+        <!-- How many of the selection's genes are drawn, and why the rest are
+             not (FR-007): a heatmap that silently drops genes reads as
+             complete. -->
+        <p class="counts">
+          {{ answer.counts.shown.toLocaleString() }} of {{ answer.counts.genes.toLocaleString() }} genes shown
+        </p>
+        @if (answer.notShown.length) {
+          <details class="not-shown">
+            <summary>{{ answer.notShown.length.toLocaleString() }} not shown, and why</summary>
+            <ul>
+              @for (gene of answer.notShown; track gene.stId) {
+                <li>{{ gene.displayName }}: {{ reason(gene) }}</li>
+              }
+            </ul>
+          </details>
+        }
+      </div>
+    }
+  }
+
+  <!-- Where the values come from (FR-012), as the licence asks. -->
+  @if (experiment(); as experiment) {
+    <footer class="padding source">
+      Expression from <a [href]="experiment.source" target="_blank" rel="noopener">{{ experiment.accession }}</a
+      >: {{ experiment.title }} ({{ experiment.design }}; updated {{ experiment.updated }}). Values as published by
+      Expression Atlas; genes chosen and reordered here. Licence: {{ experiment.licence }}.
+      @for (citation of experiment.citation; track citation) {
+        <span class="citation">{{ citation }}</span>
+      }
+    </footer>
+  }
 }
-<div id="expressionContainer" class="padding"></div>

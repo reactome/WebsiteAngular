@@ -89,17 +89,18 @@ interface PublicationFields<R extends Ref> extends DatabaseObjectFields, Edited<
 
 /**
  * A journal article. Measured over 33,014 in the enhanced query's recordings
- * and 231 elsewhere: the PubMed id, year and link always; a journal on all
- * but 31, pages on all but 920, a volume on all but 215.
+ * and 231 elsewhere: the year always; a journal on all but 31, pages on all
+ * but 920, a volume on all but 215. The PubMed id and link on all but one,
+ * recorded on 2026-11-11: dbId 6798584, a review with no PubMed id.
  */
 export interface LiteratureReference<R extends Ref> extends PublicationFields<R> {
   schemaClass: 'LiteratureReference';
   journal?: string;
   pages?: string;
-  pubMedIdentifier: number;
+  pubMedIdentifier?: number;
   volume?: number;
   year: number;
-  url: string;
+  url?: string;
 }
 
 /** A book or a chapter. Measured over 243: the year always; an ISBN on 202, a chapter title on 154, pages on 135. */
@@ -146,7 +147,7 @@ export interface ReferenceDatabase<R extends Ref> extends DatabaseObjectFields, 
   accessUrl: string;
   name: string[];
   url: string;
-  resourceIdentifier: string;
+  resourceIdentifier?: string;
   identifiersPrefix: string;
 }
 

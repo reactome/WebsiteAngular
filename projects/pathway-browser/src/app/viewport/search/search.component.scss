@@ -17,6 +17,10 @@
   flex-wrap: nowrap;
   align-items: center;
   height: var(--top-bar-height);
+  // Room on the left for whatever the host draws over this row (the viewport's
+  // way home).
+  padding-left: var(--search-inset, 0);
+  box-sizing: border-box;
   position: relative;
   z-index: 1000; // Above collapse button
 
@@ -33,6 +37,9 @@
   .text-container {
     flex: 1;
     position: relative;
+    // Keeps the text, the placeholder included, inside the pill's right end.
+    min-width: 0;
+    margin-right: 20px;
 
     input {
       width: 100%;
@@ -43,6 +50,7 @@
       font: var(--mat-sys-body-large);
       vertical-align: sub;
       padding: 0;
+      text-overflow: ellipsis;
 
       &::placeholder {
         color: light-dark(var(--on-primary), var(--on-primary-container));
@@ -65,6 +73,37 @@
 
   mat-icon {
     color: light-dark(var(--on-primary), var(--on-primary-container));
+  }
+
+  // The field itself: a pill a shade lighter than the bar, so the search reads
+  // as a field whether or not it holds text, and the icon and the clear button
+  // read as part of it. Drawn behind the row's content (z-index -1 inside the
+  // row's own stacking context) so it needs no wrapper in the markup.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 10px 10px 10px calc(var(--search-inset, 0px) + 6px);
+    z-index: -1;
+    border-radius: 999px;
+    background: color-mix(in srgb, currentColor 14%, transparent);
+    pointer-events: none;
+  }
+
+  &:focus-within::before {
+    outline: 2px solid currentColor;
+    background: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  // The clear button, inside the pill's right end; the text's margin already
+  // keeps it clear of the edge. By class: while suggestions are open they are
+  // the row's last child, and the button slid past the pill.
+  > button.clear {
+    margin-left: -10px;
+    margin-right: 10px;
+  }
+
+  > .search-icon {
+    margin-left: 6px;
   }
 }
 

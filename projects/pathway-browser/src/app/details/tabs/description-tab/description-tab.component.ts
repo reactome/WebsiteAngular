@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   OnDestroy,
@@ -202,6 +203,8 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
   readonly showLocations = input(false);
+  /** Open a short Locations tree for the reader: content pages do, the browser's details do not. */
+  readonly openLocations = input(false);
   readonly showReactionDiagram = input(true);
 
   static referenceTypeToNameSuffix = new Map<string, string>([
@@ -506,7 +509,16 @@ export class DescriptionTabComponent implements OnDestroy {
     return isHuman && isRLE(obj) && obj.isInferred === true;
   });
 
-  readonly overview$ = viewChild<HTMLDivElement>('overview');
+  readonly overview$ = viewChild<ElementRef<HTMLElement>>('overview');
+  /**
+   * The overview's height, for the icon beside it (--icon-height), measured
+   * as it changes. Read in the template as clientHeight, it changed after
+   * Angular had checked it whenever the icon arrived (NG0100 in development,
+   * a height a step behind in production).
+   */
+  readonly overviewHeight = signal<number | null>(null);
+  private overviewResize?: ResizeObserver;
+
   readonly overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
   readonly referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
   readonly modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
@@ -777,6 +789,14 @@ export class DescriptionTabComponent implements OnDestroy {
   ];
 
   constructor() {
+    // Measure the overview as it changes (overviewHeight).
+    effect(() => {
+      const element = this.overview$()?.nativeElement;
+      this.overviewResize?.disconnect();
+      if (!element) return;
+      this.overviewResize = new ResizeObserver(() => this.overviewHeight.set(element.clientHeight));
+      this.overviewResize.observe(element);
+    });
     effect(() => {
       const section = this.state.section();
       if (section) {
@@ -793,6 +813,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.observer?.();
+    this.overviewResize?.disconnect();
   }
 
   getSymbol(obj: DatabaseObject) {

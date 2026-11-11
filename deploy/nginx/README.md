@@ -76,7 +76,9 @@ a shared network.
 
 DeltaSignal and the chatbot are resolved _per request_ rather than at startup,
 through a variable and a resolver, so their absence gives a 502 on those two
-routes instead of stopping nginx entirely. Named in an upstream block they would
+routes instead of stopping nginx entirely. ReactomeGSA (`/GSAServer/`, in
+`common/routes.conf`) is resolved the same way in every deployment, being a host
+outside ours. Named in an upstream block they would
 be resolved at startup, and one missing service would refuse to start the whole
 site — which is a poor welcome for someone who only wanted to look at a pathway.
 

@@ -11,7 +11,7 @@ import { UrlStateService } from '../../../services/url-state.service';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
 import { Labels } from '../../../constants/constants';
-import { MoleculeType } from '../../tabs/molecule-tab/molecule-tab.component';
+import { MoleculeType } from '../../../model/molecule-type.model';
 
 @Component({
   selector: 'cr-external-reference',
@@ -30,7 +30,21 @@ export class ExternalReferenceComponent {
   readonly displayReference = input<boolean>(true);
 
   readonly externalRef = computed(() => {
-    return this.entity.getTransformedExternalRef(this.referenceEntity());
+    const rows = this.entity.getTransformedExternalRef(this.referenceEntity());
+    // In the molecule tab the reference's own row is left out (its name is the
+    // tree row's), so a DNA or RNA sequence with no gene names had nothing at
+    // all to show: its details opened empty. Its names are what it has.
+    const ref = this.referenceEntity();
+    const names = ref.name;
+    if (
+      !this.displayReference() &&
+      ref.moleculeType === MoleculeType.ENTITY &&
+      names?.length &&
+      !('geneName' in ref && ref.geneName.length)
+    ) {
+      return [{ label: 'Name', value: names.join(', ') }, ...rows];
+    }
+    return rows;
   });
 
   readonly moleculeType = computed(() => {

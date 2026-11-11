@@ -89,3 +89,42 @@ describe('deploy.yml', () => {
     );
   });
 });
+
+describe('the Playwright image', () => {
+  // The browsers come from Playwright's image, not `playwright install`. Each
+  // Playwright version drives one browser build, so an image a version behind
+  // or ahead of package.json's has the wrong browsers in it, and every test
+  // fails to launch one.
+  const pkg = JSON.parse(readFileSync('package.json', 'utf8')) as {
+    devDependencies?: Record<string, string>;
+  };
+  const version = pkg.devDependencies?.['@playwright/test'];
+  const images = workflows.flatMap((name) =>
+    [
+      ...readFileSync(path.join(DIR, name), 'utf8').matchAll(
+        /^\s*container:\s*\n\s*image:\s*mcr\.microsoft\.com\/playwright:(\S+)/gm
+      ),
+    ].map(([, tag = '']) => `${name}: ${tag}`)
+  );
+
+  it('is used by both suites', () => {
+    expect(images.map((image) => image.split(':')[0])).toEqual(
+      expect.arrayContaining(['release-verification.yml', 'tests.yml'])
+    );
+  });
+
+  it('is the version package.json pins', () => {
+    expect(version).toMatch(/^\d+\.\d+\.\d+$/);
+    for (const image of images)
+      expect(image).toMatch(new RegExp(`: v${version?.replaceAll('.', '\\.') ?? ''}-`));
+  });
+
+  it('leaves no workflow installing browsers from the package servers', () => {
+    const installs = workflows.flatMap((name) =>
+      scriptLines(readFileSync(path.join(DIR, name), 'utf8'))
+        .filter(([, line]) => /playwright install/.test(line))
+        .map(([at]) => `${name}:${at}`)
+    );
+    expect(installs).toEqual([]);
+  });
+});

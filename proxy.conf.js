@@ -123,6 +123,8 @@ module.exports = {
   '^/ContentService/interactors/psicquic/resources/?(\\?|$)': contentNode,
   // The API description generated from the shared contract, for the API page.
   '^/ContentService/openapi\\.json/?(\\?|$)': contentNode,
+  // The Expression tab's heatmap of a selection's genes (spec 024).
+  '^/ContentService/expression/[^/?]+/?(\\?|$)': contentNode,
   // The search box's completions and its "did you mean", the facets of
   // everything and of a query, and the icon library (its facets, pages and
   // icons); every other /search endpoint is the pattern below.

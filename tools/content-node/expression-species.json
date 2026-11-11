@@ -1,0 +1,39 @@
+{
+  "Homo sapiens": {
+    "accession": "E-MTAB-2836",
+    "design": "29 tissues from 122 individuals",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Uhlén M, et al. Tissue-based map of the human proteome. Science 347(6220):1260419 (2015). doi:10.1126/science.1260419"
+    ],
+    "licence": "CC BY 4.0"
+  },
+  "Mus musculus": {
+    "accession": "E-MTAB-3718",
+    "design": "6 tissues from adult mice, 20 samples",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Brawand D, et al. The evolution of gene expression levels in mammalian organs. Nature (2011). doi:10.1038/nature10532"
+    ],
+    "licence": "CC BY 4.0"
+  },
+  "Bos taurus": {
+    "accession": "E-MTAB-2798",
+    "design": "9 tissues, 3 samples each",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Merkin J, Russell C, Chen P, Burge CB. Evolutionary dynamics of gene and isoform regulation in Mammalian tissues. Science (2012). doi:10.1126/science.1228186"
+    ],
+    "licence": "CC BY 4.0"
+  },
+  "Rattus norvegicus": {
+    "accession": "E-GEOD-53960",
+    "stage": "adult",
+    "design": "20 organ and sex groups of adult rats, 163 samples",
+    "citation": [
+      "Madrigal P, et al. Expression Atlas in 2026: enabling FAIR and open expression data through community collaboration and integration. Nucleic Acids Research 54(D1):D147-D157 (2025). doi:10.1093/nar/gkaf1238",
+      "Yu Y, et al. A rat RNA-Seq transcriptomic BodyMap across 11 organs and 4 developmental stages. Nature Communications 5:3230 (2014). doi:10.1038/ncomms4230"
+    ],
+    "licence": "CC BY 4.0"
+  }
+}

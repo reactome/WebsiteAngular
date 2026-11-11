@@ -121,8 +121,20 @@
 // ── Subtree (children of a root) ────────────────────────
 .subtree-container {
   padding-left: 14px; // align with root icon
-  max-height: 300px;
   overflow-y: auto;
+
+  // A long subtree scrolls in its own box; a tree shown open (FR-050) is short
+  // enough to show whole, and in a box its second location fell below the fold.
+  &.scrolls {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+}
+
+.location-count {
+  margin-left: 8px;
+  font: var(--mat-sys-label-medium);
+  opacity: 0.8;
 }
 
 // ── Tree list with connector lines ──────────────────────
