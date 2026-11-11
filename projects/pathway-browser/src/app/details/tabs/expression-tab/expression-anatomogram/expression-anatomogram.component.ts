@@ -21,6 +21,7 @@ import { shade, tokenRgb, topOf } from '../expression-heatmap/expression-scale';
 /** The figures shipped for each species (assets/anatomogram), by file prefix. */
 const FIGURES: Record<string, Figure[]> = {
   homo_sapiens: ['male', 'female', 'brain'],
+  mus_musculus: ['male', 'female', 'brain'],
 };
 
 type Figure = 'male' | 'female' | 'brain';

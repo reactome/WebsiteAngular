@@ -254,12 +254,31 @@ test.describe('Expression tab (spec 024)', () => {
   test('says expression is not available for a species with no tissue experiment', async ({
     page,
   }) => {
-    await page.goto('/PathwayBrowser/R-MMU-109606?tab=expression');
+    // The fly's baseline experiments are strains and embryonic stages, not
+    // tissues: none is listed (spec 024, research R8).
+    await page.goto('/PathwayBrowser/R-DME-109606?tab=expression');
     await expect(page.locator('cr-expression-tab')).toContainText(
-      'Expression data is not available for Mus musculus',
+      'Expression data is not available for Drosophila melanogaster',
       { timeout: BOOT_TIMEOUT }
     );
     await expect(heatmap(page)).toHaveCount(0);
+  });
+
+  test('draws a mouse pathway from mouse tissues (US5)', async ({ page }) => {
+    await page.goto('/PathwayBrowser/R-MMU-109606?tab=expression');
+    await expect(page.locator('cr-expression-tab .counts')).toContainText('genes shown', {
+      timeout: BOOT_TIMEOUT,
+    });
+    await expect(page.locator('cr-expression-tab .source')).toContainText('E-MTAB-3718');
+    expect(await heatmap(page).locator('.tissue').allInnerTexts()).toEqual([
+      'brain',
+      'cerebellum',
+      'heart',
+      'kidney',
+      'liver',
+      'testis',
+    ]);
+    await expect(page.locator('cr-expression-anatomogram #UBERON_0002107')).toBeAttached();
   });
 
   /** An organ's computed fill on the anatomogram, as "rgb(r, g, b)". */
