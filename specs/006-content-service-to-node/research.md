@@ -1198,6 +1198,59 @@ diagrams and reactions do, instead of refusing them (#613's 400s): its token
 is drawn, the rest are accepted. A `.gif` of it is still refused, a format
 the genome-wide view cannot capture.
 
+## D25. The events hierarchy: the AnalysisService's sizes, snapshotted at release (T103)
+
+`GET /data/eventsHierarchy/{species}` is what the Pathway Browser's Reacfoam
+draws (`reacfoam.service.ts`): always `pathwaysOnly=true`, by taxId, with an
+analysis `token`, `resource` and `interactors` when one is shown. Measured
+11 Nov 2026 against release 98.
+
+**Two trees.** With `pathwaysOnly`, Java answers from analysis-core's
+in-memory `PathwayHierarchy`, which the AnalysisService's data file holds: its
+names and types come from that file, and siblings sit in a `TreeSet` ordered by
+species, `hasEvent` order (a top-level pathway's is its place among
+`toLower(displayName)`), then name by `String.compareTo`, so equal siblings
+merge. The full form is graph-core's event hierarchy (node already parses it,
+`parseHierarchy`), each pathway's sizes looked up by stId and every other event
+`0/0`. Without a token, both are deterministic; `interactors`, `resource` and
+`importableOnly` change nothing.
+
+**The sizes.** `totalEntity` is, per pathway, the distinct
+`(main resource, identifier)` pairs of the physical entities its reactions
+reach, its subpathways' included; `totalEntityAndInteractors` adds each
+interaction partner's identifier under the target's resource. Computed from the
+graph, `totalEntity` matched Java for every pathway of five species (3,067
+human); `totalEntityAndInteractors` matched four species exactly and 2,988 of
+3,067 human pathways, the other 79 one or two higher. analysis-core's
+InteractorsBuilder keys interactors by upper-cased identifier in one radix map
+that holds their aliases too, so a partner whose identifier is another's alias
+is merged into whichever was made first: hash-map iteration and Neo4j's order
+of equal scores, which the graph cannot reproduce.
+
+**Decision: the sizes, and the `pathwaysOnly` tree, come from the data file
+itself.** A small Java step at each release loads the AnalysisService's data
+file with analysis-core, the AnalysisService's own reader, and writes each
+species' hierarchy with its sizes as JSON for node. Exact for every species,
+and the tree follows the file as Java's does, even if the graph and the file
+were ever a release apart. Rejected: computing from the graph and declaring the
+79 (not byte-identical); reading the totals from an analysis of every
+identifier (`result.json`, 134 MB, a hack).
+
+**The overlay.** With a token, Java adds `llp`, `entities` and `reactions` to
+each node the stored result names. Node reads them through the analysis
+gateway: `/download/{token}/result.json` carries per-pathway TOTAL and
+per-resource statistics, and `/token/{token}?importableOnly=true` the
+importable ones. Java collects a hit node's children into a HashSet of identity
+hashes, so its own order below a hit changes from one request to the next:
+token answers are compared without regard to that order.
+
+**Errors to keep:** an unknown species, or one with no hierarchy, is a 500
+("Something unexpected happened…"); `pathwaysOnly` reads a taxId, dbId or name,
+the full form treats a number as a taxId and an exact name ends in a
+StackOverflowError 500; a bad boolean is Spring's 400; a bad token a 500 "Not
+Found"; every 200 carries `Content-Disposition: inline;
+swaggerDownload="attachment"; filename="{species}.json"`.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
