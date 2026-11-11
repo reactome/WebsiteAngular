@@ -212,6 +212,19 @@
 
 ---
 
+## Phase 7b: User Story 6 - See it on a body (P2) (PR-F, stacked on PR-C)
+
+**Independent Test**: on R-HSA-109606, pointing at BCL2 shades the figure's organs by BCL2's medians; pointing at the spleen picks out the spleen column; the female figure draws endometrium, ovary, fallopian tube and placenta.
+
+- [x] T045 [US6] Record each tissue's UBERON id. The refresh step reads `<acc>.condensed-sdrf.tsv`'s organism-part factor per assay, gives each tissue entry `uberon` (data-model.md), and refuses a group whose assays name more than one id. `ExpressionTissue` in `projects/contract/expression.ts` gains `uberon`; regenerate `openapi.json`; refresh the fixture and the beta data. (#914)
+- [x] T046 [US6] Ship the human figures (male, female, brain) as site assets from the anatomogram package, unchanged (stripping their editor metadata saved only 5%, and nginx already compresses SVG), with a NOTICE naming their source and licence; in `projects/pathway-browser/src/assets/anatomogram/`. Record their sizes. (#914)
+- [x] T047 [US6] Write the figure component in `expression-tab/expression-anatomogram/`. It loads the chosen figure's SVG on first view, draws it inline, sets each matched organ's fill from the heatmap's scale and the theme's tokens, and leaves unmatched organs in the theme's neutral colour. It has a male / female / brain switch, follows dark mode, and shows the organ's name when pointed at. (#914)
+- [x] T048 [US6] Link the figure and the heatmap. Pointing at or focusing a gene shades the figure by that gene. Pointing at an organ picks out its column, and pointing at a column picks out its organ. The pointed-at state is shared between the two components through the tab. (#914)
+- [x] T049 [US6] e2e: pointing at BCL2 shades the spleen darker than the liver (computed fills); pointing at the spleen picks out its column; the female figure has the ovary and not the testis; dark mode recolours the outline; nothing is fetched from EBI. Show each fails with its link removed. (#914)
+- [x] T050 [US6] Species without a figure (pig, when it is listed) show the heatmap alone. The figure's attribution joins the tab's source line. (#914)
+
+---
+
 ## Phase 8: Polish & cross-cutting
 
 - [ ] T040 Mount the expression data on beta: run the refresh step into a folder outside the repository, set `EXPRESSION_FILES_DIR` in the uncommitted `.env`, restart the content service, and check quickstart §2–4 against beta. No path goes in the repository.

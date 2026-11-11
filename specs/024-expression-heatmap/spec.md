@@ -108,6 +108,22 @@ A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse
 
 ---
 
+### User Story 6 - See it on a body (Priority: P2)
+
+Beside the heatmap, an outline of a human body (male, female, or the brain) shows the tissues as organs, as the production site's Expression Atlas widget did. Pointing at a gene shades each organ by that gene's median in its tissue, on the heatmap's scale. Pointing at a tissue column, or at an organ, picks out that organ and that column together.
+
+**Why this priority**: readers find "spleen and lymph node" faster on a body than in a column of 29 labels, and the production tab had the figure, so its absence reads as a loss.
+
+**Independent Test**: point at BCL2's row on R-HSA-109606. The organs are shaded by BCL2's medians: spleen and lymph node darker than liver. Point at the spleen: the spleen column is picked out. Switch to the female figure: endometrium, ovary, fallopian tube and placenta are drawn; prostate and testis are not.
+
+**Acceptance Scenarios**:
+
+1. **Given** a heatmap is shown, **When** the reader points at or focuses a gene, **Then** each of the experiment's tissues is shaded on the figure by that gene's median, on the heatmap's scale, and the other organs are left unshaded.
+2. **Given** a figure is shown, **When** the reader points at an organ that is one of the experiment's tissues, **Then** its tissue column is picked out on the heatmap, and its name is shown.
+3. **Given** the dark theme, **When** the figure is shown, **Then** its outline and unshaded organs use the theme's colours.
+
+---
+
 ### Edge Cases
 
 - **Large selections**: Signal Transduction has thousands of genes. The heatmap shows them all without freezing the page, ordered, with the gene names readable when zoomed or scrolled. See FR-006.
@@ -116,6 +132,8 @@ A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse
 - **Unmatched genes**: a gene product with no matching gene, or a gene the experiment does not include, is listed as not shown, with its reason (FR-007), and is never drawn as zero.
 - **Unavailable data**: the expression data can't be loaded. The tab says so and draws nothing. It never falls back to Atlas's default heatmap.
 - **Narrow panel**: the details panel can be dragged narrow. The tissue columns stay readable, or scroll, and are never squashed into unreadable slivers.
+- **Tissues with no organ in a figure**: prostate and testis are in the male figure only, and endometrium, ovary, fallopian tube and placenta in the female one only. A tissue the figure shown lacks is not drawn on it, and the heatmap still has its column.
+- **Species without a figure**: the heatmap is drawn without one (FR-015).
 - **Selection changes**: a new selection replaces the heatmap. The last selection's heatmap never stays under the new selection's name (as #911 fixed for the widget).
 
 ## Requirements _(mandatory)_
@@ -136,6 +154,9 @@ A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse
 - **FR-012**: The tab MUST name its source: the experiment (its accession, such as E-MTAB-2836, and its title), with a link to it on Expression Atlas, and the data's release date.
 - **FR-013**: The data MUST be refreshable from the published table by a documented step, and the step MUST check what it produces: the gene and tissue counts, and a sample of genes compared with the published values.
 - **FR-014**: The heatmap, its legend, its labels and its hover details MUST follow the site's light and dark themes. Its shades MUST stay distinguishable in both, and "not expressed" MUST read as such in both. (Expression Atlas's widget keeps its own background in dark mode, as the requester saw on beta, 2026-11-10.)
+- **FR-015**: Beside the heatmap, the tab MUST show the species' anatomogram (for human: male, female and brain, chosen by the reader), each of the experiment's tissues matched to its organ by its anatomy id (UBERON). With a gene pointed at or focused, each matched organ MUST be shaded by that gene's median on the heatmap's scale. A species with no figure shows the heatmap alone.
+- **FR-016**: Pointing at a matched organ MUST pick out its tissue column on the heatmap, and pointing at a tissue column MUST pick out its organ.
+- **FR-017**: The figures MUST be served by this site, loaded only when the tab is opened, and attributed as Expression Atlas's licence asks. They MUST follow the light and dark themes, as FR-014 asks of the heatmap.
 
 ### Key Entities
 
@@ -162,4 +183,5 @@ A researcher on a mouse pathway sees the same kind of heatmap, made from a mouse
 - **Matching proteins to genes**: proteins are matched to genes through Reactome's own gene references where it holds them, and otherwise through a published UniProt-to-Ensembl mapping, chosen in planning. SC-002 measures how well it works.
 - **Static between releases**: the experiment's table changes rarely. It is refreshed by the documented step (FR-013), not fetched live.
 - **Replacing the widget**: the embedded Expression Atlas widget and its bundles are removed from the tab, along with the CDN font they asked for. The link to Expression Atlas (FR-012) remains.
+- **Anatomograms**: Expression Atlas's own figures (the `@ebi-gene-expression-group/anatomogram` package, Apache-2.0; the figures CC BY 4.0 under Expression Atlas's licence). All 29 of E-MTAB-2836's tissues have an organ in the human figures, matched by the UBERON ids in the experiment's sample file (measured 2026-11-10).
 - **Licence**: Expression Atlas data is assumed to be reusable with attribution (FR-012). The exact terms are to be confirmed from EBI's published terms in planning, before any data is served.

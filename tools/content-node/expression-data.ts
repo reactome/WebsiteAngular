@@ -143,6 +143,8 @@ export function problemsOf(value: unknown): string[] {
       !tissue ||
       typeof tissue.id !== 'string' ||
       typeof tissue.label !== 'string' ||
+      typeof tissue.uberon !== 'string' ||
+      !/^UBERON_\d+$/.test(tissue.uberon) ||
       !((tissue.samples ?? 0) >= 1)
     )
       problems.push(`tissue ${i} is incomplete`);

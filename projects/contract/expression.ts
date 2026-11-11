@@ -13,11 +13,13 @@
  */
 export type Quantiles = number[];
 
-/** A column: the table's group id, its label, and how many samples it holds. */
+/** A column: the table's group id, its label, how many samples it holds, and its anatomy id. */
 export interface ExpressionTissue {
   id: string;
   label: string;
   samples: number;
+  /** Its UBERON id (UBERON_0002106 for spleen), which the anatomogram's organs carry. */
+  uberon: string;
 }
 
 /** The experiment the values come from, with what the tab must say about it. */

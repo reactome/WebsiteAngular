@@ -15,7 +15,19 @@
     }
     @case ('heatmap') {
       <div class="padding heatmap">
-        <cr-expression-heatmap [answer]="answer"></cr-expression-heatmap>
+        <div class="views">
+          <cr-expression-heatmap
+            [answer]="answer"
+            [pickedTissue]="pickedTissue()"
+            (pointed)="pointed.set($event)"
+          ></cr-expression-heatmap>
+          <cr-expression-anatomogram
+            [answer]="answer"
+            [row]="pointed().row"
+            [tissue]="pointed().tissue ?? pickedTissue()"
+            (pointedTissue)="pickedTissue.set($event)"
+          ></cr-expression-anatomogram>
+        </div>
 
         <!-- How many of the selection's genes are drawn, and why the rest are
              not (FR-007): a heatmap that silently drops genes reads as
@@ -43,6 +55,9 @@
       Expression from <a [href]="experiment.source" target="_blank" rel="noopener">{{ experiment.accession }}</a
       >: {{ experiment.title }} ({{ experiment.design }}; updated {{ experiment.updated }}). Values as published by
       Expression Atlas; genes chosen and reordered here. Licence: {{ experiment.licence }}.
+      @if (experiment.species === 'Homo sapiens') {
+        Anatomograms: Expression Atlas (CC BY 4.0).
+      }
       @for (citation of experiment.citation; track citation) {
         <span class="citation">{{ citation }}</span>
       }

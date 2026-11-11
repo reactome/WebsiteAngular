@@ -6,14 +6,17 @@ import {
   inject,
   input,
   linkedSignal,
+  output,
   OnDestroy,
   signal,
   viewChild,
 } from '@angular/core';
 import { DarkService } from '../../../../services/dark.service';
 import { formatTpm } from './expression-format';
+import { scalePosition, shade, tokenRgb, topOf } from './expression-scale';
 import type {
   ExpressionHeatmapAnswer,
+  ExpressionPointed,
   ExpressionRow,
   Quantiles,
 } from '../../../../model/expression.model';
@@ -50,6 +53,10 @@ export class ExpressionHeatmapComponent implements OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly answer = input.required<ExpressionHeatmapAnswer>();
+  /** A tissue picked out from elsewhere: the organ pointed at on the anatomogram (FR-016). */
+  readonly pickedTissue = input<number | null>(null);
+  /** The gene and tissue pointed at or focused, for the anatomogram (FR-015). */
+  readonly pointed = output<ExpressionPointed>();
 
   readonly ROW = ROW;
   readonly COLUMN = COLUMN;
@@ -67,14 +74,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
       ? [...rows].sort((a, b) => a.name.localeCompare(b.name) || a.gene.localeCompare(b.gene))
       : rows;
   });
-  /** The top of the scale: the largest median shown, and never under 10 TPM. */
-  readonly top = computed(() => {
-    let top = 10;
-    for (const row of this.answer().rows)
-      for (const cell of row.values) if (cell && (cell[2] ?? 0) > top) top = cell[2] ?? top;
-    return top;
-  });
-  // Only ticks on the bar: one past the top would claim the scale reaches it.
+  /** The top of the scale (expression-scale.ts). */
+  readonly top = computed(() => topOf(this.answer().rows));
   readonly ticks = computed(() => TICKS.filter((tick) => tick <= this.top()));
 
   readonly scroller = viewChild.required<ElementRef<HTMLElement>>('scroller');
@@ -129,7 +130,12 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     afterRenderEffect(() => {
       this.dark.isDark();
       this.size();
-      this.draw(this.shownRows(), this.described());
+      this.draw(this.shownRows(), this.described(), this.pickedTissue());
+    });
+    // Tell the anatomogram what is pointed at.
+    afterRenderEffect(() => {
+      const details = this.details();
+      this.pointed.emit({ row: details?.row ?? null, tissue: details?.cell.tissue ?? null });
     });
     // A new selection starts at the top (its order, focus and first row reset
     // with it, above).
@@ -207,7 +213,7 @@ export class ExpressionHeatmapComponent implements OnDestroy {
 
   /** The scale position of a median: log10(m + 1) against the top's. */
   position(median: number): number {
-    return Math.log10(median + 1) / Math.log10(this.top() + 1);
+    return scalePosition(median, this.top());
   }
 
   /** The legend's gradient, from the same colours the cells use. */
@@ -222,19 +228,11 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     return value || (token === '--primary' ? '#1a5fb4' : '#888');
   }
 
-  /** A CSS colour as red, green and blue, read back from a canvas. */
-  private rgb(context: CanvasRenderingContext2D, css: string): [number, number, number] {
-    context.fillStyle = '#000';
-    context.fillStyle = css;
-    const hex = String(context.fillStyle);
-    const match = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})/i.exec(hex);
-    if (match)
-      return [1, 2, 3].map((i) => parseInt(match[i] ?? '0', 16)) as [number, number, number];
-    const parts = /rgba?\(([^)]+)\)/.exec(hex)?.[1]?.split(',').map(Number) ?? [0, 0, 0];
-    return [parts[0] ?? 0, parts[1] ?? 0, parts[2] ?? 0];
-  }
-
-  private draw(shown: { row: ExpressionRow; index: number }[], described: GridCell | null) {
+  private draw(
+    shown: { row: ExpressionRow; index: number }[],
+    described: GridCell | null,
+    picked: number | null
+  ) {
     const canvas = this.canvas().nativeElement;
     const context = canvas.getContext('2d');
     if (!context) return;
@@ -252,8 +250,9 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
     context.clearRect(0, 0, width, height);
 
-    const low = this.rgb(context, this.colour('--surface-variant'));
-    const high = this.rgb(context, this.colour('--primary'));
+    const host = this.host.nativeElement;
+    const low = tokenRgb(host, '--surface-variant', [136, 136, 136]);
+    const high = tokenRgb(host, '--primary', [26, 95, 180]);
     const none = this.colour('--surface');
     const line = this.colour('--outline-variant');
     const offset = this.offset();
@@ -282,11 +281,16 @@ export class ExpressionHeatmapComponent implements OnDestroy {
           context.strokeRect(x + 0.5, y + 0.5, COLUMN - 2, ROW - 2);
           return;
         }
-        const p = Math.min(1, this.position(median));
-        const mix = (i: number) => Math.round((low[i] ?? 0) + ((high[i] ?? 0) - (low[i] ?? 0)) * p);
-        context.fillStyle = `rgb(${mix(0)}, ${mix(1)}, ${mix(2)})`;
+        context.fillStyle = shade(median, this.top(), low, high);
         context.fillRect(x, y, COLUMN - 1, ROW - 1);
       });
+    }
+    if (picked !== null) {
+      // The organ pointed at on the anatomogram: its whole column.
+      context.strokeStyle = this.colour('--on-surface');
+      context.lineWidth = 2;
+      context.strokeRect(picked * COLUMN + 1, 1, COLUMN - 3, height - 2);
+      context.lineWidth = 1;
     }
     if (described) {
       const y = (described.row - this.first()) * ROW - offset;
