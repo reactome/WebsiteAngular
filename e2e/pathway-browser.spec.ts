@@ -172,6 +172,17 @@ test.describe('Details panel deep links', () => {
   });
 });
 
+test("the Pathway Browser's Locations tree is as it was: no counts (spec 023, FR-053)", async ({
+  page,
+}) => {
+  // The count beside each top-level pathway is for content pages, where a long
+  // tree is not shown open; it appeared in the Pathway Browser's details too.
+  await page.goto('/PathwayBrowser/R-HSA-109606?select=R-HSA-114268&tab=details');
+  const tree = page.locator('app-locations-tree');
+  await expect(tree.locator('.root-entry').first()).toBeVisible({ timeout: BOOT_TIMEOUT });
+  await expect(tree.locator('.location-count')).toHaveCount(0);
+});
+
 test.describe('Expression tab (spec 024)', () => {
   test.describe.configure({ timeout: 2 * 60 * 1000 });
 

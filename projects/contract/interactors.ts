@@ -53,7 +53,11 @@ export interface CustomInteraction {
   geneName?: string[];
   databaseName: string;
   entitiesCount: number;
-  speciesName: string;
+  /**
+   * The partner's species; absent when the graph has none for it: 7 of 445
+   * recorded (2026-11-11), such as SV40's large T antigen (P03070) among TP53's.
+   */
+  speciesName?: string;
   displayName: string;
   /** An isoform's or a chain's own identifier, such as Q99IB8-PRO_0000045603. */
   variantIdentifier?: string;
