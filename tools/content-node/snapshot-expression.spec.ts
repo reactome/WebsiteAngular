@@ -9,6 +9,7 @@ import {
   buildExperiment,
   cellOf,
   checkAgainstSource,
+  compareAnswer,
   groupsOf,
   stageOf,
 } from './snapshot-expression.ts';
@@ -270,5 +271,47 @@ describe('an experiment crossing stages with organs and sex (rat)', () => {
     expect(checkAgainstSource(file, table, configuration, 50)).toContain(
       '2 tissues written for 3 columns'
     );
+  });
+});
+
+describe('compareAnswer (SC-003)', () => {
+  const answer = (values: (number[] | null)[][]) => ({
+    kind: 'heatmap' as const,
+    experiment: { ...build(), tissues: build().tissues },
+    rows: [
+      { gene: 'ENSG00000000001', name: 'ONE', values: values[0] ?? [], from: [] },
+      { gene: 'ENSG00000000002', name: 'TWO', values: values[1] ?? [], from: [] },
+    ],
+    notShown: [],
+    counts: { shown: 2, genes: 2 },
+  });
+  // Tissues in label order: adipose tissue (g3), brain & spine (g2), spleen (g1).
+  const right = [
+    [
+      [10, 20, 30, 40, 50],
+      [0.3, 0.4, 0.5, 0.6, 0.7],
+      [1, 2, 3, 4, 5],
+    ],
+    [null, [7, 7, 7, 7, 7], [0, 0, 0, 0, 0]],
+  ];
+
+  it('passes an answer that shows what the table publishes', () => {
+    expect(compareAnswer(answer(right), TABLE, 200)).toEqual([]);
+  });
+
+  it('names a value shown that the table does not publish', () => {
+    const wrong = structuredClone(right);
+    const two = wrong[1] ?? [];
+    two[1] = [7, 7, 8, 7, 7];
+    expect(compareAnswer(answer(wrong), TABLE, 200).join()).toMatch(
+      /TWO in brain & spine: shown \[7,7,8,7,7\], the table has "7,7,7,7,7"/
+    );
+  });
+
+  it('names a gene the table does not have', () => {
+    const other = answer(right);
+    const [first] = other.rows;
+    if (first) first.gene = 'ENSG00000000009';
+    expect(compareAnswer(other, TABLE, 200)).toContain('ENSG00000000009 (ONE) is not in the table');
   });
 });

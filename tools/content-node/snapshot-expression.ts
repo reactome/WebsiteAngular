@@ -11,6 +11,7 @@
  *
  *   node tools/content-node/snapshot-expression.ts --out <dir> [--species "Homo sapiens"] [--source <dir>]
  *   node tools/content-node/snapshot-expression.ts --fixture <file> --source <dir>
+ *   node tools/content-node/snapshot-expression.ts --compare <base URL> [--id <stId>]
  *
  * It refuses to write a file that does not match its source: the gene count,
  * the tissue count against both the table and the experiment's configuration,
@@ -25,7 +26,13 @@
 import { mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { ExpressionTissue, Quantiles } from '../../projects/contract/expression.ts';
+import type {
+  ExpressionAnswer,
+  ExpressionTissue,
+  Quantiles,
+} from '../../projects/contract/expression.ts';
+
+type ExpressionHeatmap = Extract<ExpressionAnswer, { kind: 'heatmap' }>;
 import { listedSpecies, problemsOf } from './expression-data.ts';
 import type { ExperimentFile, ExperimentGene, ListedSpecies } from './expression-data.ts';
 
@@ -269,6 +276,48 @@ export function checkAgainstSource(
   return problems;
 }
 
+/**
+ * A live heatmap's values against the experiment's own published table (spec
+ * 024, SC-003): `cells` gene and tissue pairs sampled from the answer, each
+ * read back from the table's text. Empty when every one matches. It checks
+ * what a reader is shown, end to end: the refresh step, the file, the
+ * service and its routing.
+ */
+export function compareAnswer(answer: ExpressionHeatmap, table: string, cells = 20): string[] {
+  const lines = table.split('\n').filter((line) => line.trim() !== '');
+  const columns = (lines[0] ?? '').split('\t');
+  const byGene = new Map(
+    lines.slice(1).map((line) => [line.split('\t')[0] ?? '', line.split('\t')])
+  );
+  const tissues = answer.experiment.tissues;
+  const pairs = answer.rows.flatMap((row) => tissues.map((tissue, t) => ({ row, tissue, t })));
+  if (!pairs.length) return ['the answer has no values to compare'];
+  const problems: string[] = [];
+  const next = sampler(pairs.length);
+  for (let n = 0; n < Math.min(cells, pairs.length); n++) {
+    const pick = pairs[next(pairs.length)];
+    if (!pick) continue;
+    const { row, tissue, t } = pick;
+    const source = byGene.get(row.gene);
+    if (!source) {
+      problems.push(`${row.gene} (${row.name}) is not in the table`);
+      continue;
+    }
+    const text = source[columns.indexOf(tissue.id)] ?? '';
+    const expected = text === '' ? null : text.split(',').map(Number);
+    const shown = row.values[t] ?? null;
+    const same =
+      expected === null
+        ? shown === null
+        : !!shown && shown.length === expected.length && shown.every((v, i) => v === expected[i]);
+    if (!same)
+      problems.push(
+        `${row.name} in ${tissue.label}: shown ${JSON.stringify(shown)}, the table has "${text}"`
+      );
+  }
+  return problems;
+}
+
 /** The genes the specs and e2e need, cut from the human table (spec 024, T011). */
 export const FIXTURE_GENES = [
   'ENSG00000171791', // BCL2
@@ -339,6 +388,8 @@ async function main(args: string[]) {
   const out = option('--out');
   const fixture = option('--fixture');
   const source = option('--source');
+  const compare = option('--compare');
+  if (compare) return compareLive(compare, option('--id') ?? 'R-HSA-109606', source);
   const only = option('--species') ?? (fixture ? 'Homo sapiens' : undefined);
   if (!out && !fixture) throw new Error('say where to write: --out <dir> or --fixture <file>');
   const fetched = new Date().toISOString().slice(0, 10);
@@ -378,6 +429,30 @@ async function main(args: string[]) {
     );
   }
   if (failed) process.exitCode = 1;
+}
+
+/**
+ * `--compare <base URL> [--id <stId>]`: the service's answer for a selection
+ * against its species' published table. Exits non-zero on any difference.
+ */
+async function compareLive(base: string, id: string, source?: string) {
+  const url = `${base.replace(/\/$/, '')}/ContentService/expression/${id}`;
+  const answer = JSON.parse(await fetchText(url)) as ExpressionAnswer;
+  if (answer.kind !== 'heatmap') throw new Error(`${url} answers ${answer.kind}, not a heatmap`);
+  const listed = listedSpecies()[answer.experiment.species];
+  if (listed?.accession !== answer.experiment.accession)
+    throw new Error(`${url} draws ${answer.experiment.accession}, not the listed experiment`);
+  const { table } = await sourcesFor(answer.experiment.accession, source);
+  const problems = compareAnswer(answer, table);
+  if (problems.length) {
+    process.exitCode = 1;
+    console.error(
+      `${id}: ${problems.length} of 20 cells differ from ${listed.accession}\n  ${problems.join('\n  ')}`
+    );
+  } else
+    console.log(
+      `${id}: 20 cells of ${answer.rows.length} genes match ${listed.accession}'s published table`
+    );
 }
 
 /**
