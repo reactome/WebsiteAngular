@@ -4,16 +4,18 @@
 import type { AnalysisPathway } from './analysis.ts';
 
 /**
- * A pathway of the tree, in the order Java writes its fields. With
+ * An event of the tree, in the order Java writes its fields. With
  * `pathwaysOnly=true` the tree is the AnalysisService's hierarchy: pathways
- * only, from each top-level pathway down.
+ * only, from each top-level pathway down; without, every event, sized where
+ * it is a pathway the AnalysisService's hierarchy holds and 0 otherwise.
  */
 export interface EventsHierarchyNode {
   stId: string;
   name: string;
   /** The species' name (its displayName), on every node, however it was asked for. */
   species: string;
-  type: 'TopLevelPathway' | 'Pathway' | 'CellLineagePath';
+  /** The event's schema class: a pathway's with pathwaysOnly, any event's without. */
+  type: string;
   /** Whether this pathway has a diagram of its own. */
   diagram: boolean;
   /** Lower-level pathway: written with an analysis token only. */
