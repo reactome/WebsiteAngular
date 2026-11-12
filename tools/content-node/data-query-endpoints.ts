@@ -9,10 +9,10 @@ import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { asciiDigits, databaseObjectSet, javaNumeric, javaTrim } from './java-text.ts';
 import {
   attributeAnswer,
+  findByIdFailure,
   graphCoreId,
   inDepthId,
   lazyCollectionQuery,
-  longPastRange,
   resolveId,
 } from './objects.ts';
 import { read } from './graph.ts';
@@ -41,22 +41,6 @@ import { orthologyIds, plainText, plainTextProblem } from './body.ts';
 import { schemaClassOf } from './schema.ts';
 import type { InstanceReferrals, SimpleDatabaseObject } from '../../projects/contract/content.ts';
 import type { JsonWritten } from './answers.ts';
-
-/**
- * What graph-core's findById throws on, for ids looked up one at a time, in
- * order -- so the first bad id decides: an id of dots (trimId splits it on
- * '.' to nothing, an ArrayIndexOutOfBounds) or a dbId past a long.
- * Undefined when Java would throw on none.
- */
-function findByIdFailure(ids: string[]) {
-  for (const raw of ids) {
-    const trimmed = javaTrim(raw);
-    if (/^\.+$/.test(trimmed)) return 'Index 0 out of bounds for length 0';
-    const refused = longPastRange([raw]);
-    if (refused) return refused;
-  }
-  return undefined;
-}
 
 /** graph-core's SchemaRepository.getByClass(Disease): the nodes alone, by displayName. */
 async function diseases() {
