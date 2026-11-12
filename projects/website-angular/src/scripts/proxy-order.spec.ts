@@ -253,11 +253,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/detail/199420/getReverseGraph?directParticipants=true',
     '/ContentService/data/detail/R-HSA-109581/getSubGraph',
     '/ContentService/data/detail/R-HSA-109581.6/getSubGraph',
-    // No Java controller maps these: Spring's 404, node's too.
-    '/ContentService/data/detail/R-HSA-199420/direction/OUTGOING',
-    '/ContentService/data/detail/R-HSA-199420/direction/INCOMING/displayName',
-    '/ContentService/data/detail/R-HSA-109581/direction/OUTGOING/relationships/hasEvent,regulatedBy',
-    '/ContentService/data/detail/R-HSA-109581/direction/UNDIRECTED/relationships/hasEvent/displayName',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -426,7 +421,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities/x',
     // Only these of an entity are ported: not a path below them.
     '/ContentService/data/entity/R-HSA-199420/componentOf/x',
-    // Only the three trees under /detail, and the four direction paths.
+    // Only the three trees under /detail. The direction paths no Java
+    // controller maps stay with Java, whose 404 is an HTML page to a browser.
+    '/ContentService/data/detail/R-HSA-199420/direction/OUTGOING',
+    '/ContentService/data/detail/R-HSA-109581/direction/UNDIRECTED/relationships/hasEvent/displayName',
     '/ContentService/data/detail/R-HSA-199420/locationsInPWBAndMore',
     '/ContentService/data/detail/R-HSA-199420/getReverseGraph/x',
     '/ContentService/data/detail/R-HSA-109581/getSubGraphs',

@@ -2,7 +2,7 @@
 //
 // /data/detail/{id}/getSubGraph and /getReverseGraph (spec 006 T107) through
 // the service, with a stand-in graph; and the four /direction/... paths, which
-// no Java controller maps. graph-core's HierarchyService and
+// no Java controller maps (not routed to node: Java's 404 is HTML to a browser). graph-core's HierarchyService and
 // HierarchyRepository: the queries' text, the paths parsed as parseRaw parses
 // them, the tree written as Jackson writes a PathwayBrowserNode. The messages
 // are Java's, measured 12 Nov 2026.
@@ -175,10 +175,12 @@ describe('/detail/{id}/getSubGraph', () => {
   });
 
   it("answers dots, and a dbId past a long, with Java's 500 before any query", async () => {
-    expect(await messages(await get('.../getSubGraph'))).toEqual([
-      500,
-      ['Index 0 out of bounds for length 0'],
-    ]);
+    // On all three trees: locationsInPWB answered 404 for dots before T107.
+    for (const tree of ['getSubGraph', 'getReverseGraph', 'locationsInPWB'])
+      expect(await messages(await get(`.../${tree}`))).toEqual([
+        500,
+        ['Index 0 out of bounds for length 0'],
+      ]);
     expect(await messages(await get('99999999999999999999.2/getSubGraph'))).toEqual([
       500,
       ['For input string: "99999999999999999999"'],
