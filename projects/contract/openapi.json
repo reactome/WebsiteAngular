@@ -16967,7 +16967,7 @@
           },
           "species": {
             "type": "string",
-            "description": "The species asked for, on every node."
+            "description": "The species' name (its displayName), on every node, however it was asked for."
           },
           "type": {
             "type": "string",
