@@ -6,11 +6,13 @@ import {
   CONTENT_SERVICE,
   IDG_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
-import type {
-  PlainEvent,
-  PlainGraphObject,
-} from '../../../../pathway-browser/src/app/model/graph/plain.model';
+import type { PlainEvent } from '../../../../pathway-browser/src/app/model/graph/plain.model';
 import { getProperty } from '../../../../pathway-browser/src/app/services/utils';
+import type { DatabaseObject } from '../../../../pathway-browser/src/app/model/graph/database-object.model';
+import {
+  JSOGDeserializer,
+  type JsogObject,
+} from '../../../../pathway-browser/src/app/utils/JSOGDeserializer';
 
 /**
  * One of the interaction datasets the IDG portal knows about.
@@ -316,12 +318,19 @@ export class IdgService {
    */
   pathwayDetail(stId: string): Observable<IdgPathwayDetail> {
     const detail = this.http
-      .get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
+      // With includeRef, a summation written earlier in the answer (one a
+      // neighbouring event shares) is a reference to it, which the
+      // deserializer resolves. Asked plain, it came as its bare dbId, and the
+      // panel showed no description (#762).
+      .get<JsogObject<DatabaseObject>>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`, {
+        params: { includeRef: true },
+      })
       .pipe(
+        map((response) => new JSOGDeserializer().deserialize(response)),
         map((object) => {
-          // A pathway's first summation; a summation written earlier comes as its dbId, no text.
+          // A pathway's first summation.
           const [first] = getProperty(object, 'summation') ?? [];
-          return plainText(typeof first === 'object' ? first.text : undefined);
+          return plainText(first?.text);
         })
       );
 

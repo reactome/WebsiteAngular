@@ -59,7 +59,12 @@ describe('IdgService', () => {
 
   describe('pathwayDetail', () => {
     const ID = 'R-HSA-69620';
-    const summation = () => http.expectOne((r) => r.url.endsWith(`/data/query/enhanced/${ID}`));
+    // Asked with includeRef, so a summation written earlier in the answer is a
+    // reference the deserializer resolves rather than a bare dbId (#762).
+    const summation = () =>
+      http.expectOne(
+        (r) => r.url.endsWith(`/data/query/enhanced/${ID}`) && r.params.get('includeRef') === 'true'
+      );
     const ancestors = () => http.expectOne((r) => r.url.endsWith(`/data/event/${ID}/ancestors`));
 
     it('gives the description and the hierarchy, root first', async () => {
@@ -79,6 +84,20 @@ describe('IdgService', () => {
         ],
         failed: { summation: false, hierarchy: false },
       });
+    });
+
+    it('reads a summation the answer wrote earlier, through its reference', async () => {
+      // A summation the pathway shares with an event the answer wrote first
+      // (eventOf, the preceding and following events come before it).
+      const detail = firstValueFrom(service.pathwayDetail(ID));
+      summation().flush({
+        '@id': '1',
+        dbId: 69620,
+        precedingEvent: [{ '@id': '2', dbId: 1, summation: [{ '@id': '3', text: 'Shared.' }] }],
+        summation: [{ '@ref': '3' }],
+      });
+      ancestors().flush([[{ stId: ID, displayName: 'Cell Cycle Checkpoints' }]]);
+      await expect(detail).resolves.toMatchObject({ summation: 'Shared.' });
     });
 
     it('says so when the description could not be loaded', async () => {
