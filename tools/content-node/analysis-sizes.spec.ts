@@ -26,16 +26,16 @@ describe('analysis sizes', () => {
         {
           pathway: 'A',
           ids: [
-            ['UniProt', 'P1'],
-            ['ChEBI', '15422'],
+            ['UniProt', 'P1', []],
+            ['ChEBI', '15422', []],
           ],
         },
         // B is under A and under TOP: its identifiers count in both, once.
         {
           pathway: 'B',
           ids: [
-            ['UniProt', 'P1'],
-            ['UniProt', 'P2'],
+            ['UniProt', 'P1', []],
+            ['UniProt', 'P2', []],
           ],
         },
       ],
@@ -54,14 +54,14 @@ describe('analysis sizes', () => {
 
   it("adds a target's partners under the target's resource", () => {
     const got = sizes({
-      entities: [{ pathway: 'B', ids: [['UniProt', 'P1']] }],
+      entities: [{ pathway: 'B', ids: [['UniProt', 'P1', []]] }],
       // A target in a resource that does not count brings no partners.
       targets: [
         {
           pathway: 'B',
           ids: [
-            ['UniProtKB', 'P1'],
-            ['UCSC', 'U1'],
+            ['UniProtKB', 'P1', []],
+            ['UCSC', 'U1', []],
           ],
         },
       ],
@@ -81,8 +81,8 @@ describe('analysis sizes', () => {
         {
           pathway: 'A',
           ids: [
-            ['UniProt', 'X'],
-            ['ENSEMBL', 'X'],
+            ['UniProt', 'X', []],
+            ['ENSEMBL', 'X', []],
           ],
         },
       ],
@@ -125,8 +125,8 @@ describe('analysis sizes', () => {
         {
           pathway: 'A',
           ids: [
-            ['UCSC', 'P1'],
-            ['UniProt', 'P1'],
+            ['UCSC', 'P1', []],
+            ['UniProt', 'P1', []],
           ],
         },
       ],
