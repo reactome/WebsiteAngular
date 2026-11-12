@@ -75,21 +75,26 @@ describe('orderRows', () => {
     expect(peaks).toEqual([...peaks].sort((a, b) => a - b));
   });
 
-  it('orders the largest pathway in under a second', () => {
-    // 2,500 genes, SC-004's largest case (answered within 5 s): 481 ms when
-    // measured on 2026-11-10 (100 genes 21 ms, 1,000 genes 106 ms).
+  it('orders the largest it clusters in O(n^2) work, counted rather than timed', () => {
+    // SC-004 asks the largest pathway (2,500 genes) be answered within 5 s:
+    // 481 ms when measured on 2026-11-10. A clock made this fail on a busy
+    // machine, so the clustering's work is counted instead: 4.2 to 4.45 n^2
+    // gene visits from 100 genes to MAX_CLUSTERED, measured 2026-11-12. A
+    // cubic step would be n times the bound. The count covers the clustering's
+    // loops; a new loop must count its visits too, or this cannot see it.
     let seed = 7;
     const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 2 ** 32;
-    const inputs = Array.from({ length: 2500 }, (_, i) =>
+    const n = MAX_CLUSTERED;
+    const inputs = Array.from({ length: n }, (_, i) =>
       gene(
         `G${i}`,
         Array.from({ length: 29 }, () => random() * 1000)
       )
     );
-    const started = performance.now();
-    const order = orderRows(inputs);
-    const elapsed = performance.now() - started;
-    expect(new Set(order).size).toBe(2500);
-    expect(elapsed).toBeLessThan(1000);
+    const work = { visits: 0 };
+    const order = orderRows(inputs, work);
+    expect(new Set(order).size).toBe(n);
+    expect(work.visits).toBeGreaterThan(n * n);
+    expect(work.visits).toBeLessThan(6 * n * n);
   });
 });
