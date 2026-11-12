@@ -192,7 +192,7 @@ export class IconService {
     { name: 'format-quote', route: 'format-quote' },
 
     { name: 'details-tab', tooltip: 'Details Tab', route: 'details-tab' },
-    { name: 'molecule-tab', tooltip: 'Molecule Tab', route: 'molecule-tab' },
+    { name: 'molecule-tab', tooltip: 'Molecules Tab', route: 'molecule-tab' },
     { name: 'results-tab', tooltip: 'Results Tab', route: 'results-tab' },
     { name: 'expression-tab', tooltip: 'Expression Tab', route: 'expression-tab' },
     { name: 'info-tab', tooltip: 'Info Tab', route: 'info-tab' },
