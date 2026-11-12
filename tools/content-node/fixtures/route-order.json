@@ -17,6 +17,7 @@
   "GET /ContentService/data/query/{id}/{attribute}",
   "GET /ContentService/data/discover/{id}",
   "GET /ContentService/data/instance/{id}/referrers",
+  "GET /ContentService/data/eventsHierarchy/{id}",
   "GET /ContentService/data/pathways/top/{id}",
   "GET /ContentService/data/event/{id}/ancestors",
   "GET /ContentService/data/pathways/low/entity/{id}",
