@@ -48,6 +48,25 @@ describe("the entity popup's molecules", () => {
     ]);
   });
 
+  it('lists a component a complex holds several copies of once', () => {
+    // The answer's flatten view repeats a component once per copy: the first
+    // written in full, the rest references to it (TP53 Tetramer, R-HSA-3209194).
+    const molecules = moleculesOf(
+      answer({
+        '@id': '1',
+        dbId: 3209194,
+        schemaClass: 'Complex',
+        hasComponent: [
+          { '@id': '2', dbId: 69488, stId: 'R-HSA-69488', displayName: 'TP53' },
+          { '@ref': '2' },
+          { '@ref': '2' },
+          { '@ref': '2' },
+        ],
+      })
+    );
+    expect(molecules.map((m) => m.displayName)).toEqual(['TP53']);
+  });
+
   it('lists members and candidates as well as components', () => {
     const molecules = moleculesOf(
       answer({
