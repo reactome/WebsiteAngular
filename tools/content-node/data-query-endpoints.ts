@@ -335,6 +335,31 @@ async function enhancedAnswer(request: Request, raw: string, flags: EnhancedFlag
   };
 }
 
+let heldDbInfo: Promise<DomainEntity> | undefined;
+
+/**
+ * The DBInfo node as graph-core maps it, read once and held for the life of
+ * the process, as cached() holds /database/version's -- the label-only match
+ * scans the graph (see that endpoint). A failed read is not held: the next
+ * request tries again. No DBInfo at all is a failure here, a database the
+ * service cannot serve.
+ */
+function dbInfo(): Promise<DomainEntity> {
+  heldDbInfo ??= read<{ db: GraphNode }>(
+    'MATCH (db:DBInfo) RETURN {id: id(db), labels: labels(db), props: properties(db)} AS db LIMIT 1'
+  )
+    .then(([row]) => {
+      const [object] = row ? mapNodes([row.db]) : [];
+      if (!object) throw new Error('no DBInfo node');
+      return object;
+    })
+    .catch((failure: unknown) => {
+      heldDbInfo = undefined;
+      throw failure;
+    });
+  return heldDbInfo;
+}
+
 export const dataQueryEndpoints: Endpoint[] = [
   {
     path: '/ContentService/data/database/version',
@@ -375,6 +400,21 @@ export const dataQueryEndpoints: Endpoint[] = [
       );
       if (!row) return { status: 404, body: 'no DBInfo node' };
       return { status: 200, body: String(row.name), type: 'text/plain;charset=UTF-8' };
+    }),
+  },
+  {
+    path: '/ContentService/data/database/info',
+    /**
+     * The release the database holds, whole (spec 006 T106): graph-core's
+     * DBInfoRepository.getDBInfo, `MATCH (db:DBInfo) RETURN db LIMIT 1`,
+     * mapped and written by the domain serialiser -- so `?includeRef=true`
+     * gives it its JSOG id, as Java's does. Read once and held, as
+     * /database/version is (dbInfo).
+     */
+    handler: async (request) => ({
+      status: 200,
+      serialised: writeDomain(await dbInfo(), ...writerFor(request)),
+      type: 'application/json',
     }),
   },
   {

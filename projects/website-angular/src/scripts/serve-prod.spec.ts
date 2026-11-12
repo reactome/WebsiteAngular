@@ -361,9 +361,10 @@ describe('serve-prod and the API roots', () => {
 
   for (const api of [
     // A path still answered by Java. /database/version, then
-    // /query/{id}/displayName, then /query/abridged/{id}, were the example
-    // until each moved to the node content service.
-    '/ContentService/data/pathways/top/9606/curated',
+    // /query/{id}/displayName, then /query/abridged/{id}, then
+    // /pathways/top/{species}/curated, were the example until each moved to
+    // the node content service.
+    '/ContentService/data/detail/R-HSA-109581/getSubGraph',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',

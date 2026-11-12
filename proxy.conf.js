@@ -177,6 +177,10 @@ module.exports = {
   // species: the entity popup and the participating-pathways list. Of every
   // form of it too, and the diagrams either is drawn in.
   '^/ContentService/data/pathways/low/(diagram/)?entity/[^/?]+(/allForms)?/?(\\?|$)': contentNode,
+  // The lower-level pathways of an outside identifier's entities, and the
+  // Pathway Browser's flag targets in a diagram (spec 006 T106).
+  '^/ContentService/data/pathways/low/diagram/identifier/[^/?]+/allForms/?(\\?|$)': contentNode,
+  '^/ContentService/data/diagram/[^/?]+/entities/[^/?]+/?(\\?|$)': contentNode,
   // An event as a schema.org Dataset, for search engines; the site never asks.
   '^/ContentService/data/discover/[^/?]+/?(\\?|$)': contentNode,
   // The reactions and pathways an identifier in an outside resource is in.
@@ -195,9 +199,10 @@ module.exports = {
   '^/ContentService/data/participants/[^/?]+/?(\\?|$)': contentNode,
   // The release number (asked on every page load) and the database name, and
   // a species' top-level pathways -- ported first and long byte-identical,
-  // but never switched over.
-  '^/ContentService/data/database/(version|name)/?(\\?|$)': contentNode,
-  '^/ContentService/data/pathways/top/[^/?]+/?(\\?|$)': contentNode,
+  // but never switched over. And the whole DBInfo and the curated top-level
+  // pathways, which Java leaves out of its description (spec 006 T106).
+  '^/ContentService/data/database/(version|name|info)/?(\\?|$)': contentNode,
+  '^/ContentService/data/pathways/top/[^/?]+(/curated)?/?(\\?|$)': contentNode,
   // The other forms of a physical entity: the details panel and the popup.
   // What an entity or event is part of: the details page's table.
   '^/ContentService/data/entity/[^/?]+/(otherForms|componentOf)/?(\\?|$)': contentNode,

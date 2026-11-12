@@ -29,7 +29,7 @@ describe('classify', () => {
 
   it('leaves out writes and what Java still answers', () => {
     expect(classify('POST', '/ContentService/data/query/ids')).toBe(undefined);
-    expect(classify('GET', '/ContentService/data/pathways/top/9606/curated')).toBe(undefined);
+    expect(classify('GET', '/ContentService/data/detail/R-HSA-109581/getSubGraph')).toBe(undefined);
     expect(classify('GET', '/ContentService/data/query/enhanced/v2/R-HSA-1')?.endpoint).toBe(
       '/ContentService/data/query/enhanced/v2/{id}'
     );

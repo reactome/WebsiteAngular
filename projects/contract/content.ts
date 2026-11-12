@@ -115,13 +115,16 @@ export interface SchemaAttribute {
 /**
  * graph-core's SimpleDatabaseObject as the content service writes it: on
  * /schema/{class}/min by simpleObjectJson (tools/content-node/schema-endpoints.ts),
- * on /instance/{id}/referrers by its own mapping (data-query-endpoints.ts).
+ * on /instance/{id}/referrers by its own mapping (data-query-endpoints.ts),
+ * on /diagram/{id}/entities/{identifier} by simpleObject
+ * (pathways-events-endpoints.ts).
  * An object of a class without a stable id --
  * an InstanceEdit, a Species -- has no `stId`, and non_empty leaves it
  * out; an empty displayName is left out the same way, and a missing one is
  * written as the text "null". schemaClass is the class the labels name on
  * /schema/{class}/min, always there; on /instance/{id}/referrers it is the
- * object's property, "null" when missing and left out when empty.
+ * object's property, "null" when missing and left out when empty; on
+ * /diagram/{id}/entities/{identifier} the class the labels name.
  */
 export interface SimpleDatabaseObject {
   dbId: number;

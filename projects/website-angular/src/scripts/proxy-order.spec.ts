@@ -392,9 +392,12 @@ describe('the dev server proxy', () => {
     // Only the lower-level pathways' own paths; no other is Java's either.
     '/ContentService/data/pathways/low/diagram/identifier/P04637',
     '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms/x',
-    // The curated top-level pathways and the database's other info are not.
-    '/ContentService/data/pathways/top/9606/curated',
-    '/ContentService/data/database/info',
+    // Nothing below a species' curated top-level pathways, and only the
+    // database's three paths.
+    '/ContentService/data/pathways/top/9606/curated/x',
+    '/ContentService/data/database/infox',
+    // Only a diagram's entities for an identifier.
+    '/ContentService/data/diagram/R-HSA-446203/entities',
     // Only an event's Dataset, not a path below it.
     '/ContentService/data/discover/R-HSA-109581/x',
     // Only an identifier's reactions and pathways.
