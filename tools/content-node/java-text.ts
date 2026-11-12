@@ -396,3 +396,15 @@ export function hashSetOf(items: Iterable<string>) {
   for (const item of items) map.set(item, true);
   return map;
 }
+
+/** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
+export function tomcatHeader(text: string) {
+  return [...text]
+    .map((char) => {
+      // One character of the text, so it has a code point.
+      const code = char.codePointAt(0) as number;
+      if (code > 0xff) return '?';
+      return (code < 0x20 && char !== '\t') || code === 0x7f ? ' ' : char;
+    })
+    .join('');
+}
