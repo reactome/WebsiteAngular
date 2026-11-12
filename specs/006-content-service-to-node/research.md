@@ -1258,12 +1258,49 @@ step to maintain); reading the totals from an analysis of every identifier
 (`result.json`, 134 MB, a hack).
 
 **The overlay.** With a token, Java adds `llp`, `entities` and `reactions` to
-each node the stored result names. Node reads them through the analysis
-gateway: `/download/{token}/result.json` carries per-pathway TOTAL and
-per-resource statistics, and `/token/{token}?importableOnly=true` the
-importable ones. Java collects a hit node's children into a HashSet of identity
-hashes, so its own order below a hit changes from one request to the next:
-token answers are compared without regard to that order.
+the nodes the stored result names, from the top down: a top-level pathway the
+result does not name is left as it is, and so is everything below it, hit or
+not; below a named one, the children are re-collected into a HashSet of new
+objects, so Java's own order there changes from one request to the next, and
+token answers are compared without regard to it. The figures are
+analysis-core's `EntityStatistics` and `ReactionStatistics`, built with the
+request's `resource` (compared case-sensitively), `interactors` and
+`importableOnly` -- the code the AnalysisService's `PathwaySummary` runs, but
+there with the analysis's own `interactors` and the resource upper-cased.
+
+**Can the AnalysisService give them? Measured 12 Nov 2026**, two analyses of 12
+identifiers (with and without interactors), every combination of `interactors`,
+`resource` (TOTAL, UNIPROT, CHEBI, lower-case, unknown) and `importableOnly`,
+against Java's answer pathway by pathway:
+
+- `/token/{token}?resource=TOTAL&importableOnly=…` matches Java exactly when
+  the request's `interactors` is the analysis's (475 and 1,313 pathways, either
+  `importableOnly`). That is the Reacfoam's default view: it sends `interactors`
+  as analysed and never `importableOnly`.
+- **A resource filter cannot be matched from either source.** Java writes, for
+  every named pathway whose data holds the resource, that resource's figures
+  even when nothing was found for it (`found: 0`, a `total`, a `ratio`, the
+  reactions' total and ratio -- the pathway's static size per resource). Both
+  `/token?resource=X` and the download's `statistics` list only pathways, and
+  resources, with something found: for CHEBI, 501 of the 551 named nodes went
+  missing. The Reacfoam offers that filter.
+- The download `result.json` leaves out pathways found only through
+  interactors (838 of the 1,313), and applies `importableOnly` to the curated
+  counts, which Java does not (730 against 728). The AnalysisService also hides
+  a malformed token's message behind its help-desk text.
+- Token errors are analysis-core's Tokenizer, in the content service's 500: a
+  token URL-decoded until it stops changing (URLDecoder's messages), then
+  java.util.Base64's decoder (Java 11's messages), then "Not Found", or "Gone"
+  for a name dated within seven days; each with the `Content-Disposition`, set
+  before the token is read.
+
+**Open: how node answers a token (T103c), to be decided with the maintainers.**
+(a) Exact: compute each pathway's static figures per resource from the graph,
+as T103a computes the totals (the ratio's denominators to be worked out from
+analysis-core's PathwayNodeData), with the found counts from the AnalysisService.
+(b) Answer the default view exactly through `/token`, and record the
+resource-filtered view as a difference. (c) Leave token requests to Java, which
+needs a routing rule by query parameter the project does not use yet.
 
 **Errors to keep:** an unknown species, or one with no hierarchy, is a 500
 ("Something unexpected happened…"); `pathwaysOnly` reads a taxId, dbId or name,
