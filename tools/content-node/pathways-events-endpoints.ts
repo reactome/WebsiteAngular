@@ -1385,14 +1385,119 @@ function overlaidJson(
   ]);
 }
 
+/** One TopLevelPathway's row of the event hierarchy query: the pathway, and its paths. */
+type EventHierarchyRow = { db: LocationStep; nodePairCollection: LocationStep[][] | null };
+
 /**
- * EventsController.getEventHierarchy, the pathwaysOnly form without a token
- * (spec 006 T103b): its parameters read in its order, each Boolean as Spring
- * binds one; the species as SpeciesService finds it, a species without a
- * hierarchy -- none found, or no top-level pathway -- being Java's
- * NullPointerException; the tree with Content-Disposition naming the species
- * as given. The token overlay (T103c) and the full tree (T103d) are not here
- * yet, and the route stays Java's until they are.
+ * HierarchyRepository.getEventHierarchyByTaxIdRaw and BySpeciesNameRaw, as
+ * written, with Event as the class: the rows' order is part of the answer
+ * (parseHierarchy), so the text is Java's to the space -- by name it is
+ * another query, whose order leaves the paths attached where they do not
+ * belong.
+ */
+const EVENT_HIERARCHY_BY_TAX_ID =
+  'MATCH (s:Species{taxId:$taxId})<-[:species]-(n:TopLevelPathway)MATCH path=(n)-[:hasEvent*]->(m:Event) ' +
+  'WITH *, relationships(path) AS r ' +
+  'RETURN [n.stId, n.displayName, n.hasDiagram, n.speciesName, n.schemaClass, labels(n), 0] AS db, ' +
+  'collect( [rel IN r | [endNode(rel).stId, endNode(rel).displayName, endNode(rel).hasDiagram, endNode(rel).speciesName, endNode(rel).schemaClass, labels(endNode(rel)), rel.order ]] ) AS nodePairCollection';
+const EVENT_HIERARCHY_BY_NAME =
+  'MATCH path=(n:TopLevelPathway{speciesName:$speciesName})-[:hasEvent*]->(m:Event) ' +
+  'WITH *, relationships(path) AS r ' +
+  'RETURN [n.stId, n.displayName, n.hasDiagram, n.speciesName, n.schemaClass, labels(n), 0] AS db, ' +
+  'collect ( [rel IN r | [endNode(rel).stId, endNode(rel).displayName, endNode(rel).hasDiagram, endNode(rel).speciesName, endNode(rel).schemaClass, labels(endNode(rel)), rel.order ]] ) AS nodePairCollection';
+
+/** Java's StackOverflowError: copying a tree that holds a cycle never ends. */
+class JavaStackOverflow extends Error {}
+
+/**
+ * The full event hierarchy (graph-core's HierarchyService.getEventHierarchy,
+ * pathwaysOnly false): each top-level pathway's paths parsed as parseRaw
+ * parses them (parseHierarchy, every event kept), the roots in a TreeSet --
+ * equal ones are one -- then each node as SizedPathwayBrowserNode copies it,
+ * with the sizes of a pathway the analysis hierarchy holds, 0 for any other
+ * event. A number is a taxId, anything else a TopLevelPathway's speciesName,
+ * as given. No rows is Java's NullPointerException; a cycle, its
+ * StackOverflowError.
+ */
+async function fullTree(
+  raw: string,
+  sizes: Map<string, { totalEntity: number; totalEntityAndInteractors: number }>
+) {
+  const rows = javaNumeric(raw)
+    ? await read<EventHierarchyRow>(EVENT_HIERARCHY_BY_TAX_ID, { taxId: raw })
+    : await read<EventHierarchyRow>(EVENT_HIERARCHY_BY_NAME, { speciesName: raw });
+  if (rows.length === 0) throw new JavaNullPointer('no event hierarchy');
+  let roots: PathwayBrowserNode[] | null = null;
+  for (const row of rows)
+    roots = sortedAdd(roots, parseHierarchy(row.db, row.nodePairCollection, false));
+  const onPath = new Set<PathwayBrowserNode>();
+  const written = new Map<PathwayBrowserNode, EventsHierarchyNode>();
+  const write = (node: PathwayBrowserNode): EventsHierarchyNode => {
+    if (onPath.has(node)) throw new JavaStackOverflow();
+    const known = written.get(node);
+    if (known) return known;
+    onPath.add(node);
+    const children = (node.children ?? []).map(write);
+    onPath.delete(node);
+    const size = node.stId === undefined ? undefined : sizes.get(node.stId);
+    // In SizedPathwayBrowserNode's @JsonPropertyOrder; a null left out.
+    const out: JsonWritten<EventsHierarchyNode> = {
+      stId: node.stId as string,
+      name: node.name as string,
+      species: node.species as string,
+      type: node.type as string,
+      diagram: node.diagram as boolean,
+      llp: undefined,
+      totalEntity: size?.totalEntity ?? 0,
+      totalEntityAndInteractors: size?.totalEntityAndInteractors ?? 0,
+      entities: undefined,
+      reactions: undefined,
+      children: children.length ? children : undefined,
+    };
+    written.set(node, out as EventsHierarchyNode);
+    return out as EventsHierarchyNode;
+  };
+  const tree = (roots ?? []).map(write);
+  return { tree, json: javaJson(tree) };
+}
+
+const fullTrees = new Map<string, Promise<{ tree: EventsHierarchyNode[]; json: string }>>();
+
+/**
+ * fullTree, kept per species as asked (a taxId, or a name). Java's
+ * StackOverflowError is kept too: it is the release's answer for that name,
+ * and working it out again costs seconds of the event loop. Only a taxId or a
+ * top-level pathway's exact speciesName gets that far, so the cache stays
+ * small; any other failure -- no rows, which any spelling reaches -- is tried
+ * again next time. A species without a taxId has an empty analysis hierarchy:
+ * every size 0.
+ */
+function cachedFullTree(raw: string, taxId: string | null) {
+  let tree = fullTrees.get(raw);
+  if (!tree) {
+    tree = (
+      taxId
+        ? analysisSizes(taxId)
+        : Promise.resolve(
+            new Map<string, { totalEntity: number; totalEntityAndInteractors: number }>()
+          )
+    ).then((sizes) => fullTree(raw, sizes));
+    tree.catch((error: unknown) => {
+      if (!(error instanceof JavaStackOverflow)) fullTrees.delete(raw);
+    });
+    fullTrees.set(raw, tree);
+  }
+  return tree;
+}
+
+/**
+ * EventsController.getEventHierarchy (spec 006 T103, research D25): its
+ * parameters read in its order, each Boolean as Spring binds one; the species
+ * as SpeciesService finds it, a species without a hierarchy -- none found, or
+ * no top-level pathway -- being Java's NullPointerException; the
+ * pathwaysOnly tree (T103b) or the full one (T103d), with Content-Disposition
+ * naming the species as given; and with a token, the analysis overlay
+ * (T103c).
  */
 async function eventsHierarchy(request: Request) {
   const raw = pathId(rawSegment(request, 4));
@@ -1413,8 +1518,6 @@ async function eventsHierarchy(request: Request) {
   const importableOnly = springBoolean(queryValues(request, 'importableOnly'));
   if (importableOnly.error !== undefined)
     return javaError(request, 400, 'BAD_REQUEST', importableOnly.error);
-  if (pathwaysOnly.value !== true)
-    return javaError(request, 501, 'NOT_IMPLEMENTED', 'Not yet answered here: spec 006 T103d');
 
   const found = await hierarchySpecies(raw);
   if (found.failure !== undefined)
@@ -1422,14 +1525,27 @@ async function eventsHierarchy(request: Request) {
   if (found.ambiguous || !found.species || !(await hasHierarchy(found.species.dbId)))
     return unexpectedFailure(request);
   const { taxId, displayName } = found.species;
-  // HierarchyBuilder leaves the hierarchy of a species without a taxId empty;
-  // EventsController answers an empty tree with its 404. None in release 98.
-  if (!taxId) return notFound(request, `No event hierarchy found for given species: ${raw}`);
+  // HierarchyBuilder leaves the hierarchy of a species without a taxId empty,
+  // and EventsController answers an empty pathwaysOnly tree with its 404; the
+  // full form asks graph-core all the same. None in release 98.
+  if (!taxId && pathwaysOnly.value === true)
+    return notFound(request, `No event hierarchy found for given species: ${raw}`);
   let built;
   try {
-    built = await cachedPathwaysOnly(taxId, displayName);
+    // The full form asks graph-core by the species as given (fullTree).
+    built =
+      pathwaysOnly.value === true
+        ? await cachedPathwaysOnly(taxId as string, displayName)
+        : await cachedFullTree(raw, taxId);
   } catch (error) {
     if (error instanceof JavaNullPointer) return unexpectedFailure(request);
+    if (error instanceof JavaStackOverflow)
+      return javaError(
+        request,
+        500,
+        'INTERNAL_SERVER_ERROR',
+        'Handler dispatch failed; nested exception is java.lang.StackOverflowError'
+      );
     throw error;
   }
   if (built.tree.length === 0)
@@ -1458,7 +1574,7 @@ async function eventsHierarchy(request: Request) {
   }
   let overlay;
   try {
-    overlay = await overlays(token, await analysisFigures(taxId), {
+    overlay = await overlays(token, await analysisFigures(taxId ?? ''), {
       resource,
       interactors: interactors.value ?? false,
       importableOnly: importableOnly.value ?? false,

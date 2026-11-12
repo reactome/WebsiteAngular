@@ -16967,15 +16967,11 @@
           },
           "species": {
             "type": "string",
-            "description": "The species' name (its displayName), on every node, however it was asked for."
+            "description": "The species' name, on every node, however it was asked for."
           },
           "type": {
             "type": "string",
-            "enum": [
-              "TopLevelPathway",
-              "Pathway",
-              "CellLineagePath"
-            ]
+            "description": "The event's schema class: a pathway's with pathwaysOnly, any event's without."
           },
           "diagram": {
             "type": "boolean",
@@ -17074,7 +17070,7 @@
             "items": {
               "$ref": "#/components/schemas/EventsHierarchyNode"
             },
-            "description": "Left out on a pathway with no subpathways."
+            "description": "Left out on an event with none below it."
           }
         },
         "required": [
@@ -17087,7 +17083,7 @@
           "totalEntityAndInteractors"
         ],
         "additionalProperties": false,
-        "description": "A pathway of the tree, in the order Java writes its fields. With `pathwaysOnly=true` the tree is the AnalysisService's hierarchy: pathways only, from each top-level pathway down."
+        "description": "An event of the tree, in the order Java writes its fields. With `pathwaysOnly=true` the tree is the AnalysisService's hierarchy: pathways only, from each top-level pathway down; without, every event, sized where it is a pathway the AnalysisService's hierarchy holds and 0 otherwise."
       },
       "EvidenceType_JsogReference": {
         "type": "object",
