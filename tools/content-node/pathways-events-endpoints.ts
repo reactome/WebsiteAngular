@@ -11,7 +11,7 @@ import type { Endpoint, Request } from './endpoint.ts';
 import { javaError, javaJson, notFound, only, unexpectedFailure } from './answers.ts';
 import { analysisSizes } from './analysis-sizes.ts';
 import type { EventsHierarchyNode } from '../../projects/contract/events-hierarchy.ts';
-import { asciiDigits, javaNumeric, javaTrim, javaUtf8 } from './java-text.ts';
+import { asciiDigits, javaNumeric, javaTrim, javaUtf8, tomcatHeader } from './java-text.ts';
 import type { JsonWritten } from './answers.ts';
 import type { PathwayBrowserNode as LocationNode } from '../../projects/contract/locations.ts';
 import {
@@ -724,7 +724,7 @@ async function hierarchySpecies(
     rows.length > 1 ? { ambiguous: true } : rows[0] ? { species: rows[0] } : {};
   if (!javaNumeric(raw)) {
     const lower = raw.toLowerCase().replace(/[_ ]+/g, ' ');
-    const name = lower.charAt(0).toUpperCase() + lower.slice(1);
+    const name = javaCapitalize(lower);
     return one(
       await read<HierarchySpecies>(
         `MATCH (s:Species) WHERE $name IN s.name RETURN ${SPECIES_FIELDS} LIMIT 2`,
@@ -747,6 +747,38 @@ async function hierarchySpecies(
   );
 }
 
+/** Character.toTitleCase where it is not toUpperCase: the four digraph letters. */
+const TITLE_CASE: Record<string, string> = {
+  Ǆ: 'ǅ',
+  ǅ: 'ǅ',
+  ǆ: 'ǅ',
+  Ǉ: 'ǈ',
+  ǈ: 'ǈ',
+  ǉ: 'ǈ',
+  Ǌ: 'ǋ',
+  ǋ: 'ǋ',
+  ǌ: 'ǋ',
+  Ǳ: 'ǲ',
+  ǲ: 'ǲ',
+  ǳ: 'ǲ',
+};
+
+/**
+ * StringUtils.capitalize (commons-lang3 3.12): the first code point in title
+ * case, the rest as they are. Title case is upper case but for the digraphs
+ * above, and a letter whose upper case is more than one letter (ß, ŉ) is
+ * left as it is, as Character.toTitleCase leaves it. (The Greek letters with
+ * iota subscript, which Java title-cases to one letter, stay as they are here:
+ * no species name could match either.)
+ */
+function javaCapitalize(text: string) {
+  const first = String.fromCodePoint(text.codePointAt(0) ?? 0);
+  if (text === '') return text;
+  const upper = first.toUpperCase();
+  const title = TITLE_CASE[first] ?? ([...upper].length === 1 ? upper : first);
+  return title + text.slice(first.length);
+}
+
 /** One pathway of the AnalysisService's hierarchy, as HierarchyBuilder reads it. */
 type HierarchyPathway = {
   stId: string;
@@ -762,19 +794,24 @@ type HierarchyPathway = {
  * with the relationship's order, whatever its species.
  */
 async function hierarchyRows(taxId: string) {
-  const [tops, edges] = await Promise.all([
+  const [tops, events] = await Promise.all([
+    // TopLevelPathwayRepository's query, in its shape: two top-level pathways
+    // of one name (Gallus gallus has two "Metabolism") come in the order
+    // Neo4j gives, which a query of another shape need not match (D25).
     read<{ stId: string }>(
-      `MATCH (t:TopLevelPathway)-[:species]->(s:Species) WHERE s.taxId = $taxId
-       RETURN t.stId AS stId ORDER BY toLower(t.displayName)`,
+      `MATCH (n:TopLevelPathway)-[r:species]-(s:Species {taxId: $taxId})
+       WITH n, collect(r) AS r, collect(s) AS s
+       RETURN n.stId AS stId ORDER BY toLower(n.displayName) ASC`,
       { taxId }
     ),
-    read<{ parent: string; child: string; order: number | null }>(
+    read<{ parent: string; child: string; order: number | null; pathway: boolean }>(
       `MATCH (t:TopLevelPathway)-[:species]->(s:Species) WHERE s.taxId = $taxId
-       MATCH (t)-[:hasEvent*0..]->(p:Pathway)-[r:hasEvent]->(c:Pathway)
-       RETURN DISTINCT p.stId AS parent, c.stId AS child, r.order AS order`,
+       MATCH (t)-[:hasEvent*0..]->(p:Pathway)-[r:hasEvent]->(c:Event)
+       RETURN DISTINCT p.stId AS parent, c.stId AS child, r.order AS order, c:Pathway AS pathway`,
       { taxId }
     ),
   ]);
+  const edges = keptPathways(events);
   const stIds = [...new Set([...tops.map((t) => t.stId), ...edges.map((e) => e.child)])];
   const pathways = await read<HierarchyPathway>(
     `MATCH (p:Pathway) WHERE p.stId IN $stIds
@@ -782,6 +819,29 @@ async function hierarchyRows(taxId: string) {
     { stIds }
   );
   return { tops, edges, pathways };
+}
+
+/**
+ * The subpathways HierarchyBuilder.fillBranch keeps. A pathway's events are a
+ * SortedSet of hasEvent ordered by `order` alone (Has.compareTo), so of two
+ * events with one order -- of any kind, a reaction too -- the set keeps one,
+ * and only then are pathways picked out. Which one Java keeps is the order it
+ * loaded them in; here, the first the graph returns. No pathway has two
+ * events of one order in release 98, so none is dropped (D25).
+ */
+function keptPathways(
+  events: { parent: string; child: string; order: number | null; pathway: boolean }[]
+) {
+  const taken = new Set<string>();
+  const kept: { parent: string; child: string; order: number }[] = [];
+  for (const { parent, child, order, pathway } of events) {
+    // Has.order is an int: a missing one is 0.
+    const at = `${parent} ${order ?? 0}`;
+    if (taken.has(at)) continue;
+    taken.add(at);
+    if (pathway) kept.push({ parent, child, order: order ?? 0 });
+  }
+  return kept;
 }
 
 /** A node of the tree before it is written: what PathwayBrowserNode.compareTo reads. */
@@ -807,7 +867,7 @@ function treeSetOf<T extends Placed>(nodes: T[]): T[] {
 /**
  * The pathwaysOnly answer for a species with a hierarchy, built once per
  * species while the process lives: SizedPathwayBrowserNode over each
- * PathwayNode -- stId, name, the species asked for, type, whether it has a
+ * PathwayNode -- stId, name, the species' name, type, whether it has a
  * diagram of its own, its sizes (analysisSizes), its children -- in
  * Jackson's order, with children left out where there are none. A pathway
  * under two parents is the same subtree under each.
@@ -821,7 +881,7 @@ async function pathwaysOnlyTree(taxId: string, speciesName: string) {
   const childrenOf = new Map<string, { stId: string; order: number }[]>();
   for (const { parent, child, order } of edges) {
     const list = childrenOf.get(parent) ?? [];
-    list.push({ stId: child, order: order ?? 0 });
+    list.push({ stId: child, order });
     childrenOf.set(parent, list);
   }
   const placed = (stId: string, order: number) => {
@@ -876,12 +936,15 @@ function cachedPathwaysOnly(taxId: string, speciesName: string) {
   return tree;
 }
 
-/** Whether a species has top-level pathways: the hierarchies analysis-core builds. */
-async function hasHierarchy(taxId: string | null) {
-  if (taxId === null) return false;
+/**
+ * Whether analysis-core built a hierarchy for a species: one for each
+ * species with a top-level pathway (SpeciesRepository.getSpecies), keyed by
+ * the Species itself.
+ */
+async function hasHierarchy(dbId: number) {
   const rows = await read<{ n: number }>(
-    'MATCH (t:TopLevelPathway)-[:species]->(:Species {taxId: $taxId}) RETURN count(t) AS n',
-    { taxId }
+    'MATCH (t:TopLevelPathway)-[:species]->(:Species {dbId: $dbId}) RETURN count(t) AS n',
+    { dbId: neo4j.int(dbId) }
   );
   return Number(rows[0]?.n ?? 0) > 0;
 }
@@ -916,16 +979,25 @@ async function eventsHierarchy(request: Request) {
   const found = await hierarchySpecies(raw);
   if (found.failure !== undefined)
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
-  if (found.ambiguous || !found.species || !(await hasHierarchy(found.species.taxId)))
+  if (found.ambiguous || !found.species || !(await hasHierarchy(found.species.dbId)))
     return unexpectedFailure(request);
   const { taxId, displayName } = found.species;
+  // HierarchyBuilder leaves the hierarchy of a species without a taxId empty;
+  // EventsController answers an empty tree with its 404. None in release 98.
+  if (!taxId) return notFound(request, `No event hierarchy found for given species: ${raw}`);
   try {
+    const tree = await cachedPathwaysOnly(taxId, displayName);
+    if (tree === '[]')
+      return notFound(request, `No event hierarchy found for given species: ${raw}`);
     return {
       status: 200,
-      serialised: await cachedPathwaysOnly(taxId as string, displayName),
+      serialised: tree,
       type: 'application/json',
       headers: {
-        'Content-Disposition': `inline; swaggerDownload="attachment"; filename="${raw}.json"`,
+        // As Tomcat writes it: past Latin-1 a '?' (a species in Arabic-Indic digits).
+        'Content-Disposition': tomcatHeader(
+          `inline; swaggerDownload="attachment"; filename="${raw}.json"`
+        ),
       },
     };
   } catch (error) {

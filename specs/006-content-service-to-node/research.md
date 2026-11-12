@@ -1210,7 +1210,17 @@ in-memory `PathwayHierarchy`, which the AnalysisService's data file holds: its
 names and types come from that file, and siblings sit in a `TreeSet` ordered by
 species, `hasEvent` order (a top-level pathway's is its place among
 `toLower(displayName)`), then name by `String.compareTo`, so equal siblings
-merge. The full form is graph-core's event hierarchy (node already parses it,
+merge. Before that, HierarchyBuilder reads a pathway's events as a SortedSet of
+`hasEvent` ordered by `order` alone, so of two events sharing an order -- of
+any kind, a reaction too -- it keeps one, which one being the order they
+loaded in; no pathway in release 98 has two events of one order, so nothing is
+dropped, and node keeps the first the graph returns. Two top-level pathways of
+one name tie in that order: Gallus gallus has two "Metabolism"
+(R-GGA-1660598, R-GGA-1430728), which come in the order Neo4j gives; node asks
+in graph-core's own query shape, and matches today, but a reload or another
+plan could swap the two cells. A species without a taxId, or any empty tree,
+is EventsController's 404; a species with no top-level pathway has no
+hierarchy, and is its NullPointerException. The full form is graph-core's event hierarchy (node already parses it,
 `parseHierarchy`), each pathway's sizes looked up by stId and every other event
 `0/0`. Without a token, both are deterministic; `interactors`, `resource` and
 `importableOnly` change nothing.

@@ -11,7 +11,7 @@ import type { AnalysisPathway } from './analysis.ts';
 export interface EventsHierarchyNode {
   stId: string;
   name: string;
-  /** The species asked for, on every node. */
+  /** The species' name (its displayName), on every node, however it was asked for. */
   species: string;
   type: 'TopLevelPathway' | 'Pathway' | 'CellLineagePath';
   /** Whether this pathway has a diagram of its own. */
