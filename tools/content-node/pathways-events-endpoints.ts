@@ -982,7 +982,13 @@ function tokenName(token: string) {
     token = aux;
     aux = javaUrlDecode(token);
   }
-  return { decoded: aux, name: new TextDecoder().decode(javaBase64Decode(aux)) };
+  const bytes = javaBase64Decode(aux);
+  // The AnalysisService is asked with the bytes' canonical spelling: Java's
+  // decoder ignores unused trailing bits, so `M/` opens what `Mw` opens.
+  return {
+    canonical: Buffer.from(bytes).toString('base64'),
+    name: new TextDecoder().decode(bytes),
+  };
 }
 
 /**
@@ -1018,19 +1024,60 @@ class StoredResultFailure extends Error {}
  * A token it does not have is analysis-core's "Not Found", or "Gone" for one
  * that should still be alive.
  */
-async function storedPathways(
-  token: { decoded: string; name: string },
+const storedResults = new Map<string, Promise<StoredResult>>();
+const STORED_FOR_MS = 5 * 60_000;
+
+type StoredResult = { interactors: boolean; pathways: Map<string, StoredPathway> };
+
+/**
+ * The stored result's pathways (see storedPathwaysOnce), kept five minutes
+ * per token, resource and importableOnly: the Reacfoam asks again on each
+ * switch of resource or interactors, and a large result is megabytes.
+ */
+function storedPathways(
+  token: { canonical: string; name: string },
   resource: string,
   importableOnly: boolean
 ) {
-  if (token.decoded.includes('/'))
+  const key = `${token.canonical} ${resource} ${String(importableOnly)}`;
+  let found = storedResults.get(key);
+  if (!found) {
+    found = storedPathwaysOnce(token, resource, importableOnly);
+    storedResults.set(key, found);
+    found.catch(() => storedResults.delete(key));
+    setTimeout(() => storedResults.delete(key), STORED_FOR_MS).unref();
+  }
+  return found;
+}
+
+/**
+ * The stored result's pathways, as the AnalysisService's /token gives them
+ * for a resource: computed with the analysis's own interactors, every pathway
+ * the analysis found for TOTAL, those that found something for a resource --
+ * disease pathways included, as Java overlays every pathway the result holds
+ * whatever the analysis was asked. A token it does not have is
+ * analysis-core's "Not Found", or "Gone" for one that should still be alive;
+ * the AnalysisService's own answer says which.
+ */
+async function storedPathwaysOnce(
+  token: { canonical: string; name: string },
+  resource: string,
+  importableOnly: boolean
+): Promise<StoredResult> {
+  // A name whose canonical spelling holds a '/' has no token path: Tokenizer's
+  // own rule decides. analysis-core never makes one.
+  if (token.canonical.includes('/'))
     throw new StoredResultFailure(shouldBeAlive(token.name) ? 'Gone' : 'Not Found');
   const url =
-    `${settings.analysisService()}/AnalysisService/token/${encodeURIComponent(token.decoded)}` +
-    `?resource=${encodeURIComponent(resource)}&importableOnly=${String(importableOnly)}`;
-  const answer = await fetch(url);
-  if (answer.status === 404) throw new StoredResultFailure('Not Found');
-  if (answer.status === 410) throw new StoredResultFailure('Gone');
+    `${settings.analysisService()}/AnalysisService/token/${encodeURIComponent(token.canonical)}` +
+    `?resource=${encodeURIComponent(resource)}&importableOnly=${String(importableOnly)}` +
+    '&includeDisease=true';
+  const answer = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+  if (answer.status === 404 || answer.status === 410) {
+    const body = (await answer.json().catch(() => ({}))) as { code?: unknown };
+    if (body.code === 404) throw new StoredResultFailure('Not Found');
+    if (body.code === 410) throw new StoredResultFailure('Gone');
+  }
   if (!answer.ok)
     throw new Error(`the AnalysisService answered ${answer.status} for a stored result`);
   const result = (await answer.json()) as {
@@ -1061,7 +1108,9 @@ function entityStatistics(stats: {
 }) {
   const exp =
     Array.isArray(stats.exp) && stats.exp.length
-      ? new RawJson(`[${(stats.exp as number[]).map(javaDouble).join(',')}]`)
+      ? new RawJson(
+          `[${(stats.exp as unknown[]).map((value) => (typeof value === 'number' ? javaDouble(value) : 'null')).join(',')}]`
+        )
       : undefined;
   return new RawJson(
     nonEmptyJson([
@@ -1139,7 +1188,7 @@ type Overlay = { llp: boolean; entities?: RawJson; reactions?: RawJson };
  * resources' curated found.
  */
 async function overlays(
-  token: { decoded: string; name: string },
+  token: { canonical: string; name: string },
   figures: AnalysisFigures,
   {
     resource,
@@ -1147,31 +1196,36 @@ async function overlays(
     importableOnly,
   }: { resource: string; interactors: boolean; importableOnly: boolean }
 ) {
-  const total = await storedPathways(token, 'TOTAL', importableOnly);
-  // Every pathway the result names, and its llp: asked with importableOnly,
-  // the AnalysisService leaves out one found only through auxiliary resources,
-  // which Java still writes (with nothing importable found).
-  const all = importableOnly ? await storedPathways(token, 'TOTAL', false) : total;
-  const analysed = total.interactors;
-  const out = new Map<string, Overlay>();
   const mainResource = [...figures.species.resources.keys()].includes(resource)
     ? resource
     : undefined;
-  const byResource = mainResource && (await storedPathways(token, mainResource, importableOnly));
+  // Every pathway the result names, and its llp, from the plain list: asked
+  // with importableOnly, the AnalysisService leaves out one found only through
+  // auxiliary resources, which Java still writes (with nothing importable found).
+  const [total, all, byResource] = await Promise.all([
+    storedPathways(token, 'TOTAL', importableOnly),
+    storedPathways(token, 'TOTAL', false),
+    mainResource ? storedPathways(token, mainResource, importableOnly) : undefined,
+  ]);
+  const analysed = total.interactors;
+  const out = new Map<string, Overlay>();
   let plainTotal: Map<string, StoredPathway> | undefined;
   let importableFound: Map<string, number> | undefined;
   if (resource === 'TOTAL' && interactors !== analysed && importableOnly) {
     if (analysed) {
       // Importable entities found: the main resources' curated found, summed.
       importableFound = new Map();
-      for (const main of figures.species.resources.keys()) {
-        if (['NCBI_PROTEIN', 'EMBL', 'COMPOUND', 'PUBCHEM_COMPOUND'].includes(main)) continue;
-        for (const [stId, pathway] of (await storedPathways(token, main, false)).pathways)
+      const mains = [...figures.species.resources.keys()].filter(
+        (main) => !['NCBI_PROTEIN', 'EMBL', 'COMPOUND', 'PUBCHEM_COMPOUND'].includes(main)
+      );
+      for (const { pathways } of await Promise.all(
+        mains.map((main) => storedPathways(token, main, false))
+      ))
+        for (const [stId, pathway] of pathways)
           importableFound.set(
             stId,
             (importableFound.get(stId) ?? 0) + (num(pathway.entities?.['curatedFound']) ?? 0)
           );
-      }
     } else plainTotal = all.pathways;
   }
   for (const [stId, base] of all.pathways) {

@@ -1295,7 +1295,7 @@ against Java's answer pathway by pathway:
   before the token is read.
 
 **Decided: exact for every field the Reacfoam reads, the rest recorded (T103c,
-13 Nov 2026).** The Reacfoam reads `llp`, `entities.fdr`, `pValue`, `total` and
+12 Nov 2026).** The Reacfoam reads `llp`, `entities.fdr`, `pValue`, `total` and
 `exp`, never a ratio or the reactions. Node takes `llp`, the found counts,
 p-values, FDRs and expression from the AnalysisService's `/token` (through the
 gateway) and every static figure from the graph (`analysisFigures`): per resource
@@ -1311,6 +1311,15 @@ had to be followed for those to match:
   through auxiliary resources, which Java still writes, with nothing importable
   found: the pathways and their `llp` are taken from the plain list.
 
+The AnalysisService is asked with `includeDisease=true`, as it otherwise drops
+the disease pathways of an analysis run without them, which Java still
+overlays; with the token's canonical spelling, as Java's Base64 decoder ignores
+unused trailing bits (`M/` opens what `Mw` opens); and through a five-minute
+cache per token, resource and importableOnly, its requests in parallel (a large
+result is megabytes, and the Reacfoam asks again on each switch). Node now
+depends on the AnalysisService for these answers, where Java reads the result
+file itself: with it down, a token is node's 500.
+
 Compared with Java: two analyses of 12 identifiers (with and without
 interactors) and one of 17,326, both `interactors`, `resource` TOTAL, UNIPROT,
 CHEBI, ENSEMBL, `uniprot` and an unknown one, both `importableOnly` -- 72
@@ -1318,9 +1327,19 @@ combinations, every node of the human tree, field by field, Java's order below a
 named node aside. Every field matches but analysis-core's alias merge
 (reactome/analysis-core#13): the 84 recorded sizes; with ChEBI, every reaction
 ratio (its species count is one higher in Java: a gene-name partner merged into
-a protein pools reactions in R-HSA-5621575) and 4 totals; asking for interactors
-an analysis was run without, the interactor ratios and up to 45 totals and 41
-interactor counts. Token errors and spellings (Base64's and URLDecoder's
+a protein pools reactions in R-HSA-5621575) and 4 totals; and wherever node
+makes an interactor figure from the graph (interactors asked other than
+analysed, a resource that found nothing, nothing importable found), the
+interactor ratios -- the species' count with interactors is lower in Java, in
+human (24,910 against 24,931), mouse and fly alike -- and in human up to 45
+totals and 41 interactor counts. An independent review checked mouse, fly and
+zebrafish trees as well: the same categories, nothing else.
+
+Not covered: an imported result (ReactomeGSA's, through /import) takes its
+static figures from the import, not the graph, so where node makes figures from
+the graph (the cases above) it would differ; the Reacfoam's default view uses
+the AnalysisService's own and is exact. An analysis run without disease
+pathways, and token spellings with '/', were compared and match. Token errors and spellings (Base64's and URLDecoder's
 messages, "Not Found", "Gone", a token encoded three times, two tokens) as Java.
 
 **Errors to keep:** an unknown species, or one with no hierarchy, is a 500

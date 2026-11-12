@@ -5,7 +5,7 @@
 // count. The sizes from the real graph are checked against Java's by
 // analysis-sizes-check.ts, every pathway of every species.
 import { describe, expect, it } from 'vitest';
-import { computeSizes, countedResource } from './analysis-sizes.ts';
+import { computeFigures, computeSizes, countedResource } from './analysis-sizes.ts';
 import type { SizeInputs } from './analysis-sizes.ts';
 
 /** A top-level pathway with two subpathways, one of them under both. */
@@ -132,5 +132,87 @@ describe('analysis sizes', () => {
       ],
     });
     expect(got['A']?.totalEntity).toBe(1);
+  });
+});
+
+describe('analysis figures, per resource (T103c)', () => {
+  // One top-level pathway TOP holding A.
+  const tree = [
+    { parent: 'TOP', child: 'A' },
+    { parent: 'TOP', child: null },
+  ];
+
+  it('counts entities, interactors and reactions per resource, and over all or the main ones', () => {
+    const { pathways, species } = computeFigures({
+      tree,
+      entities: [
+        {
+          pathway: 'A',
+          ids: [
+            ['UniProt', 'P1', [1, 2]],
+            ['ChEBI', '15422', [2]],
+            // An auxiliary resource: counted, not importable.
+            ['EMBL', 'E1', [3]],
+          ],
+        },
+      ],
+      targets: [{ pathway: 'A', ids: [['UniProt', 'P1', [1]]] }],
+      partners: [{ acc: 'P1', partners: ['Q9', 'P1'] }],
+    });
+    const top = pathways.get('TOP');
+    expect(Object.fromEntries(top?.resources ?? [])).toEqual({
+      UNIPROT: { entities: 1, interactors: 2, entitiesAndInteractors: 2, reactions: 2 },
+      CHEBI: { entities: 1, interactors: 0, entitiesAndInteractors: 1, reactions: 1 },
+      EMBL: { entities: 1, interactors: 0, entitiesAndInteractors: 1, reactions: 1 },
+    });
+    // Identifiers summed over resources; reactions one set.
+    expect(top?.combined).toEqual({
+      entities: 3,
+      interactors: 2,
+      entitiesAndInteractors: 4,
+      reactions: 3,
+    });
+    expect(top?.importable).toEqual({
+      entities: 2,
+      interactors: 2,
+      entitiesAndInteractors: 3,
+      reactions: 2,
+    });
+    expect(species.combined).toEqual(top?.combined);
+  });
+
+  it("counts a target's reactions for every resource an interactor it shares links to", () => {
+    // PathwayNode.processInteractor: X interacts with a UniProt target (in
+    // reaction 1) and a ChEBI one (in reaction 2), so reaction 1 counts for
+    // ChEBI and reaction 2 for UniProt.
+    const { pathways } = computeFigures({
+      tree,
+      entities: [
+        {
+          pathway: 'A',
+          ids: [
+            ['UniProt', 'P1', [1]],
+            ['ChEBI', '15422', [2]],
+          ],
+        },
+      ],
+      targets: [
+        {
+          pathway: 'A',
+          ids: [
+            ['UniProt', 'P1', [1]],
+            ['ChEBI', '15422', [2]],
+          ],
+        },
+      ],
+      partners: [
+        { acc: 'P1', partners: ['X'] },
+        { acc: '15422', partners: ['X'] },
+      ],
+    });
+    const a = pathways.get('A');
+    expect([a?.resources.get('UNIPROT')?.reactions, a?.resources.get('CHEBI')?.reactions]).toEqual([
+      2, 2,
+    ]);
   });
 });

@@ -119,7 +119,7 @@ export interface SizeInputs {
 const AUXILIARY = new Set(['NCBI_PROTEIN', 'EMBL', 'COMPOUND', 'PUBCHEM_COMPOUND']);
 
 /** A pathway's static counts for one resource, its subpathways' included. */
-export interface ResourceCounts {
+interface ResourceCounts {
   /** Distinct identifiers its reactions reach. */
   entities: number;
   /** Distinct identifiers of their interaction partners. */
@@ -136,7 +136,7 @@ export interface ResourceCounts {
  * ones alone (`importable`) -- identifiers summed over resources, reactions
  * as one set.
  */
-export interface PathwayFigures {
+interface PathwayFigures {
   resources: Map<string, ResourceCounts>;
   combined: ResourceCounts;
   importable: ResourceCounts;

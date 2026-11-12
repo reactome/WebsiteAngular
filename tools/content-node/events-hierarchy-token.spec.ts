@@ -92,7 +92,9 @@ beforeEach(() => {
     asked.push(url);
     const query = new URL(url).searchParams;
     const key = `${query.get('resource') ?? ''} ${query.get('importableOnly') ?? ''}`;
-    if (status !== 200) return new Response('{}', { status });
+    // The AnalysisService's own envelope, which says which.
+    if (status !== 200)
+      return Response.json({ code: status, reason: 'x', messages: [] }, { status });
     return Response.json({
       summary: { interactors: stored.interactors },
       pathways: stored.byQuery[key] ?? [],
@@ -111,7 +113,18 @@ beforeAll(async () => {
 });
 afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
 
-const TOKEN = 'MjAyNjExMTIwMDAwMDBfMQ%3D%3D';
+/**
+ * A token of its own for each test, as node keeps a stored result's answers
+ * a few minutes per token: TOKEN as sent, CANONICAL as the AnalysisService
+ * is asked with it.
+ */
+let tests = 0;
+let CANONICAL = '';
+let TOKEN = '';
+beforeEach(() => {
+  CANONICAL = Buffer.from(`20261112000000_${++tests}`).toString('base64');
+  TOKEN = encodeURIComponent(CANONICAL);
+});
 const get = (query: string) =>
   realFetch(`${base}/ContentService/data/eventsHierarchy/1111?pathwaysOnly=true&${query}`);
 type Node = {
@@ -294,6 +307,89 @@ describe('the analysis overlay', () => {
   });
 });
 
+describe('the analysis overlay, importableOnly, the other interactors', () => {
+  it('takes the curated found from the plain list, for interactors an analysis was run without', async () => {
+    stored = {
+      interactors: false,
+      byQuery: {
+        'TOTAL true': [
+          {
+            stId: 'R-TST-1',
+            llp: false,
+            entities: { resource: 'TOTAL', total: 2, found: 1, ratio: 0.01, pValue: 0.3 },
+          },
+        ],
+        'TOTAL false': [
+          {
+            stId: 'R-TST-1',
+            llp: false,
+            entities: { resource: 'TOTAL', total: 3, found: 2, ratio: 0.015, pValue: 0.1 },
+          },
+        ],
+      },
+    };
+    const node = byStId(
+      (await (await get(`token=${TOKEN}&interactors=true&importableOnly=true`)).json()) as Node[]
+    )['R-TST-1'];
+    expect(node?.entities).toEqual({
+      resource: 'TOTAL',
+      total: 6,
+      found: 1,
+      ratio: 6 / 600,
+      curatedTotal: 3,
+      curatedFound: 2,
+      interactorsTotal: 6,
+      interactorsFound: 0,
+      pValue: 0.3,
+    });
+  });
+
+  it("sums the main resources' curated found, for an interactor analysis asked without them", async () => {
+    stored = {
+      interactors: true,
+      byQuery: {
+        'TOTAL true': [
+          {
+            stId: 'R-TST-1',
+            llp: false,
+            entities: {
+              resource: 'TOTAL',
+              total: 9,
+              found: 5,
+              ratio: 0.1,
+              curatedFound: 4,
+              pValue: 0.2,
+            },
+          },
+        ],
+        'TOTAL false': [
+          {
+            stId: 'R-TST-1',
+            llp: false,
+            entities: { resource: 'TOTAL', total: 9, found: 5, ratio: 0.1, curatedFound: 4 },
+          },
+        ],
+        'UNIPROT false': [
+          { stId: 'R-TST-1', llp: false, entities: { resource: 'UNIPROT', curatedFound: 2 } },
+        ],
+        'CHEBI false': [
+          { stId: 'R-TST-1', llp: false, entities: { resource: 'CHEBI', curatedFound: 1 } },
+        ],
+      },
+    };
+    const node = byStId(
+      (await (await get(`token=${TOKEN}&interactors=false&importableOnly=true`)).json()) as Node[]
+    )['R-TST-1'];
+    expect(node?.entities).toEqual({
+      resource: 'TOTAL',
+      total: 2,
+      found: 3,
+      ratio: 0.01,
+      pValue: 0.2,
+    });
+  });
+});
+
 describe('the token', () => {
   const messages = async (response: Response) => [
     response.status,
@@ -330,11 +426,9 @@ describe('the token', () => {
     // Decoded until it no longer changes -- an encoded token encoded again
     // -- then asked by its decoded form.
     status = 404;
-    expect(await messages(await get('token=MjAyNjExMTIwMDAwMDBfMQ%25253D%25253D'))).toEqual([
-      500,
-      ['Not Found'],
-      HEADER,
-    ]);
-    expect(asked.at(-1)).toContain('/AnalysisService/token/MjAyNjExMTIwMDAwMDBfMQ%3D%3D?');
+    expect(
+      await messages(await get(`token=${encodeURIComponent(encodeURIComponent(TOKEN))}`))
+    ).toEqual([500, ['Not Found'], HEADER]);
+    expect(asked.at(-1)).toContain(`/AnalysisService/token/${encodeURIComponent(CANONICAL)}?`);
   });
 });
