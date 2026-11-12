@@ -63,8 +63,43 @@ const PATHWAYS: Record<string, { name: string; type: string; diagram: boolean | 
 
 const pick = (s: Species) => ({ dbId: s.dbId, taxId: s.taxId, displayName: s.displayName });
 
+/** A step of the event hierarchy's paths: stId, name, hasDiagram, species, class, labels, order. */
+const step = (stId: string, name: string, type: string, order = 0) => [
+  stId,
+  name,
+  type !== 'Reaction',
+  'Testus specius',
+  type,
+  type === 'Reaction' ? ['Event', 'ReactionLikeEvent', 'Reaction'] : ['Event', 'Pathway', type],
+  order,
+];
+const TOP = step('R-TST-1', 'A top', 'TopLevelPathway');
+const SUB = step('R-TST-11', 'Twin', 'Pathway', 1);
+const RXN = step('R-TST-R', 'A reaction', 'Reaction', 2);
+/** The full form's rows: by taxId, a tree; by name, paths out of order -- a cycle. */
+const FULL_ROWS = {
+  taxId: [
+    { db: TOP, nodePairCollection: [[SUB], [SUB, RXN]] },
+    // The same top-level pathway again: one, as a TreeSet keeps it.
+    { db: TOP, nodePairCollection: [[SUB]] },
+  ],
+  name: [{ db: TOP, nodePairCollection: [[SUB], [SUB, RXN], [SUB, RXN, SUB]] }],
+};
+
+/** How many times the full form's query was asked. */
+let fullQueries = 0;
+
 vi.mock('./graph.ts', () => ({
   read: async (cypher: string, params: Record<string, unknown>) => {
+    if (cypher.includes('nodePairCollection')) fullQueries++;
+    if (cypher.includes('nodePairCollection'))
+      return 'taxId' in params
+        ? params['taxId'] === '1111'
+          ? FULL_ROWS.taxId
+          : []
+        : params['speciesName'] === 'Testus specius'
+          ? FULL_ROWS.name
+          : [];
     if (cypher.includes('$name IN s.name'))
       return SPECIES.filter((s) => s.names.includes(params['name'] as string)).map(pick);
     if (cypher.includes('MATCH (s:Species {taxId: $taxId}) RETURN'))
@@ -210,8 +245,38 @@ describe('/data/eventsHierarchy/{species}?pathwaysOnly=true', () => {
       expect((await get(`1111?pathwaysOnly=${value}`)).status).toBe(200);
   });
 
-  it('leaves the full tree for later (T103d)', async () => {
-    for (const path of ['1111', '1111?pathwaysOnly=false'])
-      expect((await get(path)).status).toBe(501);
+  it('is the full tree without pathwaysOnly: every event, sized where it is a pathway', async () => {
+    for (const path of ['1111', '1111?pathwaysOnly=false']) {
+      const response = await get(path);
+      expect([path, response.status, await response.text()]).toEqual([
+        path,
+        200,
+        '[{"stId":"R-TST-1","name":"A top","species":"Testus specius","type":"TopLevelPathway","diagram":true,' +
+          `${sized('R-TST-1')},"children":[{"stId":"R-TST-11","name":"Twin","species":"Testus specius","type":"Pathway","diagram":true,` +
+          `${sized('R-TST-11')},"children":[{"stId":"R-TST-R","name":"A reaction","species":"Testus specius","type":"Reaction","diagram":false,` +
+          '"totalEntity":0,"totalEntityAndInteractors":0}]}]}]',
+      ]);
+      expect(response.headers.get('content-disposition')).toBe(
+        'inline; swaggerDownload="attachment"; filename="1111.json"'
+      );
+    }
+  });
+
+  it("asks by the name as given, and is Java's StackOverflowError when its paths make a cycle", async () => {
+    const before = fullQueries;
+    for (let ask = 0; ask < 2; ask++)
+      expect(await messages(await get('Testus%20specius'))).toEqual([
+        500,
+        ['Handler dispatch failed; nested exception is java.lang.StackOverflowError'],
+      ]);
+    // Kept: the release's answer for that name, not worked out again.
+    expect(fullQueries - before).toBe(1);
+    // Found as pathwaysOnly finds it, but no top-level pathway has this
+    // speciesName, or this taxId: no rows, Java's NullPointerException.
+    for (const species of ['T.%20specius', '500'])
+      expect(await messages(await get(species))).toEqual([
+        500,
+        ['Something unexpected happened and the error has been reported.'],
+      ]);
   });
 });

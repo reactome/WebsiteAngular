@@ -171,6 +171,8 @@ module.exports = {
   // Every route from an event up to a top-level pathway; the Pathway Browser
   // asks on every pathway it opens.
   '^/ContentService/data/event/[^/?]+/ancestors/?(\\?|$)': contentNode,
+  // The Reacfoam's tree, with or without an analysis (spec 006 T103).
+  '^/ContentService/data/eventsHierarchy/[^/?]+/?(\\?|$)': contentNode,
   // The lower-level pathways an entity takes part in, with or without a
   // species: the entity popup and the participating-pathways list. Of every
   // form of it too, and the diagrams either is drawn in.
