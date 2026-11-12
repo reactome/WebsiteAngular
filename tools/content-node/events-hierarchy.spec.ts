@@ -86,8 +86,12 @@ const FULL_ROWS = {
   name: [{ db: TOP, nodePairCollection: [[SUB], [SUB, RXN], [SUB, RXN, SUB]] }],
 };
 
+/** How many times the full form's query was asked. */
+let fullQueries = 0;
+
 vi.mock('./graph.ts', () => ({
   read: async (cypher: string, params: Record<string, unknown>) => {
+    if (cypher.includes('nodePairCollection')) fullQueries++;
     if (cypher.includes('nodePairCollection'))
       return 'taxId' in params
         ? params['taxId'] === '1111'
@@ -259,10 +263,14 @@ describe('/data/eventsHierarchy/{species}?pathwaysOnly=true', () => {
   });
 
   it("asks by the name as given, and is Java's StackOverflowError when its paths make a cycle", async () => {
-    expect(await messages(await get('Testus%20specius'))).toEqual([
-      500,
-      ['Handler dispatch failed; nested exception is java.lang.StackOverflowError'],
-    ]);
+    const before = fullQueries;
+    for (let ask = 0; ask < 2; ask++)
+      expect(await messages(await get('Testus%20specius'))).toEqual([
+        500,
+        ['Handler dispatch failed; nested exception is java.lang.StackOverflowError'],
+      ]);
+    // Kept: the release's answer for that name, not worked out again.
+    expect(fullQueries - before).toBe(1);
     // Found as pathwaysOnly finds it, but no top-level pathway has this
     // speciesName, or this taxId: no rows, Java's NullPointerException.
     for (const species of ['T.%20specius', '500'])

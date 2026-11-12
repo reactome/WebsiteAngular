@@ -1,6 +1,6 @@
 // The Reacfoam's tree (spec 006 T103, research D25): /data/eventsHierarchy/{species},
-// every pathway of a species with its size, and with an analysis token, what the
-// analysis found in each.
+// every pathway of a species with its size (or, without pathwaysOnly, every event),
+// and with an analysis token, what the analysis found in each.
 import type { AnalysisPathway } from './analysis.ts';
 
 /**
@@ -12,7 +12,7 @@ import type { AnalysisPathway } from './analysis.ts';
 export interface EventsHierarchyNode {
   stId: string;
   name: string;
-  /** The species' name (its displayName), on every node, however it was asked for. */
+  /** The species' name, on every node, however it was asked for. */
   species: string;
   /** The event's schema class: a pathway's with pathwaysOnly, any event's without. */
   type: string;
@@ -32,6 +32,6 @@ export interface EventsHierarchyNode {
   entities?: Omit<AnalysisPathway['entities'], 'exp'> & { exp?: number[] };
   /** With an analysis token, on a pathway the analysis found. */
   reactions?: AnalysisPathway['reactions'];
-  /** Left out on a pathway with no subpathways. */
+  /** Left out on an event with none below it. */
   children?: EventsHierarchyNode[];
 }

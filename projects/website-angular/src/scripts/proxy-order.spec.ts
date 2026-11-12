@@ -90,6 +90,17 @@ describe('the dev server proxy', () => {
     });
   }
 
+  it("sends the Reacfoam's tree to the content service, in every form", async () => {
+    // Pathways only or not, with a token or not, with a trailing slash.
+    for (const path of [
+      '9606',
+      '9606/',
+      '9606?pathwaysOnly=true',
+      '9606?pathwaysOnly=true&token=x',
+    ])
+      await expectContentNode(`/ContentService/data/eventsHierarchy/${path}`);
+  });
+
   for (const id of ['R-HSA-5672965', '5672965', 'REACT_111102.2']) {
     it(`sends the ancestors of ${id} to the content service`, async () => {
       await expectContentNode(`/ContentService/data/event/${id}/ancestors`);
@@ -376,7 +387,8 @@ describe('the dev server proxy', () => {
     // Only the ancestors of an event are ported.
     '/ContentService/data/event/R-HSA-5672965/ancestorsAndMore',
     '/ContentService/data/event/R-HSA-5672965/participatingPhysicalEntities',
-    '/ContentService/data/eventsHierarchy/9606',
+    // Nothing below a species' events hierarchy.
+    '/ContentService/data/eventsHierarchy/9606/x',
     // Only the lower-level pathways' own paths; no other is Java's either.
     '/ContentService/data/pathways/low/diagram/identifier/P04637',
     '/ContentService/data/pathways/low/entity/R-HSA-199420/allForms/x',
@@ -406,9 +418,6 @@ describe('the dev server proxy', () => {
     '/ContentService/data/detail/R-HSA-199420/getReverseGraph',
     '/ContentService/data/detail/R-HSA-109581/getSubGraph',
     '/ContentService/data/detail/R-HSA-199420/locationsInPWBAndMore',
-    // The event hierarchy needs the analysis service's pathway sizes.
-    '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true',
-    '/ContentService/data/eventsHierarchy/9606?pathwaysOnly=true&token=x',
     '/ContentService/data/schema/Pathway/attributesAll',
     '/ContentService/data/schema/Pathway/referrals/x',
     '/ContentService/data/schema/Pathway/countAll',
