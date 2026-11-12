@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countLocations, opensWhole, withBrowserLinks } from './locations-tree.component';
+import { countLocations, linksOut, opensWhole, withBrowserLinks } from './locations-tree.component';
 
 // As /data/detail/R-HSA-163615/locationsInPWB answers (PKA activation, release
 // 98), trimmed to one branch.
@@ -69,5 +69,31 @@ describe('which Locations trees open by themselves', () => {
     // Release 98, Homo sapiens: PKA activation 2, BCL2 16, ATP 2,182.
     expect([2, 16, 20].map(opensWhole)).toEqual([true, true, true]);
     expect([21, 2182].map(opensWhole)).toEqual([false, false]);
+  });
+});
+
+describe("which of the tree's places are links (#443)", () => {
+  const node = (type: string, children?: unknown[]) =>
+    ({ stId: 'R-HSA-1', name: 'x', type, url: '/PathwayBrowser/#/R-HSA-1', children }) as never;
+
+  it('links the end of a branch, and a reaction on the way, as reactome.org does', () => {
+    expect(linksOut(node('ChemicalDrug'))).toBe(true);
+    for (const type of [
+      'Reaction',
+      'BlackBoxEvent',
+      'Polymerisation',
+      'Depolymerisation',
+      'FailedReaction',
+    ])
+      expect([type, linksOut(node(type, [{}]))]).toEqual([type, true]);
+  });
+
+  it('leaves the pathways, complexes and sets on the way as the path to it', () => {
+    for (const type of ['TopLevelPathway', 'Pathway', 'Complex', 'CandidateSet', 'DefinedSet'])
+      expect([type, linksOut(node(type, [{}]))]).toEqual([type, false]);
+  });
+
+  it('links nothing without an address', () => {
+    expect(linksOut({ ...node('Reaction', [{}]), url: '' } as never)).toBe(false);
   });
 });

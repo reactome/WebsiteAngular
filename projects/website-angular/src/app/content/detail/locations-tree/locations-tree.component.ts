@@ -147,6 +147,8 @@ export class LocationsTreeComponent {
     return this.expanded().has(stId);
   }
 
+  readonly linksOut = linksOut;
+
   hasChildren(node: PathwayBrowserNode): boolean {
     return !!node.children?.length;
   }
@@ -166,6 +168,25 @@ export class LocationsTreeComponent {
   isLastChild(parent: PathwayBrowserNode[], node: PathwayBrowserNode): boolean {
     return parent[parent.length - 1] === node;
   }
+}
+
+/** The reaction classes, whose place in a tree is a link, as on reactome.org. */
+const REACTION_TYPES = new Set([
+  'Reaction',
+  'BlackBoxEvent',
+  'Polymerisation',
+  'Depolymerisation',
+  'FailedReaction',
+]);
+
+/**
+ * Whether a node of the tree links into the Pathway Browser: its end -- the
+ * object the page is about -- and any reaction on the way, which opens its
+ * diagram with the reaction selected (#443). Pathways, complexes and sets on
+ * the way are only the path, as reactome.org's tree has them.
+ */
+export function linksOut(node: PathwayBrowserNode): boolean {
+  return !!node.url && (!node.children?.length || REACTION_TYPES.has(node.type));
 }
 
 /**
