@@ -282,16 +282,18 @@
 
           <div class="top-right">
             <!-- reactome.org's Tour and Layout controls, behaving as they did there. -->
-            <button
-              type="button"
-              mat-icon-button
-              class="quote"
-              aria-label="Tour"
-              matTooltip="Pathway Browser tour"
-              (click)="openTour()"
-            >
-              <mat-icon fontSet="symbols">smart_display</mat-icon>
-            </button>
+            @if (hasTour) {
+              <button
+                type="button"
+                mat-icon-button
+                class="quote"
+                aria-label="Tour"
+                matTooltip="Pathway Browser tour"
+                (click)="openTour()"
+              >
+                <mat-icon fontSet="symbols">smart_display</mat-icon>
+              </button>
+            }
             <button
               type="button"
               mat-icon-button

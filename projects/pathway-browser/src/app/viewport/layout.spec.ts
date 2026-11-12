@@ -46,14 +46,8 @@ describe('the layout controls', () => {
 });
 
 describe('the tour', () => {
-  it("plays reactome.org's tour video", () => {
-    // The one the former browser's Tour dialog embeds (pwp-browser TourContainer).
-    expect(new URL(TOUR_VIDEO_URL).pathname).toBe('/embed/rDXvQcBl3Y0');
-  });
-
-  it('embeds it without YouTube cookies', () => {
-    // Privacy-enhanced mode: nothing is stored about a reader who opens the tour
-    // and never plays it.
-    expect(new URL(TOUR_VIDEO_URL).host).toBe('www.youtube-nocookie.com');
+  it('offers no video until there is a tutorial of this browser (#446)', () => {
+    // The former browser's video shows the old website.
+    expect(TOUR_VIDEO_URL).toBeUndefined();
   });
 });

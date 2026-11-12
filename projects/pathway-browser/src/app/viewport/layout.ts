@@ -26,7 +26,11 @@ export function togglePanels(layout: PanelLayout, control: LayoutControl): Panel
 }
 
 /**
- * The tour video the former browser's Tour dialog plays, embedded in YouTube's
- * privacy-enhanced mode so nothing is stored until the reader plays it.
+ * The tour video the Tour dialog plays, embedded in YouTube's privacy-enhanced
+ * mode so nothing is stored until the reader plays it; the Tour button shows
+ * only while there is one. None for now (#446): the former browser's video
+ * (https://www.youtube-nocookie.com/embed/rDXvQcBl3Y0) shows the old website,
+ * so it is not offered until a tutorial of this one is made. Set its embed
+ * address here, from www.youtube-nocookie.com, to bring the button back.
  */
-export const TOUR_VIDEO_URL = 'https://www.youtube-nocookie.com/embed/rDXvQcBl3Y0';
+export const TOUR_VIDEO_URL: string | undefined = undefined;

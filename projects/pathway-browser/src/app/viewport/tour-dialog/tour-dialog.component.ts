@@ -5,7 +5,7 @@ import { MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { TOUR_VIDEO_URL } from '../layout';
 
-/** The former browser's Tour: its walkthrough video, in a dialog. */
+/** The Tour: the browser's walkthrough video, in a dialog (opened only when there is one). */
 @Component({
   selector: 'cr-tour-dialog',
   imports: [MatDialogTitle, MatDialogContent, MatDialogClose, MatIconButton, MatIcon],
@@ -15,5 +15,5 @@ import { TOUR_VIDEO_URL } from '../layout';
 })
 export class TourDialogComponent {
   // A constant of ours, not reader input, so trusting it is safe.
-  readonly video = inject(DomSanitizer).bypassSecurityTrustResourceUrl(TOUR_VIDEO_URL);
+  readonly video = inject(DomSanitizer).bypassSecurityTrustResourceUrl(TOUR_VIDEO_URL ?? '');
 }
