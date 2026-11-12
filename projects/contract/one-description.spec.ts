@@ -274,6 +274,8 @@ const READER_ALIASES = [
   'Analysis.Result',
   'Analysis.Type',
   'NotFoundIdentifier',
+  // The Reacfoam's tree (spec 006 T103b), as the pathway browser reads it.
+  'EventsHierarchy.Data',
 ];
 
 /**

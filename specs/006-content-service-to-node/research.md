@@ -1210,7 +1210,17 @@ in-memory `PathwayHierarchy`, which the AnalysisService's data file holds: its
 names and types come from that file, and siblings sit in a `TreeSet` ordered by
 species, `hasEvent` order (a top-level pathway's is its place among
 `toLower(displayName)`), then name by `String.compareTo`, so equal siblings
-merge. The full form is graph-core's event hierarchy (node already parses it,
+merge. Before that, HierarchyBuilder reads a pathway's events as a SortedSet of
+`hasEvent` ordered by `order` alone, so of two events sharing an order -- of
+any kind, a reaction too -- it keeps one, which one being the order they
+loaded in; no pathway in release 98 has two events of one order, so nothing is
+dropped, and node keeps the first the graph returns. Two top-level pathways of
+one name tie in that order: Gallus gallus has two "Metabolism"
+(R-GGA-1660598, R-GGA-1430728), which come in the order Neo4j gives; node asks
+in graph-core's own query shape, and matches today, but a reload or another
+plan could swap the two cells. A species without a taxId, or any empty tree,
+is EventsController's 404; a species with no top-level pathway has no
+hierarchy, and is its NullPointerException. The full form is graph-core's event hierarchy (node already parses it,
 `parseHierarchy`), each pathway's sizes looked up by stId and every other event
 `0/0`. Without a token, both are deterministic; `interactors`, `resource` and
 `importableOnly` change nothing.
@@ -1284,3 +1294,10 @@ The branch is well behind main and would want rebasing before any further work.
   better left proxied indefinitely.
 - What the inventory of external consumers actually is. D3 assumes we cannot
   enumerate them; if that can be improved, the parity constraint could relax.
+- Whether the Reacfoam's sizing is the right approach (D25). Each cell's area is
+  the analysis's denominator for that pathway -- its distinct identifiers, with
+  or without interactors -- reused as a size, and to match Java node repeats
+  analysis-core's counting rules, alias merge included. Worth revisiting to
+  confirm that is what a reader of the Reacfoam should see, and whether the
+  number should be computed by a rule of its own or read from the
+  AnalysisService, which already holds it.

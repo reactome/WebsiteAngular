@@ -237,6 +237,10 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/instance/{id}/referrers',
     path: { id: 'oid' },
   },
+  '/ContentService/data/eventsHierarchy/{id}': {
+    java: '/data/eventsHierarchy/{species}',
+    path: { id: 'taxId' },
+  },
   '/ContentService/data/pathways/top/{id}': {
     java: '/data/pathways/top/{species}',
     path: { id: 'taxId' },

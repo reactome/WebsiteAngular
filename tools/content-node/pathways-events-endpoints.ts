@@ -8,8 +8,10 @@
  * unchanged from service.ts.
  */
 import type { Endpoint, Request } from './endpoint.ts';
-import { javaError, notFound, only } from './answers.ts';
-import { asciiDigits, javaNumeric, javaTrim, javaUtf8 } from './java-text.ts';
+import { javaError, javaJson, notFound, only, unexpectedFailure } from './answers.ts';
+import { analysisSizes } from './analysis-sizes.ts';
+import type { EventsHierarchyNode } from '../../projects/contract/events-hierarchy.ts';
+import { asciiDigits, javaNumeric, javaTrim, javaUtf8, tomcatHeader } from './java-text.ts';
 import type { JsonWritten } from './answers.ts';
 import type { PathwayBrowserNode as LocationNode } from '../../projects/contract/locations.ts';
 import {
@@ -700,7 +702,324 @@ export function inDepthAttributes(
   return { value: joined };
 }
 
+/** A Species as graph-core's SpeciesService finds one for the events hierarchy. */
+type HierarchySpecies = { dbId: number; taxId: string | null; displayName: string };
+
+const SPECIES_FIELDS = 's.dbId AS dbId, s.taxId AS taxId, s.displayName AS displayName';
+
+/**
+ * SpeciesService.getSpecies(String), as EventsController's pathwaysOnly
+ * branch calls it: empty is none; all digits (StringUtils.isNumeric) is a
+ * taxId, and failing that a dbId by Long.valueOf, whose overflow is Java's
+ * NumberFormatException; anything else lower-cased, each run of `_` and
+ * space made one space, capitalised, and matched against every name a
+ * Species has (getSpeciesByName). Each repository asks for one Species: two
+ * would be Spring Data's failure, never seen (no two share a taxId or a name).
+ */
+async function hierarchySpecies(
+  raw: string
+): Promise<{ species?: HierarchySpecies; failure?: string; ambiguous?: boolean }> {
+  if (raw === '') return {};
+  const one = (rows: HierarchySpecies[]) =>
+    rows.length > 1 ? { ambiguous: true } : rows[0] ? { species: rows[0] } : {};
+  if (!javaNumeric(raw)) {
+    const lower = raw.toLowerCase().replace(/[_ ]+/g, ' ');
+    const name = javaCapitalize(lower);
+    return one(
+      await read<HierarchySpecies>(
+        `MATCH (s:Species) WHERE $name IN s.name RETURN ${SPECIES_FIELDS} LIMIT 2`,
+        { name }
+      )
+    );
+  }
+  const byTaxId = await read<HierarchySpecies>(
+    `MATCH (s:Species {taxId: $taxId}) RETURN ${SPECIES_FIELDS} LIMIT 2`,
+    { taxId: raw }
+  );
+  if (byTaxId.length) return one(byTaxId);
+  const digits = asciiDigits(raw);
+  if (BigInt(digits) > 9223372036854775807n) return { failure: `For input string: "${raw}"` };
+  return one(
+    await read<HierarchySpecies>(
+      `MATCH (s:Species {dbId: $dbId}) RETURN ${SPECIES_FIELDS} LIMIT 2`,
+      { dbId: neo4j.int(digits) }
+    )
+  );
+}
+
+/** Character.toTitleCase where it is not toUpperCase: the four digraph letters. */
+const TITLE_CASE: Record<string, string> = {
+  Ǆ: 'ǅ',
+  ǅ: 'ǅ',
+  ǆ: 'ǅ',
+  Ǉ: 'ǈ',
+  ǈ: 'ǈ',
+  ǉ: 'ǈ',
+  Ǌ: 'ǋ',
+  ǋ: 'ǋ',
+  ǌ: 'ǋ',
+  Ǳ: 'ǲ',
+  ǲ: 'ǲ',
+  ǳ: 'ǲ',
+};
+
+/**
+ * StringUtils.capitalize (commons-lang3 3.12): the first code point in title
+ * case, the rest as they are. Title case is upper case but for the digraphs
+ * above, and a letter whose upper case is more than one letter (ß, ŉ) is
+ * left as it is, as Character.toTitleCase leaves it. (The Greek letters with
+ * iota subscript, which Java title-cases to one letter, stay as they are here:
+ * no species name could match either.)
+ */
+function javaCapitalize(text: string) {
+  const first = String.fromCodePoint(text.codePointAt(0) ?? 0);
+  if (text === '') return text;
+  const upper = first.toUpperCase();
+  const title = TITLE_CASE[first] ?? ([...upper].length === 1 ? upper : first);
+  return title + text.slice(first.length);
+}
+
+/** One pathway of the AnalysisService's hierarchy, as HierarchyBuilder reads it. */
+type HierarchyPathway = {
+  stId: string;
+  name: string | null;
+  type: string | null;
+  diagram: boolean | null;
+};
+
+/**
+ * HierarchyBuilder's tree for a species: its top-level pathways
+ * (TopLevelPathwayService, by toLower(displayName)), each given its place
+ * among them as its order, then every Pathway each holds through hasEvent,
+ * with the relationship's order, whatever its species.
+ */
+async function hierarchyRows(taxId: string) {
+  const [tops, events] = await Promise.all([
+    // TopLevelPathwayRepository's query, in its shape: two top-level pathways
+    // of one name (Gallus gallus has two "Metabolism") come in the order
+    // Neo4j gives, which a query of another shape need not match (D25).
+    read<{ stId: string }>(
+      `MATCH (n:TopLevelPathway)-[r:species]-(s:Species {taxId: $taxId})
+       WITH n, collect(r) AS r, collect(s) AS s
+       RETURN n.stId AS stId ORDER BY toLower(n.displayName) ASC`,
+      { taxId }
+    ),
+    read<{ parent: string; child: string; order: number | null; pathway: boolean }>(
+      `MATCH (t:TopLevelPathway)-[:species]->(s:Species) WHERE s.taxId = $taxId
+       MATCH (t)-[:hasEvent*0..]->(p:Pathway)-[r:hasEvent]->(c:Event)
+       RETURN DISTINCT p.stId AS parent, c.stId AS child, r.order AS order, c:Pathway AS pathway`,
+      { taxId }
+    ),
+  ]);
+  const edges = keptPathways(events);
+  const stIds = [...new Set([...tops.map((t) => t.stId), ...edges.map((e) => e.child)])];
+  const pathways = await read<HierarchyPathway>(
+    `MATCH (p:Pathway) WHERE p.stId IN $stIds
+     RETURN p.stId AS stId, p.displayName AS name, p.schemaClass AS type, p.hasDiagram AS diagram`,
+    { stIds }
+  );
+  return { tops, edges, pathways };
+}
+
+/**
+ * The subpathways HierarchyBuilder.fillBranch keeps. A pathway's events are a
+ * SortedSet of hasEvent ordered by `order` alone (Has.compareTo), so of two
+ * events with one order -- of any kind, a reaction too -- the set keeps one,
+ * and only then are pathways picked out. Which one Java keeps is the order it
+ * loaded them in; here, the first the graph returns. No pathway has two
+ * events of one order in release 98, so none is dropped (D25).
+ */
+function keptPathways(
+  events: { parent: string; child: string; order: number | null; pathway: boolean }[]
+) {
+  const taken = new Set<string>();
+  const kept: { parent: string; child: string; order: number }[] = [];
+  for (const { parent, child, order, pathway } of events) {
+    // Has.order is an int: a missing one is 0.
+    const at = `${parent} ${order ?? 0}`;
+    if (taken.has(at)) continue;
+    taken.add(at);
+    if (pathway) kept.push({ parent, child, order: order ?? 0 });
+  }
+  return kept;
+}
+
+/** A node of the tree before it is written: what PathwayBrowserNode.compareTo reads. */
+type Placed = { stId: string; name: string; order: number };
+
+/**
+ * PathwayBrowserNode.compareTo within one species, as the TreeSet of a
+ * node's children uses it: order, then name by String.compareTo. Two that
+ * compare equal are one, the first kept.
+ */
+function treeSetOf<T extends Placed>(nodes: T[]): T[] {
+  const kept: T[] = [];
+  // Array.sort is stable, so the first of two equal ones stays first.
+  const sorted = [...nodes].sort((a, b) => a.order - b.order || javaCompare(a.name, b.name));
+  for (const node of sorted) {
+    const last = kept[kept.length - 1];
+    if (last && last.order === node.order && last.name === node.name) continue;
+    kept.push(node);
+  }
+  return kept;
+}
+
+/**
+ * The pathwaysOnly answer for a species with a hierarchy, built once per
+ * species while the process lives: SizedPathwayBrowserNode over each
+ * PathwayNode -- stId, name, the species' name, type, whether it has a
+ * diagram of its own, its sizes (analysisSizes), its children -- in
+ * Jackson's order, with children left out where there are none. A pathway
+ * under two parents is the same subtree under each.
+ */
+async function pathwaysOnlyTree(taxId: string, speciesName: string) {
+  const [{ tops, edges, pathways }, sizes] = await Promise.all([
+    hierarchyRows(taxId),
+    analysisSizes(taxId),
+  ]);
+  const byStId = new Map(pathways.map((p) => [p.stId, p]));
+  const childrenOf = new Map<string, { stId: string; order: number }[]>();
+  for (const { parent, child, order } of edges) {
+    const list = childrenOf.get(parent) ?? [];
+    list.push({ stId: child, order });
+    childrenOf.set(parent, list);
+  }
+  const placed = (stId: string, order: number) => {
+    const name = byStId.get(stId)?.name;
+    // String.compareTo on a null name is Java's NullPointerException.
+    if (name === null || name === undefined) throw new JavaNullPointer(`no name: ${stId}`);
+    return { stId, name, order };
+  };
+  const written = new Map<string, EventsHierarchyNode>();
+  const write = (stId: string): EventsHierarchyNode => {
+    const known = written.get(stId);
+    if (known) return known;
+    const pathway = byStId.get(stId);
+    const size = sizes.get(stId);
+    const children = treeSetOf(
+      (childrenOf.get(stId) ?? []).map(({ stId: child, order }) => placed(child, order))
+    ).map(({ stId: child }) => write(child));
+    // In SizedPathwayBrowserNode's @JsonPropertyOrder; a missing name or type
+    // is left out, as Jackson leaves out a null (never seen). No analysis yet,
+    // so no llp, entities or reactions (T103c).
+    const node: JsonWritten<EventsHierarchyNode> = {
+      stId,
+      name: pathway?.name as string,
+      species: speciesName,
+      type: pathway?.type as EventsHierarchyNode['type'],
+      diagram: pathway?.diagram ?? false,
+      llp: undefined,
+      totalEntity: size?.totalEntity ?? 0,
+      totalEntityAndInteractors: size?.totalEntityAndInteractors ?? 0,
+      entities: undefined,
+      reactions: undefined,
+      children: children.length ? children : undefined,
+    };
+    written.set(stId, node as EventsHierarchyNode);
+    return node as EventsHierarchyNode;
+  };
+  return javaJson(
+    treeSetOf(tops.map(({ stId }, order) => placed(stId, order))).map(({ stId }) => write(stId))
+  );
+}
+
+const pathwaysOnlyBySpecies = new Map<string, Promise<string>>();
+
+/** pathwaysOnlyTree, kept per species; a failed build is tried again next time. */
+function cachedPathwaysOnly(taxId: string, speciesName: string) {
+  let tree = pathwaysOnlyBySpecies.get(taxId);
+  if (!tree) {
+    tree = pathwaysOnlyTree(taxId, speciesName);
+    tree.catch(() => pathwaysOnlyBySpecies.delete(taxId));
+    pathwaysOnlyBySpecies.set(taxId, tree);
+  }
+  return tree;
+}
+
+/**
+ * Whether analysis-core built a hierarchy for a species: one for each
+ * species with a top-level pathway (SpeciesRepository.getSpecies), keyed by
+ * the Species itself.
+ */
+async function hasHierarchy(dbId: number) {
+  const rows = await read<{ n: number }>(
+    'MATCH (t:TopLevelPathway)-[:species]->(:Species {dbId: $dbId}) RETURN count(t) AS n',
+    { dbId: neo4j.int(dbId) }
+  );
+  return Number(rows[0]?.n ?? 0) > 0;
+}
+
+/**
+ * EventsController.getEventHierarchy, the pathwaysOnly form without a token
+ * (spec 006 T103b): its parameters read in its order, each Boolean as Spring
+ * binds one; the species as SpeciesService finds it, a species without a
+ * hierarchy -- none found, or no top-level pathway -- being Java's
+ * NullPointerException; the tree with Content-Disposition naming the species
+ * as given. The token overlay (T103c) and the full tree (T103d) are not here
+ * yet, and the route stays Java's until they are.
+ */
+async function eventsHierarchy(request: Request) {
+  const raw = pathId(rawSegment(request, 4));
+  const pathwaysOnly = springBoolean(queryValues(request, 'pathwaysOnly'));
+  if (pathwaysOnly.error !== undefined)
+    return javaError(request, 400, 'BAD_REQUEST', pathwaysOnly.error);
+  const token = queryValues(request, 'token');
+  for (const name of ['interactors', 'importableOnly']) {
+    const bound = springBoolean(queryValues(request, name));
+    if (bound.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', bound.error);
+  }
+  if (pathwaysOnly.value !== true || token.length > 0)
+    return javaError(
+      request,
+      501,
+      'NOT_IMPLEMENTED',
+      'Not yet answered here: spec 006 T103c, T103d'
+    );
+
+  const found = await hierarchySpecies(raw);
+  if (found.failure !== undefined)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
+  if (found.ambiguous || !found.species || !(await hasHierarchy(found.species.dbId)))
+    return unexpectedFailure(request);
+  const { taxId, displayName } = found.species;
+  // HierarchyBuilder leaves the hierarchy of a species without a taxId empty;
+  // EventsController answers an empty tree with its 404. None in release 98.
+  if (!taxId) return notFound(request, `No event hierarchy found for given species: ${raw}`);
+  try {
+    const tree = await cachedPathwaysOnly(taxId, displayName);
+    if (tree === '[]')
+      return notFound(request, `No event hierarchy found for given species: ${raw}`);
+    return {
+      status: 200,
+      serialised: tree,
+      type: 'application/json',
+      headers: {
+        // As Tomcat writes it: past Latin-1 a '?' (a species in Arabic-Indic digits).
+        'Content-Disposition': tomcatHeader(
+          `inline; swaggerDownload="attachment"; filename="${raw}.json"`
+        ),
+      },
+    };
+  } catch (error) {
+    if (error instanceof JavaNullPointer) return unexpectedFailure(request);
+    throw error;
+  }
+}
+
 export const pathwaysEventsEndpoints: Endpoint[] = [
+  {
+    path: '/ContentService/data/eventsHierarchy/{id}',
+    sample: '9606?pathwaysOnly=true',
+    // The 404 and 500 bodies name the service that answered.
+    differs: [/^\/ContentService\/data\/eventsHierarchy\/[^/:]+[^:]*: \.url: /],
+    /**
+     * The Reacfoam's tree (spec 006 T103, research D25): every pathway of a
+     * species with its size. The pathwaysOnly form without a token is
+     * answered (T103b); the token overlay and the full tree follow (T103c,
+     * T103d), and nginx sends the route to node only then.
+     */
+    handler: eventsHierarchy,
+  },
   {
     path: '/ContentService/data/pathways/top/{id}',
     // Compared by default. Without a sample this endpoint expanded to nothing

@@ -22,7 +22,7 @@ import type { Citation } from './citation.ts';
 import { javaError, unexpectedFailure } from './answers.ts';
 import type { Failure } from './answers.ts';
 import type { PathwayCitation } from '../../projects/contract/citation.ts';
-import { hashSetOf } from './java-text.ts';
+import { hashSetOf, tomcatHeader } from './java-text.ts';
 import { URLSearchParams } from 'node:url';
 import { settings } from './settings.ts';
 import { pathId, queryValues, rawSegment, requiredString, springBoolean } from './spring.ts';
@@ -71,18 +71,6 @@ function citationFailure(request: Request, caught: unknown) {
   if (failure.javaMessage)
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);
   throw failure;
-}
-
-/** A header value as Tomcat writes it: past Latin-1 a '?', a control character a space. */
-function tomcatHeader(text: string) {
-  return [...text]
-    .map((char) => {
-      // One character of the text, so it has a code point.
-      const code = char.codePointAt(0) as number;
-      if (code > 0xff) return '?';
-      return (code < 0x20 && char !== '\t') || code === 0x7f ? ' ' : char;
-    })
-    .join('');
 }
 
 /**

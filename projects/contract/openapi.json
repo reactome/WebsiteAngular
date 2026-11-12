@@ -1216,9 +1216,8 @@
         }
       }
     },
-    "/ContentService/data/eventsHierarchy/{species}": {
+    "/ContentService/data/eventsHierarchy/{id}": {
       "get": {
-        "x-contract": "not yet",
         "description": "Events (pathways and reactions) in Reactome are organised in a hierarchical structure for every species. By following all 'hasEvent' relationships, this method retrieves the full event hierarchy for any given species. The result is a list of tree structures, one for each TopLevelPathway. Every event in these trees is represented by a PathwayBrowserNode. The latter contains the stable identifier, the name, the species, the url, the type, and the diagram of the particular event.",
         "operationId": "getEventHierarchy",
         "summary": "The full event hierarchy for a given species",
@@ -1227,7 +1226,7 @@
         ],
         "parameters": [
           {
-            "name": "species",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
@@ -1316,7 +1315,17 @@
         ],
         "responses": {
           "200": {
-            "description": "Not yet described by the contract."
+            "description": "The answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventsHierarchyNode"
+                  }
+                }
+              }
+            }
           },
           "404": {
             "description": "Species does not match with any in current data",
@@ -9122,6 +9131,22 @@
         ],
         "additionalProperties": false,
         "description": "A person's institution. Recorded only in people's answers (8, each with an address)."
+      },
+      "AnalysisResource": {
+        "type": "string",
+        "enum": [
+          "TOTAL",
+          "UNIPROT",
+          "ENSEMBL",
+          "CHEBI",
+          "IUPHAR",
+          "MIRBASE",
+          "NCBI_PROTEIN",
+          "EMBL",
+          "COMPOUND",
+          "PUBCHEM_COMPOUND"
+        ],
+        "description": "A resource an identifier can be mapped from, and a result summarised by."
       },
       "Anatomy_JsogReference": {
         "type": "object",
@@ -16930,6 +16955,139 @@
             "type": "string"
           }
         }
+      },
+      "EventsHierarchyNode": {
+        "type": "object",
+        "properties": {
+          "stId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "species": {
+            "type": "string",
+            "description": "The species' name (its displayName), on every node, however it was asked for."
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "TopLevelPathway",
+              "Pathway",
+              "CellLineagePath"
+            ]
+          },
+          "diagram": {
+            "type": "boolean",
+            "description": "Whether this pathway has a diagram of its own."
+          },
+          "llp": {
+            "type": "boolean",
+            "description": "Lower-level pathway: written with an analysis token only."
+          },
+          "totalEntity": {
+            "type": "number",
+            "description": "Distinct identifiers its reactions reach, its subpathways' included."
+          },
+          "totalEntityAndInteractors": {
+            "type": "number",
+            "description": "Those with their interaction partners."
+          },
+          "entities": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "exp": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "resource": {
+                "$ref": "#/components/schemas/AnalysisResource"
+              },
+              "total": {
+                "type": "number"
+              },
+              "found": {
+                "type": "number"
+              },
+              "ratio": {
+                "type": "number"
+              },
+              "pValue": {
+                "type": "number"
+              },
+              "fdr": {
+                "type": "number"
+              },
+              "curatedFound": {
+                "type": "number"
+              },
+              "curatedTotal": {
+                "type": "number"
+              },
+              "interactorsFound": {
+                "type": "number"
+              },
+              "interactorsTotal": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "fdr",
+              "found",
+              "pValue",
+              "ratio",
+              "resource",
+              "total"
+            ],
+            "description": "With an analysis token, on a pathway the analysis found: the analysis's figures as the AnalysisService gives them, except that `exp` is left out when empty, as the content service leaves out empty lists."
+          },
+          "reactions": {
+            "type": "object",
+            "properties": {
+              "resource": {
+                "$ref": "#/components/schemas/AnalysisResource"
+              },
+              "total": {
+                "type": "number"
+              },
+              "found": {
+                "type": "number"
+              },
+              "ratio": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "resource",
+              "total",
+              "found",
+              "ratio"
+            ],
+            "additionalProperties": false,
+            "description": "With an analysis token, on a pathway the analysis found."
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventsHierarchyNode"
+            },
+            "description": "Left out on a pathway with no subpathways."
+          }
+        },
+        "required": [
+          "stId",
+          "name",
+          "species",
+          "type",
+          "diagram",
+          "totalEntity",
+          "totalEntityAndInteractors"
+        ],
+        "additionalProperties": false,
+        "description": "A pathway of the tree, in the order Java writes its fields. With `pathwaysOnly=true` the tree is the AnalysisService's hierarchy: pathways only, from each top-level pathway down."
       },
       "EvidenceType_JsogReference": {
         "type": "object",

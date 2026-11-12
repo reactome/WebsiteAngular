@@ -200,6 +200,9 @@ const NOT_YET_ROUTED: Record<string, string> = {
   // Routed on beta alone (dev.conf) until the release and production run the
   // PDF service (deploy/pdf-export).
   '/ContentService/exporter/document/event/{id}': 'spec 006 T100',
+  // Node answers the pathwaysOnly form without a token; Java keeps the route
+  // until node answers the token overlay and the full tree too.
+  '/ContentService/data/eventsHierarchy/{id}': 'spec 006 T103c, T103d',
 };
 // node's own list, as the service builds it -- some paths are template
 // literals, which a reading of the source text missed (four person lists,
