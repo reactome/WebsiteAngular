@@ -105,7 +105,7 @@ export const CALLS: Call[] = [
   // pathway-browser
   { file: `${PB}/deltasignal/deltasignal.service.ts`, method: 'fetchMemberClosure', http: 'GET', route: '/data/query/enhanced/{id}', type: 'ContentServiceEntity' },
   { file: `${PB}/details/common/reaction-diagram/reaction-diagram.component.ts`, method: 'ngAfterViewInit', http: 'GET', route: '/exporter/reaction/{id}/diagram', type: 'ReactionLayout' },
-  { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', type: 'PlainGraphObject' },
+  { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', http: 'GET', route: '/data/query/enhanced/{id}', query: { includeRef: 'true' }, type: 'JsogObject<DatabaseObject>' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'molecules', n: 2, http: 'GET', route: '/data/query/{id}', type: 'PlainGraphObject' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'annotated', http: 'GET', route: '/data/participants/{id}/referenceEntities', type: 'PlainReferenceEntity[]' },
   { file: `${PB}/diagram/entity-popup/entity-popup.component.ts`, method: 'pathways', http: 'GET', route: '/data/pathways/low/entity/{id}', type: 'PlainPathway[]' },
@@ -163,7 +163,7 @@ export const CALLS: Call[] = [
   { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEntityInDepth', http: 'GET', route: '/data/entity/{id}/in-depth', type: 'JsogObject<DatabaseObject> | null', reads: 'JsogObject<E> | null', gap: 'never recorded' },
   { file: `${WEB}/app/content/detail/providers/detail-entity.provider.ts`, method: 'getEventInDepth', http: 'GET', route: '/data/event/{id}/in-depth', type: 'JsogObject<DatabaseObject>', reads: 'JsogObject<E>', gap: 'never recorded' },
   { file: `${WEB}/app/content/detail/providers/detail-interactor.provider.ts`, method: 'getCustomInteractorsByAcc', http: 'GET', route: '/interactors/static/molecule/enhanced/{acc}/details', type: 'CustomInteraction[]' },
-  { file: `${WEB}/app/idg/idg.service.ts`, method: 'detail', http: 'GET', route: '/data/query/enhanced/{id}', type: 'PlainGraphObject' },
+  { file: `${WEB}/app/idg/idg.service.ts`, method: 'detail', http: 'GET', route: '/data/query/enhanced/{id}', query: { includeRef: 'true' }, type: 'JsogObject<DatabaseObject>' },
   { file: `${WEB}/app/idg/idg.service.ts`, method: 'ancestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: null }, type: 'PlainEvent[][]' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'fetchModel', http: 'GET', route: '/data/schema/model', type: 'SchemaNode', reads: 'T' },
   { file: `${WEB}/services/content-data.service.ts`, method: 'getTocPathways', http: 'GET', route: '/data/content/toc', type: 'TocPathway[]' },
