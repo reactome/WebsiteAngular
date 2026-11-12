@@ -3654,6 +3654,46 @@
         }
       }
     },
+    "/ContentService/data/referenceMolecules": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/referenceMolecules/identifiers": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/referenceSequences": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/referenceSequences/identifiers": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/data/schema/model": {
       "get": {
         "description": "This method retrieves a full specification of all Reactome classes.",

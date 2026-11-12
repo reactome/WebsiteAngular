@@ -3,11 +3,22 @@
  * event's participants (/data/participants/*), an entity's other forms
  * and component-of (/data/entity/*), and complexes
  * (/data/complex*), with the helpers only they use. Moved unchanged from
- * service.ts.
+ * service.ts. Then the reference molecules and sequences
+ * (/data/referenceMolecules, /data/referenceSequences, spec 006 T105),
+ * PhysicalEntityController's too.
  */
-import type { Endpoint } from './endpoint.ts';
+import neo4j from 'neo4j-driver';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { javaError, neo4jFailureMessage, notFound, only } from './answers.ts';
-import { pathId, queryValues, rawSegment, springPrimitiveBoolean } from './spring.ts';
+import {
+  pathId,
+  queryValues,
+  rawSegment,
+  springInteger,
+  springPrimitiveBoolean,
+  writerFor,
+} from './spring.ts';
+import { mapNodes, writeDomain } from './domain.ts';
 import { graphCoreId } from './objects.ts';
 import { read } from './graph.ts';
 import type { Props } from './objects.ts';
@@ -147,6 +158,99 @@ export function physicalEntityJson(node: Props) {
   const className = PHYSICAL_ENTITY_CLASS_NAMES[schemaClass as string];
   if (className) return { ...head, className, ...tail };
   return { ...head, ...tail, ...(schemaClass && { className: schemaClass }) };
+}
+
+/** A reference class's object as referenceObjectsQuery returns it. */
+interface ReferenceObjectRow {
+  n: Props;
+  labels: string[];
+  id: number | string;
+}
+
+/**
+ * graph-core's SchemaRepository.getByClass(Class) and getByClass(Class, page,
+ * offset) as written -- `MATCH (n:<class>) RETURN n ORDER BY n.displayName`,
+ * paged with SKIP $skip LIMIT $limit -- with the node's labels and id beside
+ * it, which the domain objects need and read() does not keep. The order of
+ * rows that share a name is the plan's, so the text is what keeps it Java's.
+ */
+function referenceObjectsQuery(className: string, paged: boolean) {
+  return (
+    `MATCH (n:${className}) RETURN n, labels(n) AS labels, id(n) AS id ORDER BY n.displayName` +
+    (paged ? ' SKIP $skip LIMIT $limit' : '')
+  );
+}
+
+/**
+ * A reference class's objects, all of them (ReferenceMolecule) or one page
+ * (ReferenceSequence), answered as `answer` writes them.
+ *
+ * The page as PhysicalEntityController reads it: `page` and `offset` are
+ * required Integers, read as Spring reads them (springInteger), page first --
+ * a missing or unreadable one is Java's 400. SchemaService.getByClass passes
+ * them on with no cap and no check: the limit is the offset, the skip
+ * (page - 1) * offset in Java's int arithmetic, overflow and all, and a
+ * negative one is Neo4j's refusal, Java's 500. Nothing found is no error: an
+ * empty list.
+ */
+function referenceObjects(
+  className: string,
+  paged: boolean,
+  answer: (rows: ReferenceObjectRow[], request: Request) => Answer
+) {
+  return async (request: Request): Promise<Answer> => {
+    let params = {};
+    if (paged) {
+      const page = springInteger(queryValues(request, 'page'), 'page');
+      if (page.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', page.error);
+      const offset = springInteger(queryValues(request, 'offset'), 'offset');
+      if (offset.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', offset.error);
+      params = {
+        skip: neo4j.int(Math.imul((page.value - 1) | 0, offset.value)),
+        limit: neo4j.int(offset.value),
+      };
+    }
+    let rows: ReferenceObjectRow[];
+    try {
+      rows = await read<ReferenceObjectRow>(referenceObjectsQuery(className, paged), params);
+    } catch (failure) {
+      const message = neo4jFailureMessage(failure);
+      if (message === undefined) throw failure;
+      return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+    }
+    return answer(rows, request);
+  };
+}
+
+/** The objects whole, as the domain objects are written, in any of Java's views. */
+function referenceObjectsJson(rows: ReferenceObjectRow[], request: Request): Answer {
+  return {
+    status: 200,
+    serialised: writeDomain(
+      mapNodes(rows.map((row) => ({ id: row.id, labels: row.labels, props: row.n }))),
+      ...writerFor(request)
+    ),
+    type: 'application/json',
+  };
+}
+
+/**
+ * The /identifiers form: a line per object, `stId<TAB>databaseName:identifier`,
+ * joined by newlines with none after the last. Java concatenates the getters'
+ * values, so a missing one -- a reference sequence has no stable id -- is the
+ * text "null"; nothing found is an empty body.
+ */
+function referenceIdentifiers(rows: ReferenceObjectRow[]): Answer {
+  return {
+    status: 200,
+    body: rows
+      .map(
+        ({ n }) =>
+          `${asJavaString(n['stId'])}\t${asJavaString(n['databaseName'])}:${asJavaString(n['identifier'])}`
+      )
+      .join('\n'),
+    type: 'text/plain;charset=UTF-8',
+  };
 }
 
 export const entitiesEndpoints: Endpoint[] = [
@@ -443,5 +547,36 @@ export const entitiesEndpoints: Endpoint[] = [
         type: 'application/json',
       };
     },
+  },
+  {
+    path: '/ContentService/data/referenceMolecules',
+    /**
+     * Every ReferenceMolecule, whole, by name: about 1MB. Hidden from Java's
+     * description and asked for by nothing of the site's. graph-core's
+     * SchemaService.getByClass(ReferenceMolecule), the nodes alone (no
+     * relationship), written as the domain objects.
+     */
+    handler: referenceObjects('ReferenceMolecule', false, referenceObjectsJson),
+  },
+  {
+    path: '/ContentService/data/referenceMolecules/identifiers',
+    /** The same molecules, a line each: stable id, then database:identifier. */
+    handler: referenceObjects('ReferenceMolecule', false, referenceIdentifiers),
+  },
+  {
+    path: '/ContentService/data/referenceSequences',
+    differs: [/^\/ContentService\/data\/referenceSequences(\?\S*)?: \.url: /],
+    /**
+     * One page of the ReferenceSequences, whole, by name: getByClass(
+     * ReferenceSequence, page, offset), its subclasses' objects among them.
+     * The page as referenceObjects reads it.
+     */
+    handler: referenceObjects('ReferenceSequence', true, referenceObjectsJson),
+  },
+  {
+    path: '/ContentService/data/referenceSequences/identifiers',
+    differs: [/^\/ContentService\/data\/referenceSequences\/identifiers(\?\S*)?: \.url: /],
+    /** The same page a line each; a sequence's stable id is the text "null". */
+    handler: referenceObjects('ReferenceSequence', true, referenceIdentifiers),
   },
 ];
