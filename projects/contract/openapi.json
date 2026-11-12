@@ -90,6 +90,16 @@
     }
   ],
   "paths": {
+    "/ContentService/citation/download": {
+      "get": {
+        "x-contract": "not yet",
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/citation/export": {
       "get": {
         "x-contract": "not yet",
@@ -8222,6 +8232,26 @@
             "content": {
               "application/json": {}
             }
+          }
+        }
+      }
+    },
+    "/ContentService/download/{filename}": {
+      "post": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "filename",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
           }
         }
       }

@@ -80,6 +80,7 @@
   "POST /ContentService/interactors/static/molecules/details",
   "GET /ContentService/interactors/static/molecule/enhanced/{id}/details",
   "GET /ContentService/interactors/static/molecule/{id}/withEntities",
+  "POST /ContentService/download/{filename}",
   "GET /ContentService/exporter/diagram/{id}",
   "GET /ContentService/exporter/event/{id}",
   "GET /ContentService/exporter/document/event/{id}",
@@ -107,6 +108,7 @@
   "GET /ContentService/citation/pathway/{id}",
   "GET /ContentService/citation/static/{id}",
   "GET /ContentService/citation/export",
+  "GET /ContentService/citation/download",
   "POST /ContentService/contact",
   "GET /ContentService/openapi.json",
   "GET /ContentService/expression/{id}"

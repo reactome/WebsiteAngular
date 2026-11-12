@@ -3,13 +3,19 @@
  * /interactors/*, the static (IntAct) and custom interactors and the
  * PSICQUIC resources -- the registry's list, read at start and every five
  * minutes -- with the helpers only they use. Moved unchanged from
- * service.ts.
+ * service.ts. And POST /download/{filename}, Java's interactors package's
+ * DownloadController: interactors written out as a CSV.
  */
 import type { Endpoint, Request } from './endpoint.ts';
 import {
+  MAX_POST_SIZE,
+  negotiate,
   pathId,
   queryValues,
   rawSegment,
+  requiredString,
+  resourceAnswer,
+  servletRequestParameters,
   springBoolean,
   springIntegerWithDefault,
 } from './spring.ts';
@@ -37,7 +43,7 @@ import type {
   PsicquicResource,
 } from '../../projects/contract/interactors.ts';
 import { settings } from './settings.ts';
-import { plainIds, plainText, plainTextProblem } from './body.ts';
+import { consumesProblem, plainIds, plainText, plainTextProblem } from './body.ts';
 import type { Props } from './objects.ts';
 import { pathwayJson } from './objects.ts';
 
@@ -330,6 +336,52 @@ export async function refreshPsicquicResources({ timeout = 60_000 } = {}) {
 /** Batches of molecule lookups running at once (POST /interactors/static/molecules/details). */
 const MOLECULE_BATCHES = deepShare(4);
 
+/**
+ * Why File.createTempFile(prefix, suffix), as JDK 11 runs it, would throw for
+ * this prefix and suffix, or undefined: a prefix under three UTF-16 units is
+ * its IllegalArgumentException; otherwise the name it makes -- the prefix,
+ * a random unsigned long's digits and the suffix, each cut as
+ * TempDirectory.generateFile cuts them to fit a name of 255 units -- is
+ * written in UTF-8, and past 255 bytes the file system refuses it ("File name too
+ * long"). Java's number has 19 or 20 digits about as often (fewer, now and
+ * then), so a name within a byte of the limit fails there by chance; this
+ * counts 19.
+ */
+export function tempFileProblem(prefix: string, suffix: string, digits = 19): string | undefined {
+  if (prefix.length < 3) return `Prefix string "${prefix}" too short: length must be at least 3`;
+  const NAME_MAX = 255;
+  const shorten = (length: number, excess: number, least: number) => {
+    const shorter = Math.max(least, length - excess);
+    return shorter < length ? shorter : length;
+  };
+  let prefixLength = prefix.length;
+  let suffixLength = suffix.length;
+  let excess = prefixLength + digits + suffixLength - NAME_MAX;
+  if (excess > 0) {
+    prefixLength = shorten(prefixLength, excess, 3);
+    excess = prefixLength + digits + suffixLength - NAME_MAX;
+    // An extension never starts with '.', so Java's least for it is 0 here;
+    // and its second cut reuses the excess the first was given, so a long
+    // suffix is cut twice. Java would then shorten the digits for what is
+    // left over, but nothing is: the prefix and suffix so cut always fit.
+    if (excess > 0) {
+      suffixLength = shorten(suffixLength, excess, 0);
+      suffixLength = shorten(suffixLength, excess, 3);
+    }
+  }
+  const name = prefix.slice(0, prefixLength) + '0'.repeat(digits) + suffix.slice(0, suffixLength);
+  // In UTF-8, a lone surrogate (a pair cut above) three bytes: measured, Java
+  // refuses `a` x 235 then U+1F600 whenever its number has 19 digits.
+  const bytes = Buffer.byteLength(name, 'utf8');
+  return bytes > NAME_MAX ? 'File name too long' : undefined;
+}
+
+/** commons-io's FilenameUtils.getExtension, for a name holding no separator. */
+function extensionOf(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot === -1 ? '' : name.slice(dot + 1);
+}
+
 export const interactorsEndpoints: Endpoint[] = [
   {
     path: '/ContentService/interactors/static/molecule/{id}/details',
@@ -556,6 +608,51 @@ export const interactorsEndpoints: Endpoint[] = [
         body: `[${rows.map(interactionWithEntitiesJson).join(',')}]`,
         type: 'application/json',
       };
+    },
+  },
+  {
+    path: '/ContentService/download/{filename}',
+    method: 'post',
+    samplePath: { filename: 'result.csv' },
+    sampleBody: 'content=P04637,TP53#NL#Q00987,MDM2',
+    differs: [/: \.url: /],
+    // Tomcat reads a form body for parameters only up to maxPostSize; past
+    // it, the body is read and dropped, and only the query's count.
+    bodyLimit: MAX_POST_SIZE,
+    /**
+     * DownloadController.downloadFile: `content` -- the query's values and a
+     * form body's, joined by commas as Spring joins them -- written out a
+     * line at a time, each "#NL#" a line break, as a text/csv Resource.
+     * Java writes the file to its temporary folder, under the file name as a
+     * prefix and its extension as a suffix, and that is all the name does:
+     * nothing names the download. Spring checks the mapping first -- the
+     * body's type, text/plain or a form (consumes and the Content-Type
+     * header condition), then Accept against text/csv -- and then binds
+     * `content`.
+     */
+    handler: (request) => {
+      const problem = consumesProblem(request.get?.('content-type'), [
+        ['application', 'x-www-form-urlencoded'],
+        ['text', 'plain'],
+      ]);
+      if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
+      const media = negotiate(request.get?.('accept'), ['text', 'csv']);
+      if (!media)
+        return javaError(
+          request,
+          406,
+          'NOT_ACCEPTABLE',
+          'Could not find acceptable representation'
+        );
+      const content = servletRequestParameters(request)('content');
+      if (content.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('content'));
+      const filename = pathId(rawSegment(request, 3));
+      const failure = tempFileProblem(filename, extensionOf(filename));
+      if (failure) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure);
+      const lines = javaSplit(content.join(','), '#NL#');
+      const file = Buffer.from(lines.map((line) => `${line}\n`).join(''), 'utf8');
+      return resourceAnswer(request, file, media);
     },
   },
 ];

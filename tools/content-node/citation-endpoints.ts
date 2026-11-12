@@ -1,8 +1,8 @@
 /**
  * The citation endpoints (spec 014, research R1, a family): /citation/*,
  * CitationController's -- a pathway's or a paper's citation, and its export
- * as BibTeX, RIS or text -- with the helpers only they use. Moved unchanged
- * from service.ts.
+ * as BibTeX, RIS or text, and the download page's citation -- with the
+ * helpers only they use. Moved unchanged from service.ts.
  */
 import type { Endpoint, Request } from './endpoint.ts';
 import { inDepthId } from './objects.ts';
@@ -25,7 +25,16 @@ import type { PathwayCitation } from '../../projects/contract/citation.ts';
 import { hashSetOf, tomcatHeader } from './java-text.ts';
 import { URLSearchParams } from 'node:url';
 import { settings } from './settings.ts';
-import { pathId, queryValues, rawSegment, requiredString, springBoolean } from './spring.ts';
+import {
+  negotiate,
+  pathId,
+  queryValues,
+  rawSegment,
+  requiredString,
+  springBoolean,
+  stringContentType,
+} from './spring.ts';
+import { encodeText } from './body.ts';
 
 /**
  * CitationController.getEventCitationObject: an event's citation from its
@@ -218,6 +227,31 @@ export const citationEndpoints: Endpoint[] = [
         },
         body,
       };
+    },
+  },
+  {
+    path: '/ContentService/citation/download',
+    // CitationController.downloadCitation: the citation the download page
+    // offers for its files, naming the release, as StringHttpMessageConverter
+    // writes it under the type negotiated from Accept -- in the charset that
+    // names, if any. Spring's 406 for an Accept that does not take
+    // text/plain; a database with no DBInfo is Java's NullPointerException.
+    handler: async (request) => {
+      const media = negotiate(request.get?.('accept'), ['text', 'plain']);
+      if (!media)
+        return javaError(
+          request,
+          406,
+          'NOT_ACCEPTABLE',
+          'Could not find acceptable representation'
+        );
+      const version = await databaseVersion({ params: {}, query: {} });
+      if (version.status !== 200) return unexpectedFailure(request);
+      const { type, charset } = stringContentType(media);
+      const text = `"Name of file", Reactome, ${String(version.body)}, https://reactome.org/download-data/`;
+      const body = encodeText(text, charset);
+      // Bytes, so the type is sent as written; counted, so a HEAD says how many.
+      return { status: 200, type, headers: { 'Content-Length': String(body.length) }, body };
     },
   },
 ];
