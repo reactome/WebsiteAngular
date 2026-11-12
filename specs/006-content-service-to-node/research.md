@@ -1219,28 +1219,33 @@ merge. The full form is graph-core's event hierarchy (node already parses it,
 `(main resource, identifier)` pairs of the physical entities its reactions
 reach, its subpathways' included; `totalEntityAndInteractors` adds each
 interaction partner's identifier under the target's resource. Computed from the
-graph, `totalEntity` matched Java for every pathway of five species (3,067
-human); `totalEntityAndInteractors` matched four species exactly and 2,988 of
-3,067 human pathways, the other 79 one or two higher. analysis-core's
+graph (`analysis-sizes.ts`, T103a), `totalEntity` matches Java for every
+pathway of all 16 species Java has a hierarchy for (3,067 human tree nodes);
+`totalEntityAndInteractors` matches 14 species exactly. The others are 79 human
+tree nodes (76 pathways), each 1 to 6 higher in node (50 by one, 14 by two, 12
+by three to six), and 8 yeast pathways, each 1 higher. analysis-core's
 InteractorsBuilder keys interactors by upper-cased identifier in one radix map
 that holds their aliases too, so a partner whose identifier is another's alias
-is merged into whichever was made first: hash-map iteration and Neo4j's order
-of equal scores, which the graph cannot reproduce.
+is merged into whichever was made first: in human, Q6NSH3 (CT45A5) into P0DMU9
+(CT45A10), which lists it as a secondary identifier; in yeast, P04838 into the
+polyubiquitin P0CG63. Distinct entries in the graph, often near-identical
+paralogues that once shared one.
 
-**Decision: node computes the sizes from the graph, once per release, and
-the 79 are a recorded difference.** The gap is one or two entities on pathways
-holding hundreds or thousands (Signal Transduction 10,318 against 10,316), far
-below anything a reader of the Reacfoam can see, and the alternative -- a Java
-step at each release reading the data file with analysis-core -- adds a library
-build the project is not set up to keep current. The 79 are listed as an
-expected difference, so the comparison with Java fails on any other; the cause
-is reported to analysis-core (reactome/analysis-core#13, fix in
-reactome/analysis-core#14: InteractorsBuilder.getOrCreate looks a new partner
-up among every interactor's aliases), and once fixed there, Java's
-numbers become node's. The `pathwaysOnly` tree is built from the graph by the
-analysis hierarchy's rules. Rejected: a release-time snapshot of the data file
-(exact, but a Java library step to maintain); reading the totals from an
-analysis of every identifier (`result.json`, 134 MB, a hack).
+**Decision: node computes the sizes from the graph, once per species while it
+runs, and the 84 pathways are a recorded difference.** The gap is a handful of
+entities on pathways holding hundreds or thousands (Signal Transduction 10,318
+against 10,316), far below anything a reader of the Reacfoam can see, and the
+alternative -- a Java step at each release reading the data file with
+analysis-core -- adds a library build the project is not set up to keep
+current. The 84 are listed with both values in
+`fixtures/analysis-size-differences.json`, and `analysis-sizes-check.ts` fails
+on any other difference, or on one of them gone. The cause is reported to
+analysis-core (reactome/analysis-core#13), to be fixed with a Reactome release;
+once it is, Java's numbers become node's and the record goes. The
+`pathwaysOnly` tree is built from the graph by the analysis hierarchy's rules.
+Rejected: a release-time snapshot of the data file (exact, but a Java library
+step to maintain); reading the totals from an analysis of every identifier
+(`result.json`, 134 MB, a hack).
 
 **The overlay.** With a token, Java adds `llp`, `entities` and `reactions` to
 each node the stored result names. Node reads them through the analysis
