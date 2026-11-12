@@ -310,13 +310,14 @@ describe('the deep queries, held to their own share of the graph', () => {
   // connection; these routes -- a whole tree below an object, or every route
   // up to a diagram -- are the ones that can run for the full read timeout,
   // so they keep a smaller share of their own.
-  it('marks the in-depth and locationsInPWB routes as deep', () => {
+  it('marks the in-depth, locationsInPWB and identifier routes as deep', () => {
     // As a set: which is listed first is the order between families (R3).
     const deep = endpoints.filter((endpoint) => endpoint.deep).map((endpoint) => endpoint.path);
     expect(deep.sort()).toEqual([
       '/ContentService/data/detail/{id}/locationsInPWB',
       '/ContentService/data/entity/{id}/in-depth',
       '/ContentService/data/event/{id}/in-depth',
+      '/ContentService/data/pathways/low/diagram/identifier/{id}/allForms',
     ]);
   });
 

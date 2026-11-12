@@ -181,6 +181,11 @@ export interface RecordEntry {
 export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/database/version': { java: '/data/database/version' },
   '/ContentService/data/database/name': { java: '/data/database/name' },
+  '/ContentService/data/database/info': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the release the database holds, whole.',
+    query: [],
+  },
   '/ContentService/data/query/enhanced/v2/{id}': {
     java: '/data/query/enhanced/v2/{id}',
     path: { id: 'oid' },
@@ -245,6 +250,12 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/pathways/top/{species}',
     path: { id: 'taxId' },
   },
+  '/ContentService/data/pathways/top/{id}/curated': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): /data/pathways/top/{species} without the inferred pathways.',
+    path: { id: 'taxId' },
+    query: [],
+  },
   '/ContentService/data/event/{id}/ancestors': {
     java: '/data/event/{id}/ancestors',
     path: { id: 'oid' },
@@ -268,6 +279,19 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/pathways/low/diagram/entity/{id}/allForms',
     path: { id: 'oid' },
     values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/identifier/{id}/allForms': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the lower-level pathways of an outside identifier’s entities, in a species.',
+    path: { id: 'identifier' },
+    query: [{ name: 'species', in: 'query', type: 'string' }],
+    values: TAX_ID,
+  },
+  '/ContentService/data/diagram/{id}/entities/{instance}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the entities of a diagram, and the pathways among those given, an identifier names.',
+    path: { id: 'stId', instance: 'identifier' },
+    query: [{ name: 'pathways', in: 'query', type: 'string' }],
   },
   '/ContentService/data/pathway/{id}/containedEvents': {
     java: '/data/pathway/{id}/containedEvents',

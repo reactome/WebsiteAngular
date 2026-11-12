@@ -11,6 +11,7 @@ import type { Endpoint, Request } from './endpoint.ts';
 import {
   javaError,
   javaJson,
+  neo4jFailureMessage,
   nonEmptyJson,
   notFound,
   only,
@@ -33,6 +34,7 @@ import type { JsonWritten } from './answers.ts';
 import type { PathwayBrowserNode as LocationNode } from '../../projects/contract/locations.ts';
 import {
   attributeOf,
+  findByIdFailure,
   graphCoreId,
   inDepthId,
   longPastRange,
@@ -52,10 +54,14 @@ import {
   rawSegment,
   springBoolean,
   springIntWithDefault,
+  springList,
   writerFor,
 } from './spring.ts';
 import type { Bound } from './spring.ts';
 import type { Props } from './objects.ts';
+import { JavaHashMap } from './java-hashmap.ts';
+import { schemaClassOf } from './schema.ts';
+import type { SimpleDatabaseObject } from '../../projects/contract/content.ts';
 
 /** One step of locationsQuery: an event's fields, its labels, the edge's order. */
 type LocationStep = [
@@ -660,6 +666,229 @@ const PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS: LowQuery = {
      WITH r, HEAD(COLLECT(p)) AS m
      RETURN DISTINCT m`,
 };
+
+/** From an outside identifier (a reference entity, sequence, gene or cross reference) to its entities. */
+const NAMED_BY = 'referenceEntity|referenceSequence|crossReference|referenceGene*';
+
+/** An outside identifier as graph-core matches it: its identifier, or one of its names or gene names. */
+const IDENTIFIER_IS =
+  'n.identifier = $identifier OR $identifier IN n.name OR $identifier IN n.geneName';
+
+/**
+ * graph-core's PathwayRepository.getLowerLevelPathwaysForIdentifier and
+ * ...AndSpeciesTaxId. Without a species, as written: its second arm asks
+ * for `$stId`, which graph-core never binds, so Neo4j refuses the query
+ * (ParameterMissing) whatever the identifier, and Java answers that as its
+ * 500.
+ *
+ * In a species, graph-core's query finds its entities by scanning every
+ * node (AllNodesScan) for a physical entity and walking down from each to
+ * the identifier: 22-27s alone, past this service's 30s read limit as soon
+ * as the database is busy. Here the walk starts from the other end. The
+ * nodes the identifier names are found first -- reference entities by
+ * identifier, name or gene name, database identifiers by identifier, the
+ * only two kinds of node the walk can end at and the only ones of those
+ * with names (measured: no database identifier has a name or a gene name)
+ * -- and the entities above them are then put in the order the scan met
+ * them, by node id, before the walk up to the pathways, unchanged. So the
+ * rows come in Java's order: measured against graph-core's query, row for
+ * row, over 62 identifiers (spec 006 T106), in 3-8s.
+ */
+function identifierAllFormsQuery(inSpecies: boolean) {
+  const species = inSpecies ? '-[:species]->(s:Species{taxId:$taxId})' : '';
+  const entity = inSpecies ? '$identifier' : '$stId';
+  const named = inSpecies
+    ? 'CALL { MATCH (n:ReferenceEntity) WHERE ' +
+      `${IDENTIFIER_IS} RETURN n UNION MATCH (n:DatabaseIdentifier) WHERE n.identifier = $identifier RETURN n } ` +
+      `MATCH (rd:ReferenceDatabase)<--(n)<-[:${NAMED_BY}]-(pe:PhysicalEntity) WITH DISTINCT pe ORDER BY id(pe) `
+    : `MATCH (rd:ReferenceDatabase)<--(n)<-[:${NAMED_BY}]-(pe:PhysicalEntity) WHERE ${IDENTIFIER_IS} WITH DISTINCT pe `;
+  return (
+    `${named}MATCH (pe)<-[:${PARTICIPANT_OF}]-(:ReactionLikeEvent)<-[:hasEvent]-(p:Pathway)${species} RETURN DISTINCT p ` +
+    `UNION MATCH (pe:PhysicalEntity{stId:${entity}})<-[:${PARTICIPANT_OF}]-(:ReactionLikeEvent)<-[:hasEvent]-(p:Pathway)${species} RETURN DISTINCT p`
+  );
+}
+
+/**
+ * graph-core's TopLevelPathwayRepository.getCuratedTopLevelPathwaysByTaxId
+ * and ...ByName, as written: the top-level pathways that are not inferred,
+ * with their species. TopLevelPathwayService chooses by
+ * StringUtils.isNumeric, as /pathways/top/{species} does (topSpeciesMatch),
+ * but the name is not decoded a second time.
+ */
+function curatedTopQuery(byTaxId: boolean) {
+  return byTaxId
+    ? 'MATCH (n:TopLevelPathway{isInferred:False})-[r:species]-(s:Species{taxId:$taxId}) RETURN n, collect(r), collect(s)  ORDER BY toLower(n.displayName)'
+    : 'MATCH (n:TopLevelPathway{isInferred:False})-[r:species]-(s:Species{displayName:$speciesName}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName)';
+}
+
+/** The entities a diagram's reactions take part through, from the reaction down. */
+const DIAGRAM_PARTICIPANT =
+  'input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*';
+
+/**
+ * graph-core's SimpleDatabaseObjectRepository.getDiagramEntitiesForIdentifierByStId
+ * and ...ByDbId, as written: the diagram's pathway and every pathway below
+ * it without a diagram of its own, their reactions, and the entities in them
+ * that an outside identifier names -- or, by the second arm, that are or
+ * contain the entity whose stable id it is.
+ */
+function diagramEntitiesQuery(byDbId: boolean) {
+  const pathway = byDbId ? '(t:Pathway{dbId:$dbId})' : '(t:Pathway{stId:$stId})';
+  const reactions =
+    `MATCH ${pathway} OPTIONAL MATCH path=(t)-[:hasEvent*]->(p:Pathway{hasDiagram:False}) WHERE ALL(n IN TAIL(NODES(path)) WHERE n.hasDiagram = False) ` +
+    'WITH CASE WHEN path IS NULL THEN t ELSE NODES(path) END AS ps UNWIND ps AS p MATCH (p)-[:hasEvent]->(rle:ReactionLikeEvent) WITH DISTINCT rle ';
+  const written =
+    'RETURN DISTINCT pe.dbId AS dbId, pe.stId AS stId, pe.displayName AS displayName, labels(pe) AS labels';
+  return (
+    ` ${reactions}MATCH (rd:ReferenceDatabase)<--(n)<-[:referenceEntity|referenceSequence|crossReference|referenceGene|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]-(pe)<-[:${DIAGRAM_PARTICIPANT}]-(rle) WHERE ${IDENTIFIER_IS} ${written} ` +
+    `UNION ${reactions}MATCH (rle)-[:${DIAGRAM_PARTICIPANT}]->(pe:PhysicalEntity) WITH DISTINCT pe OPTIONAL MATCH (pe)-[:hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(a:PhysicalEntity) WITH DISTINCT pe, COLLECT(DISTINCT a.stId) AS participants WHERE pe.stId = $identifier OR $identifier IN participants ${written}`
+  );
+}
+
+/**
+ * graph-core's SimpleDatabaseObjectRepository.getPathwaysForIdentifierByStId
+ * and ...ByDbId, as written -- the dbId query's list is also `$stIds`: the
+ * pathways among those given that reach an entity the identifier names, or
+ * the entity whose stable id it is.
+ */
+function pathwaysForIdentifierQuery(byDbId: boolean) {
+  const among = byDbId ? 'p.dbId IN $stIds' : 'p.stId IN $stIds';
+  const written =
+    'RETURN DISTINCT p.dbId AS dbId, p.stId AS stId, p.displayName AS displayName, labels(p) AS labels';
+  const down =
+    'regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|hasEvent|proteinMarker|RNAMarker*';
+  return (
+    ` MATCH (p:Pathway)-[:${down}]->(pe:PhysicalEntity) WHERE ${among} WITH DISTINCT p, pe ` +
+    `MATCH (pe)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n)-->(rd:ReferenceDatabase) WHERE ${IDENTIFIER_IS} ${written} ` +
+    `UNION MATCH (p:Pathway)-[:${down}]->(pe:PhysicalEntity{stId:$identifier}) WHERE ${among} ${written}`
+  );
+}
+
+/** One row of the diagram entity queries: a SimpleDatabaseObject before it is built. */
+type SimpleRow = {
+  dbId: number;
+  stId: string | null;
+  displayName: string | null;
+  labels: string[];
+};
+
+/**
+ * SimpleDatabaseObject.build(Record): stId as given (null left out),
+ * displayName as asString writes a null ("null"), schemaClass from the labels
+ * (DatabaseObjectUtils.getSchemaClass). Written by Jackson with non_empty.
+ */
+function simpleObject(row: SimpleRow): SimpleDatabaseObject {
+  const out: JsonWritten<SimpleDatabaseObject> = {
+    dbId: row.dbId,
+    stId: row.stId !== null && row.stId !== '' ? row.stId : undefined,
+    displayName: row.displayName === '' ? undefined : (row.displayName ?? 'null'),
+    schemaClass: schemaClassOf(row.labels),
+  };
+  // javaJson leaves the undefined ones out, as non_empty does.
+  return out as SimpleDatabaseObject;
+}
+
+/** Long.hashCode: the high half folded into the low. */
+function longHash(id: number) {
+  const big = BigInt.asUintN(64, BigInt(id));
+  return Number(BigInt.asIntN(32, big ^ (big >> 32n)));
+}
+
+/** A HashSet<SimpleDatabaseObject>, whose equals and hashCode are the dbId's. */
+function simpleObjectSet() {
+  return new JavaHashMap<number, SimpleDatabaseObject>({ hash: longHash });
+}
+
+/** HashSet.add: a dbId already there keeps the object it has. */
+function addTo(set: JavaHashMap<number, SimpleDatabaseObject>, object: SimpleDatabaseObject) {
+  if (!set.has(object.dbId)) set.set(object.dbId, object);
+}
+
+/**
+ * The `pathways` of /diagram/{id}/entities/{identifier}, a Collection<String>
+ * as Spring binds it: a LinkedHashSet of springList's values, so repeats
+ * fall and the order stays. Past twenty the controller keeps the first
+ * twenty in a HashSet (Collectors.toSet), whose order is then the strings'
+ * hash order -- the order the 404 message lists them in.
+ */
+function diagramPathways(values: string[]): string[] | null {
+  const list = springList(values);
+  if (list === null) return null;
+  const given = [...new Set(list)];
+  if (given.length <= 20) return given;
+  const set = new JavaHashMap<string, boolean>();
+  for (const pathway of given.slice(0, 20)) set.set(pathway, true);
+  return [...set.keys()];
+}
+
+/**
+ * PathwaysService.getDiagramEntitiesForIdentifier: the pathway's id read
+ * by getIdentifier, but the query given the id as it came -- so a version
+ * or an old id finds nothing, and a dbId must be Long.parseLong's own: one
+ * padded, versioned or past a long is its NumberFormatException, naming
+ * the id as given. {failure} for Java's 500, else the rows.
+ */
+async function diagramEntities(
+  pathwayId: string,
+  identifier: string
+): Promise<{ failure: string } | { rows: SimpleRow[] }> {
+  // trimId splits an id of dots to nothing: an ArrayIndexOutOfBounds.
+  if (/^\.+$/.test(javaTrim(pathwayId))) return { failure: 'Index 0 out of bounds for length 0' };
+  const id = inDepthId(pathwayId);
+  if (id === undefined) return { rows: [] };
+  if (id.idType !== 'dbId')
+    return {
+      rows: await read<SimpleRow>(diagramEntitiesQuery(false), { stId: pathwayId, identifier }),
+    };
+  const digits = javaNumeric(pathwayId) ? asciiDigits(pathwayId) : undefined;
+  if (digits === undefined || BigInt(digits) > 9223372036854775807n)
+    return { failure: `For input string: "${pathwayId}"` };
+  return {
+    rows: await read<SimpleRow>(diagramEntitiesQuery(true), {
+      dbId: neo4j.int(digits),
+      identifier,
+    }),
+  };
+}
+
+/**
+ * PathwaysService.getPathwaysForIdentifier(identifier, pathways): each id
+ * read by getIdentifier (an old id swapped for its stable id), stable ids
+ * and dbIds asked for apart, the answers gathered in a HashSet -- whose
+ * order the controller's set then meets them in. What getIdentifier and
+ * Long.valueOf throw, for the first id in order, is {failure}.
+ */
+async function pathwaysForIdentifier(
+  identifier: string,
+  pathways: string[]
+): Promise<{ failure: string } | { found: SimpleDatabaseObject[] }> {
+  const failure = findByIdFailure(pathways);
+  if (failure) return { failure };
+  // Two HashSets, handed to the queries in their order -- which is the
+  // order an IN list is sought in, and so the order the rows come back in.
+  const stIds = new JavaHashMap<string, boolean>();
+  const dbIds = new JavaHashMap<number, string>({ hash: longHash });
+  for (const pathway of pathways) {
+    const id = await graphCoreId(pathway);
+    if (!id) continue;
+    if (id.byDbId) dbIds.set(Number(id.params.id), id.params.id);
+    else stIds.set(id.params.id, true);
+  }
+  const found = simpleObjectSet();
+  if (stIds.size)
+    for (const row of await read<SimpleRow>(pathwaysForIdentifierQuery(false), {
+      identifier,
+      stIds: [...stIds.keys()],
+    }))
+      addTo(found, simpleObject(row));
+  if (dbIds.size)
+    for (const row of await read<SimpleRow>(pathwaysForIdentifierQuery(true), {
+      identifier,
+      stIds: [...dbIds.values()].map((digits) => neo4j.int(digits)),
+    }))
+      addTo(found, simpleObject(row));
+  return { found: [...found.values()] };
+}
 
 /**
  * One of the /pathways/low family, optionally in one species: PathwaysService
@@ -1688,6 +1917,45 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
     },
   },
   {
+    path: '/ContentService/data/pathways/top/{id}/curated',
+    sample: '9606',
+    // The 404 body names the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/pathways\/top\/[^/]+\/curated: \.url: /],
+    /**
+     * A species' top-level pathways that are not inferred (spec 006 T106):
+     * graph-core's getCuratedTopLevelPathways, its query as written
+     * (curatedTopQuery) and mapped as SDN maps its records, written in the
+     * request's view. The species is the path's, decoded once: unlike
+     * /pathways/top/{species}, the controller does not decode it again. None
+     * is Java's 404, naming the species.
+     */
+    handler: async (request) => {
+      const species = pathId(rawSegment(request, 5));
+      const byTaxId = javaNumeric(species);
+      const rows = await read<{
+        n: GraphNode;
+        'collect(r)': GraphRelationship[];
+        'collect(s)': GraphNode[];
+      }>(curatedTopQuery(byTaxId), byTaxId ? { taxId: species } : { speciesName: species }, {
+        graph: true,
+      });
+      if (!rows.length)
+        return notFound(request, `No TopLevelPathways were found for species: ${species}`);
+      const pathways = mapResults(
+        rows.map((row) => ({
+          root: row.n,
+          nodes: row['collect(s)'],
+          relationships: row['collect(r)'],
+        }))
+      );
+      return {
+        status: 200,
+        serialised: writeDomain(pathways, ...writerFor(request)),
+        type: 'application/json',
+      };
+    },
+  },
+  {
     path: '/ContentService/data/event/{id}/ancestors',
     // A reaction reached by two routes, so the comparison covers more than one path.
     sample: 'R-HSA-5672965',
@@ -1792,6 +2060,99 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
      * graph-core's getPathwaysWithDiagramForAllFormsOf*.
      */
     handler: (request) => lowerLevelPathways(request, 7, PATHWAYS_WITH_DIAGRAM_FOR_ALL_FORMS),
+  },
+  {
+    path: '/ContentService/data/pathways/low/diagram/identifier/{id}/allForms',
+    // Seconds, even walked from the identifier (identifierAllFormsQuery).
+    deep: true,
+    sample: 'PTEN?species=9606',
+    differs: [
+      /^\/ContentService\/data\/pathways\/low\/diagram\/identifier\/[^/]+\/allForms[^:]*: \.url: /,
+    ],
+    /**
+     * The lower-level pathways an outside identifier's entities take part in
+     * (spec 006 T106): PathwaysService.getLowerLevelPathwaysForIdentifier on
+     * the identifier upper-cased, in the species SpeciesService finds
+     * (speciesFilter). Without one -- none given, or none found -- graph-core's
+     * query asks for a parameter it never binds, and Java's answer is Neo4j's
+     * refusal as its 500 (identifierAllFormsQuery): run here as Java runs it,
+     * so the message is Neo4j's own. None found is the 404 naming the
+     * identifier and the species as given.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 7));
+      const given = queryValues(request, 'species');
+      const species = given.length ? given.join(',') : undefined;
+      const taxId = await speciesTaxId(speciesFilter(species));
+      const identifier = raw.toUpperCase();
+      let rows: { p: GraphNode }[];
+      try {
+        rows = await read<{ p: GraphNode }>(
+          identifierAllFormsQuery(taxId !== undefined),
+          taxId === undefined ? { identifier } : { identifier, taxId },
+          { graph: true }
+        );
+      } catch (failure) {
+        const message = neo4jFailureMessage(failure, [
+          'Neo.ClientError.Statement.ParameterMissing',
+        ]);
+        if (message) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', message);
+        throw failure;
+      }
+      if (!rows.length)
+        return notFound(
+          request,
+          `No result for ${raw} in ${species === undefined ? 'null' : species}`
+        );
+      return {
+        status: 200,
+        serialised: writeDomain(
+          mapResults(rows.map((row) => ({ root: row.p, nodes: [], relationships: [] }))),
+          ...writerFor(request)
+        ),
+        type: 'application/json',
+      };
+    },
+  },
+  {
+    path: '/ContentService/data/diagram/{id}/entities/{instance}',
+    sample: 'R-HSA-1257604',
+    samplePath: { instance: 'PTEN' },
+    differs: [/^\/ContentService\/data\/diagram\/[^/]+\/entities\/[^/]+[^:]*: \.url: /],
+    /**
+     * The entities of a diagram an identifier names, and those of the
+     * `pathways` given (twenty at most) that it is in: the Pathway Browser's
+     * flag targets (spec 006 T106). PathwaysController's
+     * getEntitiesInDiagramForIdentifier, on the identifier upper-cased:
+     * graph-core's two lookups (diagramEntities, pathwaysForIdentifier), their
+     * objects gathered in a HashSet, so written in its order. None is the 404
+     * naming the identifier and pathway as given, and the pathways if any
+     * were (diagramPathways).
+     */
+    handler: async (request) => {
+      const pathwayId = pathId(rawSegment(request, 4));
+      const given = pathId(rawSegment(request, 6));
+      const identifier = given.toUpperCase();
+      const pathways = diagramPathways(queryValues(request, 'pathways'));
+      const answer = simpleObjectSet();
+      const inDiagram = await diagramEntities(pathwayId, identifier);
+      if ('failure' in inDiagram)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', inDiagram.failure);
+      for (const row of inDiagram.rows) addTo(answer, simpleObject(row));
+      if (pathways !== null) {
+        const among = await pathwaysForIdentifier(identifier, pathways);
+        if ('failure' in among)
+          return javaError(request, 500, 'INTERNAL_SERVER_ERROR', among.failure);
+        for (const object of among.found) addTo(answer, object);
+      }
+      if (answer.size === 0)
+        return notFound(
+          request,
+          `No entities with identifier '${given}' found for ${pathwayId}` +
+            (pathways !== null ? ` nor for pathways [${pathways.join(', ')}]` : '')
+        );
+      return { status: 200, body: [...answer.values()], type: 'application/json' };
+    },
   },
   {
     path: '/ContentService/data/pathway/{id}/containedEvents',
