@@ -101,7 +101,7 @@ test.describe('Release checklist: Pathway Browser', () => {
   test('details panel renders its tabs', async ({ page }) => {
     // The checklist expects 6 tabs (Description, Molecules, Structures,
     // Analysis, Expression, Downloads). The rebuilt details panel has three --
-    // Details, Molecule, Info -- which matches what curators reported
+    // Details, Molecules, Info -- which matches what curators reported
     // ("structures is not one of them", "no structures panel anymore").
     // Identical on Angular 19 and 21, so this is a product difference from the
     // legacy site rather than an upgrade regression. Asserted as-is so a real
@@ -112,7 +112,7 @@ test.describe('Release checklist: Pathway Browser', () => {
 
     const tabs = await page.locator('[role=tab]').allInnerTexts();
     console.log(`  [checklist] details tabs: ${tabs.join(' | ')}`);
-    for (const expected of ['Details', 'Molecule', 'Info']) {
+    for (const expected of ['Details', 'Molecules', 'Info']) {
       expect(tabs.some((t) => t.includes(expected))).toBe(true);
     }
   });

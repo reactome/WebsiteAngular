@@ -30,7 +30,7 @@ async function openDiagram(page: Page, id = PATHWAY, query = '') {
 }
 
 async function openMolecules(page: Page) {
-  await page.getByText('Molecule', { exact: true }).first().click();
+  await page.getByText('Molecules', { exact: true }).first().click();
   await expect(page.locator('cr-molecule-tab')).toBeVisible({ timeout: 60_000 });
   await page.waitForTimeout(3000);
 }
@@ -415,7 +415,7 @@ test.describe('Pathway tabs', () => {
 
     for (const [tab, holds] of [
       ['Details', /Intrinsic Pathway for Apoptosis/i],
-      ['Molecule', /Proteins/i],
+      ['Molecules', /Proteins/i],
       ['Info', /Drag|Zoom|Hover/i],
       ['Download', /SVG|PNG|SBML/i],
     ] as const) {
