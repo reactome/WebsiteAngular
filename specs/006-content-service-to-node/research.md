@@ -1349,6 +1349,29 @@ StackOverflowError 500; a bad boolean is Spring's 400; a bad token a 500 "Not
 Found"; every 200 carries `Content-Disposition: inline;
 swaggerDownload="attachment"; filename="{species}.json"`.
 
+## D26. The PSICQUIC interactors stay in Java (T101)
+
+Measured 12 Nov 2026. `POST /interactors/psicquic/molecules/{resource}/details`,
+the Pathway Browser's third-party interactor overlay, and its three siblings are
+not a relay. Per accession, Java asks the PSICQUIC registry for the resource
+(by its name, unencoded, every time), fetches the server's default MITAB 2.5 for
+`interactor/{acc}`, parses it with psimitab, clusters it with micluster, scores
+it with miscore -- which fetches eight MI ontology branches from EBI's ontology
+service, 16 calls a request -- and applies interactor-core's per-resource client:
+which identifier is the accession, the alias, the evidence, the score
+(`intact-miscore`, `miscore` or, for Reactome FIs, `NBC`), then a 0.45 filter,
+de-duplication through a TreeSet by score and a reversed stable sort. Its output
+order follows Java HashMaps and its scores Float.toString. Java's answers are
+stable between calls, so a port could be compared byte for byte, but it would be
+about 2,000 lines of other libraries' behaviour, kept in step with PSICQUIC data
+and the ontology. Java takes 5 to 7 s a call and has no timeouts (135 s on an
+unreachable server); the summary counts clusters before de-duplication, so it
+disagrees with the details. Decided: it stays in Java, as spec 010 already
+classes it, with the uploads (T102), which share interactor-core's parsers and
+its Kryo token store. A node version, if ever, would be a deliberate redesign
+(a relay with a timeout and the resource's own score), its differences agreed
+with curators.
+
 ## What exists already
 
 Branch `content-node-spike`, deliberately off main:
