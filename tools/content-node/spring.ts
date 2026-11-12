@@ -5,9 +5,15 @@
  * and the view and identity Java's message converter reads. Moved unchanged
  * from service.ts.
  */
+import { randomInt } from 'node:crypto';
+import type { Answer, Request } from './endpoint.ts';
+import { mediaType, mediaTypeText } from './body.ts';
+import type { MediaType } from './body.ts';
 import {
   JavaNumberFormat,
   caseInsensitive,
+  javaParseDouble,
+  javaParseInt,
   javaParseInteger,
   javaTrim,
   javaTrimAll,
@@ -163,13 +169,27 @@ export function springInteger(values: string[], name: string): Bound<number> {
  * in time linear in the text: read once, every name is to hand.
  */
 export function servletParameters(query: string): Map<string, string[]> {
-  const found = new Map<string, string[]>();
+  return parameterMap(servletPairs(query));
+}
+
+/** Each parameter servletParameters reads, as a name and a value, in order. */
+function servletPairs(query: string): [string, string][] {
+  const pairs: [string, string][] = [];
   for (const pair of String(query).split('&')) {
     if (pair === '') continue;
     const at = pair.indexOf('=');
     const key = servletDecode(at === -1 ? pair : pair.slice(0, at));
     const value = servletDecode(at === -1 ? '' : pair.slice(at + 1));
     if (key === null || value === null || key === '') continue;
+    pairs.push([key, value]);
+  }
+  return pairs;
+}
+
+/** Parameters by name, each name's values in order. */
+function parameterMap(pairs: [string, string][]): Map<string, string[]> {
+  const found = new Map<string, string[]>();
+  for (const [key, value] of pairs) {
     const values = found.get(key);
     if (values) values.push(value);
     else found.set(key, [value]);
@@ -445,4 +465,431 @@ export function springEnum(
       `${javaType}] for value '${sent}'; nested exception is ` +
       `java.lang.IllegalArgumentException: No enum constant ${javaType.replace('$', '.')}.${name}`,
   };
+}
+
+/**
+ * The media type Spring writes an answer under, from a request's Accept and
+ * the one type a mapping produces, as ProducesRequestCondition and
+ * AbstractMessageConverterMethodProcessor choose it -- or undefined for
+ * Java's 406, "Could not find acceptable representation". The header is
+ * split at commas outside quotes and each part read as mediaType reads it:
+ * one it cannot read refuses the request, and none at all is every type.
+ * Each accepted type compatible with the produced one gives the more
+ * specific of the two -- the accepted one, with its parameters, when it
+ * names the subtype -- and the first of those, as Spring sorts them by
+ * specificity and quality, is chosen, its `q` dropped. A quality, even 0,
+ * never refuses a type.
+ */
+export function negotiate(
+  header: string | undefined,
+  produced: [type: string, subtype: string]
+): MediaType | undefined {
+  const parts: string[] = [];
+  if (header !== undefined) {
+    let quoted = false;
+    let start = 0;
+    for (let at = 0; at < header.length; at += 1) {
+      const char = header.charAt(at);
+      if (char === '"') quoted = !quoted;
+      else if (char === ',' && !quoted) {
+        parts.push(header.slice(start, at));
+        start = at + 1;
+      } else if (char === '\\') at += 1;
+    }
+    parts.push(header.slice(start));
+  }
+  const accepted: MediaType[] = [];
+  for (const part of parts) {
+    if (javaTrimAll(part) === '') continue;
+    const media = mediaType(part);
+    if (typeof media === 'string') return undefined;
+    accepted.push(media);
+  }
+  if (accepted.length === 0) accepted.push({ type: '*', subtype: '*', parameters: [] });
+  const [type, subtype] = produced;
+  const produce: MediaType = { type, subtype, parameters: [] };
+  const usable = sortBySpecificityAndQuality(accepted)
+    .filter((media) => compatible(media, produce))
+    .map((media) => mostSpecific(media, produce));
+  const [chosen] = sortBySpecificityAndQuality(usable);
+  if (!chosen) return undefined;
+  // removeQualityValue: asked case-insensitively, removed by its exact name.
+  const hasQuality = chosen.parameters.some(([name]) => name.toLowerCase() === 'q');
+  return hasQuality
+    ? { ...chosen, parameters: chosen.parameters.filter(([name]) => name !== 'q') }
+    : chosen;
+}
+
+/** A parameter's value as LinkedCaseInsensitiveMap.get finds it. */
+function parameter(media: MediaType, name: string) {
+  return media.parameters.find(([key]) => key.toLowerCase() === name)?.[1];
+}
+
+/**
+ * MediaType.getQualityValue: `q` (in any case), unquoted, as
+ * Double.parseDouble reads it; 1 without one. One it cannot read, which
+ * only a `Q` can hold, is Java's own failure part way through sorting, not
+ * modelled: read as 1.
+ */
+function qualityOf(media: MediaType) {
+  const text = parameter(media, 'q');
+  if (text === undefined) return 1;
+  const unquoted = /^(".*"|'.*')$/s.test(text) && text.length >= 2 ? text.slice(1, -1) : text;
+  return javaParseDouble(unquoted) ?? 1;
+}
+
+/** Double.compare. */
+function compareDoubles(one: number, other: number) {
+  if (one < other) return -1;
+  if (one > other) return 1;
+  const [a, b] = [Object.is(one, -0) ? -0.5 : one, Object.is(other, -0) ? -0.5 : other];
+  if (Number.isNaN(a)) return Number.isNaN(b) ? 0 : 1;
+  if (Number.isNaN(b)) return -1;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+const isWildcardSubtype = (media: MediaType) =>
+  media.subtype === '*' || media.subtype.startsWith('*+');
+
+/** MediaType.SPECIFICITY_COMPARATOR: the more specific first, quality then parameters deciding a tie. */
+function specificity(one: MediaType, other: MediaType): number {
+  if (one.type === '*' && other.type !== '*') return 1;
+  if (other.type === '*' && one.type !== '*') return -1;
+  if (one.type !== other.type) return 0;
+  if (isWildcardSubtype(one) && !isWildcardSubtype(other)) return 1;
+  if (isWildcardSubtype(other) && !isWildcardSubtype(one)) return -1;
+  if (one.subtype !== other.subtype) return 0;
+  const quality = compareDoubles(qualityOf(other), qualityOf(one));
+  if (quality !== 0) return quality;
+  return Math.sign(other.parameters.length - one.parameters.length);
+}
+
+/** MediaType.QUALITY_VALUE_COMPARATOR. */
+function byQuality(one: MediaType, other: MediaType): number {
+  const quality = compareDoubles(qualityOf(other), qualityOf(one));
+  if (quality !== 0) return quality;
+  if (one.type === '*' && other.type !== '*') return 1;
+  if (other.type === '*' && one.type !== '*') return -1;
+  if (one.type !== other.type) return 0;
+  if (isWildcardSubtype(one) && !isWildcardSubtype(other)) return 1;
+  if (isWildcardSubtype(other) && !isWildcardSubtype(one)) return -1;
+  if (one.subtype !== other.subtype) return 0;
+  return Math.sign(other.parameters.length - one.parameters.length);
+}
+
+/** MediaType.sortBySpecificityAndQuality: a stable sort, as List.sort is. */
+function sortBySpecificityAndQuality(list: MediaType[]): MediaType[] {
+  if (list.length <= 1) return [...list];
+  return [...list].sort((one, other) => specificity(one, other) || byQuality(one, other));
+}
+
+/**
+ * getMostSpecificMediaType: the produced type with the accepted one's
+ * quality copied in, or the accepted type where it is at least as specific.
+ */
+function mostSpecific(accept: MediaType, produce: MediaType): MediaType {
+  const quality = parameter(accept, 'q');
+  const produceToUse: MediaType =
+    quality === undefined
+      ? produce
+      : {
+          ...produce,
+          parameters: [
+            ...produce.parameters.filter(([name]) => name.toLowerCase() !== 'q'),
+            ['q', quality],
+          ],
+        };
+  return specificity(accept, produceToUse) <= 0 ? accept : produceToUse;
+}
+
+/** MimeType.isCompatibleWith, either way round. */
+function compatible(one: MediaType, other: MediaType) {
+  if (one.type === '*' || other.type === '*') return true;
+  if (one.type !== other.type) return false;
+  if (one.subtype === other.subtype) return true;
+  if (!isWildcardSubtype(one) && !isWildcardSubtype(other)) return false;
+  const suffix = (media: MediaType) => {
+    const at = media.subtype.lastIndexOf('+');
+    return at === -1 ? undefined : media.subtype.slice(at + 1);
+  };
+  if (one.subtype === '*' || other.subtype === '*') return true;
+  const [oneSuffix, otherSuffix] = [suffix(one), suffix(other)];
+  if (isWildcardSubtype(one) && oneSuffix !== undefined)
+    return oneSuffix === other.subtype || oneSuffix === otherSuffix;
+  if (isWildcardSubtype(other) && otherSuffix !== undefined)
+    return one.subtype === otherSuffix || otherSuffix === oneSuffix;
+  return false;
+}
+
+/**
+ * The Content-Type Tomcat sends for the type Spring sets (MediaType's text),
+ * the response's encoding being UTF-8 (Spring Boot forces it): as given with
+ * `;charset=UTF-8` after it, unless Tomcat's own parser finds a charset in
+ * it -- then rebuilt as that parser has it, parameter names lower-cased,
+ * the charset unquoted and last.
+ */
+export function tomcatContentType(text: string): string {
+  const parsed = tomcatMediaType(text);
+  const charset = parsed?.parameters.get('charset');
+  if (!parsed || charset === undefined) return `${text};charset=UTF-8`;
+  const rest = [...parsed.parameters]
+    .filter(([name]) => name !== 'charset')
+    .map(([name, value]) => `;${name}=${value}`)
+    .join('');
+  const unquoted = charset.startsWith('"') ? tomcatUnquote(charset) : charset;
+  return `${parsed.type}/${parsed.subtype}${rest};charset=${unquoted}`;
+}
+
+const TCHAR = /[!#$%&'*+\-.^_`|~0-9A-Za-z]/;
+
+/** Tomcat's MediaType.parseMediaType (its HttpParser), or undefined where it gives up. */
+function tomcatMediaType(text: string) {
+  let at = 0;
+  const skipSpace = () => {
+    while (text.charAt(at) === ' ' || text.charAt(at) === '\t') at += 1;
+  };
+  const token = () => {
+    skipSpace();
+    const start = at;
+    while (at < text.length && TCHAR.test(text.charAt(at))) at += 1;
+    return text.slice(start, at);
+  };
+  // FOUND, NOT_FOUND, or EOF.
+  const skip = (char: string) => {
+    skipSpace();
+    if (at >= text.length) return 'eof';
+    if (text.charAt(at) !== char) return 'missing';
+    at += 1;
+    return 'found';
+  };
+  const quotedOrToken = (): string | undefined => {
+    skipSpace();
+    if (text.charAt(at) !== '"') {
+      const read = token();
+      return read === '' ? undefined : read;
+    }
+    let result = '"';
+    at += 1;
+    while (at < text.length) {
+      const char = text.charAt(at);
+      if (char === '\\') {
+        result += char + text.charAt(at + 1);
+        at += 2;
+      } else if (char === '"') {
+        at += 1;
+        return `${result}"`;
+      } else {
+        result += char;
+        at += 1;
+      }
+    }
+    return undefined;
+  };
+  const type = token();
+  if (type === '' || skip('/') !== 'found') return undefined;
+  const subtype = token();
+  if (subtype === '') return undefined;
+  const parameters = new Map<string, string>();
+  let semicolon = skip(';');
+  if (semicolon === 'missing') return undefined;
+  while (semicolon === 'found') {
+    const name = token();
+    let value: string | undefined = '';
+    if (skip('=') === 'found') value = quotedOrToken();
+    if (value === undefined) return undefined;
+    parameters.set(name.toLowerCase(), value);
+    semicolon = skip(';');
+    if (semicolon === 'missing') return undefined;
+  }
+  return { type, subtype, parameters };
+}
+
+/** HttpParser.unquote: the quotes off, each backslash escape its character. */
+function tomcatUnquote(text: string) {
+  return text.slice(1, -1).replace(/\\(.)/gs, '$1');
+}
+
+/**
+ * The type StringHttpMessageConverter writes a String under, and the
+ * charset it encodes it in: the chosen type's own `charset` (by that exact
+ * name, as Spring reads it), or UTF-8 put in as its last parameter.
+ */
+export function stringContentType(media: MediaType): { type: string; charset: string } {
+  const own = media.parameters.find(([name]) => name === 'charset')?.[1];
+  if (own !== undefined) {
+    const charset = /^(".*"|'.*')$/s.test(own) && own.length >= 2 ? own.slice(1, -1) : own;
+    return { type: tomcatContentType(mediaTypeText(media)), charset };
+  }
+  const parameters: [string, string][] = [
+    ...media.parameters.filter(([name]) => name.toLowerCase() !== 'charset'),
+    ['charset', 'UTF-8'],
+  ];
+  return { type: tomcatContentType(mediaTypeText({ ...media, parameters })), charset: 'UTF-8' };
+}
+
+/** Tomcat's maxPostSize: a form body longer than this is not read for parameters. */
+export const MAX_POST_SIZE = 2 * 1024 * 1024;
+
+/** Tomcat's maxParameterCount: the parameters past it, the query's first, are dropped. */
+const MAX_PARAMETER_COUNT = 10_000;
+
+/**
+ * A request's parameters as the servlet has them: the query's, then a POST
+ * body's when its Content-Type, up to any ';' and trimmed, is exactly
+ * application/x-www-form-urlencoded -- Tomcat compares it by case -- and
+ * the body is no longer than maxPostSize; of them all, the first
+ * maxParameterCount. The body's bytes are decoded as UTF-8, as the query's
+ * are: Spring Boot forces the request's encoding.
+ */
+export function servletRequestParameters(request: Request): (name: string) => string[] {
+  const url = String(request.originalUrl ?? '');
+  const at = url.indexOf('?');
+  const query = servletPairs(at === -1 ? '' : url.slice(at + 1));
+  const header = request.get?.('content-type') ?? '';
+  const media = javaTrim(header.split(';')[0] ?? '');
+  const body = Buffer.isBuffer(request.body) ? request.body : Buffer.alloc(0);
+  const form =
+    media === 'application/x-www-form-urlencoded' &&
+    !request.tooLarge &&
+    body.length <= MAX_POST_SIZE
+      ? // Every byte past ASCII as its escape, so a sequence split between a
+        // raw byte and an escaped one decodes as Tomcat decodes it, by bytes.
+        servletPairs(
+          body
+            .toString('latin1')
+            .replace(
+              /[\u0080-\u00ff]/g,
+              (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`
+            )
+        )
+      : [];
+  const pairs = query.concat(form);
+  const found = parameterMap(pairs.slice(0, MAX_PARAMETER_COUNT));
+  return (name) => found.get(name) ?? [];
+}
+
+/**
+ * A Spring Resource as a controller's answer: the bytes under the type
+ * negotiate chose, as Tomcat writes it, with `Accept-Ranges: bytes`, and a Range header honoured as
+ * AbstractMessageConverterMethodProcessor honours it, whatever the method.
+ * One range is a 206 with its Content-Range; several (or `bytes=` with
+ * none) the multipart/byteranges Spring writes, under a boundary of its
+ * random kind. A range Spring cannot read or satisfy -- not `bytes=`, a
+ * number Long.parseLong refuses, a start past the end, over a hundred
+ * ranges, or several adding up to the whole -- is a 416 with the whole body,
+ * as Java sends it.
+ */
+export function resourceAnswer(request: Request, bytes: Buffer, media: MediaType): Answer {
+  const spring = mediaTypeText(media);
+  const whole: Answer = {
+    status: 200,
+    type: tomcatContentType(spring),
+    headers: { 'Accept-Ranges': 'bytes' },
+    body: bytes,
+  };
+  const header = request.get?.('range');
+  if (header === undefined) return whole;
+  const regions = rangeRegions(header, bytes.length);
+  if (!regions)
+    return {
+      ...whole,
+      status: 416,
+      headers: { 'Accept-Ranges': 'bytes', 'Content-Range': `bytes */${bytes.length}` },
+    };
+  const [only] = regions;
+  if (only && regions.length === 1) {
+    const [start, end] = only;
+    return {
+      ...whole,
+      status: 206,
+      headers: {
+        'Accept-Ranges': 'bytes',
+        'Content-Range': `bytes ${start}-${end}/${bytes.length}`,
+      },
+      body: bytes.subarray(start, end + 1),
+    };
+  }
+  const boundary = multipartBoundary();
+  const parts = regions.map(([start, end]) =>
+    Buffer.concat([
+      Buffer.from(
+        `\r\n--${boundary}\r\nContent-Type: ${spring}\r\nContent-Range: bytes ${start}-${end}/${bytes.length}\r\n\r\n`,
+        'latin1'
+      ),
+      bytes.subarray(start, end + 1),
+    ])
+  );
+  return {
+    ...whole,
+    status: 206,
+    type: tomcatContentType(`multipart/byteranges; boundary=${boundary}`),
+    body: Buffer.concat([...parts, Buffer.from(`\r\n--${boundary}--`)]),
+  };
+}
+
+/**
+ * HttpRange.parseRanges then toResourceRegions over a body of `length`
+ * bytes: each region's first and last byte, or undefined where either
+ * throws IllegalArgumentException.
+ */
+function rangeRegions(header: string, length: number): [number, number][] | undefined {
+  if (header === '') return [];
+  if (!header.startsWith('bytes=')) return undefined;
+  const tokens = header
+    .slice('bytes='.length)
+    .split(',')
+    .map((token) => javaTrimWhitespace(token))
+    .filter((token) => token !== '');
+  if (tokens.length > 100) return undefined;
+  const size = BigInt(length);
+  const regions: [number, number][] = [];
+  try {
+    for (const token of tokens) {
+      const dash = token.indexOf('-');
+      let start: bigint;
+      let end: bigint;
+      if (dash > 0) {
+        start = javaParseInt(token.slice(0, dash), 10, 64);
+        const last =
+          dash < token.length - 1 ? javaParseInt(token.slice(dash + 1), 10, 64) : undefined;
+        if (start < 0n || (last !== undefined && last < start)) return undefined;
+        end = last !== undefined && last < size ? last : size - 1n;
+      } else if (dash === 0) {
+        const suffix = javaParseInt(token.slice(1), 10, 64);
+        if (suffix < 0n) return undefined;
+        start = suffix < size ? size - suffix : 0n;
+        end = size - 1n;
+      } else return undefined;
+      if (start >= size) return undefined;
+      regions.push([Number(start), Number(end)]);
+    }
+  } catch (failure) {
+    if (failure instanceof JavaNumberFormat) return undefined;
+    throw failure;
+  }
+  if (regions.length > 1) {
+    const total = regions.reduce((sum, [start, end]) => sum + end - start + 1, 0);
+    if (total >= length) return undefined;
+  }
+  return regions;
+}
+
+/** StringUtils.trimWhitespace: Character.isWhitespace off both ends. */
+function javaTrimWhitespace(text: string): string {
+  let start = 0;
+  let end = text.length;
+  const white = (at: number) => javaTrimAll(text.charAt(at)) === '';
+  while (start < end && white(start)) start += 1;
+  while (end > start && white(end - 1)) end -= 1;
+  return text.slice(start, end);
+}
+
+const BOUNDARY_CHARS = '-_1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+/** MimeTypeUtils.generateMultipartBoundaryString: 30 to 40 of its characters, at random. */
+function multipartBoundary(): string {
+  const size = 30 + randomInt(11);
+  return Array.from({ length: size }, () =>
+    BOUNDARY_CHARS.charAt(randomInt(BOUNDARY_CHARS.length))
+  ).join('');
 }

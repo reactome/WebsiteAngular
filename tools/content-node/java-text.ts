@@ -470,3 +470,27 @@ export function javaBase64Decode(text: string): Uint8Array {
   if (sp < sl) throw new Error(`Input byte array has incorrect ending byte at ${sp}`);
   return dp === out.length ? out : out.slice(0, dp);
 }
+
+/**
+ * Double.parseDouble's value for a text it reads, or undefined where it
+ * throws NumberFormatException: surrounding characters up to U+0020 trimmed,
+ * a sign, then NaN, Infinity, ASCII decimal digits with an optional point
+ * and exponent, or a hexadecimal significand with its binary exponent --
+ * those two with an optional f, F, d or D after.
+ */
+export function javaParseDouble(text: string): number | undefined {
+  const trimmed = javaTrim(text);
+  const match =
+    /^([+-]?)(?:(NaN)|(Infinity)|((?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)[fFdD]?|0[xX]([0-9a-fA-F]*)(?:\.([0-9a-fA-F]*))?[pP]([+-]?\d+)[fFdD]?)$/.exec(
+      trimmed
+    );
+  if (!match) return undefined;
+  const [, sign, nan, infinity, decimal, whole = '', fraction = '', exponent = '0'] = match;
+  const negative = sign === '-' ? -1 : 1;
+  if (nan) return NaN;
+  if (infinity) return negative * Infinity;
+  if (decimal !== undefined) return negative * Number(decimal);
+  if (whole === '' && fraction === '') return undefined;
+  const significand = Number.parseInt(`${whole}${fraction}` || '0', 16) / 16 ** fraction.length;
+  return negative * significand * 2 ** Number(exponent);
+}
