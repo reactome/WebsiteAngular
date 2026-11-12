@@ -210,8 +210,8 @@ describe('/data/eventsHierarchy/{species}?pathwaysOnly=true', () => {
       expect((await get(`1111?pathwaysOnly=${value}`)).status).toBe(200);
   });
 
-  it('leaves the full tree and the analysis overlay for later (T103c, T103d)', async () => {
-    for (const path of ['1111', '1111?pathwaysOnly=false', '1111?pathwaysOnly=true&token=abc'])
+  it('leaves the full tree for later (T103d)', async () => {
+    for (const path of ['1111', '1111?pathwaysOnly=false'])
       expect((await get(path)).status).toBe(501);
   });
 });

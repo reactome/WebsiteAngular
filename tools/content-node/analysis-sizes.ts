@@ -213,7 +213,7 @@ export function computeFigures({ tree, entities, targets, partners }: SizeInputs
   const own = new Map<string, Sets>();
   const ownOf = (pathway: string) => {
     let sets = own.get(pathway);
-    if (!sets) own.set(pathway, (sets = new Map()));
+    if (!sets) own.set(pathway, (sets = new Map() as Sets));
     return sets;
   };
   for (const { pathway, ids } of entities) {

@@ -1294,13 +1294,34 @@ against Java's answer pathway by pathway:
   for a name dated within seven days; each with the `Content-Disposition`, set
   before the token is read.
 
-**Open: how node answers a token (T103c), to be decided with the maintainers.**
-(a) Exact: compute each pathway's static figures per resource from the graph,
-as T103a computes the totals (the ratio's denominators to be worked out from
-analysis-core's PathwayNodeData), with the found counts from the AnalysisService.
-(b) Answer the default view exactly through `/token`, and record the
-resource-filtered view as a difference. (c) Leave token requests to Java, which
-needs a routing rule by query parameter the project does not use yet.
+**Decided: exact for every field the Reacfoam reads, the rest recorded (T103c,
+13 Nov 2026).** The Reacfoam reads `llp`, `entities.fdr`, `pValue`, `total` and
+`exp`, never a ratio or the reactions. Node takes `llp`, the found counts,
+p-values, FDRs and expression from the AnalysisService's `/token` (through the
+gateway) and every static figure from the graph (`analysisFigures`): per resource
+and over all or the main resources, entities, interactors, the two together and
+reactions, with the species' as the ratios' denominators. Two analysis-core rules
+had to be followed for those to match:
+
+- An interactor adds, under each of its targets' resources, the reactions of
+  every target it interacts with in the pathway (PathwayNode.processInteractor):
+  a UniProt target's reactions can count for ChEBI. Without it, 11 human
+  reactions were missing from ChEBI's.
+- With `importableOnly`, the AnalysisService leaves out a pathway found only
+  through auxiliary resources, which Java still writes, with nothing importable
+  found: the pathways and their `llp` are taken from the plain list.
+
+Compared with Java: two analyses of 12 identifiers (with and without
+interactors) and one of 17,326, both `interactors`, `resource` TOTAL, UNIPROT,
+CHEBI, ENSEMBL, `uniprot` and an unknown one, both `importableOnly` -- 72
+combinations, every node of the human tree, field by field, Java's order below a
+named node aside. Every field matches but analysis-core's alias merge
+(reactome/analysis-core#13): the 84 recorded sizes; with ChEBI, every reaction
+ratio (its species count is one higher in Java: a gene-name partner merged into
+a protein pools reactions in R-HSA-5621575) and 4 totals; asking for interactors
+an analysis was run without, the interactor ratios and up to 45 totals and 41
+interactor counts. Token errors and spellings (Base64's and URLDecoder's
+messages, "Not Found", "Gone", a token encoded three times, two tokens) as Java.
 
 **Errors to keep:** an unknown species, or one with no hierarchy, is a 500
 ("Something unexpected happened…"); `pathwaysOnly` reads a taxId, dbId or name,
