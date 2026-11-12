@@ -61,7 +61,7 @@ import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
 import { MatDialog } from '@angular/material/dialog';
-import { ALL_PANELS, type LayoutControl, togglePanels } from './layout';
+import { ALL_PANELS, type LayoutControl, togglePanels, TOUR_VIDEO_URL } from './layout';
 import { TourDialogComponent } from './tour-dialog/tour-dialog.component';
 
 const DETAIL_MIN_HEIGHT = 0;
@@ -144,6 +144,9 @@ export class ViewportComponent {
   toggleLayout(control: LayoutControl) {
     this.panels.update((layout) => togglePanels(layout, control));
   }
+
+  /** Whether there is a tour video to offer (#446: not until a new one is made). */
+  readonly hasTour = TOUR_VIDEO_URL !== undefined;
 
   openTour() {
     this.dialog.open(TourDialogComponent, { maxWidth: '95vw', autoFocus: 'dialog' });
