@@ -408,3 +408,65 @@ export function tomcatHeader(text: string) {
     })
     .join('');
 }
+
+const BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+/**
+ * java.util.Base64.getDecoder().decode(String), as Java 11 decodes it: the
+ * text taken as ISO-8859-1 bytes (a character past it is '?'), padding
+ * optional, and Java's IllegalArgumentException messages for the rest,
+ * thrown as errors carrying them -- which the content service answers as a
+ * 500. analysis-core reads a token with it (Tokenizer.getName).
+ */
+export function javaBase64Decode(text: string): Uint8Array {
+  // String.getBytes(ISO_8859_1): signed bytes, as Java's messages print them.
+  const src = [...text].flatMap((char) => {
+    const code = char.codePointAt(0) as number;
+    // Past Latin-1 a '?'; a surrogate pair is one character to Java's encoder.
+    return [code > 0xff ? 0x3f : code];
+  });
+  const sl = src.length;
+  if (sl === 0) return new Uint8Array(0);
+  if (sl < 2) throw new Error('Input byte[] should at least have 2 bytes for base64 bytes');
+  let paddings = 0;
+  if (src[sl - 1] === 0x3d) {
+    paddings++;
+    if (src[sl - 2] === 0x3d) paddings++;
+  }
+  if (paddings === 0 && (sl & 3) !== 0) paddings = 4 - (sl & 3);
+  const out = new Uint8Array(3 * Math.trunc((sl + 3) / 4) - paddings);
+  let dp = 0;
+  let bits = 0;
+  let shiftto = 18;
+  let sp = 0;
+  while (sp < sl) {
+    const byte = src[sp++] as number;
+    const b = byte === 0x3d ? -2 : BASE64.indexOf(String.fromCharCode(byte));
+    if (b < 0) {
+      if (b === -2) {
+        if ((shiftto === 6 && (sp === sl || src[sp++] !== 0x3d)) || shiftto === 18)
+          throw new Error('Input byte array has wrong 4-byte ending unit');
+        break;
+      }
+      // Integer.toString of the signed byte, in hex.
+      const signed = byte > 0x7f ? byte - 0x100 : byte;
+      throw new Error(`Illegal base64 character ${signed.toString(16)}`);
+    }
+    bits |= b << shiftto;
+    shiftto -= 6;
+    if (shiftto < 0) {
+      out[dp++] = (bits >> 16) & 0xff;
+      out[dp++] = (bits >> 8) & 0xff;
+      out[dp++] = bits & 0xff;
+      shiftto = 18;
+      bits = 0;
+    }
+  }
+  if (shiftto === 6) out[dp++] = (bits >> 16) & 0xff;
+  else if (shiftto === 0) {
+    out[dp++] = (bits >> 16) & 0xff;
+    out[dp++] = (bits >> 8) & 0xff;
+  } else if (shiftto === 12) throw new Error('Last unit does not have enough valid bits');
+  if (sp < sl) throw new Error(`Input byte array has incorrect ending byte at ${sp}`);
+  return dp === out.length ? out : out.slice(0, dp);
+}

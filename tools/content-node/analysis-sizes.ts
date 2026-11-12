@@ -86,16 +86,16 @@ const ENTITIES_QUERY = `
 MATCH (p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent)
 WHERE p.stId IN $pathways
 MATCH (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
-WITH DISTINCT p, re
-RETURN p.stId AS pathway, collect(DISTINCT [re.databaseName, coalesce(re.variantIdentifier, re.identifier)]) AS ids`;
+WITH DISTINCT p, re, collect(DISTINCT rle.dbId) AS reactions
+RETURN p.stId AS pathway, collect([re.databaseName, coalesce(re.variantIdentifier, re.identifier), reactions]) AS ids`;
 
 /** InteractorsBuilder's targets: what a tree pathway's reactions reach that may interact. */
 const TARGETS_QUERY = `
 MATCH (p:Pathway)-[:hasEvent]->(rle:ReactionLikeEvent)
 WHERE p.stId IN $pathways
 MATCH (rle)-[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator*]->(:PhysicalEntity)-[:referenceEntity]->(re:ReferenceEntity)
-WITH DISTINCT p, [re.databaseName, coalesce(re.variantIdentifier, re.identifier)] AS target
-RETURN p.stId AS pathway, collect(target) AS ids`;
+WITH DISTINCT p, re, collect(DISTINCT rle.dbId) AS reactions
+RETURN p.stId AS pathway, collect([re.databaseName, coalesce(re.variantIdentifier, re.identifier), reactions]) AS ids`;
 
 /** InteractionsService.getInteractions(acc): each target's partners, by its identifier. */
 const PARTNERS_QUERY = `
@@ -104,7 +104,8 @@ MATCH (t:ReferenceEntity)<-[:interactor]-(:Interaction)-[:interactor]->(o:Refere
 WHERE t.variantIdentifier = acc OR (t.variantIdentifier IS NULL AND t.identifier = acc)
 RETURN acc, collect(DISTINCT coalesce(o.variantIdentifier, o.identifier)) AS partners`;
 
-type IdRow = { pathway: string; ids: [string, string][] };
+/** A pathway's identifiers: database, identifier, and the reactions of the pathway that reach it. */
+type IdRow = { pathway: string; ids: [string, string, (number | bigint)[]][] };
 
 /** The tree's rows and the identifier rows, as computeSizes reads them. */
 export interface SizeInputs {
@@ -114,8 +115,90 @@ export interface SizeInputs {
   partners: { acc: string; partners: string[] }[];
 }
 
-/** Every pathway's size in the tree the inputs describe, by stable id. */
-export function computeSizes({ tree, entities, targets, partners }: SizeInputs) {
+/** ResourceFactory.AUX: counted, but not importable. */
+const AUXILIARY = new Set(['NCBI_PROTEIN', 'EMBL', 'COMPOUND', 'PUBCHEM_COMPOUND']);
+
+/** A pathway's static counts for one resource, its subpathways' included. */
+interface ResourceCounts {
+  /** Distinct identifiers its reactions reach. */
+  entities: number;
+  /** Distinct identifiers of their interaction partners. */
+  interactors: number;
+  /** Those two together (analysis-core's totalFound at build time). */
+  entitiesAndInteractors: number;
+  /** Its reactions that reach the resource, or reach an interactor of it. */
+  reactions: number;
+}
+
+/**
+ * A pathway's static figures as analysis-core's PathwayNodeData.setCounters
+ * makes them: per resource, and over all resources (`combined`) or the main
+ * ones alone (`importable`) -- identifiers summed over resources, reactions
+ * as one set.
+ */
+interface PathwayFigures {
+  resources: Map<string, ResourceCounts>;
+  combined: ResourceCounts;
+  importable: ResourceCounts;
+}
+
+/** Every pathway's figures, and the species' -- the ratios' denominators. */
+export interface AnalysisFigures {
+  pathways: Map<string, PathwayFigures>;
+  species: PathwayFigures;
+}
+
+type Sets = Map<string, { entities: Set<string>; partners: Set<string>; reactions: Set<string> }>;
+
+const setsFor = (sets: Sets, resource: string) => {
+  let found = sets.get(resource);
+  if (!found)
+    sets.set(
+      resource,
+      (found = { entities: new Set(), partners: new Set(), reactions: new Set() })
+    );
+  return found;
+};
+
+function figuresOf(sets: Sets): PathwayFigures {
+  const resources = new Map<string, ResourceCounts>();
+  const combined = { entities: 0, interactors: 0, entitiesAndInteractors: 0, reactions: 0 };
+  const importable = { ...combined };
+  const allReactions = new Set<string>();
+  const importableReactions = new Set<string>();
+  for (const [resource, { entities, partners, reactions }] of sets) {
+    const together = new Set([...entities, ...partners]);
+    const counts = {
+      entities: entities.size,
+      interactors: partners.size,
+      entitiesAndInteractors: together.size,
+      reactions: reactions.size,
+    };
+    resources.set(resource, counts);
+    for (const total of AUXILIARY.has(resource) ? [combined] : [combined, importable]) {
+      total.entities += counts.entities;
+      total.interactors += counts.interactors;
+      total.entitiesAndInteractors += counts.entitiesAndInteractors;
+    }
+    for (const reaction of reactions) {
+      allReactions.add(reaction);
+      if (!AUXILIARY.has(resource)) importableReactions.add(reaction);
+    }
+  }
+  combined.reactions = allReactions.size;
+  importable.reactions = importableReactions.size;
+  return { resources, combined, importable };
+}
+
+/**
+ * Every pathway's figures in the tree the inputs describe, by stable id, and
+ * the species'. Entities and their reactions come from EntitiesBuilder's rows.
+ * An interactor adds its identifier under each target's resource, and -- as
+ * PathwayNode.processInteractor does -- the reactions of every target it
+ * interacts with in the pathway under each of those targets' resources, so a
+ * UniProt target's reactions can count for ChEBI (research D25).
+ */
+export function computeFigures({ tree, entities, targets, partners }: SizeInputs): AnalysisFigures {
   const children = new Map<string, string[]>();
   for (const { parent, child } of tree) {
     const list = children.get(parent) ?? [];
@@ -127,49 +210,84 @@ export function computeSizes({ tree, entities, targets, partners }: SizeInputs) 
     children.set(parent, list);
   }
   const partnersOf = new Map(partners.map((row) => [row.acc, row.partners]));
-  const own = new Map<string, { entities: Set<string>; all: Set<string> }>();
+  const own = new Map<string, Sets>();
   const ownOf = (pathway: string) => {
     let sets = own.get(pathway);
-    if (!sets) own.set(pathway, (sets = { entities: new Set(), all: new Set() }));
+    if (!sets) own.set(pathway, (sets = new Map() as Sets));
     return sets;
   };
   for (const { pathway, ids } of entities) {
     const sets = ownOf(pathway);
-    for (const [databaseName, id] of ids) {
+    for (const [databaseName, id, reactions] of ids) {
       const resource = countedResource(databaseName);
       if (resource === undefined) continue;
-      sets.entities.add(`${resource}|${id}`);
-      sets.all.add(`${resource}|${id}`);
+      const of = setsFor(sets, resource);
+      of.entities.add(id);
+      for (const reaction of reactions) of.reactions.add(String(reaction));
     }
   }
   for (const { pathway, ids } of targets) {
     const sets = ownOf(pathway);
-    for (const [databaseName, id] of ids) {
+    // Per partner: the targets' resources it interacts with here, and their reactions.
+    const byPartner = new Map<string, { resources: Set<string>; reactions: Set<string> }>();
+    for (const [databaseName, id, reactions] of ids) {
       const resource = countedResource(databaseName);
       if (resource === undefined) continue;
-      for (const partner of partnersOf.get(id) ?? []) sets.all.add(`${resource}|${partner}`);
+      for (const partner of partnersOf.get(id) ?? []) {
+        setsFor(sets, resource).partners.add(partner);
+        let entry = byPartner.get(partner);
+        if (!entry)
+          byPartner.set(partner, (entry = { resources: new Set(), reactions: new Set() }));
+        entry.resources.add(resource);
+        for (const reaction of reactions) entry.reactions.add(String(reaction));
+      }
     }
+    for (const { resources, reactions } of byPartner.values())
+      for (const resource of resources)
+        for (const reaction of reactions) setsFor(sets, resource).reactions.add(reaction);
   }
 
-  const done = new Map<string, { entities: Set<string>; all: Set<string> }>();
-  const total = (pathway: string): { entities: Set<string>; all: Set<string> } => {
+  const done = new Map<string, Sets>();
+  const total = (pathway: string): Sets => {
     const known = done.get(pathway);
     if (known) return known;
-    const mine = own.get(pathway);
-    const sets = { entities: new Set(mine?.entities), all: new Set(mine?.all) };
-    for (const child of children.get(pathway) ?? []) {
-      const below = total(child);
-      for (const id of below.entities) sets.entities.add(id);
-      for (const id of below.all) sets.all.add(id);
-    }
+    const sets: Sets = new Map();
+    const add = (from: Sets | undefined) => {
+      for (const [resource, of] of from ?? []) {
+        const into = setsFor(sets, resource);
+        for (const id of of.entities) into.entities.add(id);
+        for (const id of of.partners) into.partners.add(id);
+        for (const id of of.reactions) into.reactions.add(id);
+      }
+    };
+    add(own.get(pathway));
+    for (const child of children.get(pathway) ?? []) add(total(child));
     done.set(pathway, sets);
     return sets;
   };
-  const sizes = new Map<string, AnalysisSize>();
+  const pathways = new Map<string, PathwayFigures>();
+  const species: Sets = new Map();
   for (const pathway of children.keys()) {
-    const { entities: e, all } = total(pathway);
-    sizes.set(pathway, { totalEntity: e.size, totalEntityAndInteractors: all.size });
+    const sets = total(pathway);
+    pathways.set(pathway, figuresOf(sets));
+    for (const [resource, of] of sets) {
+      const into = setsFor(species, resource);
+      for (const id of of.entities) into.entities.add(id);
+      for (const id of of.partners) into.partners.add(id);
+      for (const id of of.reactions) into.reactions.add(id);
+    }
   }
+  return { pathways, species: figuresOf(species) };
+}
+
+/** Every pathway's size in the tree the inputs describe, by stable id. */
+export function computeSizes(inputs: SizeInputs) {
+  const sizes = new Map<string, AnalysisSize>();
+  for (const [pathway, { combined }] of computeFigures(inputs).pathways)
+    sizes.set(pathway, {
+      totalEntity: combined.entities,
+      totalEntityAndInteractors: combined.entitiesAndInteractors,
+    });
   return sizes;
 }
 
@@ -188,18 +306,29 @@ async function sizeInputs(taxId: string): Promise<SizeInputs> {
   return { tree, entities, targets, partners };
 }
 
-const bySpecies = new Map<string, Promise<Map<string, AnalysisSize>>>();
+const bySpecies = new Map<string, Promise<AnalysisFigures>>();
 
 /**
- * Every pathway's size for a species, by taxId, computed once while the
+ * Every pathway's figures for a species, by taxId, computed once while the
  * process lives; a failed computation is tried again on the next call.
  */
-export function analysisSizes(taxId: string): Promise<Map<string, AnalysisSize>> {
-  let sizes = bySpecies.get(taxId);
-  if (!sizes) {
-    sizes = sizeInputs(taxId).then(computeSizes);
-    sizes.catch(() => bySpecies.delete(taxId));
-    bySpecies.set(taxId, sizes);
+export function analysisFigures(taxId: string): Promise<AnalysisFigures> {
+  let figures = bySpecies.get(taxId);
+  if (!figures) {
+    figures = sizeInputs(taxId).then(computeFigures);
+    figures.catch(() => bySpecies.delete(taxId));
+    bySpecies.set(taxId, figures);
   }
+  return figures;
+}
+
+/** Every pathway's size for a species, by taxId (analysisFigures' totals). */
+export async function analysisSizes(taxId: string): Promise<Map<string, AnalysisSize>> {
+  const sizes = new Map<string, AnalysisSize>();
+  for (const [pathway, { combined }] of (await analysisFigures(taxId)).pathways)
+    sizes.set(pathway, {
+      totalEntity: combined.entities,
+      totalEntityAndInteractors: combined.entitiesAndInteractors,
+    });
   return sizes;
 }

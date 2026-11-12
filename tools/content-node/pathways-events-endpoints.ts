@@ -8,10 +8,27 @@
  * unchanged from service.ts.
  */
 import type { Endpoint, Request } from './endpoint.ts';
-import { javaError, javaJson, notFound, only, unexpectedFailure } from './answers.ts';
-import { analysisSizes } from './analysis-sizes.ts';
+import {
+  javaError,
+  javaJson,
+  nonEmptyJson,
+  notFound,
+  only,
+  RawJson,
+  unexpectedFailure,
+} from './answers.ts';
+import { analysisFigures, analysisSizes } from './analysis-sizes.ts';
+import type { AnalysisFigures } from './analysis-sizes.ts';
+import { settings } from './settings.ts';
 import type { EventsHierarchyNode } from '../../projects/contract/events-hierarchy.ts';
-import { asciiDigits, javaNumeric, javaTrim, javaUtf8, tomcatHeader } from './java-text.ts';
+import {
+  asciiDigits,
+  javaBase64Decode,
+  javaNumeric,
+  javaTrim,
+  javaUtf8,
+  tomcatHeader,
+} from './java-text.ts';
 import type { JsonWritten } from './answers.ts';
 import type { PathwayBrowserNode as LocationNode } from '../../projects/contract/locations.ts';
 import {
@@ -27,7 +44,7 @@ import {
 import { read } from './graph.ts';
 import type { GraphNode, GraphRelationship } from './graph.ts';
 import neo4j from 'neo4j-driver';
-import { inDepthQuery, mapResult, mapResults, writeDomain } from './domain.ts';
+import { inDepthQuery, javaDouble, mapResult, mapResults, writeDomain } from './domain.ts';
 import type { MappedRow } from './domain.ts';
 import {
   pathId,
@@ -918,12 +935,16 @@ async function pathwaysOnlyTree(taxId: string, speciesName: string) {
     written.set(stId, node as EventsHierarchyNode);
     return node as EventsHierarchyNode;
   };
-  return javaJson(
-    treeSetOf(tops.map(({ stId }, order) => placed(stId, order))).map(({ stId }) => write(stId))
+  const tree = treeSetOf(tops.map(({ stId }, order) => placed(stId, order))).map(({ stId }) =>
+    write(stId)
   );
+  return { tree, json: javaJson(tree) };
 }
 
-const pathwaysOnlyBySpecies = new Map<string, Promise<string>>();
+const pathwaysOnlyBySpecies = new Map<
+  string,
+  Promise<{ tree: EventsHierarchyNode[]; json: string }>
+>();
 
 /** pathwaysOnlyTree, kept per species; a failed build is tried again next time. */
 function cachedPathwaysOnly(taxId: string, speciesName: string) {
@@ -950,6 +971,421 @@ async function hasHierarchy(dbId: number) {
 }
 
 /**
+ * analysis-core's Tokenizer.getName: the token URL-decoded until it no longer
+ * changes, then Base64-decoded -- each step's failure Java's own message,
+ * which the content service answers as a 500. The decoded token is what the
+ * AnalysisService is asked with; the name is the result file's.
+ */
+function tokenName(token: string) {
+  let aux = javaUrlDecode(token);
+  while (aux !== token) {
+    token = aux;
+    aux = javaUrlDecode(token);
+  }
+  const bytes = javaBase64Decode(aux);
+  // The AnalysisService is asked with the bytes' canonical spelling: Java's
+  // decoder ignores unused trailing bits, so `M/` opens what `Mw` opens.
+  return {
+    canonical: Buffer.from(bytes).toString('base64'),
+    name: new TextDecoder().decode(bytes),
+  };
+}
+
+/**
+ * Tokenizer.shouldBeAlive, for a token the AnalysisService cannot be asked
+ * about (its decoded form holds a '/'): whether its name starts with a date,
+ * yyyyMMddHHmmss before an underscore, at most seven days ago. Read as fourteen
+ * digits, which every token analysis-core makes is; SimpleDateFormat's lenient
+ * reading of anything else is not followed.
+ */
+function shouldBeAlive(name: string) {
+  if (!name.includes('_')) return false;
+  const date = /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/.exec(name.split('_')[0] ?? '');
+  if (!date) return false;
+  const [, y, mo, d, h, mi, se] = date.map(Number) as number[];
+  const when = new Date(y as number, (mo as number) - 1, d, h, mi, se);
+  return Math.floor((Date.now() - when.getTime()) / 86_400_000) <= 7;
+}
+
+/** A pathway of the AnalysisService's /token answer, as it writes one. */
+interface StoredPathway {
+  stId: string;
+  llp: boolean;
+  entities?: Record<string, unknown>;
+  reactions?: Record<string, unknown>;
+}
+
+class StoredResultFailure extends Error {}
+
+/**
+ * The stored result's pathways, as the AnalysisService's /token gives them
+ * for a resource: computed with the analysis's own interactors, every pathway
+ * the analysis found for TOTAL, those that found something for a resource.
+ * A token it does not have is analysis-core's "Not Found", or "Gone" for one
+ * that should still be alive.
+ */
+const storedResults = new Map<string, Promise<StoredResult>>();
+const STORED_FOR_MS = 5 * 60_000;
+
+type StoredResult = { interactors: boolean; pathways: Map<string, StoredPathway> };
+
+/**
+ * The stored result's pathways (see storedPathwaysOnce), kept five minutes
+ * per token, resource and importableOnly: the Reacfoam asks again on each
+ * switch of resource or interactors, and a large result is megabytes.
+ */
+function storedPathways(
+  token: { canonical: string; name: string },
+  resource: string,
+  importableOnly: boolean
+) {
+  const key = `${token.canonical} ${resource} ${String(importableOnly)}`;
+  let found = storedResults.get(key);
+  if (!found) {
+    found = storedPathwaysOnce(token, resource, importableOnly);
+    storedResults.set(key, found);
+    found.catch(() => storedResults.delete(key));
+    setTimeout(() => storedResults.delete(key), STORED_FOR_MS).unref();
+  }
+  return found;
+}
+
+/**
+ * The stored result's pathways, as the AnalysisService's /token gives them
+ * for a resource: computed with the analysis's own interactors, every pathway
+ * the analysis found for TOTAL, those that found something for a resource --
+ * disease pathways included, as Java overlays every pathway the result holds
+ * whatever the analysis was asked. A token it does not have is
+ * analysis-core's "Not Found", or "Gone" for one that should still be alive;
+ * the AnalysisService's own answer says which.
+ */
+async function storedPathwaysOnce(
+  token: { canonical: string; name: string },
+  resource: string,
+  importableOnly: boolean
+): Promise<StoredResult> {
+  // A name whose canonical spelling holds a '/' has no token path: Tokenizer's
+  // own rule decides. analysis-core never makes one.
+  if (token.canonical.includes('/'))
+    throw new StoredResultFailure(shouldBeAlive(token.name) ? 'Gone' : 'Not Found');
+  const url =
+    `${settings.analysisService()}/AnalysisService/token/${encodeURIComponent(token.canonical)}` +
+    `?resource=${encodeURIComponent(resource)}&importableOnly=${String(importableOnly)}` +
+    '&includeDisease=true';
+  const answer = await fetch(url, { signal: AbortSignal.timeout(120_000) });
+  if (answer.status === 404 || answer.status === 410) {
+    const body = (await answer.json().catch(() => ({}))) as { code?: unknown };
+    if (body.code === 404) throw new StoredResultFailure('Not Found');
+    if (body.code === 410) throw new StoredResultFailure('Gone');
+  }
+  if (!answer.ok)
+    throw new Error(`the AnalysisService answered ${answer.status} for a stored result`);
+  const result = (await answer.json()) as {
+    summary: { interactors: boolean };
+    pathways: StoredPathway[];
+  };
+  return {
+    interactors: result.summary.interactors,
+    pathways: new Map(result.pathways.map((pathway) => [pathway.stId, pathway])),
+  };
+}
+
+const num = (value: unknown) => (typeof value === 'number' ? value : undefined);
+
+/** EntityStatistics as Jackson writes it, in its fields' order; a null left out. */
+function entityStatistics(stats: {
+  resource: string;
+  total: number;
+  found: number;
+  ratio: number;
+  curatedTotal?: number | undefined;
+  curatedFound?: number | undefined;
+  interactorsTotal?: number | undefined;
+  interactorsFound?: number | undefined;
+  pValue?: number | undefined;
+  fdr?: number | undefined;
+  exp?: unknown;
+}) {
+  const exp =
+    Array.isArray(stats.exp) && stats.exp.length
+      ? new RawJson(
+          `[${(stats.exp as unknown[]).map((value) => (typeof value === 'number' ? javaDouble(value) : 'null')).join(',')}]`
+        )
+      : undefined;
+  return new RawJson(
+    nonEmptyJson([
+      ['resource', stats.resource],
+      ['total', stats.total],
+      ['found', stats.found],
+      ['ratio', stats.ratio, true],
+      ['curatedTotal', stats.curatedTotal],
+      ['curatedFound', stats.curatedFound],
+      ['interactorsTotal', stats.interactorsTotal],
+      ['interactorsFound', stats.interactorsFound],
+      ['pValue', stats.pValue, true],
+      ['fdr', stats.fdr, true],
+      ['exp', exp],
+    ])
+  );
+}
+
+/** ReactionStatistics as Jackson writes it. */
+function reactionStatistics(stats: {
+  resource: string;
+  total: number;
+  found: number;
+  ratio: number;
+}) {
+  return new RawJson(
+    nonEmptyJson([
+      ['resource', stats.resource],
+      ['total', stats.total],
+      ['found', stats.found],
+      ['ratio', stats.ratio, true],
+    ])
+  );
+}
+
+/** A statistics object the AnalysisService wrote, written as the content service writes one. */
+function restated(written: Record<string, unknown>) {
+  return entityStatistics({
+    resource: String(written['resource']),
+    total: num(written['total']) ?? 0,
+    found: num(written['found']) ?? 0,
+    ratio: num(written['ratio']) ?? 0,
+    curatedTotal: num(written['curatedTotal']),
+    curatedFound: num(written['curatedFound']),
+    interactorsTotal: num(written['interactorsTotal']),
+    interactorsFound: num(written['interactorsFound']),
+    pValue: num(written['pValue']),
+    fdr: num(written['fdr']),
+    exp: written['exp'],
+  });
+}
+
+const restatedReactions = (written: Record<string, unknown>) =>
+  reactionStatistics({
+    resource: String(written['resource']),
+    total: num(written['total']) ?? 0,
+    found: num(written['found']) ?? 0,
+    ratio: num(written['ratio']) ?? 0,
+  });
+
+/** One node's overlay: its llp, entities and reactions, as written. */
+type Overlay = { llp: boolean; entities?: RawJson; reactions?: RawJson };
+
+/**
+ * AnalysedPathwayBrowserNode.initAnalysis's figures for every pathway the
+ * stored result names (research D25): EntityStatistics and ReactionStatistics
+ * built with the request's resource, interactors and importableOnly. The
+ * AnalysisService builds the same objects with the analysis's own
+ * interactors, for the pathways that found something; where the request's
+ * interactors is the analysis's they are its, and the rest comes from the
+ * graph's static figures (analysisFigures) and the found counts, p-values and
+ * expression the AnalysisService gives. One combination is not exact: an
+ * analysis run with interactors, asked without them and importableOnly,
+ * which needs the importable entities found -- summed here over the main
+ * resources' curated found.
+ */
+async function overlays(
+  token: { canonical: string; name: string },
+  figures: AnalysisFigures,
+  {
+    resource,
+    interactors,
+    importableOnly,
+  }: { resource: string; interactors: boolean; importableOnly: boolean }
+) {
+  const mainResource = [...figures.species.resources.keys()].includes(resource)
+    ? resource
+    : undefined;
+  // Every pathway the result names, and its llp, from the plain list: asked
+  // with importableOnly, the AnalysisService leaves out one found only through
+  // auxiliary resources, which Java still writes (with nothing importable found).
+  const [total, all, byResource] = await Promise.all([
+    storedPathways(token, 'TOTAL', importableOnly),
+    storedPathways(token, 'TOTAL', false),
+    mainResource ? storedPathways(token, mainResource, importableOnly) : undefined,
+  ]);
+  const analysed = total.interactors;
+  const out = new Map<string, Overlay>();
+  let plainTotal: Map<string, StoredPathway> | undefined;
+  let importableFound: Map<string, number> | undefined;
+  if (resource === 'TOTAL' && interactors !== analysed && importableOnly) {
+    if (analysed) {
+      // Importable entities found: the main resources' curated found, summed.
+      importableFound = new Map();
+      const mains = [...figures.species.resources.keys()].filter(
+        (main) => !['NCBI_PROTEIN', 'EMBL', 'COMPOUND', 'PUBCHEM_COMPOUND'].includes(main)
+      );
+      for (const { pathways } of await Promise.all(
+        mains.map((main) => storedPathways(token, main, false))
+      ))
+        for (const [stId, pathway] of pathways)
+          importableFound.set(
+            stId,
+            (importableFound.get(stId) ?? 0) + (num(pathway.entities?.['curatedFound']) ?? 0)
+          );
+    } else plainTotal = all.pathways;
+  }
+  for (const [stId, base] of all.pathways) {
+    const overlay: Overlay = { llp: base.llp };
+    out.set(stId, overlay);
+    const figure = figures.pathways.get(stId);
+    const stored = total.pathways.get(stId);
+    if (resource === 'TOTAL' && !stored) {
+      // Nothing importable found: the importable figures, nothing found.
+      if (!figure) continue;
+      const counts = figure.importable;
+      const species = figures.species.combined;
+      const plain = base.entities ?? {};
+      overlay.entities = entityStatistics({
+        resource: 'TOTAL',
+        total: interactors ? counts.entitiesAndInteractors : counts.entities,
+        found: 0,
+        ratio: interactors
+          ? counts.entitiesAndInteractors / species.entitiesAndInteractors
+          : counts.entities / species.entities,
+        ...(interactors && {
+          curatedTotal: figure.combined.entities,
+          curatedFound: (analysed ? num(plain['curatedFound']) : num(plain['found'])) ?? 0,
+          interactorsTotal: figure.combined.interactors,
+          interactorsFound: analysed ? (num(plain['interactorsFound']) ?? 0) : 0,
+        }),
+      });
+      overlay.reactions = reactionStatistics({
+        resource: 'TOTAL',
+        total: counts.reactions,
+        found: 0,
+        ratio: counts.reactions / species.reactions,
+      });
+      continue;
+    }
+    if (resource === 'TOTAL' && stored) {
+      const entities = stored.entities ?? {};
+      if (stored.reactions) overlay.reactions = restatedReactions(stored.reactions);
+      if (interactors === analysed || !figure) {
+        overlay.entities = restated(entities);
+        continue;
+      }
+      const counts = importableOnly ? figure.importable : figure.combined;
+      const species = figures.species.combined;
+      const found = interactors
+        ? (num(entities['found']) ?? 0)
+        : importableOnly
+          ? (importableFound?.get(stId) ?? 0)
+          : (num(entities['curatedFound']) ?? 0);
+      const curatedFound = analysed
+        ? num(entities['curatedFound'])
+        : importableOnly
+          ? num(plainTotal?.get(stId)?.entities?.['found'])
+          : num(entities['found']);
+      overlay.entities = entityStatistics({
+        resource: 'TOTAL',
+        total: interactors ? counts.entitiesAndInteractors : counts.entities,
+        found,
+        ratio: interactors
+          ? counts.entitiesAndInteractors / species.entitiesAndInteractors
+          : counts.entities / species.entities,
+        ...(interactors && {
+          curatedTotal: figure.combined.entities,
+          curatedFound: curatedFound ?? 0,
+          interactorsTotal: figure.combined.interactors,
+          interactorsFound: analysed ? (num(entities['interactorsFound']) ?? 0) : 0,
+        }),
+        pValue: num(entities['pValue']),
+        fdr: num(entities['fdr']),
+        exp: entities['exp'],
+      });
+      continue;
+    }
+    // A resource the pathway's data holds, by its exact name; anything else
+    // is the llp alone.
+    const counts = mainResource ? figure?.resources.get(mainResource) : undefined;
+    if (!mainResource || !counts || !byResource) continue;
+    const species = figures.species.resources.get(mainResource);
+    if (!species) continue;
+    const found = byResource.pathways.get(stId);
+    const entities = found?.entities;
+    if (found && entities && interactors === analysed) {
+      overlay.entities = restated(entities);
+      if (found.reactions) overlay.reactions = restatedReactions(found.reactions);
+      continue;
+    }
+    const ratioOf = (part: number, whole: number) => {
+      const ratio = part / whole;
+      return Number.isFinite(ratio) ? ratio : 0;
+    };
+    overlay.entities = entityStatistics({
+      resource: mainResource,
+      total: interactors ? counts.entitiesAndInteractors : counts.entities,
+      found: entities
+        ? interactors || !analysed
+          ? (num(entities['found']) ?? 0)
+          : (num(entities['curatedFound']) ?? 0)
+        : 0,
+      ratio: interactors
+        ? ratioOf(counts.entitiesAndInteractors, species.entitiesAndInteractors)
+        : counts.entities / species.entities,
+      ...(interactors && {
+        curatedTotal: counts.entities,
+        curatedFound: entities
+          ? ((analysed ? num(entities['curatedFound']) : num(entities['found'])) ?? 0)
+          : 0,
+        interactorsTotal: counts.interactors,
+        interactorsFound: entities && analysed ? (num(entities['interactorsFound']) ?? 0) : 0,
+      }),
+      pValue: num(entities?.['pValue']),
+      fdr: num(entities?.['fdr']),
+      exp: entities?.['exp'],
+    });
+    overlay.reactions = found?.reactions
+      ? restatedReactions(found.reactions)
+      : reactionStatistics({
+          resource: mainResource,
+          total: counts.reactions,
+          found: 0,
+          ratio: counts.reactions / species.reactions,
+        });
+  }
+  return out;
+}
+
+/**
+ * The tree with the overlay, as Jackson writes AnalysedPathwayBrowserNode:
+ * from each top-level pathway down, a node the result names gets its llp and
+ * figures and its children are overlaid in turn; one it does not name is left
+ * as it is, and so is everything below it. Java collects a named node's
+ * children into a HashSet, so its order there changes from one request to
+ * the next; here they keep the tree's.
+ */
+function overlaidJson(
+  node: EventsHierarchyNode,
+  overlay: Map<string, Overlay>,
+  descend: boolean
+): string {
+  const mine = descend ? overlay.get(node.stId) : undefined;
+  const children = node.children?.length
+    ? new RawJson(
+        `[${node.children.map((child) => overlaidJson(child, overlay, mine !== undefined)).join(',')}]`
+      )
+    : undefined;
+  return nonEmptyJson([
+    ['stId', node.stId],
+    ['name', node.name],
+    ['species', node.species],
+    ['type', node.type],
+    ['diagram', node.diagram],
+    ['llp', mine?.llp],
+    ['totalEntity', node.totalEntity],
+    ['totalEntityAndInteractors', node.totalEntityAndInteractors],
+    ['entities', mine?.entities],
+    ['reactions', mine?.reactions],
+    ['children', children],
+  ]);
+}
+
+/**
  * EventsController.getEventHierarchy, the pathwaysOnly form without a token
  * (spec 006 T103b): its parameters read in its order, each Boolean as Spring
  * binds one; the species as SpeciesService finds it, a species without a
@@ -963,18 +1399,22 @@ async function eventsHierarchy(request: Request) {
   const pathwaysOnly = springBoolean(queryValues(request, 'pathwaysOnly'));
   if (pathwaysOnly.error !== undefined)
     return javaError(request, 400, 'BAD_REQUEST', pathwaysOnly.error);
-  const token = queryValues(request, 'token');
-  for (const name of ['interactors', 'importableOnly']) {
-    const bound = springBoolean(queryValues(request, name));
-    if (bound.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', bound.error);
-  }
-  if (pathwaysOnly.value !== true || token.length > 0)
-    return javaError(
-      request,
-      501,
-      'NOT_IMPLEMENTED',
-      'Not yet answered here: spec 006 T103c, T103d'
-    );
+  // A String with no default: an empty one is still a token, as Java reads it.
+  const tokens = queryValues(request, 'token');
+  // A String with a default: absent or one empty value is TOTAL.
+  const resources = queryValues(request, 'resource');
+  const resource =
+    resources.length === 0 || (resources.length === 1 && resources[0] === '')
+      ? 'TOTAL'
+      : resources.join(',');
+  const interactors = springBoolean(queryValues(request, 'interactors'));
+  if (interactors.error !== undefined)
+    return javaError(request, 400, 'BAD_REQUEST', interactors.error);
+  const importableOnly = springBoolean(queryValues(request, 'importableOnly'));
+  if (importableOnly.error !== undefined)
+    return javaError(request, 400, 'BAD_REQUEST', importableOnly.error);
+  if (pathwaysOnly.value !== true)
+    return javaError(request, 501, 'NOT_IMPLEMENTED', 'Not yet answered here: spec 006 T103d');
 
   const found = await hierarchySpecies(raw);
   if (found.failure !== undefined)
@@ -985,25 +1425,54 @@ async function eventsHierarchy(request: Request) {
   // HierarchyBuilder leaves the hierarchy of a species without a taxId empty;
   // EventsController answers an empty tree with its 404. None in release 98.
   if (!taxId) return notFound(request, `No event hierarchy found for given species: ${raw}`);
+  let built;
   try {
-    const tree = await cachedPathwaysOnly(taxId, displayName);
-    if (tree === '[]')
-      return notFound(request, `No event hierarchy found for given species: ${raw}`);
-    return {
-      status: 200,
-      serialised: tree,
-      type: 'application/json',
-      headers: {
-        // As Tomcat writes it: past Latin-1 a '?' (a species in Arabic-Indic digits).
-        'Content-Disposition': tomcatHeader(
-          `inline; swaggerDownload="attachment"; filename="${raw}.json"`
-        ),
-      },
-    };
+    built = await cachedPathwaysOnly(taxId, displayName);
   } catch (error) {
     if (error instanceof JavaNullPointer) return unexpectedFailure(request);
     throw error;
   }
+  if (built.tree.length === 0)
+    return notFound(request, `No event hierarchy found for given species: ${raw}`);
+  // Set before the token is read, so its failures carry it too.
+  const headers = {
+    // As Tomcat writes it: past Latin-1 a '?' (a species in Arabic-Indic digits).
+    'Content-Disposition': tomcatHeader(
+      `inline; swaggerDownload="attachment"; filename="${raw}.json"`
+    ),
+  };
+  if (tokens.length === 0)
+    return { status: 200, serialised: built.json, type: 'application/json', headers };
+
+  // URLDecoder's and Base64's failures, then the stored result's "Not Found"
+  // and "Gone": Java's 500, naming them.
+  const refused = (message: string) => ({
+    ...javaError(request, 500, 'INTERNAL_SERVER_ERROR', message),
+    headers,
+  });
+  let token;
+  try {
+    token = tokenName(tokens.join(','));
+  } catch (error) {
+    return refused((error as Error).message);
+  }
+  let overlay;
+  try {
+    overlay = await overlays(token, await analysisFigures(taxId), {
+      resource,
+      interactors: interactors.value ?? false,
+      importableOnly: importableOnly.value ?? false,
+    });
+  } catch (error) {
+    if (error instanceof StoredResultFailure) return refused(error.message);
+    throw error;
+  }
+  return {
+    status: 200,
+    serialised: `[${built.tree.map((node) => overlaidJson(node, overlay, true)).join(',')}]`,
+    type: 'application/json',
+    headers,
+  };
 }
 
 export const pathwaysEventsEndpoints: Endpoint[] = [

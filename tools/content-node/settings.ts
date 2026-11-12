@@ -27,6 +27,12 @@ export const settings = {
    */
   sbmlService: (): string => process.env['SBML_SERVICE'] || '',
   /**
+   * Where the AnalysisService is asked for a stored result (eventsHierarchy's
+   * overlay, spec 006 T103c): through the analysis gateway, which passes reads
+   * through unchanged.
+   */
+  analysisService: (): string => process.env['ANALYSIS_SERVICE'] || 'http://127.0.0.1:4350',
+  /**
    * Where the PDF service listens (pdf-export's single-event service,
    * deploy/pdf-export, spec 006 T100), read per request; none set, an
    * event's PDF answers 503 rather than another implementation.

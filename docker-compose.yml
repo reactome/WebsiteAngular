@@ -321,6 +321,7 @@ services:
       - SBML_SERVICE=http://127.0.0.1:4360
       # The PDF service (pdf-export, spec 006 T100): node is its only client.
       - PDF_SERVICE=http://127.0.0.1:4370
+      - ANALYSIS_SERVICE=http://127.0.0.1:4350
       - DIAGRAM_FILES=${DIAGRAM_FILES_DIR:+/data/diagram}
       - EXPRESSION_FILES=${EXPRESSION_FILES_DIR:+/data/expression}
     # Runs as the owner of that file, which is 0600 and should stay that way.
