@@ -1284,3 +1284,10 @@ The branch is well behind main and would want rebasing before any further work.
   better left proxied indefinitely.
 - What the inventory of external consumers actually is. D3 assumes we cannot
   enumerate them; if that can be improved, the parity constraint could relax.
+- Whether the Reacfoam's sizing is the right approach (D25). Each cell's area is
+  the analysis's denominator for that pathway -- its distinct identifiers, with
+  or without interactors -- reused as a size, and to match Java node repeats
+  analysis-core's counting rules, alias merge included. Worth revisiting to
+  confirm that is what a reader of the Reacfoam should see, and whether the
+  number should be computed by a rule of its own or read from the
+  AnalysisService, which already holds it.
