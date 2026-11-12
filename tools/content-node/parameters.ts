@@ -388,6 +388,33 @@ export const RECORD: Record<string, RecordEntry> = {
     java: '/data/complexes/{resource}/{identifier}',
     path: { resource: 'resource', identifier: 'identifier' },
   },
+  // Hidden from Java's description (@Hidden), and asked for by nothing of the site's.
+  '/ContentService/data/referenceMolecules': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: every ReferenceMolecule.',
+    query: [],
+  },
+  '/ContentService/data/referenceMolecules/identifiers': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: every ReferenceMolecule, a line each.',
+    query: [],
+  },
+  '/ContentService/data/referenceSequences': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences.',
+    query: [
+      { name: 'page', in: 'query', type: 'integer', required: true },
+      { name: 'offset', in: 'query', type: 'integer', required: true },
+    ],
+  },
+  '/ContentService/data/referenceSequences/identifiers': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences, a line each.',
+    query: [
+      { name: 'page', in: 'query', type: 'integer', required: true },
+      { name: 'offset', in: 'query', type: 'integer', required: true },
+    ],
+  },
   '/ContentService/data/schema/{id}/count': {
     java: '/data/schema/{className}/count',
     path: { id: 'className' },

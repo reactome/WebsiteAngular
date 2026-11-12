@@ -187,6 +187,10 @@ module.exports = {
   '^/ContentService/data/pathway/[^/?]+/containedEvents(/[^/?]+)?/?(\\?|$)': contentNode,
   // What a complex is made of, and the complexes an identifier is part of.
   '^/ContentService/data/(complex/[^/?]+/subunits|complexes/[^/?]+/[^/?]+)/?(\\?|$)': contentNode,
+  // Every reference molecule, and a page of the reference sequences, whole or
+  // a line each.
+  '^/ContentService/data/(referenceMolecules|referenceSequences)(/identifiers)?/?(\\?|$)':
+    contentNode,
   // The reference entities behind an event's participants (the molecule list
   // and the IDG page), and the physical entities themselves.
   '^/ContentService/data/participants/[^/?]+/(referenceEntities|participatingPhysicalEntities)/?(\\?|$)':
