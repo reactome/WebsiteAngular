@@ -69,8 +69,12 @@ function byPeak(inputs: OrderInput[]): number[] {
     );
 }
 
-/** The order to draw `inputs` in, as indices into it. */
-export function orderRows(inputs: OrderInput[]): number[] {
+/**
+ * The order to draw `inputs` in, as indices into it. `work`, if given, counts
+ * the genes the clustering visits -- the distance matrix and each scan of a
+ * row -- so a test can hold its cost to O(n^2) without timing it.
+ */
+export function orderRows(inputs: OrderInput[], work?: { visits: number }): number[] {
   if (inputs.length <= 2)
     return inputs.map((_, i) => i).sort((a, b) => byName(inputs[a], inputs[b]));
   if (inputs.length > MAX_CLUSTERED) return byPeak(inputs);
@@ -80,6 +84,7 @@ export function orderRows(inputs: OrderInput[]): number[] {
   const n = start.length;
   const vectors = profiles(start.flatMap((i) => inputs[i] ?? []));
   const d = new Float32Array(n * n);
+  if (work) work.visits += (n * (n - 1)) / 2;
   for (let i = 0; i < n; i++)
     for (let j = i + 1; j < n; j++)
       d[i * n + j] = d[j * n + i] = distance(vectors[i] ?? null, vectors[j] ?? null);
@@ -97,6 +102,7 @@ export function orderRows(inputs: OrderInput[]): number[] {
     const previous = chain.length > 1 ? (chain[chain.length - 2] ?? -1) : -1;
     let b = previous;
     let best = previous >= 0 ? (d[a * n + previous] ?? Infinity) : Infinity;
+    if (work) work.visits += n;
     for (let k = 0; k < n; k++) {
       if (!active[k] || k === a) continue;
       const dk = d[a * n + k] ?? Infinity;
@@ -109,6 +115,7 @@ export function orderRows(inputs: OrderInput[]): number[] {
     chain.length -= 2;
     // Merge b into a: the Lance-Williams update for average linkage.
     const [sa, sb] = [size[a] ?? 1, size[b] ?? 1];
+    if (work) work.visits += n;
     for (let k = 0; k < n; k++) {
       if (!active[k] || k === a || k === b) continue;
       const merged = (sa * (d[a * n + k] ?? 0) + sb * (d[b * n + k] ?? 0)) / (sa + sb);
