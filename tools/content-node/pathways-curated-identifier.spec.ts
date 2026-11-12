@@ -108,6 +108,9 @@ describe('/top/{species}/curated', () => {
     await get('top/Homo+sapiens%2B/curated');
     expect(last()[0]).toContain('(s:Species{displayName:$speciesName})');
     expect(last()[1]).toEqual({ speciesName: 'Homo+sapiens+' });
+    // Decoded twice, %2520 would be a space.
+    await get('top/Homo%2520sapiens/curated');
+    expect(last()[1]).toEqual({ speciesName: 'Homo%20sapiens' });
   });
 
   it('answers none with the 404 naming the species as given', async () => {

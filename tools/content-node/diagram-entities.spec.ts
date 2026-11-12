@@ -72,12 +72,17 @@ describe("the answer, a HashSet's order", () => {
     diagramRows = [
       row(5),
       { dbId: 6, stId: null, displayName: 'D', labels: ['DatabaseObject', 'Drug'] },
+      // asString writes a null displayName as the text; non_empty drops an empty one.
+      { dbId: 7, stId: 'R-HSA-7', displayName: null, labels: ['DatabaseObject', 'Drug'] },
+      { dbId: 8, stId: 'R-HSA-8', displayName: '', labels: ['DatabaseObject', 'Drug'] },
     ];
     const response = await get('R-HSA-9/entities/x');
     expect(response.status).toBe(200);
     expect(await response.text()).toBe(
       '[{"dbId":5,"stId":"R-HSA-5","displayName":"E5","schemaClass":"Complex"},' +
-        '{"dbId":6,"displayName":"D","schemaClass":"Drug"}]'
+        '{"dbId":6,"displayName":"D","schemaClass":"Drug"},' +
+        '{"dbId":7,"stId":"R-HSA-7","displayName":"null","schemaClass":"Drug"},' +
+        '{"dbId":8,"stId":"R-HSA-8","schemaClass":"Drug"}]'
     );
   });
 
