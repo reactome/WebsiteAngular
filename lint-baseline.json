@@ -1,9 +1,9 @@
 {
-  "warnings": 836,
+  "warnings": 835,
   "rules": {
     "@typescript-eslint/no-explicit-any": 96,
     "@typescript-eslint/no-namespace": 12,
-    "@typescript-eslint/no-non-null-assertion": 151,
+    "@typescript-eslint/no-non-null-assertion": 150,
     "@typescript-eslint/no-unsafe-argument": 76,
     "@typescript-eslint/no-unsafe-assignment": 145,
     "@typescript-eslint/no-unsafe-call": 173,
