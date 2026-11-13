@@ -191,6 +191,55 @@ describe('mapResult and writeDomain, as SDN and Jackson load and write an object
     ]);
   });
 
+  it("writes the nested views' getter-only lists in the running Java's order", () => {
+    // Jackson puts these in the order the JVM lists the methods, which a Tomcat
+    // restart can change (domain.ts, writeDomain); the snapshot holds the order
+    // Java wrote on 13 Nov 2026.
+    const listed = (json: unknown, names: string[]) =>
+      Object.keys(json as object).filter((key) => names.includes(key));
+    expect(listed(write(reaction, VIEW.nested), ['inputs', 'outputs'])).toEqual([
+      'outputs',
+      'inputs',
+    ]);
+    const set = (id: number, label: string) =>
+      node(id, ['DatabaseObject', 'PhysicalEntity', 'EntitySet', label], {});
+    const row = {
+      root: node(2, COMPLEX, { displayName: 'a' }),
+      nodes: [
+        node(1, EVENT, { displayName: 'r' }),
+        node(3, COMPLEX, { displayName: 'b' }),
+        set(4, 'DefinedSet'),
+        set(5, 'CandidateSet'),
+        node(6, ['DatabaseObject', 'PhysicalEntity', 'Polymer'], {}),
+      ],
+      relationships: [
+        rel('input', 1, 2, { order: 0, stoichiometry: 1 }),
+        rel('output', 1, 2, { order: 0, stoichiometry: 1 }),
+        rel('hasComponent', 3, 2, { order: 0, stoichiometry: 1 }),
+        rel('hasMember', 4, 2, { order: 0, stoichiometry: 1 }),
+        rel('hasCandidate', 5, 2, { order: 0, stoichiometry: 1 }),
+        rel('repeatedUnit', 6, 2, { order: 0, stoichiometry: 1 }),
+      ],
+    };
+    const lists = [
+      'repeatedUnitOfPolymers',
+      'memberOfSet',
+      'componentOfComplexes',
+      'candidateOfSet',
+      'inputFor',
+      'outputFor',
+    ];
+    for (const view of [VIEW.nested, VIEW.nestedAggregated])
+      expect(listed(write(row, view), lists)).toEqual([
+        'outputFor',
+        'repeatedUnitOfPolymers',
+        'componentOfComplexes',
+        'memberOfSet',
+        'candidateOfSet',
+        'inputFor',
+      ]);
+  });
+
   it('reads a Pathway reached through an interface-typed field as SDN does: TopLevelPathway', () => {
     const row = {
       root: node(10, ['DatabaseObject', 'MetaDatabaseObject', 'UpdateTracker'], {}),
