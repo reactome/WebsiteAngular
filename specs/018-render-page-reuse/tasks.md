@@ -65,7 +65,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       200 (T002, #810). Reactions with `R-NUL-` ids time out in the render page itself, whatever
       the layout: issue #843, outside this test.
 
-- [x] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5) (#810, #956).
+- [x] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5) (#810, #957).
   - **Written (#810):** the script and its tests. Its first run, `--mode fresh` on T001's
     sample, is in research R7. Still to do before it is ticked: a run in `reuse` mode,
     which needs a site build with the render page's entry point (T003): T001's prototype
@@ -75,7 +75,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - **Tests in `tools/render/reuse-compare.spec.ts`:** it fails on a planted difference,
     and its report names the request and the request drawn before it.
   - Run in `reuse` mode once T003–T005 report `reuse` (T001's prototype does not).
-  - **First `reuse` run, 8 Nov 2026 (#956):** T005's service against beta's site (T003 and
+  - **First `reuse` run, 8 Nov 2026 (#957):** T005's service against beta's site (T003 and
     T004 built in), 20 SVG requests (reactions, reaction layouts, a diagram dark, with
     subpathways off, a selection and a highlight, an illustration, the overview of two
     species, and two analysis tokens), listed, reversed and in ten runs of pairs.
@@ -170,7 +170,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 ## Phase 4: The service (US1, US3, US4)
 
 - [x] T005 [US1] Held pages in `tools/render/pages.ts`, used by `schedule()` in
-      `service.ts` (#956).
+      `service.ts` (#957).
   - The first figure on a page is a full load; later ones navigate in the app.
   - Behind `RENDER_REUSE` (off is today).
   - The comment above `getBrowser()` that warns against reuse is rewritten to say what
@@ -192,7 +192,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     while drawn, a failed page kept, `reusable` ignored and a close that throws; the move's
     tests with every page loaded, the handle kept, any host waited for and a refused move
     ignored.
-- [ ] T012 [US2] What T002's first `reuse` run found (#956 records it).
+- [ ] T012 [US2] What T002's first `reuse` run found (#957 records it).
   - **The overview's label leak:** found and fixed in the render page, or the page replaced
     when the species changes, with the pair (mouse overview, then the default) passing.
   - **Fresh renders that vary:** an illustration with a token, and highlights, made
