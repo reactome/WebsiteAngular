@@ -131,9 +131,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legend');
   readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
-  readonly interactorsComponent = input<InteractorsComponent>(undefined, {
-    alias: 'interactor',
-  });
+  readonly interactor = input<InteractorsComponent>();
   readonly pathwayId = model.required<string>();
   /** A diagram has been drawn, with the stable id of the pathway it shows. */
   readonly diagramLoaded = output<string>();
@@ -1843,9 +1841,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);
-    this.legendPosition().x <= -legendWidth + 5
-      ? this.legendPosition.set({ x: 0, y: 0 })
-      : this.legendPosition.set({ x: -legendWidth, y: 0 });
+    if (this.legendPosition().x <= -legendWidth + 5) this.legendPosition.set({ x: 0, y: 0 });
+    else this.legendPosition.set({ x: -legendWidth, y: 0 });
     this.updateLegend();
     setTimeout(() => this.animateLegend.set(false), 500);
   }
@@ -1882,7 +1879,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // Not chosen by the reader: this is the address being honoured. Passing
       // that on matters, because the same call with a resource already current
       // means "put it away" when a reader makes it.
-      this.interactorsComponent()?.getInteractors(resource, false);
+      this.interactor()?.getInteractors(resource, false);
     }
 
     this.loadAnalysis(this.state.analysis());

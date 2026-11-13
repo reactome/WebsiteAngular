@@ -251,12 +251,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);
-    this.legendPosition().x <= -legendWidth + 5
-      ? this.legendPosition.set({
-          x: 0,
-          y: 0,
-        })
-      : this.legendPosition.set({ x: -legendWidth, y: 0 });
+    if (this.legendPosition().x <= -legendWidth + 5) this.legendPosition.set({ x: 0, y: 0 });
+    else this.legendPosition.set({ x: -legendWidth, y: 0 });
     setTimeout(() => this.animateLegend.set(false), 500);
   }
 

@@ -88,7 +88,7 @@ export class SvgExporterService {
 
     let svg: SVGSVGElement | undefined;
     let css = '';
-    let padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
+    let padding: Padding;
 
     const samples = untracked(this.analysis.samples);
     if (samples.length === 0 || !options.animate) {
@@ -170,7 +170,7 @@ export class SvgExporterService {
     const height = initialSvg.getBoundingClientRect().height;
     let svg: SVGSVGElement | undefined;
     let css = '';
-    let padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
+    let padding: Padding;
     const samples = untracked(this.analysis.samples);
 
     if (samples.length === 0 || !options.animate) {

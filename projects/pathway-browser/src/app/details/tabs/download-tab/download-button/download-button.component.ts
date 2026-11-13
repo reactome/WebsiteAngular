@@ -46,10 +46,10 @@ export class DownloadButtonComponent {
   readonly label = input<string>();
   readonly tooltip = input<string>();
   readonly openInNewTab = input<string>('_blank');
-  click = output<void>();
+  readonly pressed = output<void>();
 
   onClick(event: MouseEvent) {
     event.stopPropagation();
-    this.click.emit();
+    this.pressed.emit();
   }
 }

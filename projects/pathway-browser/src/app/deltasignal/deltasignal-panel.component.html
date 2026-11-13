@@ -4,7 +4,7 @@
     <h2>DeltaSignal</h2>
     <p>Change one or more entities, solve the steady state, and overlay the predicted response.</p>
   </div>
-  <button mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
+  <button type="button" mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
     <mat-icon>close</mat-icon>
   </button>
 </header>
@@ -163,11 +163,11 @@
           (input)="setActivity($any($event.target).value)"
         />
         <div class="presets">
-          <button mat-button (click)="setActivity(0)" [disabled]="!canAdd()">Knock out · 0</button>
-          <button mat-button (click)="setActivity(1)" [disabled]="!canAdd()">Baseline · 1</button>
-          <button mat-button (click)="setActivity(80)" [disabled]="!canAdd()">Activate · 80</button>
+          <button type="button" mat-button (click)="setActivity(0)" [disabled]="!canAdd()">Knock out · 0</button>
+          <button type="button" mat-button (click)="setActivity(1)" [disabled]="!canAdd()">Baseline · 1</button>
+          <button type="button" mat-button (click)="setActivity(80)" [disabled]="!canAdd()">Activate · 80</button>
         </div>
-        <button mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!canAdd()">
+        <button type="button" mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!canAdd()">
           <mat-icon>add</mat-icon>
           Add perturbation
         </button>
@@ -181,7 +181,7 @@
           <h3>Run prediction</h3>
         </div>
         @if (service.perturbations().length) {
-          <button mat-button class="clear" (click)="service.clear()">Clear all</button>
+          <button type="button" mat-button class="clear" (click)="service.clear()">Clear all</button>
         }
       </div>
 
@@ -197,6 +197,7 @@
                 >
               </div>
               <button
+                type="button"
                 mat-icon-button
                 (click)="service.removePerturbation(item.reactomeId)"
                 matTooltip="Remove perturbation"
@@ -207,6 +208,7 @@
           }
         </div>
         <button
+          type="button"
           mat-flat-button
           class="run-button"
           (click)="service.solve()"
@@ -234,7 +236,7 @@
             <span class="step">3</span>
             <h3>Predicted response</h3>
           </div>
-          <button mat-button (click)="service.clearResult()">Remove overlay</button>
+          <button type="button" mat-button (click)="service.clearResult()">Remove overlay</button>
         </div>
 
         <div class="summary" [class.warning]="!result.converged">

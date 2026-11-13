@@ -102,10 +102,5 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
     result += `</${tagName}>`;
   }
 
-  // Add ellipsis if we truncated
-  if (wordCount >= maxWords) {
-    result;
-  }
-
   return result;
 }

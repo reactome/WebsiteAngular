@@ -64,7 +64,7 @@ export class TissueAnalysisComponent {
   private fb = inject(FormBuilder);
   private darkService = inject(DarkService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
@@ -255,7 +255,7 @@ export class TissueAnalysisComponent {
         next: (result) => {
           this.analysisAvailable.set(true);
           this.token = result.summary.token;
-          this.close.emit({ status: 'finished' });
+          this.closed.emit({ status: 'finished' });
         },
         // Without this the loader spins forever and the reader is never told.
         error: (error: unknown) => {
@@ -267,7 +267,7 @@ export class TissueAnalysisComponent {
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
   protected readonly Math = Math;

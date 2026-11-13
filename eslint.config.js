@@ -96,12 +96,14 @@ module.exports = tseslint.config(
       // measuring the services' answers (#344), and several "unnecessary" guards
       // turned out to be the only thing between a missing field and a crash.
       '@typescript-eslint/no-unnecessary-condition': 'error',
-      '@typescript-eslint/no-empty-object-type': 'warn',
+      // Cleared, with the small rules below and in the templates' section,
+      // and promoted (spec 025 T001): a new violation of any is a new mistake.
+      '@typescript-eslint/no-empty-object-type': 'error',
       '@typescript-eslint/no-namespace': 'warn',
-      '@typescript-eslint/no-unused-expressions': 'warn',
-      '@typescript-eslint/no-require-imports': 'warn',
-      'prefer-const': 'warn',
-      'no-useless-escape': 'warn',
+      '@typescript-eslint/no-unused-expressions': 'error',
+      '@typescript-eslint/no-require-imports': 'error',
+      'prefer-const': 'error',
+      'no-useless-escape': 'error',
       // Migrated in full with ng generate @angular/core:inject-migration, so
       // any new constructor injection is a step backwards.
       '@angular-eslint/prefer-inject': 'error',
@@ -134,20 +136,20 @@ module.exports = tseslint.config(
       ],
       '@angular-eslint/no-async-lifecycle-method': 'error',
       '@angular-eslint/prefer-standalone': 'error',
-      '@angular-eslint/no-output-native': 'warn',
-      '@angular-eslint/no-input-rename': 'warn',
+      '@angular-eslint/no-output-native': 'error',
+      '@angular-eslint/no-input-rename': 'error',
       // All twelve removed, so a new empty hook is a new mistake.
       '@angular-eslint/no-empty-lifecycle-method': 'error',
-      '@angular-eslint/use-lifecycle-interface': 'warn',
-      '@typescript-eslint/ban-ts-comment': 'warn',
-      '@typescript-eslint/no-wrapper-object-types': 'warn',
-      '@typescript-eslint/no-extra-non-null-assertion': 'warn',
+      '@angular-eslint/use-lifecycle-interface': 'error',
+      '@typescript-eslint/ban-ts-comment': 'error',
+      '@typescript-eslint/no-wrapper-object-types': 'error',
+      '@typescript-eslint/no-extra-non-null-assertion': 'error',
       // The last one went with search's constant currentMode (#344).
       '@typescript-eslint/prefer-as-const': 'error',
-      '@angular-eslint/no-output-rename': 'warn',
-      'no-useless-assignment': 'warn',
-      'no-unused-vars': 'warn',
-      'no-empty-pattern': 'warn',
+      '@angular-eslint/no-output-rename': 'error',
+      'no-useless-assignment': 'error',
+      'no-unused-vars': 'error',
+      'no-empty-pattern': 'error',
     },
   },
   {
@@ -162,10 +164,10 @@ module.exports = tseslint.config(
       // `(value | async) !== true`. (The rule's own `=== false` would not be the
       // same -- it is false while pending.)
       '@angular-eslint/template/no-negated-async': 'error',
-      '@angular-eslint/template/prefer-control-flow': 'warn',
-      // A <button> with no type submits its form. Most here are outside forms,
-      // where it does nothing, so warned and held rather than required.
-      '@angular-eslint/template/button-has-type': 'warn',
+      '@angular-eslint/template/prefer-control-flow': 'error',
+      // A <button> with no type submits its form. Every button says its type
+      // now (spec 025), so one that doesn't is new.
+      '@angular-eslint/template/button-has-type': 'error',
       // NgOptimizedImage (ngSrc) reserves an image's box before it loads, lazy-
       // loads by default, and takes a priority hint (#338). An <img> that
       // cannot use it -- a data URL, a src swapped on error, a size nothing here

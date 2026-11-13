@@ -138,7 +138,7 @@ export class ContentService {
           typeof frontmatter['tags'] === 'string'
             ? frontmatter['tags']
                 .split(',')
-                .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
+                .map((t: string) => t.trim().replace(/^["'[]+|["'\]]+$/g, ''))
             : (frontmatter['tags'] as string[] | undefined);
         const returnArticle: Article = {
           title: (frontmatter['title'] as string) || '',

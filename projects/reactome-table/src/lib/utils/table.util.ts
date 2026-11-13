@@ -29,8 +29,8 @@ export const pushAll = <T>(table: T[][], value: T): number =>
   table.reduce((_, col) => col.push(cp(value)), 0);
 
 export const numberToLetter = (nb: number) => {
-  let baseChar = 'A'.charCodeAt(0),
-    letters = '';
+  const baseChar = 'A'.charCodeAt(0);
+  let letters = '';
 
   do {
     nb -= 1;

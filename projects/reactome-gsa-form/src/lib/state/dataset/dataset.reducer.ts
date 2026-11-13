@@ -50,7 +50,7 @@ export const datasetReducer: ActionReducer<DatasetState> = createReducer(
     )
   ),
   on(datasetActions.delete, (state, { id }) => datasetAdapter.removeOne(id, state)),
-  on(datasetActions.reset, (state, {}) => datasetAdapter.removeAll(state)),
+  on(datasetActions.reset, (state) => datasetAdapter.removeAll(state)),
   on(datasetActions.clear, (state, { id }) => datasetAdapter.setOne({ id, saved: false }, state)),
   on(datasetActions.save, (state, { id }) =>
     datasetAdapter.updateOne({ id, changes: { saved: true } }, state)

@@ -69,7 +69,7 @@
 
     <div class="stepper-controls">
       <button type="button" mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button (click)="closed.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
@@ -174,7 +174,7 @@
 
     <div class="stepper-controls">
       <button type="button" mat-stroked-button matStepperPrevious>Previous</button>
-      <button type="button" mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button (click)="closed.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>

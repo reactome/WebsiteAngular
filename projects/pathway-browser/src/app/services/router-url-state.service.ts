@@ -147,9 +147,12 @@ export class RouterUrlStateService extends UrlStateService {
           const token = tokens.find((token) => params[token] !== undefined);
           if (token) {
             const initialValue = param.initialValue;
-            let value = params[token];
+            const value = params[token];
             if (value === undefined || value === null) param.set(value);
-            if (param.otherTransform && token !== mainToken) value = param.otherTransform(value);
+            // A legacy name's value means what its translation says: set that.
+            // It was translated into `value` and then dropped, so `?DTAB=MT`
+            // opened the default tab and `?TOOL=AT` an empty browser.
+            if (param.otherTransform && token !== mainToken) param.set(param.otherTransform(value));
             else {
               if (Array.isArray(initialValue)) {
                 let values: any[] = value.split(';');

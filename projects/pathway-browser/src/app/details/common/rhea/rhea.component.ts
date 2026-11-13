@@ -33,7 +33,7 @@ export class RheaComponent {
   private rheaService = inject(RheaService);
   private dark = inject(DarkService);
 
-  readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
+  readonly crossRefs = input.required<DatabaseIdentifier[]>();
 
   //todo: custom layout, remove it when dropping this layout
   readonly reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
@@ -134,7 +134,7 @@ export class RheaComponent {
   }
 
   _rheaResources = rxResource({
-    params: () => this._xRefs(),
+    params: () => this.crossRefs(),
     stream: (params) => {
       const identifiers = params.params;
 
