@@ -20,7 +20,7 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       public names, so no binding changed; the outputs named after DOM events become
       `pressed` (the download button) and `closed` (the analysis forms). 879 → 838.
 - [x] T001a [US1] The last `no-useless-assignment`: a bug (see below), fixed with
-      a test (`router-url-state.service.spec.ts`), then the rule promoted.
+      a test (`router-url-state.service.spec.ts`), then the rule promoted (#956).
       838 → 835: the dropped line was also an unsafe assignment, and the `tab`
       translation's `!` became `?? null` (an unknown code had set `undefined`).
 - [ ] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
