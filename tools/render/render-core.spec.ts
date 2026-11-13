@@ -65,7 +65,9 @@ describe('a figure of another species', () => {
       on() {},
       off() {},
       async goto() {},
-      async waitForSelector() {},
+      async waitForSelector() {
+        return { async dispose() {} };
+      },
       async evaluate() {
         return { ready: true, view: 'reacfoam', ...(drew ? { species: drew } : {}) };
       },
@@ -166,5 +168,73 @@ describe("the release's files", () => {
     const { page, seen } = routed();
     await render(stand(page), { base: 'http://site', pathway: 'R-HSA-1' }).catch(() => undefined);
     expect(seen()).toHaveLength(0);
+  });
+});
+
+describe('a held page (spec 018)', () => {
+  // A stand-in page that records how it was moved, waited on and let go of, and
+  // stops the render where the page reports its state.
+  function held(moves: boolean) {
+    const seen = { goto: 0, moved: [] as unknown[], selector: '', disposed: 0 };
+    const page = {
+      on() {},
+      off() {},
+      async goto() {
+        seen.goto++;
+      },
+      async evaluate(_: unknown, arg?: unknown) {
+        if (arg !== undefined) {
+          seen.moved.push(arg);
+          return moves;
+        }
+        return { ready: false, error: 'stopped here' };
+      },
+      async waitForSelector(selector: string) {
+        seen.selector = selector;
+        return {
+          async dispose() {
+            seen.disposed++;
+          },
+        };
+      },
+    };
+    return { page, seen };
+  }
+
+  it('is moved inside the app to the same address, and waits for its own host', async () => {
+    const { page, seen } = held(true);
+    await expect(
+      render(stand(page), {
+        base: 'http://site/',
+        pathway: 'R-HSA-1',
+        dark: true,
+        nav: 'figure-7',
+      })
+    ).rejects.toThrow('stopped here');
+    expect(seen.goto, 'not loaded again').toBe(0);
+    expect(seen.moved).toEqual([['/PathwayBrowser/render/R-HSA-1?dark=true', 'figure-7']]);
+    // Any other host is a previous figure's.
+    expect(seen.selector).toBe(
+      'cr-render[data-render-nav="figure-7"][data-render-ready="true"], ' +
+        'cr-render[data-render-nav="figure-7"][data-render-error]'
+    );
+  });
+
+  it('lets go of the ready host, which otherwise keeps every figure the page drew', async () => {
+    const moved = held(true);
+    await render(stand(moved.page), { base: 'http://site', nav: 'figure-1' }).catch(() => {});
+    expect(moved.seen.disposed).toBe(1);
+    const loaded = held(true);
+    await render(stand(loaded.page), { base: 'http://site' }).catch(() => {});
+    expect(loaded.seen.goto, 'a page without a move id is loaded').toBe(1);
+    expect(loaded.seen.disposed).toBe(1);
+  });
+
+  it('fails, rather than wait, when the page will not move', async () => {
+    const { page, seen } = held(false);
+    await expect(
+      render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', nav: 'figure-1' })
+    ).rejects.toThrow('the render page would not move to /PathwayBrowser/render/R-HSA-1');
+    expect(seen.selector, 'no wait for a figure that is not coming').toBe('');
   });
 });

@@ -65,7 +65,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       200 (T002, #810). Reactions with `R-NUL-` ids time out in the render page itself, whatever
       the layout: issue #843, outside this test.
 
-- [ ] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5).
+- [x] T002 [US2] The comparison script `tools/render/reuse-compare.ts` (research R5) (#810, #957).
   - **Written (#810):** the script and its tests. Its first run, `--mode fresh` on T001's
     sample, is in research R7. Still to do before it is ticked: a run in `reuse` mode,
     which needs a site build with the render page's entry point (T003): T001's prototype
@@ -75,6 +75,28 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - **Tests in `tools/render/reuse-compare.spec.ts`:** it fails on a planted difference,
     and its report names the request and the request drawn before it.
   - Run in `reuse` mode once T003–T005 report `reuse` (T001's prototype does not).
+  - **First `reuse` run, 8 Nov 2026 (#957):** T005's service against beta's site (T003 and
+    T004 built in), 20 SVG requests (reactions, reaction layouts, a diagram dark, with
+    subpathways off, a selection and a highlight, an illustration, the overview of two
+    species, and two analysis tokens), listed, reversed and in ten runs of pairs.
+    - **What differed, each drawn again through two services on this host:**
+      - **A leak:** the genome-wide view after the mouse overview, on a held page, wraps
+        one label of 7,604 ("Regulation of TBK1, IKKε-mediated activation of IRF3, IRF7
+        upon TLR3 ligation") on three lines where a fresh page wraps it on five. Two fresh
+        pages agree, and so do two held ones; an overview after a diagram, or after the
+        dark overview, does not differ. Seen only at the service's viewport (1600 by
+        1000). FoamTree reuses a label's fit for the same text at an area within 5%; what
+        carries it between two FoamTree instances is not found. Disposing the old instance
+        does not change it. T012.
+      - **Fresh renders that vary** (research R7's kind, not reuse): an illustration with
+        an analysis token (one element's `style` written before its `class`, or after) and
+        the highlight on R-HSA-69620 (a halo's last point, 4 px apart) differ between two
+        fresh pages as they do between a fresh and a held one. T012.
+      - **A sample error:** R-MMU-69620 answers 500 on fresh pages too: `RENDER_FILES` here
+        holds only human diagrams. Each failure closes its page, so the next draw is a full
+        load, which the script reports as draws not on a held page.
+      - One 500 (R-HSA-9844549 with a token, after R-HSA-1791144) did not recur when drawn
+        again.
 
 ## Phase 3: The render page (US1, US2)
 
@@ -147,8 +169,8 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 
 ## Phase 4: The service (US1, US3, US4)
 
-- [ ] T005 [US1] Held pages in `tools/render/pages.ts`, used by `schedule()` in
-      `service.ts`.
+- [x] T005 [US1] Held pages in `tools/render/pages.ts`, used by `schedule()` in
+      `service.ts` (#957).
   - The first figure on a page is a full load; later ones navigate in the app.
   - Behind `RENDER_REUSE` (off is today).
   - The comment above `getBrowser()` that warns against reuse is rewritten to say what
@@ -158,6 +180,23 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     - no more pages than `RENDER_CONCURRENCY`;
     - no page shared by two figures;
     - off means a fresh page and context each time.
+  - **Built:**
+    - a page is held only after a figure that succeeded and left it movable: one that
+      failed is closed, so T006 adds the browser problems and the browser's restart to a
+      rule that is already there;
+    - `render()` reports whether the page can still be moved: a PDF is printed from the SVG
+      put in the page's place, and a site built before T003 has no `__renderNavigate`;
+    - `/health` says `reuse`, and with it on `reused`, which reuse-compare reads before it
+      trusts a run; the rest of the health contract is T008's.
+  - **Seen failing:** the pool's tests with reuse ignored, no cap, a page left on the list
+    while drawn, a failed page kept, `reusable` ignored and a close that throws; the move's
+    tests with every page loaded, the handle kept, any host waited for and a refused move
+    ignored.
+- [ ] T012 [US2] What T002's first `reuse` run found (#957 records it).
+  - **The overview's label leak:** found and fixed in the render page, or the page replaced
+    when the species changes, with the pair (mouse overview, then the default) passing.
+  - **Fresh renders that vary:** an illustration with a token, and highlights, made
+    repeatable as T011 made reactions, and the fresh twice-over test extended to them.
 - [ ] T006 [US3] Replacement on failure, timeout or browser problem, and on a browser
       restart (data-model Replacement).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
@@ -195,5 +234,6 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T002 comes before T003–T008, so each is checked by it.
 - T003 → T004.
 - T005 → T006 → T007 → T008.
-- T009 needs T004 and T008, and T010 needs T009.
+- T012 before T009.
+- T009 needs T004, T008 and T012, and T010 needs T009.
 - T003 and T005 can run in parallel.

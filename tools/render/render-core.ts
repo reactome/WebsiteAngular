@@ -124,6 +124,11 @@ export interface RenderOptions {
    * (local-files.ts). Unset, the page fetches from the site as a browser does.
    */
   files?: string;
+  /**
+   * On a page that already holds the render page (pages.ts): the id it is
+   * moved to the figure with, inside the app, instead of loading it again.
+   */
+  nav?: string;
 }
 
 /** What the export adds to the page's report: the shapes, the picture, the frames. */
@@ -173,8 +178,9 @@ export async function render(
     maxSize = MAX_SIZE,
     timeout = 120_000,
     files,
+    nav,
   }: RenderOptions
-): Promise<{ bytes: Buffer; state: RenderReport; problems: string[] }> {
+): Promise<{ bytes: Buffer; state: RenderReport; problems: string[]; movable: boolean }> {
   if (!isFormat(format)) {
     throw new Error(`unknown format "${format}" -- expected ${FORMATS.join(', ')}`);
   }
@@ -202,24 +208,46 @@ export async function render(
   if (handler) await page.route(isDownload, handler);
 
   try {
-    await page.goto(
-      renderUrl({ base, pathway, token, subpathways, dark, select, layout, highlight, species }),
-      {
-        waitUntil: 'load',
-        timeout,
-      }
-    );
+    const address = renderUrl({
+      base,
+      pathway,
+      token,
+      subpathways,
+      dark,
+      select,
+      layout,
+      highlight,
+      species,
+    });
+    if (nav === undefined) {
+      await page.goto(address, { waitUntil: 'load', timeout });
+    } else {
+      // The same address, as the app routes it: from the site's root.
+      const inApp = address.slice(base.replace(/\/$/, '').length);
+      const moved = await page.evaluate(
+        async ([to, id]) => (await window.__renderNavigate?.(to, id)) ?? false,
+        [inApp, nav] as const
+      );
+      if (!moved) throw new Error(`the render page would not move to ${inApp}`);
+    }
 
     // The page's own signal, and its failure signal. A diagram fetches its
     // layout, its overlays and its fonts, and no fixed wait is both correct and
     // quick -- but waiting only for success means an id that does not resolve
     // costs a full timeout rather than the second it takes to find out.
-    await page.waitForSelector(
-      'cr-render[data-render-ready="true"], cr-render[data-render-error]',
-      {
-        timeout,
-      }
+    //
+    // On a moved page, only the host this move made: any other is a previous
+    // figure's, and reading its readiness hands over the previous figure.
+    const host = nav === undefined ? 'cr-render' : `cr-render[data-render-nav="${nav}"]`;
+    const ready = await page.waitForSelector(
+      `${host}[data-render-ready="true"], ${host}[data-render-error]`,
+      { timeout }
     );
+    // A handle keeps its element, and the element its whole figure: on a held
+    // page every figure drawn stayed in memory until the page closed, 157 MB of
+    // heap after 36 diagrams against 43 MB with the handle let go (spec 018,
+    // research R4 result, 2).
+    await ready.dispose();
 
     const state = await page.evaluate(() => window.__renderState);
     if (state?.error) throw new Error(state.error);
@@ -274,7 +302,11 @@ export async function render(
       );
     }
 
-    return { bytes, state: { ...(state ?? {}), ...detail }, problems };
+    // Whether the page can be moved to another figure: it still holds the render
+    // page. A PDF is printed from the SVG put in the page's place, and a site
+    // built before the entry point has none.
+    const movable = await page.evaluate(() => typeof window.__renderNavigate === 'function');
+    return { bytes, state: { ...(state ?? {}), ...detail }, problems, movable };
   } finally {
     page.off('pageerror', onPageError);
     page.off('console', onConsole);

@@ -1,7 +1,7 @@
 // What the render page publishes on `window`, as the service's code that runs
 // in the page reads it. The types are the contract's, which the page builds
 // with (projects/contract/render.ts), so the two cannot drift apart.
-import type { RenderExport, RenderState } from '../../projects/contract/render.ts';
+import type { RenderExport, RenderNavigate, RenderState } from '../../projects/contract/render.ts';
 
 /** gifenc, injected into the page by gif.ts: the parts of it gif.ts calls. */
 interface GifEnc {
@@ -17,6 +17,7 @@ interface GifEnc {
 declare global {
   interface Window {
     __renderState?: RenderState;
+    __renderNavigate?: RenderNavigate;
     __renderExport: RenderExport;
     gifenc: GifEnc;
   }

@@ -51,6 +51,16 @@ describe('/health', () => {
   });
 });
 
+describe('/health with RENDER_REUSE unset (spec 018)', () => {
+  it('says pages are not held, and counts no reuse', async () => {
+    // reuse-compare reads this before trusting a run as fresh or reused: a
+    // "reused" run on fresh pages would pass without testing anything.
+    const body = await json(await fetch(`${base}/health`));
+    expect(body.reuse).toBe(false);
+    expect('reused' in body).toBe(false);
+  });
+});
+
 describe('the cache key', () => {
   const figure = {
     pathway: 'R-HSA-69620',

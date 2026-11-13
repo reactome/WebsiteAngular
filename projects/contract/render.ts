@@ -216,6 +216,10 @@ export interface RenderHealth {
   failed: number;
   rejected: number;
   evicted: number;
+  /** Whether loaded pages are held between figures (RENDER_REUSE, spec 018). */
+  reuse: boolean;
+  /** Figures drawn on a held page since the start; only with `reuse`. */
+  reused?: number;
 }
 
 /**
