@@ -307,6 +307,18 @@ export const RECORD: Record<string, RecordEntry> = {
     path: { id: 'oid' },
     query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
   },
+  '/ContentService/data/detail/{id}/getReverseGraph': {
+    java: null,
+    why: 'A hidden controller (HierarchyController): the tree locationsInPWB is built from.',
+    path: { id: 'oid' },
+    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
+  },
+  '/ContentService/data/detail/{id}/getSubGraph': {
+    java: null,
+    why: 'A hidden controller (HierarchyController): everything below an object.',
+    path: { id: 'oid' },
+    query: [],
+  },
   '/ContentService/data/entity/{id}/in-depth': {
     java: '/data/entity/{id}/in-depth',
     path: { id: 'oid' },

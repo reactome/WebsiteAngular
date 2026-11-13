@@ -622,6 +622,46 @@
         }
       }
     },
+    "/ContentService/data/detail/{id}/getReverseGraph": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
+    "/ContentService/data/detail/{id}/getSubGraph": {
+      "get": {
+        "x-contract": "not yet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Not yet described by the contract."
+          }
+        }
+      }
+    },
     "/ContentService/data/detail/{id}/locationsInPWB": {
       "get": {
         "parameters": [
