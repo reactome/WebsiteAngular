@@ -650,6 +650,13 @@ export const RECORD: Record<string, RecordEntry> = {
     query: [],
     cache: 'never',
   },
+  // The download page's citation: the release's number, so it changes only
+  // with a release, when the edge's copies are purged.
+  '/ContentService/citation/download': {
+    java: null,
+    why: 'An undocumented controller: the citation the download page offers, naming the release.',
+    query: [],
+  },
   // The API description (spec 016, T028): it changes with a deployment, not a
   // release, and the edge's copies are purged only at a release.
   '/ContentService/openapi.json': {

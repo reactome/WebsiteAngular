@@ -1,7 +1,7 @@
 // @vitest-environment node
 //
 // /citation/pathway/{id}, /citation/static/{id} and /citation/export -- the
-// Pathway Browser's "cite this" -- with stand-ins for the graph and Europe
+// Pathway Browser's "cite this" -- and /citation/download, with stand-ins for the graph and Europe
 // PMC: content-service's EventCitation and StaticCitation, as Java writes
 // them. Java's answers measured 17 Oct 2026. Names here are invented.
 import type { IncomingMessage, Server } from 'node:http';
@@ -582,6 +582,74 @@ describe('the citation endpoints', () => {
     } finally {
       graph.graphRows = [];
     }
+  });
+
+  it("/download is the download page's citation, naming the release, as Java writes it", async () => {
+    const { request } = await import('node:http');
+    // node:http, so the Content-Type and the bytes are as the service wrote them.
+    const get = (accept?: string) =>
+      new Promise<[number, string | undefined, string]>((resolve, reject) => {
+        const url = new URL(`${base}/ContentService/citation/download`);
+        request(
+          {
+            host: url.hostname,
+            port: url.port,
+            path: url.pathname,
+            headers: accept ? { Accept: accept } : {},
+          },
+          (response) => {
+            const chunks: Buffer[] = [];
+            response.on('data', (chunk: Buffer) => chunks.push(chunk));
+            response.on('end', () =>
+              resolve([
+                response.statusCode ?? 0,
+                response.headers['content-type'],
+                Buffer.concat(chunks).toString('hex'),
+              ])
+            );
+          }
+        )
+          .on('error', reject)
+          .end();
+      });
+    const text = '"Name of file", Reactome, 97, https://reactome.org/download-data/';
+    expect(await get()).toEqual([
+      200,
+      'text/plain;charset=UTF-8',
+      Buffer.from(text).toString('hex'),
+    ]);
+    // In the charset Accept names, under the type it names.
+    expect(await get('text/plain;x=y;charset=utf-16')).toEqual([
+      200,
+      'text/plain;x=y;charset=utf-16',
+      `feff${Buffer.from(text, 'utf16le').swap16().toString('hex')}`,
+    ]);
+    // A HEAD says how long the answer is, as Java's does.
+    const head = await fetch(`${base}/ContentService/citation/download`, { method: 'HEAD' });
+    expect(head.headers.get('content-length')).toBe(String(text.length));
+    // A charset the JVM only reads: Java's 500, with no message.
+    const [cn, , cnBody] = await get('text/plain;charset=ISO-2022-CN');
+    expect([
+      cn,
+      (JSON.parse(Buffer.from(cnBody, 'hex').toString()) as { messages: unknown[] }).messages,
+    ]).toEqual([500, [null]]);
+    // EBCDIC, as Java's encoder writes it.
+    expect((await get('text/plain;charset=IBM037'))[2].slice(0, 4)).toBe('7fd5');
+    // An escaped quote takes the added charset in: Spring cannot read its own type back.
+    expect((await get('text/plain;x="a\\"b"'))[0]).toBe(500);
+    // A quality that fails in sorting, and one that fails when copied.
+    expect((await get('text/plain;Q=abc, application/json'))[0]).toBe(500);
+    expect((await get('text/plain;Q=abc'))[0]).toBe(500);
+    const [status, type, body] = await get('application/json');
+    expect([
+      status,
+      type,
+      (JSON.parse(Buffer.from(body, 'hex').toString()) as { messages: string[] }).messages,
+    ]).toEqual([
+      406,
+      'application/json; charset=utf-8',
+      ['Could not find acceptable representation'],
+    ]);
   });
 
   it("is Spring's 400 for a missing parameter", async () => {

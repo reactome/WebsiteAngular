@@ -294,6 +294,21 @@ describe('the interactor endpoints, before any query', () => {
     ]);
   });
 
+  it("is node's own 415 for a body in a charset Java reads and node cannot", async () => {
+    // x-IBM834 is a pure double-byte page: no byte reads alone.
+    expect(await envelope(await post('P04637', 'text/plain;charset=x-IBM834'))).toEqual([
+      415,
+      'UNSUPPORTED_MEDIA_TYPE',
+      ['This service cannot read a body in x-IBM834'],
+    ]);
+    const summary = await at('/molecules/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=x-IBM834' },
+      body: 'P04637',
+    });
+    expect((await envelope(summary))[0]).toBe(415);
+  });
+
   it('is a 405 for a GET of the POST', async () => {
     expect((await at('/molecules/details')).status).toBe(405);
   });

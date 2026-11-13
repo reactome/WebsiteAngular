@@ -329,6 +329,10 @@ describe('the dev server proxy', () => {
     '/ContentService/citation/pathway/R-HSA-109581?dateAccessed=x',
     '/ContentService/citation/static/25348405',
     '/ContentService/citation/export?id=R-HSA-109581&ext=bib&isPathway=true&dateAccessed=x',
+    // The download page's citation, and interactors written out as a CSV.
+    '/ContentService/citation/download',
+    '/ContentService/download/result.csv',
+    '/ContentService/download/result.csv/',
     '/ContentService/data/instance/R-HSA-141433/referrers',
     // The help-desk form (POST).
     '/ContentService/contact',
@@ -370,7 +374,9 @@ describe('the dev server proxy', () => {
     '/ContentService/search/fireworks/x?query=KNTC1',
     '/ContentService/search/pathways/of/227785/x',
     '/ContentService/citation/export/R-HSA-109581?ext=bib',
-    '/ContentService/citation/download',
+    // Below a download's file name: no mapping.
+    '/ContentService/download/result.csv/x',
+    '/ContentService/download',
     '/ContentService/data/instance/R-HSA-141433',
     '/ContentService/data/instance/R-HSA-141433/referrers/x',
     '/ContentService/search/diagram/R-HSA-68886/occurrences',

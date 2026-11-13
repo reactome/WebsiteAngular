@@ -121,6 +121,9 @@ module.exports = {
     contentNode,
   // The PSICQUIC services interactors can be drawn from.
   '^/ContentService/interactors/psicquic/resources/?(\\?|$)': contentNode,
+  // Interactors written out as a CSV (POST /download/{filename}). The
+  // AnalysisService's /download/{token}/... routes are under its own prefix.
+  '^/ContentService/download/[^/?]+/?(\\?|$)': contentNode,
   // The API description generated from the shared contract, for the API page.
   '^/ContentService/openapi\\.json/?(\\?|$)': contentNode,
   // The Expression tab's heatmap of a selection's genes (spec 024).
@@ -137,9 +140,9 @@ module.exports = {
   '^/ContentService/search/(diagram/[^/?]+(/occurrences/[^/?]+|/flag)?|fireworks(/flag)?|pathways/of/[^/?]+|query(/paginated)?)/?(\\?|$)':
     contentNode,
   // The Pathway Browser's "cite this": a pathway's citation, a paper's by
-  // PubMed id, and either to download. /citation/export/{id} and /download
-  // stay with Java.
-  '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export)/?(\\?|$)': contentNode,
+  // PubMed id, and either to download; and the download page's citation.
+  // /citation/export/{id} stays with Java.
+  '^/ContentService/citation/(pathway/[^/?]+|static/[^/?]+|export|download)/?(\\?|$)': contentNode,
   // The help-desk form (spec 006 T085), its human check Turnstile's.
   '^/ContentService/contact/?(\\?|$)': contentNode,
   // What points at an object, for the website's detail pages.

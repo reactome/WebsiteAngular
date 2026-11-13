@@ -32,7 +32,7 @@ import {
 } from './spring.ts';
 import type { Props } from './objects.ts';
 import type { Failure, Written } from './answers.ts';
-import { orthologyIds, plainText, plainTextProblem } from './body.ts';
+import { orthologyIds, plainText, plainTextProblem, unreadableCharset } from './body.ts';
 import { javaSplit, javaTrim } from './java-text.ts';
 import { referenceEntityJson } from './reference-entities.ts';
 import { JsonMap, mapNodes, writeDomain } from './domain.ts';
@@ -497,7 +497,10 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
         );
       const given = queryValues(request, 'dbFilter');
       const dbFilter = given.length ? given.join(',') : undefined;
-      const identifiers = javaSplit(plainText(request.body, contentType), /,|;|\n|\t/);
+      const text = plainText(request.body, contentType);
+      if (text === undefined)
+        return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', unreadableCharset(contentType));
+      const identifiers = javaSplit(text, /,|;|\n|\t/);
       // Stream.skip's long: page * pageSize past 2^53 is still exact.
       const skip = BigInt(page.value) * BigInt(pageSize.value);
       if (skip < 0n) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', String(skip));
@@ -701,7 +704,10 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
           'UNPROCESSABLE_ENTITY',
           'Required request body is missing: public java.util.Map<java.lang.Object, org.reactome.server.graph.domain.model.DatabaseObject> org.reactome.server.service.controller.graph.OrthologyController.getOrthologies(java.lang.Long,java.lang.String)'
         );
-      const ids = orthologyIds(plainText(request.body, contentType));
+      const text = plainText(request.body, contentType);
+      if (text === undefined)
+        return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', unreadableCharset(contentType));
+      const ids = orthologyIds(text);
       const refused = longPastRange(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       // One at a time, as Java asks, so twenty ids are not twenty queries at

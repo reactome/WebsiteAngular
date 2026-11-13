@@ -38,6 +38,7 @@ const RUN_ON_LOAD = new Set([
   'tools/content-node/people-name-check',
   'tools/content-node/reaction-layout-check',
   'tools/content-node/snapshot-case',
+  'tools/content-node/snapshot-charsets',
   'tools/content-node/snapshot-domain',
   'tools/content-node/snapshot-graph-names',
   'tools/content-node/snapshot-rfd',
