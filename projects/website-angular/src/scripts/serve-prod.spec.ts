@@ -360,11 +360,12 @@ describe('serve-prod and the API roots', () => {
   });
 
   for (const api of [
-    // A path still answered by Java. /database/version, then
-    // /query/{id}/displayName, then /query/abridged/{id}, then
-    // /pathways/top/{species}/curated, were the example until each moved to
-    // the node content service.
-    '/ContentService/data/detail/R-HSA-109581/getSubGraph',
+    // A path still answered by Java (spec 010: the PSICQUIC interactors stay
+    // there). /database/version, then /query/{id}/displayName, then
+    // /query/abridged/{id}, then /pathways/top/{species}/curated, then
+    // /detail/{id}/getSubGraph, were the example until each moved to the node
+    // content service.
+    '/ContentService/interactors/psicquic/molecule/MINT/P04637/details',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',

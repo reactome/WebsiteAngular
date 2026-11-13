@@ -31,6 +31,8 @@
   "GET /ContentService/data/pathway/{id}/containedEvents",
   "GET /ContentService/data/pathway/{id}/containedEvents/{attribute}",
   "GET /ContentService/data/detail/{id}/locationsInPWB",
+  "GET /ContentService/data/detail/{id}/getReverseGraph",
+  "GET /ContentService/data/detail/{id}/getSubGraph",
   "GET /ContentService/data/entity/{id}/in-depth",
   "GET /ContentService/data/event/{id}/in-depth",
   "GET /ContentService/data/content/toc",

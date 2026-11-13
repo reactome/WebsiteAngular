@@ -211,8 +211,10 @@ module.exports = {
   // What an entity or event is part of: the details page's table.
   '^/ContentService/data/entity/[^/?]+/(otherForms|componentOf)/?(\\?|$)': contentNode,
   // Every place an object appears in the Pathway Browser: the details page's
-  // locations tree. Only this one of Java's /data/detail/{id}/... paths.
-  '^/ContentService/data/detail/[^/?]+/locationsInPWB/?(\\?|$)': contentNode,
+  // locations tree; the reverse graph it is built from, and the sub graph
+  // (spec 006 T107).
+  '^/ContentService/data/detail/[^/?]+/(locationsInPWB|getReverseGraph|getSubGraph)/?(\\?|$)':
+    contentNode,
   // The schema browser: the class tree, and a class's count, one page of its
   // objects (simplified, whole, or a reference class's by identifier), its
   // attributes and its referrals.

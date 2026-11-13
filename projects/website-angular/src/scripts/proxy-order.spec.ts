@@ -249,6 +249,10 @@ describe('the dev server proxy', () => {
     '/ContentService/data/detail/R-HSA-199420/locationsInPWB',
     '/ContentService/data/detail/199420/locationsInPWB?directParticipants=true',
     '/ContentService/data/detail/REACT_13069/locationsInPWB?omitNonDisplayableItems=false',
+    '/ContentService/data/detail/R-HSA-199420/getReverseGraph',
+    '/ContentService/data/detail/199420/getReverseGraph?directParticipants=true',
+    '/ContentService/data/detail/R-HSA-109581/getSubGraph',
+    '/ContentService/data/detail/R-HSA-109581.6/getSubGraph',
   ]) {
     it(`sends ${url} to the content service`, async () => {
       await expectContentNode(url);
@@ -417,10 +421,14 @@ describe('the dev server proxy', () => {
     '/ContentService/data/participants/R-HSA-5672965/participatingPhysicalEntities/x',
     // Only these of an entity are ported: not a path below them.
     '/ContentService/data/entity/R-HSA-199420/componentOf/x',
-    // Only the locations are ported, not their neighbours under /detail.
-    '/ContentService/data/detail/R-HSA-199420/getReverseGraph',
-    '/ContentService/data/detail/R-HSA-109581/getSubGraph',
+    // Only the three trees under /detail. The direction paths no Java
+    // controller maps stay with Java, whose 404 is an HTML page to a browser.
+    '/ContentService/data/detail/R-HSA-199420/direction/OUTGOING',
+    '/ContentService/data/detail/R-HSA-109581/direction/UNDIRECTED/relationships/hasEvent/displayName',
     '/ContentService/data/detail/R-HSA-199420/locationsInPWBAndMore',
+    '/ContentService/data/detail/R-HSA-199420/getReverseGraph/x',
+    '/ContentService/data/detail/R-HSA-109581/getSubGraphs',
+    '/ContentService/data/detail/R-HSA-109581/direction/OUTGOING/relationships/hasEvent/displayName/x',
     '/ContentService/data/schema/Pathway/attributesAll',
     '/ContentService/data/schema/Pathway/referrals/x',
     '/ContentService/data/schema/Pathway/countAll',
