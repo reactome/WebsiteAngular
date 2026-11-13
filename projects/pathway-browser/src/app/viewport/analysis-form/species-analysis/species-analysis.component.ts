@@ -48,7 +48,7 @@ export class SpeciesAnalysisComponent {
   private darkService = inject(DarkService);
   private iconService = inject(IconService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
@@ -130,7 +130,7 @@ export class SpeciesAnalysisComponent {
       next: (result) => {
         this.analysisAvailable.set(true);
         this.token = result.summary.token;
-        this.close.emit({ status: 'finished' });
+        this.closed.emit({ status: 'finished' });
       },
       // Without this the loader spins forever and the reader is never told.
       error: (error: unknown) => {
@@ -142,7 +142,7 @@ export class SpeciesAnalysisComponent {
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
   getSpeciesIconName(species: ListedSpecies): string {

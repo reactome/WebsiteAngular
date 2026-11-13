@@ -7,14 +7,23 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
 
 ## Phase 1: The small rules (User Story 1, P1)
 
-- [ ] T001 [US1] Clear the eleven small rules and promote each to `error` in
+- [x] T001 [US1] The small rules, cleared and promoted to `error` in
       `eslint.config.js`: `@angular-eslint/template/button-has-type` (10),
       `@angular-eslint/no-input-rename` (7), `@angular-eslint/no-output-native`
-      (6), `@typescript-eslint/no-unused-expressions` (6), `no-useless-assignment`
-      (5), `@typescript-eslint/no-namespace` (14), `no-useless-escape` (2),
+      (6), `@typescript-eslint/no-unused-expressions` (6), `no-useless-escape` (2),
       `@typescript-eslint/ban-ts-comment` (1), `@typescript-eslint/no-empty-object-type`
-      (1), `no-empty-pattern` (1), `prefer-const` (1). May split in two if
-      `no-namespace` (the `Analysis`-style namespaces) needs its own review.
+      (1), `no-empty-pattern` (1), `prefer-const` (1), and four of the five
+      `no-useless-assignment`. Seven rules already at zero but still at `warn` were
+      promoted too (`no-require-imports`, `use-lifecycle-interface`,
+      `no-wrapper-object-types`, `no-extra-non-null-assertion`, `no-output-rename`,
+      `no-unused-vars`, `template/prefer-control-flow`). Renamed inputs take their
+      public names, so no binding changed; the outputs named after DOM events become
+      `pressed` (the download button) and `closed` (the analysis forms). 879 → 838.
+- [ ] T001a [US1] The last `no-useless-assignment`: a bug (see below), fixed with
+      a test, then the rule promoted.
+- [ ] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
+      (`Analysis`, `Search`, `Graph` and others) become modules, then the rule is
+      promoted. Two unused ones in the GSA form's `dataset-library.ts` went in T001.
 
 ## Phase 2: Values typed "anything" (User Story 2, P2)
 
@@ -45,8 +54,21 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 ## Bugs found on the way
 
-_None yet._
+- **A legacy query parameter's value is thrown away**
+  (`projects/pathway-browser/src/app/services/router-url-state.service.ts`, the
+  `otherTransform` line). A parameter given under an old name (`?DTAB=…` for
+  `tab`, `?TOOL=AT` for `analysisTab`) is translated, and the translation is
+  then dropped, so nothing is set. Fragments (`#TOOL=AT`) are rewritten before
+  this and work. Fixed in T001a.
+- **Every excerpt ends in "...", cut or not**
+  (`projects/website-angular/src/utils/truncateHtml.ts`): the ellipsis is added
+  unconditionally; the check meant to add it only when the text was cut did
+  nothing (`result;`). The dead check went in T001; the ellipsis is unchanged,
+  as fixing it changes what readers see, and waits for a decision.
 
 ## Silenced lines
 
-_None yet._
+1. `projects/pathway-browser/src/app/services/analysis.service.ts`,
+   `noData`: `@ts-expect-error`, because `@types/chroma-js` leaves out
+   `Scale.nodata`, which chroma-js has. (It was there before; T001 gave it its
+   reason.)

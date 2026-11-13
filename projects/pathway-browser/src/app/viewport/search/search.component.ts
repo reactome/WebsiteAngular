@@ -181,7 +181,7 @@ export class SearchComponent {
       // The selected pathway brings itself into view -- see RevealDirective in
       // the template. This only has to tell the scroller to redraw the shadows
       // that say there is more above or below.
-      this.selectedResultPathwaysStable().length > 1 &&
+      if (this.selectedResultPathwaysStable().length > 1)
         setTimeout(() => this.resultPathways()?.updateShadows(), 600);
     });
   }

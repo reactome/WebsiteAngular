@@ -62,7 +62,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   private lottieService: LottieService = inject(LottieService);
   private darkService: DarkService = inject(DarkService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly table = viewChild<TableComponent>('table');
@@ -233,7 +233,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
         next: (result) => {
           this.analysisAvailable.set(true);
           this.token = result.summary.token;
-          this.close.emit({ status: 'finished' });
+          this.closed.emit({ status: 'finished' });
         },
         // Without this the loader animation runs forever and the user is never
         // told the analysis failed.
@@ -258,7 +258,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
 
   displayAnalysis() {
     this.state.analysis.set(this.token!);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
   protected readonly Math = Math;

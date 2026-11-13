@@ -150,7 +150,7 @@ export class PaletteSummary {
   }
 
   noData(color: string | chroma.Color) {
-    // @ts-expect-error
+    // @ts-expect-error -- @types/chroma-js leaves out Scale.nodata, which chroma-js has
     this.scale.nodata(color);
     return this;
   }
