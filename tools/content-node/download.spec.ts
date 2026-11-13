@@ -170,6 +170,30 @@ describe('POST /download/{filename}', () => {
       ]);
   });
 
+  it("is Java's 500 for a quality it cannot copy, but only once `content` is bound", async () => {
+    const accept = (body: string, path = '/download/result.csv') =>
+      post(path, body, {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'text/csv;Q=7',
+      });
+    expect([
+      (await accept('x=1')).status,
+      (await accept('content=a', '/download/ab')).status,
+    ]).toEqual([400, 500]);
+    expect(message(await accept('content=a', '/download/ab'))).toMatch(/^Prefix string/);
+    const failed = await accept('content=a');
+    expect([failed.status, message(failed)]).toEqual([
+      500,
+      'Invalid quality value "7": should be between 0.0 and 1.0',
+    ]);
+    // One that fails while Spring sorts the Accept fails before `content` is bound.
+    const sorting = await post('/download/result.csv', 'x=1', {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'text/csv;Q=abc, application/json',
+    });
+    expect([sorting.status, message(sorting)]).toEqual([500, 'For input string: "abc"']);
+  });
+
   it('honours a Range, as Spring does for any Resource', async () => {
     const sent = await post('/download/result.csv', 'content=abcdef%23NL%23ghij', {
       'Content-Type': 'application/x-www-form-urlencoded',

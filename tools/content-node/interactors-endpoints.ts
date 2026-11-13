@@ -43,7 +43,13 @@ import type {
   PsicquicResource,
 } from '../../projects/contract/interactors.ts';
 import { settings } from './settings.ts';
-import { consumesProblem, plainIds, plainText, plainTextProblem } from './body.ts';
+import {
+  consumesProblem,
+  plainIds,
+  plainText,
+  plainTextProblem,
+  unreadableCharset,
+} from './body.ts';
 import type { Props } from './objects.ts';
 import { pathwayJson } from './objects.ts';
 
@@ -447,6 +453,8 @@ export const interactorsEndpoints: Endpoint[] = [
           'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsSummaryByAccs(java.lang.String)'
         );
       const body = plainText(request.body, contentType);
+      if (body === undefined)
+        return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', unreadableCharset(contentType));
       const summary = await staticSummary(javaSplit(body, /,|;|\n|\t/).map(javaTrim));
       if (!summary.entities.length)
         return notFound(request, `No interactors found for accession: ${body}`);
@@ -529,6 +537,8 @@ export const interactorsEndpoints: Endpoint[] = [
           'Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.StaticInteractionsController.getProteinsDetailsByAccs(java.lang.Integer,java.lang.Integer,java.lang.String)'
         );
       const proteins = plainText(request.body, contentType);
+      if (proteins === undefined)
+        return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', unreadableCharset(contentType));
       const accs = new JavaHashMap<string, boolean>();
       for (const acc of plainIds(proteins)) accs.set(acc, true);
       // One query per accession, one at a time as Java asks: a diagram's
@@ -636,14 +646,16 @@ export const interactorsEndpoints: Endpoint[] = [
         ['text', 'plain'],
       ]);
       if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
-      const media = negotiate(request.get?.('accept'), ['text', 'csv']);
-      if (!media)
+      const negotiated = negotiate(request.get?.('accept'), ['text', 'csv']);
+      if (negotiated.kind === 'not-acceptable')
         return javaError(
           request,
           406,
           'NOT_ACCEPTABLE',
           'Could not find acceptable representation'
         );
+      if (negotiated.kind === 'failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
       const content = servletRequestParameters(request)('content');
       if (content.length === 0)
         return javaError(request, 400, 'BAD_REQUEST', requiredString('content'));
@@ -651,8 +663,10 @@ export const interactorsEndpoints: Endpoint[] = [
       const failure = tempFileProblem(filename, extensionOf(filename));
       if (failure) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure);
       const lines = javaSplit(content.join(','), '#NL#');
+      if (negotiated.kind === 'write-failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
       const file = Buffer.from(lines.map((line) => `${line}\n`).join(''), 'utf8');
-      return resourceAnswer(request, file, media);
+      return resourceAnswer(request, file, negotiated.media);
     },
   },
 ];

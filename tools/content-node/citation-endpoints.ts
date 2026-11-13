@@ -234,24 +234,38 @@ export const citationEndpoints: Endpoint[] = [
     // CitationController.downloadCitation: the citation the download page
     // offers for its files, naming the release, as StringHttpMessageConverter
     // writes it under the type negotiated from Accept -- in the charset that
-    // names, if any. Spring's 406 for an Accept that does not take
-    // text/plain; a database with no DBInfo is Java's NullPointerException.
+    // names, if any. Spring's 406 and 500s for an Accept it cannot use
+    // (negotiate, stringContentType); a database with no DBInfo is Java's
+    // NullPointerException.
     handler: async (request) => {
-      const media = negotiate(request.get?.('accept'), ['text', 'plain']);
-      if (!media)
+      const negotiated = negotiate(request.get?.('accept'), ['text', 'plain']);
+      if (negotiated.kind === 'not-acceptable')
         return javaError(
           request,
           406,
           'NOT_ACCEPTABLE',
           'Could not find acceptable representation'
         );
+      if (negotiated.kind === 'failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
       const version = await databaseVersion({ params: {}, query: {} });
       if (version.status !== 200) return unexpectedFailure(request);
-      const { type, charset } = stringContentType(media);
+      if (negotiated.kind === 'write-failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
+      const written = stringContentType(negotiated.media);
+      if ('failure' in written)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', written.failure);
       const text = `"Name of file", Reactome, ${String(version.body)}, https://reactome.org/download-data/`;
-      const body = encodeText(text, charset);
+      const body = encodeText(text, written.charset);
+      // A charset the JVM only reads (ISO-2022-CN): Java's 500, with no message.
+      if (!body) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
       // Bytes, so the type is sent as written; counted, so a HEAD says how many.
-      return { status: 200, type, headers: { 'Content-Length': String(body.length) }, body };
+      return {
+        status: 200,
+        type: written.type,
+        headers: { 'Content-Length': String(body.length) },
+        body,
+      };
     },
   },
 ];

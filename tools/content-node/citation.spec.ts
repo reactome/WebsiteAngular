@@ -627,6 +627,19 @@ describe('the citation endpoints', () => {
     // A HEAD says how long the answer is, as Java's does.
     const head = await fetch(`${base}/ContentService/citation/download`, { method: 'HEAD' });
     expect(head.headers.get('content-length')).toBe(String(text.length));
+    // A charset the JVM only reads: Java's 500, with no message.
+    const [cn, , cnBody] = await get('text/plain;charset=ISO-2022-CN');
+    expect([
+      cn,
+      (JSON.parse(Buffer.from(cnBody, 'hex').toString()) as { messages: unknown[] }).messages,
+    ]).toEqual([500, [null]]);
+    // EBCDIC, as Java's encoder writes it.
+    expect((await get('text/plain;charset=IBM037'))[2].slice(0, 4)).toBe('7fd5');
+    // An escaped quote takes the added charset in: Spring cannot read its own type back.
+    expect((await get('text/plain;x="a\\"b"'))[0]).toBe(500);
+    // A quality that fails in sorting, and one that fails when copied.
+    expect((await get('text/plain;Q=abc, application/json'))[0]).toBe(500);
+    expect((await get('text/plain;Q=abc'))[0]).toBe(500);
     const [status, type, body] = await get('application/json');
     expect([
       status,

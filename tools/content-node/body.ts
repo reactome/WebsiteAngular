@@ -4,6 +4,7 @@
  * the ids in it split as the controllers split them. Moved unchanged from
  * service.ts.
  */
+import { readFileSync } from 'node:fs';
 import { javaParseDouble, javaTrim, present } from './java-text.ts';
 import { JavaHashMap } from './java-hashmap.ts';
 
@@ -154,8 +155,41 @@ export function plainTextProblem(header: string | undefined): string | undefined
   return consumesProblem(header, [['text', 'plain']]);
 }
 
+/** charset-snapshot.json (snapshot-charsets.ts): a charset as the service's JVM has it. */
+interface JavaCharset {
+  name: string;
+  aliases: string[];
+  encode: 'ascii' | { prefix: string; chars: string[] } | null;
+  table?: string;
+  unread?: number[];
+  low?: string;
+}
+
+let charsets: Map<string, JavaCharset> | undefined;
+
+/**
+ * The charset Charset.forName finds for a name -- its canonical name or any
+ * alias, in any case -- or undefined where Java has none: Java's names, as
+ * measured (charset-snapshot.json), not TextDecoder's.
+ */
+function javaCharset(name: string): JavaCharset | undefined {
+  charsets ??= new Map(
+    (
+      JSON.parse(readFileSync(new URL('./charset-snapshot.json', import.meta.url), 'utf8')) as {
+        charsets: JavaCharset[];
+      }
+    ).charsets.flatMap((charset) =>
+      [charset.name, ...charset.aliases].map((key): [string, JavaCharset] => [
+        key.toLowerCase(),
+        charset,
+      ])
+    )
+  );
+  return charsets.get(name.toLowerCase());
+}
+
 function knownCharset(name: string) {
-  return decoderFor(name.toLowerCase()) !== undefined;
+  return javaCharset(name) !== undefined;
 }
 
 /**
@@ -164,132 +198,130 @@ function knownCharset(name: string) {
  * not the class's own ISO-8859-1 (measured: Java reads C3 A9 as "é") -- a
  * malformed sequence read as U+FFFD. The charset is the parameter named
  * exactly `charset`, unquoted, as Spring finds it: `Charset=` names none.
+ * Undefined where this cannot read the body as Java would (readerFor).
  */
-export function plainText(body: Buffer, header?: string) {
+export function plainText(body: Buffer, header?: string): string | undefined {
+  const charset = javaCharset(plainTextCharset(header));
+  return charset ? readerFor(charset, body)?.(body) : undefined;
+}
+
+/** The charset a text/plain Content-Type names for Spring, or UTF-8. */
+function plainTextCharset(header?: string) {
   const media = header ? mediaType(header) : undefined;
   const own =
     typeof media === 'object'
       ? media.parameters.find(([name]) => name === 'charset')?.[1]
       : undefined;
-  const charset = own === undefined ? 'utf-8' : unquote(own).toLowerCase();
-  return (decoderFor(charset) ?? UTF_8)(body);
+  return own === undefined ? 'UTF-8' : unquote(own);
 }
 
 /**
- * A text in a charset Java writes it in, by a name mediaType has taken:
- * the UTF-16 and UTF-32 families as the JDK's encoders write them (UTF-16
- * with a big-endian byte-order mark, UTF-32 without one), Latin-1 and ASCII with '?' for what they cannot hold, and
- * any other as UTF-8 -- the same bytes, for ASCII text, in every
- * ASCII-compatible charset, which is what the content service writes this
- * way.
+ * Node's own answer, a 415, for a body in a charset Java reads and this
+ * cannot: no Java message, since Java answers the request.
  */
-export function encodeText(text: string, charset: string): Buffer {
-  const name = charset.toLowerCase();
-  const units = (little: boolean, mark: boolean) => {
-    const out = Buffer.alloc((text.length + (mark ? 1 : 0)) * 2);
-    let at = 0;
-    for (const unit of [
-      ...(mark ? [0xfeff] : []),
-      ...Array.from(text, (_, i) => text.charCodeAt(i)),
-    ]) {
-      if (little) out.writeUInt16LE(unit, at);
-      else out.writeUInt16BE(unit, at);
-      at += 2;
-    }
-    return out;
-  };
-  const points = (little: boolean) => {
-    const values = Array.from(text, (char) => char.codePointAt(0) as number);
-    const out = Buffer.alloc(values.length * 4);
-    values.forEach((value, i) =>
-      little ? out.writeUInt32LE(value, i * 4) : out.writeUInt32BE(value, i * 4)
-    );
-    return out;
-  };
-  if (['utf-16', 'utf_16', 'utf16', 'unicode'].includes(name)) return units(false, true);
-  if (
-    ['utf-16be', 'utf_16be', 'x-utf-16be', 'iso-10646-ucs-2', 'unicodebigunmarked'].includes(name)
-  )
-    return units(false, false);
-  if (['utf-16le', 'utf_16le', 'x-utf-16le', 'unicodelittleunmarked'].includes(name))
-    return units(true, false);
-  if (['utf-32', 'utf_32', 'utf32', 'utf-32be', 'utf_32be', 'x-utf-32be'].includes(name))
-    return points(false);
-  if (['utf-32le', 'utf_32le', 'x-utf-32le'].includes(name)) return points(true);
-  const latin1 = JAVA_CHARSET_NAMES[0]?.[0].split(' ') ?? [];
-  const ascii = JAVA_CHARSET_NAMES[1]?.[0].split(' ') ?? [];
-  if (latin1.includes(name) || ascii.includes(name)) {
-    const limit = latin1.includes(name) ? 0xff : 0x7f;
-    return Buffer.from(
-      Array.from(text, (char) => ((char.codePointAt(0) as number) > limit ? '?' : char)).join(''),
-      'latin1'
-    );
-  }
-  return Buffer.from(text, 'utf8');
+export function unreadableCharset(header?: string) {
+  const charset = javaCharset(plainTextCharset(header));
+  return `This service cannot read a body in ${charset?.name ?? plainTextCharset(header)}`;
+}
+
+/**
+ * The bytes StringHttpMessageConverter writes a text of printable ASCII in,
+ * in a charset mediaType has taken, as measured on Java (charset-snapshot.json):
+ * the text's own bytes, or each character's after the bytes every write
+ * starts with (a byte-order mark); undefined where the JVM has no encoder
+ * for it (ISO-2022-CN reads only), which is Java's 500.
+ */
+export function encodeText(text: string, charset: string): Buffer | undefined {
+  const found = javaCharset(charset);
+  if (!found?.encode) return undefined;
+  if (found.encode === 'ascii') return Buffer.from(text, 'latin1');
+  const { prefix, chars } = found.encode;
+  return Buffer.from(
+    prefix +
+      Array.from(text, (char) => {
+        const bytes = chars[char.charCodeAt(0) - 0x20];
+        if (bytes === undefined) throw new Error(`not printable ASCII: ${JSON.stringify(char)}`);
+        return bytes;
+      }).join(''),
+    'hex'
+  );
 }
 
 type Decoder = (body: Buffer) => string;
 
-const UTF_8: Decoder = (body) => body.toString('utf8');
-
-/** Java's names for the charsets decoded here as Java decodes them. */
-const JAVA_CHARSET_NAMES: [names: string, decode: Decoder][] = [
-  [
-    'iso-8859-1 iso8859_1 iso_8859_1 iso_8859-1 iso8859-1 8859_1 latin1 l1 ibm819 ibm-819 cp819 819 csisolatin1 iso-ir-100 iso_8859-1:1987',
-    (body) => body.toString('latin1'),
-  ],
-  [
-    'us-ascii ascii us iso646-us 646 ascii7 default csascii cp367 ibm367 iso-ir-6 ansi_x3.4-1968 ansi_x3.4-1986 iso_646.irv:1983 iso_646.irv:1991',
-    (body) =>
-      Array.from(body, (byte) => (byte < 0x80 ? String.fromCharCode(byte) : '\ufffd')).join(''),
-  ],
-  ['utf-8 utf8 unicode-1-1-utf-8', UTF_8],
-  ['utf-16 utf_16 utf16 unicode', (body) => utf16(body, undefined)],
-  ['utf-16be utf_16be x-utf-16be iso-10646-ucs-2 unicodebigunmarked', (body) => utf16(body, 'be')],
-  ['utf-16le utf_16le x-utf-16le unicodelittleunmarked', (body) => utf16(body, 'le')],
-  ['utf-32 utf_32 utf32', (body) => utf32(body, undefined)],
-  ['utf-32be utf_32be x-utf-32be', (body) => utf32(body, 'be')],
-  ['utf-32le utf_32le x-utf-32le', (body) => utf32(body, 'le')],
-];
-
-const JAVA_DECODERS = new Map(
-  JAVA_CHARSET_NAMES.flatMap(([names, decode]) =>
-    names.split(' ').map((name): [string, Decoder] => [name, decode])
-  )
+/** The bytes `low` gives, by their place in it: 0x20 to 0x7E, then tab, CR and LF. */
+const LOW = new Map(
+  [...Array.from({ length: 0x5f }, (_, i) => i + 0x20), 9, 13, 10].map((byte, at) => [byte, at])
 );
 
 /**
- * How to read a body in a charset named in a Content-Type, lower-cased, or
- * undefined for one this cannot read -- Spring's 415. Latin-1, ASCII and the
- * UTF family are read as the JDK reads them (orthology.spec.ts holds the
- * JDK's answers); any other charset by TextDecoder when it knows the name,
- * which for a body of stable ids reads the same. A charset only Java knows
- * (an EBCDIC code page) is refused here and read by Java.
+ * The JDK decoders this repeats exactly, by canonical name: the UTF family.
+ * x-UTF-16LE-BOM reads a mark either way and is little-endian without one;
+ * the UTF-32 -BOM variants read as their order does.
  */
-function decoderFor(charset: string): Decoder | undefined {
-  if (JAVA_DECODERS.has(charset)) return JAVA_DECODERS.get(charset);
-  try {
-    const decoder = new TextDecoder(charset);
-    return (body) => decoder.decode(body);
-  } catch {
-    return undefined;
+const EXACT: Record<string, Decoder> = {
+  'UTF-8': (body) => body.toString('utf8'),
+  'UTF-16': (body) => utf16(body, undefined),
+  'UTF-16BE': (body) => utf16(body, 'be'),
+  'UTF-16LE': (body) => utf16(body, 'le'),
+  'x-UTF-16LE-BOM': (body) => utf16(body, undefined, true),
+  'UTF-32': (body) => utf32(body, undefined),
+  'UTF-32BE': (body) => utf32(body, 'be'),
+  'UTF-32LE': (body) => utf32(body, 'le'),
+  'X-UTF-32BE-BOM': (body) => utf32(body, 'be'),
+  'X-UTF-32LE-BOM': (body) => utf32(body, 'le'),
+};
+
+/**
+ * How to read a body in a Java charset, or undefined where this cannot read
+ * it as Java does, from what was measured on Java (charset-snapshot.json).
+ * The UTF family by the JDK's rules (EXACT); a single-byte charset by its
+ * table, exactly, and a shifting EBCDIC one the same way while no shift-out
+ * byte comes; a body of printable ASCII, tab, CR and LF by what each of
+ * those bytes reads as (no escape or shift in it to change a stateful
+ * charset's state); and anything else in a multi-byte charset by
+ * TextDecoder where it knows one of the charset's names -- the same for the
+ * ids these bodies hold, but for odd bytes perhaps not. Otherwise
+ * undefined: a pure double-byte code page, or bytes past ASCII in a
+ * charset TextDecoder does not know.
+ */
+function readerFor(charset: JavaCharset, body: Buffer): Decoder | undefined {
+  const exact = EXACT[charset.name];
+  if (exact) return exact;
+  const { table, unread = [] } = charset;
+  if (table && !body.some((byte) => unread.includes(byte)))
+    return (bytes) => Array.from(bytes, (byte) => table.charAt(byte)).join('');
+  const { low } = charset;
+  if (low && body.every((byte) => LOW.has(byte)))
+    return (bytes) => Array.from(bytes, (byte) => low.charAt(LOW.get(byte) as number)).join('');
+  for (const name of [charset.name, ...charset.aliases]) {
+    try {
+      const decoder = new TextDecoder(name);
+      if (decoder.encoding === 'replacement' || decoder.encoding.startsWith('utf-16')) continue;
+      return (bytes) => decoder.decode(bytes);
+    } catch {
+      // Not a name TextDecoder knows.
+    }
   }
+  return undefined;
 }
 
 /**
  * The JDK's UTF-16 decoders: with no order given, a byte-order mark decides it
- * and is dropped, and without one it is big-endian; with an order, a mark is
- * a character. A reversed mark (U+FFFE) anywhere, a lone surrogate or an odd
+ * and is dropped, and without one it is big-endian (little-endian for
+ * x-UTF-16LE-BOM, `little`); with an order, a mark is a character. A reversed mark (U+FFFE) anywhere, a lone surrogate or an odd
  * last byte is U+FFFD -- one for a high surrogate and the odd byte after it.
  */
-function utf16(body: Buffer, order: 'be' | 'le' | undefined): string {
+function utf16(body: Buffer, order: 'be' | 'le' | undefined, littleByDefault = false): string {
   // Every read below is inside `body`: each checks the length first.
   const byte = (at: number) => body[at] as number;
   let at = 0;
-  let little = order === 'le';
+  let little = order === 'le' || littleByDefault;
   if (order === undefined && body.length >= 2) {
-    if (byte(0) === 0xfe && byte(1) === 0xff) at = 2;
-    else if (byte(0) === 0xff && byte(1) === 0xfe) {
+    if (byte(0) === 0xfe && byte(1) === 0xff) {
+      at = 2;
+      little = false;
+    } else if (byte(0) === 0xff && byte(1) === 0xfe) {
       at = 2;
       little = true;
     }

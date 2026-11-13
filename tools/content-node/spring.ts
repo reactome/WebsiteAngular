@@ -468,22 +468,37 @@ export function springEnum(
 }
 
 /**
- * The media type Spring writes an answer under, from a request's Accept and
- * the one type a mapping produces, as ProducesRequestCondition and
- * AbstractMessageConverterMethodProcessor choose it -- or undefined for
- * Java's 406, "Could not find acceptable representation". The header is
- * split at commas outside quotes and each part read as mediaType reads it:
- * one it cannot read refuses the request, and none at all is every type.
- * Each accepted type compatible with the produced one gives the more
- * specific of the two -- the accepted one, with its parameters, when it
- * names the subtype -- and the first of those, as Spring sorts them by
- * specificity and quality, is chosen, its `q` dropped. A quality, even 0,
- * never refuses a type.
+ * What Spring makes of a request's Accept for a mapping that produces one
+ * type, in the order it finds out:
+ *
+ *  - `not-acceptable`: Java's 406, "Could not find acceptable
+ *    representation" -- a part it cannot read, or none compatible.
+ *  - `failed`: a 500 while it sorts the accepted types to match the mapping,
+ *    before the controller runs: a quality written `Q` (MediaType reads `q`
+ *    in any case to sort, but checks it only by that exact name) that
+ *    Double.parseDouble refuses, met as Java's sort meets it.
+ *  - `write-failed`: a 500 once the controller has answered, when the
+ *    accepted type's quality is copied onto the produced one and checked:
+ *    such a `Q` refused there, or one outside 0 to 1.
+ *  - `chosen`: the type the answer is written under.
+ *
+ * The header is split at commas outside quotes and each part read as
+ * mediaType reads it; none at all is every type. Each accepted type
+ * compatible with the produced one gives the more specific of the two -- the
+ * accepted one, with its parameters, when it names the subtype -- and the
+ * first of those, as Spring sorts them by specificity and quality, is
+ * chosen, its `q` dropped. A quality, even 0, never refuses a type.
  */
+export type Negotiation =
+  | { kind: 'not-acceptable' }
+  | { kind: 'failed'; message: string }
+  | { kind: 'write-failed'; message: string }
+  | { kind: 'chosen'; media: MediaType };
+
 export function negotiate(
   header: string | undefined,
   produced: [type: string, subtype: string]
-): MediaType | undefined {
+): Negotiation {
   const parts: string[] = [];
   if (header !== undefined) {
     let quoted = false;
@@ -502,40 +517,66 @@ export function negotiate(
   for (const part of parts) {
     if (javaTrimAll(part) === '') continue;
     const media = mediaType(part);
-    if (typeof media === 'string') return undefined;
+    if (typeof media === 'string') return { kind: 'not-acceptable' };
     accepted.push(media);
   }
   if (accepted.length === 0) accepted.push({ type: '*', subtype: '*', parameters: [] });
   const [type, subtype] = produced;
   const produce: MediaType = { type, subtype, parameters: [] };
-  const usable = sortBySpecificityAndQuality(accepted)
-    .filter((media) => compatible(media, produce))
-    .map((media) => mostSpecific(media, produce));
-  const [chosen] = sortBySpecificityAndQuality(usable);
-  if (!chosen) return undefined;
-  // removeQualityValue: asked case-insensitively, removed by its exact name.
-  const hasQuality = chosen.parameters.some(([name]) => name.toLowerCase() === 'q');
-  return hasQuality
-    ? { ...chosen, parameters: chosen.parameters.filter(([name]) => name !== 'q') }
-    : chosen;
+  try {
+    let sorted: MediaType[];
+    try {
+      sorted = javaSort(accepted, bySpecificityAndQuality);
+    } catch (failure) {
+      if (failure instanceof QualityFailure) return { kind: 'failed', message: failure.message };
+      throw failure;
+    }
+    const compatibles = sorted.filter((media) => compatible(media, produce));
+    if (compatibles.length === 0) return { kind: 'not-acceptable' };
+    const usable = compatibles.map((media) => mostSpecific(media, produce));
+    const [chosen] = javaSort(usable, bySpecificityAndQuality);
+    if (!chosen) return { kind: 'not-acceptable' };
+    // removeQualityValue: asked case-insensitively, removed by its exact name.
+    const hasQuality = chosen.parameters.some(([name]) => name.toLowerCase() === 'q');
+    return {
+      kind: 'chosen',
+      media: hasQuality
+        ? { ...chosen, parameters: chosen.parameters.filter(([name]) => name !== 'q') }
+        : chosen,
+    };
+  } catch (failure) {
+    if (failure instanceof QualityFailure)
+      return { kind: 'write-failed', message: failure.message };
+    throw failure;
+  }
 }
+
+/** The IllegalArgumentException (a NumberFormatException among them) a quality throws in Java. */
+class QualityFailure extends Error {}
 
 /** A parameter's value as LinkedCaseInsensitiveMap.get finds it. */
 function parameter(media: MediaType, name: string) {
   return media.parameters.find(([key]) => key.toLowerCase() === name)?.[1];
 }
 
+const unquoted = (text: string) =>
+  /^(".*"|'.*')$/s.test(text) && text.length >= 2 ? text.slice(1, -1) : text;
+
 /**
- * MediaType.getQualityValue: `q` (in any case), unquoted, as
- * Double.parseDouble reads it; 1 without one. One it cannot read, which
- * only a `Q` can hold, is Java's own failure part way through sorting, not
- * modelled: read as 1.
+ * Double.parseDouble on a quality, or its NumberFormatException: "empty
+ * String", or the text, trimmed, "For input string".
  */
+function parseQuality(text: string): number {
+  const value = javaParseDouble(text);
+  if (value !== undefined) return value;
+  const trimmed = javaTrim(text);
+  throw new QualityFailure(trimmed === '' ? 'empty String' : `For input string: "${trimmed}"`);
+}
+
+/** MediaType.getQualityValue: `q` in any case, unquoted, parsed; 1 without one. */
 function qualityOf(media: MediaType) {
   const text = parameter(media, 'q');
-  if (text === undefined) return 1;
-  const unquoted = /^(".*"|'.*')$/s.test(text) && text.length >= 2 ? text.slice(1, -1) : text;
-  return javaParseDouble(unquoted) ?? 1;
+  return text === undefined ? 1 : parseQuality(unquoted(text));
 }
 
 /** Double.compare. */
@@ -546,6 +587,13 @@ function compareDoubles(one: number, other: number) {
   if (Number.isNaN(a)) return Number.isNaN(b) ? 0 : 1;
   if (Number.isNaN(b)) return -1;
   return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/** Double.compare(quality2, quality1), each read in Java's order. */
+function byQualityValue(one: MediaType, other: MediaType) {
+  const first = qualityOf(one);
+  const second = qualityOf(other);
+  return compareDoubles(second, first);
 }
 
 const isWildcardSubtype = (media: MediaType) =>
@@ -559,14 +607,14 @@ function specificity(one: MediaType, other: MediaType): number {
   if (isWildcardSubtype(one) && !isWildcardSubtype(other)) return 1;
   if (isWildcardSubtype(other) && !isWildcardSubtype(one)) return -1;
   if (one.subtype !== other.subtype) return 0;
-  const quality = compareDoubles(qualityOf(other), qualityOf(one));
+  const quality = byQualityValue(one, other);
   if (quality !== 0) return quality;
   return Math.sign(other.parameters.length - one.parameters.length);
 }
 
 /** MediaType.QUALITY_VALUE_COMPARATOR. */
 function byQuality(one: MediaType, other: MediaType): number {
-  const quality = compareDoubles(qualityOf(other), qualityOf(one));
+  const quality = byQualityValue(one, other);
   if (quality !== 0) return quality;
   if (one.type === '*' && other.type !== '*') return 1;
   if (other.type === '*' && one.type !== '*') return -1;
@@ -577,28 +625,61 @@ function byQuality(one: MediaType, other: MediaType): number {
   return Math.sign(other.parameters.length - one.parameters.length);
 }
 
-/** MediaType.sortBySpecificityAndQuality: a stable sort, as List.sort is. */
-function sortBySpecificityAndQuality(list: MediaType[]): MediaType[] {
-  if (list.length <= 1) return [...list];
-  return [...list].sort((one, other) => specificity(one, other) || byQuality(one, other));
+/** sortBySpecificityAndQuality's comparator: SPECIFICITY_COMPARATOR.thenComparing(QUALITY_VALUE_COMPARATOR). */
+const bySpecificityAndQuality = (one: MediaType, other: MediaType) =>
+  specificity(one, other) || byQuality(one, other);
+
+/**
+ * List.sort as Java runs it on fewer than 32 items (TimSort's
+ * countRunAndMakeAscending, then binarySort), comparing the same pairs in the
+ * same order: Spring's comparators are no total order and may throw, so
+ * another sort could order them otherwise, or meet another failure first.
+ * A longer list is sorted the same way; Java's would merge runs (declared).
+ */
+function javaSort<T>(list: T[], compare: (one: T, other: T) => number): T[] {
+  const a = [...list];
+  const n = a.length;
+  if (n < 2) return a;
+  const at = (i: number) => a[i] as T;
+  let runHi = 1;
+  if (compare(at(runHi++), at(0)) < 0) {
+    while (runHi < n && compare(at(runHi), at(runHi - 1)) < 0) runHi += 1;
+    a.splice(0, runHi, ...a.slice(0, runHi).reverse());
+  } else {
+    while (runHi < n && compare(at(runHi), at(runHi - 1)) >= 0) runHi += 1;
+  }
+  for (let start = runHi; start < n; start += 1) {
+    const pivot = at(start);
+    let left = 0;
+    let right = start;
+    while (left < right) {
+      const mid = (left + right) >>> 1;
+      if (compare(pivot, at(mid)) < 0) right = mid;
+      else left = mid + 1;
+    }
+    a.splice(start, 1);
+    a.splice(left, 0, pivot);
+  }
+  return a;
 }
 
 /**
  * getMostSpecificMediaType: the produced type with the accepted one's
- * quality copied in, or the accepted type where it is at least as specific.
+ * quality copied in -- checked there, by its exact name `q`, as a new
+ * MediaType checks it -- or the accepted type where it is at least as
+ * specific.
  */
 function mostSpecific(accept: MediaType, produce: MediaType): MediaType {
   const quality = parameter(accept, 'q');
-  const produceToUse: MediaType =
-    quality === undefined
-      ? produce
-      : {
-          ...produce,
-          parameters: [
-            ...produce.parameters.filter(([name]) => name.toLowerCase() !== 'q'),
-            ['q', quality],
-          ],
-        };
+  if (quality === undefined) return specificity(accept, produce) <= 0 ? accept : produce;
+  const value = unquoted(quality);
+  const number = parseQuality(value);
+  if (!(number >= 0 && number <= 1))
+    throw new QualityFailure(`Invalid quality value "${value}": should be between 0.0 and 1.0`);
+  const produceToUse: MediaType = {
+    ...produce,
+    parameters: [...produce.parameters, ['q', quality]],
+  };
   return specificity(accept, produceToUse) <= 0 ? accept : produceToUse;
 }
 
@@ -711,20 +792,32 @@ function tomcatUnquote(text: string) {
 
 /**
  * The type StringHttpMessageConverter writes a String under, and the
- * charset it encodes it in: the chosen type's own `charset` (by that exact
- * name, as Spring reads it), or UTF-8 put in as its last parameter.
+ * charset it encodes it in: the chosen type with UTF-8 put in as its last
+ * parameter unless it names a `charset` (by that exact name, as Spring reads
+ * it). Spring then reads that type back from the response's headers, as
+ * mediaType reads it, and encodes in the charset it finds there; a type that
+ * does not read back -- a value holding an escaped quote, which then takes
+ * the added charset into it -- is its 500, the failure's message.
  */
-export function stringContentType(media: MediaType): { type: string; charset: string } {
-  const own = media.parameters.find(([name]) => name === 'charset')?.[1];
-  if (own !== undefined) {
-    const charset = /^(".*"|'.*')$/s.test(own) && own.length >= 2 ? own.slice(1, -1) : own;
-    return { type: tomcatContentType(mediaTypeText(media)), charset };
-  }
-  const parameters: [string, string][] = [
-    ...media.parameters.filter(([name]) => name.toLowerCase() !== 'charset'),
-    ['charset', 'UTF-8'],
-  ];
-  return { type: tomcatContentType(mediaTypeText({ ...media, parameters })), charset: 'UTF-8' };
+export function stringContentType(
+  media: MediaType
+): { type: string; charset: string } | { failure: string } {
+  const own = media.parameters.some(([name]) => name === 'charset');
+  const text = mediaTypeText(
+    own
+      ? media
+      : {
+          ...media,
+          parameters: [
+            ...media.parameters.filter(([name]) => name.toLowerCase() !== 'charset'),
+            ['charset', 'UTF-8'],
+          ],
+        }
+  );
+  const back = mediaType(text);
+  if (typeof back === 'string') return { failure: back };
+  const charset = back.parameters.find(([name]) => name === 'charset')?.[1] ?? 'UTF-8';
+  return { type: tomcatContentType(text), charset: unquoted(charset) };
 }
 
 /** Tomcat's maxPostSize: a form body longer than this is not read for parameters. */
@@ -787,7 +880,10 @@ export function resourceAnswer(request: Request, bytes: Buffer, media: MediaType
     headers: { 'Accept-Ranges': 'bytes' },
     body: bytes,
   };
-  const header = request.get?.('range');
+  // HttpHeaders.getFirst: the first Range sent, where Node joins them all.
+  const raw = request.rawHeaders ?? [];
+  const index = raw.findIndex((name, at) => at % 2 === 0 && name.toLowerCase() === 'range');
+  const header = index === -1 ? undefined : raw[index + 1];
   if (header === undefined) return whole;
   const regions = rangeRegions(header, bytes.length);
   if (!regions)

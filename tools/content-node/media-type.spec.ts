@@ -10,7 +10,7 @@
 // /citation/download, /interactors/static/molecules/summary and
 // /data/query/ids on 12 Nov 2026.
 import { describe, expect, it } from 'vitest';
-import { consumesProblem, encodeText, mediaType, plainText } from './body.ts';
+import { consumesProblem, encodeText, mediaType, plainText, unreadableCharset } from './body.ts';
 import type { MediaType } from './body.ts';
 import { javaParseDouble } from './java-text.ts';
 import {
@@ -21,6 +21,7 @@ import {
   tomcatContentType,
 } from './spring.ts';
 import type { Request } from './endpoint.ts';
+import type { Negotiation } from './spring.ts';
 
 const FORM: [string, string][] = [
   ['application', 'x-www-form-urlencoded'],
@@ -151,11 +152,17 @@ describe('javaParseDouble', () => {
 
 const CSV: [string, string] = ['text', 'csv'];
 const PLAIN: [string, string] = ['text', 'plain'];
-const text = (media: MediaType | undefined) =>
-  media &&
-  tomcatContentType(
+/** The Content-Type Tomcat sends for what negotiate chose, or what it did instead. */
+const text = (negotiation: Negotiation) => {
+  if (negotiation.kind !== 'chosen')
+    return negotiation.kind === 'not-acceptable'
+      ? 406
+      : `${negotiation.kind}: ${negotiation.message}`;
+  const media = negotiation.media;
+  return tomcatContentType(
     `${media.type}/${media.subtype}${media.parameters.map(([n, v]) => `;${n}=${v}`).join('')}`
   );
+};
 
 describe('negotiate, the type Spring writes under, from Accept', () => {
   it("refuses an Accept that takes nothing it produces, or that it cannot read: Java's 406", () => {
@@ -175,7 +182,7 @@ describe('negotiate, the type Spring writes under, from Accept', () => {
       'text/*+x',
       'text/x+csv',
     ])
-      expect([accept, negotiate(accept, CSV)]).toEqual([accept, undefined]);
+      expect([accept, text(negotiate(accept, CSV))]).toEqual([accept, 406]);
   });
 
   it('takes any compatible type, whatever its quality; none at all is every type', () => {
@@ -243,8 +250,11 @@ describe('tomcatContentType, what Tomcat sends for the type Spring sets', () => 
 
 describe('stringContentType and encodeText, a String as StringHttpMessageConverter writes it', () => {
   const string = (accept: string) => {
-    const media = negotiate(accept, PLAIN);
-    return media && stringContentType(media);
+    const negotiation = negotiate(accept, PLAIN);
+    if (negotiation.kind !== 'chosen') throw new Error(negotiation.kind);
+    const written = stringContentType(negotiation.media);
+    if ('failure' in written) throw new Error(written.failure);
+    return written;
   };
   it('writes in the charset the type names, by that exact name; else UTF-8, put in last', () => {
     expect(string('text/plain;x=y')).toEqual({
@@ -255,7 +265,7 @@ describe('stringContentType and encodeText, a String as StringHttpMessageConvert
       type: 'text/plain;charset=latin1',
       charset: 'latin1',
     });
-    expect(string("text/plain;charset='latin1'")?.charset).toBe('latin1');
+    expect(string("text/plain;charset='latin1'").charset).toBe('latin1');
     // `Charset` is no charset to Spring: replaced by UTF-8, under its own name.
     expect(string('text/plain;Charset=latin1')).toEqual({
       type: 'text/plain;charset=UTF-8',
@@ -263,11 +273,11 @@ describe('stringContentType and encodeText, a String as StringHttpMessageConvert
     });
     // Spring keeps `Q` (removeQualityValue misses it), and Tomcat, rebuilding
     // around the charset, lower-cases it.
-    expect(string('text/plain;Q=0.5')?.type).toBe('text/plain;q=0.5;charset=UTF-8');
+    expect(string('text/plain;Q=0.5').type).toBe('text/plain;q=0.5;charset=UTF-8');
   });
 
   it("encodes as the JDK's encoders do", () => {
-    const hex = (charset: string) => encodeText('"N', charset).toString('hex');
+    const hex = (charset: string) => encodeText('"N', charset)?.toString('hex');
     expect(hex('utf-16')).toBe('feff0022004e');
     expect(hex('unicode')).toBe('feff0022004e');
     expect(hex('UTF-16BE')).toBe('0022004e');
@@ -275,9 +285,13 @@ describe('stringContentType and encodeText, a String as StringHttpMessageConvert
     expect(hex('utf-32')).toBe('000000220000004e');
     expect(hex('UTF-32LE')).toBe('220000004e000000');
     expect(hex('latin1')).toBe('224e');
-    expect(encodeText('é€😀', 'latin1').toString('latin1')).toBe('é??');
-    expect(encodeText('é😀', 'us-ascii').toString('latin1')).toBe('??');
-    expect(encodeText('é', 'utf-8').toString('hex')).toBe('c3a9');
+    // Java's own encoders, measured: EBCDIC, the -BOM variants' marks, MacRoman.
+    expect(hex('IBM037')).toBe('7fd5');
+    expect(hex('x-UTF-16LE-BOM')).toBe('fffe22004e00');
+    expect(hex('X-UTF-32BE-BOM')).toBe('0000feff000000220000004e');
+    expect(hex('MacRoman')).toBe('224e');
+    // A charset the JVM only reads has no encoder: Java's 500.
+    expect(hex('ISO-2022-CN')).toBe(undefined);
   });
 });
 
@@ -287,6 +301,7 @@ const request = (headers: Record<string, string>, url = '/x', body?: Buffer): Re
     originalUrl: url,
     body,
     get: (name: string) => headers[name.toLowerCase()],
+    rawHeaders: Object.entries(headers).flat(),
   }) as unknown as Request;
 
 describe('resourceAnswer, a Resource with a Range as Spring answers it', () => {
@@ -350,6 +365,16 @@ describe('resourceAnswer, a Resource with a Range as Spring answers it', () => {
         `\r\n--${boundary}\r\nContent-Type: text/csv\r\nContent-Range: bytes 3-4/12\r\n\r\nde` +
         `\r\n--${boundary}--`
     );
+    // Only the first Range counts, as HttpHeaders.getFirst has it; Node joins them.
+    const twice = resourceAnswer(
+      {
+        get: () => 'bytes=0-1, bytes=3-4',
+        rawHeaders: ['Range', 'bytes=0-1', 'range', 'bytes=3-4'],
+      } as unknown as Request,
+      bytes,
+      csv
+    );
+    expect([twice.status, twice.headers?.['Content-Range']]).toEqual([206, 'bytes 0-1/12']);
     // An empty Range is no range at all: a multipart of none.
     expect((answer('').body as Buffer).toString()).toMatch(/^\r\n--[-_0-9A-Za-z]{30,40}--$/);
   });
@@ -402,5 +427,107 @@ describe('servletRequestParameters, as Tomcat reads a query and a form', () => {
     // What Tomcat skips -- no name, a malformed escape -- is not counted.
     expect(values(FORM_TYPE, '/x', `=1&%zz=1&${many(9999)}`)).toEqual(['z']);
     expect(values(FORM_TYPE, '/x?a=1', many(9999))).toEqual([]);
+  });
+});
+
+describe("Java's charsets, by Java's names (charset-snapshot.json)", () => {
+  it('takes the names Java knows, and refuses the ones only TextDecoder knows', () => {
+    for (const name of [
+      'cp437',
+      'IBM037',
+      'x-UTF-16LE-BOM',
+      'X-UTF-32BE-BOM',
+      'MacRoman',
+      'x-MacRoman',
+      'csiso2022kr',
+      '"ibm-37"',
+    ])
+      expect([name, consumesProblem(`text/plain;charset=${name}`, FORM)]).toEqual([
+        name,
+        undefined,
+      ]);
+    for (const name of [
+      'x-user-defined',
+      'x-mac-cyrillic',
+      'csunicode',
+      'ucs-2',
+      'iso-8859-8-i',
+      'unicodefeff',
+      'unicodefffe',
+    ])
+      expect(consumesProblem(`text/plain;charset=${name}`, FORM)).toBe(
+        `Invalid mime type "text/plain;charset=${name}": unsupported charset '${name}'`
+      );
+  });
+
+  it('reads a body as Java does, where it can: tables, ASCII, the UTF family', () => {
+    const read = (charset: string, hex: string) =>
+      plainText(Buffer.from(hex, 'hex'), `text/plain;charset=${charset}`);
+    expect(read('cp437', '52802d')).toBe('RÇ-');
+    expect(read('IBM037', 'd9c1')).toBe('RA');
+    // A double-byte EBCDIC page by its single-byte table, before any shift-out.
+    expect(read('x-IBM930', 'd9c1')).toBe('RA');
+    // A Japanese IBM page reads `\` and `~` as its own characters.
+    expect(read('x-IBM942', '5c7e41')).toBe('¥‾A');
+    expect(read('Shift_JIS', '522d41')).toBe('R-A');
+    // x-UTF-16LE-BOM: little-endian without a mark, as the mark says with one.
+    expect(read('x-UTF-16LE-BOM', '52002d00')).toBe('R-');
+    expect(read('x-UTF-16LE-BOM', 'feff0052002d')).toBe('R-');
+    expect(read('X-UTF-32BE-BOM', '0000feff00000052')).toBe('R');
+  });
+
+  it('reads nothing it cannot read as Java does: undefined, which the endpoints refuse', () => {
+    const read = (charset: string, hex: string) =>
+      plainText(Buffer.from(hex, 'hex'), `text/plain;charset=${charset}`);
+    // A pure double-byte page, ASCII or not; a shift-out; bytes past ASCII
+    // in a charset TextDecoder does not know.
+    expect(read('x-IBM834', '522d41')).toBe(undefined);
+    expect(read('x-IBM930', '0e4141')).toBe(undefined);
+    expect(read('x-IBM33722', '52e9')).toBe(undefined);
+    expect(unreadableCharset('text/plain;charset=ibm834')).toBe(
+      'This service cannot read a body in x-IBM834'
+    );
+  });
+});
+
+describe('negotiate when a quality fails, as Java fails', () => {
+  it('fails while sorting, before the controller, comparing pairs as Java does', () => {
+    const cases: [string, string | number][] = [
+      ['text/csv;Q=abc, application/json', 'failed: For input string: "abc"'],
+      ['application/json, text/csv;Q=abc', 'failed: For input string: "abc"'],
+      // Java's insertion sort compares the second with the first, reading the second's first.
+      ['text/csv;Q=a, text/csv;Q=b, text/csv;Q=c', 'failed: For input string: "b"'],
+      // A one-type Accept is not sorted, and an incompatible one never copied.
+      ['application/json;Q=abc', 406],
+    ];
+    for (const [accept, outcome] of cases)
+      expect([accept, text(negotiate(accept, CSV))]).toEqual([accept, outcome]);
+  });
+
+  it('fails once the controller has answered, copying the quality onto the produced type', () => {
+    const cases: [string, string][] = [
+      ['text/csv;Q=abc', 'write-failed: For input string: "abc"'],
+      ['*/*;Q=x', 'write-failed: For input string: "x"'],
+      ['text/csv;Q=" "', 'write-failed: empty String'],
+      ['text/csv;Q=7', 'write-failed: Invalid quality value "7": should be between 0.0 and 1.0'],
+      [
+        'text/csv;Q=7, text/*',
+        'write-failed: Invalid quality value "7": should be between 0.0 and 1.0',
+      ],
+      // Sorted without reading either quality (a wildcard subtype decides), so
+      // the one copied first fails: the specific type's.
+      ['text/*;Q=abc, text/csv;Q=def', 'write-failed: For input string: "def"'],
+    ];
+    for (const [accept, outcome] of cases)
+      expect([accept, text(negotiate(accept, CSV))]).toEqual([accept, outcome]);
+  });
+
+  it("is Spring's 500 for a type that does not read back once the charset is added", () => {
+    const negotiation = negotiate('text/plain;x="a\\"b"', PLAIN);
+    if (negotiation.kind !== 'chosen') throw new Error(negotiation.kind);
+    expect(stringContentType(negotiation.media)).toEqual({
+      failure:
+        'Invalid mime type "text/plain;x="a\\"b";charset=UTF-8": Invalid token character \'"\' in token ""a\\"b";charset=UTF-8"',
+    });
   });
 });

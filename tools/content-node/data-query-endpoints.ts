@@ -37,7 +37,7 @@ import type { Props } from './objects.ts';
 import { databaseVersion } from './release.ts';
 import { cached, javaError, notFound } from './answers.ts';
 import { pathId, queryValues, rawSegment, springPrimitiveBoolean, writerFor } from './spring.ts';
-import { orthologyIds, plainText, plainTextProblem } from './body.ts';
+import { orthologyIds, plainText, plainTextProblem, unreadableCharset } from './body.ts';
 import { schemaClassOf } from './schema.ts';
 import type { InstanceReferrals, SimpleDatabaseObject } from '../../projects/contract/content.ts';
 import type { JsonWritten } from './answers.ts';
@@ -687,7 +687,10 @@ export const dataQueryEndpoints: Endpoint[] = [
           'UNPROCESSABLE_ENTITY',
           `Required request body is missing: ${signature}`
         );
-      const ids = orthologyIds(plainText(request.body, contentType));
+      const text = plainText(request.body, contentType);
+      if (text === undefined)
+        return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', unreadableCharset(contentType));
+      const ids = orthologyIds(text);
       const refused = findByIdFailure(ids);
       if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
       const found: [string, DomainEntity][] = [];
