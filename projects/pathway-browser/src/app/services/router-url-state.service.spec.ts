@@ -30,9 +30,9 @@ async function openAt(url: string): Promise<UrlStateService> {
   });
   const state = TestBed.inject(UrlStateService);
   const harness = await RouterTestingHarness.create();
+  // navigateByUrl waits for the app to be stable, by which time the reader has
+  // applied these params: none of them needs a lookup.
   await harness.navigateByUrl(url);
-  // The reader applies the params in an async callback; let it finish.
-  await new Promise((resolve) => setTimeout(resolve));
   return state;
 }
 
@@ -55,9 +55,11 @@ describe('RouterUrlStateService, legacy query parameters', () => {
     expect(state.tab()).toBe('molecule');
   });
 
-  it('an unknown DTAB code opens no particular tab', async () => {
+  it('an unknown DTAB code leaves the tab unset, as no tab at all does', async () => {
+    // null, not undefined: the details panel settles its Info fallback only on
+    // null, and an undefined tab pushed a history entry instead (#168).
     const state = await openAt('/PathwayBrowser/R-HSA-1?DTAB=XX');
-    expect(state.tab()).toBeFalsy();
+    expect(state.tab()).toBeNull();
   });
 
   it('TOOL=AT opens the analysis tool', async () => {

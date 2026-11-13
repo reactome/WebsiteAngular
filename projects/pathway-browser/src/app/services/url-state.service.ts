@@ -168,7 +168,7 @@ function createStateValues(oldToNewTab: ReadonlyMap<string | null, string>) {
       ['TOOL'],
       (tool) => (tool === 'AT' ? 'qualitative' : null)
     ),
-    tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => oldToNewTab.get(tab)!),
+    tab: urlParam<string | null>(null, 'string', ['DTAB'], (tab) => oldToNewTab.get(tab) ?? null),
     significance: urlParam<number>(0.05, 'number'),
     sample: urlParam<string | null>(null, 'string'),
     /**
