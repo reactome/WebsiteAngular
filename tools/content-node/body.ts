@@ -275,7 +275,7 @@ const EXACT: Record<string, Decoder> = {
 /**
  * How to read a body in a Java charset, or undefined where this cannot read
  * it as Java does, from what was measured on Java (charset-snapshot.json).
- * The UTF family by the JDK's rules (EXACT); a single-byte charset by its
+ * The UTF family by the JDK's rules (EXACT), CESU-8 where well-formed; a single-byte charset by its
  * table, exactly, and a shifting EBCDIC one the same way while no shift-out
  * byte comes; a body of printable ASCII, tab, CR and LF by what each of
  * those bytes reads as (no escape or shift in it to change a stateful
@@ -288,6 +288,10 @@ const EXACT: Record<string, Decoder> = {
 function readerFor(charset: JavaCharset, body: Buffer): Decoder | undefined {
   const exact = EXACT[charset.name];
   if (exact) return exact;
+  if (charset.name === 'CESU-8') {
+    const text = cesu8(body);
+    return text === undefined ? undefined : () => text;
+  }
   const { table, unread = [] } = charset;
   if (table && !body.some((byte) => unread.includes(byte)))
     return (bytes) => Array.from(bytes, (byte) => table.charAt(byte)).join('');
@@ -304,6 +308,55 @@ function readerFor(charset: JavaCharset, body: Buffer): Decoder | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * A well-formed CESU-8 body as the JDK's decoder reads it -- UTF-8 whose
+ * characters past U+FFFF are their two surrogates, three bytes each --
+ * or undefined for one that is not well-formed, whose replacements this
+ * does not repeat: a stray or missing continuation byte, an overlong form,
+ * a four-byte sequence, a surrogate without its pair.
+ */
+function cesu8(body: Buffer): string | undefined {
+  const units: number[] = [];
+  const continuation = (at: number) => at < body.length && ((body[at] as number) & 0xc0) === 0x80;
+  for (let at = 0; at < body.length;) {
+    const lead = body[at] as number;
+    if (lead < 0x80) {
+      units.push(lead);
+      at += 1;
+    } else if (lead >= 0xc2 && lead <= 0xdf && continuation(at + 1)) {
+      units.push(((lead & 0x1f) << 6) | ((body[at + 1] as number) & 0x3f));
+      at += 2;
+    } else if (
+      lead >= 0xe0 &&
+      lead <= 0xef &&
+      continuation(at + 1) &&
+      continuation(at + 2) &&
+      !(lead === 0xe0 && (body[at + 1] as number) < 0xa0)
+    ) {
+      units.push(
+        ((lead & 0x0f) << 12) |
+          (((body[at + 1] as number) & 0x3f) << 6) |
+          ((body[at + 2] as number) & 0x3f)
+      );
+      at += 3;
+    } else return undefined;
+  }
+  // A lone surrogate Java writes out as '?' somewhere on the way: not repeated.
+  for (let at = 0; at < units.length; at += 1) {
+    const unit = units[at] as number;
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = units[at + 1];
+      if (next === undefined || next < 0xdc00 || next > 0xdfff) return undefined;
+      at += 1;
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) return undefined;
+  }
+  // In slices: a 10MB body's units are too many for one call's arguments.
+  let text = '';
+  for (let at = 0; at < units.length; at += 8192)
+    text += String.fromCharCode(...units.slice(at, at + 8192));
+  return text;
 }
 
 /**

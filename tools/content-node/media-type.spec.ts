@@ -9,6 +9,7 @@
 // expected value was measured against Java's /download/{filename},
 // /citation/download, /interactors/static/molecules/summary and
 // /data/query/ids on 12 Nov 2026.
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { consumesProblem, encodeText, mediaType, plainText, unreadableCharset } from './body.ts';
 import type { MediaType } from './body.ts';
@@ -474,6 +475,35 @@ describe("Java's charsets, by Java's names (charset-snapshot.json)", () => {
     expect(read('x-UTF-16LE-BOM', '52002d00')).toBe('R-');
     expect(read('x-UTF-16LE-BOM', 'feff0052002d')).toBe('R-');
     expect(read('X-UTF-32BE-BOM', '0000feff00000052')).toBe('R');
+  });
+
+  it('reads CESU-8 as UTF-8 with its characters past U+FFFF in two surrogates', () => {
+    // Measured: Java's 404 names "xyz,café,😀" for this body, under every CESU-8 name.
+    for (const name of ['CESU-8', 'CESU8', 'csCESU-8'])
+      expect(
+        plainText(
+          Buffer.from('78797a2c636166c3a92ceda0bdedb880', 'hex'),
+          `text/plain;charset=${name}`
+        )
+      ).toBe('xyz,café,😀');
+    // Not well-formed -- a lone surrogate, a four-byte form, a stray byte -- is not read.
+    for (const hex of ['eda0bd', 'f09f9880', 'c080', 'e08080', '80', '522dc3'])
+      expect([hex, plainText(Buffer.from(hex, 'hex'), 'text/plain;charset=CESU-8')]).toEqual([
+        hex,
+        undefined,
+      ]);
+  });
+
+  it('gives no byte table to a charset whose bytes combine (snapshot-charsets.ts)', () => {
+    const snapshot = JSON.parse(
+      readFileSync(new URL('./charset-snapshot.json', import.meta.url), 'utf8')
+    ) as { charsets: { name: string; table?: string }[] };
+    const tabled = new Set(snapshot.charsets.filter((c) => c.table).map((c) => c.name));
+    expect([tabled.has('UTF-8'), tabled.has('CESU-8'), tabled.has('IBM437')]).toEqual([
+      false,
+      false,
+      true,
+    ]);
   });
 
   it('reads nothing it cannot read as Java does: undefined, which the endpoints refuse', () => {

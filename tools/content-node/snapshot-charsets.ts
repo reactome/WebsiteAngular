@@ -18,7 +18,8 @@
  *    byte-order mark) and each character's bytes after, checked to make up
  *    the whole text written at once; null where the JVM has no encoder.
  *  - `table`: for a single-byte charset, the character each byte reads as
- *    (U+FFFD for one it does not map), checked against all 256 read at once;
+ *    (U+FFFD for one it does not map), checked against all 256 read at once
+ *    and against every pair of bytes read together;
  *    and for a shifting one (EBCDIC's double-byte code pages), the same for
  *    the bytes before any shift, `unread` naming the shift bytes, which read
  *    as nothing alone.
@@ -33,6 +34,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import * as prettier from 'prettier';
 
 const OUT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'charset-snapshot.json');
 const JAVA = process.env['JAVA'];
@@ -65,6 +67,26 @@ public class Charsets {
     char[] buffer = new char[4096];
     for (int n; (n = reader.read(buffer)) != -1; ) b.append(buffer, 0, n);
     return b.toString();
+  }
+  static boolean pairsReadAlone(Charset cs, StringBuilder table, List<Integer> unread) {
+    CharsetDecoder decoder = cs.newDecoder()
+        .onMalformedInput(CodingErrorAction.REPLACE)
+        .onUnmappableCharacter(CodingErrorAction.REPLACE);
+    for (int a = 0; a < 256; a++) {
+      if (unread.contains(a)) continue;
+      for (int b = 0; b < 256; b++) {
+        if (unread.contains(b)) continue;
+        String two;
+        try {
+          two = decoder.reset().decode(java.nio.ByteBuffer.wrap(new byte[] {(byte) a, (byte) b})).toString();
+        } catch (CharacterCodingException failure) {
+          return false;
+        }
+        if (two.length() != 2 || two.charAt(0) != table.charAt(a) || two.charAt(1) != table.charAt(b))
+          return false;
+      }
+    }
+    return true;
   }
   static String json(String s) {
     StringBuilder b = new StringBuilder("\\"");
@@ -133,8 +155,12 @@ public class Charsets {
       StringBuilder expected = new StringBuilder();
       for (int i = 0; i < 256; i++) if (!unread.contains(i)) expected.append(table.charAt(i));
       boolean shifts = !unread.isEmpty() && unread.stream().allMatch(b -> b == 0x0e || b == 0x0f);
-      if ((unread.isEmpty() && cs.newDecoder().maxCharsPerByte() == 1f || shifts)
-          && read(readAlone.toByteArray(), cs).equals(expected.toString())) {
+      // A decoder's maxCharsPerByte says nothing here (UTF-8's and CESU-8's are
+      // 1 too, and read each high byte alone as U+FFFD), so every pair of
+      // bytes must read as the two read alone: C3 A9 is one character in those.
+      if ((unread.isEmpty() || shifts)
+          && read(readAlone.toByteArray(), cs).equals(expected.toString())
+          && pairsReadAlone(cs, table, unread)) {
         e.append(",\\"table\\":").append(json(table.toString()));
         if (shifts) e.append(",\\"unread\\":").append(unread);
       }
@@ -162,7 +188,9 @@ try {
   // A single source file runs without compiling first (JDK 11+).
   const text = execFileSync(JAVA, [source], { encoding: 'utf8', maxBuffer: 1 << 26 });
   const parsed = JSON.parse(text) as { charsets: { name: string }[] };
-  writeFileSync(OUT, `${JSON.stringify(parsed, null, 1)}\n`);
+  // Written as the repository formats it, so a run that changes nothing shows nothing.
+  const options = (await prettier.resolveConfig(OUT)) ?? {};
+  writeFileSync(OUT, await prettier.format(JSON.stringify(parsed), { ...options, filepath: OUT }));
   console.log(`${OUT}: ${parsed.charsets.length} charsets`);
 } finally {
   rmSync(dir, { recursive: true, force: true });
