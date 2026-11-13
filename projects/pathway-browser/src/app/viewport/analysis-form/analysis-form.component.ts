@@ -48,7 +48,7 @@ export class AnalysisFormComponent {
   species = this.http.get('assets/icons/analysis/SpeciesCompare.svg', { responseType: 'text' });
   tissue = this.http.get('assets/icons/analysis/TissueCompare.svg', { responseType: 'text' });
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   /**

@@ -409,7 +409,7 @@
               }
               @let analysisStatus = dropdown() === 'analysis' ? 'open' : 'closed';
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
-                <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
+                <cr-analysis-form (closed)="closeAnalysis()" [status]="analysisStatus" />
               </div>
               @if (showingInteractors() || resourceFoundNothing() || badgesHiddenByZoom()) {
                 <cr-interactor-threshold />

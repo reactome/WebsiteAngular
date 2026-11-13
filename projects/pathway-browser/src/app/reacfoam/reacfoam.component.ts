@@ -199,7 +199,7 @@ export class ReacfoamComponent implements OnDestroy {
   setFlag(groups: PathwayGroup[]) {
     groups.forEach((group: PathwayGroup) => {
       group.flag = this.flagging() ? this.cleanFlagIdentifiers().has(group.stId) : false;
-      group.groups && this.setFlag(group.groups);
+      if (group.groups) this.setFlag(group.groups);
     });
   }
 

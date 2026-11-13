@@ -99,7 +99,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    * ancestor of the selection, to draw the path.
    */
   readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
-  readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
+  readonly eventSplit = input.required<SplitComponent>();
   readonly treeControlButton = viewChild('treeControlButton', { read: ElementRef });
   readonly eventIcon = viewChild('eventIcon', { read: ElementRef });
   readonly tree = viewChild.required(MatTree);
@@ -269,7 +269,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.breadcrumbs = events as Event[];
     });
 
-    this.split()
+    this.eventSplit()
       .dragProgress$.pipe(untilDestroyed(this))
       .subscribe((_data) => {
         this.adjustWidths();

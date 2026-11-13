@@ -46,9 +46,7 @@ import { OntologyTermComponent } from '../ontology-term/ontology-term.component'
 export class MolecularProcessComponent {
   private iconService = inject(IconService);
 
-  readonly objects = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>({
-    alias: 'entries',
-  });
+  readonly entries = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>();
   // Most events have neither.
   readonly catalystActivityReference = input<CatalystActivityReference>();
   readonly regulationRefs = input<RegulationReference[]>();
@@ -62,7 +60,7 @@ export class MolecularProcessComponent {
   readonly data = computed(() => this.getData());
 
   getData(): MolecularProcess[] {
-    return this.objects().map((entry) => {
+    return this.entries().map((entry) => {
       if (isRegulation(entry)) {
         return this.getRegulation(entry);
       } else if (isCatalystActivity(entry)) {

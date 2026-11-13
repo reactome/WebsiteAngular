@@ -33,8 +33,8 @@ export class ParticipantService {
   }
 
   getNameAndType(molecule: ParticipantReference): { type: string; name: string } {
-    let type = '';
-    let name = '';
+    let type: string;
+    let name: string;
 
     const schemaClass = molecule.schemaClass;
     switch (schemaClass) {

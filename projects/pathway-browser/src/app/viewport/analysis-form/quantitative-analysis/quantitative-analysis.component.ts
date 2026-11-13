@@ -17,7 +17,7 @@ export class QuantitativeAnalysisComponent {
   private state: UrlStateService = inject(UrlStateService);
   public analysis: AnalysisService = inject(AnalysisService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly gsaId = signal<string>('');
@@ -28,13 +28,13 @@ export class QuantitativeAnalysisComponent {
   gsaFinished(token: string | undefined) {
     if (!token) return;
     this.state.analysis.set(token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
   seeResultAction = (result: AnalysisResult) => {
     const link = result.reactome_links.find((link: any) => link.token);
     if (!link) return;
     this.state.analysis.set(link.token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   };
 }
