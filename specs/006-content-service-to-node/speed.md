@@ -41,9 +41,16 @@ waits for a later decision.
   - Requests ran one at a time, each on a fresh connection without
     compression, timed to the last byte. The figure for a request is the median
     of its five.
-- **Load during the run.** The timed runs ran with no other builds or tests
-  going. The 20 slowest requests were measured again later, on a quiet machine,
-  and gave the same results.
+- **Load during the run.** The machine was not idle. A test run was going
+  during the timed requests (load average about 1.3–3.1 on 8 cores), and the
+  warm-up pass overlapped a full pre-push check. Alternating Java and node
+  request by request puts that load on both alike, so it blurs the times more
+  than it favours either side. The 20 slowest requests were measured again
+  afterwards (load about 1.7–3.0) and 19 gave the same results. The exception
+  was a static citation (`/citation/static/29186351`), which took about 4.6 s
+  on both the first time and 1.9 s on Java against 0.1 s on node the second:
+  it waits on an outside service, so its times say little about either
+  implementation.
 - **The concurrency test.** 8 clients sent a mix of 10 typical site requests for
   30 seconds to each service in turn, Java first and then node first, and again
   without the two search requests.
@@ -130,7 +137,7 @@ No errors and no "busy" answers on either side.
   write the 561 KB answer afresh on each request. Java serves a cached answer.
   Keeping the written answer would likely close the gap.
 - **The light endpoints under load.** Node's light endpoints rise evenly to a
-  median of about 40–55 ms under 8 clients, a sign of queueing in its single
+  median of about 38–60 ms under 8 clients, a sign of queueing in its single
   process. Running more than one process would spread that.
 
 ## Caveats
