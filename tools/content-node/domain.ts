@@ -731,9 +731,15 @@ const empty = (value: unknown) =>
  * data, and the same thing a Tomcat restart does -- and under JSOG the numbers
  * follow. Seen happen: before a Tomcat restart on 15 Oct 2026 Java wrote an
  * EntityWithAccessionedSequence's componentOfComplexes before candidateOfSet,
- * after it the other way. So the nested views are compared with Java as data;
+ * after it the other way. In the run Tomcat started on 12 Nov 2026 Java put
+ * PhysicalEntity's outputFor first and componentOfComplexes before memberOfSet
+ * (outputFor, repeatedUnitOfPolymers, componentOfComplexes, memberOfSet,
+ * candidateOfSet, inputFor), and a reaction's outputs before its inputs; the
+ * snapshot was set to that order, which matched Java byte for byte on 1,899
+ * requests (13 Nov 2026), 1,698 of them in a nested view, and will drift again
+ * with a later restart. So the nested views are compared with Java as data;
  * the default (flatten) view, which matched Java byte for byte over 20,279
- * objects of every class, did so before that restart and after it.
+ * objects of every class, did so before the 15 Oct restart and after it.
  */
 /** What writeDomain has still to write: text as it is, or a value to write. */
 type WorkItem = string | { value: unknown; floating: boolean };
