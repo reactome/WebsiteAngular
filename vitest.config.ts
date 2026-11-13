@@ -24,6 +24,12 @@ export default defineConfig({
     // sat in the repo without being run by anything at all.
     include: ['{src,projects,tools,deploy}/**/*.spec.{ts,mjs}'],
     css: false,
+    // A spec checks what code does, not how fast: vitest's 5-second default
+    // failed specs that pass alone in milliseconds whenever the machine was
+    // busy (the pre-push run beside other work: a render spec of 1.7s, a
+    // release-switch spec of 40ms). A spec that hangs still fails, later.
+    testTimeout: 60_000,
+    hookTimeout: 60_000,
     // No graph credentials for any spec. graph.ts reads them from a file when
     // the environment has none, so on a machine that has that file the specs
     // would query a real graph -- and the specs for an unreachable graph would
