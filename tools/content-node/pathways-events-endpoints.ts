@@ -7,7 +7,7 @@
  * Pathway Browser (/data/detail/*), with the helpers only they use. Moved
  * unchanged from service.ts.
  */
-import type { Endpoint, Request } from './endpoint.ts';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
 import {
   javaError,
   javaJson,
@@ -546,6 +546,151 @@ export function pathwayBrowserJson(node: PathwayBrowserNode): LocationNode {
   };
   // JSON's step: an undefined field is written as absent.
   return out as LocationNode;
+}
+
+/**
+ * HierarchyRepository.getSubHierarchyByStIdRaw / ByDbIdRaw: Java's MATCH,
+ * expansion and WITH to the space, because parseHierarchy builds the tree
+ * from the order of the paths. Only the RETURN differs, and only in shape, as
+ * in locationsQuery: a row per path rather than every path collected into one
+ * record, which the node driver decodes slowly; the step's labels, which
+ * nothing but the root reads, left out.
+ */
+function subGraphQuery(byDbId: boolean) {
+  const match = byDbId
+    ? 'MATCH (n:DatabaseObject{dbId:$dbId}) '
+    : 'MATCH (n:DatabaseObject{stId:$stId}) ';
+  return (
+    match +
+    'OPTIONAL MATCH path=(n)-[:hasEvent|input|output|repeatedUnit|hasMember|hasCandidate|hasComponent*]->(m:DatabaseObject) ' +
+    'WITH *, relationships(path) AS r ' +
+    'RETURN [n.stId, n.displayName, n.hasDiagram, n.speciesName, n.schemaClass, labels(n), 0] AS db, ' +
+    '[rel IN r | [endNode(rel).stId, endNode(rel).displayName, endNode(rel).hasDiagram, endNode(rel).speciesName, endNode(rel).schemaClass, null, rel.order ]] AS steps'
+  );
+}
+
+/**
+ * HierarchyService's id handling and HierarchyRepository's parseResult: the
+ * id read by getIdentifier (graphCoreId) -- dots alone, or a dbId past a
+ * long, Java's 500 (findByIdFailure) -- then the query's paths parsed into a
+ * tree from the root (parseHierarchy). No id, or no such object, is
+ * `missing`. May throw what parseHierarchy throws (treeFailure).
+ */
+async function browserTree(
+  request: Request,
+  raw: string,
+  missing: () => Answer,
+  query: (byDbId: boolean) => string,
+  omitNonDisplayableItems: boolean
+): Promise<Answer | PathwayBrowserNode> {
+  // getIdentifier's split of dots alone is empty, and indexing it Java's 500;
+  // Long.parseLong past a long's range is its 500 too, naming the digits as
+  // given -- neo4j.int would wrap round instead and find some other object.
+  const refused = findByIdFailure([raw]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const id = await graphCoreId(raw);
+  if (!id) return missing();
+  const { params, byDbId } = id;
+  const rows = await read<LocationsRow>(
+    query(byDbId),
+    byDbId ? { dbId: neo4j.int(params.id) } : { stId: params.id }
+  );
+  const [row] = rows;
+  if (!row) return missing();
+  // One row per path; no path at all is one row with none, which Java's
+  // collect drops.
+  const paths = rows
+    .map((each) => each.steps)
+    .filter((steps): steps is LocationStep[] => steps !== null);
+  return parseHierarchy(row.db, paths, omitNonDisplayableItems);
+}
+
+/**
+ * HierarchyService.getLocationsInPathwayBrowser, as the controller's
+ * locationsInPWB and getReverseGraph call it: `directParticipants` (default
+ * false) and `omitNonDisplayableItems` (default true) read as Spring reads a
+ * Boolean, in the controller's order, a value it cannot read its 400; then
+ * the tree up from the object (browserTree, locationsQuery). Nothing found is
+ * Java's 404, the same message on both routes.
+ */
+async function reverseGraph(request: Request, raw: string): Promise<Answer | PathwayBrowserNode> {
+  // In the controller's parameter order: the first that cannot be read is
+  // the one Java names.
+  const direct = springBoolean(queryValues(request, 'directParticipants'));
+  if (direct.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', direct.error);
+  const omit = springBoolean(queryValues(request, 'omitNonDisplayableItems'));
+  if (omit.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', omit.error);
+  const missing = () =>
+    javaError(request, 404, 'NOT_FOUND', `Reverse sub graph found for id: ${raw}`);
+  try {
+    return await browserTree(
+      request,
+      raw,
+      missing,
+      (byDbId) => locationsQuery(byDbId, direct.value ?? false),
+      omit.value ?? true
+    );
+  } catch (failure) {
+    return treeFailure(request, failure);
+  }
+}
+
+/**
+ * The ways graph-core fails on these trees, answered as Java answers them: a
+ * cycle overflows the stack, which Spring reports by name, and a null it
+ * dereferences is the generic message. Anything else is thrown on.
+ */
+function treeFailure(request: Request, failure: unknown): Answer {
+  if (failure instanceof RangeError || failure instanceof JavaStackOverflow) {
+    return javaError(
+      request,
+      500,
+      'INTERNAL_SERVER_ERROR',
+      'Handler dispatch failed; nested exception is java.lang.StackOverflowError'
+    );
+  }
+  if (failure instanceof JavaNullPointer) {
+    return javaError(
+      request,
+      500,
+      'INTERNAL_SERVER_ERROR',
+      'Something unexpected happened and the error has been reported.'
+    );
+  }
+  throw failure;
+}
+
+/**
+ * A PathwayBrowserNode tree as Jackson writes it under the service's
+ * non_empty: stId, name, species, url, type, diagram (false included), then
+ * the children in their TreeSet's order, absent when there are none -- the
+ * @JsonIgnore'd unique, order, parent and flags never. A node reached from
+ * two parents is written in full under each, so each node's text is made
+ * once and reused. A cycle has no end in Jackson either: JavaStackOverflow.
+ */
+function browserGraphJson(root: PathwayBrowserNode): string {
+  const written = new Map<PathwayBrowserNode, string>();
+  const onPath = new Set<PathwayBrowserNode>();
+  const write = (node: PathwayBrowserNode): string => {
+    const known = written.get(node);
+    if (known !== undefined) return known;
+    if (onPath.has(node)) throw new JavaStackOverflow();
+    onPath.add(node);
+    const children = (node.children ?? []).map(write);
+    onPath.delete(node);
+    const text = nonEmptyJson([
+      ['stId', node.stId],
+      ['name', node.name],
+      ['species', node.species],
+      ['url', node.url],
+      ['type', node.type],
+      ['diagram', node.diagram],
+      ['children', children.length ? new RawJson(`[${children.join(',')}]`) : undefined],
+    ]);
+    written.set(node, text);
+    return text;
+  };
+  return write(root);
 }
 
 /**
@@ -2245,39 +2390,10 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
      */
     handler: async (request) => {
       const raw = pathId(rawSegment(request, 4));
-      // In the controller's parameter order: the first that cannot be read is
-      // the one Java names.
-      const direct = springBoolean(queryValues(request, 'directParticipants'));
-      if (direct.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', direct.error);
-      const omit = springBoolean(queryValues(request, 'omitNonDisplayableItems'));
-      if (omit.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', omit.error);
-
-      const missing = () =>
-        javaError(request, 404, 'NOT_FOUND', `Reverse sub graph found for id: ${raw}`);
-      const id = await graphCoreId(raw);
-      if (!id) return missing();
-      const { params, byDbId } = id;
-      // Long.parseLong past a long's range is Java's 500, naming the digits as
-      // given; neo4j.int would wrap round instead and find some other object.
-      if (byDbId && BigInt(params.id) > 9223372036854775807n) {
-        const digits = javaTrim(raw).split('.')[0];
-        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `For input string: "${digits}"`);
-      }
-      const rows = await read<LocationsRow>(
-        locationsQuery(byDbId, direct.value ?? false),
-        byDbId ? { dbId: neo4j.int(params.id) } : { stId: params.id }
-      );
-      const [row] = rows;
-      if (!row) return missing();
-
+      const reverse = await reverseGraph(request, raw);
+      if (!(reverse instanceof PathwayBrowserNode)) return reverse;
       try {
-        // One row per path; no path at all is one row with none, which Java's
-        // collect drops.
-        const paths = rows
-          .map((each) => each.steps)
-          .filter((steps): steps is LocationStep[] => steps !== null);
-        const root = parseHierarchy(row.db, paths, omit.value ?? true);
-        const trees = locationsInPathwayBrowser(root);
+        const trees = locationsInPathwayBrowser(reverse);
         if (trees.length === 0) {
           return javaError(
             request,
@@ -2288,26 +2404,77 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
         }
         return { status: 200, body: trees.map(pathwayBrowserJson), type: 'application/json' };
       } catch (failure) {
-        // The two ways graph-core fails on this graph, answered as Java answers
-        // them: a cycle overflows the stack, which Spring reports by name, and
-        // a null it dereferences is the generic message.
-        if (failure instanceof RangeError) {
-          return javaError(
-            request,
-            500,
-            'INTERNAL_SERVER_ERROR',
-            'Handler dispatch failed; nested exception is java.lang.StackOverflowError'
-          );
-        }
-        if (failure instanceof JavaNullPointer) {
-          return javaError(
-            request,
-            500,
-            'INTERNAL_SERVER_ERROR',
-            'Something unexpected happened and the error has been reported.'
-          );
-        }
-        throw failure;
+        return treeFailure(request, failure);
+      }
+    },
+  },
+  {
+    path: '/ContentService/data/detail/{id}/getReverseGraph',
+    // Every path up from an object: seconds and megabytes for a small molecule.
+    deep: true,
+    sample: 'R-HSA-199420',
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    // A tree that holds a cycle -- asked for with omitNonDisplayableItems=false,
+    // its nodes without a stable id made one -- is Java's 200 cut short where
+    // Jackson's recursion overflowed the stack, at a length that varies from
+    // run to run; node answers the StackOverflowError's 500 instead.
+    differs: [
+      /^\/ContentService\/data\/detail\/[^/]+\/getReverseGraph(\?\S*)?: \.url: /,
+      /^\/ContentService\/data\/detail\/[^/]+\/getReverseGraph\?\S*: (status 500, java says 200|body "\{"code":500,"reason":"INTERNAL_SERVER_ERROR")/,
+    ],
+    /**
+     * The tree locationsInPWB is built from, as it is: the object at the
+     * root, and below it everything that leads to it -- reactions, sets,
+     * complexes, regulations, pathways -- up to the top-level pathways, each
+     * written in full wherever it appears (graph-core's
+     * getLocationsInPathwayBrowser, the HierarchyController's
+     * getReverseSubGraph). Hidden in Java, asked for by nothing of the site's.
+     *
+     * The same parameters, query, parsing and errors as locationsInPWB
+     * (reverseGraph), then the root written as Jackson writes a
+     * PathwayBrowserNode (browserGraphJson).
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const reverse = await reverseGraph(request, raw);
+      if (!(reverse instanceof PathwayBrowserNode)) return reverse;
+      try {
+        return { status: 200, serialised: browserGraphJson(reverse), type: 'application/json' };
+      } catch (failure) {
+        return treeFailure(request, failure);
+      }
+    },
+  },
+  {
+    path: '/ContentService/data/detail/{id}/getSubGraph',
+    // Every path down from a pathway: 10MB for Signal Transduction.
+    deep: true,
+    sample: 'R-HSA-109581',
+    // The error bodies name the service that answered; see /pathways/top/{id}.
+    differs: [/^\/ContentService\/data\/detail\/[^/]+\/getSubGraph(\?\S*)?: \.url: /],
+    /**
+     * Everything below an object along its structure -- an event's events,
+     * a reaction's inputs and outputs, a set's members and candidates, a
+     * complex's components, a polymer's repeated unit -- each written in full
+     * wherever it appears (graph-core's HierarchyService.getSubHierarchy, the
+     * HierarchyController's getSubGraph). Hidden in Java, asked for by
+     * nothing of the site's. Reads no parameter.
+     *
+     * The id read as locationsInPWB reads it; the paths in the order Java's
+     * query gives them (subGraphQuery), parsed as parseRaw parses them with
+     * every item kept (parseHierarchy), the root written as Jackson writes a
+     * PathwayBrowserNode (browserGraphJson). Nothing found is Java's 404.
+     */
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const missing = () =>
+        javaError(request, 404, 'NOT_FOUND', `No sub graph found for given id: ${raw}`);
+      try {
+        const root = await browserTree(request, raw, missing, subGraphQuery, false);
+        if (!(root instanceof PathwayBrowserNode)) return root;
+        return { status: 200, serialised: browserGraphJson(root), type: 'application/json' };
+      } catch (failure) {
+        return treeFailure(request, failure);
       }
     },
   },
