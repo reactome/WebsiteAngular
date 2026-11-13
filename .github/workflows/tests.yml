@@ -19,6 +19,10 @@ jobs:
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
+    # It takes 4 to 7 minutes. Without a limit a hung spec held the runner for
+    # GitHub's default of six hours; each spec has a minute of its own
+    # (vitest.config.ts), so this only stops a run that is stuck.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -123,6 +127,8 @@ jobs:
     # a location regex passed them all and was refused at deploy time.
     name: nginx configuration
     runs-on: ubuntu-latest
+    # Seconds of work; the limit is for a docker pull that never finishes.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - name: nginx -t, dev, release and production
