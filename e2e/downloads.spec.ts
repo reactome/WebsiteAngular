@@ -688,20 +688,23 @@ const TOKEN = 'MADE-UP-RENDER-TOKEN';
  * view reads for its own colouring (a diagram's found entities and pathways,
  * the overview's tree) six, so a page ready on the result alone is caught as
  * well as one ready before it. Each load says whether the page was already
- * ready when it arrived.
+ * ready when it arrived, as `host()` names the figure's host at that moment:
+ * on a held page, the figure a move made (`data-render-nav`), not the last.
  */
-async function holdAnalysisForUniprot(page: Page) {
-  const loads: { url: string; resource: string; readyBefore: boolean }[] = [];
+async function holdAnalysisForUniprot(page: Page, host: () => string = () => 'cr-render') {
+  const loads: { url: string; resource: string; host: string; readyBefore: boolean }[] = [];
   const arrive = async (url: URL) => {
     const resource = url.searchParams.get('resource') ?? 'TOTAL';
     const result = url.pathname.endsWith(`/token/${TOKEN}`);
+    // Whose load this is, as asked rather than as answered.
+    const figure = host();
     if (resource === 'UNIPROT')
       await new Promise((resolve) => setTimeout(resolve, result ? 3_000 : 6_000));
     const ready = await page
-      .locator('cr-render[data-render-ready="true"]')
+      .locator(`${figure}[data-render-ready="true"]`)
       .count()
       .catch(() => 0);
-    loads.push({ url: url.pathname, resource, readyBefore: ready > 0 });
+    loads.push({ url: url.pathname, resource, host: figure, readyBefore: ready > 0 });
   };
   const result = {
     summary: {
@@ -754,6 +757,23 @@ async function holdAnalysisForUniprot(page: Page) {
     return route.fallback({ url: url.toString() });
   });
   return loads;
+}
+
+/**
+ * Moves a held page to the render address `to`, as the render service moves
+ * one (spec 018): the figure it makes carries `nav` on its host.
+ */
+async function moveHeld(page: Page, to: string, nav: string) {
+  const moved = await page.evaluate(
+    async ([address, id]) =>
+      await (
+        window as unknown as {
+          __renderNavigate: (to: string, nav: string) => Promise<boolean>;
+        }
+      ).__renderNavigate(address, id),
+    [to, nav] as const
+  );
+  expect(moved, `the page moved to ${to}`).toBe(true);
 }
 
 test.describe('The render page, without the render service', () => {
@@ -873,6 +893,86 @@ test.describe('The render page, without the render service', () => {
       timeout: 120_000,
     });
     await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
+
+  // On a held page (spec 018) the next figure is a new render component in the
+  // same app, whose analysis service can already hold a settled result: the
+  // last figure's. A wait that trusted that would be ready before the new
+  // view had coloured itself, and the render service would cache the figure
+  // under the token (pdf-export spec 002, T017).
+  for (const [view, from, to, own] of [
+    [
+      'a diagram, after an illustration with no analysis',
+      `/PathwayBrowser/render/${ILLUSTRATION}`,
+      `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`,
+      '/found/all/',
+    ],
+    [
+      'the genome-wide view, after a diagram with the same analysis',
+      `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`,
+      `/PathwayBrowser/render?species=9606&analysis=${TOKEN}`,
+      '/eventsHierarchy/',
+    ],
+  ] as const) {
+    test(`on a held page, is not ready until ${view} has its analysis`, async ({ page }) => {
+      // Two figures, each with loads held back for seconds.
+      test.slow();
+      let figure = 'cr-render';
+      const loads = await holdAnalysisForUniprot(page, () => figure);
+      await page.goto(from);
+      await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      figure = 'cr-render[data-render-nav="next"]';
+      await moveHeld(page, to, 'next');
+      await expect(page.locator(`${figure}[data-render-ready="true"]`)).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      const state = await page.evaluate(
+        () =>
+          (window as unknown as { __renderState: { nav?: string; analysis: unknown } })
+            .__renderState
+      );
+      expect(state.nav).toBe('next');
+      expect(state.analysis, 'coloured for the one resource besides TOTAL').toEqual({
+        token: TOKEN,
+        resource: 'UNIPROT',
+      });
+      await expect
+        .poll(
+          () =>
+            loads.filter(
+              (load) =>
+                load.host === figure && load.resource === 'UNIPROT' && load.url.includes(own)
+            ).length,
+          { message: `the moved page read ${own} for UNIPROT`, timeout: 20_000 }
+        )
+        .toBeGreaterThan(0);
+      expect(
+        loads.filter((load) => load.readyBefore),
+        'no colouring arrived after its figure said it was ready'
+      ).toEqual([]);
+    });
+  }
+
+  // A held page's analysis service has settled before, so a dead token must
+  // still end the next figure in its error, not in a figure without colour.
+  test('on a held page, fails rather than draw uncoloured when the analysis cannot be read', async ({
+    page,
+  }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 410, json: { code: 410, reason: 'Gone' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${ILLUSTRATION}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    await moveHeld(page, `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`, 'next');
+    const render = page.locator('cr-render[data-render-nav="next"]');
+    await expect(render).toHaveAttribute('data-render-error', /analysis result is gone/, {
+      timeout: 120_000,
+    });
     await expect(render).not.toHaveAttribute('data-render-ready', 'true');
   });
 

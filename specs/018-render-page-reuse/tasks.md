@@ -167,6 +167,36 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     - **Analysis tokens:** two made on this host's own Analysis Service for this, from five
       UniProt and four ChEBI identifiers.
 
+- [x] T013 The render page waits for its analysis overlay, fresh and held, for
+      pdf-export's analysis report (its spec 002: T017, research R3, FR-204) (#958).
+  - **Asked for:** with a token, the page is ready only once the view carries the overlay
+    for the result's default resource (the one resource besides TOTAL, when the result
+    holds exactly one; otherwise TOTAL); a token that cannot be read ends in the page's
+    error; the render cache's key bumped; a test that fails when the page is ready first.
+  - **Already built, by #771 (2 Nov 2026), before held pages:** `analysisShown` in
+    `render.component.ts` waits on `AnalysisService.settled` and on each view's own
+    colouring (the diagram's `appliedAnalysis` for the token and resource, the
+    illustration's for the result, the overview's tree for the token and resource);
+    `analysisFailure` makes an unreadable token an error; the cache key went to v12 for
+    it. pdf-export's research R3 was written on 30 Oct, before it. The reaction's own
+    layout carries no overlay, and says so (`analysis: null`).
+  - **Added here: held pages.** A moved figure is a new component in an app whose
+    analysis service can already have settled for the last figure. Tests in
+    `e2e/downloads.spec.ts`: a diagram with a token after an illustration without one;
+    the overview after a diagram with the same token (the result already settled); and a
+    dead token after a figure that drew. Each figure's readiness is read on its own host
+    (`data-render-nav`).
+  - **Seen failing** (13 Nov 2026, a dev server of this tree, recorded answers):
+    - with `analysisShown` always true, all five overlay tests, fresh and held;
+    - with only `settled` kept, four (not the illustration, whose colouring arrives with
+      its result, as the test's comment says);
+    - with `settled` dropped, the illustration's;
+    - with the views' checks skipped on a moved figure only, the two held tests alone;
+    - with `analysisFailure` never failing, the three unreadable-token tests.
+  - **The cache key is not bumped again.** This change adds tests, not output: every
+    figure cached under v12 and later was drawn with the wait, so a bump would only make
+    the cache cold.
+
 ## Phase 4: The service (US1, US3, US4)
 
 - [x] T005 [US1] Held pages in `tools/render/pages.ts`, used by `schedule()` in
@@ -235,5 +265,6 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T003 → T004.
 - T005 → T006 → T007 → T008.
 - T012 before T009.
+- T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
 - T003 and T005 can run in parallel.
