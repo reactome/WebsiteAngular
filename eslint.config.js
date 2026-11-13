@@ -147,7 +147,7 @@ module.exports = tseslint.config(
       // The last one went with search's constant currentMode (#344).
       '@typescript-eslint/prefer-as-const': 'error',
       '@angular-eslint/no-output-rename': 'error',
-      'no-useless-assignment': 'warn',
+      'no-useless-assignment': 'error',
       'no-unused-vars': 'error',
       'no-empty-pattern': 'error',
     },

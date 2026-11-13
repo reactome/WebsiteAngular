@@ -19,8 +19,10 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       `no-unused-vars`, `template/prefer-control-flow`). Renamed inputs take their
       public names, so no binding changed; the outputs named after DOM events become
       `pressed` (the download button) and `closed` (the analysis forms). 879 → 838.
-- [ ] T001a [US1] The last `no-useless-assignment`: a bug (see below), fixed with
-      a test, then the rule promoted.
+- [x] T001a [US1] The last `no-useless-assignment`: a bug (see below), fixed with
+      a test (`router-url-state.service.spec.ts`), then the rule promoted (#956).
+      838 → 835: the dropped line was also an unsafe assignment, and the `tab`
+      translation's `!` became `?? null` (an unknown code had set `undefined`).
 - [ ] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
       (`Analysis`, `Search`, `Graph` and others) become modules, then the rule is
       promoted. Two unused ones in the GSA form's `dataset-library.ts` went in T001.
@@ -58,8 +60,9 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   (`projects/pathway-browser/src/app/services/router-url-state.service.ts`, the
   `otherTransform` line). A parameter given under an old name (`?DTAB=…` for
   `tab`, `?TOOL=AT` for `analysisTab`) is translated, and the translation is
-  then dropped, so nothing is set. Fragments (`#TOOL=AT`) are rewritten before
-  this and work. Fixed in T001a.
+  then dropped, so nothing is set. `#TOOL=AT` is rewritten to `analysisTab`
+  before this and worked; `#…&DTAB=…` is passed on under its old name, so it was
+  dropped too. Fixed in T001a: the translation is set.
 - **Every excerpt ends in "...", cut or not**
   (`projects/website-angular/src/utils/truncateHtml.ts`): the ellipsis is added
   unconditionally; the check meant to add it only when the text was cut did
