@@ -7,15 +7,15 @@ export const datasetSourceActions = createActionGroup({
   events: {
     'load locals': emptyProps(),
     'load locals success': props<{ locals: PDatasetSource[] }>(),
-    'load locals failure': props<{ error: any }>(),
+    'load locals failure': props<{ error: unknown }>(),
 
     'load examples': emptyProps(),
     'load examples success': props<{ examples: PDatasetSource[] }>(),
-    'load examples failure': props<{ error: any }>(),
+    'load examples failure': props<{ error: unknown }>(),
 
     'load external': emptyProps(),
     'load external success': props<{ externals: PDatasetSource[] }>(),
-    'load external failure': props<{ error: any }>(),
+    'load external failure': props<{ error: unknown }>(),
 
     select: props<{ toBeSelected: PDatasetSource }>(),
     'set parameter': props<{ id: string; param: Parameter }>(),

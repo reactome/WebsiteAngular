@@ -19,7 +19,7 @@ export class DatasetSourceEffects {
           map((datasetSources) =>
             datasetSourceActions.loadLocalsSuccess({ locals: datasetSources })
           ),
-          catchError((err) => of(datasetSourceActions.loadLocalsFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadLocalsFailure({ error: err })))
         )
       )
     )
@@ -34,7 +34,7 @@ export class DatasetSourceEffects {
           map((datasetSources) =>
             datasetSourceActions.loadExamplesSuccess({ examples: datasetSources })
           ),
-          catchError((err) => of(datasetSourceActions.loadExamplesFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadExamplesFailure({ error: err })))
         )
       )
     )
@@ -60,7 +60,7 @@ export class DatasetSourceEffects {
             datasetSourceActions.loadExternalSuccess({ externals: datasetSources }),
             // parameterActions.addMany({parameters: datasetSources.flatMap(source => source.parameters)})
           ]),
-          catchError((err) => of(datasetSourceActions.loadExternalFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadExternalFailure({ error: err })))
         )
       )
     )
