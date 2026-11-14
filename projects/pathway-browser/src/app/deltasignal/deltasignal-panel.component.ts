@@ -14,6 +14,7 @@ import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DeltaSignalService } from './deltasignal.service';
+import { DeltaSignalReadoutRow } from './deltasignal.model';
 import { DeltaSignalLogicGraphComponent } from './deltasignal-logic-graph.component';
 
 @Component({
@@ -71,6 +72,18 @@ export class DeltaSignalPanelComponent {
     return [...new Set(names)].join(' / ');
   });
   readonly visibleRows = computed(() => this.service.readoutRows().slice(0, 40));
+  // specs/027: the compact rendering of a served measured range (deltasignal
+  // specs/155) — the 50%-share entries only, one line per axis. The axis
+  // names are display labels; an unknown axis shows its served name.
+  rowRanges(row: DeltaSignalReadoutRow) {
+    return row.ranges.filter((range) => range.share === 0.5);
+  }
+  axisLabel(axis: string): string {
+    return (
+      { korkut_rppa: 'the drug-RPPA record', decryptm_phospho: 'the drug-phospho record' }[axis] ??
+      axis
+    );
+  }
   // The selection's readout through /api/readouts (deltasignal specs/141):
   // its measured predicted level, even when the entity has no node of its own
   // (it then reads through its proxy reactions), or null while none exists.

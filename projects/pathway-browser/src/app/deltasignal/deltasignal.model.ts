@@ -146,6 +146,11 @@ interface DeltaSignalReadoutResult {
    *  to it here) and when the table is unavailable. */
   confidence?: number | null;
   confidence_stratum?: string | null;
+  /** deltasignal specs/155: on each covered axis's validation record, the
+   *  middle `share` of MEASURED folds for answers in this readout's class
+   *  landed in [lo, hi] over n recorded pairs — a share of the record, never
+   *  a probability. Absent (never null) where the record is silent. */
+  measured_fold_ranges?: DeltaSignalFoldRange[];
   /** deltasignal specs/154: true when the readout's fold at the other stable
    *  state would produce a DIFFERENT call — this number is a basin's
    *  coordinates, not a magnitude. Served only when the request carried the
@@ -180,7 +185,21 @@ export interface DeltaSignalReadoutsResponse {
   malformed_tables: string[];
   /** specs/146: "ok", or why every confidence is null. */
   confidence_table?: string;
+  /** deltasignal specs/155: "ok: <version>", or why no ranges are served
+   *  (absent table, malformed, or a provenance mismatch with the served
+   *  catalog — rendered as absence, never substituted). */
+  fold_ranges?: string;
+  fold_ranges_min_cell?: number | null;
   results: DeltaSignalReadoutResult[];
+}
+
+/** One served measured-fold range (deltasignal specs/155), verbatim. */
+interface DeltaSignalFoldRange {
+  axis: string;
+  share: number;
+  lo: number;
+  hi: number;
+  n: number;
 }
 
 /** One entity row of the results table, built from `/api/readouts`. */
@@ -195,6 +214,9 @@ export interface DeltaSignalReadoutRow {
    *  specs/154): which one, and the readout's fold at the other. Null when
    *  the loop has one state under these constraints. */
   switchState: DeltaSignalSwitchState | null;
+  /** The served measured ranges (specs/155), verbatim; empty when the record
+   *  is silent for this readout's class. */
+  ranges: DeltaSignalFoldRange[];
   lead: DeltaSignalLead | null;
   confidence: number | null;
   /** The perturbation has no route to this readout in this network. */

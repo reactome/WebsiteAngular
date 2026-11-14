@@ -429,6 +429,29 @@ describe('DeltaSignalService readouts', () => {
     expect(service.readoutRows().every((row) => row.switchState === null)).toBe(true);
   });
 
+  it('carries served measured fold ranges onto rows verbatim (specs/027)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    const ranges = [
+      { axis: 'korkut_rppa', share: 0.5, lo: 0.866, hi: 1.074, n: 232 },
+      { axis: 'korkut_rppa', share: 0.9, lo: 0.746, hi: 1.293, n: 232 },
+    ];
+    // The engine's record speaks; the client never computes or pools a range
+    // (deltasignal specs/155).
+    answer.results[0] = { ...answer.results[0], measured_fold_ranges: ranges };
+    http.expectOne('/api/readouts').flush(answer);
+    await flushNoLeads();
+    await solving;
+
+    const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
+    expect(byId.get('R-HSA-1')?.ranges).toEqual(ranges);
+    // honest absence: an entry the record is silent for carries an empty list
+    expect(byId.get('R-HSA-2')?.ranges).toEqual([]);
+  });
+
   it('loads the scope statement once, honestly failing with nothing substituted', async () => {
     const scopeAnswer = {
       status: 'success',
