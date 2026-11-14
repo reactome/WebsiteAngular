@@ -52,6 +52,35 @@ describe('the PDF service in compose', () => {
     expect(dockerfile).toMatch(/"--files", "\/files"/);
   });
 
+  it('keeps the printer’s working folder in memory, its user’s alone (pdf-export spec 002, T018)', () => {
+    // A report's page holds what a user submitted, and one killed mid-print
+    // stays until the service starts again: never on disk.
+    expect(pdf).toMatch(/^ {6}- PDF_EXPORT_WORK=\/work$/m);
+    const mount = pdf.match(/^ {4}tmpfs:\n {6}- \/work:(\S+)$/m)?.[1] ?? 'no tmpfs at /work';
+    const options = mount.split(',');
+    expect(options).toEqual(
+      expect.arrayContaining([
+        'mode=0700',
+        'uid=${CONTENT_NODE_UID:-1020}',
+        'gid=${CONTENT_NODE_GID:-1001}',
+        'noexec',
+      ])
+    );
+    expect(options.some((o) => /^size=\d+m$/.test(o))).toBe(true);
+  });
+
+  it('reads the analysis service directly, not through the gateway that sends it reports', () => {
+    expect(pdf).toMatch(/^ {6}- ANALYSIS_SERVICE=http:\/\/127\.0\.0\.1:8080\/AnalysisService$/m);
+  });
+
+  it('is where the analysis gateway sends the reports (pdf-export spec 002, T021)', () => {
+    const gateway = service('analysis-gateway');
+    expect(gateway).toMatch(
+      /^ {6}- REPORT_UPSTREAM=\$\{REPORT_UPSTREAM:-http:\/\/127\.0\.0\.1:4370\}$/m
+    );
+    expect(gateway).not.toMatch(/REPORT_LIMIT/);
+  });
+
   it('gives Chromium room, and the whole a limit', () => {
     expect(pdf).toMatch(/^ {4}shm_size: '1gb'$/m);
     expect(pdf).toMatch(/^ {4}mem_limit: \d+[mg]$/m);

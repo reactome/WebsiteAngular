@@ -66,6 +66,8 @@ type AnaLysisItem = {
   url: Signal<string>;
   icon: Icon;
   isShown: Signal<boolean>;
+  /** Opened in a new tab rather than downloaded (see DownloadButtonComponent). */
+  opens?: boolean;
 };
 
 type DiagramItem = {
@@ -276,7 +278,11 @@ export class DownloadTabComponent {
     {
       title: 'PDF Result',
       description:
-        'Download a detailed report with the most significant pathway analysis results in PDF format',
+        'Open a detailed report with the most significant pathway analysis results in PDF format, in a new tab: it is made in the background, then downloads',
+      // Made in the background by pdf-export (its spec 002): the address
+      // answers a page that asks again until the report is ready. Fetched and
+      // saved here, that page would be saved as the report.
+      opens: true,
       url: computed(() =>
         analysisReportUrl(
           ANALYSIS_SERVICE,
