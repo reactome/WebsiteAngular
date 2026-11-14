@@ -1,5 +1,6 @@
 import { type Page, type Download, type Locator } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf } from './support/json';
 import { readFileSync } from 'node:fs';
 
 // What an analysis is *for*: the numbers beside the pathways, the table you sort
@@ -325,7 +326,7 @@ test.describe('Continuing a summary in the chat', () => {
   test('opens the chat on this summary, in a new tab', async ({ page, context }) => {
     let summarised: unknown = null;
     await page.route('**/analysis-summary', (route) => {
-      summarised = route.request().postDataJSON()?.token;
+      summarised = bodyOf(route.request())?.['token'];
       return route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
@@ -337,7 +338,7 @@ test.describe('Continuing a summary in the chat', () => {
     });
     let minted: Record<string, unknown> | null = null;
     await page.route('**/chat-handoff', async (route) => {
-      minted = route.request().postDataJSON();
+      minted = bodyOf(route.request());
       await route.fulfill({
         status: 200,
         contentType: 'application/json',

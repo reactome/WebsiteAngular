@@ -95,7 +95,7 @@ test.describe('Release checklist: Pathway Browser', () => {
     const canvas = page.locator('canvas').first();
     await expect(canvas).toBeVisible({ timeout: BOOT });
     const box = await canvas.boundingBox();
-    expect(box!.width).toBeGreaterThan(200);
+    expect(box?.width).toBeGreaterThan(200);
   });
 
   test('details panel renders its tabs', async ({ page }) => {

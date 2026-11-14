@@ -8,6 +8,8 @@ import { test, expect } from './support/backend';
 // A sub-pathway is used deliberately: a top-level pathway renders an EHLD
 // illustration rather than the interactive diagram.
 /** The cytoscape instance the diagram hangs on the host element. */
+type Core = import('cytoscape').Core;
+
 interface CytoscapeHost extends HTMLElement {
   _cyreg?: { cy?: import('cytoscape').Core };
 }
@@ -268,10 +270,24 @@ test.describe('Flagging a reaction', () => {
             const cy = (document.querySelector('#cytoscape') as CytoscapeHost | null)?._cyreg?.cy;
             const reaction = cy?.nodes('.reaction.flag');
             if (!cy || !reaction?.length) return false;
-            cy.data('reactome').update(cy);
+            // Defined here: the function runs in the page, and takes nothing with it.
+            const canUpdate = (v: unknown): v is { update(cy: Core): void } =>
+              typeof v === 'object' &&
+              v !== null &&
+              'update' in v &&
+              typeof v.update === 'function';
+            const canZoom = (v: unknown): v is { triggerZoom(): void } =>
+              typeof v === 'object' &&
+              v !== null &&
+              'triggerZoom' in v &&
+              typeof v.triggerZoom === 'function';
+            const style: unknown = cy.data('reactome');
+            if (!canUpdate(style)) throw new Error('the diagram has no style to update');
+            style.update(cy);
             // The shared Style restyles whichever graph was bound last, which can
             // be the legend; this diagram's own handler is run explicitly too.
-            cy.scratch('_reactomeInteractivity')?.triggerZoom();
+            const interactivity: unknown = cy.scratch('_reactomeInteractivity');
+            if (canZoom(interactivity)) interactivity.triggerZoom();
             cy.fit(reaction.closedNeighborhood(), 80);
             return true;
           }),

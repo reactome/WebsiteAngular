@@ -1,5 +1,6 @@
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf } from './support/json';
 
 /**
  * A search request that fails is not an answer of "nothing".
@@ -210,7 +211,7 @@ test.describe('The help form shown when nothing is found', () => {
           body: JSON.stringify(sitekeyStatus === 200 ? { sitekey: 'test-sitekey' } : {}),
         });
       }
-      posts.push(route.request().postDataJSON());
+      posts.push(bodyOf(route.request()) ?? {});
       await new Promise((resolve) => setTimeout(resolve, postDelayMs));
       return route.fulfill({ status: postStatus, contentType: 'application/json', body: '{}' });
     });
