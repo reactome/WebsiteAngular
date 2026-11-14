@@ -14,7 +14,7 @@ import { AnalysisService } from '../../../services/analysis.service';
 import { AnalysisSummaryComponent } from '../../../analysis-summary/analysis-summary.component';
 import { RevealDirective } from '../../../utils/reveal.directive';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import type { Analysis } from '../../../model/analysis.model';
+import type * as Analysis from '../../../model/analysis.model';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { DecimalPipe } from '@angular/common';

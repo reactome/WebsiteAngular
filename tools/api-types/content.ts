@@ -11,7 +11,7 @@
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { recordedAnswers, type RecordedAnswer, type Skipped } from './answers.ts';
-import { CALLS, TYPES, type Call } from './calls.ts';
+import { CALLS, MODULES, TYPES, type Call } from './calls.ts';
 import { compileAnswers, ROOT, type Answer, type Problem } from './compile.ts';
 
 const NOT_JSON = new Set(['text', 'blob']);
@@ -102,7 +102,12 @@ function header(types: string[]): string {
   return [...names]
     .filter((n) => n in TYPES)
     .sort()
-    .map((n) => `import type { ${n} } from ${JSON.stringify(path.join(ROOT, TYPES[n] ?? ''))};`)
+    .map((n) => {
+      const from = JSON.stringify(path.join(ROOT, TYPES[n] ?? ''));
+      return MODULES.has(n)
+        ? `import type * as ${n} from ${from};`
+        : `import type { ${n} } from ${from};`;
+    })
     .join('\n');
 }
 

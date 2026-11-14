@@ -10,7 +10,7 @@ import { LiteratureReference } from '../model/graph/publication/literature-refer
 import { SchemaClasses } from '../constants/constants';
 import { CatalystActivity } from '../model/graph/catalyst-activity.model';
 import { Regulation } from '../model/graph/Regulation/regulation.model';
-import type { Relationship } from '../model/graph/relationship.model';
+import type * as Relationship from '../model/graph/relationship.model';
 import { ReferenceGroup } from '../model/graph/reference-entity/reference-group.model';
 import { ReplacedResidue } from '../model/graph/abstract-modified-residue/replaced-residue.model';
 import { FragmentModification } from '../model/graph/abstract-modified-residue/fragment-modification.model';

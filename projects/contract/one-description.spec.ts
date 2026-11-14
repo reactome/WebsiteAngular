@@ -72,7 +72,38 @@ const describesShape = (type: ts.TypeNode): boolean =>
   (ts.isIntersectionTypeNode(type) && type.types.some(describesShape)) ||
   (ts.isTypeReferenceNode(type) && (type.typeArguments ?? []).some(describesShape));
 
-/** A declaration's name with the namespaces it sits in: `Search.Icon.Entry`. */
+/**
+ * The name each reader module is read under (`import type * as Analysis from
+ * '…/analysis.model'`), by repository path. The model namespaces became such
+ * modules (spec 025), and their declarations keep the names they had:
+ * `Analysis.Result`, not a bare `Result` that would protect every `Result`.
+ */
+function namespaceImports(readers: Record<string, string>): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const [file, source] of Object.entries(readers))
+    for (const statement of parse(file, source).statements) {
+      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier))
+        continue;
+      const bindings = statement.importClause?.namedBindings;
+      if (!bindings || !ts.isNamespaceImport(bindings)) continue;
+      const specifier = statement.moduleSpecifier.text;
+      const target = path.posix.join(
+        path.posix.dirname(file),
+        specifier.endsWith('.ts') ? specifier : `${specifier}.ts`
+      );
+      if (!(target in readers)) continue;
+      const known = names.get(target);
+      if (known !== undefined && known !== bindings.name.text)
+        throw new Error(`${target} is read as both ${known} and ${bindings.name.text}`);
+      names.set(target, bindings.name.text);
+    }
+  return names;
+}
+
+/**
+ * A declaration's name with the namespaces it sits in, and the name its module
+ * is read under: `Analysis.Result`.
+ */
 function qualifiedName(node: ts.Node & { name: ts.Identifier }): string {
   const parts = [node.name.text];
   // A source file's parent is undefined at run time, whatever its type says.
@@ -80,8 +111,12 @@ function qualifiedName(node: ts.Node & { name: ts.Identifier }): string {
     let at = node.parent as ts.Node | undefined;
     at !== undefined;
     at = at.parent as ts.Node | undefined
-  )
+  ) {
     if (ts.isModuleDeclaration(at)) parts.unshift(at.name.text);
+    // Walked up to, not asked of the node: a class's arrives as a copy, without its methods.
+    const readUnder = ts.isSourceFile(at) ? readAs.get(at.fileName) : undefined;
+    if (readUnder !== undefined) parts.unshift(readUnder);
+  }
   return parts.join('.');
 }
 
@@ -260,8 +295,8 @@ const READER_ALIASES = [
   'ResultGroup',
   'Search.Entry',
   'Search.Facet',
-  'Search.Icon.Entry',
-  'Search.Icon.Result',
+  'Search.IconEntry',
+  'Search.IconResult',
   'Search.PathwayOf',
   'Search.Result',
   'SearchResult',
@@ -292,8 +327,6 @@ const NAMESAKES: Record<string, string> = {
     "a participant of a Rhea reaction, as Rhea's own service answers it",
   'projects/website-angular/src/app/about/release-calendar/release-calendar.component.ts: interface Release':
     "the site's release calendar, written in its own content; not the graph's Release",
-  'projects/pathway-browser/src/app/reacfoam/svg-exporter.service.ts: interface SvgDecoration.Output':
-    'an output arrow drawn on an exported species overview',
 };
 
 /** Every declaration in the readers that describes, again, an answer the contract has. */
@@ -324,6 +357,7 @@ const contract = Object.fromEntries(
     .map((file) => [file, readFileSync(path.join(CONTRACT, file), 'utf8')])
 );
 const readers = Object.assign({}, ...READERS.map(modules)) as Record<string, string>;
+const readAs = namespaceImports(readers);
 const contractOwn = contractNames(contract);
 const aliases = localAliases(readers, contractOwn);
 const names = new Set([...contractOwn, ...readerAliases(readers), ...READER_ALIASES]);

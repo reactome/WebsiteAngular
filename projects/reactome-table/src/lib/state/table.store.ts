@@ -12,6 +12,9 @@ import {
 import { map } from 'rxjs';
 import { fromPromise } from 'rxjs/internal/observable/innerFrom';
 import { initialUndoRedoState, UndoRedoState } from 'ngrx-wieder';
+import { cellAt, rowAt } from './dataset';
+import * as Ranges from './ranges';
+import * as Cells from './cells';
 
 export type Coords = { x: number; y: number };
 export type Named = { name: string };
@@ -54,23 +57,6 @@ export const cell = (
 });
 
 export const EMPTY_CELL: Cell = cell();
-
-/**
- * The row at y. Out of range it throws, as reading a cell of it always did --
- * now saying where rather than reading a property of undefined.
- */
-function rowAt(dataset: Cell[][], y: number): Cell[] {
-  const row = dataset[y];
-  if (!row) throw new RangeError(`The table has no row ${y}.`);
-  return row;
-}
-
-/** The cell at x, y; out of range it throws, as reading it always did. */
-function cellAt(dataset: Cell[][], x: number, y: number): Cell {
-  const found = rowAt(dataset, y)[x];
-  if (!found) throw new RangeError(`The table has no cell at ${x}, ${y}.`);
-  return found;
-}
 
 /** The longest value in column x; out of range it throws, as reading it did. */
 function maxAt(state: TableState, x: number): LocatedValue {
@@ -606,118 +592,4 @@ export class TableStore extends ComponentStore<TableState> {
       return state;
     }
   );
-}
-
-export namespace Ranges {
-  type MinMax = { min: number; max: number };
-  type Range = { x: MinMax; y: MinMax };
-
-  export function minMax(start: Coords, stop: Coords): Range {
-    return {
-      x: { min: Math.min(start.x, stop.x), max: Math.max(start.x, stop.x) },
-      y: { min: Math.min(start.y, stop.y), max: Math.max(start.y, stop.y) },
-    };
-  }
-
-  export function origin(state: TableState): Coords {
-    return {
-      x: state.settings.renameRows ? 0 : 1,
-      y: state.settings.renameCols ? 0 : 1,
-    };
-  }
-
-  export function equals(a: Coords, b: Coords): boolean {
-    return a.x === b.x && a.y === b.y;
-  }
-
-  export function limits(state: TableState): Range {
-    const origin = Ranges.origin(state);
-    return {
-      x: { min: origin.x, max: width(state.dataset) },
-      y: { min: origin.y, max: height(state.dataset) },
-    };
-  }
-
-  export function limitRange(
-    range: Range,
-    state: TableState,
-    limits = Ranges.limits(state)
-  ): Range {
-    return {
-      x: {
-        min: limit(range.x.min, limits.x.min, limits.x.max),
-        max: limit(range.x.max, limits.x.min, limits.x.max),
-      },
-      y: {
-        min: limit(range.y.min, limits.y.min, limits.y.max),
-        max: limit(range.y.max, limits.y.min, limits.y.max),
-      },
-    };
-  }
-
-  export function limitCoords(coords: Coords, state: TableState): Coords {
-    const { x, y } = origin(state);
-    return {
-      x: limit(coords.x, x, width(state.dataset)),
-      y: limit(coords.y, y, height(state.dataset)),
-    };
-  }
-
-  function limit(value: number, lowerLimit: number, upperLimit: number): number {
-    if (value < lowerLimit) return lowerLimit;
-    if (value > upperLimit) return upperLimit;
-    return value;
-  }
-
-  export function column<T>(table: T[][], x: number): T[] {
-    // Every row as wide as the first; see atColumn.
-    return table.map((row: T[]) => row[x] as T);
-  }
-
-  export function findMaximumOfColumn(state: TableState, x: number): LocatedValue {
-    return Ranges.column(state.dataset, x).reduce(
-      (max, e, y) =>
-        e.value.length > max.value.length
-          ? {
-              value: e.value,
-              coords: { x, y },
-            }
-          : max,
-      { value: cellAt(state.dataset, x, state.start.y).value, coords: state.start }
-    );
-  }
-}
-
-namespace Cells {
-  export function select(state: TableState): TableState {
-    state.selectedCoords.forEach((coords) => {
-      // The previous selection, to un-mark: a cell of a row or column deleted
-      // since is gone, with nothing to un-mark. Reading its row used to throw,
-      // ending the store's state stream and leaving the table unusable.
-      const cell = state.dataset[coords.y]?.[coords.x];
-      if (cell) {
-        cell.selected = false;
-        cell.visibility = 'visible';
-      }
-    });
-    state.selectedCoords = [];
-    if (!state.hasFocus) return state;
-    const range = Ranges.minMax(state.start, state.stop);
-    for (let x = range.x.min; x <= range.x.max; x++) {
-      for (let y = range.y.min; y <= range.y.max; y++) {
-        selectCell({ x, y }, state);
-        selectCell({ x: 0, y }, state);
-      }
-      selectCell({ x, y: 0 }, state);
-    }
-    const selectedCell = rowAt(state.dataset, state.start.y)[state.start.x];
-    if (selectedCell) selectedCell.visibility = 'hidden';
-    return state;
-  }
-
-  function selectCell(coords: Coords, state: TableState): Coords {
-    cellAt(state.dataset, coords.x, coords.y).selected = true;
-    state.selectedCoords.push(coords);
-    return coords;
-  }
 }

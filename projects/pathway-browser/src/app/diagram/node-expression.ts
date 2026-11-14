@@ -1,5 +1,5 @@
 import type { NodeSingular } from 'cytoscape';
-import type { Graph } from '../model/graph.model';
+import type * as Graph from '../model/graph.model';
 
 /**
  * What the analysis found for one drawn entity: a value per leaf it stands for,

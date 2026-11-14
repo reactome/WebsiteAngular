@@ -1,6 +1,6 @@
 import type { Event } from './event/event.model';
 import type { DatabaseObject } from './database-object.model';
-import type { Relationship } from './relationship.model';
+import type * as Relationship from './relationship.model';
 
 /**
  * What the pathway browser adds to an object it holds, in its trees and tabs,

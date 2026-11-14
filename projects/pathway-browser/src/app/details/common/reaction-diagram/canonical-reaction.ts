@@ -10,7 +10,7 @@ type Placed = Pick<Entity, 'position' | 'renderableClass'> & Partial<Pick<Entity
  */
 const byReactomeId = (a: Placed, b: Placed) =>
   a.reactomeId === undefined || b.reactomeId === undefined ? 0 : a.reactomeId - b.reactomeId;
-import { Graph } from '../../../model/graph.model';
+import type * as Graph from '../../../model/graph.model';
 
 const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
 

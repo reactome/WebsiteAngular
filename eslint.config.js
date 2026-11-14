@@ -99,7 +99,9 @@ module.exports = tseslint.config(
       // Cleared, with the small rules below and in the templates' section,
       // and promoted (spec 025 T001): a new violation of any is a new mistake.
       '@typescript-eslint/no-empty-object-type': 'error',
-      '@typescript-eslint/no-namespace': 'warn',
+      // The model namespaces became modules, read as `import type * as Analysis`
+      // (spec 025 T001b).
+      '@typescript-eslint/no-namespace': 'error',
       '@typescript-eslint/no-unused-expressions': 'error',
       '@typescript-eslint/no-require-imports': 'error',
       'prefer-const': 'error',

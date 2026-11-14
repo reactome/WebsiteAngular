@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Diagram, Link, NodeConnector } from '../../../model/diagram.model';
-import { Graph } from '../../../model/graph.model';
+import type * as Graph from '../../../model/graph.model';
 import { canonicalReaction } from './canonical-reaction';
 
 /**

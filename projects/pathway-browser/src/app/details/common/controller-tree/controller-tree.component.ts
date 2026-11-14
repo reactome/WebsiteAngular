@@ -3,7 +3,7 @@ import { DatabaseObject } from '../../../model/graph/database-object.model';
 import { PageEvent } from '@angular/material/paginator';
 import { isArray, max } from 'lodash';
 import { InDepth } from '../../../model/graph/in-depth.model';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { isEntry } from '../../../services/utils';
 import { MatPaginator } from '@angular/material/paginator';
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';

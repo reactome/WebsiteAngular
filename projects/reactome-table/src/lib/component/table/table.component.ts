@@ -17,7 +17,8 @@ import {
 } from '@angular/core';
 import { Settings } from '../../model/table.model';
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Cell, Coords, Ranges, TableStore } from '../../state/table.store';
+import { Cell, Coords, TableStore } from '../../state/table.store';
+import * as Ranges from '../../state/ranges';
 import {
   combineLatest,
   combineLatestWith,

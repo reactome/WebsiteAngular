@@ -44,7 +44,7 @@ import { FlagButtonComponent } from '../../details/common/flag-button/flag-butto
 import { ShadowScrollComponent } from '../../shared/shadow-scroll/shadow-scroll.component';
 import { RevealDirective } from '../../utils/reveal.directive';
 import Entry = Search.Entry;
-import { Search } from '../../model/search.model';
+import * as Search from '../../model/search.model';
 
 const MIN_SUGGEST_LENGTH = 2;
 const AVAILABLE_IN_HEIGHT = 20;

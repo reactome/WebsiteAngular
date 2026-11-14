@@ -8,27 +8,25 @@ import { UrlStateService } from '../services/url-state.service';
 import { EhldComponent } from '../ehld/ehld.component';
 import { EhldService } from '../services/ehld.service';
 
-namespace SvgDecoration {
-  export interface Style {
-    surface: string;
-    onSurface: string;
-    primary: string;
-    onPrimary: string;
-    sw: number;
-    decorationSize: number;
-  }
+interface DecorationStyle {
+  surface: string;
+  onSurface: string;
+  primary: string;
+  onPrimary: string;
+  sw: number;
+  decorationSize: number;
+}
 
-  export interface Dimensions {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }
+interface DecorationDimensions {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
-  export interface Output {
-    css: string;
-    elements: string;
-  }
+interface DecorationOutput {
+  css: string;
+  elements: string;
 }
 
 /**
@@ -53,7 +51,7 @@ export class SvgExporterService {
   private state = inject(UrlStateService);
   private ehld = inject(EhldService);
 
-  style!: SvgDecoration.Style;
+  style!: DecorationStyle;
   options!: DownloadOptions & { halfTransition: number; totalTime: number };
 
   readonly hasExpressionFilter = computed(
@@ -383,7 +381,7 @@ export class SvgExporterService {
     return keyframes;
   }
 
-  private generateAnalysisLegend({ x, y, height }: SvgDecoration.Dimensions): SvgDecoration.Output {
+  private generateAnalysisLegend({ x, y, height }: DecorationDimensions): DecorationOutput {
     const { onSurface, sw, decorationSize } = this.style;
     const gWidth = decorationSize;
     const fontSize = 12;
@@ -434,8 +432,8 @@ export class SvgExporterService {
 
   private generateTimeline(
     titles: string[],
-    { x, y, width, height }: SvgDecoration.Dimensions
-  ): SvgDecoration.Output {
+    { x, y, width, height }: DecorationDimensions
+  ): DecorationOutput {
     const tlHeight = this.style.decorationSize;
     const { primary, onPrimary, onSurface } = this.style;
 
@@ -554,8 +552,8 @@ export class SvgExporterService {
 
   private generateTitle(
     titles: string[],
-    { x, y, width, height }: SvgDecoration.Dimensions
-  ): SvgDecoration.Output {
+    { x, y, width, height }: DecorationDimensions
+  ): DecorationOutput {
     const { sw, onSurface } = this.style;
     const fontSize = height - 2 * sw;
     const output = {

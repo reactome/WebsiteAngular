@@ -2,7 +2,7 @@ import { computed, Injectable, inject } from '@angular/core';
 import { LoadingStatus } from '../model/load-dataset.model';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { AnalysisResult } from '../model/analysis-result.model';
-import { Request } from '../model/analysis.model';
+import type * as Request from '../model/analysis.model';
 import { catchError, EMPTY, Observable, throwError } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Method } from '../state/method/method.state';

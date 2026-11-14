@@ -1,4 +1,4 @@
-import { Search } from '../model/search.model';
+import type * as Search from '../model/search.model';
 import { computed, Injectable, signal, inject } from '@angular/core';
 import { map, Observable, of, switchMap } from 'rxjs';
 import { CONTENT_SERVICE, ICON_BASE, environment } from '../../environments/environment';
@@ -12,7 +12,7 @@ import { SchemaClasses } from '../constants/constants';
  * never deletes an icon, but a deleted entry keeps the type it had, so the
  * mark is checked too: only then is the entry the contract's icon kind.
  */
-function isIcon(entry: Search.Entry): entry is Search.Entry & Search.Icon.Entry {
+function isIcon(entry: Search.Entry): entry is Search.Entry & Search.IconEntry {
   return entry.type === 'Icon' && !entry.deleted;
 }
 
@@ -49,7 +49,7 @@ export class IconService {
     return `${this.iconBase()}/${stId}.svg`;
   }
 
-  readonly currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
+  readonly currentIcon = signal<Search.IconEntry | undefined>(undefined);
 
   protein = { name: 'protein', tooltip: 'Protein', route: 'protein' };
   negativeRegulation = {
@@ -262,7 +262,7 @@ export class IconService {
 
   fetchIcon(identifier: string): Observable<string | null> {
     return this.http
-      .get<Search.Icon.Result>(`${CONTENT_SERVICE}/search/query?query=${identifier}&types=Icon`)
+      .get<Search.IconResult>(`${CONTENT_SERVICE}/search/query?query=${identifier}&types=Icon`)
       .pipe(
         // No result group at all is no icon, not an error.
         map((response) => {

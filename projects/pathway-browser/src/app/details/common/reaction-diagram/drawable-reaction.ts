@@ -1,6 +1,6 @@
 import type { ReactionLayout } from '../../../../../../contract/reaction-layout.ts';
 import { Diagram } from '../../../model/diagram.model';
-import { Graph } from '../../../model/graph.model';
+import type * as Graph from '../../../model/graph.model';
 
 /**
  * A reaction's layout, as the service answers it, in the form the diagram is

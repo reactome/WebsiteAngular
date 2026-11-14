@@ -1,7 +1,7 @@
 import { computed, ElementRef, Injectable, InjectionToken, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
 import { DataStateService } from './data-state.service';
 import { UrlStateService } from './url-state.service';

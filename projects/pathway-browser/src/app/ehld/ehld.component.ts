@@ -18,7 +18,7 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { UrlStateService } from '../services/url-state.service';
 import SvgPanZoom from 'svg-pan-zoom';
 import { AnalysisService } from '../services/analysis.service';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { isDefined } from '../services/utils';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource } from '@angular/core/rxjs-interop';

@@ -1,4 +1,4 @@
-import { Search } from '../../../../model/search.model';
+import type * as Search from '../../../../model/search.model';
 import { Component, input, ViewEncapsulation } from '@angular/core';
 import { SafePipe } from '../../../../pipes/safe.pipe';
 import { CONTENT_DETAIL } from '../../../../../environments/environment';
@@ -13,6 +13,6 @@ import { MatTooltip } from '@angular/material/tooltip';
 })
 export class IconComponent {
   readonly iconSVG = input.required<string>();
-  readonly icon = input.required<Search.Icon.Entry>();
+  readonly icon = input.required<Search.IconEntry>();
   protected readonly CONTENT_DETAIL = CONTENT_DETAIL;
 }
