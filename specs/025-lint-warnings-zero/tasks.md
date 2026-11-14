@@ -60,7 +60,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       away. Three unchecked casts went with them (the GSA submission's
       parameters, the method list and the captured GSA reads). No gate type-checks `e2e/`; checked by hand against
       main with the root tsconfig, it has no new error and one fewer. 803 → 782
-      (#PR).
+      (#964).
 - [ ] T004 [US2] `projects/reactome-gsa-form` (100).
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
 - [ ] T006 [US2] `projects/website-angular`, second third (~75).
