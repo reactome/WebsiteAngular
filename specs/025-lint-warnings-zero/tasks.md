@@ -51,7 +51,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       component's JSON attributes were never parsed (a bug, below): the table's
       `table` and `userSettings` inputs now parse a string through a type guard,
       and `safeInput` is gone. Its two non-null assertions are T015's. 822 → 803
-      (#PR).
+      (#963).
 - [ ] T003 [US2] `e2e` (16; its 5 non-null assertions with it).
 - [ ] T004 [US2] `projects/reactome-gsa-form` (100).
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
