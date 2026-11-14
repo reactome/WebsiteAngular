@@ -45,7 +45,13 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
 
 The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
-- [ ] T002 [US2] `projects/reactome-table` (19).
+- [x] T002 [US2] `projects/reactome-table` (19). `CellInfo.value` is a
+      string, as the table's cells are; the spec imports vitest's functions rather
+      than relying on its globals; `width` and `height` take any table. The web
+      component's JSON attributes were never parsed (a bug, below): the table's
+      `table` and `userSettings` inputs now parse a string through a type guard,
+      and `safeInput` is gone. Its two non-null assertions are T015's. 822 → 803
+      (#PR).
 - [ ] T003 [US2] `e2e` (16; its 5 non-null assertions with it).
 - [ ] T004 [US2] `projects/reactome-gsa-form` (100).
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
@@ -82,6 +88,15 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   unconditionally; the check meant to add it only when the text was cut did
   nothing (`result;`). The dead check went in T001; the ellipsis is unchanged,
   as fixing it changes what readers see, and waits for a decision.
+- **The table web component drew nothing from its documented use**
+  (`projects/reactome-table/src/lib/utils/web-component-utils.ts`, `safeInput`).
+  Its attributes are strings, so its demo page sets `table` as JSON. `safeInput`
+  was to parse it, but tested the input itself, a signal since the inputs became
+  signals, so it never did: the store was given the string, threw
+  (`entries is not a function`), and the table was empty. Fixed in T002: the
+  inputs parse a string, through a type guard, with a spec seen failing against
+  the old pass-through and against each guard loosened; the built web component,
+  loaded as its demo page does, now shows the demo's cells, and threw before.
 
 ## Silenced lines
 
