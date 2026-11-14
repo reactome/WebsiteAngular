@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import type { TissueExperiment } from './tissue-experiment.model';
+import type * as TissueExperiment from './tissue-experiment.model';
 import { Observable } from 'rxjs';
 import {
   DIGESTER_FOR_BACKEND,

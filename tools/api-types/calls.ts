@@ -97,6 +97,9 @@ export const TYPES: Record<string, string> = {
   InteractionWithEntities: 'projects/contract/interactors',
 };
 
+/** The names in TYPES that are whole modules, read as namespaces (`Search.Result`). */
+export const MODULES: ReadonlySet<string> = new Set(['Search', 'EventsHierarchy']);
+
 const UPLOAD = 'an upload is stored for good, so none is recorded';
 
 // One call per line reads as a table.
@@ -132,7 +135,7 @@ export const CALLS: Call[] = [
   { file: `${PB}/services/event.service.ts`, method: 'fetchEventAncestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: null }, type: 'Event[][]' },
   { file: `${PB}/services/general.service.ts`, method: 'version', http: 'GET', route: '/data/database/version', type: 'number' },
   { file: `${PB}/services/general.service.ts`, method: 'version', n: 2, http: 'GET', route: '/data/database/version', type: 'number', indirect: 'another deployment, named by the profile' },
-  { file: `${PB}/services/icon.service.ts`, method: 'fetchIcon', http: 'GET', route: '/search/query', query: { types: 'Icon' }, type: 'Search.Icon.Result' },
+  { file: `${PB}/services/icon.service.ts`, method: 'fetchIcon', http: 'GET', route: '/search/query', query: { types: 'Icon' }, type: 'Search.IconResult' },
   { file: `${PB}/services/participant.service.ts`, method: 'getParticipants', http: 'GET', route: '/data/participants/{id}', type: 'Participant[]' },
   { file: `${PB}/details/common/object-tree/object-tree.component.ts`, method: 'findDiagrams', http: 'GET', route: '/data/participants/{id}', type: 'Participant[]' },
   { file: `${PB}/details/common/object-tree/object-tree.component.ts`, method: 'findDiagrams', n: 2, http: 'GET', route: '/data/pathways/low/diagram/entity/{id}/allForms', type: 'PlainPathway[]' },

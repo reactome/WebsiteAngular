@@ -23,9 +23,23 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       a test (`router-url-state.service.spec.ts`), then the rule promoted (#956).
       838 → 835: the dropped line was also an unsafe assignment, and the `tab`
       translation's `!` became `?? null` (an unknown code had set `undefined`).
-- [ ] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
+- [x] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
       (`Analysis`, `Search`, `Graph` and others) become modules, then the rule is
       promoted. Two unused ones in the GSA form's `dataset-library.ts` went in T001.
+      Each model file is now the module its names live in, imported whole as the
+      namespace was named, so every `Analysis.Result` reads as before;
+      `Search.Icon.Entry` and `.Result` became `Search.IconEntry` and
+      `Search.IconResult`. The table store's `Ranges` and `Cells` became modules
+      beside it (`ranges.ts`, `cells.ts`, with the row and cell accessors they
+      share in `dataset.ts`), moved token for token but for two locals renamed so
+      as not to shadow the module's own `origin` and `limits`. The two private ones
+      (`SvgDecoration`, the Reacfoam's `Layout`) became plain interfaces. The
+      contract's one-description check names a declaration by the name its module
+      is imported under, so `Analysis.Result` is still protected as such; the
+      recorded-answer check imports such modules whole. 835 → 822 (main measured
+      834: one warning of slack). Dead code 104 → 100 (main measured 102):
+      `Layout` is no longer an unused export, and the store's `LocatedValue` is
+      now imported (#962).
 
 ## Phase 2: Values typed "anything" (User Story 2, P2)
 

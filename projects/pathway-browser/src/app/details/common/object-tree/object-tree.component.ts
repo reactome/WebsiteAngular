@@ -47,7 +47,7 @@ import { SchemaClasses } from '../../../constants/constants';
 import { IconService } from '../../../services/icon.service';
 import { EntityService } from '../../../services/entity.service';
 import { DataStateService } from '../../../services/data-state.service';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { cloneDeep, isArray } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
 import { MatTooltip } from '@angular/material/tooltip';

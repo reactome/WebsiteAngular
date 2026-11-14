@@ -42,7 +42,7 @@ import { gatherGroups } from './gather-groups';
 import { installRenderNavigate, pageBuild } from './render-navigation';
 import { currentRenderNav } from './render-reuse-strategy';
 import { startAsFresh } from './start-as-fresh';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is

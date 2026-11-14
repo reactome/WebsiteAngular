@@ -12,17 +12,15 @@ import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { httpParams } from '../utils/http-params';
-import { EventsHierarchy } from '../model/events-hierarchy.model';
+import type * as EventsHierarchy from '../model/events-hierarchy.model';
 
 const LAYOUT_URL = 'assets/reacfoam/layout.tsv';
-export namespace Layout {
-  export interface Data {
-    stId: string;
-    name: string;
-    distanceFromCenter: number;
-    position: number;
-    family: string;
-  }
+interface LayoutData {
+  stId: string;
+  name: string;
+  distanceFromCenter: number;
+  position: number;
+  family: string;
 }
 
 /** Built from the event, whose layout and analysis values may be undefined. */
@@ -72,7 +70,7 @@ export class ReacfoamService {
     );
   }
 
-  fetchTLPLayoutMap(): Observable<Map<string, Layout.Data>> {
+  fetchTLPLayoutMap(): Observable<Map<string, LayoutData>> {
     //console.log('fetch tlp layout')
     return this.http.get(LAYOUT_URL, { responseType: 'text' }).pipe(
       map(
@@ -218,7 +216,7 @@ export class ReacfoamService {
 
   event2group(
     event: EventsHierarchy.Data,
-    layoutMap: Map<string, Layout.Data>,
+    layoutMap: Map<string, LayoutData>,
     stIdToFirstId: Map<string, string>,
     parentFamily?: string,
     depth = 0,

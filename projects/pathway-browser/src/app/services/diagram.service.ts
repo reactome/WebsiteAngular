@@ -10,7 +10,7 @@ import {
   Prop,
   Rectangle,
 } from '../model/diagram.model';
-import { Graph } from '../model/graph.model';
+import type * as Graph from '../model/graph.model';
 import { Style, Types } from 'ngx-reactome-cytoscape-style';
 import legend from '../../assets/json/legend.json';
 import { absoluteToRelative, equal, isFinitePoint, RelativePosition } from './edge-geometry';

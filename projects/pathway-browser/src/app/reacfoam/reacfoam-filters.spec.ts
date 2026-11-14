@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ReacfoamService } from './reacfoam.service';
-import { EventsHierarchy } from '../model/events-hierarchy.model';
+import type * as EventsHierarchy from '../model/events-hierarchy.model';
 
 // The content service leaves an empty list out of its answer, so a pathway in
 // an analysis without expression values comes back with no `exp` at all

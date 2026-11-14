@@ -20,7 +20,7 @@ import {
 import { UrlStateService } from './url-state.service';
 import { Event } from '../model/graph/event/event.model';
 import { MatTree } from '@angular/material/tree';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
 import { EhldService } from './ehld.service';
 import {

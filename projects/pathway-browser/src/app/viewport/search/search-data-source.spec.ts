@@ -1,4 +1,4 @@
-import { Search } from '../../model/search.model';
+import type * as Search from '../../model/search.model';
 import { describe, expect, it } from 'vitest';
 import { CollectionViewer, ListRange } from '@angular/cdk/collections';
 import { BehaviorSubject, Observable, Subject, of, throwError } from 'rxjs';

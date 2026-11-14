@@ -14,7 +14,7 @@ import { MatFormField, MatLabel, MatOption, MatSelect } from '@angular/material/
 import { TissueExperimentService } from './tissue-experiment/tissue-experiment.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
-import type { TissueExperiment } from './tissue-experiment/tissue-experiment.model';
+import type * as TissueExperiment from './tissue-experiment/tissue-experiment.model';
 import { AnalysisService } from '../../../services/analysis.service';
 import type { DotLottie } from '@lottiefiles/dotlottie-web';
 import { LottieService } from '../../../services/lottie.service';

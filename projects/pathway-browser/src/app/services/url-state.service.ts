@@ -4,7 +4,7 @@ import { catchError, firstValueFrom, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import type { PaletteName } from './analysis.service';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { DEFAULT_INTERACTOR_SCORE } from '../interactors/interactor-threshold';
 
 /**

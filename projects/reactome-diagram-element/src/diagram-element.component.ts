@@ -19,7 +19,7 @@ import { DataStateService } from '../../pathway-browser/src/app/services/data-st
 import { EventService } from '../../pathway-browser/src/app/services/event.service';
 import { DarkService } from '../../pathway-browser/src/app/services/dark.service';
 import { HierarchyHoverService } from '../../pathway-browser/src/app/services/hierarchy-hover.service';
-import { Analysis } from '../../pathway-browser/src/app/model/analysis.model';
+import type * as Analysis from '../../pathway-browser/src/app/model/analysis.model';
 import { Pathway } from '../../pathway-browser/src/app/model/graph/event/pathway.model';
 import { MemoryState } from './memory-state';
 import { embedProviders } from './embed-providers';

@@ -1,7 +1,7 @@
 import { Component, computed, input, inject } from '@angular/core';
 import { CatalystActivityReference } from '../../../model/graph/control-reference/catalyst-activity-reference.model';
 import { CatalystActivity } from '../../../model/graph/catalyst-activity.model';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { Regulation } from '../../../model/graph/Regulation/regulation.model';
 import { IconService } from '../../../services/icon.service';
 import { RegulationReference } from '../../../model/graph/control-reference/regulation-reference.model';

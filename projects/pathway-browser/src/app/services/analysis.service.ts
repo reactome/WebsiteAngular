@@ -23,7 +23,7 @@ import {
 } from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { UrlStateService } from './url-state.service';
 import chroma, { Color, Scale } from 'chroma-js';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';

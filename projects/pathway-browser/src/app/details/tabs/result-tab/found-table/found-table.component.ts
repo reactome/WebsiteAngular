@@ -12,7 +12,7 @@ import { ExpressionTagComponent } from '../expression-tag/expression-tag.compone
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { TypeSafeMatCellDef } from '../../../../utils/type-safe-mat-cell-def.directive';
 import { TypeSafeMatRowDef } from '../../../../utils/type-safe-mat-row-def.directive';
-import type { Analysis } from '../../../../model/analysis.model';
+import type * as Analysis from '../../../../model/analysis.model';
 import { AnalysisService } from '../../../../services/analysis.service';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';

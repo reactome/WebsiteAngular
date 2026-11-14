@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultResource } from './analysis.service';
-import { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 
 const summary = (...resources: Analysis.Resource[]) => resources.map((resource) => ({ resource }));
 
