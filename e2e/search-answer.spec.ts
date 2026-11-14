@@ -28,6 +28,7 @@
  */
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf } from './support/json';
 
 const ENDPOINT = '**/search-answer';
 // A query the recordings actually carry: `search.spec.ts` recorded apoptosis,
@@ -407,8 +408,7 @@ test.describe('Search page React-to-Me answer', () => {
     let verified = false;
     let answerCalls = 0;
     await page.route('**/search-answer/verify', async (route) => {
-      const body = route.request().postDataJSON();
-      verified = body?.captchaToken === 'solved-token';
+      verified = bodyOf(route.request())?.['captchaToken'] === 'solved-token';
       await route.fulfill({ status: verified ? 204 : 400, body: '' });
     });
     await page.route('**/search-answer', (route) => {

@@ -57,8 +57,8 @@ test.describe('Pathway Browser', () => {
 
     const box = await canvas.boundingBox();
     expect(box).not.toBeNull();
-    expect(box!.width).toBeGreaterThan(200);
-    expect(box!.height).toBeGreaterThan(200);
+    expect(box?.width).toBeGreaterThan(200);
+    expect(box?.height).toBeGreaterThan(200);
   });
 
   test('loads without uncaught page errors', async ({ page }) => {

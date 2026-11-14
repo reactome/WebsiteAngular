@@ -52,7 +52,15 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       `table` and `userSettings` inputs now parse a string through a type guard,
       and `safeInput` is gone. Its two non-null assertions are T015's. 822 → 803
       (#963).
-- [ ] T003 [US2] `e2e` (16; its 5 non-null assertions with it).
+- [x] T003 [US2] `e2e` (16; its 5 non-null assertions with it). Request bodies
+      and JSON answers are read through guards in `e2e/support/json.ts`
+      (`isRecord`, `isArray`, `bodyOf`), the diagram's style and interactivity
+      handler through guards defined inside the page function, and a missing box
+      is reported (`box?.width`, or an error naming it) rather than asserted
+      away. Three unchecked casts went with them (the GSA submission's
+      parameters, the method list and the captured GSA reads). No gate type-checks `e2e/`; checked by hand against
+      main with the root tsconfig, it has no new error and one fewer. 803 → 782
+      (#PR).
 - [ ] T004 [US2] `projects/reactome-gsa-form` (100).
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
 - [ ] T006 [US2] `projects/website-angular`, second third (~75).

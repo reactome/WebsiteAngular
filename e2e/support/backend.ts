@@ -67,6 +67,7 @@ import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
 import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
 import { serveReleaseFiles } from './release-files';
 import { serveDescription } from './description';
+import { isRecord } from './json';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -315,7 +316,7 @@ function fakeResponse(rec: ApiRecording) {
     headers: () => rec.headers,
     body: async () => buffer,
     text: async () => buffer.toString('utf8'),
-    json: async () => JSON.parse(buffer.toString('utf8')),
+    json: async (): Promise<unknown> => JSON.parse(buffer.toString('utf8')),
     dispose: async () => {},
   };
 }
@@ -521,15 +522,21 @@ function watchAngularErrors(context: BrowserContext) {
  * (e2e/fixtures). Keyed by the path after `/GSAServer/0.1/`.
  */
 const GSA_READS: Record<string, unknown> = (() => {
-  const fixture = (name: string) =>
+  const fixture = (name: string): unknown =>
     JSON.parse(readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf8'));
-  const example = fixture('gsa-melanoma-example.json') as Record<string, { body: unknown }>;
+  const example = fixture('gsa-melanoma-example.json');
+  const bodyAt = (key: string): unknown => {
+    const read = isRecord(example) ? example[key] : undefined;
+    if (!isRecord(read) || !('body' in read))
+      throw new Error(`gsa-melanoma-example.json has no ${key} read`);
+    return read['body'];
+  };
   return {
     methods: fixture('gsa-methods.json'),
     ...Object.fromEntries(
       ['types', 'data/sources', 'data/examples', 'data/search/species'].map((key) => [
         key,
-        example[key].body,
+        bodyAt(key),
       ])
     ),
   };

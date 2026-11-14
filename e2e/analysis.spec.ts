@@ -2,12 +2,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf, isArray, isRecord } from './support/json';
 
 // GSAServer is a shared production service, and no test calls it: the harness
 // (support/backend.ts) answers the reads the form makes on load from captured
 // copies, and fails a test that makes any request it did not stub. This copy
 // is read here too, for the test that turns reports on.
-const gsaMethods = JSON.parse(
+const gsaMethods: unknown = JSON.parse(
   // __dirname, not import.meta.url: this package is CommonJS, and import.meta
   // makes Playwright's loader treat the spec as ESM and fail to load it at all.
   readFileSync(join(__dirname, 'fixtures', 'gsa-methods.json'), 'utf8')
@@ -451,9 +452,11 @@ test.describe('Quantitative analysis: adding a dataset', () => {
   // show none of its own results (curator review, item 3b).
   test("asks ReactomeGSA to deliver to this deployment's server", async ({ page }) => {
     await stubGsa(page);
-    let submitted: { parameters?: { name: string; value: string }[] } | null = null;
+    // Held in an object: the type checker does not see a callback's assignment
+    // to a local, and would read it below as still null.
+    const seen: { submitted: Record<string, unknown> | null } = { submitted: null };
     await page.route('**/GSAServer/0.1/analysis', (route) => {
-      submitted = route.request().postDataJSON();
+      seen.submitted = bodyOf(route.request());
       return route.fulfill({ contentType: 'text/plain', body: 'test-analysis-id' });
     });
     // Submitting starts a status poll; it is answered, not sent on.
@@ -465,10 +468,12 @@ test.describe('Quantitative analysis: adding a dataset', () => {
     );
     await submitCameraOnMelanoma(page);
 
-    await expect.poll(() => submitted, { timeout: 20_000 }).not.toBeNull();
-    const parameters: { name: string; value: string }[] =
-      (submitted as { parameters?: { name: string; value: string }[] } | null)?.parameters ?? [];
-    expect(parameters.find((p) => p.name === 'reactome_server')?.value).toBe('dev');
+    await expect.poll(() => seen.submitted, { timeout: 20_000 }).not.toBeNull();
+    const parameters = seen.submitted?.['parameters'];
+    const server = (isArray(parameters) ? parameters : []).find(
+      (p) => isRecord(p) && p['name'] === 'reactome_server'
+    );
+    expect(isRecord(server) ? server['value'] : undefined).toBe('dev');
   });
 
   // The report card's progress bar was bound to the fraction complete (0 to 1)
@@ -477,10 +482,12 @@ test.describe('Quantitative analysis: adding a dataset', () => {
   // three expected showed as an empty button.
   test('shows how far the reports have got, and every report it is given', async ({ page }) => {
     // Reports on, so the Report card is shown.
-    const methods = JSON.parse(JSON.stringify(gsaMethods)) as typeof gsaMethods;
-    for (const method of methods as { parameters?: { name: string; default?: string }[] }[]) {
-      for (const parameter of method.parameters ?? []) {
-        if (parameter.name === 'create_reports') parameter.default = 'True';
+    const methods: unknown = JSON.parse(JSON.stringify(gsaMethods));
+    for (const method of isArray(methods) ? methods : []) {
+      const parameters = isRecord(method) ? method['parameters'] : undefined;
+      for (const parameter of isArray(parameters) ? parameters : []) {
+        if (isRecord(parameter) && parameter['name'] === 'create_reports')
+          parameter['default'] = 'True';
       }
     }
     await stubGsa(page);

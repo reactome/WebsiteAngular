@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { isRecord } from './support/json';
 
 // Right-click inspector on diagram entities (issue #122).
 //
@@ -42,7 +43,8 @@ async function openPopupOnAnyEntity(page: Page): Promise<string> {
 
   for (const offset of [0, 0.017]) {
     await page.waitForTimeout(3_000);
-    const box = (await container.boundingBox())!;
+    const box = await container.boundingBox();
+    if (!box) throw new Error('the diagram container has no box');
 
     for (let fy = 0.12 + offset; fy <= 0.92; fy += 0.04) {
       for (let fx = 0.08 + offset; fx <= 0.94; fx += 0.035) {
@@ -356,8 +358,10 @@ test.describe('Popup with an analysis running', () => {
       }
     );
     test.skip(!res.ok(), 'analysis service unavailable on this backend');
-    const token: string | undefined = (await res.json())?.summary?.token;
-    if (!token) {
+    const answer: unknown = await res.json();
+    const summary = isRecord(answer) ? answer['summary'] : undefined;
+    const token = isRecord(summary) ? summary['token'] : undefined;
+    if (typeof token !== 'string' || !token) {
       test.skip(true, 'analysis returned no token');
       // Unreachable: test.skip() above aborts the test. The return is what tells
       // TypeScript so -- skip narrows nothing, which is why this line read as a
