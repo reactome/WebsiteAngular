@@ -12,7 +12,7 @@ reports the difference as intended and reports its disappearance as news
 
 This page gathers every declared difference into one register. It does not
 replace the sources: each row links to the place the difference is recorded,
-which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the website's event PDF, 7 Nov 2026; search, diagram and reaction images, PowerPoint, 8 Nov 2026).
+which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the website's event PDF, 7 Nov 2026; search, diagram and reaction images, PowerPoint, 8 Nov 2026; the analysis report's comparisons, 14 Nov 2026).
 
 **Terms used here**
 
@@ -50,8 +50,8 @@ which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the 
 | [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint live on beta                      |
 | [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           8 | Website's SBGN merged, routed on beta; bulk file not switched       |
 | [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          17 | Website's PDF live on beta; book not switched                       |
-| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          14 | Spec only                                                           |
-| **Total**                                                                             |     **106** |                                                                     |
+| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          19 | Merged; compared on the development host; website not routed to it  |
+| **Total**                                                                             |     **111** |                                                                     |
 
 Then: [things that look like differences but are not](#not-differences),
 and [decisions still open](#decisions-still-open).
@@ -269,26 +269,40 @@ endpoint's answers") and research R2, R4.
 
 The analysis report PDF, today written inside the AnalysisService by
 `analysis-report`, is to be made by pdf-export with today's content in the new
-look (the user's choice, 30 Oct 2026). **Spec only.** Source:
+look (the user's choice, 30 Oct 2026). **Merged** in pdf-export and compared
+with today's report on the development host's own services (spec 002 T019,
+T020; research R9, R10); the website is not routed to it yet (T021). Source:
 [pdf-export spec 002](https://github.com/reactome/pdf-export/blob/main/specs/002-analysis-report/spec.md),
 Assumptions ("Expected differences from today's report").
 
-| What                                                                      | Today's report                                                    | New report                                                                    | Why                                       |
-| ------------------------------------------------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------- |
-| Look, bookmarks and text                                                  | Old look, no bookmarks, today's text                              | As spec 001: the website's look, bookmarks, rewritten text                    | Design                                    |
-| Colour profiles                                                           | Read                                                              | Ignored                                                                       | Design                                    |
-| Footer                                                                    | A link to the server, with its numbering                          | A running header and page numbers counted from the cover                      | Design                                    |
-| "Identifiers not found" when there are none                               | Left out, but still in the contents list                          | Left out of the contents list too                                             | Bug fix                                   |
-| A pathway's figure when the report's resource is not the result's default | Overlaid for the report's resource                                | Overlaid for the default resource, until the render service takes a resource  | Platform (temporary)                      |
-| An edit-history row with more than five names                             | Five names from a hash set                                        | Five in the edits' authors' order                                             | Determinism                               |
-| The genome-wide overview                                                  | Only the pathways the resource and importable-only filters kept   | The whole result's pathways (the same with the website's defaults)            | Design                                    |
-| KEGG COMPOUND and NCBI Protein                                            | Tables always empty and left out                                  | Their identifiers and interactors shown                                       | Bug fix                                   |
-| An edit with no date                                                      | The report fails                                                  | Left out of the edit history                                                  | Bug fix                                   |
-| A service it needs cannot answer before the PDF begins                    | 500                                                               | 503                                                                           | Design                                    |
-| Order of what a pathway was inferred from                                 | No set order                                                      | The curators' order                                                           | Determinism                               |
-| A failure while making the PDF                                            | The answer ends early, or a 500 with the framework's default body | A 500 in the analysis service's JSON form, before any of the PDF is sent      | Bug fix                                   |
-| Too many requests                                                         | Waits without limit                                               | Beyond the queue or its time budget, "unavailable"                            | Design                                    |
-| A report that takes long                                                  | Answered in one request however long it takes                     | Made in the background: "accepted" (202), fetched again from the same address | Platform: the edge allows 100 s a request |
+T019 compared every part of both reports by meaning; T020 replayed 39
+requests (36 the same, 3 the listed differences below). Two points the user
+decided on 14 Nov 2026: every `modified` edit is printed (row below), and a
+book's and a web page's references follow today's report's form (no
+difference left). The order of a day's rows in the edit history, found to
+differ by T019, was a bug in the new report and now matches today's.
+
+| What                                                                      | Today's report                                                       | New report                                                                    | Why                                        |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------ |
+| Look, bookmarks and text                                                  | Old look, no bookmarks, today's text                                 | As spec 001: the website's look, bookmarks, rewritten text                    | Design                                     |
+| Colour profiles                                                           | Read                                                                 | Ignored                                                                       | Design                                     |
+| Footer                                                                    | A link to the server, with its numbering                             | A running header and page numbers counted from the cover                      | Design                                     |
+| "Identifiers not found" when there are none                               | Left out, but still in the contents list                             | Left out of the contents list too                                             | Bug fix                                    |
+| A pathway's figure when the report's resource is not the result's default | Overlaid for the report's resource                                   | Overlaid for the default resource, until the render service takes a resource  | Platform (temporary)                       |
+| An edit-history row with more than five names                             | Five names from a hash set                                           | Five in the edits' authors' order                                             | Determinism                                |
+| The genome-wide overview                                                  | Only the pathways the resource and importable-only filters kept      | The whole result's pathways (the same with the website's defaults)            | Design                                     |
+| KEGG COMPOUND and NCBI Protein                                            | Tables always empty and left out                                     | Their identifiers and interactors shown                                       | Bug fix                                    |
+| An edit with no date                                                      | The report fails                                                     | Left out of the edit history                                                  | Bug fix                                    |
+| A service it needs cannot answer before the PDF begins                    | 500                                                                  | 503                                                                           | Design                                     |
+| Order of what a pathway was inferred from                                 | No set order                                                         | The curators' order                                                           | Determinism                                |
+| A failure while making the PDF                                            | The answer ends early, or a 500 with the framework's default body    | A 500 in the analysis service's JSON form, before any of the PDF is sent      | Bug fix                                    |
+| Too many requests                                                         | Waits without limit                                                  | Beyond the queue or its time budget, "unavailable"                            | Design                                     |
+| A report that takes long                                                  | Answered in one request however long it takes                        | Made in the background: "accepted" (202), fetched again from the same address | Platform: the edge allows 100 s a request  |
+| A pathway with two or more `modified` edits                               | No Modified row at all (one is shown only when there is exactly one) | Every one, a row each (20 of 50 pathways compared, release 98)                | Bug fix (decided by the user, 14 Nov 2026) |
+| A character the report's typeface lacks (a Greek letter in a reference)   | Written as U+0000                                                    | Printed                                                                       | Bug fix                                    |
+| A malformed token, or one holding `%2F`                                   | 500, or the servlet container's HTML 400                             | 404 in the analysis service's JSON form                                       | Bug fix                                    |
+| `importableOnly` of spaces alone                                          | 500 with an empty body (measured)                                    | Read as the default (false)                                                   | Bug fix                                    |
+| The PDF's `Content-Type`                                                  | `application/pdf;charset=UTF-8`                                      | `application/pdf`                                                             | Bug fix (a PDF has no charset)             |
 
 ## Not differences
 
@@ -339,8 +353,9 @@ These show up in comparisons but are not differences in what a reader gets.
   pathway's SBGN is a 503. The bulk file's text encoding is still to be
   checked, and a mismatch would come to the user as a candidate difference
   (sbgn-exporter T034).
-- **The analysis report's figures**: the render page must wait for an
-  analysis overlay and take a resource before the report can match today's
+- **The analysis report's figures**: the render page now waits for an
+  analysis overlay (pdf-export T017, #771, #958); it must still take a
+  resource before the report can match today's
   overlays (pdf-export spec 002, FR-204). The report's species overview still
   shows the retired Fireworks figure while the AnalysisService makes it
   (spec 010 T058).
