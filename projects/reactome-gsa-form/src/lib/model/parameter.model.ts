@@ -1,6 +1,10 @@
-export interface Parameter<T = any> {
+/** A parameter's value as the form holds it: its text read as its type (parserFor). */
+export type ParameterValue = string | number | boolean;
+
+export interface Parameter<T = ParameterValue> {
   id: string;
-  default: T;
+  /** A data source's parameters have none. */
+  default?: T | undefined;
   description: string;
   display_name: string;
   name: string;
@@ -8,7 +12,7 @@ export interface Parameter<T = any> {
   type: ParameterType;
   required?: boolean;
   values?: string[];
-  value?: T;
+  value?: T | undefined;
 }
 
 export enum ParameterType {
