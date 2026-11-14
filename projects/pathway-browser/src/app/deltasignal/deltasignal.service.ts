@@ -109,6 +109,13 @@ export class DeltaSignalService {
         fold: readout.fold,
         call: readout.call,
         railed: readout.railed === true,
+        switchState:
+          readout.switch === true &&
+          (readout.state === 'high' || readout.state === 'low') &&
+          readout.other_state_fold !== null &&
+          readout.other_state_fold !== undefined
+            ? { state: readout.state, otherStateFold: readout.other_state_fold }
+            : null,
         lead: this.leadState().byId.get(reactomeId) ?? null,
         confidence: readout.confidence ?? null,
         untouched: readout.confidence_stratum === 'untouched',
@@ -390,6 +397,7 @@ export class DeltaSignalService {
               converged: this.result()?.converged ?? null,
               pinned: Object.keys(observations),
               queries: [{ id: reactomeId, stable_ids: [reactomeId], members }],
+              ...this.switchComponents(),
             })
           );
           entry = response.results[0] ?? entry;
@@ -568,8 +576,22 @@ export class DeltaSignalService {
         converged: this.result()?.converged ?? null,
         pinned: Object.keys(observations),
         queries: ids.map((id) => ({ id, stable_ids: [id] })),
+        ...this.switchComponents(),
       })
     );
+  }
+
+  /**
+   * specs/026: the solve's switch components, passed back verbatim so the
+   * readouts carry switch/state/other_state_fold (deltasignal specs/154).
+   * Nothing is sent when the solve served none (detection off, or not
+   * converged): no second-state claim exists, and the client never invents
+   * one. An empty list means detection found nothing — equally nothing to
+   * send.
+   */
+  private switchComponents() {
+    const components = this.result()?.switch_components;
+    return components && components.length > 0 ? { switch_components: components } : {};
   }
 
   private getCatalog() {

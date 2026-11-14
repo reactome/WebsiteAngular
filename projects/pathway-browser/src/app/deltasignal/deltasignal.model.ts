@@ -42,6 +42,20 @@ export interface DeltaSignalSolveResult {
   /** How far from steady state the solve stopped (deltasignal specs/142: a
    *  non-converged answer is cap-decided, not a steady state — say so). */
   residual?: number;
+  /** deltasignal specs/154: cyclic components with a second stable state.
+   *  `[]` means detection ran and found none; absent means detection was off
+   *  or the solve did not converge — no second-state claim either way. Passed
+   *  back to `/api/readouts` verbatim, never interpreted here. */
+  switch_components?: DeltaSignalSwitchComponent[];
+}
+
+/** One bistable component from `/api/solve` (deltasignal specs/154):
+ *  `alt_activities` holds only the nodes whose value at the other stable
+ *  state differs, on the solve's own scale. */
+interface DeltaSignalSwitchComponent {
+  id: string;
+  size: number;
+  alt_activities: Record<string, number>;
 }
 
 /**
@@ -132,6 +146,15 @@ interface DeltaSignalReadoutResult {
    *  to it here) and when the table is unavailable. */
   confidence?: number | null;
   confidence_stratum?: string | null;
+  /** deltasignal specs/154: true when the readout's fold at the other stable
+   *  state would produce a DIFFERENT call — this number is a basin's
+   *  coordinates, not a magnitude. Served only when the request carried the
+   *  solve's `switch_components` back. */
+  switch?: boolean | null;
+  /** Which state this perturbation selected, by the readout's own value. */
+  state?: 'high' | 'low' | null;
+  /** The readout's fold at the unselected state, same scale as `fold`. */
+  other_state_fold?: number | null;
 }
 
 export interface DeltaSignalReadoutsResponse {
@@ -146,6 +169,12 @@ export interface DeltaSignalReadoutsResponse {
      *  rendered, never hardcoded client-side. */
     rail_low?: number;
     rail_high?: number;
+    /** The switch detection rule and its served thresholds (specs/154) —
+     *  present when the request carried switch components back. */
+    switch_rule?: string;
+    switch_floor?: number;
+    switch_max_sweeps?: number;
+    switch_components?: number;
   };
   missing_tables: string[];
   malformed_tables: string[];
@@ -162,6 +191,10 @@ export interface DeltaSignalReadoutRow {
   fold: number;
   call: 'up' | 'down' | 'normal';
   railed: boolean;
+  /** The perturbation selected one of two stable states (deltasignal
+   *  specs/154): which one, and the readout's fold at the other. Null when
+   *  the loop has one state under these constraints. */
+  switchState: DeltaSignalSwitchState | null;
   lead: DeltaSignalLead | null;
   confidence: number | null;
   /** The perturbation has no route to this readout in this network. */
@@ -204,6 +237,12 @@ export interface DeltaSignalLeadsResponse {
       }
     >;
   };
+}
+
+/** A served switch readout's state pair, verbatim from `/api/readouts`. */
+interface DeltaSignalSwitchState {
+  state: 'high' | 'low';
+  otherStateFold: number;
 }
 
 /** One lead answer for a not-reached readout: the composite's call, with the

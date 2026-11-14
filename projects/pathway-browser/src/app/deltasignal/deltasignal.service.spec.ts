@@ -366,6 +366,69 @@ describe('DeltaSignalService readouts', () => {
     expect(byId.get('R-HSA-2')?.railed).toBe(false);
   });
 
+  it('passes the solve switch components back and lands the state pair on the row (specs/026)', async () => {
+    const components = [{ id: 'scc-raf', size: 3, alt_activities: { 'node-b': 0.9 } }];
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush({ ...solveAnswer, switch_components: components });
+    await settle();
+    const request = http.expectOne('/api/readouts');
+    expect((request.request.body as { switch_components?: unknown }).switch_components).toEqual(
+      components
+    );
+    const answer = readoutsAnswer();
+    // The engine says this readout's two states produce different calls; the
+    // row repeats the served pair — never a client-side detection
+    // (deltasignal specs/154).
+    answer.results[1] = {
+      ...answer.results[1],
+      fold: 0.4,
+      call: 'down',
+      switch: true,
+      state: 'low',
+      other_state_fold: 4.15,
+    };
+    request.flush(answer);
+    await flushNoLeads();
+    await solving;
+
+    const byId = new Map(service.readoutRows().map((row) => [row.reactomeId, row]));
+    expect(byId.get('R-HSA-2')?.switchState).toEqual({ state: 'low', otherStateFold: 4.15 });
+    expect(byId.get('R-HSA-1')?.switchState).toBeNull();
+
+    // the on-demand selected-entity path carries the same components
+    const resolving = service.resolveSelectedReadout('R-HSA-3');
+    const onDemand = http.expectOne('/api/readouts');
+    expect((onDemand.request.body as { switch_components?: unknown }).switch_components).toEqual(
+      components
+    );
+    onDemand.flush({
+      status: 'success',
+      protocol,
+      missing_tables: [],
+      malformed_tables: [],
+      results: [],
+    });
+    await resolving;
+  });
+
+  it('a solve without switch components sends none, and switch: false stays bare (specs/026)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const request = http.expectOne('/api/readouts');
+    expect(request.request.body).not.toHaveProperty('switch_components');
+    const answer = readoutsAnswer();
+    // both basins converged to one point: the honest absence renders nothing
+    answer.results[0] = { ...answer.results[0], switch: false };
+    request.flush(answer);
+    await flushNoLeads();
+    await solving;
+
+    expect(service.readoutRows().every((row) => row.switchState === null)).toBe(true);
+  });
+
   it('loads the scope statement once, honestly failing with nothing substituted', async () => {
     const scopeAnswer = {
       status: 'success',

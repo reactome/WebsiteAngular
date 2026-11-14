@@ -339,6 +339,15 @@
                 still stands, but read the number as "as far as the model can go", the same rule DeltaSignal's own
                 validation record uses to set such values aside.
               </dd>
+              <dt>A switch</dt>
+              <dd>
+                Some curated loops hold two stable states, and a prediction there is the coordinates of one state, not a
+                level on a dial. Where the loop still has both states under your perturbation, DeltaSignal re-solves it
+                from both sides and says which state your perturbation selects and what the readout would be at the
+                other. A loop your perturbation itself drives has only one state left, so it shows no switch note — the
+                "at the model's bound" rule keeps carrying those. The detection rule and its thresholds are the
+                engine's, served with the results, never recomputed here.
+              </dd>
               <dt>Influence</dt>
               <dd>
                 How strongly everything this entity feeds directly in the logic network (the reactions it is an input
@@ -398,6 +407,12 @@
                       {{ row.fold | number: '1.2-2' }}×
                       @if (row.railed) {
                         <small class="railed-note">at the model's bound</small>
+                      }
+                      @if (row.switchState; as switchState) {
+                        <small class="switch-note">
+                          a switch: this perturbation selects its {{ switchState.state }} state — the other stable state
+                          reads {{ switchState.otherStateFold | number: '1.2-2' }}×
+                        </small>
                       }
                     </span>
                     <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
