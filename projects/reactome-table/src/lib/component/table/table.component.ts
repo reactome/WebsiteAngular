@@ -35,7 +35,7 @@ import {
 } from 'rxjs';
 import { isDefined } from '../../model/utils.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { safeInput } from '../../utils/web-component-utils';
+import { settingsInput, tableInput } from '../../utils/web-component-utils';
 import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   CdkVirtualScrollViewport,
@@ -82,9 +82,16 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   isDraggingMouse: boolean = false;
   isDraggingFile: boolean = false;
 
-  readonly userSettings = input<Partial<Settings>>({});
+  readonly userSettings = input<Partial<Settings>, Partial<Settings> | string>(
+    {},
+    {
+      transform: settingsInput,
+    }
+  );
   readonly name = input<string>('default-name');
-  readonly table = input<string[][]>();
+  readonly table = input<string[][] | undefined, string[][] | string | undefined>(undefined, {
+    transform: tableInput,
+  });
 
   readonly numberOfColumns = input<number | undefined>(undefined);
   readonly numberOfRows = input<number | undefined>(undefined);
@@ -238,9 +245,6 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
   ngOnInit(): void {
-    safeInput(this, 'table');
-    safeInput(this, 'userSettings');
-
     //Initialize settings
     this.tableStore.settings({ settings: this.userSettings() });
 
@@ -321,7 +325,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.tableStore.deleteRow({ y });
   }
 
-  focusLastCell(_$event: any) {
+  focusLastCell(_$event: Event) {
     this.tableStore.focusLast();
   }
 
@@ -406,7 +410,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.scrollOffset.set(this.viewport().getRenderedRange().start * this.rowHeight());
   }
 
-  trackByIndex: TrackByFunction<any> = <T>(index: number, _element: T) => {
+  trackByIndex: TrackByFunction<Cell[]> = (index: number) => {
     return index;
   };
 
