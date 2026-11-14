@@ -16,6 +16,11 @@ const headersSeen: string[][] = [];
 const held: (() => void)[] = [];
 let upstream: Server;
 let upstreamUrl: string;
+/** What the stand-in pdf-export was sent, and its reports not yet answered. */
+const reportsArrived: { url: string; headers: string[] }[] = [];
+const reportsHeld: (() => void)[] = [];
+let reports: Server;
+let reportsUrl: string;
 
 beforeAll(async () => {
   upstream = createServer((req, res) => {
@@ -57,26 +62,45 @@ beforeAll(async () => {
         ]);
         res.end(JSON.stringify({ path: req.url, length: body.length }));
       };
-      if (/\/(identifiers|species|report)\//.test(url) && !url.includes('quick')) held.push(finish);
+      if (/\/(identifiers|species)\//.test(url) && !url.includes('quick')) held.push(finish);
       else finish();
     });
   });
   await new Promise<void>((resolve) => upstream.listen(0, '127.0.0.1', resolve));
   upstreamUrl = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}`;
+  // A stand-in pdf-export: each report held until the test lets it go, as
+  // pdf-export holds a request while it makes the report.
+  reports = createServer((req, res) => {
+    reportsArrived.push({ url: req.url ?? '', headers: req.rawHeaders });
+    req.resume();
+    reportsHeld.push(() => {
+      res.writeHead(200, { 'Content-Type': 'application/pdf' });
+      res.end('%PDF-');
+    });
+  });
+  await new Promise<void>((resolve) => reports.listen(0, '127.0.0.1', resolve));
+  reportsUrl = `http://127.0.0.1:${(reports.address() as AddressInfo).port}`;
 });
-afterAll(() => new Promise((resolve) => upstream.close(resolve)));
+afterAll(async () => {
+  await new Promise((resolve) => upstream.close(resolve));
+  reports.closeAllConnections();
+  await new Promise((resolve) => reports.close(resolve));
+});
 beforeEach(() => {
   seen.length = 0;
   arrived.length = 0;
   headersSeen.length = 0;
   held.length = 0;
+  reportsArrived.length = 0;
+  reportsHeld.length = 0;
 });
 
 /** A gateway on its own port, with small limits, for one test. */
 async function start(settings: GatewaySettings = {}) {
   const server = gateway({
     upstream: upstreamUrl,
-    limits: { analysis: 2, report: 1 },
+    reportUpstream: reportsUrl,
+    limits: { analysis: 2 },
     queueLength: 2,
     maxWaitMs: 2000,
     retryAfter: 7,
@@ -188,24 +212,8 @@ describe('the queue', () => {
     }
   });
 
-  it('keeps reports on a lane of their own', async () => {
-    const { base, close } = await start();
-    try {
-      const report = fetch(`${base}/AnalysisService/report/T/Homo%20sapiens/r.pdf`);
-      await until(() => held.length === 1);
-      // Analyses still run while a report holds its own lane.
-      const analysis = post(base, '/AnalysisService/identifiers/?n=1');
-      await until(() => held.length === 2);
-      held.splice(0).forEach((finish) => finish());
-      expect((await report).status).toBe(200);
-      expect((await analysis).status).toBe(200);
-    } finally {
-      await close();
-    }
-  });
-
   it('never holds back a stored result, a download or the metadata', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, queueLength: 0 });
+    const { base, close } = await start({ limits: { analysis: 1 }, queueLength: 0 });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -223,7 +231,7 @@ describe('the queue', () => {
   });
 
   it('releases the place of a reader who leaves while waiting, and never runs their request', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -321,10 +329,8 @@ describe('passing through', () => {
     try {
       expect(await health(base)).toMatchObject({
         ok: true,
-        lanes: {
-          analysis: { limit: 2, active: 0, waiting: 0 },
-          report: { limit: 1, active: 0, waiting: 0 },
-        },
+        lanes: { analysis: { limit: 2, active: 0, waiting: 0 } },
+        reports: { upstream: reportsUrl, active: 0 },
         queueLength: 2,
         maxWaitMs: 2000,
       });
@@ -336,7 +342,7 @@ describe('passing through', () => {
 
 describe('the review of #539', () => {
   it('admits those waiting in the order they came', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, queueLength: 5 });
+    const { base, close } = await start({ limits: { analysis: 1 }, queueLength: 5 });
     try {
       const answers = [1, 2, 3, 4].map((n) => post(base, `/AnalysisService/identifiers/?n=${n}`));
       for (let turn = 1; turn <= 4; turn++) {
@@ -367,7 +373,7 @@ describe('the review of #539', () => {
   });
 
   it('holds a place until the service finishes, even when the reader left mid-analysis', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const gone = new AbortController();
       const leaver = fetch(`${base}/AnalysisService/identifiers/?n=1`, {
@@ -392,7 +398,7 @@ describe('the review of #539', () => {
   });
 
   it('sees a reader with a large upload leave while waiting, and never runs it', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -417,7 +423,7 @@ describe('the review of #539', () => {
   });
 
   it('sends a large upload whole once it is admitted from the waiting list', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -465,7 +471,7 @@ describe('the review of #539', () => {
   });
 
   it('does not pass connection-scoped headers on, and keeps a refusal out of every cache', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, queueLength: 0 });
+    const { base, close } = await start({ limits: { analysis: 1 }, queueLength: 0 });
     try {
       await new Promise((resolve, reject) => {
         const url = new URL(`${base}/AnalysisService/token/T`);
@@ -499,15 +505,17 @@ describe('the review of #539', () => {
 
 describe('a reader who leaves mid-answer', () => {
   it('keeps the place until the service has finished the answer', async () => {
-    const { base, close } = await start();
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const gone = new AbortController();
-      const first = await fetch(`${base}/AnalysisService/report/T/x/trickle.pdf`, {
+      const first = await fetch(`${base}/AnalysisService/identifiers/trickle`, {
+        method: 'POST',
+        body: 'P04637',
         signal: gone.signal,
       });
       expect(first.status).toBe(200);
       gone.abort();
-      const second = fetch(`${base}/AnalysisService/report/T/x/second.pdf`);
+      const second = post(base, '/AnalysisService/identifiers/?second');
       await new Promise((r) => setTimeout(r, 100));
       expect(arrived.some((url) => url.includes('second'))).toBe(false);
       letGo();
@@ -538,7 +546,7 @@ const health = async (base: string) => (await fetch(`${base}/health`)).json() as
 
 describe('the second review of #539', () => {
   it('gives the place back at once when a reader leaves mid-upload', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const { call } = upload(base, '/AnalysisService/identifiers/?n=1', {
         'Content-Length': '1000',
@@ -557,7 +565,7 @@ describe('the second review of #539', () => {
   });
 
   it('sends the rest of a body still arriving when it is admitted from the waiting list', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 } });
+    const { base, close } = await start({ limits: { analysis: 1 } });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -580,7 +588,7 @@ describe('the second review of #539', () => {
   });
 
   it('stops reading at its budget, sends the body whole, and holds nothing once admitted', async () => {
-    const { base, close } = await start({ limits: { analysis: 1, report: 1 }, waitingBytes: 1000 });
+    const { base, close } = await start({ limits: { analysis: 1 }, waitingBytes: 1000 });
     try {
       const running = post(base, '/AnalysisService/identifiers/?n=1');
       await until(() => held.length === 1);
@@ -606,7 +614,7 @@ describe('the second review of #539', () => {
   it('gives the place back when the service cannot be reached', async () => {
     const { base, close } = await start({
       upstream: 'http://127.0.0.1:9',
-      limits: { analysis: 1, report: 1 },
+      limits: { analysis: 1 },
       maxWaitMs: 500,
     });
     try {
@@ -618,10 +626,10 @@ describe('the second review of #539', () => {
   });
 
   it('gives the place back when the service fails mid-answer', async () => {
-    const { base, close } = await start({ maxWaitMs: 500 });
+    const { base, close } = await start({ limits: { analysis: 1 }, maxWaitMs: 500 });
     try {
       for (const n of [1, 2]) {
-        const outcome = await fetch(`${base}/AnalysisService/report/T/x/broken${n}.pdf`)
+        const outcome = await post(base, `/AnalysisService/identifiers/broken${n}`)
           .then((r) => r.text())
           .then(
             () => 'whole',
@@ -636,9 +644,13 @@ describe('the second review of #539', () => {
   });
 
   it('gives up a call the service has gone silent on, and frees its place', async () => {
-    const { base, close } = await start({ upstreamTimeoutMs: 200, maxWaitMs: 2000 });
+    const { base, close } = await start({
+      limits: { analysis: 1 },
+      upstreamTimeoutMs: 200,
+      maxWaitMs: 2000,
+    });
     try {
-      const hung = fetch(`${base}/AnalysisService/report/T/x/trickle.pdf`)
+      const hung = post(base, '/AnalysisService/identifiers/trickle')
         .then((r) => r.text())
         .then(
           () => 'whole',
@@ -646,7 +658,7 @@ describe('the second review of #539', () => {
         );
       expect(await hung).toBe('cut');
       held.length = 0;
-      const next = fetch(`${base}/AnalysisService/report/T/x/next.pdf`);
+      const next = post(base, '/AnalysisService/identifiers/?next');
       await until(() => held.length === 1);
       letGo();
       expect((await next).status).toBe(200);
@@ -702,7 +714,7 @@ describe('the review of 20 Oct', () => {
 
   it('refuses a client beyond its share when it would wait, while others still get in', async () => {
     const { base, close } = await start({
-      limits: { analysis: 2, report: 1 },
+      limits: { analysis: 2 },
       queueLength: 10,
       perClient: 2,
       // Long enough that only the share can refuse the third, never its wait.
@@ -741,7 +753,7 @@ describe('the review of 20 Oct', () => {
 
   it('runs a client beyond its share while places are free: the share is for scarce places', async () => {
     const { base, close } = await start({
-      limits: { analysis: 3, report: 1 },
+      limits: { analysis: 3 },
       perClient: 1,
     });
     try {
@@ -757,7 +769,7 @@ describe('the review of 20 Oct', () => {
 
   it('gives a waiting client its place back when it times out', async () => {
     const { base, close } = await start({
-      limits: { analysis: 1, report: 1 },
+      limits: { analysis: 1 },
       queueLength: 10,
       perClient: 2,
       maxWaitMs: 200,
@@ -777,7 +789,7 @@ describe('the review of 20 Oct', () => {
 
   it('gives a waiting client its place back when it leaves', async () => {
     const { base, close } = await start({
-      limits: { analysis: 1, report: 1 },
+      limits: { analysis: 1 },
       queueLength: 10,
       perClient: 2,
       maxWaitMs: 30_000,
@@ -797,6 +809,209 @@ describe('the review of 20 Oct', () => {
       letGo();
       expect((await running).status).toBe(200);
       expect((await health(base)).clients).toBe(0);
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', () => {
+  const REPORT = '/AnalysisService/report/T/Homo%20sapiens/report.pdf';
+  const report = (base: string, headers: Record<string, string> = {}, signal?: AbortSignal) =>
+    fetch(`${base}${REPORT}`, { headers, ...(signal && { signal }) });
+  /** The values of a header pdf-export was sent, however its name was spelled. */
+  const sent = (raw: string[], name: string) =>
+    raw.filter((_, i) => i % 2 === 1 && raw[i - 1]?.toLowerCase() === name);
+  const letReportGo = () => {
+    const finish = reportsHeld.shift();
+    if (!finish) throw new Error('pdf-export holds no report to let go');
+    finish();
+  };
+
+  it('goes to pdf-export, and never to the analysis service', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = report(base);
+      await until(() => reportsHeld.length === 1);
+      letReportGo();
+      const pdf = await answer;
+      expect([pdf.status, pdf.headers.get('content-type'), await pdf.text()]).toEqual([
+        200,
+        'application/pdf',
+        '%PDF-',
+      ]);
+      expect(reportsArrived.map((r) => r.url)).toEqual([REPORT]);
+      expect(arrived).toEqual([]);
+      // A HEAD runs a GET's handler in Spring: never the AnalysisService's
+      // report, unqueued.
+      const head = fetch(`${base}${REPORT}`, { method: 'HEAD' });
+      await until(() => reportsHeld.length === 1);
+      letReportGo();
+      expect((await head).status).toBe(200);
+      expect(arrived).toEqual([]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('sends everything else to the analysis service as before', async () => {
+    const { base, close } = await start();
+    try {
+      for (const path of [
+        '/AnalysisService/token/T',
+        '/AnalysisService/download/T/result.json.gz',
+        '/AnalysisService/reports/T',
+      ])
+        expect((await fetch(`${base}${path}`)).status).toBe(200);
+      const posted = await fetch(`${base}${REPORT}`, { method: 'POST', body: 'x' });
+      expect(posted.status).toBe(200);
+      expect(reportsArrived).toEqual([]);
+      expect(arrived).toEqual([
+        '/AnalysisService/token/T',
+        '/AnalysisService/download/T/result.json.gz',
+        '/AnalysisService/reports/T',
+        REPORT,
+      ]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('is never queued: more reports at once than any lane had, all with pdf-export', async () => {
+    const { base, close } = await start({ limits: { analysis: 1 }, queueLength: 0 });
+    try {
+      const answers = [1, 2, 3].map((n) => report(base, { 'X-Real-IP': `203.0.113.${n}` }));
+      await until(() => reportsHeld.length === 3);
+      expect((await health(base)).reports.active).toBe(3);
+      // An analysis still runs beside them.
+      const analysis = post(base, '/AnalysisService/identifiers/?n=1');
+      await until(() => held.length === 1);
+      letGo();
+      reportsHeld.splice(0).forEach((finish) => finish());
+      expect((await Promise.all([...answers, analysis])).map((r) => r.status)).toEqual([
+        200, 200, 200, 200,
+      ]);
+      expect((await health(base)).reports.active).toBe(0);
+    } finally {
+      await close();
+    }
+  });
+
+  it('names the client to pdf-export by its own reading, whatever the client sent', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = report(base, {
+        'X-Real-IP': '2001:db8:0:1::7',
+        'X-Reactome-Client': 'someone-else',
+        'X-Forwarded-For': '198.51.100.1',
+      });
+      await until(() => reportsHeld.length === 1);
+      letReportGo();
+      await answer;
+      const headers = reportsArrived[0]?.headers ?? [];
+      expect(sent(headers, 'x-reactome-client')).toEqual(['2001:db8:0:1::/64']);
+    } finally {
+      await close();
+    }
+  });
+
+  it('counts a client by its address, not by the name it sent', async () => {
+    const { base, close } = await start({ perClient: 2 });
+    try {
+      // One address, naming itself differently each time: still one client.
+      const two = [1, 2].map((n) =>
+        report(base, { 'X-Real-IP': '203.0.113.1', 'X-Reactome-Client': `name-${n}` })
+      );
+      await until(() => reportsHeld.length === 2);
+      const third = await report(base, {
+        'X-Real-IP': '203.0.113.1',
+        'X-Reactome-Client': 'name-3',
+      });
+      expect([third.status, third.headers.get('retry-after')]).toEqual([503, '7']);
+      expect(reportsArrived.length).toBe(2);
+      reportsHeld.splice(0).forEach((finish) => finish());
+      expect((await Promise.all(two)).map((r) => r.status)).toEqual([200, 200]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('keeps the share per client across analyses and reports, refusing a report past it', async () => {
+    const { base, close } = await start({ limits: { analysis: 1 }, perClient: 2 });
+    try {
+      const who = { 'X-Real-IP': '203.0.113.1' };
+      const analysis = fetch(`${base}/AnalysisService/identifiers/?n=1`, {
+        method: 'POST',
+        body: 'P04637',
+        headers: who,
+      });
+      await until(() => held.length === 1);
+      const first = report(base, who);
+      await until(() => reportsHeld.length === 1);
+      // Two in flight: a second report from this client is refused at once.
+      const refused = await report(base, who);
+      expect(refused.status).toBe(503);
+      // Another client is not.
+      const other = report(base, { 'X-Real-IP': '203.0.113.2' });
+      await until(() => reportsHeld.length === 2);
+      letGo();
+      reportsHeld.splice(0).forEach((finish) => finish());
+      expect((await Promise.all([analysis, first, other])).map((r) => r.status)).toEqual([
+        200, 200, 200,
+      ]);
+      expect((await health(base)).clients).toBe(0);
+    } finally {
+      await close();
+    }
+  });
+
+  it('gives the client its place back when it leaves a report it is waiting on', async () => {
+    const { base, close } = await start({ perClient: 1 });
+    try {
+      const who = { 'X-Real-IP': '203.0.113.1' };
+      const leaving = new AbortController();
+      const left = report(base, who, leaving.signal).catch(() => undefined);
+      await until(() => reportsHeld.length === 1);
+      leaving.abort();
+      await left;
+      for (let i = 0; i < 200 && (await health(base)).clients > 0; i++)
+        await new Promise((r) => setTimeout(r, 10));
+      expect((await health(base)).reports.active).toBe(0);
+      // Its place is free again: not refused for one it no longer waits on.
+      const again = report(base, who);
+      await until(() => reportsHeld.length === 2);
+      reportsHeld.splice(0).forEach((finish) => finish());
+      expect((await again).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it("answers 503 in the analysis service's form when pdf-export cannot be reached", async () => {
+    const { base, close } = await start({ reportUpstream: 'http://127.0.0.1:9' });
+    try {
+      for (let n = 0; n < 2; n++) {
+        const answer = await report(base, { 'X-Real-IP': '203.0.113.1' });
+        expect({
+          status: answer.status,
+          type: answer.headers.get('content-type'),
+          retry: answer.headers.get('retry-after'),
+          cache: answer.headers.get('cache-control'),
+          origin: answer.headers.get('access-control-allow-origin'),
+          body: await answer.text(),
+        }).toEqual({
+          status: 503,
+          type: 'application/json;charset=UTF-8',
+          retry: '7',
+          cache: 'no-store',
+          origin: '*',
+          body: '{"code":503,"reason":"Service Unavailable","messages":["The report service cannot be reached; try again in 7 seconds"]}\n',
+        });
+      }
+      // Its place given back each time.
+      expect((await health(base)).clients).toBe(0);
+      // The analysis service is still reached as before.
+      expect((await fetch(`${base}/AnalysisService/token/T`)).status).toBe(200);
     } finally {
       await close();
     }

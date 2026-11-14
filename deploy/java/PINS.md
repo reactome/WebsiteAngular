@@ -38,7 +38,7 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
 
 | Artifact             | Repository            | Commit             | Runtime |
 | -------------------- | --------------------- | ------------------ | ------- |
-| pdf-export (`serve`) | `reactome/pdf-export` | `979b8d6` (`main`) | Node 24 |
+| pdf-export (`serve`) | `reactome/pdf-export` | `55cde47` (`main`) | Node 24 |
 
 ## Changing a pin
 

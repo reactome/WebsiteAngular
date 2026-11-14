@@ -247,6 +247,9 @@ services:
   # through unchanged. Host networking, as content-node: Tomcat's
   # AnalysisService is on the host's loopback, and nginx reaches this on
   # 127.0.0.1:4350. Stateless, so a restart costs only the requests in flight.
+  #
+  # The analysis report PDF goes to pdf-export instead (pdf-export spec 002,
+  # T021), unqueued, with the client named in X-Reactome-Client.
   analysis-gateway:
     build:
       context: .
@@ -255,8 +258,8 @@ services:
     network_mode: host
     environment:
       - ANALYSIS_UPSTREAM=${ANALYSIS_UPSTREAM:-http://127.0.0.1:8080}
+      - REPORT_UPSTREAM=${REPORT_UPSTREAM:-http://127.0.0.1:4370}
       - ANALYSIS_LIMIT=${ANALYSIS_LIMIT:-4}
-      - REPORT_LIMIT=${REPORT_LIMIT:-1}
       - QUEUE_LENGTH=${QUEUE_LENGTH:-40}
       - PER_CLIENT=${PER_CLIENT:-8}
       - MAX_WAIT_MS=${MAX_WAIT_MS:-60000}
@@ -380,8 +383,10 @@ services:
   # pdf-export's single-event service (pdf-export spec 001, Story 2) from the
   # graph, its figures drawn by the render service as the website draws them,
   # an analysis token's results read from the AnalysisService. It replaces
-  # Java's event-pdf for the website. Node is its only client; nginx never
-  # names it.
+  # Java's event-pdf for the website, and, through the analysis gateway, the
+  # AnalysisService's report PDF (pdf-export spec 002). Node and the gateway
+  # are its only clients; nginx never names it, as it trusts the client the
+  # gateway names in X-Reactome-Client.
   #
   # Built here from the commit deploy/java/PINS.md pins, from GitHub's archive
   # of it, and never pulled from or pushed to a registry: no `image:`.
@@ -415,15 +420,28 @@ services:
       # Every figure drawn on request by the render service: no figures'
       # folder (pdf-export's `figures`, contracts/figures.md) is given yet.
       - RENDER_SERVICE=http://127.0.0.1:4310
-      # Read for a PDF with an analysis token: the token's results, never a
-      # new analysis, so not through the analysis gateway's queue.
+      # Read for a PDF with an analysis token, and for the analysis report
+      # (pdf-export spec 002, contracts/analysis-api.md): the token's results,
+      # never a new analysis, so read from the AnalysisService directly, not
+      # through the analysis gateway, which sends the report here.
       - ANALYSIS_SERVICE=http://127.0.0.1:8080/AnalysisService
+      # The printer's working folder (pdf-export spec 002, FR-211, research
+      # R7 and R10): a report's page holds the identifiers a user submitted,
+      # and one killed while it printed leaves its page behind until the
+      # service starts again. So it is the tmpfs below, in memory and never
+      # on disk, owned by the service's user alone; the service empties it
+      # as it starts.
+      - PDF_EXPORT_WORK=/work
       # Where the PDF's links go: the public site, as event-pdf's do.
       - REACTOME_SITE=${PDF_SITE:-https://reactome.org}
+    tmpfs:
+      - /work:size=256m,mode=0700,uid=${CONTENT_NODE_UID:-1020},gid=${CONTENT_NODE_GID:-1001},noexec,nosuid,nodev
     # Chromium prints the PDFs; its default 64 MB /dev/shm is too small for a
     # large page, as for the render service.
     shm_size: '1gb'
-    mem_limit: 2g
+    # Within it: the reports kept for an hour (512 MB at most, pdf-export's
+    # ServeLimits), two printing at once, and the working folder's tmpfs.
+    mem_limit: 3g
     healthcheck:
       test: ['CMD', 'curl', '-fs', '-m', '10', '-o', '/dev/null', 'http://127.0.0.1:4370/health']
       interval: 30s

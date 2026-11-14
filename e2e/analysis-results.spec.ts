@@ -96,7 +96,22 @@ test.describe('Analysis results', () => {
     await expect.poll(pathways, { message: 'but not none of them' }).toBeGreaterThan(0);
   });
 
-  test('the result files download', async ({ page }) => {
+  test('the result files download', async ({ page, context }) => {
+    // The PDF report is made in the background by pdf-export (its spec 002):
+    // its address answers "being made" until the report is ready. Fetched and
+    // saved by the page, that answer was saved as report.pdf; opened in a tab,
+    // its page asks again and the PDF downloads once ready. Stubbed here, so
+    // no report is made.
+    const reportsAsked: string[] = [];
+    await context.route('**/AnalysisService/report/**', (route) => {
+      reportsAsked.push(route.request().url());
+      return route.fulfill({
+        status: 202,
+        headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
+        contentType: 'text/html;charset=UTF-8',
+        body: '<!doctype html><title>Making your report</title><h1>Making your report</h1>',
+      });
+    });
     await runGeneList(page);
     await openTab(page, 'Download');
 
@@ -113,6 +128,22 @@ test.describe('Analysis results', () => {
       expect(bytes.length, `${label} size`).toBeGreaterThan(100);
       expect(looksRight(bytes), `${label} content`).toBe(true);
     }
+
+    // The PDF report opens in a new tab, and is not downloaded by the page.
+    let downloads = 0;
+    page.on('download', () => downloads++);
+    const [tab] = await Promise.all([
+      context.waitForEvent('page', { timeout: 30_000 }),
+      page.getByText('PDF Result', { exact: true }).click(),
+    ]);
+    await tab.waitForLoadState();
+    expect(new URL(tab.url()).pathname).toMatch(
+      /^\/AnalysisService\/report\/[^/]+\/[^/]+\/report\.pdf$/
+    );
+    await expect(tab.getByRole('heading', { name: 'Making your report' })).toBeVisible();
+    // Asked once, by the new tab: the page itself fetched nothing.
+    expect(reportsAsked).toHaveLength(1);
+    expect(downloads).toBe(0);
   });
 
   test('species comparison overlays the pathways', async ({ page }) => {

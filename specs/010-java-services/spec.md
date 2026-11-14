@@ -174,9 +174,11 @@ A researcher submits an analysis while the service is busy. Their analysis waits
 
 - **FR-019**: The shape of an analysis result, as the site reads it, MUST be defined once in this repository and checked against real results by tests.
 - **FR-021**: Requests that start a computation (submitting identifiers, mapping, importing, a single identifier, a species comparison, and the PDF report) MUST be admitted a limited number at a time, set by configuration. Those beyond the limit MUST wait in arrival order on a waiting list of bounded length, for no longer than a bounded time.
+  - _Amended 14 Nov 2026 (T066):_ the PDF report is no longer the AnalysisService's or queued here: it is made by pdf-export (its spec 002), to which the gateway sends it unqueued (FR-025).
 - **FR-022**: A request that cannot be admitted, because the waiting list is full or its wait ran out, MUST be answered at once with a "service unavailable" status, in the service's own error format, saying when to retry. It MUST NOT be run later.
 - **FR-023**: Every other request (stored results, downloads, metadata) MUST pass through without waiting. Every answer MUST reach the reader byte-identical to the AnalysisService's own, headers included.
 - **FR-024**: A waiting request whose reader disconnects MUST lose its place and never be run. The limit, the waiting list's length and the longest wait MUST be reported with the queue's current state on a health check.
+- **FR-025**: The analysis report PDF (`GET /AnalysisService/report/…`) MUST be sent to pdf-export without waiting, counted in its client's share and refused past it, with the client named in `X-Reactome-Client` by the gateway alone (never a value the request sent); when pdf-export cannot be reached the answer MUST be 503 in the service's error format (pdf-export spec 002, research R6; T066).
 - **FR-020**: Before the shared application server is switched off, each of its other webapps MUST have a recorded home or retirement, decided on measured use. Besides ContentService and AnalysisService it hosts nine: the experiment digester, the search no-result report service, the old diagram and fireworks widgets, the old Pathway Browser, popular pathways, overlays, the old RESTful API and the root application (research R10).
 
 ### Key Entities

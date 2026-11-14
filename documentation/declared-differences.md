@@ -12,7 +12,7 @@ reports the difference as intended and reports its disappearance as news
 
 This page gathers every declared difference into one register. It does not
 replace the sources: each row links to the place the difference is recorded,
-which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the website's event PDF, 7 Nov 2026; search, diagram and reaction images, PowerPoint, 8 Nov 2026; the analysis report's comparisons, 14 Nov 2026).
+which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the website's event PDF, 7 Nov 2026; search, diagram and reaction images, PowerPoint, 8 Nov 2026; the analysis report's comparisons and its routing to pdf-export, 14 Nov 2026).
 
 **Terms used here**
 
@@ -45,13 +45,13 @@ which stays the authority. Compiled 6 Nov 2026, and updated since (SBGN and the 
 | [ContentService: reaction layout](#contentservice-reaction-layout)                    |           4 | Live on beta                                                        |
 | [ContentService: contact form](#contentservice-contact-form)                          |           7 | Live on beta                                                        |
 | [ContentService: images](#contentservice-images)                                      |          14 | Live on beta, but the PowerPoint and the overview's options, merged |
-| [AnalysisService gateway](#analysisservice-gateway)                                   |           2 | Live on beta                                                        |
+| [AnalysisService gateway](#analysisservice-gateway)                                   |           5 | Two live on beta; the report's three merged                         |
 | [SBML (sbml-exporter)](#sbml-sbml-exporter)                                           |          13 | Website's SBML live on beta; bulk file not switched                 |
 | [BioPAX (BioPAX3Exporter)](#biopax-biopax3exporter)                                   |          13 | Exporter merged; website endpoint live on beta                      |
 | [SBGN (sbgn-exporter)](#sbgn-sbgn-exporter)                                           |           8 | Website's SBGN merged, routed on beta; bulk file not switched       |
 | [Pathway PDFs (pdf-export spec 001)](#pathway-pdfs-pdf-export-spec-001)               |          17 | Website's PDF live on beta; book not switched                       |
-| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          19 | Merged; compared on the development host; website not routed to it  |
-| **Total**                                                                             |     **111** |                                                                     |
+| [Analysis report PDF (pdf-export spec 002)](#analysis-report-pdf-pdf-export-spec-002) |          21 | Merged; website routed to it (spec 010 T066), not yet deployed      |
+| **Total**                                                                             |     **116** |                                                                     |
 
 Then: [things that look like differences but are not](#not-differences),
 and [decisions still open](#decisions-still-open).
@@ -143,12 +143,17 @@ sending, and the message's subject and body are kept. Done on beta on
 
 The analysis maths stays in Java. A small gateway in this repository sits in
 front of the AnalysisService and admits a few computations at a time. Every
-answer the service gives passes through byte for byte.
+answer the service gives passes through byte for byte. The analysis report
+PDF is not the AnalysisService's any more: the gateway sends it to pdf-export
+([below](#analysis-report-pdf-pdf-export-spec-002); spec 010 T066).
 
-| What                  | Java                                                                                                        | New                                                                                                                                                                                                                              | Why                                                              | Decided                      | Status       | Source                                                                      |
-| --------------------- | ----------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ---------------------------- | ------------ | --------------------------------------------------------------------------- |
-| Many analyses at once | Runs them all at once; under a burst every one slows, and all can pass the edge's 100-second limit together | At most 4 analyses (and 1 PDF report) run at a time, the rest wait in order. A request that cannot be admitted in time is a `503` with `Retry-After`, in the service's error form, and is never run later. The site retries once | Design: a burst should make a few people wait, not fail everyone | The user, 19 Oct 2026 (R12)  | Live on beta | [spec 010 R12, FR-021–FR-024](../specs/010-java-services/research.md), #539 |
-| A share per client    | None                                                                                                        | At most 8 computations running or waiting per client address (an IPv6 one by its /64)                                                                                                                                            | Design: one client cannot keep everyone else out                 | Review of 20 Oct 2026 (T065) | Live on beta | [spec 010 T065](../specs/010-java-services/tasks.md), #574                  |
+| What                                                     | Java                                                                                                                   | New                                                                                                                                                                                                                                                       | Why                                                                                                                                                                                                   | Decided                                       | Status       | Source                                                                                                                                                                |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Many analyses at once                                    | Runs them all at once; under a burst every one slows, and all can pass the edge's 100-second limit together            | At most 4 analyses run at a time, the rest wait in order. A request that cannot be admitted in time is a `503` with `Retry-After`, in the service's error form, and is never run later. The site retries once. (Until T066, also 1 PDF report at a time.) | Design: a burst should make a few people wait, not fail everyone                                                                                                                                      | The user, 19 Oct 2026 (R12)                   | Live on beta | [spec 010 R12, FR-021–FR-024](../specs/010-java-services/research.md), #539                                                                                           |
+| A share per client                                       | None                                                                                                                   | At most 8 computations running or waiting per client address (an IPv6 one by its /64)                                                                                                                                                                     | Design: one client cannot keep everyone else out                                                                                                                                                      | Review of 20 Oct 2026 (T065)                  | Live on beta | [spec 010 T065](../specs/010-java-services/tasks.md), #574                                                                                                            |
+| The analysis report PDF, `GET /AnalysisService/report/…` | Made by the AnalysisService; the gateway queued it, one at a time                                                      | Sent to pdf-export, not queued; counted in the client's share of 8 and refused (`503`) past it; pdf-export told the client in `X-Reactome-Client`, set by nginx and again by the gateway, never the request's own                                         | Design: pdf-export holds a request up to 30 s while it makes the report in the background, so a queue of one would make every browser asking again wait for the others; pdf-export has its own limits | pdf-export spec 002 R6 (reviewed 13 Nov 2026) | Merged       | [spec 010 T066](../specs/010-java-services/tasks.md), [pdf-export spec 002 T021](https://github.com/reactome/pdf-export/blob/main/specs/002-analysis-report/tasks.md) |
+| The report's service cannot be reached                   | The gateway's `502` (`Bad Gateway`) for the AnalysisService                                                            | `503` with `Retry-After`, in the analysis service's JSON form, as pdf-export writes its own `503`                                                                                                                                                         | Design: the report's address keeps one error format (pdf-export spec 002, FR-203)                                                                                                                     | pdf-export spec 002 R6                        | Merged       | [spec 010 T066](../specs/010-java-services/tasks.md)                                                                                                                  |
+| A `HEAD` of the report's address                         | The framework runs the `GET` handler: the report is made, its headers answered (read from the framework, not measured) | pdf-export's `405` with `Allow: GET` and no body                                                                                                                                                                                                          | Design: a `HEAD` would otherwise reach the AnalysisService's report outside any queue, and pdf-export answers `GET` alone                                                                             | T066, 14 Nov 2026                             | Merged       | [spec 010 T066](../specs/010-java-services/tasks.md)                                                                                                                  |
 
 ## SBML (sbml-exporter)
 
@@ -271,7 +276,12 @@ The analysis report PDF, today written inside the AnalysisService by
 `analysis-report`, is to be made by pdf-export with today's content in the new
 look (the user's choice, 30 Oct 2026). **Merged** in pdf-export and compared
 with today's report on the development host's own services (spec 002 T019,
-T020; research R9, R10); the website is not routed to it yet (T021). Source:
+T020; research R9, R10); **the website is routed to it** through the analysis
+gateway (spec 002 T018 and T021, spec 010 T066), which takes effect on beta
+when deployed. Its error answers were compared again through the gateway, on
+the development host, for T001's error cases: the same status, `Content-Type`
+and body as the analysis service's, but the two listed below (a malformed
+token). Source:
 [pdf-export spec 002](https://github.com/reactome/pdf-export/blob/main/specs/002-analysis-report/spec.md),
 Assumptions ("Expected differences from today's report").
 
@@ -303,6 +313,8 @@ differ by T019, was a bug in the new report and now matches today's.
 | A malformed token, or one holding `%2F`                                   | 500, or the servlet container's HTML 400                             | 404 in the analysis service's JSON form                                       | Bug fix                                    |
 | `importableOnly` of spaces alone                                          | 500 with an empty body (measured)                                    | Read as the default (false)                                                   | Bug fix                                    |
 | The PDF's `Content-Type`                                                  | `application/pdf;charset=UTF-8`                                      | `application/pdf`                                                             | Bug fix (a PDF has no charset)             |
+| Each report's timing, with the client's address and browser               | Sent to a separate reporting service                                 | Not sent; one log line per report, with no submitted identifier or client     | Design (FR-211)                            |
+| The website's "PDF Result" button                                         | Downloads the address's answer                                       | Opens the address in a new tab, whose page asks again until the PDF downloads | Design (spec 002 plan, step 8; T021)       |
 
 ## Not differences
 
@@ -356,9 +368,9 @@ These show up in comparisons but are not differences in what a reader gets.
 - **The analysis report's figures**: the render page now waits for an
   analysis overlay (pdf-export T017, #771, #958); it must still take a
   resource before the report can match today's
-  overlays (pdf-export spec 002, FR-204). The report's species overview still
-  shows the retired Fireworks figure while the AnalysisService makes it
-  (spec 010 T058).
+  overlays (pdf-export spec 002, FR-204). The retired Fireworks figure in the
+  report's species overview (spec 010 T058) goes when the report is routed to
+  pdf-export, which draws the overview with the render service.
 
 ## Inconsistencies between sources
 

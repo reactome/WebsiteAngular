@@ -3,6 +3,9 @@
 # for an event's PDF at /ContentService/exporter/document/event/{id}.pdf. It
 # reads the graph, draws its figures through the render service, reads an
 # analysis token's results from the AnalysisService, and prints with Chromium.
+# It also answers the analysis report, /AnalysisService/report/... (pdf-export
+# spec 002), which the analysis gateway sends it; its printer's working folder
+# is compose's tmpfs (PDF_EXPORT_WORK).
 #
 # Built from the commit deploy/java/PINS.md records ("The PDF service"), from
 # GitHub's archive of it: nothing but that commit. pins.spec.ts checks the two
@@ -12,7 +15,7 @@
 # browser, and node:24's layers are already on the host.
 FROM node:24
 
-ARG PDF_EXPORT_COMMIT=979b8d6d436c1edcf7e54e104c04c617f12692a8
+ARG PDF_EXPORT_COMMIT=55cde47f05832123a685b8c293bb3665465cb32f
 
 # Where the browser goes: outside any user's home, as the service runs as the
 # owner of the graph's credentials file, not as the user that installed it

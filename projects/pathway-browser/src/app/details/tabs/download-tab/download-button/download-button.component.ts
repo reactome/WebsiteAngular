@@ -46,6 +46,12 @@ export class DownloadButtonComponent {
   readonly label = input<string>();
   readonly tooltip = input<string>();
   readonly openInNewTab = input<string>('_blank');
+  /**
+   * Opens the address in a new tab instead of downloading it: for a file made
+   * in the background, whose address shows a page that asks again until the
+   * file is ready, then downloads it (the analysis report, pdf-export spec 002).
+   */
+  readonly opens = input(false);
   readonly pressed = output<void>();
 
   onClick(event: MouseEvent) {
