@@ -19,7 +19,7 @@ const typeToParse: Record<ParameterType, Parser> = {
   [ParameterType.string]: (value) => value,
 };
 
-const isKnownType = (type: string): type is ParameterType => type in typeToParse;
+const isKnownType = (type: string): type is ParameterType => Object.hasOwn(typeToParse, type);
 
 /**
  * How to read a parameter of this type. A type this form does not know -- one

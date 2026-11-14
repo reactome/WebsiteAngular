@@ -38,3 +38,10 @@ describe('readDefault', () => {
     expect(readDefault('bool', true)).toBe(true);
   });
 });
+
+describe('parserFor, given a name every object has', () => {
+  it('reads it as text, as any type it does not know', () => {
+    expect(parserFor('toString')('x')).toBe('x');
+    expect(parserFor('constructor')('x')).toBe('x');
+  });
+});
