@@ -348,6 +348,14 @@
                 "at the model's bound" rule keeps carrying those. The detection rule and its thresholds are the
                 engine's, served with the results, never recomputed here.
               </dd>
+              <dt>Measured range</dt>
+              <dd>
+                For answers in the same measured class, where the validation record's MEASURED folds actually landed:
+                the middle half of recorded cases, with how many cases stand behind it and which record they come from.
+                It is a share of the record, never a probability — and it is served by the engine from a
+                provenance-checked table fitted under registered out-of-sample gates; nothing is computed in the
+                browser. Where the record is silent for a class, no range is shown.
+              </dd>
               <dt>Influence</dt>
               <dd>
                 How strongly everything this entity feeds directly in the logic network (the reactions it is an input
@@ -412,6 +420,13 @@
                         <small class="switch-note">
                           a switch: this perturbation selects its {{ switchState.state }} state — the other stable state
                           reads {{ switchState.otherStateFold | number: '1.2-2' }}×
+                        </small>
+                      }
+                      @for (range of rowRanges(row); track range.axis) {
+                        <small class="range-note">
+                          on {{ axisLabel(range.axis) }}, answers like this measured {{ range.lo | number: '1.2-2' }}–{{
+                            range.hi | number: '1.2-2'
+                          }}× half the time ({{ range.n }} cases)
                         </small>
                       }
                     </span>
