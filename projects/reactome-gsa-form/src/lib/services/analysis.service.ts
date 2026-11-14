@@ -23,7 +23,7 @@ import { ConfigProvider, REACTOME_GSA_CONFIG } from '../config/gsa-config';
  */
 export function submittedParameters(parameters: Parameter[] | undefined) {
   return (parameters ?? [])
-    .filter((param) => param.value !== undefined && param.value !== null && param.value !== '')
+    .filter((param) => param.value != null && param.value !== '')
     .map((param) => ({ name: param.name, value: String(param.value) }));
 }
 

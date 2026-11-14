@@ -27,5 +27,6 @@ interface Comparison {
 
 export interface Parameter {
   name: string;
-  value: any;
+  /** As sent: every value as its text (submittedParameters). */
+  value: string;
 }

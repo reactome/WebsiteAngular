@@ -1,6 +1,11 @@
 import { computed, Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { DataSummary, LoadingStatus, PLoadingStatus } from '../model/load-dataset.model';
+import {
+  DataSummary,
+  LoadParameter,
+  LoadingStatus,
+  PLoadingStatus,
+} from '../model/load-dataset.model';
 import { UploadData } from '../model/upload-dataset-model';
 import { catchError, Observable, of, throwError } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
@@ -34,10 +39,7 @@ export class LoadDatasetService {
     return failValue$;
   }
 
-  submitLoadDataset(
-    resourceId: string,
-    postParameters: { name: string; value: any }[]
-  ): Observable<string> {
+  submitLoadDataset(resourceId: string, postParameters: LoadParameter[]): Observable<string> {
     return this.http
       .post(this.loadDataUrl() + resourceId, postParameters, { responseType: 'text' })
       .pipe(
@@ -57,7 +59,7 @@ export class LoadDatasetService {
 
   getLoadingStatus(loadingId: string): Observable<PLoadingStatus> {
     return this.http.get<LoadingStatus>(this.loadingStatusUrl() + loadingId).pipe(
-      catchError((err) =>
+      catchError((err: HttpErrorResponse) =>
         this.snackError<PLoadingStatus>(
           err,
           of({

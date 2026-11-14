@@ -70,7 +70,7 @@ export class FetchDatasetService {
   }
 
   search(keywords: string, species: string | undefined | null): Observable<SearchResult[]> {
-    const params: any = {
+    const params: Record<string, string> = {
       keywords,
     };
     if (species) params['species'] = species;

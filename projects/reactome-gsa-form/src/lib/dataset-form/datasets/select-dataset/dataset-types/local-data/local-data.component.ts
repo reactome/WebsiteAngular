@@ -8,6 +8,16 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 
+/**
+ * The file an event chose: the first of its input's, if it came from one. The
+ * card's click comes here too, from an element with no files, and threw.
+ */
+export function chosenFile(event: Event): File | undefined {
+  return event.target instanceof HTMLInputElement
+    ? (event.target.files?.[0] ?? undefined)
+    : undefined;
+}
+
 @Component({
   selector: 'gsa-local-data',
   templateUrl: './local-data.component.html',
@@ -37,13 +47,13 @@ export class LocalDataComponent {
     this.store.dispatch(datasetSourceActions.select({ toBeSelected: this.source() }));
   }
 
-  onFileSelected(event: any) {
+  onFileSelected(event: Event) {
     if (this.isRiboSeq()) {
       this.showPopup = true;
       this.loadLocalFiles = false;
     } else {
       // Nothing, when the reader closes the picker without choosing a file.
-      const file: File | undefined = event.target.files[0];
+      const file = chosenFile(event);
       if (file) {
         this.store.dispatch(
           datasetActions.upload({ id: this.datasetId(), file, typeId: this.source().id })
@@ -70,8 +80,16 @@ export class LocalDataComponent {
     this.filesLoaded = false;
   }
 
-  async uploadRNAFile(event: any) {
-    this.fileRNA = event.target.files[0];
+  async uploadRNAFile(event: Event) {
+    await this.setRNAFile(chosenFile(event));
+  }
+
+  async uploadRiboFile(event: Event) {
+    await this.setRiboFile(chosenFile(event));
+  }
+
+  private async setRNAFile(file: File | undefined) {
+    this.fileRNA = file ?? null;
     if (this.fileRNA) {
       this.fileValid = await this.checkValidFile(this.fileRNA);
       this.rnaFileName = this.fileRNA.name;
@@ -83,8 +101,8 @@ export class LocalDataComponent {
     }
   }
 
-  async uploadRiboFile(event: any) {
-    this.fileRibo = event.target.files[0];
+  private async setRiboFile(file: File | undefined) {
+    this.fileRibo = file ?? null;
     if (this.fileRibo) {
       this.fileValid = await this.checkValidFile(this.fileRibo);
       this.riboFileName = this.fileRibo.name;
@@ -117,7 +135,7 @@ export class LocalDataComponent {
     this.onDragLeave(event); // Remove the drag-over style
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      await this.uploadRNAFile({ target: { files } });
+      await this.setRNAFile(files[0]);
     }
   }
 
@@ -126,7 +144,7 @@ export class LocalDataComponent {
     this.onDragLeave(event); // Remove the drag-over style
     const files = event.dataTransfer?.files;
     if (files && files.length > 0) {
-      void this.uploadRiboFile({ target: { files } });
+      void this.setRiboFile(files[0]);
     }
   }
 

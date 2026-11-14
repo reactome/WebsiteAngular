@@ -10,12 +10,13 @@ export class DatasetTable {
 }
 
 export interface StatisticalDesign {
-  defaultComparisonFactor?: string;
-  defaultGroup1?: string;
-  defaultGroup2?: string;
+  // Undefined when the dataset's summary gives none.
+  defaultComparisonFactor?: string | undefined;
+  defaultGroup1?: string | undefined;
+  defaultGroup2?: string | undefined;
   defaultCovariances: Set<string>;
 
-  analysisGroup?: string;
+  analysisGroup?: string | undefined;
   // Set to undefined on purpose: choosing another analysis group clears them.
   comparisonGroup1?: string | undefined;
   comparisonGroup2?: string | undefined;

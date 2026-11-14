@@ -1,3 +1,5 @@
+import type { ParameterValue } from './parameter.model';
+
 export interface Dataset {
   description: string;
   id: string;
@@ -11,5 +13,5 @@ export interface ImportParameter {
   name: string;
   required: boolean;
   type: string;
-  value: any;
+  value?: ParameterValue;
 }

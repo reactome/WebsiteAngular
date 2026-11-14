@@ -20,6 +20,8 @@ import { datasetFeature } from './state/dataset/dataset.selector';
 import { datasetActions } from './state/dataset/dataset.actions';
 import { analysisActions } from './state/analysis/analysis.actions';
 import { Dataset } from './state/dataset/dataset.state';
+import type { Method } from './state/method/method.state';
+import type { Parameter } from './model/parameter.model';
 import { CdkStep, StepperSelectionEvent } from '@angular/cdk/stepper';
 import { analysisFeature } from './state/analysis/analysis.selector';
 import { isDefined } from './utilities/utils';
@@ -206,7 +208,15 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
     if (this.canStartTour()) this.tour.start();
   }
 
-  async stepChange($event: StepperSelectionEvent, vm: any) {
+  async stepChange(
+    $event: StepperSelectionEvent,
+    vm: {
+      method: Method | null;
+      datasets: Dataset[];
+      parameters: Parameter[];
+      reportsRequired: boolean;
+    }
+  ) {
     this.stepIndex.set($event.selectedIndex);
     switch ($event.selectedStep) {
       case this.setMethodStep():
@@ -219,7 +229,16 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
         this.store.dispatch(datasetActions.initAnnotationColumns());
         break;
       case this.analysisStep():
-        this.store.dispatch(analysisActions.load(vm));
+        // The stepper is linear: the analysis step is reached with a method chosen.
+        if (vm.method)
+          this.store.dispatch(
+            analysisActions.load({
+              method: vm.method,
+              datasets: vm.datasets,
+              parameters: vm.parameters,
+              reportsRequired: vm.reportsRequired,
+            })
+          );
         this.editable = false;
         break;
     }
@@ -233,10 +252,13 @@ export class GsaFormComponent implements AfterViewInit, OnDestroy {
 
   async cancel() {
     if (this.stepper().selected === this.analysisStep()) {
-      const dialogRef = this.dialog.open(CancelDialogComponent, {
-        autoFocus: '#cancel',
-        role: 'alertdialog',
-      });
+      const dialogRef = this.dialog.open<CancelDialogComponent, unknown, boolean>(
+        CancelDialogComponent,
+        {
+          autoFocus: '#cancel',
+          role: 'alertdialog',
+        }
+      );
       const cancel = await firstValueFrom(dialogRef.afterClosed());
       if (cancel) {
         // The analysis is cancelled first, so nothing about the form -- it may

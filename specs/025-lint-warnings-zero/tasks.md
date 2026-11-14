@@ -61,7 +61,21 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       parameters, the method list and the captured GSA reads). No gate type-checks `e2e/`; checked by hand against
       main with the root tsconfig, it has no new error and one fewer. 803 → 782
       (#964).
-- [ ] T004 [US2] `projects/reactome-gsa-form` (100).
+- [ ] T004 [US2] `projects/reactome-gsa-form` (100), split in three by what the
+      types flow through: the models, services, utilities and components first,
+      then the state.
+  - [x] T004a The models, services, utilities and components (42), and 22 of the
+        state's with them: a parameter's value is `ParameterValue` (text, a
+        number or a boolean, as `parserFor` reads it), a request's parameters
+        are text, a summary's default parameters are text as the service sends
+        them (measured in the recording), and the service's methods are read as
+        the state's `Method` (the model's `Method`, `MethodParameter` and
+        `ParameterJSON` were never constructed, and are gone). The effects read a
+        default through `readDefault`, which reads one as `parserFor` did, an
+        absent one included. Four bugs (below). 782 → 718; dead code 100 → 99
+        (#965).
+  - [ ] T004b `state/dataset` (the rest of its warnings).
+  - [ ] T004c The other state folders.
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
 - [ ] T006 [US2] `projects/website-angular`, second third (~75).
 - [ ] T007 [US2] `projects/website-angular`, the rest (~78).
@@ -105,6 +119,28 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   inputs parse a string, through a type guard, with a spec seen failing against
   the old pass-through and against each guard loosened; the built web component,
   loaded as its demo page does, now shows the demo's cells, and threw before.
+- **A failed GSA request could show no message at all**
+  (`projects/reactome-gsa-form/src/lib/utilities/utils.ts`, `extractErrorMessage`).
+  It read the body as text whenever it had no `detail`: a request that never
+  arrived (its body the browser's `ProgressEvent`), an empty body, or text
+  starting with `{` that was not JSON each threw a `TypeError` or `SyntaxError`
+  inside the requests' `catchError`, so the snack bar never opened and the
+  failure became that error. Fixed in T004a, with `utils.spec.ts` (failing on
+  each of the three before).
+- **Clicking a local-data card threw**
+  (`…/local-data/local-data.component.ts`, `onFileSelected`). The card's click is
+  bound to the file handler too, and read `event.target.files[0]` from an
+  element with no files. Only the console showed it. Fixed in T004a
+  (`chosenFile`, `local-data.spec.ts`, failing before).
+- **Importing with an empty field threw**
+  (`…/external-data/external-data.component.ts`, `loadData`):
+  `param.value.toString()` on an absent value. The Import button did nothing,
+  and still sends nothing while a field is empty, now without the error
+  (`loadParameters`, `external-data.spec.ts`, failing before).
+- **A parameter type named like an object's own property** (`toString`) was read
+  by `Object.prototype`'s function instead of as text (`parserFor`). Not one the
+  service sends; fixed with `Object.hasOwn` in T004a, its case seen failing with
+  `in`.
 
 ## Silenced lines
 
