@@ -321,7 +321,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.tableStore.deleteRow({ y });
   }
 
-  focusLastCell(_$event: any) {
+  focusLastCell(_$event: Event) {
     this.tableStore.focusLast();
   }
 
@@ -406,7 +406,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.scrollOffset.set(this.viewport().getRenderedRange().start * this.rowHeight());
   }
 
-  trackByIndex: TrackByFunction<any> = <T>(index: number, _element: T) => {
+  trackByIndex: TrackByFunction<Cell[]> = (index: number) => {
     return index;
   };
 

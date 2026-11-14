@@ -12,8 +12,8 @@ const firstRow = <T>(table: T[][]): T[] => {
   return first;
 };
 
-export const width = (table: any[][]) => firstRow(table).length - 1;
-export const height = (table: any[][]) => table.length - 1;
+export const width = <T>(table: T[][]) => firstRow(table).length - 1;
+export const height = <T>(table: T[][]) => table.length - 1;
 
 export const cp = <T>(obj: T) => JSON.parse(JSON.stringify(obj)) as T;
 

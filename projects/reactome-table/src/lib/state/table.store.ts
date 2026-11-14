@@ -19,8 +19,8 @@ import * as Cells from './cells';
 export type Coords = { x: number; y: number };
 export type Named = { name: string };
 
-export function isNamed(o: any): o is Named {
-  return o.name != undefined;
+export function isNamed(o: object): o is Named {
+  return 'name' in o && o.name != undefined;
 }
 
 export interface TableState extends UndoRedoState {
