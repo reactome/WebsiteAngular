@@ -39,7 +39,7 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       recorded-answer check imports such modules whole. 835 → 822 (main measured
       834: one warning of slack). Dead code 104 → 100 (main measured 102):
       `Layout` is no longer an unused export, and the store's `LocatedValue` is
-      now imported (#PR).
+      now imported (#962).
 
 ## Phase 2: Values typed "anything" (User Story 2, P2)
 
