@@ -72,6 +72,7 @@ import { EntityPopupComponent } from './entity-popup/entity-popup.component';
 import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
+import { nodeExpression } from './node-expression';
 import { DeltaSignalService } from '../deltasignal/deltasignal.service';
 import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 
@@ -1611,14 +1612,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             cy.nodes('.PhysicalEntity').forEach((node) => {
               if (node.hasClass('Interactor') && !includeInteractors) return; // Avoid coloring interactors when analysis does not include them
 
-              const leaves: Graph.Node[] = node.data('graph.leaves') || [node.data('graph')];
-              const exp = leaves
-                .map((leaf) =>
-                  leaf.identifier ? analysisEntityMap.get(leaf.identifier) : undefined
-                )
-                .sort((a, b) => (a !== undefined ? (b !== undefined ? a - b : -1) : 1));
-              // if (hasExpression) exp = exp.map(e => e !== undefined ? 1 - e : undefined);
-              node.data('exp', exp);
+              node.data('exp', nodeExpression(node, analysisEntityMap));
             });
             cy.nodes('.Pathway').forEach((node) => {
               const dbId: number = node.data('reactomeId');
