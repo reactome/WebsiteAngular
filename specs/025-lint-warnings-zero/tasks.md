@@ -125,8 +125,25 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       `nav-options-mapper.spec.ts` (new) passes on both, and fails with
       `external` ignored. `projects/website-angular` now has no "anything"
       warnings. 534 → 454 (#971).
-- [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
-      each (311 in all). Split decided when T007 is done, from a fresh count.
+- T008–T013 [US2] `projects/pathway-browser`, by feature folder: 309 on
+  15 Nov, split into six of about 50 (folders under `src/app`).
+  - [x] T008 `details/common` and the small folders: `citation`, `model`,
+        `reacfoam`, `render`, `shared/logger`,
+        `utils/expandable-virtual-scroll` (47). Types only, no runtime change:
+        the byline spec imports vitest's functions; the citation dialog's data
+        is injected as a `Citation`; a search's `Params` is a type rather than
+        an interface extending `Record<string, any>`, so it is still sent as
+        the request's parameters; the Reacfoam's `throttle` takes `unknown[]`;
+        a node's background image is read as `unknown`; the logger's input is
+        `unknown`; the resize directive's element is an `HTMLElement`. 454 →
+        407 (#PR).
+  - [ ] T009 `details/tabs` (41).
+  - [ ] T010 `diagram`, with `diagram/entity-popup` (63).
+  - [ ] T011 `interactors` (52).
+  - [ ] T012 `pipes` (50).
+  - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
+        `deltasignal` (5) is another session's work at present: its warnings
+        wait for that session, or are cleared with it.
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
       `error` (their counts are zero).
 

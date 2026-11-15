@@ -1148,7 +1148,7 @@ export class RenderComponent {
    * they have to be split apart before any of them will parse.
    */
   private backgroundMarkup(node: cytoscape.NodeSingular): string[] {
-    const style = node.style('background-image');
+    const style: unknown = node.style('background-image');
     const values = (Array.isArray(style) ? style : [style]).flatMap((value) =>
       String(value ?? '').split(/\s+(?=data:)/)
     );

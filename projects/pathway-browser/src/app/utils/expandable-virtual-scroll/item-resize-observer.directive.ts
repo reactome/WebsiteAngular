@@ -4,7 +4,7 @@ import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, output } from 
   selector: '[item-resize]',
 })
 export class ItemResizeObserverDirective implements AfterViewInit, OnDestroy {
-  private el = inject(ElementRef);
+  private el = inject<ElementRef<HTMLElement>>(ElementRef);
 
   heightChange = output<number>();
 

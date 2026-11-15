@@ -457,7 +457,7 @@ export class ReacfoamComponent implements OnDestroy {
   }
 }
 
-function throttle<Args extends any[]>(
+function throttle<Args extends unknown[]>(
   delay: number,
   func: (...args: Args) => void
 ): (...args: Args) => void {
