@@ -95,12 +95,12 @@ export class SchemaComponent implements OnInit, OnDestroy {
           //   /dataSchema/:className/:dbId
           // so a single subscription has to keep both selectedClass and
           // selectedInstanceId in sync with the URL.
-          this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-            const className = params['className'] || 'DatabaseObject';
+          this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+            const className = params.get('className') || 'DatabaseObject';
             if (className !== this.selectedClass) {
               this.selectClass(className);
             }
-            const dbIdParam = params['dbId'];
+            const dbIdParam = params.get('dbId');
             const dbId = dbIdParam != null ? Number(dbIdParam) : null;
             if (dbId !== this.selectedInstanceId) {
               this.selectedInstanceId = dbId;

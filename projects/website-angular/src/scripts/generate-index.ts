@@ -179,8 +179,13 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
   return articles;
 }
 
-function buildRecursiveIndex(dir: string): any {
-  const result: Record<string, any> = {};
+/** A folder's index: its own articles under `articles`, and each subfolder's index by its name. */
+interface ArticleTree {
+  [name: string]: ArticleTree | ArticleIndexItem[];
+}
+
+function buildRecursiveIndex(dir: string): ArticleTree {
+  const result: ArticleTree = {};
 
   // Root-level articles
   const rootArticles = loadNewsArticlesFromDir(dir);

@@ -5,6 +5,8 @@ import {
   UrlStateService,
   urlParam,
 } from '../../../../../../pathway-browser/src/app/services/url-state.service';
+import type { PaletteName } from '../../../../../../pathway-browser/src/app/services/analysis.service';
+import type * as Analysis from '../../../../../../pathway-browser/src/app/model/analysis.model';
 import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/app/interactors/interactor-threshold';
 
 /**
@@ -62,10 +64,10 @@ export class DetailUrlState implements Omit<UrlStateService, NotOnContentPages> 
   // Mirrors UrlStateService, though the content pages do not draw interactors.
   // Nothing checks the two stay in step (see the class comment), so keep them so.
   interactorScore = urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number');
-  palette = urlParam<any>(null, 'string');
-  filterViewMode = urlParam<any>(undefined, 'string');
+  palette = urlParam<PaletteName | null>(null, 'string');
+  filterViewMode = urlParam<'focus' | 'overview' | undefined>(undefined, 'string');
   speciesFilter = urlParam<string[]>([], 'string');
-  resourceFilter = urlParam<any>(null, 'string');
+  resourceFilter = urlParam<Analysis.Resource | null>(null, 'string');
   includeDisease = urlParam<boolean | undefined>(undefined, 'boolean');
   includeGrouping = urlParam<boolean | undefined>(undefined, 'boolean');
   pathwayMinSizeFilter = urlParam<number | undefined>(undefined, 'number');

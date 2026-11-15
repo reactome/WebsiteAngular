@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { linkPath, linkQueryParams } from './link';
 
 describe('linkPath', () => {

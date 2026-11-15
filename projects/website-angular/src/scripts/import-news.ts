@@ -88,8 +88,10 @@ const ENTITIES: Record<string, string> = {
 
 function decodeEntities(text: string) {
   return text
-    .replace(/&#(\d+);/g, (_m, code) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([0-9a-f]+);/gi, (_m, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&#(\d+);/g, (_m: string, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_m: string, code: string) =>
+      String.fromCodePoint(parseInt(code, 16))
+    )
     .replace(/&([a-z]+);/gi, (match, name: string) => ENTITIES[name.toLowerCase()] ?? match);
 }
 
@@ -176,7 +178,7 @@ function plain(html: string) {
       .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
       .replace(
         /<a[^>]*class="__cf_email__"[^>]*data-cfemail="([0-9a-f]+)"[^>]*>.*?<\/a>/gis,
-        (_m, hex) => decodeCloudflareEmail(hex)
+        (_m: string, hex: string) => decodeCloudflareEmail(hex)
       )
       .replace(/<[^>]+>/g, '')
   ).replace(/\s+/g, ' ');
@@ -202,7 +204,7 @@ function toMarkdown(body: string) {
     .replace(/<(script|style)[\s\S]*?<\/\1>/gi, '')
     .replace(
       /<a[^>]*class="__cf_email__"[^>]*data-cfemail="([0-9a-f]+)"[^>]*>.*?<\/a>/gis,
-      (_m, hex) => decodeCloudflareEmail(hex)
+      (_m: string, hex: string) => decodeCloudflareEmail(hex)
     )
     // Images before anchors: an image inside a link keeps both.
     .replace(/<img[^>]*>/gi, (tag) => {

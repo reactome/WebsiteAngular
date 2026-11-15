@@ -42,7 +42,7 @@ export class ResourcesComponent implements OnInit {
     });
   }
 
-  getKeys(obj: Record<string, any>): string[] {
+  getKeys(obj: Record<string, unknown>): string[] {
     return Object.keys(obj);
   }
 
