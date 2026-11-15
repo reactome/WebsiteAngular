@@ -101,7 +101,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       read through a guard in `serve-prod.spec.ts`. No gate type-checks the
       scripts and specs here; checked by hand against main with the root
       tsconfig, the files touched have no new error and 19 fewer. 682 → 604
-      (#PR).
+      (#969).
 - [ ] T006 [US2] `projects/website-angular`, the search page (70).
 - [ ] T007 [US2] `projects/website-angular`, `src/utils` (80).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
