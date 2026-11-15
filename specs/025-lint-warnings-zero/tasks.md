@@ -124,7 +124,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       real file the menus are as before (compared once, old mapper against new);
       `nav-options-mapper.spec.ts` (new) passes on both, and fails with
       `external` ignored. `projects/website-angular` now has no "anything"
-      warnings. 534 → 454 (#PR).
+      warnings. 534 → 454 (#971).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
       each (311 in all). Split decided when T007 is done, from a fresh count.
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
