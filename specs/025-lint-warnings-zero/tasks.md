@@ -61,7 +61,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       parameters, the method list and the captured GSA reads). No gate type-checks `e2e/`; checked by hand against
       main with the root tsconfig, it has no new error and one fewer. 803 → 782
       (#964).
-- [ ] T004 [US2] `projects/reactome-gsa-form` (100), split in three by what the
+- [x] T004 [US2] `projects/reactome-gsa-form` (100), split in three by what the
       types flow through: the models, services, utilities and components first,
       then the state.
   - [x] T004a The models, services, utilities and components (42), and 22 of the
@@ -74,8 +74,16 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         default through `readDefault`, which reads one as `parserFor` did, an
         absent one included. Four bugs (below). 782 → 718; dead code 100 → 99
         (#965).
-  - [ ] T004b `state/dataset` (the rest of its warnings).
-  - [ ] T004c The other state folders.
+  - [x] T004b The state, all of it (36): T004c folded in, its warnings being
+        the same few lines in every folder. A failure action carries the error
+        it was given as `unknown`, what `catchError` gives; only two places read
+        one, and they narrow it: the analysis effect retries a 503 only from an
+        `HttpErrorResponse`, and the analysis reducer shows an
+        `HttpErrorResponse`'s reason and any other error's message, as before
+        (`analysis.reducer.spec.ts`, passing on the old reducer and the new). A
+        load's parameters are `LoadParameter`s, text, as every caller sends.
+        `projects/reactome-gsa-form` now lints clean. 718 → 682 (#968).
+  - [x] T004c Folded into T004b.
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
 - [ ] T006 [US2] `projects/website-angular`, second third (~75).
 - [ ] T007 [US2] `projects/website-angular`, the rest (~78).

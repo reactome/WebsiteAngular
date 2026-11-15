@@ -29,7 +29,7 @@ export class MethodEffects {
             });
             return methodActions.loadSuccess({ methods });
           }),
-          catchError((err) => of(methodActions.loadFailure({ error: err })))
+          catchError((err: unknown) => of(methodActions.loadFailure({ error: err })))
         )
       )
     )

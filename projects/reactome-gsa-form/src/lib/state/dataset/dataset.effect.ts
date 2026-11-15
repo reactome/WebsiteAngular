@@ -52,7 +52,7 @@ export class DatasetEffects {
               name: file.name.substring(0, file.name.lastIndexOf('.')),
             })
           ),
-          catchError((error) => of(datasetActions.uploadError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.uploadError({ error, id })))
         )
       )
     )
@@ -79,7 +79,7 @@ export class DatasetEffects {
               name: fileRNA.name.substring(0, fileRNA.name.lastIndexOf('.')),
             })
           ),
-          catchError((error) => of(datasetActions.uploadError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.uploadError({ error, id })))
         )
       )
     )
@@ -116,7 +116,7 @@ export class DatasetEffects {
       exhaustMap(({ resourceId, parameters, id }) =>
         this.loadDatasetService.submitLoadDataset(resourceId, parameters).pipe(
           map((loadingId) => datasetActions.loadSubmitted({ loadingId, id })),
-          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.loadSubmittedError({ error, id })))
         )
       )
     )
@@ -136,7 +136,7 @@ export class DatasetEffects {
       switchMap(({ loadingId, id }) =>
         this.loadDatasetService.getLoadingStatus(loadingId).pipe(
           mergeMap((loadingStatus) => {
-            const actions: Action<any>[] = [datasetActions.setLoadStatus({ loadingStatus, id })];
+            const actions: Action[] = [datasetActions.setLoadStatus({ loadingStatus, id })];
             if (loadingStatus.status === 'running')
               actions.push(datasetActions.getLoadStatus({ loadingId, id }));
             else if (loadingStatus.status === 'failed') {
@@ -147,7 +147,7 @@ export class DatasetEffects {
           delayWhen((action) =>
             action.type === '[GSA Dataset] get load status' ? timer(500) : timer(0)
           ),
-          catchError((error) => of(datasetActions.getLoadStatusError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.getLoadStatusError({ error, id })))
         )
       )
     )
@@ -191,7 +191,7 @@ export class DatasetEffects {
       exhaustMap(({ datasetId, id }) =>
         this.loadDatasetService.getSummary(datasetId).pipe(
           map((summary) => datasetActions.setSummary({ summary, id })),
-          catchError((error) => of(datasetActions.getSummaryError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.getSummaryError({ error, id })))
         )
       )
     )

@@ -8,7 +8,7 @@ export const methodActions = createActionGroup({
   events: {
     load: emptyProps(),
     'load success': props<{ methods: Method[] }>(),
-    'load failure': props<{ error: any }>(),
+    'load failure': props<{ error: unknown }>(),
 
     select: props<{ methodName: string }>(),
 

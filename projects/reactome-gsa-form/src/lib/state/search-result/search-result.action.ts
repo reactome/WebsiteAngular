@@ -6,10 +6,10 @@ export const searchResultActions = createActionGroup({
   events: {
     'load species': emptyProps(),
     'load species success': props<{ speciesList: string[] }>(),
-    'load species failure': props<{ error: any }>(),
+    'load species failure': props<{ error: unknown }>(),
 
     search: props<{ species?: string | null; keywords: string }>(),
     'search success': props<{ results: SearchResult[] }>(),
-    'search error': props<{ error: any }>(),
+    'search error': props<{ error: unknown }>(),
   },
 });
