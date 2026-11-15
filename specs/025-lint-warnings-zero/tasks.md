@@ -82,7 +82,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         `HttpErrorResponse`'s reason and any other error's message, as before
         (`analysis.reducer.spec.ts`, passing on the old reducer and the new). A
         load's parameters are `LoadParameter`s, text, as every caller sends.
-        `projects/reactome-gsa-form` now lints clean. 718 → 682 (#PR).
+        `projects/reactome-gsa-form` now lints clean. 718 → 682 (#968).
   - [x] T004c Folded into T004b.
 - [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
 - [ ] T006 [US2] `projects/website-angular`, second third (~75).
