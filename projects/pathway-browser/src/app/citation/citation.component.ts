@@ -34,7 +34,7 @@ import { FormsModule } from '@angular/forms';
 export class CitationComponent {
   citation = inject(CitationService);
 
-  data: Citation = inject(MAT_DIALOG_DATA);
+  data = inject<Citation>(MAT_DIALOG_DATA);
 
   id = this.data.id;
   citationContent = this.data.content;

@@ -9,13 +9,14 @@ import type {
 
 // Read as a namespace: `import * as Search from '…/search.model'`.
 
-export interface Params extends Record<string, any> {
+// A type, not an interface, so that it is a record: it is sent as a search's parameters.
+export type Params = {
   query: string;
   species?: string;
   diagram?: string;
   types?: string[];
   includeInteractors?: boolean;
-}
+};
 
 export type Paginated<T> = T & {
   start: number;
