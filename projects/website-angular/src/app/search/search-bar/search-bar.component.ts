@@ -124,7 +124,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       // change to the URL.
       const applied = this.activeFilters();
       this.advancedFilters = Object.fromEntries(
-        Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
+        Object.entries(applied).map(([key, values]) => [key, [...values]])
       ) as SearchFilters;
     }
     if (changes['query']) {
