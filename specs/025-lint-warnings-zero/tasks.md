@@ -116,7 +116,15 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       and a 401's challenge and its refusals (`answer.service.spec.ts`). Checked
       by hand against main with the root tsconfig, the files touched have no new
       error and 33 fewer. 604 → 534 (#970).
-- [ ] T007 [US2] `projects/website-angular`, `src/utils` (80).
+- [x] T007 [US2] `projects/website-angular`, `src/utils` (80): the HTML
+      passes' `replace` callbacks take their groups as text (an optional group
+      as `string | undefined`), and the navigation menus are read from
+      `nav-options.json` as `unknown`: a field as text where it is text (empty
+      otherwise), `external` by its truth, an icon only where it is text. On the
+      real file the menus are as before (compared once, old mapper against new);
+      `nav-options-mapper.spec.ts` (new) passes on both, and fails with
+      `external` ignored. `projects/website-angular` now has no "anything"
+      warnings. 534 → 454 (#971).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
       each (311 in all). Split decided when T007 is done, from a fresh count.
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to

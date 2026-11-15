@@ -66,23 +66,26 @@ function addSamePageIds(html: string): string {
     if (fragment) fragments.add(fragment);
   if (fragments.size === 0) return out;
 
-  out = out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    // Skip headings that already have an id (pass 1 added one).
-    if (attrs && /\bid=/.test(attrs)) return full;
-    // Skip headings whose content is itself a link (pass 1 would have
-    // handled them if the link target matched).
-    // Use the heading's plain text to compute the slug.
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    if (!text) return full;
-    // Try the plain slug first, then the MediaWiki encoding, so a page can
-    // mix both conventions.
-    const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
-      (s) => fragments.has(s) && !assigned.has(s)
-    );
-    if (!slug) return full;
-    assigned.add(slug);
-    return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
-  });
+  out = out.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      // Skip headings that already have an id (pass 1 added one).
+      if (attrs && /\bid=/.test(attrs)) return full;
+      // Skip headings whose content is itself a link (pass 1 would have
+      // handled them if the link target matched).
+      // Use the heading's plain text to compute the slug.
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      if (!text) return full;
+      // Try the plain slug first, then the MediaWiki encoding, so a page can
+      // mix both conventions.
+      const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
+        (s) => fragments.has(s) && !assigned.has(s)
+      );
+      if (!slug) return full;
+      assigned.add(slug);
+      return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
+    }
+  );
 
   // Pass 3: fragments that still resolve to nothing.
   //
@@ -120,14 +123,17 @@ function addSamePageIds(html: string): string {
     }
   }
 
-  return out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    if (attrs && /\bid=/.test(attrs)) return full;
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    const frag = text && wanted.get(loose(text));
-    if (!frag || assigned.has(frag)) return full;
-    assigned.add(frag);
-    return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
-  });
+  return out.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      if (attrs && /\bid=/.test(attrs)) return full;
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      const frag = text && wanted.get(loose(text));
+      if (!frag || assigned.has(frag)) return full;
+      assigned.add(frag);
+      return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
+    }
+  );
 }
 
 /**
@@ -142,14 +148,17 @@ function addSamePageIds(html: string): string {
  */
 function idEveryHeading(html: string): string {
   const taken = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-  return html.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    if (attrs && /\bid=/.test(attrs)) return full;
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    const id = text.replace(/\s+/g, '_').replace(/"/g, '');
-    if (!id || taken.has(id)) return full;
-    taken.add(id);
-    return `<${tag}${attrs || ''} id="${id}">${inner}</${tag}>`;
-  });
+  return html.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      if (attrs && /\bid=/.test(attrs)) return full;
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      const id = text.replace(/\s+/g, '_').replace(/"/g, '');
+      if (!id || taken.has(id)) return full;
+      taken.add(id);
+      return `<${tag}${attrs || ''} id="${id}">${inner}</${tag}>`;
+    }
+  );
 }
 
 export default function addAnchorIds(html: string): string {

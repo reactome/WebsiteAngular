@@ -35,7 +35,13 @@ export function relocate(path: string): string {
 export default function rewriteContentUrls(html: string): string {
   return html.replace(
     /\b(href|src)=("([^"]*)"|'([^']*)')/g,
-    (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
+    (
+      _match: string,
+      attr: string,
+      _quoted: string,
+      doubleQuoted: string | undefined,
+      singleQuoted: string | undefined
+    ) => {
       const value = doubleQuoted ?? singleQuoted ?? '';
       return `${attr}="${normalizeContentUrl(value)}"`;
     }

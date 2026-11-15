@@ -5,7 +5,7 @@
 const COLLAPSE_THRESHOLD = 8;
 
 export default function wrapCodeBlocks(html: string): string {
-  return html.replace(/<pre>([\s\S]*?)<\/pre>/g, (match, body) => {
+  return html.replace(/<pre>([\s\S]*?)<\/pre>/g, (match: string, body: string) => {
     const text = body.replace(/<[^>]+>/g, '');
     const lines = text.split('\n').filter((l: string) => l.trim().length > 0).length;
     if (lines < COLLAPSE_THRESHOLD) return match;
