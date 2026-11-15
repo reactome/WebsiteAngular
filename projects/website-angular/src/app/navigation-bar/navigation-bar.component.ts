@@ -13,7 +13,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
   standalone: true,
   selector: 'app-navigation-bar',
   host: {
-    '(window:resize)': 'onResize($event)',
+    '(window:resize)': 'onResize()',
   },
   imports: [
     NgOptimizedImage,
@@ -122,7 +122,7 @@ export class NavigationBarComponent implements AfterViewInit {
     return !!links && Object.keys(links).length > 0;
   }
 
-  onResize(_event: any) {
+  onResize() {
     this.windowWidth = window.innerWidth;
   }
 }

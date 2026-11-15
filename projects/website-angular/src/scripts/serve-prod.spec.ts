@@ -46,6 +46,20 @@ async function waitForServer(url: string, timeoutMs = 20_000) {
   return false;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The health route's answer: its services by name, refused unless it has them. */
+async function health(
+  base: string
+): Promise<{ ok: unknown; bundle: unknown; services: Record<string, unknown> }> {
+  const body: unknown = await (await fetch(base + '/health')).json();
+  if (!isRecord(body) || !isRecord(body['services'])) {
+    throw new Error('the health route answered without its services');
+  }
+  return { ok: body['ok'], bundle: body['bundle'], services: body['services'] };
+}
+
 describe('serve-prod', () => {
   let dist = '';
   let embed = '';
@@ -112,14 +126,16 @@ describe('serve-prod', () => {
    * sibling was down would be reporting the estate under the name of the site.
    */
   it('reports each service, and says which are down', async () => {
-    const body = await (await fetch(base + '/health')).json();
+    const body = await health(base);
     expect(Object.keys(body.services)).toEqual(
       expect.arrayContaining(['content-node', 'render', 'mcp'])
     );
     // Nothing is running in this suite, so every one of them is down and each
     // says so on its own rather than collapsing into a single failure.
-    for (const [name, state] of Object.entries(body.services as Record<string, { up: boolean }>)) {
-      expect(state.up, `${name} should report its own state`).toBe(false);
+    for (const [name, state] of Object.entries(body.services)) {
+      expect(isRecord(state) ? state['up'] : state, `${name} should report its own state`).toBe(
+        false
+      );
     }
   });
 
@@ -127,7 +143,7 @@ describe('serve-prod', () => {
     // `ok` is the site's answer, not the estate's. The site renders without the
     // render service; telling a monitor otherwise pages somebody for the wrong
     // thing, and what is actually wrong is named in `services`.
-    const body = await (await fetch(base + '/health')).json();
+    const body = await health(base);
     expect(body.ok).toBe(true);
     expect(body.bundle === null || typeof body.bundle === 'string').toBe(true);
   });

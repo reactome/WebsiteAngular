@@ -1,5 +1,6 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { catchError, map, Observable, of, throwError } from 'rxjs';
 import { EntityService } from '../../../../../../pathway-browser/src/app/services/entity.service';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
@@ -7,6 +8,7 @@ import { PhysicalEntity } from '../../../../../../pathway-browser/src/app/model/
 import { Pathway } from '../../../../../../pathway-browser/src/app/model/graph/event/pathway.model';
 import { ReferenceEntity } from '../../../../../../pathway-browser/src/app/model/graph/reference-entity/reference-entity.model';
 import { DataKeys, Labels } from '../../../../../../pathway-browser/src/app/constants/constants';
+import { fieldByName } from '../../../../../../pathway-browser/src/app/services/utils';
 import {
   JSOGDeserializer,
   type JsogObject,
@@ -19,7 +21,11 @@ export class DetailEntityService implements Partial<EntityService> {
   readonly eventId = signal<string | undefined>(undefined);
   selectedElement$ = of(undefined);
 
-  _refEntities: any = { value: signal(null) };
+  // EntityService's resource, with nothing to load: the detail page has no selected entity
+  readonly _refEntities: EntityService['_refEntities'] = rxResource({
+    stream: () => of(null),
+    defaultValue: null,
+  });
   readonly refEntities = signal(null);
 
   getOtherForms(stId: string): Observable<PhysicalEntity[]> {
@@ -100,9 +106,9 @@ export class DetailEntityService implements Partial<EntityService> {
       { key: 'referenceGene', label: 'Reference Genes' },
       { key: 'referenceTranscript', label: 'Reference Transcript' },
     ];
-    const results: { label: string; value: any }[] = [];
+    const results: { label: string; value: unknown }[] = [];
     for (const property of properties) {
-      const value = (externalRef as any)[property.key];
+      const value = fieldByName(externalRef, property.key);
       if (!value) continue;
       results.push({ label: property.label || property.key, value });
     }

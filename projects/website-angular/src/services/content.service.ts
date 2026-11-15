@@ -165,8 +165,10 @@ export class ContentService {
    * Get all articles
    */
   getAllArticles(path: string): Observable<ArticleIndexItem[]> {
-    return this.http.get<any>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE).pipe(
-      map((data) => {
+    // As scripts/generate-index.ts writes it: a folder's articles, or its tree
+    type Index = ArticleIndexItem[] | { articles?: ArticleIndexItem[] } | null;
+    return this.http.get<Index>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE).pipe(
+      map((data): ArticleIndexItem[] => {
         if (Array.isArray(data)) return data;
         if (data?.articles && Array.isArray(data.articles)) return data.articles;
         return [];

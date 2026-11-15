@@ -10,7 +10,12 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
-declare const SwaggerUIBundle: any;
+/** The Swagger UI bundle's global, loaded as a script: the options this page gives it. */
+declare const SwaggerUIBundle: (options: {
+  domNode: HTMLElement;
+  url: string;
+  deepLinking: boolean;
+}) => unknown;
 
 /**
  * Each service's description, under its own root. The content service's is the
@@ -39,7 +44,8 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     const platformId = inject(PLATFORM_ID);
 
     this.isBrowser = isPlatformBrowser(platformId);
-    this.serviceName = this.route.snapshot.data['serviceName'] || 'ContentService';
+    const name: unknown = this.route.snapshot.data['serviceName'];
+    this.serviceName = typeof name === 'string' && name !== '' ? name : 'ContentService';
   }
 
   ngAfterViewInit() {

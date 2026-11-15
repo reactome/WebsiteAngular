@@ -84,9 +84,26 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         load's parameters are `LoadParameter`s, text, as every caller sends.
         `projects/reactome-gsa-form` now lints clean. 718 → 682 (#968).
   - [x] T004c Folded into T004b.
-- [ ] T005 [US2] `projects/website-angular`, first third by folder (~75).
-- [ ] T006 [US2] `projects/website-angular`, second third (~75).
-- [ ] T007 [US2] `projects/website-angular`, the rest (~78).
+- [x] T005 [US2] `projects/website-angular`, all but the search page and
+      `src/utils` (78, counted on 15 Nov: the thirds split by folder as search
+      70, `src/utils` 80 and the rest 78). The specs import vitest's functions
+      rather than relying on its globals (`link.spec.ts`); the detail page's
+      stand-ins take the Pathway Browser's own types (`_refEntities` is a resource
+      with nothing to load, `currentResource` a `ResourceAndType`, the palette,
+      view mode and resource filter their `UrlStateService` types) and read an
+      external reference's fields through `fieldByName`; the schema page reads its
+      route through `paramMap`; the page holds a `PageContent`; the Swagger UI
+      bundle's global is declared with the options the page gives it; the article
+      index is typed as `generate-index.ts` writes it, and read so; a site-search
+      hit is its page's item, found by the identifier MiniSearch gives back
+      (`site-search.service.spec.ts`, passing on the old service and the new,
+      failing with the empty-body fallback removed); the health route's answer is
+      read through a guard in `serve-prod.spec.ts`. No gate type-checks the
+      scripts and specs here; checked by hand against main with the root
+      tsconfig, the files touched have no new error and 19 fewer. 682 → 604
+      (#969).
+- [ ] T006 [US2] `projects/website-angular`, the search page (70).
+- [ ] T007 [US2] `projects/website-angular`, `src/utils` (80).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
       each (311 in all). Split decided when T007 is done, from a fresh count.
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to

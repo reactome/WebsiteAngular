@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angul
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ContentService } from '../../services/content.service';
+import { ContentService, type PageContent } from '../../services/content.service';
 import { marked } from 'marked';
 import addImageSizes from '../../utils/addImageSizes';
 import renderContentBody from '../../utils/renderContentBody';
@@ -26,13 +26,13 @@ export class PageComponent implements OnInit {
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
   private stats = inject(StatsService);
-  private elementRef = inject(ElementRef);
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private viewportScroller = inject(ViewportScroller);
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
 
-  page: any | null = null;
+  page: PageContent | null = null;
   renderedContent: SafeHtml = '';
   loading = false;
   error: string | null = null;
@@ -101,7 +101,7 @@ export class PageComponent implements OnInit {
             // contents is carried away from it as the images above arrive --
             // measured at 2,793px off on the FIViz page, which has 116.
             this.renderedContent = sanitize(
-              addImageSizes(renderContentBody(html), this.page?.imageSizes),
+              addImageSizes(renderContentBody(html), page.imageSizes),
               this.sanitizer
             );
             this.loading = false;
