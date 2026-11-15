@@ -113,7 +113,15 @@ export class DeltaSignalPanelComponent {
   );
   readonly softLine = computed(() => {
     const result = this.service.result();
-    if (result?.soft_observed === undefined) return null;
+    if (!result) return null;
+    if (result.soft_observed === undefined) {
+      // A server from before deltasignal specs/156 ignores unknown request
+      // fields: measurements were sent and silently dropped. Say so — the
+      // engine's own 400 only exists on servers that know the field.
+      return this.softSent()
+        ? 'This server ignored the measured levels (it predates soft observations) — this answer is unconditioned.'
+        : null;
+    }
     if (!this.softSent() && !result.soft_observed) return null;
     const overridden = result.soft_overridden ?? [];
     const pins = overridden.filter((item) => item.reason === 'pin').length;
