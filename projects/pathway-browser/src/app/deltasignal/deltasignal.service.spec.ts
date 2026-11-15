@@ -816,3 +816,194 @@ describe('DeltaSignalService readouts', () => {
     expect(service.readoutState().byId.has('R-HSA-3')).toBe(false);
   });
 });
+
+// deltasignal specs/156 consumption (WA specs/028): a measured level entered
+// on a solved readout row conditions the NEXT solve through its own
+// `soft_observations` field — present exactly when measurements exist, built
+// from the row's resolved nodes minus the hard pins, and reported back from
+// the server's own counters, never recomputed here.
+describe('DeltaSignalService soft observations (specs/028)', () => {
+  let service: DeltaSignalService;
+  let http: HttpTestingController;
+
+  const network: DeltaSignalNetwork = {
+    status: 'success',
+    message: 'ok',
+    network_id: 'pw:test',
+    edges: [],
+    pathways: [],
+    nodes: [
+      {
+        uuid: 'root-a',
+        name: 'ATM',
+        reactome_id: 'R-HSA-1',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+      {
+        uuid: 'mid-a',
+        name: 'ATM',
+        reactome_id: 'R-HSA-1',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+      {
+        uuid: 'node-b',
+        name: 'TP53',
+        reactome_id: 'R-HSA-2',
+        entity_type: 'protein',
+        baseline: 0.01,
+        set_id: null,
+      },
+    ],
+  };
+
+  const protocol = {
+    ko_agg: 'mean_entity',
+    total_readout: 'abundance_a3',
+    baseline: 0.01,
+    down_cutoff: 0.85,
+    up_cutoff: 1.15,
+  };
+
+  const readoutsAnswer = (basis: 'direct' | 'proxy' = 'direct'): DeltaSignalReadoutsResponse => ({
+    status: 'success',
+    protocol,
+    missing_tables: [],
+    malformed_tables: [],
+    results: [
+      {
+        id: 'R-HSA-1',
+        mode: 'forms',
+        basis,
+        groups: [['root-a', 'mid-a']],
+        pinned: ['root-a'],
+        value: 0.005,
+        fold: 0.5,
+        call: 'down',
+        railed: false,
+      },
+    ],
+  });
+
+  const solveAnswer = {
+    status: 'success' as const,
+    message: 'ok',
+    node_activities: { 'root-a': 0, 'mid-a': 0.01, 'node-b': 0.02 },
+    influence_scores: { 'mid-a': 0.4 },
+    converged: true,
+    iterations: 3,
+    solve_time: 0.1,
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(DeltaSignalService);
+    http = TestBed.inject(HttpTestingController);
+    service.pathway.set({ id: 'Test_R-HSA-9', stable_id: 'R-HSA-9', name: 'Test' });
+    service.network.set(network);
+    service.perturbations.set([
+      { reactomeId: 'R-HSA-1', name: 'ATM', activity: 0, nodeUuids: ['root-a'], basis: 'root' },
+    ]);
+  });
+
+  afterEach(() => http.verify());
+
+  const settle = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+  const flushNoLeads = async () => {
+    await settle();
+    http
+      .expectOne('/api/leads')
+      .flush({ status: 'success', leads: { composite_prefix: 'ctx-arrows_', centres: {} } });
+    await settle();
+  };
+
+  const firstSolve = async (basis: 'direct' | 'proxy' = 'direct') => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer(basis));
+    await flushNoLeads();
+    await solving;
+  };
+
+  it('a solve without measurements sends NO soft_observations field', async () => {
+    const solving = service.solve();
+    await settle();
+    const request = http.expectOne('/api/solve');
+    expect('soft_observations' in (request.request.body as object)).toBe(false);
+    request.flush(solveAnswer);
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await flushNoLeads();
+    await solving;
+  });
+
+  it("a measured level conditions the next solve over the row's unpinned nodes", async () => {
+    await firstSolve();
+    expect(service.addMeasurement('R-HSA-1', 0.6, 0.5)).toBe(true);
+
+    const solving = service.solve();
+    await settle();
+    const request = http.expectOne('/api/solve');
+    // root-a is hard-pinned, so only mid-a is soft-observed.
+    expect((request.request.body as { soft_observations: unknown }).soft_observations).toEqual({
+      'mid-a': [0.6, 0.5],
+    });
+    request.flush({
+      ...solveAnswer,
+      soft_obs_rule: 'blend',
+      soft_observed: 1,
+      soft_overridden: [],
+    });
+    await settle();
+    http.expectOne('/api/readouts').flush(readoutsAnswer());
+    await settle(); // the leads table is cached from the first solve
+    await solving;
+
+    // the server's counters are what the UI reports, never a recomputation
+    expect(service.result()?.soft_observed).toBe(1);
+    expect(service.result()?.soft_obs_rule).toBe('blend');
+  });
+
+  it('a proxy row takes no measurement — honest absence, not a hidden default', async () => {
+    await firstSolve('proxy');
+    expect(service.addMeasurement('R-HSA-1', 0.6, 0.5)).toBe(false);
+    expect(service.measurements()).toEqual([]);
+  });
+
+  it('out-of-range values are refused client-side', async () => {
+    await firstSolve();
+    expect(service.addMeasurement('R-HSA-1', 0.6, 1.5)).toBe(false);
+    expect(service.addMeasurement('R-HSA-1', 150, 0.5)).toBe(false);
+    expect(service.measurements()).toEqual([]);
+  });
+
+  it('a server with the feature off surfaces its 400 verbatim', async () => {
+    await firstSolve();
+    expect(service.addMeasurement('R-HSA-1', 0.6, 0.5)).toBe(true);
+
+    const message =
+      'soft_observations are not enabled on this server (DS_SOFT_OBS=off); a request carrying them is refused rather than silently un-conditioned.';
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush({ message }, { status: 400, statusText: 'Bad Request' });
+    await solving;
+
+    expect(service.status()).toBe('error');
+    expect(service.error()).toBe(message);
+  });
+
+  it('measurements clear with clear() and reset()', async () => {
+    await firstSolve();
+    expect(service.addMeasurement('R-HSA-1', 0.6, 0.5)).toBe(true);
+    service.clear();
+    expect(service.measurements()).toEqual([]);
+  });
+});

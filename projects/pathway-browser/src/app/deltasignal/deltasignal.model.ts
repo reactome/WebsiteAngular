@@ -47,6 +47,12 @@ export interface DeltaSignalSolveResult {
    *  or the solve did not converge — no second-state claim either way. Passed
    *  back to `/api/readouts` verbatim, never interpreted here. */
   switch_components?: DeltaSignalSwitchComponent[];
+  /** deltasignal specs/156: what the server did with the request's soft
+   *  observations — rendered verbatim, never recomputed client-side. Absent
+   *  on servers from before the feature. */
+  soft_obs_rule?: 'off' | 'blend';
+  soft_observed?: number;
+  soft_overridden?: { uuid: string; reason: string }[];
 }
 
 /** One bistable component from `/api/solve` (deltasignal specs/154):
@@ -96,6 +102,19 @@ export interface DeltaSignalPinState {
   reactomeId: string | null;
   result: DeltaSignalPinResult | null;
   message: string | null;
+}
+
+/**
+ * A measured level entered on a solved readout row (deltasignal specs/156):
+ * the next solve soft-observes the row's resolved node uuids at `fold` with
+ * `weight` — the engine reconciles it with the network instead of pinning.
+ */
+export interface DeltaSignalMeasurement {
+  reactomeId: string;
+  name: string;
+  fold: number;
+  weight: number;
+  nodeUuids: string[];
 }
 
 export interface DeltaSignalPerturbation {

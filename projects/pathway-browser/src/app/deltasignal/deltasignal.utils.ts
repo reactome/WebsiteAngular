@@ -1,5 +1,6 @@
 import {
   DeltaSignalEdge,
+  DeltaSignalMeasurement,
   DeltaSignalNetwork,
   DeltaSignalPerturbation,
   DeltaSignalResultRow,
@@ -26,6 +27,22 @@ export function buildObservations(
       perturbation.nodeUuids.map((uuid) => [uuid, [perturbation.activity, 1] as [number, number]])
     )
   );
+}
+
+/**
+ * The `soft_observations` map a solve sends (deltasignal specs/156): each
+ * measurement's resolved node uuids at [fold, weight]. Two entities resolving
+ * to one shared node: the first entry stands — the server treats a
+ * contradiction as a conflict, not a set — and the result line's
+ * server-applied count keeps any mismatch visible.
+ */
+export function buildSoftObservations(
+  measurements: Iterable<DeltaSignalMeasurement>
+): Record<string, [number, number]> {
+  const soft: Record<string, [number, number]> = {};
+  for (const measurement of measurements)
+    for (const uuid of measurement.nodeUuids) soft[uuid] ??= [measurement.fold, measurement.weight];
+  return soft;
 }
 
 export function resultRows(
