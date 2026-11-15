@@ -17,10 +17,16 @@ import {
   DeltaSignalLeadsResponse,
   DeltaSignalLeadState,
   ContentServiceEntity,
+  DeltaSignalMeasurement,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
 } from './deltasignal.model';
-import { buildObservations, groupChangesByReactomeId, resultRows } from './deltasignal.utils';
+import {
+  buildObservations,
+  buildSoftObservations,
+  groupChangesByReactomeId,
+  resultRows,
+} from './deltasignal.utils';
 import { CONTENT_SERVICE } from '../../environments/environment';
 
 // specs/020: the member closure may take one ContentService request per set
@@ -53,6 +59,8 @@ export class DeltaSignalService {
   readonly pathway = signal<DeltaSignalPathway | null>(null);
   readonly network = signal<DeltaSignalNetwork | null>(null);
   readonly perturbations = signal<DeltaSignalPerturbation[]>([]);
+  /** Measured levels conditioning the next solve (deltasignal specs/156). */
+  readonly measurements = signal<DeltaSignalMeasurement[]>([]);
   readonly result = signal<DeltaSignalSolveResult | null>(null);
   readonly pinState = signal<DeltaSignalPinState>({
     status: 'idle',
@@ -158,6 +166,7 @@ export class DeltaSignalService {
     this.pathway.set(null);
     this.network.set(null);
     this.perturbations.set([]);
+    this.measurements.set([]);
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.readoutState.set(IDLE_READOUTS);
@@ -247,6 +256,36 @@ export class DeltaSignalService {
     return true;
   }
 
+  /**
+   * Attach a measured level to a solved readout row (deltasignal specs/156).
+   * Resolution is the row's own: the union of its readout groups minus any
+   * hard-pinned uuid — exactly what the engine's registered arm conditioned
+   * on. Only an entity-node basis qualifies; a proxy row's groups are
+   * reaction flux nodes, not a level someone can have measured.
+   */
+  addMeasurement(reactomeId: string, fold: number, weight: number): boolean {
+    const state = this.readoutState();
+    if (state.status !== 'ready') return false;
+    const entry = state.byId.get(reactomeId);
+    if (!entry || (entry.basis !== 'direct' && entry.basis !== 'set_members')) return false;
+    const pinned = new Set(entry.pinned);
+    const nodeUuids = [...new Set(entry.groups.flat())].filter((uuid) => !pinned.has(uuid));
+    if (!nodeUuids.length) return false;
+    if (!Number.isFinite(fold) || fold < 0 || fold > 100) return false;
+    if (!Number.isFinite(weight) || weight < 0 || weight > 1) return false;
+    const name =
+      this.readoutRows().find((row) => row.reactomeId === reactomeId)?.name ?? reactomeId;
+    this.measurements.update((items) => [
+      ...items.filter((item) => item.reactomeId !== reactomeId),
+      { reactomeId, name, fold, weight, nodeUuids },
+    ]);
+    return true;
+  }
+
+  removeMeasurement(reactomeId: string) {
+    this.measurements.update((items) => items.filter((item) => item.reactomeId !== reactomeId));
+  }
+
   removePerturbation(reactomeId: string) {
     this.perturbations.update((items) => items.filter((item) => item.reactomeId !== reactomeId));
     this.result.set(null);
@@ -256,6 +295,7 @@ export class DeltaSignalService {
 
   clear() {
     this.perturbations.set([]);
+    this.measurements.set([]);
     this.result.set(null);
     this.readoutState.set(IDLE_READOUTS);
     this.leadState.set(IDLE_LEADS);
@@ -292,9 +332,10 @@ export class DeltaSignalService {
     this.readoutState.set(IDLE_READOUTS);
     this.leadState.set(IDLE_LEADS);
     const observations = buildObservations(this.perturbations());
+    const softObservations = buildSoftObservations(this.measurements());
 
     try {
-      this.result.set(await this.requestSolve(network.network_id, observations));
+      this.result.set(await this.requestSolve(network.network_id, observations, softObservations));
       this.status.set('ready');
       await this.resolveReadouts(network.network_id, observations);
     } catch (error) {
@@ -303,7 +344,9 @@ export class DeltaSignalService {
         try {
           const reparsed = await this.parse(pathway);
           this.network.set(reparsed);
-          this.result.set(await this.requestSolve(reparsed.network_id, observations));
+          this.result.set(
+            await this.requestSolve(reparsed.network_id, observations, softObservations)
+          );
           this.status.set('ready');
           await this.resolveReadouts(reparsed.network_id, observations);
           return;
@@ -645,11 +688,19 @@ export class DeltaSignalService {
     return result;
   }
 
-  private requestSolve(networkId: string, observations: Record<string, [number, number]>) {
+  private requestSolve(
+    networkId: string,
+    observations: Record<string, [number, number]>,
+    softObservations: Record<string, [number, number]> = {}
+  ) {
     return firstValueFrom(
       this.http.post<DeltaSignalSolveResult>('/api/solve', {
         network_id: networkId,
         observations,
+        // deltasignal specs/156 FR-001 mirrored: the field exists only when
+        // measurements do — a measurement-free request is byte-identical to
+        // one from before the feature.
+        ...(Object.keys(softObservations).length ? { soft_observations: softObservations } : {}),
       })
     );
   }

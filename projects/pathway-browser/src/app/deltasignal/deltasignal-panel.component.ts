@@ -15,6 +15,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DeltaSignalService } from './deltasignal.service';
 import { DeltaSignalReadoutRow } from './deltasignal.model';
+import { buildSoftObservations } from './deltasignal.utils';
 import { DeltaSignalLogicGraphComponent } from './deltasignal-logic-graph.component';
 
 @Component({
@@ -42,6 +43,11 @@ export class DeltaSignalPanelComponent {
   readonly dismissed = output<void>();
 
   readonly activity = signal(0);
+  // A measured level for the selected, solved readout (deltasignal specs/156).
+  // Weight 0.5 is the default because it was the strongest registered weight
+  // on the engine's record (specs/156 FR-004).
+  readonly measuredFold = signal(1);
+  readonly measuredWeight = signal(0.5);
   readonly resultView = signal<'diagram' | 'logic'>('diagram');
   readonly selectedNodes = computed(() => this.service.matchingNodes(this.selectedStId()));
   // The selection's resolution through /api/pins (deltasignal specs/140): the
@@ -93,6 +99,35 @@ export class DeltaSignalPanelComponent {
     return id && state.status === 'ready' ? (state.byId.get(id) ?? null) : null;
   });
 
+  // A measured level attaches only to a row resolved from entity nodes: a
+  // proxy row's groups are reaction flux, not a level anyone measured.
+  readonly canMeasure = computed(() => {
+    const readout = this.selectedReadout();
+    return (
+      !!readout && !!readout.call && (readout.basis === 'direct' || readout.basis === 'set_members')
+    );
+  });
+  /** How many node levels the next solve will send (shared nodes counted once). */
+  readonly softSent = computed(
+    () => Object.keys(buildSoftObservations(this.service.measurements())).length
+  );
+  readonly softLine = computed(() => {
+    const result = this.service.result();
+    if (result?.soft_observed === undefined) return null;
+    if (!this.softSent() && !result.soft_observed) return null;
+    const overridden = result.soft_overridden ?? [];
+    const pins = overridden.filter((item) => item.reason === 'pin').length;
+    const pools = overridden.filter((item) => item.reason === 'pool').length;
+    const parts = [
+      `Conditioned on ${result.soft_observed} of ${this.softSent()} measured node levels`,
+    ];
+    if (pins) parts.push(`${pins} overridden by a hard pin`);
+    if (pools) parts.push(`${pools} written by a cycle pool instead`);
+    if (result.soft_observed + pins + pools < this.softSent())
+      parts.push('the rest were not in the solved network');
+    return parts.join(' · ');
+  });
+
   constructor() {
     effect(() => {
       const pathwayId = this.pathwayId();
@@ -133,5 +168,20 @@ export class DeltaSignalPanelComponent {
   addSelected() {
     const stableId = this.selectedStId();
     if (stableId) this.service.addPerturbation(stableId, this.activity());
+  }
+
+  setMeasuredFold(value: string | number) {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (Number.isFinite(parsed)) this.measuredFold.set(Math.min(100, Math.max(0, parsed)));
+  }
+
+  setMeasuredWeight(value: string | number) {
+    const parsed = typeof value === 'number' ? value : Number(value);
+    if (Number.isFinite(parsed)) this.measuredWeight.set(Math.min(1, Math.max(0, parsed)));
+  }
+
+  addMeasurement() {
+    const stableId = this.selectedStId();
+    if (stableId) this.service.addMeasurement(stableId, this.measuredFold(), this.measuredWeight());
   }
 }
