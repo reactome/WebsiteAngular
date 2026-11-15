@@ -20,7 +20,7 @@ import {
   effect,
   untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, type Params } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subscription, forkJoin, catchError, map, Observable } from 'rxjs';
 import { of } from 'rxjs';
@@ -174,7 +174,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.paramsSub = this.route.queryParams.subscribe((params) => {
       // Check query params first, then fall back to query embedded in URL path (e.g. /content/query=kj)
-      let q = params['q'] || '';
+      // the router gives a parameter given twice as a list: its first value is the query
+      const given = paramValues(params, 'q');
+      let q = (Array.isArray(given) ? given[0] : given) || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
         const querySegment = pathSegments.length === 2 ? pathSegments[1] : undefined;
@@ -184,14 +186,16 @@ export class SearchComponent implements OnInit, OnDestroy {
       }
 
       this.query = q;
-      this.currentPage = params['page'] ? parseInt(params['page'], 10) - 1 : 0;
+      const pages = paramValues(params, 'page');
+      const page = Array.isArray(pages) ? pages[0] : pages;
+      this.currentPage = page ? parseInt(page, 10) - 1 : 0;
 
       this.filters = {
-        species: toArray(params['species']),
-        types: toArray(params['types']),
-        compartments: toArray(params['compartments']),
-        keywords: toArray(params['keywords']),
-        pageCategories: toArray(params['pageCategories']),
+        species: toArray(paramValues(params, 'species')),
+        types: toArray(paramValues(params, 'types')),
+        compartments: toArray(paramValues(params, 'compartments')),
+        keywords: toArray(paramValues(params, 'keywords')),
+        pageCategories: toArray(paramValues(params, 'pageCategories')),
       };
 
       // ?advanced / ?reference / ?site-search URL params from legacy inbound
@@ -447,9 +451,9 @@ export class SearchComponent implements OnInit, OnDestroy {
     });
   }
 
-  private handleSearchError(err: any): Observable<SearchResult | null> {
+  private handleSearchError(err: unknown): Observable<SearchResult | null> {
     // Check if this is a 404 with "No entries found" message
-    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
+    if (isRecord(err) && err['status'] === 404 && saysNoEntries(err['error'])) {
       // Return empty results instead of throwing error
       return of({
         results: [],
@@ -658,7 +662,7 @@ export class SearchComponent implements OnInit, OnDestroy {
       pageCategories: 'Pages',
     };
     for (const [key, values] of Object.entries(this.filters)) {
-      if (values?.length) {
+      if (values.length) {
         for (const v of values) {
           active.push({ category: key, label: labels[key] || key, value: v });
         }
@@ -670,7 +674,9 @@ export class SearchComponent implements OnInit, OnDestroy {
   getDetailLink(entry: SearchEntry): string {
     // Site-search hits carry their own absolute URL into pageUrl.
     if (entry.exactType === 'Pages') {
-      return (entry as any).pageUrl || '/';
+      return 'pageUrl' in entry && typeof entry.pageUrl === 'string' && entry.pageUrl
+        ? entry.pageUrl
+        : '/';
     }
     // Search aggregates by reference entity (one TP53, its forms collapsed
     // under it), so an entry links to its reference id where it has one.
@@ -813,6 +819,24 @@ export class SearchComponent implements OnInit, OnDestroy {
       },
     });
   }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+/** A query parameter's values as the router gives them: one, several (given more than once), or none. */
+function paramValues(params: Params, key: string): string | string[] | undefined {
+  const value: unknown = params[key];
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string');
+  return undefined;
+}
+
+/** The content service's 404 for a search with no results: its first message says so. */
+function saysNoEntries(body: unknown): boolean {
+  const messages = isRecord(body) ? body['messages'] : undefined;
+  const first: unknown = Array.isArray(messages) ? messages[0] : undefined;
+  return typeof first === 'string' && first.includes('No entries found');
 }
 
 function toArray(value: string | string[] | undefined): string[] {

@@ -1,11 +1,12 @@
+import { beforeEach, describe, expect, it } from 'vitest';
 import { SearchEntry } from '../../model/search.model';
 import { TestBed } from '@angular/core/testing';
 import { ChangeDetectorRef } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { ActivatedRoute } from '@angular/router';
-import { of } from 'rxjs';
+import { firstValueFrom, of } from 'rxjs';
 import { SearchComponent } from './search.component';
 
 function makeEntry(overrides: Partial<SearchEntry> = {}): SearchEntry {
@@ -103,6 +104,42 @@ describe('SearchComponent', () => {
       expect(component.getDetailLink(makeEntry({ exactType: 'Pathway', stId: 'R-HSA-123' }))).toBe(
         '/content/detail/R-HSA-123'
       );
+    });
+
+    it("should return a site page's own address, or the root without one", () => {
+      const page = { ...makeEntry({ exactType: 'Pages' }), pageUrl: '/about/placeholder' };
+      expect(component.getDetailLink(page)).toBe('/about/placeholder');
+      expect(component.getDetailLink(makeEntry({ exactType: 'Pages' }))).toBe('/');
+    });
+  });
+
+  describe('a failed search', () => {
+    const answered = (err: unknown): Promise<unknown> =>
+      firstValueFrom(component['handleSearchError'](err));
+
+    it("is no results when the content service's 404 says no entries were found", async () => {
+      const noEntries = new HttpErrorResponse({
+        status: 404,
+        error: { code: 404, messages: ['No entries found for query: placeholder'] },
+      });
+      expect(await answered(noEntries)).toEqual({
+        results: [],
+        rowCount: 0,
+        numberOfGroups: 0,
+        numberOfMatches: 0,
+      });
+    });
+
+    it('is a failure otherwise', async () => {
+      expect(
+        await answered(new HttpErrorResponse({ status: 404, error: { messages: ['Not found'] } }))
+      ).toBeNull();
+      expect(
+        await answered(
+          new HttpErrorResponse({ status: 500, error: { messages: ['No entries found'] } })
+        )
+      ).toBeNull();
+      expect(await answered(new HttpErrorResponse({ status: 404, error: null }))).toBeNull();
     });
   });
 

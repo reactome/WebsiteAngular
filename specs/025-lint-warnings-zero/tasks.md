@@ -102,7 +102,20 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       scripts and specs here; checked by hand against main with the root
       tsconfig, the files touched have no new error and 19 fewer. 682 → 604
       (#969).
-- [ ] T006 [US2] `projects/website-angular`, the search page (70).
+- [x] T006 [US2] `projects/website-angular`, the search page (70). Its specs
+      import vitest's functions; the page reads its query parameters through
+      `paramValues` (one, several or none, as the router gives them; a `q` or
+      `page` given twice reads its first value, where a repeated `q` put a list
+      in the query before), and a failed search's 404 through `saysNoEntries`; a
+      site page's address is read as `pageUrl` where the entry has one; the
+      answer panel reads a 401's site key and verify address as text;
+      `SearchFilters` is a type rather than an interface, so `Object.entries`
+      reads its values as lists. New tests, each passing on the old code and the
+      new and failing on a planted fault: a site page's link and its fallback, a
+      failed search's 404 and the other failures (`search.component.spec.ts`),
+      and a 401's challenge and its refusals (`answer.service.spec.ts`). Checked
+      by hand against main with the root tsconfig, the files touched have no new
+      error and 33 fewer. 604 → 534 (#PR).
 - [ ] T007 [US2] `projects/website-angular`, `src/utils` (80).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
       each (311 in all). Split decided when T007 is done, from a fresh count.

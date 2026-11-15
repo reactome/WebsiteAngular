@@ -22,7 +22,8 @@ export type ShownResult = Omit<SearchResult, 'results'> & { results: ShownGroup[
 
 export type { Facet, FacetResponse, NamedFacetCount } from '../../../contract/search.ts';
 
-export interface SearchFilters {
+// A type, not an interface, so that it is a record of lists: Object.entries reads its values as lists.
+export type SearchFilters = {
   species?: string[];
   types?: string[];
   compartments?: string[];
@@ -30,4 +31,4 @@ export interface SearchFilters {
   // Client-side filter for the merged site-search "Pages" group. Values are
   // page categories (e.g. "News", "Documentation").
   pageCategories?: string[];
-}
+};
