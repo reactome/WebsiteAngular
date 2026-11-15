@@ -115,7 +115,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       failed search's 404 and the other failures (`search.component.spec.ts`),
       and a 401's challenge and its refusals (`answer.service.spec.ts`). Checked
       by hand against main with the root tsconfig, the files touched have no new
-      error and 33 fewer. 604 → 534 (#PR).
+      error and 33 fewer. 604 → 534 (#970).
 - [ ] T007 [US2] `projects/website-angular`, `src/utils` (80).
 - [ ] T008–T013 [US2] `projects/pathway-browser`, by feature folder, about 50
       each (311 in all). Split decided when T007 is done, from a fresh count.
