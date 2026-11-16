@@ -113,7 +113,7 @@ export class EntityService {
       { key: 'referenceGene', label: 'Reference Genes' },
       { key: 'referenceTranscript', label: 'Reference Transcript' },
     ];
-    const results: { label: string; value: any }[] = [];
+    const results: { label: string; value: unknown }[] = [];
     for (const property of properties) {
       const value = fieldByName(externalRef, property.key);
       if (!value) continue;

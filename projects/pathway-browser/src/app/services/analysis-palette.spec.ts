@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import chroma from 'chroma-js';
-import { TYPE_DEFAULT_PALETTE } from './analysis.service';
+import { PaletteSummary, TYPE_DEFAULT_PALETTE } from './analysis.service';
 import { ANALYSIS_TYPES } from '../model/analysis-types';
 
 // A PADOG run comes back as GSA_STATISTICS, which had no default palette. The
@@ -32,5 +32,14 @@ describe('default analysis palettes', () => {
     const known: readonly string[] = ANALYSIS_TYPES;
     const extra = [...TYPE_DEFAULT_PALETTE.keys()].filter((type) => !known.includes(type));
     expect(extra, 'palette entries for types that do not exist').toEqual([]);
+  });
+});
+
+// @types/chroma-js leaves out a scale's `nodata`; the summary reaches it through
+// a guard, so a scale given a colour for no value must still use it.
+describe('a palette summary with a colour for no value', () => {
+  it('colours a missing value with it', () => {
+    const palette = new PaletteSummary(['white', 'black']).noData('#ff0000');
+    expect(palette.scale(null).hex()).toBe('#ff0000');
   });
 });

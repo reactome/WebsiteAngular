@@ -13,7 +13,8 @@ export interface Summary {
   tissuesMap: Record<string, number>;
 }
 
-export interface SampleParams extends Record<string, any> {
+/** A sample's request parameters: a type, so they can be sent as the request's parameters. */
+export type SampleParams = {
   omitNulls?: boolean;
   included: number[];
-}
+};

@@ -29,7 +29,7 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 type Summary = TissueExperiment.Summary;
 import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
-import { FormBuilder, FormControl } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl } from '@angular/forms';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DarkService } from '../../../services/dark.service';
 import { describeAnalysisFailure } from '../analysis-failure';
@@ -81,11 +81,13 @@ export class TissueAnalysisComponent {
   readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
   readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
-  selectTissuesControl: FormControl;
+  selectTissuesControl: FormControl<string[]>;
 
   constructor() {
-    this.selectTissuesControl = this.fb.nonNullable.control([] as string[], (selected) =>
-      selected.getRawValue().length === 0 ? { invalid: true } : null
+    this.selectTissuesControl = this.fb.nonNullable.control<string[]>(
+      [],
+      (selected: AbstractControl<string[]>) =>
+        selected.value.length === 0 ? { invalid: true } : null
     );
     effect(() => this.selectTissuesControl.setValue(this.selectedTissues()));
 

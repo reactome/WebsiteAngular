@@ -32,7 +32,7 @@ export class QuantitativeAnalysisComponent {
   }
 
   seeResultAction = (result: AnalysisResult) => {
-    const link = result.reactome_links.find((link: any) => link.token);
+    const link = result.reactome_links.find((link) => link.token);
     if (!link) return;
     this.state.analysis.set(link.token);
     this.closed.emit({ status: 'finished' });

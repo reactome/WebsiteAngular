@@ -112,7 +112,7 @@ export class DeltaSignalLogicGraphComponent implements OnDestroy {
       wheelSensitivity: 0.2,
       style: logicGraphStyles,
     });
-    this.cy.on('tap', 'node', (event) => {
+    this.cy.on('tap', 'node', (event: cytoscape.EventObjectNode) => {
       const selected = nodes.find((node) => node.uuid === event.target.id()) ?? null;
       // A signal: zoneless change detection sees the set, with no zone to enter.
       this.selected.set(selected);

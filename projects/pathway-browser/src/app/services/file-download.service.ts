@@ -260,7 +260,7 @@ export class FileDownloadService {
   }
 
   private async readError(error: HttpErrorResponse): Promise<string> {
-    const body = error.error;
+    const body: unknown = error.error;
     if (body instanceof Blob) {
       try {
         return messageFrom(error.status, await body.text());

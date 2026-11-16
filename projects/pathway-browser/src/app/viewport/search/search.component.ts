@@ -43,6 +43,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { FlagButtonComponent } from '../../details/common/flag-button/flag-button.component';
 import { ShadowScrollComponent } from '../../shared/shadow-scroll/shadow-scroll.component';
 import { RevealDirective } from '../../utils/reveal.directive';
+import { fieldByName } from '../../services/utils';
 import Entry = Search.Entry;
 import * as Search from '../../model/search.model';
 
@@ -371,7 +372,7 @@ export class SearchComponent {
 
   handleSearchError(scope: Scope, error: HttpErrorResponse) {
     if (error.status === 404) {
-      const message = error.error?.messages?.[0] || 'No entries found';
+      const message = noEntriesMessage(error.error);
       this.searchErrorMessage.set(message);
 
       if (scope === 'local') this.localHasNoResult.set(true);
@@ -510,6 +511,16 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         },
       });
   }
+}
+
+/**
+ * What a search's 404 says: the first of its body's `messages`, where that is
+ * text, or "No entries found".
+ */
+export function noEntriesMessage(body: unknown): string {
+  const messages = typeof body === 'object' && body !== null ? fieldByName(body, 'messages') : null;
+  const first: unknown = Array.isArray(messages) ? messages[0] : null;
+  return (typeof first === 'string' && first) || 'No entries found';
 }
 
 /** `params` without the named keys. */

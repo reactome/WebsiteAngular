@@ -27,6 +27,7 @@ import {
   groupChangesByReactomeId,
   resultRows,
 } from './deltasignal.utils';
+import { textField } from '../services/utils';
 import { CONTENT_SERVICE } from '../../environments/environment';
 
 // specs/020: the member closure may take one ContentService request per set
@@ -720,7 +721,7 @@ export class DeltaSignalService {
 
   private errorMessage(error: unknown, fallback: string): string {
     if (error instanceof HttpErrorResponse) {
-      return typeof error.error?.message === 'string' ? error.error.message : fallback;
+      return textField(error.error, 'message') ?? fallback;
     }
     return error instanceof Error ? error.message : fallback;
   }

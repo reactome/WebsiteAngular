@@ -98,7 +98,7 @@ export class SpeciesService {
     identifiers: string[],
     speciesDbId: number
   ): Observable<OrthologousMap> {
-    if (identifiers.length === 0) return of(new Map());
+    if (identifiers.length === 0) return of<OrthologousMap>(new Map());
     const url = `${this._ORTHOLOGIES}${speciesDbId}`;
     return this.http
       .post<{ [p: string]: SelectableObject }>(
@@ -138,7 +138,10 @@ export class SpeciesService {
       newValue = newValue.replaceAll(',""', '').replaceAll('""', '').trim(); // Remove trailing commas and quotes from lists
       // console.log(value, " => ", newValue);
       if (newValue.length === 0) delete params[key];
-      else params[key] = JSON.parse(newValue);
+      else {
+        const parsed: unknown = JSON.parse(newValue);
+        params[key] = parsed;
+      }
     }
 
     void this.state.navigateTo(pathwayId ?? null, {
