@@ -164,7 +164,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         (one with no counterpart in an inferred species' diagram) sets the
         selection to `null` where it set `undefined`; both mean none.
         `element-data.spec.ts` (new) passes, and fails on each planted
-        fault. 366 → 303 (#PR).
+        fault. 366 → 303 (#976).
   - [ ] T011 `interactors` (52).
   - [ ] T012 `pipes` (50).
   - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
