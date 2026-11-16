@@ -23,7 +23,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 ## Phase 1: Setup
 
-- [ ] T001 Create project `reactome-diagram-element` in `angular.json`, with:
+- [x] T001 Create project `reactome-diagram-element` in `angular.json`, with: (#357)
   - builder `@angular-devkit/build-angular:application`;
   - `browser: projects/reactome-diagram-element/src/main.ts`, `index: false`, `polyfills: []`;
   - `outputPath: dist/reactome-diagram`, `outputHashing: "none"`, `namedChunks: false`, `crossOrigin: "anonymous"`;
@@ -32,8 +32,8 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - `allowedCommonJsDependencies`: cytoscape, cytoscape-fcose, lodash;
   - configurations `development` (`deployUrl: http://localhost:4340/`), `beta` (`deployUrl: https://beta.reactome.org/embed/diagram/v1/`) and `production` (`deployUrl: https://reactome.org/embed/diagram/v1/`);
   - production budget `initial` warn 1.2 MB, error 1.5 MB.
-- [ ] T002 Create `projects/reactome-diagram-element/tsconfig.app.json`, extending the root `tsconfig.json` with `files: [src/main.ts]`. Confirm `npm run check:types`, lint's project service and `knip.json` pick up the new project (add `projects/reactome-diagram-element/src/main.ts` to knip `entry`).
-- [ ] T003 [P] Add an embed site profile in `projects/website-angular/src/config/environments.ts`. Its `host` is absolute per configuration: `https://reactome.org` for production, `https://beta.reactome.org` for beta, `http://localhost:4330` for development and e2e; never `origin` (R2). Select it through the build's `define`/`fileReplacements` in T001.
+- [x] T002 Create `projects/reactome-diagram-element/tsconfig.app.json`, extending the root `tsconfig.json` with `files: [src/main.ts]`. Confirm `npm run check:types`, lint's project service and `knip.json` pick up the new project (add `projects/reactome-diagram-element/src/main.ts` to knip `entry`). (#357)
+- [x] T003 [P] Add an embed site profile in `projects/website-angular/src/config/environments.ts`. Its `host` is absolute per configuration: `https://reactome.org` for production, `https://beta.reactome.org` for beta, `http://localhost:4330` for development and e2e; never `origin` (R2). Select it through the build's `define`/`fileReplacements` in T001. (#357)
 
 ## Phase 2: Foundational (blocks every story)
 
@@ -150,7 +150,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - unit tests, types, lint (per-rule ratchet unchanged), dead code, format, `check:har`;
   - the app build and the embed build;
   - the full e2e suite, plus `embed-diagram.spec.ts` (T009–T012 all green, each red proof recorded).
-- [ ] T024 [US1] Open the PR. Run an adversarial review subagent covering:
+- [x] T024 [US1] Open the PR. Run an adversarial review subagent covering: (#357)
   - host-page side effects;
   - the per-element injector;
   - overlay escape;
@@ -190,7 +190,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - **As built**: the analysis palette reads its tokens from a `STYLE_ROOT` token (the element's host in the embed, `document.body` on the site). `entityselected` reports what is selected ~20ms after a change, so a click from one entity to another is one event, not a null then the new one. Removing `select`, or `resetSelection()`, also clears a selection the reader made -- the diagram leaves the last one drawn when the state is cleared.
 - [x] T030 [US2] Draw EHLD pathways: switch on `hasEHLD` as the render page does, rendering `cr-ehld`. Make `ehld.service.ts`'s relative `assets/…` paths (:46-67) absolute via the deploy URL.
   - **As built**: `cr-ehld` inside a small `reactome-illustration` wrapper under `@defer`, a 92 KB lazy chunk; the wrapper gives it a stand-in SVG exporter, since the real one brings Reacfoam, a root service reading the address. The kind (diagram/illustration) holds through a pathway switch until the next answer. Legend arrows come from an `EHLD_LEGEND_BASE` token, beside main.js in the embed; the images are copied into the build.
-- [ ] T031 [US2] Run the gates and the full e2e suite. Open the PR, with review focused on state-clearing paths, event shapes against the contract, and EHLD asset URLs. CI green, merge, deploy. Verify on beta with the demo page's flag, select and theme controls. Add those controls to `demo.html` in T029.
+- [x] T031 [US2] Run the gates and the full e2e suite. Open the PR, with review focused on state-clearing paths, event shapes against the contract, and EHLD asset URLs. CI green, merge, deploy. Verify on beta with the demo page's flag, select and theme controls. Add those controls to `demo.html` in T029. (#360)
 
 ## Phase 5: User Story 3: the old `Reactome.Diagram` interface (P2)
 
@@ -221,7 +221,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 - [x] T035 [US3] Implement `highlightItem`/`resetHighlight` as a new element method pair, `highlight(id)`/`resetHighlight()`, which makes the entity stand out as a hover does without selecting it, via the diagram's hover path. Add it to the element contract.
   - **As built**: through `HierarchyHoverService`, the Pathway Browser's mark for what is pointed at in its hierarchy (the rest fades) -- not the pointer's `hover` class, which the reader's pointer clears and which physical entities have no style for; it reaches an illustration's regions too. The loader's unit tests run the real file in a `vm` sandbox, since it has no exports.
-- [ ] T036 [US3] Run the gates and both embed specs. Open the PR, with review focused on queue ordering, handler argument shapes against the old docs, and the synchronous global. CI green, merge, deploy. Verify on beta with `alliance.html` pointing at beta's script (served locally, so from another origin).
+- [x] T036 [US3] Run the gates and both embed specs. Open the PR, with review focused on queue ordering, handler argument shapes against the old docs, and the synchronous global. CI green, merge, deploy. Verify on beta with `alliance.html` pointing at beta's script (served locally, so from another origin). (#362)
 
 ## Phase 6: User Story 4: partner image addresses and links (P3)
 
@@ -235,7 +235,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
   Show each failing against a wrong id first.
 
-- [ ] T039 [US4] Run the gates. Open the PR, review, CI green, merge.
+- [x] T039 [US4] Run the gates. Open the PR, review, CI green, merge. (#366)
 
 ## Phase 7: Close-out
 
