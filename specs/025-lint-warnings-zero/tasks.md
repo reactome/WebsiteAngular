@@ -178,7 +178,14 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         were passed on (none are sent so). `interactor-drawing.spec.ts` and
         `upload-form.spec.ts` (new) and `element-data.spec.ts` pass, and fail
         on the old service and on each planted fault. 303 → 251 (#977).
-  - [ ] T012 `pipes` (50).
+  - [x] T012 `pipes` (50). The specs import vitest's functions (41 of
+        the 50); the group-by pipe reads its dotted path as `unknown`, each
+        step `fieldByName` on the boxed value, so it reads what `a?.[b]` read
+        (a text's own properties included), and its keys are `unknown`. No
+        template uses it. No behaviour moved: `group-by.pipe.spec.ts` passes
+        on the old pipe and the new, and fails on each planted fault (the path
+        walked through objects only, split on the wrong separator). 251 →
+        201 (#978).
   - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
         `deltasignal` (5) is another session's work at present: its warnings
         wait for that session, or are cleared with it.
