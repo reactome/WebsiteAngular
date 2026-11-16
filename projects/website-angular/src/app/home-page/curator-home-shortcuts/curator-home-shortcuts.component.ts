@@ -21,10 +21,9 @@ export class CuratorHomeShortcutsComponent {
   // from environment.host so it always resolves to the deployed WebBench.
   readonly webbenchLink = `${environment.host}/curatortool/home`;
 
-  // The curator build's baseHref is "/curatorgraph/", not "/". A plain
-  // absolute href like "/about" would ignore that base and 404; strip the
-  // leading slash so the browser resolves it relative to the current
-  // (already-base-prefixed) page instead.
+  // A plain absolute href like "/about" ignores the page's <base href>, which
+  // breaks if the app is ever mounted under a sub-path; strip the leading slash
+  // so the browser resolves it against the base instead.
   resolveShortcutLink(link: string | undefined): string {
     if (!link) {
       return '';

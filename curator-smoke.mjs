@@ -8,7 +8,7 @@ import { chromium } from '@playwright/test';
 // Access-Control-Allow-Origin. In production the curator bundle is served from
 // curator.reactome.org itself so those are same-origin; only serving it from localhost
 // makes them cross-origin. Set STRICT=1 to see the browser-default behaviour.
-const BASE = 'http://localhost:4300/curatorgraph';
+const BASE = 'http://localhost:4300';
 const OUT = '/tmp/curator-shots';
 const STRICT = !!process.env.STRICT;
 

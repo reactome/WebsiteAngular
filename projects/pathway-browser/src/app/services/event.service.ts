@@ -22,6 +22,7 @@ import { Event } from '../model/graph/event/event.model';
 import { MatTree } from '@angular/material/tree';
 import type { Analysis } from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
+import { HasDiagramService } from './has-diagram.service';
 import { EhldService } from './ehld.service';
 import { TopLevelPathway } from '../model/graph/event/top-level-pathway.model';
 import { DatabaseObject } from '../model/graph/database-object.model';
@@ -45,6 +46,7 @@ export class EventService {
   private analysisService: AnalysisService = inject(AnalysisService);
   private ehldService: EhldService = inject(EhldService);
   private dboService: DatabaseObjectService = inject(DatabaseObjectService);
+  private hasDiagram = inject(HasDiagramService);
 
   private readonly _TOP_LEVEL_PATHWAYS = `${CONTENT_SERVICE}/data/pathways/top/`;
   private readonly _ANCESTORS = `${CONTENT_SERVICE}/data/event/`;
@@ -104,6 +106,9 @@ export class EventService {
       map((ancestorsOptions) =>
         ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
       ),
+      switchMap((ancestorsOptions) =>
+        this.hasDiagram.correct(ancestorsOptions, ancestorsOptions.flat())
+      ),
       // The backend 404s instead of returning an empty list for an event with
       // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
       // callers still emit and can render the event on its own.
@@ -157,6 +162,14 @@ export class EventService {
 
   fetchEventChildren(tree: Event): Observable<Event> {
     return this.dboService.fetchEnhancedEntry<Event>(tree.stId).pipe(
+      // The children become the tree's nodes, which tag a subpathway and pick
+      // its color by whether it is drawn in its parent.
+      switchMap((result) =>
+        this.hasDiagram.correct(result, [
+          result,
+          ...(isPathway(result) ? (result.events ?? []).map((e) => e.element) : []),
+        ])
+      ),
       switchMap((result) => {
         if (isPathway(result) && result.events && isPathway(tree)) {
           const treeAncestors = this.getAncestors(this.treeData$.value, tree.stId) || [];
@@ -328,9 +341,13 @@ export class EventService {
     tree: MatTree<Event, string>,
     _hitReactions: number[]
   ): void {
+    // The diagram on screen counts as one whatever its flag says -- see
+    // EventHierarchyComponent.diagramIdFromLineage.
     const reactionDiagramStId = [...selectedReaction.ancestors]
       .reverse()
-      .find((ancestor) => isPathway(ancestor) && ancestor.hasDiagram)?.stId;
+      .find(
+        (ancestor) => ancestor.stId === diagramId || (isPathway(ancestor) && ancestor.hasDiagram)
+      )?.stId;
     const isReactionInCurrentDiagram =
       diagramId === reactionDiagramStId ||
       this.diagramPathway?.normalPathway?.stId === reactionDiagramStId;

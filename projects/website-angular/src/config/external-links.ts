@@ -15,6 +15,7 @@ export const EXTERNAL_LINKS = {
   },
   coretrustseal: { label: 'CoreTrustSeal', link: 'https://www.coretrustseal.org/' },
   ebi: { label: 'EBI', link: 'http://www.ebi.ac.uk/' },
+  sju: { label: 'SJU', link: 'https://www.stjohns.edu/' },
   nyu: { label: 'NYU', link: 'https://med.nyu.edu/' },
   ohsu: { label: 'OHSU', link: 'http://www.ohsu.edu/' },
   oicr: { label: 'OICR', link: 'https://oicr.on.ca/' },

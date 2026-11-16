@@ -140,9 +140,8 @@ export const CONTENT_DETAIL_PATH = '/content/detail';
 
 // Person and schema links are built from the hosting shell's base URL so they
 // keep working wherever the widget is deployed. document.baseURI resolves the
-// page's <base href> against the current origin, which yields "/" under
-// `ng serve` and "/curatorgraph/" on the deployed curator site -- hardcoding the
-// segment appended a second copy of it in local dev.
+// page's <base href> against the current origin, so a host that mounts the app
+// under a sub-path gets that segment without it being hardcoded here.
 const schemaHost: string =
   typeof document !== 'undefined' ? document.baseURI.replace(/\/+$/, '') : host;
 export const CONTENT_SCHEMA = IS_CURATOR

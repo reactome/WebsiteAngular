@@ -267,7 +267,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // from the release (figures, icons, EHLDs), so it comes from the public site,
     // which is the authority on which release is current.
     versionFallback: 'https://reactome.org/ContentService/data/database/version',
-    schemaPath: '/curatorgraph/dataSchema',
+    schemaPath: '/dataSchema',
   },
   'curator-local': {
     variant: 'curator',
@@ -282,7 +282,7 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // Proxied at the root by proxy.curator-local.conf.json, because
     // newcurator.reactome.org/download sends no Access-Control-Allow-Origin.
     downloadBase: '/download/current',
-    schemaPath: '/curatorgraph/dataSchema',
+    schemaPath: '/dataSchema',
   },
 };
 

@@ -92,7 +92,6 @@
               "sourceMap": true
             },
             "curator": {
-              "baseHref": "/curatorgraph/",
               "define": {
                 "APP_ENV": "\"curator\""
               }

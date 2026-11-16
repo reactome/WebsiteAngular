@@ -1,6 +1,6 @@
 import { computed, effect, Injectable, linkedSignal, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { UrlStateService } from './url-state.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
@@ -10,6 +10,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
 import { SpeciesService } from './species.service';
+import { HasDiagramService } from './has-diagram.service';
 
 type SelectionData = {
   selectedElement: SelectableObject | undefined;
@@ -41,6 +42,7 @@ export class DataStateService {
   private state = inject(UrlStateService);
   private http = inject(HttpClient);
   private species = inject(SpeciesService);
+  private hasDiagram = inject(HasDiagramService);
 
   _currentPathway = rxResource({
     params: () => this.state.pathwayId(),
@@ -219,7 +221,10 @@ export class DataStateService {
           view: 'nested-aggregated',
         },
       })
-      .pipe(map(this.flattenReferences));
+      .pipe(
+        map(this.flattenReferences),
+        switchMap((result) => this.hasDiagram.correct(result, [result]))
+      );
   }
 
   fetchAncestors(stId: string | undefined, path: string[]): Observable<Pathway[]> {
@@ -235,6 +240,7 @@ export class DataStateService {
       .pipe(
         map((lineages) => this.findBestAncestors(lineages, path).reverse()),
         map(this.flattenReferences),
+        switchMap((ancestors) => this.hasDiagram.correct(ancestors, ancestors)),
         // An event that hangs off no top-level pathway - a freshly cloned
         // curation pathway, say - makes the backend answer 404 rather than an
         // empty list. That is not an error for the caller: it has no ancestors.

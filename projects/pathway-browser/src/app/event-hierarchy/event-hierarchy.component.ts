@@ -385,8 +385,75 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     this.selectAllParents(event, this.treeDataSource.data);
     this.loadEvents(event);
     this.updateBreadcrumbs(event);
-    this.setDiagramId(event);
-    this.navigateToPathway(event);
+    this.resolveDiagramId(event)
+      .pipe(untilDestroyed(this))
+      .subscribe((diagramId) => {
+        this.pathwayId.set(diagramId);
+        this.navigateToPathway(event);
+      });
+  }
+
+  /**
+   * The diagram to open for an event picked in the tree: its own if it has
+   * one, otherwise its nearest ancestor's.
+   *
+   * The tree's events can come back with hasDiagram false throughout -- a
+   * backend that only works the flag out for the object it was asked for
+   * leaves it false on child events and on the top-level list -- so a false
+   * flag there means "not known" as often as "no diagram", and only a true one
+   * can be taken at its word. Searching the tree's lineage anyway picked
+   * whichever ancestor happened to read true: a distant one over a nearer one
+   * still reading false, so the diagram opened on, say, Cancer Hallmarks, and
+   * the URL-selection sync then corrected it to Cell Cycle Checkpoints -- every
+   * reaction click flashed the wrong diagram first.
+   *
+   * The ancestors endpoint is asked instead, and its answers are kept by stId
+   * so the next click under the same pathways does not have to ask again. They
+   * are not written onto the tree's events, which a rebuild replaces.
+   *
+   * Falls back to the event itself, which the viewport either draws by walking
+   * up to a diagram or explains has none -- never to an exception.
+   */
+  private resolveDiagramId(event: Event): Observable<string> {
+    if (isPathway(event) && event.hasDiagram) return of(event.stId);
+    const lineage = [...(event.ancestors ?? []), event];
+    if (lineage.every((ancestor) => this.hasDiagramById.has(ancestor.stId))) {
+      return of(this.diagramIdFromLineage(lineage));
+    }
+    return this.eventService.fetchEventAncestors(event.stId).pipe(
+      map((lineages) => {
+        // An empty list is also what a failed fetch gives, which says nothing
+        // about any of them.
+        if (lineages.length === 0) return event.stId;
+        const withDiagram = new Set(
+          lineages
+            .flat()
+            .filter((ancestor) => ancestor.hasDiagram)
+            .map((a) => a.stId)
+        );
+        lineage.forEach((ancestor) =>
+          this.hasDiagramById.set(ancestor.stId, withDiagram.has(ancestor.stId))
+        );
+        return this.diagramIdFromLineage(lineage);
+      })
+    );
+  }
+
+  /** Whether an event has a diagram, as the ancestors endpoint answered it. */
+  private readonly hasDiagramById = new Map<string, boolean>();
+
+  /**
+   * The diagram on screen counts as one whatever the flag says: a pathway
+   * drawn in the curation graph before anything set its hasDiagram reads false
+   * everywhere, e.g. The CARD8 inflammasome, R-HSA-9995698, and a reaction
+   * picked under it would otherwise open its ancestor's diagram instead.
+   */
+  private diagramIdFromLineage(lineage: Event[]): string {
+    const drawn = this.pathwayId();
+    const withDiagram = [...lineage]
+      .reverse()
+      .find((e) => e.stId === drawn || this.hasDiagramById.get(e.stId));
+    return (withDiagram ?? lineage[lineage.length - 1]).stId;
   }
 
   private loadEvents(treeEvent: Event) {
@@ -444,17 +511,6 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const ancestors = this.eventService.getAncestors(this.treeDataSource.data, event.stId);
     if (ancestors) {
       return this.eventService.setBreadcrumbs(ancestors);
-    }
-  }
-
-  private setDiagramId(event: Event): void {
-    // Pathway
-    if (isPathway(event) && event.hasDiagram) {
-      this.pathwayId.set(event.stId);
-    } else {
-      // Subpathway and reaction
-      const parentWithDiagram = this.eventService.getPathwayWithDiagram(event);
-      this.pathwayId.set(parentWithDiagram!.stId);
     }
   }
 

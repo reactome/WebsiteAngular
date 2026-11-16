@@ -8,12 +8,14 @@ import {
   JSOGObject,
 } from '../../../../../../pathway-browser/src/app/utils/JSOGDeserializer';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
+import { HasDiagramService } from '../../../../../../pathway-browser/src/app/services/has-diagram.service';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { map, Observable, of } from 'rxjs';
+import { map, Observable, of, switchMap } from 'rxjs';
 
 @Injectable()
 export class DetailDataState implements Partial<DataStateService> {
   private http = inject(HttpClient);
+  private hasDiagram = inject(HasDiagramService);
 
   readonly selectedElement = signal<SelectableObject | undefined>(undefined);
   readonly selectedElementLoading = signal(false);
@@ -50,7 +52,12 @@ export class DetailDataState implements Partial<DataStateService> {
           view: 'nested-aggregated',
         },
       })
-      .pipe(map(this.flattenReferences));
+      .pipe(
+        map(this.flattenReferences),
+        // The page shows the pathway's diagram, and offers it for download,
+        // by this flag.
+        switchMap((result) => this.hasDiagram.correct(result, [result]))
+      );
   }
 
   flattenReferences<T>(response: T): T {
