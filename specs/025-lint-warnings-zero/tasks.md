@@ -394,7 +394,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   an id, so such a diagram would fail to draw. Found in T017; fixed on the
   user's decision (16 Nov), numbering each repeat in turn (`edge-id.ts`, whose
   spec fails on the old count). A diagram that draws today keeps its ids.
-  (#TBD)
+  (#988)
 
 ## Silenced lines
 
