@@ -235,6 +235,14 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   falsy value is no key, so a 0 sorts before every negative value ascending
   and after them descending. The results table sorts 0 as a number. Kept in
   T009, as fixing it changes what readers see, and waits for a decision.
+- **A custom resource's file, shared by link, was sent as "[object Object]"**
+  (`…/interactors/custom-interactor-dialog`, `prepareFormData`). The file field
+  holds the file input's `FileInput`, not a file, and it was appended to the
+  upload as it was; `FormData` turns anything but a file into text, so with
+  "share by link" ticked the service was sent the text "[object Object]" in
+  place of the reader's file. (Read in the page, the default, the file was read
+  right.) Fixed in T011: the chosen file is sent (`upload-form.ts`,
+  `upload-form.spec.ts`, failing with the holder appended).
 
 ## Silenced lines
 
