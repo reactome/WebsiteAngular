@@ -20,6 +20,7 @@
     "start:website": "cd projects/website-angular && npm run start",
     "start:pathway": "cd projects/pathway-browser && npm run start-with-deps",
     "build": "npm run generate:indices && npm run stage:content && ng build --configuration production",
+    "build:embed": "ng build reactome-diagram-element",
     "build:curator": "npm run generate:indices && npm run stage:content && npm run build:libs && ng build --configuration production,curator",
     "build:website": "npm run build:curator && tar czf dist/browser.tgz -C dist/reactome/browser . && scp dist/browser.tgz curator:~/browser.tgz && rm dist/browser.tgz",
     "build:pathway": "cd projects/pathway-browser && npm run build",
