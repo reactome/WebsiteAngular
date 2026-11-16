@@ -334,7 +334,8 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   details tree, under a protein's reference; no diagram draws them, so there
   is nothing to select, and the click only deselected what was selected.
   Found in T016; the button is now offered only for a reference with a stable
-  id (`summary-selection.ts`, whose spec fails when it is always offered).
+  id (`summary-selection.ts`, whose spec fails when it is always offered;
+  #984).
 
 ## Silenced lines
 
