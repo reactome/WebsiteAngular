@@ -20,6 +20,7 @@ import cytoscapeFcose, { FcoseLayoutOptions } from 'cytoscape-fcose';
 import { CONTENT_SERVICE, environment } from '../../environments/environment';
 import { SchemaClasses } from '../constants/constants';
 import { GeneralService } from './general.service';
+import { uniqueEdgeId } from './edge-id';
 type NodeDefinition = Types.NodeDefinition;
 type ReactionDefinition = Types.ReactionDefinition;
 type EdgeTypeDefinition = Types.EdgeTypeDefinition;
@@ -868,16 +869,9 @@ export class DiagramService {
     target: Edge | Node,
     edgeIds: Map<string, number>
   ) {
-    let edgeId = `${source.id} --${this.edgeTypeToStr.get(connector.type)} ${target.id}`;
-
-    let count = edgeIds.get(edgeId);
-    if (count !== undefined) {
-      edgeIds.set(edgeId, count++);
-      edgeId += ` (${count})`;
-      console.warn('Conflicting edge id: ', edgeId);
-    } else {
-      edgeIds.set(edgeId, 0);
-    }
+    const base = `${source.id} --${this.edgeTypeToStr.get(connector.type)} ${target.id}`;
+    const edgeId = uniqueEdgeId(base, edgeIds);
+    if (edgeId !== base) console.warn('Conflicting edge id: ', edgeId);
     return edgeId;
   }
 

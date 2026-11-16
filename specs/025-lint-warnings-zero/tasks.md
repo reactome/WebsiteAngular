@@ -391,8 +391,10 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   (`…/services/diagram.service.ts`, `getEdgeId`). The count stored is the one
   before the increment (`count++`), so it never rises: every conflict after
   the first is named " (1)" again, and cytoscape refuses a second element with
-  an id, so such a diagram would fail to draw. Found in T017 and kept: none is
-  known, and drawing it is a change to what readers see.
+  an id, so such a diagram would fail to draw. Found in T017; fixed on the
+  user's decision (16 Nov), numbering each repeat in turn (`edge-id.ts`, whose
+  spec fails on the old count). A diagram that draws today keeps its ids.
+  (#TBD)
 
 ## Silenced lines
 
