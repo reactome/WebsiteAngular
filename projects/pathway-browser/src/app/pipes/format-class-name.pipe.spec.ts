@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { FormatClassNamePipe } from './format-class-name.pipe';
 
 describe('FormatClassNamePipe', () => {
