@@ -21,9 +21,10 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { TitleCasePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { FlagButtonComponent } from '../../../common/flag-button/flag-button.component';
+import { SortKey, sortKey, sortRows, valueAtPath } from '../sort-rows';
 
 type ResourceMap = { [resource: string]: string[] };
-type FoundIdentifier = {
+export type FoundIdentifier = {
   id: string;
   exp: number[];
   entities: ResourceMap;
@@ -59,11 +60,7 @@ export class FoundTableComponent {
   readonly sort = viewChild.required(MatSort);
 
   constructor() {
-    this.dataSource.sortingDataAccessor = (data, header) => {
-      const value = header.split('-').reduce((a: any, b) => a?.[b], data);
-      if (value instanceof Array) return arrayToSortableString(value); // Interactors
-      if (value) return value; // Expressions + identifier
-    };
+    this.dataSource.sortData = (rows, sort) => sortRows(rows, sort, foundSortKey);
 
     effect(() => (this.dataSource.data = this.foundEntities()));
     effect(() => (this.dataSource.sort = this.sort()));
@@ -149,7 +146,13 @@ export class FoundTableComponent {
   ]);
 }
 
-function arrayToSortableString(values: string[] | undefined): string {
-  if (!values) return '0';
-  return `${values.length}-${values.join('-')}`;
+/**
+ * A found identifier's key in a column: a list (interactors, a resource's
+ * entities) by its length and then its items; a falsy value (an expression of
+ * 0 among them) as a missing one.
+ */
+export function foundSortKey(row: FoundIdentifier, columnId: string): SortKey {
+  const value = valueAtPath(row, columnId);
+  if (Array.isArray(value)) return `${value.length}-${value.join('-')}`;
+  return sortKey(value || undefined);
 }

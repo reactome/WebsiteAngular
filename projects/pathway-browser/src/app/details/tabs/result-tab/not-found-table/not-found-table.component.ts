@@ -19,6 +19,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { UrlStateService } from '../../../../services/url-state.service';
 import { ExpressionTagComponent } from '../expression-tag/expression-tag.component';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { sortKey, sortRows, valueAtPath } from '../sort-rows';
 
 @Component({
   selector: 'cr-not-found-table',
@@ -72,9 +73,8 @@ export class NotFoundTableComponent {
   constructor() {
     effect(() => (this.dataSource.data = this.data()));
     effect(() => (this.dataSource.sort = this.sort()));
-    this.dataSource.sortingDataAccessor = (data, header) => {
-      const value = header.split('-').reduce((a: any, b) => a?.[b], data);
-      if (value) return value; // Expressions + identifier
-    };
+    // A falsy value (an expression of 0 among them) sorts as a missing one.
+    this.dataSource.sortData = (rows, sort) =>
+      sortRows(rows, sort, (row, columnId) => sortKey(valueAtPath(row, columnId) || undefined));
   }
 }

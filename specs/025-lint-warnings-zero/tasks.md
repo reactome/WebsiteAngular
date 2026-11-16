@@ -136,8 +136,22 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         the request's parameters; the Reacfoam's `throttle` takes `unknown[]`;
         a node's background image is read as `unknown`; the logger's input is
         `unknown`; the resize directive's element is an `HTMLElement`. 454 →
-        407 (#PR).
-  - [ ] T009 `details/tabs` (41).
+        407 (#972).
+  - [x] T009 `details/tabs` (41). The description tab's templates are
+        `TemplateRef<unknown>`, the two optional ones held as possibly
+        undefined rather than cast; the animated-download dialog is opened
+        typed with its result, `DownloadOptions`; the PDBe Molstar global is
+        declared with the one method used. The three analysis tables (results,
+        found, not found) read a column's value through `valueAtPath` and sort
+        through `sortRows` (`result-tab/sort-rows.ts`), Material's own
+        `sortData` for a key that may be missing, which its accessor's type
+        cannot return. No order moved: compared once, old accessors through
+        Material's `sortData` against the new on generated rows (zeros,
+        missing values, `NaN`, lists, both directions and none);
+        `sort-rows.spec.ts` (new) passes, and fails on each planted fault (a
+        missing key sorted last, numbers compared as text, no direction
+        sorting, 0 dropped, the path walk broken, the found table's 0 kept or
+        its lists' length dropped). 407 → 366 (#PR).
   - [ ] T010 `diagram`, with `diagram/entity-popup` (63).
   - [ ] T011 `interactors` (52).
   - [ ] T012 `pipes` (50).
@@ -204,6 +218,11 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   by `Object.prototype`'s function instead of as text (`parserFor`). Not one the
   service sends; fixed with `Object.hasOwn` in T004a, its case seen failing with
   `in`.
+- **An expression of 0 sorts as missing** in the analysis's found and
+  not-found tables (`found-table`, `not-found-table`, their sort keys): any
+  falsy value is no key, so a 0 sorts before every negative value ascending
+  and after them descending. The results table sorts 0 as a number. Kept in
+  T009, as fixing it changes what readers see, and waits for a decision.
 
 ## Silenced lines
 

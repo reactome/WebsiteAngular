@@ -23,6 +23,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { EhldService } from '../../../services/ehld.service';
 import {
   DownloadFormat,
+  type DownloadOptions,
   DownloadService,
   DownloadTarget,
   includeSubpathways,
@@ -364,7 +365,11 @@ export class DownloadTabComponent {
   }
 
   onReacfoamAnimatedDownload() {
-    const matDialogRef = this.dialog.open(AnimatedDownloadFormComponent);
+    const matDialogRef = this.dialog.open<
+      AnimatedDownloadFormComponent,
+      undefined,
+      DownloadOptions
+    >(AnimatedDownloadFormComponent);
     matDialogRef.afterClosed().subscribe((options) => {
       if (options) {
         this.download.requestDownload(DownloadTarget.REACFOAM, DownloadFormat.SVG, options);
@@ -373,7 +378,11 @@ export class DownloadTabComponent {
   }
 
   onEHLDAnimatedDownload() {
-    const matDialogRef = this.dialog.open(AnimatedDownloadFormComponent);
+    const matDialogRef = this.dialog.open<
+      AnimatedDownloadFormComponent,
+      undefined,
+      DownloadOptions
+    >(AnimatedDownloadFormComponent);
     matDialogRef.afterClosed().subscribe((options) => {
       if (options) {
         this.download.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.SVG, options);

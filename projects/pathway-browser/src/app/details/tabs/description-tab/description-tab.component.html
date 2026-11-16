@@ -52,7 +52,7 @@
             [disableNavigation]="element.disableNavigation?.() ?? false"
           />
         } @else if (element.template) {
-          <ng-container *ngTemplateOutlet="element.template!()"></ng-container>
+          <ng-container *ngTemplateOutlet="element.template() ?? null"></ng-container>
         }
       }
     }
