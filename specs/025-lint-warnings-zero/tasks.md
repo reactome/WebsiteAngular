@@ -278,9 +278,25 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 ## Phase 4: Done
 
-- [ ] T018 Confirm `lint-baseline.json` has no warned rules left, and every
+- [x] T018 Confirm `lint-baseline.json` has no warned rules left, and every
       rule warned on 13 Nov is an error; list the silenced lines (SC-004) and the
-      bugs found (SC-005) here.
+      bugs found (SC-005) here. (#TBD)
+  - `lint-baseline.json` is `{"warnings": 0, "rules": {}}` (#985).
+  - The ten rules `eslint.config.js` warned when this spec began
+    (`no-explicit-any`, `no-namespace`, `no-non-null-assertion`, the five
+    `no-unsafe-*`, `no-useless-assignment`, and `no-unused-vars` for
+    `tools/**/*.mjs`) are all `'error'`. The last was promoted here: no `.mjs`
+    is left under `tools/`, so it matched nothing.
+  - Silenced lines: twelve, each with its reason where it stands (SC-004: at
+    most 20). Ten are `template/prefer-ngsrc` on images whose size nothing
+    here knows or whose `src` is swapped on error, as the config's comment
+    asks; `tools/render/gif.ts` keeps `no-useless-assignment` on the line that
+    drops a full-size frame for the garbage collector; and
+    `tools/content-node/rejection.spec.ts` keeps `only-throw-error`, because
+    a rejection that is no `Error` is the case it tests. None was added by
+    this spec.
+  - Bugs found: listed below, each with its pull request; two are left for a
+    decision (the 0-expression sort, the third connector's edge id).
 
 ## Bugs found on the way
 
@@ -380,6 +396,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 ## Silenced lines
 
-None. The one there was (`analysis.service.ts`, `noData`: `@ts-expect-error`,
+None added by this spec (T018 lists the twelve that stand). The one
+`@ts-expect-error` there was (`analysis.service.ts`, `noData`,
 because `@types/chroma-js` leaves out `Scale.nodata`, which chroma-js has) went
 in T013: the scale's `nodata` is reached through a guard (`hasNoData`).
