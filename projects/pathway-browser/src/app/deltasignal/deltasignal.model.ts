@@ -96,6 +96,42 @@ export interface DeltaSignalPinsResponse {
   results: DeltaSignalPinResult[];
 }
 
+/** One ranked row of an inverse answer (deltasignal specs/158), verbatim. */
+interface DeltaSignalInverseRow {
+  candidates: string[];
+  names: string[];
+  dose: 'knockout' | 'overexpression';
+  activity: number;
+  fold: number;
+  call: 'up' | 'down' | 'normal';
+  converged: boolean;
+}
+
+export interface DeltaSignalInverseResponse {
+  status: 'success';
+  direction: string;
+  cap: number;
+  ordering: string;
+  counts: {
+    candidates_total: number;
+    self_excluded: number;
+    reachable: number;
+    solved: number;
+    capped: number;
+    moved: number;
+    returned: number;
+  };
+  results: DeltaSignalInverseRow[];
+}
+
+/** The inverse-query state for the selected entity (deltasignal specs/158). */
+export interface DeltaSignalInverseState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  reactomeId: string | null;
+  result: DeltaSignalInverseResponse | null;
+  message: string | null;
+}
+
 /** The resolution state for the entity selected on the diagram. */
 export interface DeltaSignalPinState {
   status: 'idle' | 'loading' | 'ready' | 'error';
