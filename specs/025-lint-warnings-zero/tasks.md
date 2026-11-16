@@ -186,7 +186,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         on the old pipe and the new, and fails on each planted fault (the path
         walked through objects only, split on the wrong separator). 251 →
         201 (#978).
-  - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
+  - [x] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
         `deltasignal` (5) is another session's feature work, so its changes
         are types only and kept to the warned lines (no open pull request
         touched its files): a tap's target is cytoscape's `EventObjectNode`,
@@ -209,7 +209,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         missing param, a repeated one: the last failing on the old service),
         `dark.service.spec.ts` (failing on the old service),
         `analysis-palette.spec.ts` (a missing value's colour) and
-        `no-entries-message.spec.ts`. The six rules are at zero. 201 → 145.
+        `no-entries-message.spec.ts`. The six rules are at zero. 201 → 145 (#979).
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
       `error` (their counts are zero).
 
