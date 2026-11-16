@@ -18,6 +18,15 @@ import { clampThreshold, DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../in
 import type { ExportableInteraction } from '../interactor-export';
 import { INTERACTOR_BADGE_MIN_ZOOM } from 'ngx-reactome-cytoscape-style';
 import { UrlStateService } from '../../services/url-state.service';
+import {
+  allData,
+  drawnInteractors,
+  listData,
+  nodeData,
+  numberData,
+  recordData,
+  textData,
+} from '../../diagram/element-data';
 
 /**
  * What the drawn badges add up to, counted once per protein.
@@ -32,8 +41,8 @@ import { UrlStateService } from '../../services/url-state.service';
 function tallyBadges(badges: cytoscape.NodeCollection): ResourceTally {
   const byAccession = new Map<string, number>();
   badges.forEach((badge) => {
-    const accession = (badge.data('acc') as string | undefined) ?? badge.id();
-    const interactions = (badge.data('interactors') as unknown[] | undefined)?.length ?? 0;
+    const accession = textData(badge, 'acc') ?? badge.id();
+    const interactions = listData(badge, 'interactors')?.length ?? 0;
     byAccession.set(accession, Math.max(byAccession.get(accession) ?? 0, interactions));
   });
   return {
@@ -376,7 +385,7 @@ export class InteractorService {
     // so fitting to them moved nothing at all: nine badges, zoom 0.283 before
     // and 0.283 after. Their entities are on the diagram and visible.
     const entities = badges.reduce((collection, badge) => {
-      const entity = badge.data('entity') as NodeSingular | undefined;
+      const entity = nodeData(badge, 'entity');
       return entity ? collection.union(entity) : collection;
     }, cy.collection() as cytoscape.Collection);
     if (entities.length > 0) cy.fit(entities, 80);
@@ -485,9 +494,13 @@ export class InteractorService {
     const result: string[] = [];
 
     graphNodes.forEach((entity) => {
-      const schemaClass = entity.data('graph').schemaClass;
-      if (schemaClass === 'EntityWithAccessionedSequence' || schemaClass === 'SimpleEntity') {
-        result.push(entity.data('acc'));
+      const schemaClass = textData(entity, 'graph.schemaClass');
+      const acc = textData(entity, 'acc');
+      if (
+        acc !== undefined &&
+        (schemaClass === 'EntityWithAccessionedSequence' || schemaClass === 'SimpleEntity')
+      ) {
+        result.push(acc);
       }
     });
 
@@ -578,7 +591,7 @@ export class InteractorService {
           if (!entityNode.classes().includes('Modification')) {
             const occurrenceNode = cy.add({
               data: {
-                ...entityNode.data(),
+                ...allData(entityNode),
                 exp: undefined,
                 id: id,
                 displayName: interactorEntity.count,
@@ -614,7 +627,7 @@ export class InteractorService {
    */
   public applyInteractorThreshold(cy: cytoscape.Core, threshold: number): void {
     const show = (element: cytoscape.NodeSingular | cytoscape.EdgeSingular): void => {
-      const score = element.data('score') as number | undefined;
+      const score = numberData(element, 'score');
       element.style('display', passesThreshold({ score }, threshold) ? 'element' : 'none');
     };
 
@@ -634,11 +647,7 @@ export class InteractorService {
     // against what the whole pathway offers -- a true number and a useless one.
     const offered = cy
       .nodes('.InteractorOccurrences.opened')
-      .reduce(
-        (total, badge) =>
-          total + ((badge.data('interactors') as unknown[] | undefined)?.length ?? 0),
-        0
-      );
+      .reduce((total, badge) => total + (listData(badge, 'interactors')?.length ?? 0), 0);
     this.interactorCounts.set({
       shown: drawn.filter((node) => node.visible()).length,
       drawn: drawn.length,
@@ -660,15 +669,10 @@ export class InteractorService {
     // file still carries 150.
     this.exportableInteractions.set(
       cy.nodes('.InteractorOccurrences.opened').reduce<ExportableInteraction[]>((rows, badge) => {
-        const entity = badge.data('entity')?.data('displayName') as string | undefined;
-        const interactions = (badge.data('interactors') ?? []) as {
-          acc?: string;
-          alias?: string;
-          score?: number;
-          evidences?: number;
-        }[];
+        const entityNode = nodeData(badge, 'entity');
+        const entity = entityNode && textData(entityNode, 'displayName');
         return rows.concat(
-          interactions.map((interaction) => ({
+          drawnInteractors(badge).map((interaction) => ({
             acc: interaction.acc,
             alias: interaction.alias,
             score: interaction.score,
@@ -683,9 +687,8 @@ export class InteractorService {
       cy
         .nodes('.InteractorOccurrences.opened')
         .reduce<number[]>((scores, badge) => {
-          const interactions = (badge.data('interactors') ?? []) as { score?: number }[];
           return scores.concat(
-            interactions
+            drawnInteractors(badge)
               .map((interaction) => interaction.score)
               .filter((score): score is number => typeof score === 'number')
           );
@@ -709,8 +712,8 @@ export class InteractorService {
       other.removeClass('opened');
     });
 
-    const interactorsData = occurrenceNode.data('interactors');
-    const resource = occurrenceNode.data('resource');
+    const interactorsData = drawnInteractors(occurrenceNode);
+    const resource = textData(occurrenceNode, 'resource') ?? '';
     InteractorsLayout.BOX_WIDTH =
       resource === ResourceType.DISGENET
         ? this.DEFAULT_DISGENET_WIDTH / 2
@@ -784,11 +787,13 @@ export class InteractorService {
     numberToAdd: number,
     resource: string
   ) {
+    const entity = nodeData(targetNode, 'entity');
+    if (!entity) return cy.collection();
     const interactorNodes: cytoscape.NodeDefinition[] = [];
     const interactorLayout = new InteractorsLayout();
 
     interactorsData.forEach((interactor: DrawnInteractor, index: number) => {
-      const position = interactorLayout.getPosition(targetNode, index, numberToAdd);
+      const position = interactorLayout.getPosition(entity.position(), index, numberToAdd);
       const displayName = interactor.alias ? interactor.alias : interactor.acc;
       const defaultType = ['Protein', 'PhysicalEntity']; // Default interactor type for custom resource when there is no type data provided
       const classes =
@@ -808,10 +813,10 @@ export class InteractorService {
       const id = 'interactor-' + interactor.acc;
       interactorNodes.push({
         data: {
-          ...targetNode.data(),
+          ...allData(targetNode),
           id: id,
           graph: {
-            ...targetNode.data('graph'),
+            ...recordData(targetNode, 'graph'),
             leaves: undefined,
             identifier: interactor.acc,
           },
@@ -853,16 +858,18 @@ export class InteractorService {
     const resourceClass =
       resource === ResourceType.DISGENET ? ['Interactor', 'disease'] : ['Interactor'];
 
+    const entity = nodeData(occurrenceNode, 'entity');
+    if (!entity) return;
+
     const interactorEdges: cytoscape.EdgeDefinition[] = [];
     interactorsData.forEach((interactor: DrawnInteractor) => {
-      const entity = occurrenceNode.data('entity');
       const targetNodes = interactor.existingNodes
         ? interactor.existingNodes
         : [cy.getElementById('interactor-' + interactor.acc)];
       targetNodes.forEach((targetNode) => {
         interactorEdges.push({
           data: {
-            ...targetNode.data(),
+            ...allData(targetNode),
             id: interactor.acc + '-' + entity.id(),
             source: entity.id(),
             target: targetNode.id(),
@@ -892,16 +899,18 @@ export class InteractorService {
   }
 
   public removeInteractorNodes(occurrenceNode: cytoscape.NodeSingular) {
-    const entityNode = occurrenceNode.data('entity');
-    const interactors = entityNode.closedNeighborhood('node.Interactor');
+    const entityNode = nodeData(occurrenceNode, 'entity');
     const cy = occurrenceNode.cy();
 
-    entityNode.connectedEdges('.Interactor').remove();
-    interactors.forEach((interactor: cytoscape.NodeSingular) => {
-      if (interactor.connectedEdges().empty()) {
-        interactor.remove();
-      }
-    });
+    if (entityNode) {
+      const interactors = entityNode.closedNeighborhood('node.Interactor');
+      entityNode.connectedEdges('.Interactor').remove();
+      interactors.forEach((interactor: cytoscape.NodeSingular) => {
+        if (interactor.connectedEdges().empty()) {
+          interactor.remove();
+        }
+      });
+    }
 
     // The confidence control follows this, so it has to be true after a close as
     // well as after an open. It was only ever set when interactors were added,

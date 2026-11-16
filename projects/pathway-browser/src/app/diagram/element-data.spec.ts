@@ -2,9 +2,14 @@ import cytoscape from 'cytoscape';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import { describe, expect, it } from 'vitest';
 import {
+  allData,
+  drawnInteractors,
   graphLeaves,
   interactorAccessions,
+  listData,
+  nodeData,
   numberData,
+  recordData,
   selectedStId,
   shadowEdges,
   styleOf,
@@ -64,6 +69,47 @@ describe("reading a diagram element's data", () => {
     const interactors = [{ acc: 'P1' }, { acc: 2 }, null, { name: 'x' }, { acc: 'P3' }];
     expect(interactorAccessions(node({ interactors }))).toEqual(['P1', 'P3']);
     expect(interactorAccessions(node({}))).toEqual([]);
+  });
+
+  it('reads everything on an element, and an object under a name, to copy', () => {
+    const n = node({ graph: { stId: 'R-HSA-1' }, acc: 'P1', label: 'x' });
+    expect(allData(n)).toEqual({ id: 'n', graph: { stId: 'R-HSA-1' }, acc: 'P1', label: 'x' });
+    expect(allData({ data: () => undefined })).toEqual({});
+    expect(recordData(n, 'graph')).toEqual({ stId: 'R-HSA-1' });
+    expect(recordData(n, 'acc')).toBeUndefined();
+    expect(recordData(n, 'missing')).toBeUndefined();
+  });
+
+  it('reads a list where it is one', () => {
+    expect(listData(node({ interactors: [1, null] }), 'interactors')).toEqual([1, null]);
+    expect(listData(node({ interactors: null }), 'interactors')).toBeUndefined();
+    expect(listData(node({ interactors: { length: 2 } }), 'interactors')).toBeUndefined();
+  });
+
+  it("reads an interactor occurrence's entity where it is a node", () => {
+    const cy = cytoscape({ headless: true, elements: [{ data: { id: 'e' } }] });
+    const entity = cy.$id('e');
+    const badge = cy.add({ data: { id: 'b', entity } });
+    expect(nodeData(badge, 'entity')).toBe(entity);
+    badge.data('entity', 'e');
+    expect(nodeData(badge, 'entity')).toBeUndefined();
+    badge.data('entity', { id: 'e' });
+    expect(nodeData(badge, 'entity')).toBeUndefined();
+    badge.data('entity', { id: () => 'e', position: () => ({ x: 0, y: 0 }) });
+    expect(nodeData(badge, 'entity')).toBeUndefined();
+    badge.removeData('entity');
+    expect(nodeData(badge, 'entity')).toBeUndefined();
+  });
+
+  it("reads an interactor occurrence's interactors: those with an accession", () => {
+    const kept = { acc: 'P1', alias: 'A', score: 0.5 };
+    const interactors = [kept, { acc: 2 }, null, 'P3', { alias: 'x' }];
+    const read = drawnInteractors(node({ interactors }));
+    expect(read).toEqual([kept]);
+    // The same objects: drawing marks the ones already on the diagram.
+    expect(read[0]).toBe(interactors[0]);
+    expect(drawnInteractors(node({ interactors: null }))).toEqual([]);
+    expect(drawnInteractors(node({}))).toEqual([]);
   });
 
   it("reads a sub-pathway's edges where they are a collection", () => {

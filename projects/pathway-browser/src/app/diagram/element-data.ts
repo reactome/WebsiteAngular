@@ -1,6 +1,7 @@
-import type { Core, EdgeCollection } from 'cytoscape';
+import type { Core, EdgeCollection, NodeSingular } from 'cytoscape';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import type * as Graph from '../model/graph.model';
+import type { DrawnInteractor } from '../interactors/model/interactor.model';
 
 /**
  * Reading what the diagram keeps on its cytoscape elements.
@@ -12,6 +13,50 @@ import type * as Graph from '../model/graph.model';
  */
 interface WithData {
   data(name: string): unknown;
+}
+
+interface WithAllData {
+  data(): unknown;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+/** Everything kept on an element, to copy onto another; nothing where it is not an object. */
+export function allData(element: WithAllData): Record<string, unknown> {
+  const data = element.data();
+  return isRecord(data) ? data : {};
+}
+
+/** The value under `name` where it is an object, to copy onto another element. */
+export function recordData(element: WithData, name: string): Record<string, unknown> | undefined {
+  const value = element.data(name);
+  return isRecord(value) ? value : undefined;
+}
+
+/** The value under `name` where it is a list. */
+export function listData(element: WithData, name: string): unknown[] | undefined {
+  const value: unknown = element.data(name);
+  return Array.isArray(value) ? value : undefined;
+}
+
+/**
+ * The value under `name` where it is a cytoscape node, as an interactor
+ * occurrence keeps its entity (`entity`).
+ */
+export function nodeData(element: WithData, name: string): NodeSingular | undefined {
+  const value = element.data(name);
+  return isNodeSingular(value) ? value : undefined;
+}
+
+function isNodeSingular(value: unknown): value is NodeSingular {
+  return (
+    isRecord(value) &&
+    typeof value['isNode'] === 'function' &&
+    typeof value['position'] === 'function' &&
+    typeof value['id'] === 'function'
+  );
 }
 
 /** The value under `name` where it is text. */
@@ -68,6 +113,18 @@ function isEdgeCollection(value: unknown): value is EdgeCollection {
     'style' in value &&
     typeof value.style === 'function'
   );
+}
+
+/**
+ * An interactor occurrence's interactors, as the interactor service puts them
+ * there: the entries with an accession, which is what drawing reads of each.
+ */
+export function drawnInteractors(occurrence: WithData): DrawnInteractor[] {
+  return (listData(occurrence, 'interactors') ?? []).filter(isDrawnInteractor);
+}
+
+function isDrawnInteractor(value: unknown): value is DrawnInteractor {
+  return isRecord(value) && typeof value['acc'] === 'string';
 }
 
 /** The accessions of an interactor occurrence's interactors, where they are text. */

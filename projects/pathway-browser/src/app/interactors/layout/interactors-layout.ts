@@ -1,4 +1,3 @@
-import { NodeSingular } from 'cytoscape';
 import { DrawnInteractor } from '../model/interactor.model';
 
 export interface Position {
@@ -69,8 +68,7 @@ class InteractorsLayout {
     };
   }
 
-  public getPosition(targetNode: NodeSingular, interactorIndex: number, numberToDraw: number) {
-    const centerPosition: { x: number; y: number } = targetNode.data('entity').position();
+  public getPosition(centerPosition: Position, interactorIndex: number, numberToDraw: number) {
     const lp = LayoutParameter.calculate(numberToDraw);
 
     let edgeNodes = lp.nodeOnTop;

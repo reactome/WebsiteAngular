@@ -3,9 +3,7 @@ import {
   AbstractControl,
   FormBuilder,
   FormControl,
-  FormGroup,
   ValidationErrors,
-  ValidatorFn,
   Validators,
 } from '@angular/forms';
 import { merge } from 'rxjs';
@@ -29,6 +27,7 @@ import {
 } from '@angular/material/dialog';
 import { InputCategory, InteractorToken } from '../model/interactor.model';
 import { parseCustomInteractions } from '../custom-interactor-parse';
+import { chosenText, FileFieldValue, uploadForm } from './upload-form';
 import { MatFormField, MatLabel, MatError, MatHint } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -84,7 +83,16 @@ export class CustomInteractorDialogComponent implements OnInit {
     Validators.required,
     Validators.pattern(/^[a-zA-Z_]+[a-zA-Z0-9_]*$/),
   ]);
-  resourceForm!: FormGroup;
+  readonly resourceForm = this.fb.group(
+    {
+      selectedValue: [''],
+      form: this.fb.control<FileFieldValue>(''), // file uploader
+      content: [''],
+      url: [''],
+      psicquicUrl: [''],
+    },
+    { validators: anySourceGiven }
+  );
   errorMessage = '';
   tabId = 'data'; // Default value
   selectedValue = 'form'; // Default value
@@ -111,17 +119,6 @@ export class CustomInteractorDialogComponent implements OnInit {
   ];
 
   constructor() {
-    this.resourceForm = this.fb.group(
-      {
-        selectedValue: [''],
-        form: [''], // file uploader
-        content: [''],
-        url: [''],
-        psicquicUrl: [''],
-      },
-      { validators: this.formGroupValidator }
-    );
-
     merge(this.name.statusChanges, this.name.valueChanges)
       .pipe(takeUntilDestroyed())
       .subscribe(() => this.updateErrorMessage());
@@ -130,18 +127,6 @@ export class CustomInteractorDialogComponent implements OnInit {
   ngOnInit() {
     this.cy = this.data.cy;
   }
-
-  formGroupValidator: ValidatorFn = (control: AbstractControl): ValidationErrors | null => {
-    const fileValue = control.value.form;
-    const contentValue = control.value.content;
-    const urlValue = control.value.url;
-    const psicquicUrlValue = control.value.psicquicUrl;
-    if (fileValue || contentValue || urlValue || psicquicUrlValue) {
-      return null;
-    } else {
-      return { invalid: true };
-    }
-  };
 
   updateErrorMessage() {
     if (this.name.hasError('required')) {
@@ -165,7 +150,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     this.uploadError.set('');
   }
 
-  onItemChange($event: MatRadioChange) {
+  onItemChange($event: MatRadioChange<string>) {
     this.selectedValue = $event.value;
   }
 
@@ -282,40 +267,52 @@ export class CustomInteractorDialogComponent implements OnInit {
   }
 
   /** The text to read, whether it was typed or chosen from disk. */
-  private async readInput(): Promise<string> {
-    const value = this.resourceForm.value[this.selectedValue];
-    if (typeof value === 'string') return value;
-    // ngx-mat-file-input hands over a FileInput holding the chosen files.
-    const file = (value as { files?: File[] } | null)?.files?.[0];
-    if (file) return file.text();
-    return '';
+  private readInput(): Promise<string> {
+    return chosenText(this.chosenSource());
+  }
+
+  /** The field of the source chosen on the data tab: a file, a paste or a URL. */
+  private chosenSource(): FileFieldValue {
+    const formValue = this.resourceForm.value;
+    switch (this.selectedValue) {
+      case 'form':
+        return formValue.form;
+      case 'content':
+        return formValue.content;
+      case 'url':
+        return formValue.url;
+      default:
+        return undefined;
+    }
   }
 
   private getInputs(): InputCategory {
     const input = new InputCategory();
-    const formValue = this.resourceForm.value;
 
     if (this.tabId === 'data') {
       input.url = this.interactorService.UPLOAD_URL + this.selectedValue;
-      input.content = formValue[this.selectedValue];
-      if (this.selectedValue === this.items[0]?.name) {
-        // Prepare formdata when file is uploaded
-        input.content = this.prepareFormData(formValue.form);
+      if (this.selectedValue === 'form') {
+        input.content = uploadForm(this.resourceForm.value.form);
+      } else {
+        const source = this.chosenSource();
+        input.content = typeof source === 'string' ? source : undefined;
       }
     }
 
     if (this.tabId === 'psicquic') {
       input.url = this.interactorService.UPLOAD_PSICQUIC_URL;
-      input.content = formValue.psicquicUrl;
+      input.content = this.resourceForm.value.psicquicUrl ?? undefined;
     }
     return input;
   }
+}
 
-  private prepareFormData(formControl: string | Blob): FormData {
-    const formData = new FormData();
-    formData.append('file', formControl);
-    return formData;
-  }
+/** Whether any source is given: a file, a paste, a URL or a PSICQUIC service. */
+function anySourceGiven(control: AbstractControl): ValidationErrors | null {
+  const sources = ['form', 'content', 'url', 'psicquicUrl'].map(
+    (name): unknown => control.get(name)?.value
+  );
+  return sources.some(Boolean) ? null : { invalid: true };
 }
 
 /**
