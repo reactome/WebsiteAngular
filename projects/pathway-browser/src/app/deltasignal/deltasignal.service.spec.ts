@@ -429,6 +429,24 @@ describe('DeltaSignalService readouts', () => {
     expect(service.readoutRows().every((row) => row.switchState === null)).toBe(true);
   });
 
+  it('carries the served fragility rate onto rows verbatim, null when absent (specs/029)', async () => {
+    const solving = service.solve();
+    await settle();
+    http.expectOne('/api/solve').flush(solveAnswer);
+    await settle();
+    const answer = readoutsAnswer();
+    answer.results[0].fragility = { rate: 0.1379, n: 1436 };
+    http.expectOne('/api/readouts').flush(answer);
+    await flushNoLeads();
+    await solving;
+
+    const rows = service.readoutRows();
+    const withRate = rows.find((row) => row.reactomeId === 'R-HSA-1');
+    const without = rows.find((row) => row.reactomeId === 'R-HSA-2');
+    expect(withRate?.fragility).toEqual({ rate: 0.1379, n: 1436 });
+    expect(without?.fragility).toBeNull();
+  });
+
   it('carries served measured fold ranges onto rows verbatim (specs/027)', async () => {
     const solving = service.solve();
     await settle();

@@ -170,6 +170,11 @@ interface DeltaSignalReadoutResult {
    *  landed in [lo, hi] over n recorded pairs — a share of the record, never
    *  a probability. Absent (never null) where the record is silent. */
   measured_fold_ranges?: DeltaSignalFoldRange[];
+  /** deltasignal specs/157: the share of recorded ensemble pairs in this
+   *  readout's class whose call flipped under at least one recorded
+   *  near-equivalent rule variant — stability across contested structure,
+   *  never correctness. Absent where the record is silent. */
+  fragility?: { rate: number; n: number };
   /** deltasignal specs/154: true when the readout's fold at the other stable
    *  state would produce a DIFFERENT call — this number is a basin's
    *  coordinates, not a magnitude. Served only when the request carried the
@@ -209,6 +214,9 @@ export interface DeltaSignalReadoutsResponse {
    *  catalog — rendered as absence, never substituted). */
   fold_ranges?: string;
   fold_ranges_min_cell?: number | null;
+  /** deltasignal specs/157: "ok: <version>", or why no rates are served. */
+  fragility_table?: string;
+  fragility_min_cell?: number | null;
   results: DeltaSignalReadoutResult[];
 }
 
@@ -236,6 +244,8 @@ export interface DeltaSignalReadoutRow {
   /** The served measured ranges (specs/155), verbatim; empty when the record
    *  is silent for this readout's class. */
   ranges: DeltaSignalFoldRange[];
+  /** The served structural-fragility rate (specs/157), verbatim or null. */
+  fragility: { rate: number; n: number } | null;
   lead: DeltaSignalLead | null;
   confidence: number | null;
   /** The perturbation has no route to this readout in this network. */

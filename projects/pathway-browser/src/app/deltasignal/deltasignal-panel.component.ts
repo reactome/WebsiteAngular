@@ -15,7 +15,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DeltaSignalService } from './deltasignal.service';
 import { DeltaSignalReadoutRow } from './deltasignal.model';
-import { buildSoftObservations } from './deltasignal.utils';
+import { buildSoftObservations, fragilityAtFloor } from './deltasignal.utils';
 import { DeltaSignalLogicGraphComponent } from './deltasignal-logic-graph.component';
 
 @Component({
@@ -83,6 +83,12 @@ export class DeltaSignalPanelComponent {
   // names are display labels; an unknown axis shows its served name.
   rowRanges(row: DeltaSignalReadoutRow) {
     return row.ranges.filter((range) => range.share === 0.5);
+  }
+  // specs/029: the served fragility rate (deltasignal specs/157), shown only
+  // at or above the display floor — the record's typical class is under 1%,
+  // where the note would be noise. Rendered, never computed.
+  fragileNote(row: DeltaSignalReadoutRow) {
+    return fragilityAtFloor(row.fragility);
   }
   axisLabel(axis: string): string {
     return (

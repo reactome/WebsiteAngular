@@ -580,3 +580,9 @@ main {
 .method-note.soft-note {
   color: #1b7f8c;
 }
+
+// deltasignal specs/157 (WA specs/029): the structural-fragility note.
+.fragility-note {
+  display: block;
+  color: #b45309;
+}

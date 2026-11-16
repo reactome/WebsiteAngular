@@ -3,6 +3,7 @@ import {
   buildLogicGraph,
   buildObservations,
   groupChangesByReactomeId,
+  fragilityAtFloor,
   resultRows,
 } from './deltasignal.utils';
 import type {
@@ -92,5 +93,15 @@ describe('DeltaSignal result mapping', () => {
     expect(graph.nodes.map((node) => node.uuid)).toEqual(['a', 'b']);
     expect(graph.nodes.every((node) => node.mappingMultiplicity === 2)).toBe(true);
     expect(graph.edges).toEqual([network.edges[0]]);
+  });
+});
+
+// deltasignal specs/157 (WA specs/029): the fragility display floor.
+describe('fragilityAtFloor', () => {
+  it('names the class at or above the floor and is silent below it', () => {
+    expect(fragilityAtFloor({ rate: 0.14, n: 1436 })).toEqual({ rate: 0.14, n: 1436 });
+    expect(fragilityAtFloor({ rate: 0.05, n: 100 })).toEqual({ rate: 0.05, n: 100 });
+    expect(fragilityAtFloor({ rate: 0.006, n: 17312 })).toBeNull();
+    expect(fragilityAtFloor(null)).toBeNull();
   });
 });
