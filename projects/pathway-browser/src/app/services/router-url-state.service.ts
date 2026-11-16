@@ -10,6 +10,7 @@ import {
 import { filter, map, switchMap } from 'rxjs';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { textField } from './utils';
 import {
   FRAGMENT_PATTERN,
   fragmentParams,
@@ -18,6 +19,26 @@ import {
   UrlParam,
   UrlStateService,
 } from './url-state.service';
+
+/**
+ * A param as the address sets it: from the text of a query parameter, parsed
+ * by its `type`, whatever the param's own type. Each param is one of these.
+ */
+type AddressParam = Pick<
+  UrlParam<unknown>,
+  'otherTokens' | 'initialValue' | 'type' | 'otherTransform'
+> & {
+  set(value: unknown): void;
+};
+
+/**
+ * A query parameter's value as text. The router gives a parameter given more
+ * than once as a list; it reads as its first value, as `paramMap.get` reads it.
+ */
+function queryText(value: unknown): string | undefined {
+  const first: unknown = Array.isArray(value) ? value[0] : value;
+  return typeof first === 'string' ? first : undefined;
+}
 
 @UntilDestroy()
 /**
@@ -45,7 +66,7 @@ export class RouterUrlStateService extends UrlStateService {
           while (route.firstChild) route = route.firstChild;
           return route.params;
         }),
-        map((params) => params['pathwayId'])
+        map((params) => textField(params, 'pathwayId'))
       )
       .subscribe((id) => {
         this.pathwayId.set(id);
@@ -141,29 +162,29 @@ export class RouterUrlStateService extends UrlStateService {
       // Kept synchronous: subscribe ignores what the callback returns, so a
       // rejection in here would go unreported.
       void (async () => {
-        for (const mainToken in this.values) {
-          const param = this.values[mainToken as keyof StateValues] as UrlParam<any>;
+        const entries: [string, AddressParam][] = Object.entries(this.values);
+        for (const [mainToken, param] of entries) {
           const tokens: string[] = [mainToken, ...(param.otherTokens || [])];
-          const token = tokens.find((token) => params[token] !== undefined);
-          if (token) {
+          const found = tokens
+            .map((token) => ({ token, value: queryText(params[token]) }))
+            .find((entry): entry is { token: string; value: string } => entry.value !== undefined);
+          if (found) {
+            const { token, value } = found;
             const initialValue = param.initialValue;
-            const value = params[token];
-            if (value === undefined || value === null) param.set(value);
             // A legacy name's value means what its translation says: set that.
             // It was translated into `value` and then dropped, so `?DTAB=MT`
             // opened the default tab and `?TOOL=AT` an empty browser.
             if (param.otherTransform && token !== mainToken) param.set(param.otherTransform(value));
             else {
               if (Array.isArray(initialValue)) {
-                let values: any[] = value.split(';');
+                const texts = value.split(';');
+                let values: unknown[] = texts;
                 if (param.type === 'id') {
-                  const mixedValues = values.map((v) =>
-                    v.charAt(0).match(/\d/) ? parseInt(v) : v
-                  );
+                  const mixedValues = texts.map((v) => (v.charAt(0).match(/\d/) ? parseInt(v) : v));
                   values = await Promise.all(mixedValues.map((v) => this.ensureStId(v)));
                 }
-                if (param.type === 'number') values = values.map((v) => +v);
-                if (param.type === 'boolean') values = values.map((v) => v === 'true');
+                if (param.type === 'number') values = texts.map((v) => +v);
+                if (param.type === 'boolean') values = texts.map((v) => v === 'true');
                 param.set(values);
               } else if (param.type === 'boolean') {
                 param.set(value === 'true');

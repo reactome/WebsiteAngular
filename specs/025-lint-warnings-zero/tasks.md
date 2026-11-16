@@ -186,9 +186,30 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         on the old pipe and the new, and fails on each planted fault (the path
         walked through objects only, split on the wrong separator). 251 →
         201 (#978).
-  - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
-        `deltasignal` (5) is another session's work at present: its warnings
-        wait for that session, or are cleared with it.
+  - [x] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
+        `deltasignal` (5) is another session's feature work, so its changes
+        are types only and kept to the warned lines (no open pull request
+        touched its files): a tap's target is cytoscape's `EventObjectNode`,
+        and an error's message is read through `textField`. The address is
+        read into the state through `AddressParam`, a param as the address
+        sets it, and `queryText`, a query parameter's value as text: a
+        parameter given more than once reads as its first value, as
+        `paramMap.get` reads it, where it threw (a bug, below). The palette
+        reaches chroma's `nodata` through a guard, so the silenced line is
+        gone; the dark-mode flag in local storage is dark only when it is
+        `true`; a search's 404 shows its first message where that is text
+        (`noEntriesMessage`); the tree is a `MatTree<Event, string>` and its
+        element references are `ElementRef<HTMLElement>`. Three things move:
+        a repeated parameter (above); a stored dark-mode value other than
+        `true` or `false` reads as light, where it was set as it was (the
+        site writes only those two); a 404 whose first message is not text
+        shows "No entries found" (the service sends text). New tests, each
+        passing on the new code and failing on a planted fault:
+        `router-url-state.service.spec.ts` (the address parsed by type, a
+        missing param, a repeated one: the last failing on the old service),
+        `dark.service.spec.ts` (failing on the old service),
+        `analysis-palette.spec.ts` (a missing value's colour) and
+        `no-entries-message.spec.ts`. The six rules are at zero. 201 → 145 (#979).
 - [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
       `error` (their counts are zero).
 
@@ -263,9 +284,18 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   right.) Fixed in T011: the chosen file is sent (`upload-form.ts`,
   `upload-form.spec.ts`, failing with the holder appended).
 
+- **A query parameter given twice stopped the address being read**
+  (`projects/pathway-browser/src/app/services/router-url-state.service.ts`,
+  the query-parameter reader). The router gives a repeated parameter as a list,
+  and the reader called `split` or `replaceAll` on it: the error was logged,
+  and every param after it in the list kept its old value (so
+  `?flag=A&flag=B&significance=0.01` left the significance at 0.05); a
+  repeated `select` was set to the list itself. Fixed in T013: a repeated
+  parameter reads as its first value, as `paramMap.get` reads it
+  (`router-url-state.service.spec.ts`, failing on the old service).
+
 ## Silenced lines
 
-1. `projects/pathway-browser/src/app/services/analysis.service.ts`,
-   `noData`: `@ts-expect-error`, because `@types/chroma-js` leaves out
-   `Scale.nodata`, which chroma-js has. (It was there before; T001 gave it its
-   reason.)
+None. The one there was (`analysis.service.ts`, `noData`: `@ts-expect-error`,
+because `@types/chroma-js` leaves out `Scale.nodata`, which chroma-js has) went
+in T013: the scale's `nodata` is reached through a guard (`hasNoData`).

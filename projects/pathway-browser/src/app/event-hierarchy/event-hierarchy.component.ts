@@ -78,7 +78,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   protected eventService: EventService = inject(EventService);
   private speciesService: SpeciesService = inject(SpeciesService);
   public state: UrlStateService = inject(UrlStateService);
-  private el: ElementRef = inject(ElementRef);
+  private el: ElementRef<HTMLElement> = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly hierarchyHover = inject(HierarchyHoverService);
   private ehldService: EhldService = inject(EhldService);
   private analysis: AnalysisService = inject(AnalysisService);
@@ -100,9 +100,13 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    */
   readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
   readonly eventSplit = input.required<SplitComponent>();
-  readonly treeControlButton = viewChild('treeControlButton', { read: ElementRef });
-  readonly eventIcon = viewChild('eventIcon', { read: ElementRef });
-  readonly tree = viewChild.required(MatTree);
+  readonly treeControlButton = viewChild<unknown, ElementRef<HTMLElement>>('treeControlButton', {
+    read: ElementRef,
+  });
+  readonly eventIcon = viewChild<unknown, ElementRef<HTMLElement>>('eventIcon', {
+    read: ElementRef,
+  });
+  readonly tree = viewChild.required<MatTree<Event, string>>(MatTree);
 
   private _SCROLL_SPEED = 50; // pixels per second
   private _ICON_PADDING = 16;
@@ -508,8 +512,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    * Adjust widths when loading mat tree data at the initialization.
    */
   adjustWidths() {
-    const treeNodes = this.el.nativeElement.querySelectorAll('.tree-node');
-    treeNodes.forEach((node: HTMLElement) => {
+    const treeNodes = this.el.nativeElement.querySelectorAll<HTMLElement>('.tree-node');
+    treeNodes.forEach((node) => {
       this.adjustWidth(node);
     });
   }

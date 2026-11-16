@@ -31,7 +31,7 @@ import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
 import type { Params } from '@angular/router';
 import { httpParams } from '../utils/http-params';
-import { isDefined, shouldBeScientificFormat } from './utils';
+import { fieldByName, isDefined, shouldBeScientificFormat } from './utils';
 import { Report } from 'reactome-gsa-form';
 import { Species } from '../model/graph/species.model';
 import { SpeciesService } from './species.service';
@@ -122,6 +122,15 @@ export function describeLoadFailure(error: unknown): string {
   return 'The analysis result could not be loaded. Try again in a moment.';
 }
 
+/** A scale's colour for no value, which chroma-js has and @types/chroma-js leaves out. */
+interface NoDataScale {
+  nodata(color: string | Color): unknown;
+}
+
+function hasNoData(scale: Scale): scale is Scale & NoDataScale {
+  return typeof fieldByName(scale, 'nodata') === 'function';
+}
+
 export class PaletteSummary {
   lightColors: Color[];
   darkColors: Color[];
@@ -150,8 +159,7 @@ export class PaletteSummary {
   }
 
   noData(color: string | chroma.Color) {
-    // @ts-expect-error -- @types/chroma-js leaves out Scale.nodata, which chroma-js has
-    this.scale.nodata(color);
+    if (hasNoData(this.scale)) this.scale.nodata(color);
     return this;
   }
 
