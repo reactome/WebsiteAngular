@@ -86,9 +86,9 @@ module.exports = tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
-      // Warned, and held at today's count by scripts/check-lint.mjs, until
-      // spec 025 T015-T017 clear it.
-      '@typescript-eslint/no-non-null-assertion': 'warn',
+      // A `!` tells the compiler a value is there without checking. All were
+      // replaced by a check (spec 025 T015-T017), so a new one is a new mistake.
+      '@typescript-eslint/no-non-null-assertion': 'error',
       // A check the types say can never matter: a `?.` on a value typed as
       // never null, an `if` that is always true. Where the value is API data,
       // the answer is not to delete the check but to make the type say the

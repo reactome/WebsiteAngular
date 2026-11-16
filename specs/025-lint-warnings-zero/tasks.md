@@ -248,8 +248,33 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         it set `undefined` (both mean none: see below); the animated EHLD
         export, its picture gone, fails with an error saying so, where it
         threw a `TypeError`. 145 → 68 with T015 (#983).
-  - [ ] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
+  - [x] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
         `services` (32) and `viewport` (19): 68. Promote the rule to `error`.
+        What a signal holds is read once into a constant and narrowed (the
+        EHLD's selection, the citation's id, the current pathway, the hit
+        reactions' token and pathway, the analysis forms' canvases and
+        chosen species); the qualitative analysis's table is
+        `viewChild.required` (drawn unconditionally, in its first step); the
+        custom resource's name control is `nonNullable` (it is never reset),
+        its inputs always have a URL, and the body they may lack is typed as
+        such down to the request; a diagram's file naming a part of itself
+        that is not there (a node, an edge, a subpathway, a link class) stops
+        the drawing with an error naming it, through `lookUp`, as it stopped
+        it with a `TypeError` before; the edge types are a `Record` over the
+        connector's type; the primary palette is held in a field, the one its
+        map entry holds; `groupAndSortBy` gets or creates its groups; the
+        EHLD's `setDbIdToSVGGElementMap`, never called since the first
+        commit, is gone. What moves: up from no suggestion with none listed,
+        then Enter, searches for what was typed, where the preview threw and
+        Enter did nothing (`suggestPreview`, `suggest-preview.spec.ts`,
+        failing with the old `at(index)!`; see below); a tissue analysis with
+        no experiment, which its disabled button rules out, does not start;
+        an edge walk given no points, which its callers rule out, adds none.
+        Errors that were `TypeError`s now say what was missing: a tree event
+        with no pathway with a diagram above it (every top-level pathway in
+        the recordings, 271, has one), an EHLD region outside an
+        illustration, a canvas with no 2D context, an empty ChEBI
+        identifier. 68 → 0 (#985).
 
 ## Phase 4: Done
 
@@ -336,6 +361,22 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   Found in T016; the button is now offered only for a reference with a stable
   id (`summary-selection.ts`, whose spec fails when it is always offered;
   #984).
+
+- **Up, then Enter, in the Pathway Browser's search did nothing**
+  (`…/viewport/search/search.component.ts`, `currentSuggest`). Up from no
+  suggestion chooses the first, whether or not one is listed, and the preview
+  read that suggestion with a `!`: with none (a term nothing completes, or an
+  empty box), the preview threw, and Enter, which searches for the preview,
+  threw too, so nothing was searched. Fixed in T017: the preview is nothing
+  when there is no suggestion where it points, and Enter searches for what was
+  typed (`suggestPreview`, `suggest-preview.spec.ts`, failing on the old
+  code).
+- **A third connector with the same ends reuses the second's edge id**
+  (`…/services/diagram.service.ts`, `getEdgeId`). The count stored is the one
+  before the increment (`count++`), so it never rises: every conflict after
+  the first is named " (1)" again, and cytoscape refuses a second element with
+  an id, so such a diagram would fail to draw. Found in T017 and kept: none is
+  known, and drawing it is a change to what readers see.
 
 ## Silenced lines
 

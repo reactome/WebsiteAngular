@@ -26,6 +26,19 @@ type EdgeTypeDefinition = Types.EdgeTypeDefinition;
 
 cytoscape.use(cytoscapeFcose);
 
+/** A node definition with its id, as every one made here has. */
+type IdentifiedNode = cytoscape.NodeDefinition & { data: { id: string } };
+
+/**
+ * One part of a diagram's files named by another part. A missing one is a
+ * broken file, and drawing stops there, naming it.
+ */
+function lookUp<K, V>(map: Map<K, V>, key: K, what: string): V {
+  const value = map.get(key);
+  if (value === undefined) throw new Error(`The diagram names ${what} ${String(key)}, not in it.`);
+  return value;
+}
+
 const posToStr = (edge: Edge, pos: Position) => `${edge.id}-${pos.x},${pos.y}`;
 
 const pointToStr = (point: Position) => `${point.x};${point.y}`;
@@ -135,14 +148,14 @@ export class DiagramService {
     ['Uncertain Process', ['uncertain', 'reaction']],
   ]);
 
-  edgeTypeMap = new Map<string, EdgeTypeDefinition>([
-    ['INPUT', ['consumption', 'incoming', 'reaction']],
-    ['ACTIVATOR', ['positive-regulation', 'incoming', 'reaction']],
-    ['REQUIRED', ['positive-regulation', 'incoming', 'reaction']],
-    ['INHIBITOR', ['negative-regulation', 'incoming', 'reaction']],
-    ['CATALYST', ['catalysis', 'incoming', 'reaction']],
-    ['OUTPUT', ['production', 'outgoing', 'reaction']],
-  ]);
+  readonly edgeTypes: Record<NodeConnector['type'] | 'REQUIRED', EdgeTypeDefinition> = {
+    INPUT: ['consumption', 'incoming', 'reaction'],
+    ACTIVATOR: ['positive-regulation', 'incoming', 'reaction'],
+    REQUIRED: ['positive-regulation', 'incoming', 'reaction'],
+    INHIBITOR: ['negative-regulation', 'incoming', 'reaction'],
+    CATALYST: ['catalysis', 'incoming', 'reaction'],
+    OUTPUT: ['production', 'outgoing', 'reaction'],
+  };
 
   edgeTypeToStr = new Map<string, string>([
     ['INPUT', '-'],
@@ -259,7 +272,14 @@ export class DiagramService {
                   )
                   // An identifier without its "chebi:" prefix has no id after one.
                   .flatMap((node) => {
-                    const [, id] = (node.chebiIdentifier || node.standardIdentifier)!.split(':');
+                    // Kept by the filter for one or the other, so only an empty
+                    // ChEBI identifier with no standard one is neither: that
+                    // threw here before, as it still does, now saying so.
+                    const identifier = node.chebiIdentifier || node.standardIdentifier;
+                    if (identifier === undefined) {
+                      throw new Error(`Node ${node.dbId} has an empty ChEBI identifier.`);
+                    }
+                    const [, id] = identifier.split(':');
                     return id === undefined ? [] : [id];
                   })
               )
@@ -349,7 +369,9 @@ export class DiagramService {
 
     const getLeaves = (node: Graph.Node, leaves: Set<Graph.Node>) => {
       if (node.children && node.children.length > 0)
-        node.children.forEach((child) => getLeaves(dbIdToGraphNode.get(child)!, leaves));
+        node.children.forEach((child) =>
+          getLeaves(lookUp(dbIdToGraphNode, child, 'the graph node'), leaves)
+        );
       else leaves.add(node);
     };
 
@@ -613,7 +635,7 @@ export class DiagramService {
     });
 
     //sub pathways
-    const shadowNodes: cytoscape.NodeDefinition[] = diagram.shadows.map((item) => {
+    const shadowNodes: IdentifiedNode[] = diagram.shadows.map((item) => {
       return {
         data: {
           id: item.id + '',
@@ -627,10 +649,9 @@ export class DiagramService {
         },
         classes: ['Shadow'],
         position: closestToAverage(
-          subpathwayIdToEventIds
-            .get(item.reactomeId)!
-            .map((reactionId) => reactomeIdToEdge.get(reactionId)!)
-            .map((edge) => scale(edge!.position))
+          lookUp(subpathwayIdToEventIds, item.reactomeId, 'the subpathway')
+            .map((reactionId) => lookUp(reactomeIdToEdge, reactionId, 'the reaction'))
+            .map((edge) => scale(edge.position))
         ),
       };
     });
@@ -649,7 +670,7 @@ export class DiagramService {
      */
     const edges: cytoscape.EdgeDefinition[] = diagram.nodes.flatMap((node) => {
       return node.connectors.map((connector) => {
-        const reaction = idToEdges.get(connector.edgeId)!;
+        const reaction = lookUp(idToEdges, connector.edgeId, 'the edge');
 
         const reactionP = scale(reaction.position);
         const nodeP = scale(node.position);
@@ -683,7 +704,7 @@ export class DiagramService {
         // points = addRoundness(from, to, points);
         const relatives = absoluteToRelative(from, to, points);
 
-        const classes = [...this.edgeTypeMap.get(connector.type)!];
+        const classes = [...this.edgeTypes[connector.type]];
         if (reaction.isDisease) classes.push('disease');
         if (node.trivial) classes.push('trivial');
         if (eventIdToSubPathwayId.has(reaction.reactomeId)) classes.push('shadow');
@@ -772,8 +793,8 @@ export class DiagramService {
         const [output] = link.outputs;
         // As before, a link with no end cannot be drawn; now it says which.
         if (!input || !output) throw new Error(`Link ${link.id} has no input or no output.`);
-        const source = idToNodes.get(input.id)!;
-        const target = idToNodes.get(output.id)!;
+        const source = lookUp(idToNodes, input.id, 'the node');
+        const target = lookUp(idToNodes, output.id, 'the node');
 
         const sourceP = scale(source.position);
         const targetP = scale(target.position);
@@ -790,7 +811,7 @@ export class DiagramService {
         const relatives = absoluteToRelative(from, to, points);
         const relativeSegments = this.getRelativeSegmentsData(relatives);
 
-        const classes = [...this.linkClassMap.get(link.renderableClass)!];
+        const classes = [...lookUp(this.linkClassMap, link.renderableClass, 'the link class')];
         if (link.isDisease) classes.push('disease');
         const isBackground =
           link.isFadeOut ||
@@ -849,8 +870,8 @@ export class DiagramService {
   ) {
     let edgeId = `${source.id} --${this.edgeTypeToStr.get(connector.type)} ${target.id}`;
 
-    if (edgeIds.has(edgeId)) {
-      let count = edgeIds.get(edgeId)!;
+    let count = edgeIds.get(edgeId);
+    if (count !== undefined) {
       edgeIds.set(edgeId, count++);
       edgeId += ` (${count})`;
       console.warn('Conflicting edge id: ', edgeId);
@@ -891,22 +912,19 @@ export class DiagramService {
     // refused, so a U-shape cannot be dragged out of shape.
     this.bridgeReversedSegment(edge, points, direction, stop);
 
-    if (direction === 'forward') {
-      const map = this.extraLine;
-      let pos = posToStr(edge, points.at(-1)!);
-      while (map.has(pos) && pos !== stopPos && !visited.has(pos)) {
-        visited.add(pos);
-        points.push(map.get(pos)!);
-        pos = posToStr(edge, points.at(-1)!);
-      }
-    } else {
-      const map = this.reverseExtraLine;
-      let pos = posToStr(edge, points.at(0)!);
-      while (map.has(pos) && pos !== stopPos && !visited.has(pos)) {
-        visited.add(pos);
-        points.unshift(map.get(pos)!);
-        pos = posToStr(edge, points.at(0)!);
-      }
+    // Each step goes from the point the last one added. The callers always
+    // pass at least one point.
+    const forward = direction === 'forward';
+    const map = forward ? this.extraLine : this.reverseExtraLine;
+    let at = forward ? points.at(-1) : points.at(0);
+    while (at) {
+      const pos = posToStr(edge, at);
+      const next = map.get(pos);
+      if (!next || pos === stopPos || visited.has(pos)) break;
+      visited.add(pos);
+      if (forward) points.push(next);
+      else points.unshift(next);
+      at = next;
     }
   }
 
@@ -1002,7 +1020,7 @@ export class DiagramService {
     // const peTypes = ['Gene'];
     const reactionTypes = ['association', 'dissociation', 'transition', 'uncertain', 'omitted'];
 
-    const physicalEntities: cytoscape.NodeDefinition[] = Array.from({ length: amount }, (_x, i) => {
+    const physicalEntities: IdentifiedNode[] = Array.from({ length: amount }, (_x, i) => {
       const clazz = this.pick(peTypes);
       return {
         group: 'nodes',
@@ -1017,7 +1035,7 @@ export class DiagramService {
       };
     });
 
-    const reactions: cytoscape.NodeDefinition[] = physicalEntities.map((_node, i) => ({
+    const reactions: IdentifiedNode[] = physicalEntities.map((_node, i) => ({
       group: 'nodes',
       data: {
         id: `${i}-react`,
@@ -1058,8 +1076,8 @@ export class DiagramService {
     }).map(() => ({
       group: 'edges',
       data: {
-        source: this.pick(physicalEntities).data.id!,
-        target: this.pick(reactions).data.id!,
+        source: this.pick(physicalEntities).data.id,
+        target: this.pick(reactions).data.id,
       },
       classes: this.pick([
         'catalysis',
@@ -1136,7 +1154,7 @@ function getRect(node: Node): Rectangle {
 /**
  * Create a temporary cytoscape session to apply a layout to the nodes in order to avoid them to overlap each others
  */
-function avoidOverlap(definitions: cytoscape.NodeDefinition[]) {
+function avoidOverlap(definitions: IdentifiedNode[]) {
   const container = document.createElement('div');
 
   const style = new Style(container, {});
@@ -1168,7 +1186,7 @@ function avoidOverlap(definitions: cytoscape.NodeDefinition[]) {
   const layout = nodes.layout(options as cytoscape.LayoutOptions);
   layout.run();
 
-  definitions.forEach((def) => (def.position = cy.getElementById(def.data.id!).position()));
+  definitions.forEach((def) => (def.position = cy.getElementById(def.data.id).position()));
 
   cy.destroy();
   container.remove();

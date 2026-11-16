@@ -371,7 +371,7 @@ export class InteractorsComponent implements AfterViewInit {
         if (resource) {
           // The dialog drew it; nothing chosen before may answer over it.
           this.startLoading();
-          this.resourceTokens!.push(resource);
+          this.resourceTokens.push(resource);
           this.clear = false;
           this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
           // Only when there is something a link can resolve. A locally parsed
@@ -385,7 +385,7 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   isSelected(resource: InteractorToken): boolean {
-    return this.resourceTokens!.includes(resource);
+    return this.resourceTokens.includes(resource);
   }
 
   getCustomResourceInteractors(resource: InteractorToken) {
@@ -432,10 +432,10 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   deleteCustomResource(resource: InteractorToken) {
-    const index = this.resourceTokens!.indexOf(resource);
+    const index = this.resourceTokens.indexOf(resource);
     if (index === -1) return;
 
-    this.resourceTokens!.splice(index, 1);
+    this.resourceTokens.splice(index, 1);
     // Including one that never drew: a link to an overlay that did not exist.
     this.interactors.clearLoadFailure();
 

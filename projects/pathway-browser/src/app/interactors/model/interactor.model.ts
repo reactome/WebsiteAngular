@@ -53,8 +53,9 @@ interface Summary {
   name: string;
 }
 
-export class InputCategory {
-  url: string | undefined;
+/** Where a custom resource is sent, and what is sent (nothing when its field is empty). */
+export interface InputCategory {
+  url: string;
   content: string | FormData | undefined;
 }
 

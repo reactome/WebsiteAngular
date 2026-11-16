@@ -180,35 +180,6 @@ export class EhldService {
     return map;
   }
 
-  setDbIdToSVGGElementMap(container: ElementRef<HTMLDivElement> | undefined) {
-    const map = new Map<number, SVGGElement>();
-    const svgElement = container!.nativeElement.querySelectorAll(
-      'g[id^="REGION"]'
-    ) as NodeListOf<SVGGElement>;
-    svgElement.forEach((svgElement) => {
-      const idAttr = svgElement.getAttribute('id');
-      if (idAttr) {
-        const dbId = this.getDbId(idAttr);
-        if (dbId) {
-          map.set(Number(dbId), svgElement);
-        }
-      }
-    });
-    return map;
-  }
-
-  getDbId(identifier: string) {
-    const DBID_PATTERN_LITE = /\d+$/;
-
-    if (identifier.trim()) {
-      const result = DBID_PATTERN_LITE.exec(identifier);
-      if (result && result.length > 0) {
-        return result[0]; // First match
-      }
-    }
-    return null;
-  }
-
   saturateRegion(
     regionElement: SVGGElement,
     setSaturation: boolean,
@@ -320,9 +291,10 @@ export class EhldService {
     type: 'fdr' | 'exp'
   ) {
     const svg = regionElement.closest('svg');
+    if (!svg) throw new Error(`The region of ${stId} is not in an illustration.`);
     const defs =
-      svg!.querySelector('defs') ||
-      svg!.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
+      svg.querySelector('defs') ||
+      svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
 
     const stops: {
       start: number;
@@ -423,8 +395,10 @@ export class EhldService {
       textInfoElement.removeAttribute('transform');
       textInfoElement.classList.add('analysis-text');
 
+      // The first rect or path, as before; there is one, as `container` is.
       const rectBox = (
-        analysisInfoElement.querySelector('rect, path')! as SVGGraphicsElement
+        analysisInfoElement.querySelector<SVGRectElement | SVGPathElement>('rect, path') ??
+        container
       ).getBBox();
       const centerX = rectBox.x + rectBox.width / 2;
       const centerY = rectBox.y + rectBox.height / 2;
@@ -569,7 +543,8 @@ export class EhldService {
       canvas.width = Math.round(width * scale);
       canvas.height = Math.round(height * scale);
 
-      const context = canvas.getContext('2d')!;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('The browser gave no canvas to draw the illustration on.');
       if (background) {
         context.fillStyle = background;
         context.fillRect(0, 0, canvas.width, canvas.height);

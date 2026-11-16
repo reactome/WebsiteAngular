@@ -977,7 +977,7 @@ export class InteractorService {
       );
   }
 
-  public getInteractorsToken(name: string, url: string, body: string | FormData) {
+  public getInteractorsToken(name: string, url: string, body: string | FormData | undefined) {
     return this.http.post<InteractorToken>(url, body, {
       params: new HttpParams().set('name', name),
     });
@@ -995,7 +995,7 @@ export class InteractorService {
   public getInteractorsFromToken(
     name: string,
     url: string,
-    body: string | FormData,
+    body: string | FormData | undefined,
     cy: cytoscape.Core
   ): Observable<{
     token: InteractorToken;
