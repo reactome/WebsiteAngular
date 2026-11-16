@@ -38,6 +38,7 @@ import { MatSliderModule } from '@angular/material/slider';
 import { fieldByName, getArrayStats, textField } from '../../../services/utils';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDivider } from '@angular/material/divider';
+import { sortKey, sortRows, valueAtPath } from './sort-rows';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
 
 /**
@@ -302,8 +303,8 @@ export class ResultTabComponent {
   });
 
   constructor() {
-    this.dataSource.sortingDataAccessor = (data, header) =>
-      header.split('-').reduce((a: any, b) => a?.[b], data);
+    this.dataSource.sortData = (rows, sort) =>
+      sortRows(rows, sort, (row, columnId) => sortKey(valueAtPath(row, columnId)));
     effect(() => {
       this.sizeObserver.observe(this.container().nativeElement);
     });

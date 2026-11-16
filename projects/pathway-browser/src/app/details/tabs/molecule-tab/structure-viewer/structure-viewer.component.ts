@@ -98,8 +98,22 @@ export enum Source {
   PDB = 'PDB',
 }
 
-// Global variable avoid typescript errors
-declare const PDBeMolstarPlugin: any;
+/**
+ * PDBe Molstar's plugin, a global its script defines; only what is used here.
+ * https://github.com/molstar/pdbe-molstar/wiki/1.-PDBe-Molstar-as-JS-plugin
+ */
+declare const PDBeMolstarPlugin: new () => {
+  render(target: HTMLElement, options: PdbeMolstarOptions): void;
+};
+
+interface PdbeMolstarOptions {
+  bgColor: string;
+  hideControls: boolean;
+  landscape: boolean;
+  moleculeId?: string;
+  customData?: { url: string; format: string };
+  alphafoldView?: boolean;
+}
 
 @Component({
   selector: 'cr-structure-viewer',

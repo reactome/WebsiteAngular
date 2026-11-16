@@ -519,33 +519,35 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly overviewHeight = signal<number | null>(null);
   private overviewResize?: ResizeObserver;
 
-  readonly overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
-  readonly referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
-  readonly modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
+  readonly overviewTemplate$ = viewChild.required<TemplateRef<unknown>>('overviewTemplate');
+  readonly referenceTemplate$ = viewChild.required<TemplateRef<unknown>>('referenceTemplate');
+  readonly modificationsTemplate$ =
+    viewChild.required<TemplateRef<unknown>>('modificationsTemplate');
   readonly crossReferencesTemplate$ =
-    viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
-  readonly markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
+    viewChild.required<TemplateRef<unknown>>('crossReferencesTemplate');
+  readonly markerTemplate$ = viewChild.required<TemplateRef<unknown>>('markerTemplate');
   readonly otherPathwaysTemplate$ =
     viewChild.required<TemplateRef<unknown>>('otherPathwaysTemplate');
-  readonly regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
-  readonly regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
-  readonly catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>(
+  readonly regulationTemplate$ = viewChild.required<TemplateRef<unknown>>('regulationTemplate');
+  readonly regulatesTemplate$ = viewChild.required<TemplateRef<unknown>>('regulatesTemplate');
+  readonly catalystActivityTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'catalystActivityTemplate'
   );
-  readonly catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>(
+  readonly catalystActivitiesTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'catalystActivitiesTemplate'
   );
-  readonly inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
+  readonly inferencesTemplate$ = viewChild.required<TemplateRef<unknown>>('inferencesTemplate');
   readonly orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'orthologousEventsTemplate'
   );
-  readonly otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
-  readonly literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
-  readonly authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
-  readonly interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
-  readonly rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
-  readonly locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
-  readonly reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
+  readonly otherFormsTemplate$ = viewChild.required<TemplateRef<unknown>>('otherFormsTemplate');
+  readonly literatureRefsTemplate$ =
+    viewChild.required<TemplateRef<unknown>>('literatureRefsTemplate');
+  readonly authorsTemplate$ = viewChild.required<TemplateRef<unknown>>('authorsTemplate');
+  readonly interactorsTemplate$ = viewChild.required<TemplateRef<unknown>>('interactorsTemplate');
+  readonly rheaTemplate$ = viewChild.required<TemplateRef<unknown>>('rheaTemplate');
+  readonly locationsTemplate$ = viewChild<TemplateRef<unknown>>('locationsTemplate');
+  readonly reactionDiagramTemplate$ = viewChild<TemplateRef<unknown>>('reactionDiagramTemplate');
 
   readonly isReaction = computed(() => isRLE(this.obj()));
 
@@ -563,7 +565,7 @@ export class DescriptionTabComponent implements OnDestroy {
     hasDepthControl?: boolean;
     manual?: boolean;
     scope?: 'entity' | 'event';
-    template?: Signal<TemplateRef<any>>;
+    template?: Signal<TemplateRef<unknown> | undefined>;
     isPresent?: Signal<boolean>;
     disableNavigation?: Signal<boolean>;
   }[] = [
@@ -578,14 +580,14 @@ export class DescriptionTabComponent implements OnDestroy {
       key: 'locationsInPWB',
       label: 'Locations',
       manual: true,
-      template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
+      template: this.locationsTemplate$,
       isPresent: computed(() => this.showLocations()),
     },
     {
       key: 'reactionDiagram',
       label: 'Reaction Diagram',
       manual: true,
-      template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
+      template: this.reactionDiagramTemplate$,
       isPresent: computed(() => this.isReaction() && this.showReactionDiagram()),
     },
     {

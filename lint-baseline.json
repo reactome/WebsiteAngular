@@ -1,12 +1,12 @@
 {
-  "warnings": 407,
+  "warnings": 366,
   "rules": {
-    "@typescript-eslint/no-explicit-any": 34,
+    "@typescript-eslint/no-explicit-any": 10,
     "@typescript-eslint/no-non-null-assertion": 145,
-    "@typescript-eslint/no-unsafe-argument": 28,
-    "@typescript-eslint/no-unsafe-assignment": 53,
-    "@typescript-eslint/no-unsafe-call": 66,
-    "@typescript-eslint/no-unsafe-member-access": 62,
-    "@typescript-eslint/no-unsafe-return": 19
+    "@typescript-eslint/no-unsafe-argument": 26,
+    "@typescript-eslint/no-unsafe-assignment": 50,
+    "@typescript-eslint/no-unsafe-call": 64,
+    "@typescript-eslint/no-unsafe-member-access": 58,
+    "@typescript-eslint/no-unsafe-return": 13
   }
 }
