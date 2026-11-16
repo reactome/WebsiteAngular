@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { SortByTextPipe } from './sort-by-text.pipe';
 
 describe('SortByTextPipe', () => {
