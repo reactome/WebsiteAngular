@@ -1,10 +1,6 @@
-import { Publication } from './publication.model';
-import { Affiliation } from '../affiliation.model';
+import type * as Graph from '../../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface Book extends Publication {
-  ISBN: string;
-  chapterTitle: string;
-  pages: string;
-  publisher: Affiliation;
-  year: number;
-}
+/** A book or a chapter, as the pathway browser reads it (the contract's, resolved). */
+export type Book = Resolved<Graph.Book<JsogReference>>;

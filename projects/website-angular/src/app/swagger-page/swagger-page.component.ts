@@ -10,7 +10,22 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 
-declare const SwaggerUIBundle: any;
+/** The Swagger UI bundle's global, loaded as a script: the options this page gives it. */
+declare const SwaggerUIBundle: (options: {
+  domNode: HTMLElement;
+  url: string;
+  deepLinking: boolean;
+}) => unknown;
+
+/**
+ * Each service's description, under its own root. The content service's is the
+ * one generated from the shared contract (spec 016, T028), which says what each
+ * answer holds; the analysis service's is still its own.
+ */
+const DESCRIPTIONS: Record<string, string> = {
+  ContentService: 'ContentService/openapi.json',
+  AnalysisService: 'AnalysisService/v3/api-docs',
+};
 
 @Component({
   selector: 'app-swagger-page',
@@ -29,7 +44,8 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     const platformId = inject(PLATFORM_ID);
 
     this.isBrowser = isPlatformBrowser(platformId);
-    this.serviceName = this.route.snapshot.data['serviceName'] || 'ContentService';
+    const name: unknown = this.route.snapshot.data['serviceName'];
+    this.serviceName = typeof name === 'string' && name !== '' ? name : 'ContentService';
   }
 
   ngAfterViewInit() {
@@ -57,7 +73,7 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     //
     // ngAfterViewInit returns early off-browser, so window is always defined by
     // the time this runs.
-    const url = `${window.location.origin}/${this.serviceName}/v3/api-docs`;
+    const url = `${window.location.origin}/${DESCRIPTIONS[this.serviceName] ?? `${this.serviceName}/v3/api-docs`}`;
     SwaggerUIBundle({
       domNode: this.swaggerContainer().nativeElement,
       url,
@@ -90,9 +106,6 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    const swaggerContainer = this.swaggerContainer();
-    if (swaggerContainer?.nativeElement) {
-      swaggerContainer.nativeElement.innerHTML = '';
-    }
+    this.swaggerContainer().nativeElement.innerHTML = '';
   }
 }

@@ -2,7 +2,7 @@
   *ngrxLet="{ method: method$, parameters: parameters$, selected: selected$ } as vm"
   (closed)="updateScroll()"
   (opened)="updateScroll()"
-  [ngClass]="{ chosen: vm.selected }"
+  [class.chosen]="vm.selected"
   [expanded]="vm.selected"
   hideToggle
   class="mat-elevation-z3"
@@ -22,7 +22,13 @@
         <gsa-method-parameter [parameter]="param" (parameterChange)="updateParam($event)" />
       </div>
     }
-    <button (click)="setToDefault(vm.parameters)" class="margin-top-20" class="primary-color" mat-raised-button>
+    <button
+      type="button"
+      (click)="setToDefault(vm.parameters)"
+      class="margin-top-20"
+      class="primary-color"
+      mat-raised-button
+    >
       Reset
     </button>
   </div>

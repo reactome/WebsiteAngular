@@ -35,7 +35,13 @@ export function relocate(path: string): string {
 export default function rewriteContentUrls(html: string): string {
   return html.replace(
     /\b(href|src)=("([^"]*)"|'([^']*)')/g,
-    (_match, attr, _quoted, doubleQuoted, singleQuoted) => {
+    (
+      _match: string,
+      attr: string,
+      _quoted: string,
+      doubleQuoted: string | undefined,
+      singleQuoted: string | undefined
+    ) => {
       const value = doubleQuoted ?? singleQuoted ?? '';
       return `${attr}="${normalizeContentUrl(value)}"`;
     }
@@ -45,7 +51,7 @@ export default function rewriteContentUrls(html: string): string {
 function normalizeContentUrl(url: string): string {
   const reactomeUrlMatch = url.match(/^https?:\/\/(?:www\.)?reactome\.org\/?(.*)$/i);
   if (reactomeUrlMatch) {
-    const rest = reactomeUrlMatch[1].replace(/^\//, '');
+    const rest = (reactomeUrlMatch[1] ?? '').replace(/^\//, '');
     if (STILL_ON_PRODUCTION.some((path) => path.test(rest))) return url;
     // The home page itself has no path left; an empty href would mean the page
     // the reader is already on.

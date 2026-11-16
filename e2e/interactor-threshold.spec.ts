@@ -156,7 +156,8 @@ test.describe('The interactor confidence threshold', () => {
     await showInteractors(page);
 
     const scores = await offeredScores(page);
-    test.skip(scores.length === 0, 'this entity offered no interactions');
+    // Asserted, not skipped on: the pathway is chosen for its interactions (#321).
+    expect(scores.length, 'this entity offers interactions').toBeGreaterThan(0);
 
     const shownAtDefault = await drawnInteractors(page);
     expect(shownAtDefault, 'interactors are drawn to begin with').toBeGreaterThan(0);
@@ -358,7 +359,20 @@ test.describe('The threshold a resource was left at', () => {
       .locator('cr-interactors button.psicquic-button')
       .filter({ has: page.locator('.resource-count:not(.none)') })
       .first();
-    test.skip((await other.count()) === 0, 'no second resource has interactors on this pathway');
+    // Waited for, then skipped on. Live, the counts arrive as the third-party
+    // servers answer -- six to seventeen seconds each -- so one read raced them
+    // and skipped while they were still coming (#321). Which servers hold
+    // anything is theirs to decide, so against a live site finding none is a
+    // skip. In CI the counts are replayed, and a skip is not in
+    // expected-skips.json, so it still fails the shard there.
+    const found = await expect
+      .poll(() => other.count(), { timeout: 60_000 })
+      .toBeGreaterThan(0)
+      .then(
+        () => true,
+        () => false
+      );
+    test.skip(!found, 'no second resource has interactors on this pathway');
 
     const otherName = (await other.locator('.resource-name span').first().textContent())?.trim();
     await other.click();
@@ -463,7 +477,9 @@ test.describe('An overlay that cannot be seen yet', () => {
       if (!cy) throw new Error('no cytoscape instance on #cytoscape');
       return cy.zoom();
     });
-    test.skip(zoom >= 0.6, 'this pathway opens close enough in to draw them');
+    // Asserted, not skipped on: the pathway and window are chosen so it opens
+    // zoomed out, which is the case under test (#321).
+    expect(zoom, 'the pathway opens zoomed out past the badge threshold').toBeLessThan(0.6);
 
     // Polled, not read once. The badges are added and the handler that hides
     // them at this zoom runs afterwards, so a single read raced it -- the test
@@ -538,11 +554,16 @@ test.describe('An overlay the reader chose', () => {
     );
     await expect(tree.first()).toBeVisible({ timeout: BOOT_TIMEOUT });
     await tree.nth(1).click();
+    // Waited for and asserted, not skipped on after a fixed pause: the tree is
+    // the same every run, so a click that goes nowhere is a regression (#321).
+    await expect
+      .poll(() => new URL(page.url()).pathname, {
+        message: 'the tree item leads to another pathway',
+        timeout: 30_000,
+      })
+      .not.toBe(before);
+    // Let the new pathway load, so going back leaves a drawn diagram.
     await page.waitForTimeout(8000);
-    test.skip(
-      new URL(page.url()).pathname === before,
-      'that tree item did not lead anywhere else today'
-    );
 
     await page.goBack();
     await page.waitForTimeout(8000);

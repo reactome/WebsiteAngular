@@ -1,0 +1,404 @@
+# Tasks: No lint warnings
+
+**Input**: [spec.md](spec.md), [plan.md](plan.md)
+
+Each task is one pull request. The pull request that completes a task ticks it
+here and adds its number. Counts are as measured on 13 Nov 2026.
+
+## Phase 1: The small rules (User Story 1, P1)
+
+- [x] T001 [US1] The small rules, cleared and promoted to `error` in
+      `eslint.config.js`: `@angular-eslint/template/button-has-type` (10),
+      `@angular-eslint/no-input-rename` (7), `@angular-eslint/no-output-native`
+      (6), `@typescript-eslint/no-unused-expressions` (6), `no-useless-escape` (2),
+      `@typescript-eslint/ban-ts-comment` (1), `@typescript-eslint/no-empty-object-type`
+      (1), `no-empty-pattern` (1), `prefer-const` (1), and four of the five
+      `no-useless-assignment`. Seven rules already at zero but still at `warn` were
+      promoted too (`no-require-imports`, `use-lifecycle-interface`,
+      `no-wrapper-object-types`, `no-extra-non-null-assertion`, `no-output-rename`,
+      `no-unused-vars`, `template/prefer-control-flow`). Renamed inputs take their
+      public names, so no binding changed; the outputs named after DOM events become
+      `pressed` (the download button) and `closed` (the analysis forms). 879 → 838.
+- [x] T001a [US1] The last `no-useless-assignment`: a bug (see below), fixed with
+      a test (`router-url-state.service.spec.ts`), then the rule promoted (#956).
+      838 → 835: the dropped line was also an unsafe assignment, and the `tab`
+      translation's `!` became `?? null` (an unknown code had set `undefined`).
+- [x] T001b [US1] `@typescript-eslint/no-namespace` (12): the model namespaces
+      (`Analysis`, `Search`, `Graph` and others) become modules, then the rule is
+      promoted. Two unused ones in the GSA form's `dataset-library.ts` went in T001.
+      Each model file is now the module its names live in, imported whole as the
+      namespace was named, so every `Analysis.Result` reads as before;
+      `Search.Icon.Entry` and `.Result` became `Search.IconEntry` and
+      `Search.IconResult`. The table store's `Ranges` and `Cells` became modules
+      beside it (`ranges.ts`, `cells.ts`, with the row and cell accessors they
+      share in `dataset.ts`), moved token for token but for two locals renamed so
+      as not to shadow the module's own `origin` and `limits`. The two private ones
+      (`SvgDecoration`, the Reacfoam's `Layout`) became plain interfaces. The
+      contract's one-description check names a declaration by the name its module
+      is imported under, so `Analysis.Result` is still protected as such; the
+      recorded-answer check imports such modules whole. 835 → 822 (main measured
+      834: one warning of slack). Dead code 104 → 100 (main measured 102):
+      `Layout` is no longer an unused export, and the store's `LocatedValue` is
+      now imported (#962).
+
+## Phase 2: Values typed "anything" (User Story 2, P2)
+
+The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
+
+- [x] T002 [US2] `projects/reactome-table` (19). `CellInfo.value` is a
+      string, as the table's cells are; the spec imports vitest's functions rather
+      than relying on its globals; `width` and `height` take any table. The web
+      component's JSON attributes were never parsed (a bug, below): the table's
+      `table` and `userSettings` inputs now parse a string through a type guard,
+      and `safeInput` is gone. Its two non-null assertions are T015's. 822 → 803
+      (#963).
+- [x] T003 [US2] `e2e` (16; its 5 non-null assertions with it). Request bodies
+      and JSON answers are read through guards in `e2e/support/json.ts`
+      (`isRecord`, `isArray`, `bodyOf`), the diagram's style and interactivity
+      handler through guards defined inside the page function, and a missing box
+      is reported (`box?.width`, or an error naming it) rather than asserted
+      away. Three unchecked casts went with them (the GSA submission's
+      parameters, the method list and the captured GSA reads). No gate type-checks `e2e/`; checked by hand against
+      main with the root tsconfig, it has no new error and one fewer. 803 → 782
+      (#964).
+- [x] T004 [US2] `projects/reactome-gsa-form` (100), split in three by what the
+      types flow through: the models, services, utilities and components first,
+      then the state.
+  - [x] T004a The models, services, utilities and components (42), and 22 of the
+        state's with them: a parameter's value is `ParameterValue` (text, a
+        number or a boolean, as `parserFor` reads it), a request's parameters
+        are text, a summary's default parameters are text as the service sends
+        them (measured in the recording), and the service's methods are read as
+        the state's `Method` (the model's `Method`, `MethodParameter` and
+        `ParameterJSON` were never constructed, and are gone). The effects read a
+        default through `readDefault`, which reads one as `parserFor` did, an
+        absent one included. Four bugs (below). 782 → 718; dead code 100 → 99
+        (#965).
+  - [x] T004b The state, all of it (36): T004c folded in, its warnings being
+        the same few lines in every folder. A failure action carries the error
+        it was given as `unknown`, what `catchError` gives; only two places read
+        one, and they narrow it: the analysis effect retries a 503 only from an
+        `HttpErrorResponse`, and the analysis reducer shows an
+        `HttpErrorResponse`'s reason and any other error's message, as before
+        (`analysis.reducer.spec.ts`, passing on the old reducer and the new). A
+        load's parameters are `LoadParameter`s, text, as every caller sends.
+        `projects/reactome-gsa-form` now lints clean. 718 → 682 (#968).
+  - [x] T004c Folded into T004b.
+- [x] T005 [US2] `projects/website-angular`, all but the search page and
+      `src/utils` (78, counted on 15 Nov: the thirds split by folder as search
+      70, `src/utils` 80 and the rest 78). The specs import vitest's functions
+      rather than relying on its globals (`link.spec.ts`); the detail page's
+      stand-ins take the Pathway Browser's own types (`_refEntities` is a resource
+      with nothing to load, `currentResource` a `ResourceAndType`, the palette,
+      view mode and resource filter their `UrlStateService` types) and read an
+      external reference's fields through `fieldByName`; the schema page reads its
+      route through `paramMap`; the page holds a `PageContent`; the Swagger UI
+      bundle's global is declared with the options the page gives it; the article
+      index is typed as `generate-index.ts` writes it, and read so; a site-search
+      hit is its page's item, found by the identifier MiniSearch gives back
+      (`site-search.service.spec.ts`, passing on the old service and the new,
+      failing with the empty-body fallback removed); the health route's answer is
+      read through a guard in `serve-prod.spec.ts`. No gate type-checks the
+      scripts and specs here; checked by hand against main with the root
+      tsconfig, the files touched have no new error and 19 fewer. 682 → 604
+      (#969).
+- [x] T006 [US2] `projects/website-angular`, the search page (70). Its specs
+      import vitest's functions; the page reads its query parameters through
+      `paramValues` (one, several or none, as the router gives them; a `q` or
+      `page` given twice reads its first value, where a repeated `q` put a list
+      in the query before), and a failed search's 404 through `saysNoEntries`; a
+      site page's address is read as `pageUrl` where the entry has one; the
+      answer panel reads a 401's site key and verify address as text;
+      `SearchFilters` is a type rather than an interface, so `Object.entries`
+      reads its values as lists. New tests, each passing on the old code and the
+      new and failing on a planted fault: a site page's link and its fallback, a
+      failed search's 404 and the other failures (`search.component.spec.ts`),
+      and a 401's challenge and its refusals (`answer.service.spec.ts`). Checked
+      by hand against main with the root tsconfig, the files touched have no new
+      error and 33 fewer. 604 → 534 (#970).
+- [x] T007 [US2] `projects/website-angular`, `src/utils` (80): the HTML
+      passes' `replace` callbacks take their groups as text (an optional group
+      as `string | undefined`), and the navigation menus are read from
+      `nav-options.json` as `unknown`: a field as text where it is text (empty
+      otherwise), `external` by its truth, an icon only where it is text. On the
+      real file the menus are as before (compared once, old mapper against new);
+      `nav-options-mapper.spec.ts` (new) passes on both, and fails with
+      `external` ignored. `projects/website-angular` now has no "anything"
+      warnings. 534 → 454 (#971).
+- T008–T013 [US2] `projects/pathway-browser`, by feature folder: 309 on
+  15 Nov, split into six of about 50 (folders under `src/app`).
+  - [x] T008 `details/common` and the small folders: `citation`, `model`,
+        `reacfoam`, `render`, `shared/logger`,
+        `utils/expandable-virtual-scroll` (47). Types only, no runtime change:
+        the byline spec imports vitest's functions; the citation dialog's data
+        is injected as a `Citation`; a search's `Params` is a type rather than
+        an interface extending `Record<string, any>`, so it is still sent as
+        the request's parameters; the Reacfoam's `throttle` takes `unknown[]`;
+        a node's background image is read as `unknown`; the logger's input is
+        `unknown`; the resize directive's element is an `HTMLElement`. 454 →
+        407 (#972).
+  - [x] T009 `details/tabs` (41). The description tab's templates are
+        `TemplateRef<unknown>`, the two optional ones held as possibly
+        undefined rather than cast; the animated-download dialog is opened
+        typed with its result, `DownloadOptions`; the PDBe Molstar global is
+        declared with the one method used. The three analysis tables (results,
+        found, not found) read a column's value through `valueAtPath` and sort
+        through `sortRows` (`result-tab/sort-rows.ts`), Material's own
+        `sortData` for a key that may be missing, which its accessor's type
+        cannot return. No order moved: compared once, old accessors through
+        Material's `sortData` against the new on generated rows (zeros,
+        missing values, `NaN`, lists, both directions and none);
+        `sort-rows.spec.ts` (new) passes, and fails on each planted fault (a
+        missing key sorted last, numbers compared as text, no direction
+        sorting, 0 dropped, the path walk broken, the found table's 0 kept or
+        its lists' length dropped). 407 → 366 (#975).
+  - [x] T010 `diagram`, with `diagram/entity-popup` (63). What the diagram
+        keeps on its elements is read through `element-data.ts`: text as
+        text, a number as a number, an entity's leaves where they are a list,
+        an interactor occurrence's accessions, a sub-pathway's edges where
+        they are a collection, and the bound `Style` by `instanceof`; each
+        reads anything else as absent, where the old reads threw or passed it
+        on. Node event handlers take cytoscape's `EventObjectNode`, `add` and
+        `remove` an event on one element; the popup checks a click's target
+        is a `Node`. One thing moves: selecting an entity with no stable id
+        (one with no counterpart in an inferred species' diagram) sets the
+        selection to `null` where it set `undefined`; both mean none.
+        `element-data.spec.ts` (new) passes, and fails on each planted
+        fault. 366 → 303 (#976).
+  - [x] T011 `interactors` (52). What an interactor badge keeps on its
+        element is read through `element-data.ts`: its interactors as the
+        entries with an accession (`drawnInteractors`), its entity where it is
+        a node, a list where it is one, and its data copied as an object; the
+        badge counts, the export and the threshold read the same way, so their
+        casts went too. The custom-resource dialog's form is typed. Four things
+        move: sharing a file by link sends the file (a bug, below); an entity
+        with no accession no longer adds an empty identifier to the request;
+        a badge with no list or no entity draws and removes nothing, where it
+        threw; entries with no accession are left out, where they threw or
+        were passed on (none are sent so). `interactor-drawing.spec.ts` and
+        `upload-form.spec.ts` (new) and `element-data.spec.ts` pass, and fail
+        on the old service and on each planted fault. 303 → 251 (#977).
+  - [x] T012 `pipes` (50). The specs import vitest's functions (41 of
+        the 50); the group-by pipe reads its dotted path as `unknown`, each
+        step `fieldByName` on the boxed value, so it reads what `a?.[b]` read
+        (a text's own properties included), and its keys are `unknown`. No
+        template uses it. No behaviour moved: `group-by.pipe.spec.ts` passes
+        on the old pipe and the new, and fails on each planted fault (the path
+        walked through objects only, split on the wrong separator). 251 →
+        201 (#978).
+  - [x] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
+        `deltasignal` (5) is another session's feature work, so its changes
+        are types only and kept to the warned lines (no open pull request
+        touched its files): a tap's target is cytoscape's `EventObjectNode`,
+        and an error's message is read through `textField`. The address is
+        read into the state through `AddressParam`, a param as the address
+        sets it, and `queryText`, a query parameter's value as text: a
+        parameter given more than once reads as its first value, as
+        `paramMap.get` reads it, where it threw (a bug, below). The palette
+        reaches chroma's `nodata` through a guard, so the silenced line is
+        gone; the dark-mode flag in local storage is dark only when it is
+        `true`; a search's 404 shows its first message where that is text
+        (`noEntriesMessage`); the tree is a `MatTree<Event, string>` and its
+        element references are `ElementRef<HTMLElement>`. Three things move:
+        a repeated parameter (above); a stored dark-mode value other than
+        `true` or `false` reads as light, where it was set as it was (the
+        site writes only those two); a 404 whose first message is not text
+        shows "No entries found" (the service sends text). New tests, each
+        passing on the new code and failing on a planted fault:
+        `router-url-state.service.spec.ts` (the address parsed by type, a
+        missing param, a repeated one: the last failing on the old service),
+        `dark.service.spec.ts` (failing on the old service),
+        `analysis-palette.spec.ts` (a missing value's colour) and
+        `no-entries-message.spec.ts`. The six rules are at zero. 201 → 145 (#979).
+- [x] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
+      `error` (their counts are zero). Seen failing: an `any` planted in a
+      service gives three errors (`no-explicit-any`, `no-unsafe-return`,
+      `no-unsafe-member-access`). 145 warnings left, all
+      `no-non-null-assertion` (#981).
+
+## Phase 3: Asserted values (User Story 3, P3)
+
+- [x] T015 [US3] `no-non-null-assertion` outside the Pathway Browser (8), with
+      T016 in one pull request. A map filled as it is read takes the list it
+      made (the release calendar, the icon library, the search page's protein
+      forms); the table's maximum height and the download page's observer are
+      read once into a constant; the schema page's class filter, drawn only
+      once the model has loaded, checks the model is there; the locations
+      tree's spec names the node it copies. No behaviour moved.
+- T016–T017 [US3] `no-non-null-assertion` in the Pathway Browser: 137 on
+  16 Nov, split by folder under `src/app` into two halves.
+  - [x] T016 `details` (17), `diagram` (23) and `reacfoam` (29): 69. What a
+        signal holds is read once into a constant and narrowed; the diagram's
+        canvas, compare canvas and legend are `viewChild.required` (all three
+        are drawn unconditionally); a style's diagram, a merged image's 2D
+        context and its blob, and the animated EHLD export's picture are
+        checked where they are used; the Reacfoam's filters are read from
+        `filters()`, which is `mergedFilters()` whenever one is set; the
+        diagram's `getFittedViewport`, never called since the first commit,
+        is gone. What moves: a merged diagram image the browser cannot make
+        (no width, say, or too large) fails with an error naming its size,
+        where `null` was passed on as the image and failed downloading
+        (`canvas-blob.ts`, `canvas-blob.spec.ts`, failing with the old
+        `resolve(blob!)`); with nothing selected, a diagram's load unselects
+        and stops, where it searched for an element called "null" and fitted
+        to nothing; the Reacfoam is given an empty list of groups while its
+        tree loads, where it was given none (FoamTree reads both alike, and
+        `showsCurrentData` answers as before); the "select summary" button
+        of a reference with no stable id sets the selection to `null` where
+        it set `undefined` (both mean none: see below); the animated EHLD
+        export, its picture gone, fails with an error saying so, where it
+        threw a `TypeError`. 145 → 68 with T015 (#983).
+  - [x] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
+        `services` (32) and `viewport` (19): 68. Promote the rule to `error`.
+        What a signal holds is read once into a constant and narrowed (the
+        EHLD's selection, the citation's id, the current pathway, the hit
+        reactions' token and pathway, the analysis forms' canvases and
+        chosen species); the qualitative analysis's table is
+        `viewChild.required` (drawn unconditionally, in its first step); the
+        custom resource's name control is `nonNullable` (it is never reset),
+        its inputs always have a URL, and the body they may lack is typed as
+        such down to the request; a diagram's file naming a part of itself
+        that is not there (a node, an edge, a subpathway, a link class) stops
+        the drawing with an error naming it, through `lookUp`, as it stopped
+        it with a `TypeError` before; the edge types are a `Record` over the
+        connector's type; the primary palette is held in a field, the one its
+        map entry holds; `groupAndSortBy` gets or creates its groups; the
+        EHLD's `setDbIdToSVGGElementMap`, never called since the first
+        commit, is gone. What moves: up from no suggestion with none listed,
+        then Enter, searches for what was typed, where the preview threw and
+        Enter did nothing (`suggestPreview`, `suggest-preview.spec.ts`,
+        failing with the old `at(index)!`; see below); a tissue analysis with
+        no experiment, which its disabled button rules out, does not start;
+        an edge walk given no points, which its callers rule out, adds none.
+        Errors that were `TypeError`s now say what was missing: a tree event
+        with no pathway with a diagram above it (every top-level pathway in
+        the recordings, 271, has one), an EHLD region outside an
+        illustration, a canvas with no 2D context, an empty ChEBI
+        identifier. 68 → 0 (#985).
+
+## Phase 4: Done
+
+- [x] T018 Confirm `lint-baseline.json` has no warned rules left, and every
+      rule warned on 13 Nov is an error; list the silenced lines (SC-004) and the
+      bugs found (SC-005) here. (#987)
+  - `lint-baseline.json` is `{"warnings": 0, "rules": {}}` (#985).
+  - The ten rules `eslint.config.js` warned when this spec began
+    (`no-explicit-any`, `no-namespace`, `no-non-null-assertion`, the five
+    `no-unsafe-*`, `no-useless-assignment`, and `no-unused-vars` for
+    `tools/**/*.mjs`) are all `'error'`. The last was promoted here: no `.mjs`
+    is left under `tools/`, so it matched nothing.
+  - Silenced lines: twelve, each with its reason where it stands (SC-004: at
+    most 20). Ten are `template/prefer-ngsrc` on images whose size nothing
+    here knows or whose `src` is swapped on error, as the config's comment
+    asks; `tools/render/gif.ts` keeps `no-useless-assignment` on the line that
+    drops a full-size frame for the garbage collector; and
+    `tools/content-node/rejection.spec.ts` keeps `only-throw-error`, because
+    a rejection that is no `Error` is the case it tests. None was added by
+    this spec.
+  - Bugs found: listed below, each with its pull request; two are left for a
+    decision (the 0-expression sort, the third connector's edge id).
+
+## Bugs found on the way
+
+- **A legacy query parameter's value is thrown away**
+  (`projects/pathway-browser/src/app/services/router-url-state.service.ts`, the
+  `otherTransform` line). A parameter given under an old name (`?DTAB=…` for
+  `tab`, `?TOOL=AT` for `analysisTab`) is translated, and the translation is
+  then dropped, so nothing is set. `#TOOL=AT` is rewritten to `analysisTab`
+  before this and worked; `#…&DTAB=…` is passed on under its old name, so it was
+  dropped too. Fixed in T001a: the translation is set.
+- **Every excerpt ends in "...", cut or not**
+  (`projects/website-angular/src/utils/truncateHtml.ts`): the ellipsis is added
+  unconditionally; the check meant to add it only when the text was cut did
+  nothing (`result;`). The dead check went in T001; the ellipsis is unchanged,
+  as fixing it changes what readers see, and waits for a decision.
+- **The table web component drew nothing from its documented use**
+  (`projects/reactome-table/src/lib/utils/web-component-utils.ts`, `safeInput`).
+  Its attributes are strings, so its demo page sets `table` as JSON. `safeInput`
+  was to parse it, but tested the input itself, a signal since the inputs became
+  signals, so it never did: the store was given the string, threw
+  (`entries is not a function`), and the table was empty. Fixed in T002: the
+  inputs parse a string, through a type guard, with a spec seen failing against
+  the old pass-through and against each guard loosened; the built web component,
+  loaded as its demo page does, now shows the demo's cells, and threw before.
+- **A failed GSA request could show no message at all**
+  (`projects/reactome-gsa-form/src/lib/utilities/utils.ts`, `extractErrorMessage`).
+  It read the body as text whenever it had no `detail`: a request that never
+  arrived (its body the browser's `ProgressEvent`), an empty body, or text
+  starting with `{` that was not JSON each threw a `TypeError` or `SyntaxError`
+  inside the requests' `catchError`, so the snack bar never opened and the
+  failure became that error. Fixed in T004a, with `utils.spec.ts` (failing on
+  each of the three before).
+- **Clicking a local-data card threw**
+  (`…/local-data/local-data.component.ts`, `onFileSelected`). The card's click is
+  bound to the file handler too, and read `event.target.files[0]` from an
+  element with no files. Only the console showed it. Fixed in T004a
+  (`chosenFile`, `local-data.spec.ts`, failing before).
+- **Importing with an empty field threw**
+  (`…/external-data/external-data.component.ts`, `loadData`):
+  `param.value.toString()` on an absent value. The Import button did nothing,
+  and still sends nothing while a field is empty, now without the error
+  (`loadParameters`, `external-data.spec.ts`, failing before).
+- **A parameter type named like an object's own property** (`toString`) was read
+  by `Object.prototype`'s function instead of as text (`parserFor`). Not one the
+  service sends; fixed with `Object.hasOwn` in T004a, its case seen failing with
+  `in`.
+- **An expression of 0 sorts as missing** in the analysis's found and
+  not-found tables (`found-table`, `not-found-table`, their sort keys): any
+  falsy value is no key, so a 0 sorts before every negative value ascending
+  and after them descending. The results table sorts 0 as a number. Kept in
+  T009, as fixing it changes what readers see, and waits for a decision.
+- **A custom resource's file, shared by link, was sent as "[object Object]"**
+  (`…/interactors/custom-interactor-dialog`, `prepareFormData`). The file field
+  holds the file input's `FileInput`, not a file, and it was appended to the
+  upload as it was; `FormData` turns anything but a file into text, so with
+  "share by link" ticked the service was sent the text "[object Object]" in
+  place of the reader's file. (Read in the page, the default, the file was read
+  right.) Fixed in T011: the chosen file is sent (`upload-form.ts`,
+  `upload-form.spec.ts`, failing with the holder appended).
+
+- **A query parameter given twice stopped the address being read**
+  (`projects/pathway-browser/src/app/services/router-url-state.service.ts`,
+  the query-parameter reader). The router gives a repeated parameter as a list,
+  and the reader called `split` or `replaceAll` on it: the error was logged,
+  and every param after it in the list kept its old value (so
+  `?flag=A&flag=B&significance=0.01` left the significance at 0.05); a
+  repeated `select` was set to the list itself. Fixed in T013: a repeated
+  parameter reads as its first value, as `paramMap.get` reads it
+  (`router-url-state.service.spec.ts`, failing on the old service).
+
+- **"Select summary of entity" on a reference with no stable id cleared the
+  selection** (`…/details/common/external-reference`). The button sets the
+  selection to the reference's stId, which the recordings show missing on 84
+  references: the gene and transcript records a protein's reference links to
+  (NCBI Gene, KEGG, OMIM, RefSeq and the like). They are reached in the
+  details tree, under a protein's reference; no diagram draws them, so there
+  is nothing to select, and the click only deselected what was selected.
+  Found in T016; the button is now offered only for a reference with a stable
+  id (`summary-selection.ts`, whose spec fails when it is always offered;
+  #984).
+
+- **Up, then Enter, in the Pathway Browser's search did nothing**
+  (`…/viewport/search/search.component.ts`, `currentSuggest`). Up from no
+  suggestion chooses the first, whether or not one is listed, and the preview
+  read that suggestion with a `!`: with none (a term nothing completes, or an
+  empty box), the preview threw, and Enter, which searches for the preview,
+  threw too, so nothing was searched. Fixed in T017: the preview is nothing
+  when there is no suggestion where it points, and Enter searches for what was
+  typed (`suggestPreview`, `suggest-preview.spec.ts`, failing on the old
+  code).
+- **A third connector with the same ends reuses the second's edge id**
+  (`…/services/diagram.service.ts`, `getEdgeId`). The count stored is the one
+  before the increment (`count++`), so it never rises: every conflict after
+  the first is named " (1)" again, and cytoscape refuses a second element with
+  an id, so such a diagram would fail to draw. Found in T017; fixed on the
+  user's decision (16 Nov), numbering each repeat in turn (`edge-id.ts`, whose
+  spec fails on the old count). A diagram that draws today keeps its ids.
+  (#988)
+
+## Silenced lines
+
+None added by this spec (T018 lists the twelve that stand). The one
+`@ts-expect-error` there was (`analysis.service.ts`, `noData`,
+because `@types/chroma-js` leaves out `Scale.nodata`, which chroma-js has) went
+in T013: the scale's `nodata` is reached through a guard (`hasNoData`).

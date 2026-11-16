@@ -19,13 +19,35 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { isEmailParameter } from './method-parameter.component';
-import { Parameter } from '../../model/parameter.model';
 
-const recordedMethods: { name: string; parameters: Parameter[] }[] = JSON.parse(
+type RecordedParameter = { name: string; type: string };
+
+const isRecordedParameter = (p: unknown): p is RecordedParameter =>
+  typeof p === 'object' &&
+  p !== null &&
+  'name' in p &&
+  typeof p.name === 'string' &&
+  'type' in p &&
+  typeof p.type === 'string';
+
+/** A recorded method's parameters; a method or parameter of another shape fails the load. */
+function parametersOf(method: unknown): RecordedParameter[] {
+  const parameters: unknown =
+    typeof method === 'object' && method !== null && 'parameters' in method
+      ? method.parameters
+      : undefined;
+  if (!Array.isArray(parameters) || !parameters.every(isRecordedParameter))
+    throw new Error('e2e/fixtures/gsa-methods.json holds a method without named, typed parameters');
+  return parameters;
+}
+
+const recordedMethods: unknown = JSON.parse(
   readFileSync(join(__dirname, '../../../../../../e2e/fixtures/gsa-methods.json'), 'utf8')
 );
+if (!Array.isArray(recordedMethods))
+  throw new Error('e2e/fixtures/gsa-methods.json is not a list of methods');
 
-const recordedParameters = recordedMethods.flatMap((method) => method.parameters);
+const recordedParameters = recordedMethods.flatMap(parametersOf);
 const recordedEmail = recordedParameters.find((parameter) => parameter.name === 'email');
 
 // Fail loudly at load rather than asserting on an optional in every test: if
@@ -50,7 +72,7 @@ describe('which GSA parameter holds an e-mail address', () => {
   });
 
   it('still recognises a type of email, should the server ever send one', () => {
-    const typed = { name: 'notify', type: 'email' } as unknown as Parameter;
+    const typed = { name: 'notify', type: 'email' };
     expect(isEmailParameter(typed)).toBe(true);
   });
 });

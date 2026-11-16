@@ -1,7 +1,9 @@
 import {
   Component,
   computed,
+  DestroyRef,
   effect,
+  ElementRef,
   inject,
   signal,
   untracked,
@@ -15,20 +17,32 @@ import { ReactionDiagramComponent } from '../details/common/reaction-diagram/rea
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
 import { EventService } from '../services/event.service';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
-import { AnalysisService } from '../services/analysis.service';
+import { AnalysisService, isNotFound } from '../services/analysis.service';
+import { failureMessage } from './failure-message';
 import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
+import { SpeciesService } from '../services/species.service';
 import type cytoscape from 'cytoscape';
 import { defaultDownloadOptions } from '../services/download.service';
 import type {
+  Drawn,
+  Published,
   RenderEdgeShape,
+  RenderExport,
+  RenderGrouping,
   RenderNodeShape,
   RenderShapes,
+  RenderState,
   ShapeColour,
   ShapeGeometry,
-} from './render-shapes.model';
+} from '../../../../contract/render.ts';
+import { gatherGroups } from './gather-groups';
+import { installRenderNavigate, pageBuild } from './render-navigation';
+import { currentRenderNav } from './render-reuse-strategy';
+import { startAsFresh } from './start-as-fresh';
+import type * as Analysis from '../model/analysis.model';
 
 /**
  * A chrome-free page whose only job is to draw a pathway and say when it is
@@ -58,6 +72,20 @@ import type {
  */
 const EHLD_SVG = 'cr-ehld #ehld svg';
 
+/** A picture, given as a data URL, drawn on a canvas of its own size. */
+async function canvasOf(dataUrl: string): Promise<HTMLCanvasElement> {
+  const image = new Image();
+  image.src = dataUrl;
+  await image.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('the frame canvas has no 2D context');
+  context.drawImage(image, 0, 0);
+  return canvas;
+}
+
 @Component({
   selector: 'cr-render',
   standalone: true,
@@ -66,6 +94,7 @@ const EHLD_SVG = 'cr-ehld #ehld svg';
   styleUrl: './render.component.scss',
   host: {
     '[attr.data-render-ready]': 'ready()',
+    '[attr.data-render-nav]': 'nav',
     '[attr.data-render-error]': 'error() || null',
   },
 })
@@ -78,6 +107,30 @@ export class RenderComponent {
   private ehldService = inject(EhldService);
   private dark = inject(DarkService);
   private route = inject(ActivatedRoute);
+  private speciesService = inject(SpeciesService);
+  private router = inject(Router);
+  private host: HTMLElement = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
+  private destroyRef = inject(DestroyRef);
+
+  /**
+   * Whether the component is gone: on a held page, moved on to the next
+   * figure. Its wait polls on after that unless it asks, and found the next
+   * figure on the page: a move made while a diagram was still drawing
+   * published the next figure, an illustration, as the diagram's pathway
+   * (spec 018, research R2 audit 2). A method, because it changes across the
+   * wait's awaits.
+   */
+  private destroyed(): boolean {
+    return this.destroyRef.destroyed;
+  }
+
+  /**
+   * The id of the move that made this component (`__renderNavigate`), on its
+   * host and in `__renderState`; null on a full load. A caller holding the page
+   * waits for the host with its own id: any other is a previous figure's, and
+   * reading its readiness would hand over the previous figure.
+   */
+  readonly nav = currentRenderNav(this.router);
 
   /**
    * ?subpathways=false leaves the sub-pathway tints and labels out, matching
@@ -100,6 +153,21 @@ export class RenderComponent {
   private readonly wantsDark = this.route.snapshot.queryParamMap.get('dark') === 'true';
 
   /**
+   * The species whose overview the genome-wide view draws, by taxId -- the old
+   * fireworks exporter's URL names one (spec 006 T093). Unset, it is the
+   * site's default species.
+   *
+   * The overview is not created until this species is the current one. Its
+   * tree takes the data of whatever species is current when it loads, so
+   * creating it first would draw the default species and then redraw this
+   * one -- and the wait below could take the first as finished.
+   */
+  private readonly wantedSpecies = this.route.snapshot.queryParamMap.get('species');
+  readonly speciesReady = computed(
+    () => !this.wantedSpecies || this.speciesService.currentSpecies().taxId === this.wantedSpecies
+  );
+
+  /**
    * ?select=<stId> frames the figure on one event rather than the whole diagram.
    *
    * This is what a reaction page needs. Reactome's own reaction exporter draws a
@@ -110,6 +178,17 @@ export class RenderComponent {
    * layout it actually has, and needs no new drawing code at all.
    */
   private readonly selection = this.route.snapshot.queryParamMap.get('select') ?? '';
+
+  /**
+   * ?highlight=<stId>,<stId>... marks events as selected on the whole diagram,
+   * framing nothing. This is how Java's exporter draws a figure of a subpathway
+   * (its parent's diagram, the subpathway's reactions selected) or of a
+   * reaction (the diagram that holds it, the reaction selected) -- the figure
+   * ContentService's /exporter/diagram has always answered with.
+   */
+  private readonly highlighted = (this.route.snapshot.queryParamMap.get('highlight') ?? '')
+    .split(',')
+    .filter(Boolean);
 
   /**
    * ?view=reaction draws the reaction's own layout instead of the pathway
@@ -130,19 +209,22 @@ export class RenderComponent {
   readonly hasEHLD = computed(() => this.dataState.currentPathway()?.hasEHLD === true);
 
   private readonly diagram = viewChild(DiagramComponent);
+  private readonly ehld = viewChild(EhldComponent);
   private readonly reacfoam = viewChild(ReacfoamComponent);
   private readonly reaction = viewChild(ReactionDiagramComponent);
 
   /** Non-empty only in the reaction view, which is what the template keys on. */
-  readonly reactionId = computed(() => (this.reactionView ? (this.pathwayId() ?? '') : ''));
+  readonly reactionId = computed(() => (this.reactionView ? this.pathwayId() : ''));
 
   readonly ready = signal(false);
   readonly error = signal<string | null>(null);
 
   /** What was drawn and how much of it, for the caller to sanity-check. */
-  private readonly stateForCaller = signal<Record<string, unknown>>({});
+  private readonly stateForCaller = signal<Published | Record<string, never>>({});
 
   constructor() {
+    installRenderNavigate(this.router);
+    startAsFresh(this.analysis, this.speciesService, this.route.snapshot.paramMap.get('pathwayId'));
     this.dark.isDark.set(this.wantsDark);
 
     // The diagram waits on EventService.diagramPathway$ before it will load,
@@ -152,6 +234,32 @@ export class RenderComponent {
     effect(() => {
       const pathway = this.dataState.currentPathway();
       if (pathway) this.eventService.setDiagramPathway(pathway);
+    });
+
+    effect(() => {
+      // A pathway is its own species; `species` is the overview's.
+      if (!this.wantedSpecies || this.pathwayId()) return;
+      let all;
+      try {
+        all = this.speciesService.allShortenSpecies();
+      } catch {
+        // A list that failed to load throws when read: say so now, rather
+        // than leave the caller to a minute's wait for "nothing drawn".
+        this.error.set('the species list could not be read');
+        this.publish();
+        return;
+      }
+      if (!all) return;
+      const wanted = all.find((species) => species.taxId === this.wantedSpecies);
+      if (!wanted) {
+        this.error.set(`no species with taxId ${this.wantedSpecies}`);
+        this.publish();
+        return;
+      }
+      // The same species as another object would still change the data's
+      // parameters, and load the overview's data a second time.
+      if (untracked(this.speciesService.currentSpecies).taxId !== wanted.taxId)
+        untracked(() => this.speciesService.currentSpecies.set(wanted));
     });
 
     effect(() => {
@@ -175,9 +283,9 @@ export class RenderComponent {
       // undefined, so a 404 surfaces here rather than through an error signal.
       // Without this the wait died silently and the caller paid a full timeout
       // to learn nothing.
+      const message = failure instanceof Error ? failure.message : String(failure);
       this.error.set(
-        `could not render ${pathway ?? 'the genome-wide view'}: ` +
-          ((failure as Error)?.message ?? String(failure))
+        `could not render ${pathway ?? 'the genome-wide view'}: ${failureMessage(message)}`
       );
       this.publish();
     }
@@ -196,7 +304,16 @@ export class RenderComponent {
     // settled: a slow but valid load is still "loading" and never trips it.
     const giveUpOnMissing = started + 3_000;
 
-    while (Date.now() < deadline) {
+    while (!this.destroyed() && Date.now() < deadline) {
+      // A token whose result cannot be read is dropped by the analysis service,
+      // which would leave a figure with no colouring at all -- drawn, ready, and
+      // wrong. It is the caller's failure to hear about, not a figure.
+      const failed = this.analysisFailure();
+      if (failed) {
+        this.error.set(failed);
+        this.publish();
+        return;
+      }
       const drawn = this.drawn();
 
       if (
@@ -220,12 +337,14 @@ export class RenderComponent {
         await document.fonts.ready;
         // Two frames: one to apply the last change, one to paint it.
         await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+        if (this.destroyed()) return;
         this.stateForCaller.set({
           pathway: pathway ?? null,
           // For a caller that puts the figure in a document and needs to label
           // it. An stId is not a caption.
           name:
             this.dataState.currentPathway()?.displayName || this.reaction()?.figureName() || null,
+          analysis: this.coloured(),
           ...drawn,
         });
         // Set before publishing, not after: publish() copies the signal's value
@@ -240,18 +359,85 @@ export class RenderComponent {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
-    this.error.set(`nothing drawn for ${pathway ?? 'the genome-wide view'} within 60s`);
+    this.error.set(
+      this.drawn(true)
+        ? `the analysis was not coloured on ${pathway ?? 'the genome-wide view'} within 60s`
+        : `nothing drawn for ${pathway ?? 'the genome-wide view'} within 60s`
+    );
     this.publish();
+  }
+
+  /** Why the analysis cannot be coloured, if it cannot. */
+  private analysisFailure(): string | null {
+    // The reaction's own layout is never coloured, so its analysis is not its
+    // business.
+    if (this.reactionView) return null;
+    // Read from the resource first: the analysis service records the failure
+    // in an effect, and reading the result before then throws its error, URL
+    // and token included. A result a release removed is not the same failure
+    // as one that could not be read just now, so the two are told apart.
+    const error = this.analysis.resultResource.error();
+    if (error !== undefined || this.analysis.loadFailure() !== null) {
+      return (error !== undefined ? isNotFound(error) : this.analysis.loadFailureGone())
+        ? 'the analysis result is gone: a release removed it, or it was never on this server'
+        : 'the analysis result could not be read';
+    }
+    if (this.diagram()?.analysisFailed()) return 'the analysis could not be read for this diagram';
+    return null;
+  }
+
+  /** The analysis the figure is to carry, or null with none. */
+  private coloured(): { token: string; resource: Analysis.Resource } | null {
+    // The reaction's own layout is never coloured, so it carries none.
+    if (this.reactionView) return null;
+    const token = this.state.analysis();
+    return token ? { token, resource: this.state.resourceFilter() ?? 'TOTAL' } : null;
+  }
+
+  /**
+   * Whether the view on screen carries the analysis the address will settle
+   * on. Each view colours itself after it has drawn -- a diagram fetches what
+   * the analysis found in it, Reacfoam reloads its tree with the token -- and
+   * the result can itself be reloaded for its default resource after the
+   * first load. A figure taken before then is drawn, ready, and uncoloured or
+   * coloured for the wrong resource, and the render service caches it.
+   */
+  private analysisShown(view: Drawn['view']): boolean {
+    const wanted = this.coloured();
+    // The reaction's own layout is never coloured.
+    if (!wanted || view === 'reaction') return true;
+    if (!this.analysis.settled()) return false;
+    switch (view) {
+      case 'diagram': {
+        const applied = this.diagram()?.appliedAnalysis();
+        return applied?.token === wanted.token && applied.resource === wanted.resource;
+      }
+      case 'ehld':
+        // The illustration colours itself in an effect that runs with the
+        // result's arrival, so this is rarely seen to wait; it is here so a
+        // capture between the two cannot happen, not because one was seen.
+        return this.ehld()?.appliedAnalysis() === this.analysis.result();
+      case 'reacfoam':
+        return this.reacfoam()?.showsCurrentData() ?? false;
+    }
   }
 
   /**
    * Whether something is actually on screen, and what. Each view reports
    * differently: a diagram has a cytoscape instance with elements, an
-   * illustration is an inlined svg, and Reacfoam draws to a canvas.
+   * illustration is an inlined svg, and Reacfoam draws to a canvas. Not until
+   * it carries its analysis, if it has one; `uncoloured` asks only whether it
+   * is drawn.
    */
-  private drawn(): Record<string, unknown> | null {
-    const host = document.querySelector('cr-render');
-    if (!host) return null;
+  private drawn(uncoloured = false): Drawn | null {
+    const drawn = this.drawnView();
+    return drawn && (uncoloured || this.analysisShown(drawn.view)) ? drawn : null;
+  }
+
+  private drawnView(): Drawn | null {
+    // Its own host, not the page's first `cr-render`: on a held page that can
+    // be the next figure's (audit 2).
+    const host = this.host;
 
     const reaction = this.reaction();
     if (reaction) {
@@ -266,7 +452,7 @@ export class RenderComponent {
 
     const diagram = this.diagram();
     if (diagram) {
-      const instances = diagram.cys?.filter(Boolean) ?? [];
+      const instances = diagram.cys.filter(Boolean);
       const elements = instances.reduce((total, cy) => total + cy.elements().length, 0);
       // Both conditions matter. The element count comes from the diagram's own
       // instances, which excludes the legend -- the legend is a separate
@@ -307,14 +493,17 @@ export class RenderComponent {
       // that window produces a valid SVG with zero width and nothing in it.
       // Geometry only appears once FoamTree's relaxation has run.
       const tree = untracked(reacfoam.foamTree);
-      const dataObject = tree?.get('dataObject');
+      const dataObject = tree.get('dataObject');
       const geometry = dataObject ? tree.get('geometry', dataObject) : undefined;
       const groups = dataObject?.groups ?? [];
-      if (!geometry?.boxWidth || !geometry?.boxHeight) return null;
+      if (!geometry?.boxWidth || !geometry.boxHeight) return null;
       return {
         view: 'reacfoam',
         groups: groups.length,
         box: [geometry.boxWidth, geometry.boxHeight],
+        // Whose overview this is, so a caller that asked for one species can
+        // tell it was not handed another's.
+        species: this.speciesService.currentSpecies().taxId,
       };
     }
 
@@ -322,16 +511,20 @@ export class RenderComponent {
   }
 
   private publish() {
-    const api = window as unknown as Record<string, unknown>;
-    api['__renderState'] = {
+    // A destroyed figure's state would be read as the next one's.
+    if (this.destroyed()) return;
+    const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
+      ...(this.nav === null ? {} : { nav: this.nav }),
+      build: pageBuild(),
       ...this.stateForCaller(),
     };
+    window.__renderState = state;
     // The caller asks the page for the artefact rather than reaching into
     // cytoscape itself: how a view exports is the view's business, and a
     // caller poking at renderer internals would break the first time they move.
-    api['__renderExport'] = {
+    const exports: RenderExport = {
       svg: () => this.exportSvg(),
       // The diagram as shapes rather than as a picture, for exporters that draw
       // shapes -- PowerPoint. Null where the view is not made of shapes (an
@@ -352,6 +545,7 @@ export class RenderComponent {
       showSample: (name: string) => this.showSample(name),
       frameCanvas: (scale = 1) => this.frameCanvas(scale),
     };
+    window.__renderExport = exports;
   }
 
   /**
@@ -382,15 +576,68 @@ export class RenderComponent {
     return true;
   }
 
+  /**
+   * The illustration being drawn, if it is one. A highlight is refused here
+   * rather than dropped: the illustration does not mark events yet, and a
+   * figure without the selection asked for is a 200 nobody can detect.
+   */
+  private illustration() {
+    const svg = this.host.querySelector<SVGSVGElement>(EHLD_SVG);
+    if (svg && this.highlighted.length) {
+      throw new Error('highlight is not drawn on an illustration yet');
+    }
+    return svg;
+  }
+
+  /**
+   * An entity's group. A modification badge is a node of its own, pointing at
+   * its protein with nodeId: it goes with the protein, so dragging one takes
+   * both -- and it carries the protein's name, not its own text, or a group
+   * could be named "P" after a phosphorylation (a slide names a group by the
+   * first of its shapes that has a name).
+   */
+  private entityGroup(node: cytoscape.NodeSingular, label: string): RenderGrouping {
+    const ownerId = String(node.data('nodeId') ?? node.id());
+    const owner = ownerId === node.id() ? node : node.cy().getElementById(ownerId);
+    const ownerLabel = owner.nonempty() ? String(owner.data('displayName') ?? '').trim() : '';
+    return {
+      group: `entity-${ownerId}`,
+      groupName:
+        ownerLabel ||
+        label ||
+        String(owner.data('schemaClass') ?? node.data('schemaClass') ?? ownerId),
+    };
+  }
+
   /** The diagram's cytoscape instances, with the sub-pathway preference applied. */
   private exportableInstances() {
     const diagram = this.diagram();
-    const instances = diagram?.cys?.filter(Boolean) ?? [];
+    const instances = diagram?.cys.filter(Boolean) ?? [];
     // Applied here rather than while waiting: drawing continues after the
     // diagram first has elements, and anything hidden earlier comes back. The
     // page is disposable, so nothing needs restoring.
     if (diagram && !this.wantsSubpathways) {
       instances.forEach((cy) => diagram.setSubPathwayVisibility(false, cy));
+    }
+    // The diagram's own lookup, as selecting in the app uses, without the fit
+    // that select() animates: the whole diagram is the figure.
+    // One token at a time: getElements only looks a token up as a subpathway
+    // while nothing has been found, so a subpathway after a reaction in one
+    // list would be dropped.
+    if (diagram && this.highlighted.length) {
+      instances.forEach((cy) => {
+        cy.elements(':selected').unselect();
+        for (const token of this.highlighted) {
+          // A token that is not an identifier would be spliced into the
+          // diagram's selector ([graph.stId="..."]) and throw; one that names
+          // nothing here selects nothing. Both are passed over, as Java's
+          // exporter passes over a `sel` it does not find -- its answer is
+          // the figure with what it could select, and so is this one.
+          if (!/^[\w.:-]+$/.test(token)) continue;
+          const marked = diagram.getElements([token], cy);
+          if ('select' in marked) marked.select();
+        }
+      });
     }
     return { diagram, instances };
   }
@@ -416,19 +663,25 @@ export class RenderComponent {
    * assembling it here.
    */
   private async frameCanvas(scale: number): Promise<HTMLCanvasElement> {
+    // A reaction's own layout: its picture, on white as the diagram's frames
+    // are. Without this a .gif of a reaction was a 500 (spec 006 research D24).
+    const reaction = this.reaction()?.core();
+    if (reaction) return await canvasOf(reaction.png({ full: true, scale, bg: '#ffffff' }));
+
     const { diagram, instances } = this.exportableInstances();
-    if (diagram && instances.length) {
+    const [instance] = instances;
+    if (diagram && instance) {
       // White, not transparent. Every animated format in play here either has no
       // alpha channel or only a single transparent index, so a transparent
       // background composites to black rather than to nothing.
-      return diagram.exportCanvas(instances[0], { full: true, scale, bg: '#ffffff' });
+      return diagram.exportCanvas(instance, { full: true, scale, bg: '#ffffff' });
     }
 
     // An illustration is inline SVG rather than a canvas, so a frame has to be
     // rasterised. That belongs to the illustration's own service, which knows
     // that its styling comes from the page's stylesheets and has to be inlined
     // before the markup means anything on its own.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) {
       return await this.ehldService.rasterise(svg, scale, this.wantsDark ? '#0d1617' : '#ffffff');
     }
@@ -488,9 +741,29 @@ export class RenderComponent {
     const arrowheads: (RenderNodeShape | RenderEdgeShape)[] = [];
     const glyphs: RenderEdgeShape[] = [];
 
+    // Which thing a shape is part of, so a slide can make it one object (#299).
+    // A reaction's node and every line of it carry the reaction's layout id;
+    // any other node is an entity of its own. Compartments are left alone: a
+    // compartment is a backdrop, not something moved with its contents.
+    const reactionGroup = (element: cytoscape.SingularElementArgument): RenderGrouping => {
+      const reactionId: unknown = element.data('reactionId');
+      if (reactionId === undefined || reactionId === null) return {};
+      const graph: unknown = element.data('graph');
+      const stId = graph && typeof graph === 'object' && 'stId' in graph ? graph.stId : undefined;
+      return {
+        group: `reaction-${String(reactionId)}`,
+        groupName: typeof stId === 'string' ? `Reaction ${stId}` : 'Reaction',
+      };
+    };
+
     for (const node of visible) {
       const box = node.boundingBox({ includeLabels: false, includeOverlays: false });
       const label = String(node.data('displayName') ?? '').trim();
+      const grouping: RenderGrouping = this.isCompartment(node)
+        ? {}
+        : node.data('reactionId') !== undefined && node.data('reactionId') !== null
+          ? reactionGroup(node)
+          : this.entityGroup(node, label);
       const under = this.underlay(node);
       if (under) {
         nodeUnderlays.push({
@@ -510,13 +783,14 @@ export class RenderComponent {
           fontColor: null,
           bold: false,
           dashed: false,
+          ...grouping,
         });
       }
 
       // A node whose body is an image is drawn as that image's own geometry,
       // and its own rectangle then carries nothing but the label -- otherwise
       // the plain box outlines the glyph a second time.
-      const glyph = this.glyphShapes(node, box);
+      const glyph = this.glyphShapes(node, box).map((shape) => ({ ...shape, ...grouping }));
       glyphs.push(...glyph);
       const bodyIsImage = glyph.length > 0;
 
@@ -539,6 +813,7 @@ export class RenderComponent {
         fontColor: this.colour(node.style('color'), '1'),
         bold: String(node.style('font-weight') ?? '').includes('bold'),
         dashed: this.dashed(node.style('border-style')),
+        ...grouping,
       });
     }
 
@@ -573,6 +848,10 @@ export class RenderComponent {
 
       const stroke = this.colour(edge.style('line-color'), edge.style('opacity'));
       const dashed = this.dashed(edge.style('line-style'));
+      // The band behind a line stays out of the group: it belongs to the layer
+      // behind every line, and drawn with its reaction, one reaction's band
+      // covered another's line where they crossed.
+      const grouping = reactionGroup(edge);
       edges.push({
         kind: 'edge',
         id: String(edge.id()),
@@ -583,10 +862,13 @@ export class RenderComponent {
         closed: false,
         fill: null,
         dashed,
+        ...grouping,
       });
 
       // The arrowhead is drawn after its line, so it sits on top of it.
-      arrowheads.push(...this.arrowhead(edge, points, width));
+      arrowheads.push(
+        ...this.arrowhead(edge, points, width).map((shape) => ({ ...shape, ...grouping }))
+      );
     }
 
     return {
@@ -602,16 +884,27 @@ export class RenderComponent {
       // The underlays are how the diagram tints an event by the sub-pathway it
       // belongs to, and each sits immediately behind the glyph it marks -- so
       // they go in front of the compartments and behind everything else.
-      shapes: this.clipToExtent(framed ? extent : null, [
-        ...compartments,
-        ...edgeUnderlays,
-        ...edges,
-        ...arrowheads,
-        ...nodeUnderlays,
-        // The glyph body sits under the box that carries its label.
-        ...glyphs,
-        ...nodes,
-      ]),
+      // Each thing's shapes together, where its first one is drawn: a reaction
+      // with the lines (behind every entity), an entity with its highlight.
+      //
+      // A trade made on purpose: a PowerPoint group is one place in the
+      // stacking order, so grouping cannot keep the flat order above. A
+      // reaction's arrowheads and node come forward to its first line -- so a
+      // later reaction's line can cross over them -- and an entity's body to
+      // its underlay. The SVG and PNG keep the flat order; the slide gives it
+      // up so a reader can move a reaction or an entity as one thing (#299).
+      shapes: gatherGroups(
+        this.clipToExtent(framed ? extent : null, [
+          ...compartments,
+          ...edgeUnderlays,
+          ...edges,
+          ...arrowheads,
+          ...nodeUnderlays,
+          // The glyph body sits under the box that carries its label.
+          ...glyphs,
+          ...nodes,
+        ])
+      ),
     };
   }
 
@@ -675,7 +968,7 @@ export class RenderComponent {
     markups.forEach((markup, at) => {
       const parsed = new DOMParser().parseFromString(markup, 'image/svg+xml');
       const root = parsed.documentElement;
-      if (!root || root.nodeName === 'parsererror') return;
+      if (root.nodeName === 'parsererror') return;
 
       const width = parseFloat(root.getAttribute('width') ?? '0');
       const height = parseFloat(root.getAttribute('height') ?? '0');
@@ -779,6 +1072,8 @@ export class RenderComponent {
 
       const a = points[from];
       const b = points[to];
+      // In range: both are indexes of points, from the stack.
+      if (!a || !b) continue;
       const dx = b.x - a.x;
       const dy = b.y - a.y;
       const span = Math.hypot(dx, dy);
@@ -787,6 +1082,7 @@ export class RenderComponent {
       let at = -1;
       for (let index = from + 1; index < to; index++) {
         const point = points[index];
+        if (!point) continue;
         // Distance to the chord, or to its endpoint when the chord is a point.
         const distance =
           span === 0
@@ -840,7 +1136,7 @@ export class RenderComponent {
   private transformScale(element: Element): number {
     const transform = element.getAttribute('transform') ?? element.getAttribute('style') ?? '';
     const scale = /scale\(\s*([\d.]+)/.exec(transform);
-    const value = scale ? parseFloat(scale[1]) : 1;
+    const value = parseFloat(scale?.[1] ?? '1');
     return Number.isFinite(value) && value > 0 ? value : 1;
   }
 
@@ -852,7 +1148,7 @@ export class RenderComponent {
    * they have to be split apart before any of them will parse.
    */
   private backgroundMarkup(node: cytoscape.NodeSingular): string[] {
-    const style = node.style('background-image');
+    const style: unknown = node.style('background-image');
     const values = (Array.isArray(style) ? style : [style]).flatMap((value) =>
       String(value ?? '').split(/\s+(?=data:)/)
     );
@@ -1053,18 +1349,19 @@ export class RenderComponent {
 
     const rgb = /^rgba?\(([^)]+)\)$/.exec(text);
     if (rgb) {
-      const parts = rgb[1].split(/[,\s/]+/).map((part) => parseFloat(part));
+      const parts = (rgb[1] ?? '').split(/[,\s/]+/).map((part) => parseFloat(part));
       if (parts.length >= 3 && parts.slice(0, 3).every((part) => Number.isFinite(part))) {
         const own = parts.length > 3 && Number.isFinite(parts[3]) ? parts[3] : 1;
         return withAlpha(parts.slice(0, 3), own);
       }
     }
     const hex = /^#?([0-9a-f]{6})$/i.exec(text);
-    if (hex) {
-      return withAlpha([0, 2, 4].map((at) => parseInt(hex[1].slice(at, at + 2), 16)));
+    if (hex?.[1]) {
+      const digits = hex[1];
+      return withAlpha([0, 2, 4].map((at) => parseInt(digits.slice(at, at + 2), 16)));
     }
     const short = /^#?([0-9a-f]{3})$/i.exec(text);
-    if (short) {
+    if (short?.[1]) {
       return withAlpha([...short[1]].map((digit) => parseInt(digit + digit, 16)));
     }
     return null;
@@ -1153,6 +1450,8 @@ export class RenderComponent {
       for (let index = 0; index < polygon.length; index++) {
         const current = polygon[index];
         const previous = polygon[(index + polygon.length - 1) % polygon.length];
+        // In range: both indexes are taken within the polygon's length.
+        if (!current || !previous) continue;
         const currentIn = inside(current);
         const previousIn = inside(previous);
         if (currentIn) {
@@ -1187,18 +1486,20 @@ export class RenderComponent {
     for (let at = 0; at < points.length - 1; at++) {
       const from = points[at];
       const to = points[at + 1];
+      if (!from || !to) continue;
       const dx = to.x - from.x;
       const dy = to.y - from.y;
       let enter = 0;
       let leave = 1;
       let inside = true;
 
-      for (const [p, q] of [
+      const edges: [p: number, q: number][] = [
         [-dx, from.x - box.x1],
         [dx, box.x2 - from.x],
         [-dy, from.y - box.y1],
         [dy, box.y2 - from.y],
-      ]) {
+      ];
+      for (const [p, q] of edges) {
         if (p === 0) {
           // Parallel to this edge: outside it means the whole segment is out.
           if (q < 0) {
@@ -1219,8 +1520,9 @@ export class RenderComponent {
 
       const start = { x: from.x + dx * enter, y: from.y + dy * enter };
       const end = { x: from.x + dx * leave, y: from.y + dy * leave };
-      if (!run.length) run.push(start);
-      else if (!near(run[run.length - 1], start)) {
+      const last = run.at(-1);
+      if (!last) run.push(start);
+      else if (!near(last, start)) {
         if (run.length > 1) runs.push(run);
         run = [start];
       }
@@ -1266,8 +1568,10 @@ export class RenderComponent {
     const scale = this.pixels(edge.style('arrow-scale')) || 1;
     const size = Math.max(6, width * 4 * scale);
 
-    const tip = points[points.length - 1];
-    const from = points[points.length - 2];
+    const tip = points.at(-1);
+    const from = points.at(-2);
+    // Two points at least: checked on entry.
+    if (!tip || !from) return [];
     const run = Math.hypot(tip.x - from.x, tip.y - from.y) || 1;
     // Along the line, and across it.
     const ax = (tip.x - from.x) / run;
@@ -1376,7 +1680,7 @@ export class RenderComponent {
       controlPoints?: () => { x: number; y: number }[];
     };
     const points = candidate.segmentPoints?.() ?? candidate.controlPoints?.() ?? [];
-    return Array.isArray(points) ? points.filter((point) => Number.isFinite(point?.x)) : [];
+    return Array.isArray(points) ? points.filter((point) => Number.isFinite(point.x)) : [];
   }
 
   private exportSvg(): string | Promise<string> {
@@ -1387,19 +1691,20 @@ export class RenderComponent {
 
     if (this.diagram()) {
       const { instances } = this.exportableInstances();
-      if (!instances.length) throw new Error('no diagram to export');
+      const [instance] = instances;
+      if (!instance) throw new Error('no diagram to export');
       // One instance here by construction: this page never opens the
       // comparison view.
       //
       // full:false exports what the viewport shows, which is the point when the
       // viewport has been framed on one event.
-      const framed = this.frameSelection(instances[0]);
-      return instances[0].svg({ full: !framed });
+      const framed = this.frameSelection(instance);
+      return instance.svg({ full: !framed });
     }
 
     // Through the illustration's own service, which knows that its styling has
     // to be inlined and its size written down before the markup stands alone.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) return this.ehldService.svgMarkup(svg).markup;
 
     // The genome-wide view draws to a canvas via FoamTree, so it has its own
@@ -1446,32 +1751,47 @@ export class RenderComponent {
     // nothing is lost from the picture, and encode that.
     const asJpeg = (canvas: HTMLCanvasElement) => canvas.toDataURL('image/jpeg', 0.9);
 
+    // A reaction's own layout: its picture on white, encoded here, for the
+    // reason above -- its jpg() writes PNG too. It used to be encoded only
+    // through the diagram, which the reaction view does not have, so its .jpeg
+    // was a PNG with a transparent background (spec 006 research D24).
     const reaction = this.reaction()?.core();
     if (reaction) {
-      const { diagram } = this.exportableInstances();
-      if (jpeg && diagram) {
-        return asJpeg(diagram.exportCanvas(reaction, { full: true, scale, bg }));
-      }
-      return reaction.png({ full: true, scale, bg });
+      const png = reaction.png({ full: true, scale, bg });
+      return jpeg ? asJpeg(await canvasOf(png)) : png;
     }
 
     const { diagram, instances } = this.exportableInstances();
-    if (instances.length) {
-      const framed = this.frameSelection(instances[0]);
+    const [instance] = instances;
+    if (instance) {
+      const framed = this.frameSelection(instance);
       if (jpeg && diagram) {
-        return asJpeg(diagram.exportCanvas(instances[0], { full: !framed, scale, bg }));
+        return asJpeg(diagram.exportCanvas(instance, { full: !framed, scale, bg }));
       }
-      return instances[0].png({ full: !framed, scale, bg });
+      return instance.png({ full: !framed, scale, bg });
     }
 
     // An illustration has no cytoscape instance to ask, so it goes through the
     // same rasteriser the animation frames use. Without this a .png of any
     // illustrated pathway was a 500 -- and illustrations are the top-level
     // pathways, so it was the ones a report is most likely to want.
-    const svg = document.querySelector<SVGSVGElement>(`cr-render ${EHLD_SVG}`);
+    const svg = this.illustration();
     if (svg) {
       const canvas = await this.ehldService.rasterise(svg, scale, jpeg ? '#ffffff' : undefined);
       return canvas.toDataURL(jpeg ? 'image/jpeg' : 'image/png', 1.0);
+    }
+
+    // The genome-wide view draws to a canvas through FoamTree, which exports
+    // its own image -- as the page's own download does (ReacfoamComponent's
+    // exportRaster). Without this, a .png or .jpeg of a species overview was a
+    // 500, though its .svg worked.
+    const reacfoam = this.reacfoam();
+    if (reacfoam) {
+      return untracked(reacfoam.foamTree).get('imageData', {
+        format: jpeg ? 'image/jpeg' : 'image/png',
+        pixelRatio: scale,
+        ...(jpeg ? { quality: 0.9, backgroundColor: '#ffffff' } : {}),
+      });
     }
 
     throw new Error(`this view cannot export ${type.toUpperCase()} yet`);

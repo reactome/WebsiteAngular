@@ -54,6 +54,7 @@ const {
   mountAnalysisSummaryProxy,
   mountChatHandoffProxy,
 } = require('./search-answer-proxy');
+const { mountContactRoute } = require('./contact-route');
 
 const app = express();
 app.disable('x-powered-by');
@@ -64,6 +65,9 @@ app.disable('x-powered-by');
 mountSearchAnswerProxy(app);
 mountAnalysisSummaryProxy(app);
 mountChatHandoffProxy(app);
+// The help-desk message from a search that found nothing: our own route, as
+// ContentService's only takes an hCaptcha token.
+mountContactRoute(app);
 
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
@@ -72,15 +76,18 @@ for (const [context, options] of Object.entries(proxyConfig)) {
   // Selected with pathFilter rather than mounted with app.use(context, ...):
   // mounting makes Express strip the prefix before the proxy sees the request,
   // so /ContentService/data/... would reach the backend as /data/... and 404.
+  //
+  // Contexts read the way the dev server (Vite) reads them: one starting with
+  // `^` is a regex over the path and query, any other is a path prefix.
+  const pattern = context.startsWith('^') ? new RegExp(context) : undefined;
+  const inContext = pattern
+    ? (_pathname, req) => pattern.test(req.url ?? '')
+    : (pathname) => pathname === context || pathname.startsWith(`${context}/`);
   app.use(
     createProxyMiddleware({
       // The dev server's `bypass` hook, honoured here too: a path it claims for
-      // the app falls through to the static handler, which serves the app. The
-      // function is the glob below spelled out, for a context that is a prefix.
-      pathFilter: options.bypass
-        ? (pathname, req) =>
-            (pathname === context || pathname.startsWith(`${context}/`)) && !options.bypass(req)
-        : `${context}/**`,
+      // the app falls through to the static handler, which serves the app.
+      pathFilter: (pathname, req) => inContext(pathname, req) && !options.bypass?.(req),
       target: options.target,
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,
@@ -244,14 +251,33 @@ app.use(
   }
 );
 
-// Hashed build artefacts are immutable; index.html must never be cached or a
-// redeploy leaves browsers pinned to chunks that no longer exist.
+// Only build output named by its content is immutable: the bundles at the top
+// of the build (main-XXXXXXXX.js, chunk-..., styles-...) and media/. Everything
+// else keeps its name when it changes -- index.html, the content pages, uploads,
+// assets -- so browsers check back (a 304 when unchanged). Cached for a year as
+// immutable, a rewritten documentation page stayed old in every browser that
+// had seen it; index.html cached would pin browsers to chunks that are gone.
+const CONTENT_NAMED = /-[A-Z0-9]{8}\.[a-z0-9]+$/;
+function contentNamed(filePath) {
+  const relative = path.relative(DIST, filePath).split(path.sep);
+  const inBuildRoot = relative.length === 1 || (relative.length === 2 && relative[0] === 'media');
+  return inBuildRoot && CONTENT_NAMED.test(relative[relative.length - 1]);
+}
 app.use(
   express.static(DIST, {
     index: false,
     setHeaders: (res, filePath) => {
-      if (filePath.endsWith('index.html')) res.setHeader('Cache-Control', 'no-cache');
-      else res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader(
+        'Cache-Control',
+        contentNamed(filePath)
+          ? 'public, max-age=31536000, immutable'
+          : /\.(json|html)$/.test(filePath)
+            ? // Content pages, the search index, index.html: always current.
+              'no-cache'
+            : // Images, uploads, fonts: a few minutes, so a page's pictures are
+              // not refetched on every view, and an edit shows within minutes.
+              'public, max-age=300'
+      );
     },
   })
 );
@@ -281,16 +307,38 @@ const REBUILDING = `<!doctype html><meta charset="utf-8"><title>Rebuilding…</t
   <p>A new build is being written. This page will refresh itself.</p>
 </div>`;
 
+/**
+ * The API's own addresses that serve the site's API page: never stored.
+ * The API under them is cached at the edge until a release's purge, and a
+ * page kept there would outlive the next deploy's scripts (spec 011).
+ */
+const API_PAGE_ROOT = /^\/(ContentService|AnalysisService)\/?$/;
+
 // Client-side routing: anything not matched above is an Angular route.
-app.get(/.*/, (_req, res) => {
-  res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(DIST, 'index.html'), (error) => {
+app.get(/.*/, (req, res) => {
+  res.setHeader('Cache-Control', API_PAGE_ROOT.test(req.path) ? 'no-store' : 'no-cache');
+  // Relative to its root, so only 'index.html' is checked for a leading dot:
+  // given the whole path, Express 5 (send 1) refuses a build that sits under
+  // any dot-directory -- ~/.something, .claude/worktrees -- and every page
+  // was a 500.
+  res.sendFile('index.html', { root: DIST }, (error) => {
     if (!error || res.headersSent) return;
     if (error.code === 'ENOENT') {
       res.setHeader('Retry-After', '5');
       return res.status(503).type('html').send(REBUILDING);
     }
     res.status(500).type('text/plain').send('Could not read the build output');
+  });
+});
+
+// Last: anything a route did not answer is answered here in JSON, never with
+// Express's default page, which carries the stack trace (NODE_ENV is unset).
+app.use((error, _req, res, next) => {
+  if (res.headersSent) return next(error);
+  const status = Number(error?.status || error?.statusCode) || 500;
+  console.error(`serve-prod: ${error?.message}`);
+  res.status(status >= 400 && status < 600 ? status : 500).json({
+    detail: status < 500 ? 'The request could not be read' : 'Something went wrong',
   });
 });
 

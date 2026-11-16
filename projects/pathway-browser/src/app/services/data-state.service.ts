@@ -1,33 +1,26 @@
 import { computed, effect, Injectable, linkedSignal, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { catchError, forkJoin, map, Observable, of, switchMap } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, forkJoin, map, Observable, of, switchMap, throwError } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { UrlStateService } from './url-state.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
-import { JSOGDeserializer, JSOGObject } from '../utils/JSOGDeserializer';
+import { JSOGDeserializer, type JsogObject } from '../utils/JSOGDeserializer';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { Pathway } from '../model/graph/event/pathway.model';
+import type { Event } from '../model/graph/event/event.model';
 import { SelectableObject } from './event.service';
 import { isPathway, isReferenceEntityStId } from './utils';
 import { SpeciesService } from './species.service';
 import { HasDiagramService } from './has-diagram.service';
+import { DiagramFlagResult, SpeciesOverviewFlagResult } from '../model/flag.model';
+
+/** ContentService's flag search answers 404 for a term with no match. */
+const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
 
 type SelectionData = {
   selectedElement: SelectableObject | undefined;
   selectedElementLoading: boolean;
   currentPathway: string | undefined;
-};
-
-type DiagramFlagResult = {
-  diagramEntity?: string;
-  inDiagram?: boolean;
-  occurrences?: string[];
-  interactsWith?: string[];
-};
-
-type FireworksFlagResult = {
-  llps?: string[];
-  interactsWith?: string[];
 };
 
 type FlaggingResult = {
@@ -78,6 +71,23 @@ export class DataStateService {
 
   public ancestorsLoading = this._ancestors.isLoading;
 
+  /** There is no such pathway: asking again will not help. */
+  readonly pathwayNotFound = computed(
+    () => this._currentPathway.status() === 'error' && isNotFound(this._currentPathway.error())
+  );
+
+  /**
+   * The open pathway, or what is needed to draw it, could not be loaded: the
+   * pathway itself, or -- for one with no diagram of its own -- the ancestors
+   * whose diagram it is drawn in. Without this the viewport could not tell a
+   * failure from a pathway with nothing to draw.
+   */
+  readonly loadFailed = computed(() => {
+    if (this._currentPathway.status() === 'error') return !this.pathwayNotFound();
+    const pathway = this.currentPathway();
+    return !!pathway && !pathway.hasDiagram && this._ancestors.status() === 'error';
+  });
+
   private _selectedElement = rxResource({
     params: () => ({
       id: this.state.select() || this.state.pathwayId(),
@@ -92,7 +102,15 @@ export class DataStateService {
           }),
   });
 
-  public selectedElement = this._selectedElement.asReadonly().value;
+  /**
+   * The selection, or undefined while there is none -- and when it could not
+   * be loaded. The resource's own value() throws in its error state, so every
+   * view reading it threw too when the open pathway (the default selection)
+   * failed or did not exist.
+   */
+  public readonly selectedElement = computed(() =>
+    this._selectedElement.hasValue() ? this._selectedElement.value() : undefined
+  );
   public selectedElementLoading = this._selectedElement.asReadonly().isLoading;
 
   readonly hasDetail = computed(() => !!(this.state.select() || this.state.pathwayId()));
@@ -137,14 +155,14 @@ export class DataStateService {
               // Combine tokens
               return diagram // When in diagram / ehld view // When in reacfoam view
                 ? this.getDiagramFlagging(diagram, query)
-                : this.getReacfoamFlagging(query, species!);
+                : this.getReacfoamFlagging(query, species);
             })
           ).pipe(
             map((results) =>
               results.reduce<FlaggingResult>(
                 (acc, result) => {
-                  if (result.matches) acc.matches.push(...result.matches);
-                  if (result.interactsWith) acc.interactsWith!.push(...result.interactsWith);
+                  acc.matches.push(...result.matches);
+                  acc.interactsWith.push(...result.interactsWith);
                   return acc;
                 },
                 { matches: [], interactsWith: [] }
@@ -153,37 +171,48 @@ export class DataStateService {
           ),
   });
 
-  getReacfoamFlagging(query: string, species: string): Observable<Partial<FlaggingResult>> {
+  getReacfoamFlagging(query: string, species: string): Observable<FlaggingResult> {
     return this.http
-      .get<FireworksFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
-        params: { query, species, scope: 'REFERENCE_ENTITY', includeInteractors: false },
+      .get<SpeciesOverviewFlagResult>(`${CONTENT_SERVICE}/search/fireworks/flag`, {
+        // Only what the endpoint takes: anything more changes nothing, and
+        // keeps the answer out of the edge cache (spec 011).
+        params: { query, species },
       })
       .pipe(
-        catchError(() => of({} as FireworksFlagResult)),
+        // 404 is ContentService's "no match"; anything else is a failure.
+        catchError((error: unknown) =>
+          isNotFound(error) ? of<SpeciesOverviewFlagResult>({}) : throwError(() => error)
+        ),
         map((r) => ({
-          matches: r.llps,
-          interactsWith: r.interactsWith,
+          matches: r.llps ?? [],
+          interactsWith: r.interactsWith ?? [],
         }))
       );
   }
 
-  getDiagramFlagging(diagram: string, query: string): Observable<Partial<FlaggingResult>> {
+  getDiagramFlagging(diagram: string, query: string): Observable<FlaggingResult> {
     return this.http
       .get<DiagramFlagResult>(`${CONTENT_SERVICE}/search/diagram/${diagram}/flag`, {
-        params: { query, scope: 'REFERENCE_ENTITY', includeInteractors: false },
+        // Only what the endpoint takes (no `scope`): spec 011.
+        params: { query, includeInteractors: false },
       })
       .pipe(
-        catchError(() => of({} as DiagramFlagResult)),
+        // 404 is ContentService's "no match"; anything else is a failure,
+        // which the flag banner reports rather than flagging nothing.
+        catchError((error: unknown) =>
+          isNotFound(error) ? of<DiagramFlagResult>({}) : throwError(() => error)
+        ),
         map((r) => ({
-          matches: r.occurrences,
-          interactsWith: r.interactsWith,
+          matches: r.occurrences ?? [],
+          interactsWith: r.interactsWith ?? [],
         }))
       );
   }
 
   readonly flagIdentifiers = computed(() => {
     const identifiers: string[] = this.state.flag().filter((token) => token.startsWith('class:'));
-    const match = this.flagResource.value();
+    // value() throws while the search is in error; the banner reports that.
+    const match = this.flagResource.hasValue() ? this.flagResource.value() : undefined;
     if (match?.matches) identifiers.push(...match.matches);
     if (this.state.flagInteractors() && match?.interactsWith)
       identifiers.push(...match.interactsWith);
@@ -211,7 +240,7 @@ export class DataStateService {
     if (!isReferenceEntityStId(id.toString()) && params) params.includeDisease = true; // Always include disease data for non summary elements
 
     return this.http
-      .get<T>(url, {
+      .get<JsogObject<T>>(url, {
         params: {
           fetchIncomingRelationships: true,
           summariseReferenceEntity: true,
@@ -227,11 +256,16 @@ export class DataStateService {
       );
   }
 
-  fetchAncestors(stId: string | undefined, path: string[]): Observable<Pathway[]> {
+  /**
+   * The open object's lineage, from it up to its top-level pathway. Written
+   * from the object itself, which can be a reaction (the browser opened at
+   * one), so each step is an event; reversed here, top-level pathway first.
+   */
+  fetchAncestors(stId: string | undefined, path: string[]): Observable<Event[]> {
     const url = `${CONTENT_SERVICE}/data/event/${stId}/ancestors`;
     if (stId === undefined) return of();
     return this.http
-      .get<Pathway[][]>(url, {
+      .get<Event[][]>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -244,24 +278,29 @@ export class DataStateService {
         // An event that hangs off no top-level pathway - a freshly cloned
         // curation pathway, say - makes the backend answer 404 rather than an
         // empty list. That is not an error for the caller: it has no ancestors.
-        catchError(() => of([] as Pathway[]))
+        // Any other failure is one: without them a pathway drawn in its
+        // parent's diagram cannot find it (see `loadFailed`).
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404
+            ? of<Event[]>([])
+            : throwError(() => error)
+        )
       );
   }
 
-  flattenReferences<T>(response: T): T {
-    const deserializer = new JSOGDeserializer();
-    const resolvedResponse = deserializer.deserialize<T>(response as JSOGObject);
-    return resolvedResponse as T;
+  flattenReferences<T>(response: JsogObject<T>): T {
+    return new JSOGDeserializer().deserialize(response);
   }
 
-  private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    if (!lineages) return [];
-    if (lineages.length === 1) return lineages[0];
+  private findBestAncestors(lineages: Event[][], path: string[]): Event[] {
+    const [first, ...others] = lineages;
+    if (!first) return [];
+    if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = lineages[0];
-    let bestAncestorsScore = this.getAncestorsMatchingScore(lineages[0], idealIds);
-    for (const ancestors of lineages.slice(1)) {
+    let bestAncestors: Event[] = first;
+    let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
+    for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
       if (score > bestAncestorsScore) {
         bestAncestors = ancestors;
@@ -271,7 +310,7 @@ export class DataStateService {
     return bestAncestors;
   }
 
-  private getAncestorsMatchingScore(ancestors: Pathway[], path: Set<string>) {
+  private getAncestorsMatchingScore(ancestors: Event[], path: Set<string>) {
     return ancestors.reduce((score, ancestor) => (path.has(ancestor.stId) ? score + 1 : score), 0);
   }
 }

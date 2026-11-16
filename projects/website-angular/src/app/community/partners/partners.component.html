@@ -21,7 +21,12 @@
     <div class="partners-grid">
       @for (partner of partners; track partner.name) {
         <a [href]="partner.url" target="_blank" class="partner-card">
-          <img [src]="partner.logosrc" [alt]="partner.name + ' logo'" />
+          <img
+            [ngSrc]="partner.logosrc"
+            [width]="partner.logoSize[0]"
+            [height]="partner.logoSize[1]"
+            [alt]="partner.name + ' logo'"
+          />
           <h2>{{ partner.name }}</h2>
           <p>{{ partner.description }}</p>
           <a [href]="partner.url" target="_blank">Visit Partner Site</a>

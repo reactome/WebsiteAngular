@@ -28,6 +28,7 @@
  */
 import type { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf } from './support/json';
 
 const ENDPOINT = '**/search-answer';
 // A query the recordings actually carry: `search.spec.ts` recorded apoptosis,
@@ -42,7 +43,7 @@ function stream(frames: string[]): string {
 }
 
 const ANSWERED = stream([
-  'event: start\ndata: {"release": 97, "answered": true}',
+  'event: start\ndata: {"release": 98, "answered": true}',
   'event: token\ndata: {"text": "## CDK5\\n\\nCDK5 bound to p25 "}',
   'event: token\ndata: {"text": "phosphorylates tau."}',
   // No trailing Sources list here, because the answer endpoint no longer sends
@@ -54,7 +55,7 @@ const ANSWERED = stream([
 ]);
 
 const NOTHING_FOUND = stream([
-  'event: start\ndata: {"release": 97, "answered": false}',
+  'event: start\ndata: {"release": 98, "answered": false}',
   'event: done\ndata: {"state": "nothing_found", "seconds": 4.5}',
 ]);
 
@@ -174,7 +175,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "CDK5 phosphorylates tau."}',
         'event: token\ndata: {"text": "\\n\\n### Sources\\n- Something"}',
         'event: done\ndata: {"state": "answered", "seconds": 1.0}',
@@ -206,7 +207,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "Open the pathway browser from the toolbar."}',
         'event: done\ndata: {"state": "answered", "seconds": 3.3}',
       ])
@@ -274,7 +275,7 @@ test.describe('Search page React-to-Me answer', () => {
     await stubAnswer(
       page,
       stream([
-        'event: start\ndata: {"release": 97, "answered": true}',
+        'event: start\ndata: {"release": 98, "answered": true}',
         'event: token\ndata: {"text": "CDK5 bound to p25 "}',
       ])
     );
@@ -407,8 +408,7 @@ test.describe('Search page React-to-Me answer', () => {
     let verified = false;
     let answerCalls = 0;
     await page.route('**/search-answer/verify', async (route) => {
-      const body = route.request().postDataJSON();
-      verified = body?.captchaToken === 'solved-token';
+      verified = bodyOf(route.request())?.['captchaToken'] === 'solved-token';
       await route.fulfill({ status: verified ? 204 : 400, body: '' });
     });
     await page.route('**/search-answer', (route) => {

@@ -1,12 +1,9 @@
+import { DoiPathway, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import {
-  ContentDataService,
-  DoiPathway,
-  SimplePerson,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
 type SortKey = 'displayName' | 'doi' | 'releaseDate' | 'species';
 type SortDir = 'asc' | 'desc';
@@ -43,9 +40,13 @@ export class DoiComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      // Not distinctUntilChanged: clearing the box does not pass through here,
+      // so the same term typed again would look like no change and be dropped.
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();
@@ -102,8 +103,8 @@ export class DoiComponent implements OnInit, OnDestroy {
       results = results.filter(
         (p) =>
           p.displayName.toLowerCase().includes(q) ||
-          p.species?.toLowerCase().includes(q) ||
-          p.doi?.toLowerCase().includes(q) ||
+          p.species.toLowerCase().includes(q) ||
+          p.doi.toLowerCase().includes(q) ||
           this.personsMatch(p.authors, q) ||
           this.personsMatch(p.reviewers, q) ||
           this.personsMatch(p.editors, q)
@@ -114,11 +115,11 @@ export class DoiComponent implements OnInit, OnDestroy {
     this.updatePage();
   }
 
-  private personsMatch(persons: SimplePerson[], q: string): boolean {
-    return persons?.some(
+  private personsMatch(persons: SimplePerson[] | undefined, q: string): boolean {
+    return !!persons?.some(
       (p) =>
-        p.displayName?.toLowerCase().includes(q) ||
-        p.surname?.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q) ||
+        p.surname.toLowerCase().includes(q) ||
         p.firstname?.toLowerCase().includes(q)
     );
   }
@@ -171,7 +172,7 @@ export class DoiComponent implements OnInit, OnDestroy {
     }
   }
 
-  personNames(persons: SimplePerson[]): string {
+  personNames(persons: SimplePerson[] | undefined): string {
     if (!persons?.length) return '';
     return persons.map((p) => p.displayName).join(', ');
   }

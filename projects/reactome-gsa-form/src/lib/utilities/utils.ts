@@ -10,14 +10,29 @@ export function isDefined<T>(o: T | undefined | null): o is T {
   return o !== undefined && o !== null;
 }
 
-export function extractErrorMessage(err: HttpErrorResponse) {
+/** The reason a failure's body gives, as an object or as JSON text. */
+function reasonIn(body: unknown): string | undefined {
+  if (typeof body === 'string' && body.startsWith('{')) {
+    try {
+      return reasonIn(JSON.parse(body));
+    } catch {
+      return undefined;
+    }
+  }
+  const detail: unknown =
+    typeof body === 'object' && body !== null && 'detail' in body ? body.detail : undefined;
+  return typeof detail === 'string' && detail ? detail : undefined;
+}
+
+/**
+ * Read inside the requests' catchError: a body with no reason in it (an empty
+ * one, plain text, the browser's event for a request that never arrived) threw
+ * here, and the reader was shown nothing.
+ */
+export function extractErrorMessage(err: HttpErrorResponse): string {
   if (err.status === 502)
     return 'An unknown error occurred. The submitted dataset might be too large.';
-  return (
-    err.error?.detail ||
-    ((err.error as string).charAt(0) === '{' && JSON.parse(err.error)?.detail) ||
-    err.message
-  );
+  return reasonIn(err.error) ?? err.message;
 }
 
 export class EntityHelper<T, S extends EntityState<T> = EntityState<T>> {

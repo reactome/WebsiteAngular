@@ -1,15 +1,11 @@
+import { SchemaNode, SchemaAttribute, SimpleDatabaseObject } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { InstanceBrowserComponent } from './instance-browser/instance-browser.component';
-import {
-  ContentDataService,
-  SchemaNode,
-  SchemaAttribute,
-  SimpleDatabaseObject,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
 interface FlatTreeNode {
   className: string;
@@ -111,12 +107,12 @@ export class SchemaComponent implements OnInit, OnDestroy {
           //   /dataSchema/:className/:dbId
           // so a single subscription has to keep both selectedClass and
           // selectedInstanceId in sync with the URL.
-          this.route.params.pipe(takeUntil(this.destroy$)).subscribe((params) => {
-            const className = params['className'] || 'DatabaseObject';
+          this.route.paramMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+            const className = params.get('className') || 'DatabaseObject';
             if (className !== this.selectedClass) {
               this.selectClass(className);
             }
-            const dbIdParam = params['dbId'];
+            const dbIdParam = params.get('dbId');
             const dbId = dbIdParam != null ? Number(dbIdParam) : null;
             if (dbId !== this.selectedInstanceId) {
               this.selectedInstanceId = dbId;
@@ -195,7 +191,8 @@ export class SchemaComponent implements OnInit, OnDestroy {
   }
 
   private buildFlatTreeRecursive(node: SchemaNode, depth: number) {
-    const hasChildren = node.children && node.children.length > 0;
+    const children = node.children ?? [];
+    const hasChildren = children.length > 0;
     const expanded = this.expandedNodes.has(node.className);
 
     // If searching, skip nodes that aren't in the search results path
@@ -211,7 +208,7 @@ export class SchemaComponent implements OnInit, OnDestroy {
     });
 
     if (hasChildren && expanded) {
-      const sorted = [...node.children].sort((a, b) => a.className.localeCompare(b.className));
+      const sorted = [...children].sort((a, b) => a.className.localeCompare(b.className));
       for (const child of sorted) {
         this.buildFlatTreeRecursive(child, depth + 1);
       }
@@ -244,9 +241,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
   onTreeSearch(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.treeSearchQuery = value.toLowerCase().trim();
-    if (this.treeSearchQuery) {
+    // The filter is drawn only once the model has loaded, so the root is there.
+    if (this.treeSearchQuery && this.treeRoot) {
       this.treeSearchResults.clear();
-      this.collectMatchingNodes(this.treeRoot!, this.treeSearchQuery);
+      this.collectMatchingNodes(this.treeRoot, this.treeSearchQuery);
     }
     this.rebuildFlatTree();
   }

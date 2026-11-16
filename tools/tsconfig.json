@@ -1,0 +1,45 @@
+// The server-side services' type check (spec 013, research R4). Node 24 runs
+// these files as they are, stripping the types, so nothing is emitted; the
+// strictness is the site's. Every module and spec under tools/ is .ts (spec
+// 013 T023, held by tools/load.spec.ts); checkJs stays off because the .mjs
+// scripts they import from scripts/ and e2e/ are not part of this check.
+{
+  "compilerOptions": {
+    "target": "ES2024",
+    // DOM: the render service's code that runs in the page.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "allowJs": true,
+    "checkJs": false,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // On, as strict has it: off for the mechanical conversion (research R4:
+    // 1,180 errors to clear, 3,373 with it on), then cleared module by module
+    // (tasks T021) until none was left. check:types still counts it, a
+    // second line should this be turned off again.
+    "noImplicitAny": true
+    // verbatimModuleSyntax and erasableSyntaxOnly are not set: the services
+    // import the site's model types, which a whole-program option would hold
+    // to them too. Lint enforces both for tools/, and tools/load.spec.ts loads
+    // every entry point under Node, which fails on what they would catch.
+  },
+  // The contract too (spec 016): otherwise a contract module no service or
+  // site file imports yet is checked by neither program.
+  "include": ["**/*.ts", "**/*.mjs", "../projects/contract/**/*.ts"],
+  "exclude": ["**/node_modules", "svg-export-harness/harness.bundle.js"]
+}

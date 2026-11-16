@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { Component, inject, computed } from '@angular/core';
 import { SearchBarComponent } from '../search/search-bar/search-bar.component';
 import { HomeSpotlightComponent } from './home-spotlight/home-spotlight.component';
@@ -17,6 +18,7 @@ import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environ
   selector: 'app-home-page',
   standalone: true,
   imports: [
+    NgOptimizedImage,
     SearchBarComponent,
     HomeSpotlightComponent,
     HomeWhyReactomeComponent,

@@ -1,0 +1,3568 @@
+{
+  "openapi": "3.0.1",
+  "paths": {
+    "/contact": {
+      "post": [
+        {
+          "name": "contactName",
+          "in": "query",
+          "type": "string",
+          "default": ""
+        },
+        {
+          "name": "h-captcha-response",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "mailAddress",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "message",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "sendEmailCopy",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "subject",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/complex/{id}/subunits": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "excludeStructures",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/complexes/{resource}/{identifier}": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/content/contributors": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/content/doi": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/content/toc": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/database/name": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/database/version": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/discover/{identifier}": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/diseases": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/diseases/doid": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/entity/{id}/componentOf": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/entity/{id}/in-depth": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "attributes",
+          "in": "query",
+          "type": "string",
+          "default": "species,compartment"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "maxDepth",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 1
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/entity/{id}/otherForms": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/event/{id}/ancestors": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/event/{id}/in-depth": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "attributes",
+          "in": "query",
+          "type": "string",
+          "default": "species,compartment"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "maxDepth",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 1
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/eventsHierarchy/{species}": {
+      "get": [
+        {
+          "name": "species",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "importableOnly",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "interactors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "pathwaysOnly",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "resource",
+          "in": "query",
+          "type": "string",
+          "default": "TOTAL"
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/instance/{id}/referrers": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/mapping/{resource}/{identifier}/pathways": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/mapping/{resource}/{identifier}/reactions": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/orthologies/ids/species/{speciesId}": {
+      "post": [
+        {
+          "name": "speciesId",
+          "in": "path",
+          "type": "integer",
+          "format": "int64",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/orthology/{id}/species/{speciesId}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "speciesId",
+          "in": "path",
+          "type": "integer",
+          "format": "int64",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/participants/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/participants/{id}/participatingPhysicalEntities": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/participants/{id}/referenceEntities": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathway/{id}/containedEvents": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathway/{id}/containedEvents/{attributeName}": {
+      "get": [
+        {
+          "name": "attributeName",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathways/low/diagram/entity/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathways/low/diagram/entity/{id}/allForms": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathways/low/entity/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathways/low/entity/{id}/allForms": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/pathways/top/{species}": {
+      "get": [
+        {
+          "name": "species",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/people/name/{name}": {
+      "get": [
+        {
+          "name": "name",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/people/name/{name}/exact": {
+      "get": [
+        {
+          "name": "name",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/authoredPathways": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/authoredReactions": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/publications": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/reviewedPathways": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/reviewedReactions": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/person/{id}/{attributeName}": {
+      "get": [
+        {
+          "name": "attributeName",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/enhanced/v2/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "fetchIncomingRelationships",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "includeDisease",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "summariseReferenceEntity",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/enhanced/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/ids": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/ids/map": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/{id}": {
+      "get": [
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/query/{id}/{attributeName}": {
+      "get": [
+        {
+          "name": "attributeName",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "id",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/model": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}/attributes": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}/count": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}/min": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}/reference": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "offset",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/schema/{className}/referrals": {
+      "get": [
+        {
+          "name": "className",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/species/all": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/data/species/main": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/diagram/{identifier}.{ext}": {
+      "get": [
+        {
+          "name": "ext",
+          "in": "path",
+          "type": "string",
+          "enum": [
+            "png",
+            "jpg",
+            "jpeg",
+            "svg",
+            "gif"
+          ],
+          "required": true
+        },
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "analysisProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Standard",
+            "Strosobar, Copper%20Plus"
+          ]
+        },
+        {
+          "name": "diagramProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Modern",
+            "Standard"
+          ]
+        },
+        {
+          "name": "ehld",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "expColumn",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "flg",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "flgInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "margin",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 15
+        },
+        {
+          "name": "quality",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 5
+        },
+        {
+          "name": "resource",
+          "in": "query",
+          "type": "string",
+          "default": "TOTAL"
+        },
+        {
+          "name": "sel",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "title",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/document/event/{identifier}.pdf": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "analysisProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Standard",
+            "Strosobar",
+            "Copper%20Plus"
+          ]
+        },
+        {
+          "name": "diagramProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Modern",
+            "Standard"
+          ]
+        },
+        {
+          "name": "expColumn",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "importableOnly",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "level [0 - 1]",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 1
+        },
+        {
+          "name": "resource",
+          "in": "query",
+          "type": "string",
+          "default": "TOTAL"
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/event/{identifier}.sbgn": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/event/{identifier}.sbml": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/fireworks/{species}.{ext}": {
+      "get": [
+        {
+          "name": "ext",
+          "in": "path",
+          "type": "string",
+          "enum": [
+            "png",
+            "jpg",
+            "jpeg",
+            "svg",
+            "gif"
+          ],
+          "required": true
+        },
+        {
+          "name": "species",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "coverage",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "diagramProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Copper",
+            "Copper plus",
+            "Barium Lithium",
+            "Calcium Salts"
+          ]
+        },
+        {
+          "name": "expColumn",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "flg",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "flgInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "margin",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 15
+        },
+        {
+          "name": "quality",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 5
+        },
+        {
+          "name": "resource",
+          "in": "query",
+          "type": "string",
+          "default": "TOTAL"
+        },
+        {
+          "name": "sel",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "title",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/reaction/{identifier}.{ext}": {
+      "get": [
+        {
+          "name": "ext",
+          "in": "path",
+          "type": "string",
+          "enum": [
+            "png",
+            "jpg",
+            "jpeg",
+            "svg",
+            "gif"
+          ],
+          "required": true
+        },
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "analysisProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Standard",
+            "Strosobar, Copper%20Plus"
+          ]
+        },
+        {
+          "name": "diagramProfile",
+          "in": "query",
+          "type": "string",
+          "enum": [
+            "Modern",
+            "Standard"
+          ]
+        },
+        {
+          "name": "expColumn",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "flg",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "flgInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "margin",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 15
+        },
+        {
+          "name": "quality",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 5
+        },
+        {
+          "name": "resource",
+          "in": "query",
+          "type": "string",
+          "default": "TOTAL"
+        },
+        {
+          "name": "sel",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "title",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "token",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/exporter/reaction/{identifier}/diagram": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/psicquic/molecule/{resource}/{acc}/details": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/psicquic/molecule/{resource}/{acc}/summary": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/psicquic/molecules/{resource}/details": {
+      "post": [
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/psicquic/molecules/{resource}/summary": {
+      "post": [
+        {
+          "name": "resource",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/psicquic/resources": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecule/enhanced/{acc}/details": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecule/{acc}/details": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": -1
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": -1
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecule/{acc}/pathways": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "onlyDiagrammed",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecule/{acc}/summary": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecule/{acc}/withEntities": {
+      "get": [
+        {
+          "name": "acc",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecules/details": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": -1
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": -1
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/static/molecules/summary": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/token/{token}": {
+      "post": [
+        {
+          "name": "token",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/upload/psicquic/url": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/upload/tuple/content": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/upload/tuple/form": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/interactors/upload/tuple/url": {
+      "post": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "name",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/references/mapping/xrefs": {
+      "post": [
+        {
+          "name": "dbFilter",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 0
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 100
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/references/mapping/{identifier}": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/references/mapping/{identifier}/xrefs": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "dbFilter",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/diagram/{diagram}": {
+      "get": [
+        {
+          "name": "diagram",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "rows",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "default": "PHYSICAL_ENTITY",
+          "enum": [
+            "REFERENCE_ENTITY",
+            "PHYSICAL_ENTITY",
+            "BOTH"
+          ]
+        },
+        {
+          "name": "start",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/diagram/{diagram}/occurrences/{instance}": {
+      "get": [
+        {
+          "name": "diagram",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "instance",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/diagram/{pathwayId}/flag": {
+      "get": [
+        {
+          "name": "pathwayId",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/facet": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/facet_query": {
+      "get": [
+        {
+          "name": "compartments",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "Force filters",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "keywords",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "default": "PHYSICAL_ENTITY",
+          "enum": [
+            "REFERENCE_ENTITY",
+            "PHYSICAL_ENTITY",
+            "BOTH"
+          ]
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/fireworks": {
+      "get": [
+        {
+          "name": "includeInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "rows",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "default": "PHYSICAL_ENTITY",
+          "enum": [
+            "REFERENCE_ENTITY",
+            "PHYSICAL_ENTITY",
+            "BOTH"
+          ]
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string",
+          "default": "Homo sapiens"
+        },
+        {
+          "name": "start",
+          "in": "query",
+          "type": "integer",
+          "format": "int32"
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/fireworks/flag": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string",
+          "default": "Homo sapiens"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/icon/facet": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/icon/query": {
+      "get": [
+        {
+          "name": "category",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 1
+        },
+        {
+          "name": "pageSize",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 28
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/icon/{identifier}": {
+      "get": [
+        {
+          "name": "identifier",
+          "in": "path",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/pathways/of/{dbId}": {
+      "get": [
+        {
+          "name": "dbId",
+          "in": "path",
+          "type": "integer",
+          "format": "int64",
+          "required": true
+        },
+        {
+          "name": "directlyInDiagram",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "fields",
+          "in": "query",
+          "type": "array",
+          "items": "string",
+          "enum": [
+            "DB_ID",
+            "ST_ID",
+            "PHYSICAL_ENTITIES_DB_ID",
+            "NAME",
+            "SPECIES",
+            "SPECIES_FACET",
+            "TYPES",
+            "KEYWORDS",
+            "COMPARTMENT_FACET",
+            "ICON_CATEGORIES_FACET",
+            "SUMMATION",
+            "INFERRED_SUMMATION",
+            "REFERENCE_URL",
+            "REFERENCE_NAME",
+            "REFERENCE_IDENTIFIERS",
+            "IS_DISEASE",
+            "TYPE",
+            "IS_REFERENCE_SUMMARY",
+            "HAS_REFERENCE_ENTITY",
+            "HAS_EHLD",
+            "EXACT_TYPE",
+            "DATABASE_NAME",
+            "REGULATOR",
+            "REGULATOR_ID",
+            "REGULATED_ENTITY",
+            "REGULATED_ENTITY_ID",
+            "COMPARTMENT_NAME",
+            "COMPARTMENT_ACCESSION",
+            "FIREWORKS_SPECIES",
+            "OCCURRENCES",
+            "OCCURRENCES_INTERACTOR",
+            "DIAGRAMS",
+            "DIAGRAMS_INTERACTOR",
+            "LLPS",
+            "AUTHORED_PATHWAYS",
+            "AUTHORED_REACTIONS",
+            "REVIEWED_PATHWAYS",
+            "REVIEWED_REACTIONS",
+            "ORCIDID",
+            "TARGET_IDENTIFIER",
+            "TARGET_ACCESSIONS",
+            "TARGET_GENENAMES",
+            "TARGET_SYNONYMS",
+            "TARGET_RESOURCE",
+            "ICON_NAME",
+            "ICON_CATEGORIES",
+            "ICON_CURATOR_NAME",
+            "ICON_CURATOR_ORCIDID",
+            "ICON_CURATOR_URL",
+            "ICON_DESIGNER_NAME",
+            "ICON_DESIGNER_URL",
+            "ICON_DESIGNER_ORCIDID",
+            "ICON_REFERENCES",
+            "ICON_PHYSICAL_ENTITIES",
+            "ICON_EHLDS",
+            "DELETED",
+            "DELETED_REASON",
+            "DELETED_EXPLANATION",
+            "DELETED_DATE",
+            "DELETED_REPLACEMENT_DB_IDS",
+            "DELETED_REPLACEMENT_ST_IDS"
+          ]
+        },
+        {
+          "name": "includeInteractors",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/query": {
+      "get": [
+        {
+          "name": "cluster",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "compartments",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "Force filters",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "keywords",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "parserType",
+          "in": "query",
+          "type": "string",
+          "default": "STD",
+          "enum": [
+            "DISMAX",
+            "EDISMAX",
+            "STD"
+          ]
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "rows",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 10
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "default": "PHYSICAL_ENTITY",
+          "enum": [
+            "REFERENCE_ENTITY",
+            "PHYSICAL_ENTITY",
+            "BOTH"
+          ]
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "Start row",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "default": 0
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/query/paginated": {
+      "get": [
+        {
+          "name": "cluster",
+          "in": "query",
+          "type": "boolean",
+          "default": true
+        },
+        {
+          "name": "compartments",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "keywords",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "page",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "parserType",
+          "in": "query",
+          "type": "string",
+          "default": "STD",
+          "enum": [
+            "DISMAX",
+            "EDISMAX",
+            "STD"
+          ]
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "rowCount",
+          "in": "query",
+          "type": "integer",
+          "format": "int32",
+          "required": true
+        },
+        {
+          "name": "scope",
+          "in": "query",
+          "type": "string",
+          "default": "PHYSICAL_ENTITY",
+          "enum": [
+            "REFERENCE_ENTITY",
+            "PHYSICAL_ENTITY",
+            "BOTH"
+          ]
+        },
+        {
+          "name": "species",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "types",
+          "in": "query",
+          "type": "array",
+          "items": "string"
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/spellcheck": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    },
+    "/search/suggest": {
+      "get": [
+        {
+          "name": "includeRef",
+          "in": "query",
+          "type": "boolean",
+          "default": false
+        },
+        {
+          "name": "query",
+          "in": "query",
+          "type": "string",
+          "required": true
+        },
+        {
+          "name": "view",
+          "in": "query",
+          "type": "string",
+          "default": "flatten",
+          "enum": [
+            "flatten",
+            "nested",
+            "nested-aggregated"
+          ]
+        }
+      ]
+    }
+  }
+}

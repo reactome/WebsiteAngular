@@ -1,13 +1,13 @@
 import { Component, computed, input, inject } from '@angular/core';
 import { CatalystActivityReference } from '../../../model/graph/control-reference/catalyst-activity-reference.model';
 import { CatalystActivity } from '../../../model/graph/catalyst-activity.model';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { Regulation } from '../../../model/graph/Regulation/regulation.model';
 import { IconService } from '../../../services/icon.service';
 import { RegulationReference } from '../../../model/graph/control-reference/regulation-reference.model';
-import { DatabaseObject } from '../../../model/graph/database-object.model';
 import {
-  hasProperty,
+  type Classed,
+  getProperty,
   isCatalystActivity,
   isFragmentModification,
   isHasModifiedResidue,
@@ -46,22 +46,21 @@ import { OntologyTermComponent } from '../ontology-term/ontology-term.component'
 export class MolecularProcessComponent {
   private iconService = inject(IconService);
 
-  readonly objects = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>({
-    alias: 'entries',
-  });
-  readonly catalystActivityReference = input.required<CatalystActivityReference>();
-  readonly regulationRefs = input.required<RegulationReference[]>();
+  readonly entries = input.required<(Regulation | CatalystActivity | HasModifiedResidue)[]>();
+  // Most events have neither.
+  readonly catalystActivityReference = input<CatalystActivityReference>();
+  readonly regulationRefs = input<RegulationReference[]>();
 
   readonly perspective = input<'entity' | 'event'>('event');
 
-  getSymbol(obj: DatabaseObject) {
+  getSymbol(obj: Classed) {
     return this.iconService.getIconDetails(obj);
   }
 
   readonly data = computed(() => this.getData());
 
   getData(): MolecularProcess[] {
-    return this.objects().map((entry) => {
+    return this.entries().map((entry) => {
       if (isRegulation(entry)) {
         return this.getRegulation(entry);
       } else if (isCatalystActivity(entry)) {
@@ -113,7 +112,7 @@ export class MolecularProcessComponent {
   }
 
   private getModifiedResidue(entry: HasModifiedResidue) {
-    let psiMods = hasProperty(entry.element, 'psiMod') ? entry.element.psiMod : undefined;
+    let psiMods = getProperty(entry.element, 'psiMod');
 
     if (psiMods) {
       psiMods = Array.isArray(psiMods) ? psiMods : [psiMods]; // Ensure it's always an array
@@ -126,10 +125,8 @@ export class MolecularProcessComponent {
       schemaClass: entry.element.schemaClass,
       name: entry.element.displayName,
       psiMod: psiMods,
-      coordinate: hasProperty(entry.element, 'coordinate') ? entry.element.coordinate : undefined,
-      modification: hasProperty(entry.element, 'modification')
-        ? entry.element.modification
-        : undefined,
+      coordinate: getProperty(entry.element, 'coordinate'),
+      modification: getProperty(entry.element, 'modification'),
       literatureReference: [],
       isModification: true,
     } as unknown as MolecularProcess;

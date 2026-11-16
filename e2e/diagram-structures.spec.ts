@@ -27,6 +27,10 @@ type Probe = {
     };
   };
 };
+/** The same probe while the page boots: no component yet, or nothing drawn. */
+type Booting = {
+  ng?: { getComponent(element: Element): { cy?: cytoscape.Core } | null };
+};
 
 async function open(page: Page, chebi: 'found' | 'missing') {
   await page.route('**/www.ebi.ac.uk/chebi/**', (route) =>
@@ -40,7 +44,7 @@ async function open(page: Page, chebi: 'found' | 'missing') {
       () =>
         page.evaluate(() => {
           const host = document.querySelector('cr-diagram');
-          const probe = (window as unknown as Partial<Probe>).ng;
+          const probe = (window as unknown as Booting).ng;
           if (!host || !probe) return 0;
           return probe.getComponent(host)?.cy?.nodes('.Molecule').length ?? 0;
         }),

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { authorNameEntries, composeAuthorByline } from './publication-byline';
 
 describe('authorNameEntries', () => {

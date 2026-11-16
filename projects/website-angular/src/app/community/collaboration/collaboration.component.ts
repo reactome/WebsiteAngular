@@ -69,13 +69,13 @@ export class CollaborationComponent implements OnInit {
 
     let rowMatch;
     while ((rowMatch = rowRegex.exec(html)) !== null) {
-      const rowHtml = rowMatch[1];
+      const rowHtml = rowMatch[1] ?? '';
       const cells: { text: string; links: string[] }[] = [];
 
       let cellMatch;
       const cellRe = new RegExp(cellRegex.source, 'g');
       while ((cellMatch = cellRe.exec(rowHtml)) !== null) {
-        const cellHtml = cellMatch[1];
+        const cellHtml = cellMatch[1] ?? '';
         const text = cellHtml
           .replace(tagRegex, '')
           .replace(/&amp;/g, '&')
@@ -88,35 +88,39 @@ export class CollaborationComponent implements OnInit {
         let linkMatch;
         const linkRe = new RegExp(linkRegex.source, 'g');
         while ((linkMatch = linkRe.exec(cellHtml)) !== null) {
-          links.push(decodeURIComponent(linkMatch[1].replace(/&amp;/g, '&')));
+          links.push(decodeURIComponent((linkMatch[1] ?? '').replace(/&amp;/g, '&')));
         }
         cells.push({ text, links });
       }
 
-      if (cells.length < 6) continue;
+      // Number, Word doc, PDF, pathway, curator, topic, and an optional contact.
+      const [numberCell, docCell, pdfCell, pathwayCell, curatorCell, topicCell, contactCell] =
+        cells;
+      if (!numberCell || !docCell || !pdfCell || !pathwayCell || !curatorCell || !topicCell) {
+        continue;
+      }
 
       // Skip header row and empty rows
-      const num = parseInt(cells[0].text, 10);
+      const num = parseInt(numberCell.text, 10);
       if (isNaN(num)) continue;
 
-      const pathway = cells[3].text;
+      const pathway = pathwayCell.text;
       if (!pathway) continue;
 
-      // Cell 1: Word doc link, Cell 2: PDF link, Cell 3: Pathway name + link
-      const docUrl = cells[1].links[0] || '';
-      const pdfUrl = cells[2].links[0] || '';
-      const pathwayUrl = cells[3].links[0] || '';
+      const docUrl = docCell.links[0] || '';
+      const pdfUrl = pdfCell.links[0] || '';
+      const pathwayUrl = pathwayCell.links[0] || '';
 
       // Extract document name from whichever cell has a filename
-      const rawDocName = cells[1].text || cells[2].text || '';
+      const rawDocName = docCell.text || pdfCell.text || '';
       const docName = this.cleanFilename(rawDocName);
 
       entries.push({
         number: num,
         pathway,
-        curator: cells[4].text,
-        topic: cells[5].text,
-        contact: cells[6]?.text || 'help@reactome.org',
+        curator: curatorCell.text,
+        topic: topicCell.text,
+        contact: contactCell?.text || 'help@reactome.org',
         docUrl,
         pdfUrl,
         pathwayUrl,

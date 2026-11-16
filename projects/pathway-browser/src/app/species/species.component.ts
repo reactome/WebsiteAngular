@@ -1,5 +1,5 @@
 import { Component, input, model, inject } from '@angular/core';
-import { Species } from '../model/graph/species.model';
+import { ListedSpecies } from '../model/graph/species.model';
 import { SpeciesService } from '../services/species.service';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { DataStateService } from '../services/data-state.service';
@@ -37,7 +37,7 @@ export class SpeciesComponent {
     );
   }
 
-  onSpeciesChange(newSpecies: Species) {
+  onSpeciesChange(newSpecies: ListedSpecies) {
     this.speciesService.currentSpecies.set(newSpecies);
 
     this.speciesService
@@ -55,7 +55,7 @@ export class SpeciesComponent {
       });
   }
 
-  getSpeciesIconName(species: Species): string {
+  getSpeciesIconName(species: ListedSpecies): string {
     const normalizedTaxId = (species.taxId || '').replace(/\D/g, '');
     return this.availableSpeciesIcons.has(normalizedTaxId)
       ? normalizedTaxId

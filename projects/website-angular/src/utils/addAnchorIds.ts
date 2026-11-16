@@ -35,7 +35,8 @@ function addSamePageIds(html: string): string {
   const re = /<(h[1-6])>\s*(<a\s[^>]*href="#([^"]+)"[^>]*>)/g;
   const matches: { index: number; length: number; tag: string; href: string; full: string }[] = [];
   for (let m = re.exec(html); m !== null; m = re.exec(html)) {
-    matches.push({ index: m.index, length: m[0].length, tag: m[1], href: m[3], full: m[0] });
+    const [full, tag = '', , href = ''] = m;
+    matches.push({ index: m.index, length: full.length, tag, href, full });
   }
   const lastByHref = new Map<string, number>();
   matches.forEach((m, i) => lastByHref.set(m.href, i));
@@ -61,26 +62,30 @@ function addSamePageIds(html: string): string {
   // match, which is the behaviour pass 1 exists to avoid.
   const assigned = new Set(lastByHref.keys());
   const fragments = new Set<string>();
-  for (const m of out.matchAll(/href="#([^"]+)"/g)) fragments.add(m[1]);
+  for (const [, fragment] of out.matchAll(/href="#([^"]+)"/g))
+    if (fragment) fragments.add(fragment);
   if (fragments.size === 0) return out;
 
-  out = out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    // Skip headings that already have an id (pass 1 added one).
-    if (attrs && /\bid=/.test(attrs)) return full;
-    // Skip headings whose content is itself a link (pass 1 would have
-    // handled them if the link target matched).
-    // Use the heading's plain text to compute the slug.
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    if (!text) return full;
-    // Try the plain slug first, then the MediaWiki encoding, so a page can
-    // mix both conventions.
-    const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
-      (s) => fragments.has(s) && !assigned.has(s)
-    );
-    if (!slug) return full;
-    assigned.add(slug);
-    return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
-  });
+  out = out.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      // Skip headings that already have an id (pass 1 added one).
+      if (attrs && /\bid=/.test(attrs)) return full;
+      // Skip headings whose content is itself a link (pass 1 would have
+      // handled them if the link target matched).
+      // Use the heading's plain text to compute the slug.
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      if (!text) return full;
+      // Try the plain slug first, then the MediaWiki encoding, so a page can
+      // mix both conventions.
+      const slug = [text.replace(/\s+/g, '_'), mediaWikiAnchor(text)].find(
+        (s) => fragments.has(s) && !assigned.has(s)
+      );
+      if (!slug) return full;
+      assigned.add(slug);
+      return `<${tag}${attrs || ''} id="${slug}">${inner}</${tag}>`;
+    }
+  );
 
   // Pass 3: fragments that still resolve to nothing.
   //
@@ -101,11 +106,12 @@ function addSamePageIds(html: string): string {
   const loose = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '');
   const linkText = new Map<string, string>();
   for (const m of out.matchAll(/<a\s[^>]*href="#([^"]+)"[^>]*>([\s\S]*?)<\/a>/g)) {
-    const text = m[2]
+    const [, fragment = '', inner = ''] = m;
+    const text = inner
       .replace(/<[^>]+>/g, '')
       .replace(/^[\d.\s]+/, '')
       .trim();
-    if (text && !linkText.has(m[1])) linkText.set(m[1], text);
+    if (text && !linkText.has(fragment)) linkText.set(fragment, text);
   }
 
   const wanted = new Map<string, string>();
@@ -117,14 +123,17 @@ function addSamePageIds(html: string): string {
     }
   }
 
-  return out.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    if (attrs && /\bid=/.test(attrs)) return full;
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    const frag = text && wanted.get(loose(text));
-    if (!frag || assigned.has(frag)) return full;
-    assigned.add(frag);
-    return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
-  });
+  return out.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      if (attrs && /\bid=/.test(attrs)) return full;
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      const frag = text && wanted.get(loose(text));
+      if (!frag || assigned.has(frag)) return full;
+      assigned.add(frag);
+      return `<${tag}${attrs || ''} id="${frag}">${inner}</${tag}>`;
+    }
+  );
 }
 
 /**
@@ -139,14 +148,17 @@ function addSamePageIds(html: string): string {
  */
 function idEveryHeading(html: string): string {
   const taken = new Set([...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]));
-  return html.replace(/<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g, (full, tag, attrs, inner) => {
-    if (attrs && /\bid=/.test(attrs)) return full;
-    const text = inner.replace(/<[^>]+>/g, '').trim();
-    const id = text.replace(/\s+/g, '_').replace(/"/g, '');
-    if (!id || taken.has(id)) return full;
-    taken.add(id);
-    return `<${tag}${attrs || ''} id="${id}">${inner}</${tag}>`;
-  });
+  return html.replace(
+    /<(h[1-6])(\s[^>]*)?>([\s\S]*?)<\/\1>/g,
+    (full: string, tag: string, attrs: string | undefined, inner: string) => {
+      if (attrs && /\bid=/.test(attrs)) return full;
+      const text = inner.replace(/<[^>]+>/g, '').trim();
+      const id = text.replace(/\s+/g, '_').replace(/"/g, '');
+      if (!id || taken.has(id)) return full;
+      taken.add(id);
+      return `<${tag}${attrs || ''} id="${id}">${inner}</${tag}>`;
+    }
+  );
 }
 
 export default function addAnchorIds(html: string): string {

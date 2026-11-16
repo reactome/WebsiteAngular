@@ -18,6 +18,7 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { UrlStateService } from '../services/url-state.service';
 import SvgPanZoom from 'svg-pan-zoom';
 import { AnalysisService } from '../services/analysis.service';
+import type * as Analysis from '../model/analysis.model';
 import { isDefined } from '../services/utils';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource } from '@angular/core/rxjs-interop';
@@ -27,6 +28,7 @@ import {
   defaultDownloadOptions,
   DownloadFormat,
   DownloadService,
+  DownloadTarget,
 } from '../services/download.service';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { map } from 'rxjs';
@@ -57,6 +59,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   readonly ehldContainer = viewChild.required<ElementRef<HTMLDivElement>>('ehld');
   readonly pathwayId = model.required<string>();
   readonly hovering = signal(false);
+  /**
+   * The analysis result last coloured on the illustration: undefined for none,
+   * null before it has been drawn at all. The render page waits until it is the
+   * result on show, so a figure is not captured before its colouring.
+   */
+  readonly appliedAnalysis = signal<Analysis.Result | undefined | null>(null);
   /** Set when the fetched file cannot be drawn; the template says so instead of showing nothing. */
   readonly drawError = signal<string | null>(null);
   /** The illustration is on screen, for its pathway id. */
@@ -101,32 +109,38 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   readonly stIdToSVGGElement = signal(new Map<string, SVGGElement>());
   readonly subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
-  readonly selectedElement = linkedSignal(() =>
-    this.state.select() ? this.stIdToSVGGElement().get(this.state.select()!) : undefined
-  );
+  readonly selectedElement = linkedSignal(() => {
+    const select = this.state.select();
+    return select ? this.stIdToSVGGElement().get(select) : undefined;
+  });
   readonly flaggedElements = computed(() =>
     this.data
       .flagIdentifiers()
       .map((stId) => this.stIdToSVGGElement().get(stId))
       .filter(isDefined)
   );
-  panZoomInstance?: SvgPanZoom.Instance;
+  panZoomInstance: SvgPanZoom.Instance | undefined;
   legendItems: LegendGroup[] = [...this.ehldService.legendItems];
-  resizeObserver!: ResizeObserver;
+  private readonly resizeObserver = new ResizeObserver(() => {
+    if (!this.panZoomInstance) return;
+    this.handleResize();
+  });
   readonly controlZoom = signal<number>(0);
   readonly controlMinZoom = signal<number>(1);
   readonly controlMaxZoom = signal<number>(15);
 
   private initialZoom = 1;
   private initialPan = { x: 0, y: 0 };
-  currentSample?: string;
+  currentSample: string | undefined;
+
+  /** The last download request this view took up (see the download effect). */
+  private handled = 0;
 
   constructor() {
-    effect(
-      () =>
-        this.selectedElement() &&
-        this.ehldService.applyOutline(this.selectedElement()!, this.flaggedElements())
-    );
+    effect(() => {
+      const selected = this.selectedElement();
+      if (selected) this.ehldService.applyOutline(selected, this.flaggedElements());
+    });
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
     // A sub-pathway hovered in the hierarchy lights up here as if hovered here.
     effect((onCleanup) => {
@@ -144,8 +158,9 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       });
     });
     effect(() => {
-      const text = this.svgData.value();
-      if (text && this.ehldContainer()) {
+      // value() throws while the resource is in error; loadError says so.
+      const text = this.svgData.hasValue() ? this.svgData.value() : undefined;
+      if (text) {
         let svg: SVGSVGElement;
         try {
           svg = parseEhldSvg(text);
@@ -159,12 +174,15 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.stIdToSVGGElement.set(this.ehldService.setStIdToSVGGElementMap(this.ehldContainer()));
         this.addEventListenerToSvg();
         this.initializePanAndZoom();
+        this.download.figureState(this, DownloadTarget.DIAGRAM, 'ready');
         this.illustrationLoaded.emit(untracked(this.pathwayId));
       }
     });
     effect(() => {
-      if (this.loadError() || this.drawError())
+      if (this.loadError() || this.drawError()) {
+        this.download.figureState(this, DownloadTarget.DIAGRAM, 'failed');
         this.illustrationFailed.emit(untracked(this.pathwayId));
+      }
     });
     // A file that fails to arrive must not leave the previous pathway's drawing
     // on screen under a message saying this one could not be loaded.
@@ -179,26 +197,38 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       this.currentSample = this.state.sample() || undefined;
     });
 
+    // A new illustration is on its way: nothing to make a figure of until it
+    // is drawn.
+    effect(() => {
+      if (this.svgData.isLoading())
+        untracked(() => this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading'));
+    });
+
     effect(() => {
       const request = this.download.downloadRequest();
       const options = request?.options || defaultDownloadOptions;
       // Read up front, not after the await below: a signal read after an await
       // runs outside the effect's tracking, so this one was never a dependency.
       const pathwayId = this.pathwayId();
+      // The request stays set until its file is saved, and this effect also
+      // runs again when a signal the export reads changes -- the selection,
+      // say. Once per request, or the figure is made and saved twice.
+      if (request?.owner !== this || request.id === this.handled) return;
+      this.handled = request.id;
 
-      if (request && this.download.isRasterFormat(request.format)) {
+      if (this.download.isRasterFormat(request.format)) {
         void this.ehldService
           .downloadImage(request.format)
-          .then(() => this.download.resetDownload())
-          .catch((error) => this.download.failed(error, 'EHLD image export failed'));
-      } else if (request?.format === DownloadFormat.SVG) {
+          .then(() => this.download.finished(request.id))
+          .catch((error) => this.download.failed(error, 'EHLD image export failed', request.id));
+      } else if (request.format === DownloadFormat.SVG) {
         void this.svgExporter
           .exportEHLD(this, options)
           .then((svg) => {
             this.download.export(svg, request.format, pathwayId);
-            this.download.resetDownload();
+            this.download.finished(request.id);
           })
-          .catch((error) => this.download.failed(error, 'EHLD SVG export failed'));
+          .catch((error) => this.download.failed(error, 'EHLD SVG export failed', request.id));
       }
     });
   }
@@ -213,11 +243,6 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.style = new Style(this.ehldContainer().nativeElement);
 
-    this.resizeObserver = new ResizeObserver(() => {
-      if (!this.panZoomInstance) return;
-      this.handleResize();
-    });
-
     this.resizeObserver.observe(this.ehldContainer().nativeElement);
   }
 
@@ -226,12 +251,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);
-    this.legendPosition().x <= -legendWidth + 5
-      ? this.legendPosition.set({
-          x: 0,
-          y: 0,
-        })
-      : this.legendPosition.set({ x: -legendWidth, y: 0 });
+    if (this.legendPosition().x <= -legendWidth + 5) this.legendPosition.set({ x: 0, y: 0 });
+    else this.legendPosition.set({ x: -legendWidth, y: 0 });
     setTimeout(() => this.animateLegend.set(false), 500);
   }
 
@@ -286,9 +307,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       });
 
       element.addEventListener('click', () => {
-        if (this.selectedElement()) {
-          this.ehldService.removeOutline(this.selectedElement()!, this.flaggedElements());
-        }
+        const selected = this.selectedElement();
+        if (selected) this.ehldService.removeOutline(selected, this.flaggedElements());
         this.selectedElement.set(element);
 
         const idAttr = this.selectedElement()?.getAttribute('id');
@@ -315,14 +335,15 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   private loadAnalysis() {
     const elementsMap = this.stIdToSVGGElement();
-    const svg = this.ehldContainer().nativeElement.querySelector('svg')!;
+    // Not there until the illustration has loaded.
+    const svg = this.ehldContainer().nativeElement.querySelector('svg');
     if (!svg) return;
     this.ehldService.clearExistingPatterns(svg);
     this.ehldService.clearAllOverlay(elementsMap);
     this.ehldService.clearAnalysisInfo(elementsMap);
 
-    const bg = svg.querySelector('#BG') as SVGGElement;
-    const fg = svg.querySelector('#FG') as SVGGElement;
+    const bg = svg.querySelector<SVGGElement>('#BG');
+    const fg = svg.querySelector<SVGGElement>('#FG');
 
     const allPathwayStIds = this.subpathwayStIds();
     if (!this.analysis.result()) {
@@ -342,6 +363,7 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
         this.ehldService.showAnalysisInfo(regionElement, pathwayData);
       });
     }
+    this.appliedAnalysis.set(this.analysis.result());
   }
 
   private handleResize() {
@@ -372,9 +394,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-    }
+    this.resizeObserver.disconnect();
+    this.download.figureGone(this);
     if (this.panZoomInstance) {
       this.panZoomInstance.destroy();
     }

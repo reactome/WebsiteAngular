@@ -275,7 +275,7 @@ export class SummaryService {
     if (response.status === 401) {
       const body: unknown = await response.json().catch(() => null);
       const challenge = body as { sitekey?: unknown; verify?: unknown } | null;
-      if (typeof challenge?.sitekey === 'string' && typeof challenge?.verify === 'string') {
+      if (typeof challenge?.sitekey === 'string' && typeof challenge.verify === 'string') {
         this._challenge.set({ sitekey: challenge.sitekey, verify: challenge.verify });
       } else {
         this._state.set('failed');

@@ -1,0 +1,174 @@
+// @vitest-environment node
+//
+// /exporter/voronoi/{species}.{ext}: a species' overview, the Voronoi map the
+// site shows (Reacfoam), the render service's genome-wide view (spec 006
+// T093); the old /exporter/fireworks/ URL redirects to it. A stand-in graph
+// answers the species lookup, and a stand-in render service records what it
+// is asked for. Java's answers measured on production, 19 Oct 2026.
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+
+const SPECIES: Record<string, string> = {
+  9606: '9606',
+  'Homo sapiens': '9606',
+  48887: '9606',
+  'Mus musculus': '10090',
+};
+vi.mock('./graph.ts', () => ({
+  read: async (cypher: string, params?: { value?: string }) => {
+    const taxId = params?.value === undefined ? undefined : SPECIES[params.value];
+    if (cypher.includes('{taxId: $value}'))
+      return taxId && params?.value === taxId ? [{ taxId }] : [];
+    if (cypher.includes('{dbId: toInteger($value)}'))
+      return params?.value === '48887' ? [{ taxId: '9606' }] : [];
+    if (cypher.includes('$value IN s.name')) return taxId ? [{ taxId }] : [];
+    return [];
+  },
+  configured: () => true,
+  close: async () => {},
+  envSetting: () => '',
+}));
+
+/** What the stand-in render service was asked for, by path and query. */
+const asked: (string | undefined)[] = [];
+let renderer: Server;
+let base: string;
+let server: Server;
+beforeAll(async () => {
+  renderer = createServer((request, response) => {
+    asked.push(request.url);
+    response.writeHead(200, { 'Content-Type': 'image/svg+xml' });
+    response.end('<svg/>');
+  });
+  await new Promise<void>((resolve) => renderer.listen(0, '127.0.0.1', resolve));
+  process.env['RENDER_SERVICE_URL'] =
+    `http://127.0.0.1:${(renderer.address() as AddressInfo).port}`;
+  const { app } = await import('./server.ts');
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
+  });
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+afterAll(async () => {
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  await new Promise<void>((resolve) => renderer.close(() => resolve()));
+});
+
+const at = (path: string) => fetch(`${base}/ContentService/exporter/voronoi/${path}`);
+/** Status, reason and messages: Java's error envelope. */
+const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+  const body = (await response.json()) as { reason: string; messages: string[] };
+  return [response.status, body.reason, body.messages];
+};
+
+describe('the species overview, the Voronoi map', () => {
+  it('reads the species as Java does, and asks for that species’ genome-wide view', async () => {
+    asked.length = 0;
+    for (const species of ['Homo_sapiens', 'homo_sapiens', '9606', '48887', 'Homo%20sapiens'])
+      expect([species, (await at(`${species}.svg`)).status]).toEqual([species, 200]);
+    expect(new Set(asked)).toEqual(new Set(['/render/genome-wide.svg?species=9606']));
+    const mouse = await at('Mus_musculus.png');
+    expect([mouse.status, mouse.headers.get('content-type')]).toEqual([
+      200,
+      'image/png;charset=UTF-8',
+    ]);
+    expect(asked.at(-1)).toBe('/render/genome-wide.png?species=10090');
+  });
+
+  it('passes an analysis on, and draws jpg as jpeg', async () => {
+    await (await at('Mus_musculus.jpg?token=MjAyNjEw')).arrayBuffer();
+    expect(asked.at(-1)).toBe('/render/genome-wide.jpeg?species=10090&token=MjAyNjEw');
+  });
+
+  it('is Java’s 400 for a species it does not know', async () => {
+    expect(await envelope(await at('Nosuchspecies.svg'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      ["'Nosuchspecies' is not a species"],
+    ]);
+  });
+
+  it('accepts what the overview does not draw, and draws the overview without it (research D24)', async () => {
+    asked.length = 0;
+    const response = await at(
+      'Homo_sapiens.svg?flg=TP53&coverage=true&sel=R-HSA-1640170&quality=8&title=false&margin=3' +
+        '&diagramProfile=Standard&resource=UNIPROT&expColumn=2&flgInteractors=false'
+    );
+    expect(response.status).toBe(200);
+    expect(asked).toEqual(['/render/genome-wide.svg?species=9606']);
+    // A format it cannot draw is still refused: the genome-wide view has no frames.
+    expect((await envelope(await at('Homo_sapiens.gif')))[2][0]).toContain('gif');
+  });
+
+  it('takes a parameter at its default, which is what every caller gets', async () => {
+    const response = await at('Homo_sapiens.svg?quality=5&title=true&margin=15&coverage=false');
+    expect(response.status).toBe(200);
+  });
+
+  it('names a value Spring cannot read, before anything else', async () => {
+    expect((await envelope(await at('Homo_sapiens.svg?coverage=maybe')))[2][0]).toContain(
+      'Invalid boolean value [maybe]'
+    );
+  });
+
+  it('converts the parameters in Java’s order: expColumn before coverage', async () => {
+    // Measured on production: the Integer's error, not the Boolean's.
+    expect(
+      (await envelope(await at('Nosuchspecies.svg?coverage=maybe&expColumn=x')))[2][0]
+    ).toContain("to required type 'java.lang.Integer'");
+  });
+
+  it('leaves a quality outside 1-10 to Java’s own 500, after the species', async () => {
+    expect(await envelope(await at('Nosuchspecies.svg?quality=11'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      ["'Nosuchspecies' is not a species"],
+    ]);
+    expect(await envelope(await at('Homo_sapiens.svg?quality=11'))).toEqual([
+      500,
+      'INTERNAL_SERVER_ERROR',
+      ['quality must be in the range [1-10]'],
+    ]);
+  });
+
+  it('takes a blank margin, a title, a profile and a selection, empty or not, as Java takes them', async () => {
+    for (const query of ['margin=', 'title=false', 'diagramProfile=Copper', 'sel=,', 'sel=a,,b'])
+      expect([query, (await at(`Homo_sapiens.svg?${query}`)).status]).toEqual([query, 200]);
+  });
+});
+
+describe('the old fireworks URL', () => {
+  it('redirects to the Voronoi overview, keeping the species, the extension and the query', async () => {
+    for (const path of ['9606.svg', 'Homo_sapiens.png?token=ABC&quality=7', 'Nosuchspecies.svg']) {
+      const response = await fetch(`${base}/ContentService/exporter/fireworks/${path}`, {
+        redirect: 'manual',
+      });
+      expect([path, response.status, response.headers.get('location')]).toEqual([
+        path,
+        301,
+        `/ContentService/exporter/voronoi/${path}`,
+      ]);
+    }
+  });
+
+  it('redirects an encoded spelling of the old URL too, rather than to itself', async () => {
+    // Routing decodes letters; the path's own text still has the escape.
+    for (const [path, to] of [
+      ['fire%77orks/9606.svg', '9606.svg'],
+      [
+        'fire%77orks/9606.svg?x=/ContentService/exporter/fireworks/',
+        '9606.svg?x=/ContentService/exporter/fireworks/',
+      ],
+    ] as const) {
+      const response = await fetch(`${base}/ContentService/exporter/${path}`, {
+        redirect: 'manual',
+      });
+      expect([path, response.status, response.headers.get('location')]).toEqual([
+        path,
+        301,
+        `/ContentService/exporter/voronoi/${to}`,
+      ]);
+    }
+  });
+});

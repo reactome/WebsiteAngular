@@ -3,13 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { InteractorService } from '../../../../../../pathway-browser/src/app/interactors/services/interactor.service';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
-import { CustomInteraction } from '../../../../../../pathway-browser/src/app/interactors/model/interactor.model';
+import type {
+  CustomInteraction,
+  ResourceAndType,
+} from '../../../../../../pathway-browser/src/app/interactors/model/interactor.model';
 
 @Injectable()
 export class DetailInteractorService implements Partial<InteractorService> {
   private http = inject(HttpClient);
 
-  readonly currentResource = signal<any>({ type: null, name: null });
+  readonly currentResource = signal<ResourceAndType>({ type: null, name: null });
   identifiers = '';
 
   getCustomInteractorsByAcc(acc: string): Observable<CustomInteraction[]> {

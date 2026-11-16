@@ -329,6 +329,38 @@ main {
   font: var(--mat-sys-body-small);
 }
 
+.column-help {
+  margin: 0 0 12px;
+  color: var(--on-surface-variant);
+  font: var(--mat-sys-body-small);
+
+  summary {
+    cursor: pointer;
+    color: var(--primary);
+    font: var(--mat-sys-label-large);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 12px;
+    margin: 10px 0 6px;
+  }
+
+  dt {
+    color: var(--on-surface);
+    font-weight: 500;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
 .result-table {
   max-height: 360px;
   overflow: auto;
@@ -338,7 +370,7 @@ main {
 
 .result-row {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) 100px 100px 100px;
+  grid-template-columns: minmax(180px, 1fr) 100px 90px 90px 90px;
   gap: 12px;
   align-items: center;
   min-height: 48px;
@@ -434,7 +466,7 @@ main {
 
 @media (max-width: 620px) {
   .result-row {
-    grid-template-columns: minmax(140px, 1fr) 72px 72px;
+    grid-template-columns: minmax(140px, 1fr) 72px 72px 60px;
 
     > :last-child {
       display: none;
@@ -443,5 +475,142 @@ main {
 
   .legend {
     grid-template-columns: 1fr;
+  }
+}
+
+.railed-note {
+  display: block;
+  font-size: 11px;
+  color: #b26a00;
+}
+
+.switch-note {
+  display: block;
+  font-size: 11px;
+  color: #1b7f8c;
+}
+
+.range-note {
+  display: block;
+  font-size: 11px;
+  color: #6b7280;
+}
+
+.method-note.nonconverged {
+  color: #b26a00;
+  font-weight: 500;
+}
+
+.column-help.scope {
+  margin-top: 16px;
+
+  h4 {
+    margin: 12px 0 4px;
+  }
+
+  .provenance {
+    display: block;
+    color: #6b7280;
+    font-size: 11px;
+  }
+}
+
+.untouched-note {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.lead-note {
+  display: block;
+  font-style: normal;
+  color: #1f5e9e;
+  font-size: 11px;
+}
+
+// deltasignal specs/156 (WA specs/028): the measured-level entry and its
+// conditioning summary.
+.measure-control {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed rgba(0, 0, 0, 0.18);
+  border-radius: 8px;
+
+  .measure-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+
+    span {
+      font-size: 12px;
+      color: #6b7280;
+    }
+  }
+
+  .measure-inputs {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+      color: #374151;
+
+      input {
+        width: 90px;
+        padding: 4px 6px;
+      }
+
+      span {
+        font-size: 11px;
+        color: #6b7280;
+      }
+    }
+  }
+}
+
+.perturbation.measurement strong::before {
+  content: '📏 ';
+}
+
+.method-note.soft-note {
+  color: #1b7f8c;
+}
+
+// deltasignal specs/157 (WA specs/029): the structural-fragility note.
+.fragility-note {
+  display: block;
+  color: #b45309;
+}
+
+// deltasignal specs/158 (WA specs/030): the inverse question.
+.inverse-control {
+  margin-top: 12px;
+
+  .inverse-counts {
+    display: block;
+    margin-top: 6px;
+    color: #6b7280;
+  }
+
+  .inverse-rows {
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .inverse-row {
+      display: flex;
+      gap: 8px;
+      font-size: 13px;
+
+      span {
+        color: #374151;
+      }
+    }
   }
 }

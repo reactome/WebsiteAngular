@@ -1,0 +1,1 @@
+An empty folder, mounted as the release's files when RELEASE_FILES_DIR is unset (docker-compose.yml): with no EHLD summary (ehld/svgsummary.txt), the PDF service refuses to start, rather than draw every illustrated pathway as a diagram.

@@ -4,7 +4,7 @@ import { map, Observable, of } from 'rxjs';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 import {
   JSOGDeserializer,
-  JSOGObject,
+  type JsogObject,
 } from '../../../../projects/pathway-browser/src/app/utils/JSOGDeserializer';
 import { DatabaseObject } from '../../../../projects/pathway-browser/src/app/model/graph/database-object.model';
 
@@ -20,7 +20,7 @@ export class DetailDataService {
     if (id === null) return of(undefined);
     const url = `${CONTENT_SERVICE}/data/query/enhanced/v2/${id}`;
     return this.http
-      .get<T>(url, {
+      .get<JsogObject<T>>(url, {
         params: {
           fetchIncomingRelationships: true,
           summariseReferenceEntity: true,
@@ -29,11 +29,6 @@ export class DetailDataService {
           view: 'nested-aggregated',
         },
       })
-      .pipe(
-        map((response) => {
-          const deserializer = new JSOGDeserializer();
-          return deserializer.deserialize<T>(response as JSOGObject);
-        })
-      );
+      .pipe(map((response) => new JSOGDeserializer().deserialize(response)));
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, map, catchError, of } from 'rxjs';
+import { Observable, map, catchError, of, throwError } from 'rxjs';
 import { Article, ArticleIndexItem, FaqIndex } from '../types/article';
 import truncateHtml from '../utils/truncateHtml';
 
@@ -36,12 +36,23 @@ export interface PageContent {
   imageSizes?: Record<string, [number, number]>;
 }
 
-export interface TeamMember {
-  name: string;
-  role: string;
-  institution: string;
-  type: 'principal_investigator' | 'current' | 'alumni';
+/** A staged content file's JSON: an object of its frontmatter fields and body. */
+function isFrontmatter(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+/** Staged image sizes: present when the content had images to measure. */
+function isImageSizes(value: unknown): value is Record<string, [number, number]> {
+  return isFrontmatter(value);
+}
+
+/**
+ * Content files keep their names when they are edited, so the browser is told to
+ * check with the server rather than trust a copy it saved (a 304 when nothing
+ * changed). Without this, a page served as cacheable stayed old in browsers that
+ * had seen it, and a hard reload does not refetch what the page's code asks for.
+ */
+const REVALIDATE = { cache: 'no-cache' } as const;
 
 @Injectable({
   providedIn: 'root',
@@ -63,14 +74,14 @@ export class ContentService {
     // the browser just consumes structured data -- no raw markdown fetch, and
     // nothing for vite to mistake for JSX source.
     return this.http
-      .get<Record<string, unknown>>(`${this.contentBasePath}/${pageType}/${slug}.json`)
+      .get<unknown>(`${this.contentBasePath}/${pageType}/${slug}.json`, REVALIDATE)
       .pipe(
         map((frontmatter) => {
           // Not every 200 carries a content file: the SPA fallback answers an
           // unknown path with index.html, which can reach here as a string
           // rather than as a parse failure. Anything that is not a frontmatter
           // object means there is no such page.
-          if (!frontmatter || typeof frontmatter !== 'object' || Array.isArray(frontmatter)) {
+          if (!isFrontmatter(frontmatter)) {
             return null;
           }
           return {
@@ -84,7 +95,9 @@ export class ContentService {
             // nothing until it is named -- which is how the image sizes came to
             // be measured, shipped, and then silently dropped one layer before
             // the renderer that needed them.
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
+            ...(isImageSizes(frontmatter['imageSizes']) && {
+              imageSizes: frontmatter['imageSizes'],
+            }),
           };
         }),
         catchError((error: unknown) => {
@@ -98,12 +111,14 @@ export class ContentService {
    * Get article index item by slug
    */
   getArticleIndexItem(path: string, slug: string): Observable<ArticleIndexItem | null> {
-    return this.http.get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`).pipe(
-      map((items) => {
-        const item = items.find((i) => i.slug === slug);
-        return item || null;
-      })
-    );
+    return this.http
+      .get<ArticleIndexItem[]>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE)
+      .pipe(
+        map((items) => {
+          const item = items.find((i) => i.slug === slug);
+          return item || null;
+        })
+      );
   }
 
   /**
@@ -111,44 +126,56 @@ export class ContentService {
    */
   getArticle(path: string, slug: string): Observable<Article | null> {
     // See getPage(): content is compiled to JSON at build time.
-    return this.http
-      .get<Record<string, unknown>>(`${this.contentBasePath}/${path}/${slug}.json`)
-      .pipe(
-        map((frontmatter) => {
-          const body = frontmatter['body'] as string;
-          const returnArticle: Article = {
-            title: (frontmatter['title'] as string) || '',
-            date: new Date(frontmatter['date'] as string),
-            author: frontmatter['author'] as string,
-            image: frontmatter['image'] as string,
-            tags:
-              typeof frontmatter['tags'] === 'string'
-                ? frontmatter['tags']
-                    .split(',')
-                    .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
-                : (frontmatter['tags'] as string[] | undefined),
-            body: body || '',
-            excerpt: truncateHtml(body || '', 50),
-            slug: slug,
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
-          };
-          return returnArticle;
-        }),
-        catchError(() => of(null))
-      );
+    return this.http.get<unknown>(`${this.contentBasePath}/${path}/${slug}.json`, REVALIDATE).pipe(
+      map((frontmatter) => {
+        // As in getPage(): anything that is not a frontmatter object means
+        // there is no such article.
+        if (!isFrontmatter(frontmatter)) {
+          return null;
+        }
+        const body = frontmatter['body'] as string;
+        const tags =
+          typeof frontmatter['tags'] === 'string'
+            ? frontmatter['tags']
+                .split(',')
+                .map((t: string) => t.trim().replace(/^["'[]+|["'\]]+$/g, ''))
+            : (frontmatter['tags'] as string[] | undefined);
+        const returnArticle: Article = {
+          title: (frontmatter['title'] as string) || '',
+          date: new Date(frontmatter['date'] as string),
+          author: frontmatter['author'] as string,
+          image: frontmatter['image'] as string,
+          ...(tags && { tags }),
+          body: body || '',
+          excerpt: truncateHtml(body || '', 50),
+          slug: slug,
+          ...(isImageSizes(frontmatter['imageSizes']) && {
+            imageSizes: frontmatter['imageSizes'],
+          }),
+        };
+        return returnArticle;
+      }),
+      // A missing article is null; a failed one reaches the page, which says
+      // so rather than showing an article with nothing in it.
+      catchError((error: unknown) => (isMissingContent(error) ? of(null) : throwError(() => error)))
+    );
   }
 
   /**
    * Get all articles
    */
   getAllArticles(path: string): Observable<ArticleIndexItem[]> {
-    return this.http.get<any>(`${this.contentBasePath}/${path}/index.json`).pipe(
-      map((data) => {
+    // As scripts/generate-index.ts writes it: a folder's articles, or its tree
+    type Index = ArticleIndexItem[] | { articles?: ArticleIndexItem[] } | null;
+    return this.http.get<Index>(`${this.contentBasePath}/${path}/index.json`, REVALIDATE).pipe(
+      map((data): ArticleIndexItem[] => {
         if (Array.isArray(data)) return data;
         if (data?.articles && Array.isArray(data.articles)) return data.articles;
         return [];
       }),
-      catchError(() => of([]))
+      // A missing index is an empty list; a failed one is not, and its readers
+      // say so rather than claiming there is nothing to show.
+      catchError((error: unknown) => (isMissingContent(error) ? of([]) : throwError(() => error)))
     );
   }
 
@@ -164,60 +191,14 @@ export class ContentService {
   }
 
   /**
-   * Get all team members
-   */
-  getTeamMembers(): Observable<TeamMember[]> {
-    return this.http
-      .get<TeamMember[]>(`${this.contentBasePath}/team/index.json`)
-      .pipe(catchError(() => of([])));
-  }
-
-  /**
-   * Get team member by slug
-   */
-  getTeamMember(slug: string): Observable<TeamMember | null> {
-    return this.http
-      .get<TeamMember>(`${this.contentBasePath}/team/${slug}.json`)
-      .pipe(catchError(() => of(null)));
-  }
-
-  /**
    * Get all FAQ categories
    */
   getFaqIndex(): Observable<FaqIndex> {
-    return this.http
-      .get<FaqIndex>(`${this.contentBasePath}/documentation/faq/index.json`)
-      .pipe(catchError(() => of({})));
-  }
-
-  getFaqArticle(category: string, slug: string): Observable<Article | null> {
-    // See getPage(): content is compiled to JSON at build time.
-    return this.http
-      .get<Record<string, unknown>>(
-        `${this.contentBasePath}/documentation/faq/${category}/${slug}.json`
-      )
-      .pipe(
-        map((frontmatter) => {
-          const body = frontmatter['body'] as string;
-          const returnArticle: Article = {
-            title: (frontmatter['title'] as string) || '',
-            date: new Date(frontmatter['date'] as string),
-            author: frontmatter['author'] as string,
-            image: frontmatter['image'] as string,
-            tags:
-              typeof frontmatter['tags'] === 'string'
-                ? frontmatter['tags']
-                    .split(',')
-                    .map((t: string) => t.trim().replace(/^[\[\["']+|[\]'"]+$/g, ''))
-                : (frontmatter['tags'] as string[] | undefined),
-            body: body || '',
-            excerpt: truncateHtml(body || '', 50),
-            slug: slug,
-            imageSizes: frontmatter['imageSizes'] as Record<string, [number, number]> | undefined,
-          };
-          return returnArticle;
-        }),
-        catchError(() => of(null))
-      );
+    // Every failure reaches the page, a missing index included: the index
+    // always ships with the site, so its absence means the content did not.
+    return this.http.get<FaqIndex>(
+      `${this.contentBasePath}/documentation/faq/index.json`,
+      REVALIDATE
+    );
   }
 }

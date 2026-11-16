@@ -15,7 +15,8 @@ export const methodReducer: ActionReducer<MethodState> = createReducer(
       })),
       {
         ...state,
-        commonParameters: methods[0].parameters.filter((param) => param.scope === 'common'), // They are transferred to global status
+        // They are transferred to global status; no methods have none.
+        commonParameters: methods[0]?.parameters.filter((param) => param.scope === 'common') ?? [],
       }
     )
   ),

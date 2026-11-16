@@ -1,5 +1,4 @@
-import { NodeSingular } from 'cytoscape';
-import { Interactor } from '../model/interactor.model';
+import { DrawnInteractor } from '../model/interactor.model';
 
 export interface Position {
   x: number;
@@ -35,7 +34,8 @@ class InteractorsLayout {
 
   constructor() {}
 
-  public static getNumberOfInteractorsToDraw(interactors: Interactor[]) {
+  // Read from a node's untyped data, which an entity without interactors lacks.
+  public static getNumberOfInteractorsToDraw(interactors: DrawnInteractor[] | null | undefined) {
     if (interactors == null) return 0;
     return Math.min(interactors.length, InteractorsLayout.MAX_INTERACTORS);
   }
@@ -68,8 +68,7 @@ class InteractorsLayout {
     };
   }
 
-  public getPosition(targetNode: NodeSingular, interactorIndex: number, numberToDraw: number) {
-    const centerPosition: { x: number; y: number } = targetNode.data('entity').position();
+  public getPosition(centerPosition: Position, interactorIndex: number, numberToDraw: number) {
     const lp = LayoutParameter.calculate(numberToDraw);
 
     let edgeNodes = lp.nodeOnTop;
@@ -79,7 +78,7 @@ class InteractorsLayout {
     const nodePerEdges = [lp.nodeOnTop, lp.nodeOnRight, lp.nodeOnBottom, lp.nodeOnLeft];
 
     for (edgeIndex = 0; edgeIndex < nodePerEdges.length; edgeIndex++) {
-      edgeNodes = nodePerEdges[edgeIndex];
+      edgeNodes = nodePerEdges[edgeIndex] ?? 0;
       prevNodeCount = nodeCount;
       nodeCount += edgeNodes - 1;
       if (interactorIndex < nodeCount) {

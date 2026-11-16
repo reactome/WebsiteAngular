@@ -327,3 +327,28 @@
 .highlight-tag {
   padding: 4px 4px;
 }
+
+// The diagrams that draw a molecule, offered under its row (molecule tab).
+.diagram-choices {
+  margin: 4px 0 8px 40px;
+  padding: 8px 12px;
+  border-left: 3px solid var(--primary);
+  font: var(--mat-sys-body-medium);
+
+  ul {
+    margin: 4px 0;
+    padding-left: 18px;
+  }
+
+  .diagram-choice,
+  .diagram-choices-close {
+    border: none;
+    background: none;
+    padding: 2px 0;
+    color: var(--primary);
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}

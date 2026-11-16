@@ -1,5 +1,5 @@
 import { createActionGroup, emptyProps, props } from '@ngrx/store';
-import { DataSummary, PLoadingStatus } from '../../model/load-dataset.model';
+import { DataSummary, LoadParameter, PLoadingStatus } from '../../model/load-dataset.model';
 import { StatisticalDesign } from '../../model/dataset.model';
 import { UploadData } from '../../model/upload-dataset-model';
 import { Update } from '@ngrx/entity';
@@ -22,19 +22,19 @@ export const datasetActions = createActionGroup({
       typeId: string;
       id: number;
     }>(),
-    'upload error': props<{ error: any; id: number }>(),
+    'upload error': props<{ error: unknown; id: number }>(),
 
-    load: props<{ resourceId: string; parameters: { name: string; value: any }[]; id: number }>(),
+    load: props<{ resourceId: string; parameters: LoadParameter[]; id: number }>(),
     'load submitted': props<{ loadingId: string; id: number }>(),
-    'load submitted error': props<{ error: any; id: number }>(),
+    'load submitted error': props<{ error: unknown; id: number }>(),
 
     'get load status': props<{ loadingId: string; id: number }>(),
     'set load status': props<{ loadingStatus: PLoadingStatus; id: number }>(),
-    'get load status error': props<{ error: any; id: number }>(),
+    'get load status error': props<{ error: unknown; id: number }>(),
 
     'get summary': props<{ datasetId: string; id: number }>(),
     'set summary': props<{ summary: DataSummary; id: number }>(),
-    'get summary error': props<{ error: any; id: number }>(),
+    'get summary error': props<{ error: unknown; id: number }>(),
 
     'update summary': props<{ update: Update<DataSummary> }>(),
     'update annotations': props<{ update: Update<string[][]> }>(),

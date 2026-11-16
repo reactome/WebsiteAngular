@@ -1,12 +1,9 @@
+import { TocPathway, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import {
-  ContentDataService,
-  TocPathway,
-  SimplePerson,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
 type SortKey = 'displayName' | 'releaseDate';
 type SortDir = 'asc' | 'desc';
@@ -39,9 +36,13 @@ export class TocComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      // Not distinctUntilChanged: clearing the box does not pass through here,
+      // so the same term typed again would look like no change and be dropped.
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();
@@ -56,10 +57,11 @@ export class TocComponent implements OnInit, OnDestroy {
    * `stId` -> DOI, for the subpathways whose DOI the table of contents cannot
    * see on its own.
    *
-   * `/data/content/toc` sends three fields for a child -- `stId`, `displayName`,
-   * `speciesName` -- and no `doi`, measured over all 215 children it returns.
-   * The template has always rendered a DOI link for a child behind
-   * `@if (sub.doi)`, so that link could never appear.
+   * Java's `/data/content/toc` sends three fields for a child -- `stId`,
+   * `displayName`, `speciesName` -- and no `doi`, measured over all 215 children
+   * it returns, so a DOI link for a child could never appear from the answer
+   * alone. (The node port sends a child's `doi` when it has one; `loadData`
+   * tells the two apart.)
    *
    * It is not markup for a case that never existed. Production's own
    * `/content/toc` carries **44 DOIs, of which 41 are subpathways** -- so all
@@ -73,7 +75,7 @@ export class TocComponent implements OnInit, OnDestroy {
    */
   private doiByStId = new Map<string, string>();
 
-  doiFor(pathway: { stId: string; doi?: string | null }): string | null {
+  doiFor(pathway: { stId: string; doi?: string }): string | null {
     return pathway.doi ?? this.doiByStId.get(pathway.stId) ?? null;
   }
 
@@ -123,9 +125,7 @@ export class TocComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (rows) => {
-          this.doiByStId = new Map(
-            rows.filter((row) => row.doi).map((row) => [row.stId, row.doi as string])
-          );
+          this.doiByStId = new Map(rows.map((row) => [row.stId, row.doi]));
           this.cdr.markForCheck();
         },
         error: (err) => {
@@ -166,7 +166,7 @@ export class TocComponent implements OnInit, OnDestroy {
       results = results.filter(
         (p) =>
           p.displayName.toLowerCase().includes(q) ||
-          p.species?.toLowerCase().includes(q) ||
+          p.species.toLowerCase().includes(q) ||
           p.doi?.toLowerCase().includes(q) ||
           this.personsMatch(p.authors, q) ||
           this.personsMatch(p.reviewers, q) ||
@@ -202,11 +202,11 @@ export class TocComponent implements OnInit, OnDestroy {
     });
   }
 
-  private personsMatch(persons: SimplePerson[], q: string): boolean {
-    return persons?.some(
+  private personsMatch(persons: SimplePerson[] | undefined, q: string): boolean {
+    return !!persons?.some(
       (p) =>
-        p.displayName?.toLowerCase().includes(q) ||
-        p.surname?.toLowerCase().includes(q) ||
+        p.displayName.toLowerCase().includes(q) ||
+        p.surname.toLowerCase().includes(q) ||
         p.firstname?.toLowerCase().includes(q)
     );
   }
@@ -223,7 +223,7 @@ export class TocComponent implements OnInit, OnDestroy {
     return this.expandedStIds.has(stId);
   }
 
-  personNames(persons: SimplePerson[]): string {
+  personNames(persons: SimplePerson[] | undefined): string {
     if (!persons?.length) return '';
     return persons.map((p) => p.displayName).join(', ');
   }

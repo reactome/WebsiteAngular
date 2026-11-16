@@ -12,9 +12,9 @@ export class ExtractCompartmentPipe implements PipeTransform {
   transform(value: string, remove = false): string | null {
     if (!value) return null;
 
-    if (remove) return value.split('[')[0];
+    if (remove) return value.split('[')[0] ?? value;
 
     const match = value.match(/\[(.*?)\]/);
-    return match ? match[1] : null;
+    return match?.[1] ?? null;
   }
 }

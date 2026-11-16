@@ -10,7 +10,7 @@ import { LiteratureReference } from '../model/graph/publication/literature-refer
 import { SchemaClasses } from '../constants/constants';
 import { CatalystActivity } from '../model/graph/catalyst-activity.model';
 import { Regulation } from '../model/graph/Regulation/regulation.model';
-import type { Relationship } from '../model/graph/relationship.model';
+import type * as Relationship from '../model/graph/relationship.model';
 import { ReferenceGroup } from '../model/graph/reference-entity/reference-group.model';
 import { ReplacedResidue } from '../model/graph/abstract-modified-residue/replaced-residue.model';
 import { FragmentModification } from '../model/graph/abstract-modified-residue/fragment-modification.model';
@@ -18,7 +18,7 @@ import { ReferenceMolecule } from '../model/graph/reference-entity/reference-mol
 import { Publication } from '../model/graph/publication/publication.model';
 import { Book } from '../model/graph/publication/book.model';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { Molecule } from './participant.service';
+import type { Molecule } from '../model/participant.model';
 import { SimpleEntity } from '../model/graph/physical-entity/simple-entity.model';
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 import { ReferenceSequence } from '../model/graph/reference-entity/reference-sequence.model';
@@ -43,10 +43,18 @@ export function groupAndSortBy<E, K>(
   elements: E[];
 }[] {
   const grouped = new Map<K, E[]>();
-  elements.forEach((element) =>
-    grouped.set(getKey(element), [...(grouped.get(getKey(element)) || []), element])
-  );
-  return [...grouped.keys()].sort(orderBy).map((key) => ({ key, elements: grouped.get(key)! }));
+  for (const element of elements) {
+    const key = getKey(element);
+    let group = grouped.get(key);
+    if (!group) {
+      group = [];
+      grouped.set(key, group);
+    }
+    group.push(element);
+  }
+  return [...grouped]
+    .sort(([key1], [key2]) => orderBy(key1, key2))
+    .map(([key, elements]) => ({ key, elements }));
 }
 
 export function sortByYearDescending(refs: Publication[]) {
@@ -66,23 +74,30 @@ export function sortByYearDescending(refs: Publication[]) {
 }
 
 // Type guards to narrow the type
-export function isEvent(obj: DatabaseObject): obj is Event {
+/**
+ * Anything told apart by its class: a graph object, or a view the pathway
+ * browser builds of one (a molecule, a molecular process). The guards below
+ * read nothing else.
+ */
+export type Classed = { schemaClass: string };
+
+export function isEvent(obj: Classed): obj is Event {
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj) || isRLE(obj);
 }
 
-export function isExactlyPathway(obj: DatabaseObject): obj is Pathway {
+export function isExactlyPathway(obj: Classed): obj is Pathway {
   return obj.schemaClass === SchemaClasses.PATHWAY;
 }
 
-export function isExactlyTLP(obj: DatabaseObject): obj is TopLevelPathway {
+export function isExactlyTLP(obj: Classed): obj is TopLevelPathway {
   return obj.schemaClass === SchemaClasses.TLP;
 }
 
-export function isExactlyCellLineagePath(obj: DatabaseObject): obj is CellLineagePath {
+export function isExactlyCellLineagePath(obj: Classed): obj is CellLineagePath {
   return obj.schemaClass === SchemaClasses.CELL_LINEAGE_PATH;
 }
 
-export function isPathway(obj: DatabaseObject): obj is Pathway | TopLevelPathway | CellLineagePath {
+export function isPathway(obj: Classed): obj is Pathway | TopLevelPathway | CellLineagePath {
   return isExactlyPathway(obj) || isExactlyTLP(obj) || isExactlyCellLineagePath(obj);
 }
 
@@ -105,12 +120,12 @@ const physicalEntityClasses: Set<string> = new Set([
   SchemaClasses.SUMMARY_ENTITY,
 ]);
 
-export function isPhysicalEntity(obj: DatabaseObject): obj is PhysicalEntity {
+export function isPhysicalEntity(obj: Classed): obj is PhysicalEntity {
   return physicalEntityClasses.has(obj.schemaClass);
 }
 
-export function isReferenceSummary(obj: DatabaseObject): obj is SummaryEntity {
-  return (obj as SummaryEntity).summarisedEntities !== undefined;
+export function isReferenceSummary(obj: object): obj is SummaryEntity {
+  return 'summarisedEntities' in obj && obj.summarisedEntities !== undefined;
 }
 
 const ReferenceEntityClasses: Set<string> = new Set([
@@ -126,18 +141,18 @@ const ReferenceEntityClasses: Set<string> = new Set([
   SchemaClasses.SUMMARY_ENTITY,
 ]);
 
-export function isRefEntity(obj: DatabaseObject): obj is ReferenceEntity {
+export function isRefEntity(obj: Classed): obj is ReferenceEntity {
   return ReferenceEntityClasses.has(obj.schemaClass);
 }
 
 export function isReferenceEntityStId(id: string | undefined | null): boolean {
   return id?.includes(':') || false;
 }
-export function isEWAS(obj: DatabaseObject): obj is EntityWithAccessionedSequence {
+export function isEWAS(obj: Classed): obj is EntityWithAccessionedSequence {
   return obj.schemaClass === SchemaClasses.EWAS;
 }
 
-export function isChemical(obj: DatabaseObject): obj is SimpleEntity {
+export function isChemical(obj: Classed): obj is SimpleEntity {
   return obj.schemaClass === SchemaClasses.SIMPLE_ENTITY;
 }
 
@@ -150,7 +165,7 @@ const reactionLikeEventClasses: Set<string> = new Set([
   SchemaClasses.CELL_DEVELOPMENT_STEP,
 ]);
 
-export function isRLE(obj: DatabaseObject): obj is ReactionLikeEvent {
+export function isRLE(obj: Classed): obj is ReactionLikeEvent {
   return reactionLikeEventClasses.has(obj.schemaClass);
 }
 
@@ -167,12 +182,17 @@ const moleculeClasses: Set<string> = new Set([
   SchemaClasses.REFERENCE_THERAPEUTIC,
 ]);
 
-export function isMolecule(obj: DatabaseObject): obj is Molecule {
+/**
+ * A molecule, as the molecules view holds one: in that view the object tree's
+ * nodes are the participant service's molecules (with their url, identifier
+ * and formatted name), told apart by class like the graph objects they stand for.
+ */
+export function isMolecule<T extends { schemaClass: string }>(obj: T): obj is T & Molecule {
   return moleculeClasses.has(obj.schemaClass);
 }
 
 export function isPathwayWithDiagram(obj: DatabaseObject): obj is Pathway {
-  return isPathway(obj) && obj.hasDiagram;
+  return isPathway(obj) && obj.hasDiagram === true;
 }
 
 const regulationClasses: Set<string> = new Set([
@@ -199,15 +219,8 @@ export function isCatalystActivity(
 export function isHasModifiedResidue(
   obj: Regulation | CatalystActivity | HasModifiedResidue
 ): obj is HasModifiedResidue {
-  return 'type' in obj && obj.type === 'modifiedResidue';
-}
-
-// Checks whether a given property exists in an object
-export function hasProperty<K extends keyof DatabaseObject>(
-  obj: DatabaseObject,
-  property: K
-): obj is DatabaseObject & Record<K, unknown> {
-  return property in obj;
+  // Of the three, only the modified-residue entry has a type.
+  return 'type' in obj;
 }
 
 const fragmentModificationClasses: Set<string> = new Set([
@@ -217,22 +230,22 @@ const fragmentModificationClasses: Set<string> = new Set([
   SchemaClasses.FRAGMENT_REPLACED_MODIFICATION,
 ]);
 
-export function isFragmentModification(obj: DatabaseObject): obj is FragmentModification {
+export function isFragmentModification(obj: Classed): obj is FragmentModification {
   return fragmentModificationClasses.has(obj.schemaClass);
 }
 
-export function isReplacedResidue(obj: DatabaseObject): obj is ReplacedResidue {
+export function isReplacedResidue(obj: Classed): obj is ReplacedResidue {
   return (
     obj.schemaClass === SchemaClasses.REPLACED_RESIDUE ||
     obj.schemaClass === SchemaClasses.NONSENSE_MUTATION
   );
 }
 
-export function isReferenceGroup(obj: DatabaseObject): obj is ReferenceGroup {
+export function isReferenceGroup(obj: Classed): obj is ReferenceGroup {
   return obj.schemaClass === SchemaClasses.REFERENCE_GROUP;
 }
 
-export function isReferenceMolecule(obj: DatabaseObject): obj is ReferenceMolecule {
+export function isReferenceMolecule(obj: Classed): obj is ReferenceMolecule {
   return obj.schemaClass === SchemaClasses.REFERENCE_MOLECULE;
 }
 
@@ -255,7 +268,7 @@ const referenceGeneProductClasses: Set<string> = new Set([
   SchemaClasses.REFERENCE_ISOFORM,
 ]);
 
-export function isReferenceGeneProduct(obj: DatabaseObject): obj is ReferenceGeneProduct {
+export function isReferenceGeneProduct(obj: Classed): obj is ReferenceGeneProduct {
   return referenceGeneProductClasses.has(obj.schemaClass);
 }
 
@@ -266,7 +279,7 @@ export function isRefOrBook(publication: Publication): publication is Literature
   );
 }
 
-export function isSelectableObject(obj: DatabaseObject): obj is Event | PhysicalEntity {
+export function isSelectableObject(obj: Classed): obj is Event | PhysicalEntity {
   return isEvent(obj) || isPhysicalEntity(obj);
 }
 
@@ -277,11 +290,47 @@ export function isSelectableObject(obj: DatabaseObject): obj is Event | Physical
  *  If it does, it returns the value of the property. Otherwise, it returns undefined.
  */
 
-export function getProperty<T extends DatabaseObject, K extends keyof T>(
+/**
+ * A field read by a name known only at run time (a tab's configured key):
+ * whatever the object holds there, unknown until the reader checks it.
+ */
+export function fieldByName(obj: object, key: string): unknown {
+  return key in obj ? Reflect.get(obj, key) : undefined;
+}
+
+/**
+ * A relationship entry (it has an element), as against a graph object, which
+ * never has one: how the trees tell the two apart in what they are given.
+ */
+export const isEntry = <E extends object, R extends object>(value: E | R): value is R =>
+  'element' in value;
+
+/** A field of an object, if it is one, read as text; undefined for anything else. */
+export function textField(from: unknown, key: string): string | undefined {
+  const value = typeof from === 'object' && from !== null ? fieldByName(from, key) : undefined;
+  return typeof value === 'string' ? value : undefined;
+}
+
+/** A key any member of a union has: `inferredTo` on an event, which an entity also has. */
+type KeyOfAny<T> = T extends unknown ? keyof T : never;
+
+/** What the members of a union that have a key hold there; none, for the others. */
+type ValueOfAny<T, K extends PropertyKey> = T extends unknown
+  ? K extends keyof T
+    ? T[K]
+    : undefined
+  : never;
+
+/**
+ * A field of whichever member of a union `obj` is, or undefined when it has
+ * none (a selected object may be an event or an entity). The `in` check is
+ * the boundary: the member that has the key holds that member's value there.
+ */
+export function getProperty<T extends object, K extends KeyOfAny<T>>(
   obj: T,
   key: K
-): T[K] | undefined {
-  return key in obj ? obj[key] : undefined;
+): ValueOfAny<T, K> | undefined {
+  return key in obj ? (obj as Record<K, ValueOfAny<T, K>>)[key] : undefined;
 }
 
 /**
@@ -297,7 +346,7 @@ export const shouldBeScientificFormat = (representativeSample: number[]) =>
  * @param value a number
  */
 const shouldBeScientificFormatValue = (value: number) =>
-  parseInt(value.toExponential(0).split(/e[+-]/)[1]) > 3;
+  parseInt(value.toExponential(0).split(/e[+-]/)[1] ?? '0') > 3;
 
 export type ArrayStats = {
   min: number;
@@ -308,8 +357,7 @@ export type ArrayStats = {
 };
 
 export function getArrayStats(values: number[]): ArrayStats {
-  if (values === undefined || values.length === 0)
-    return { min: 0, max: 0, average: 0, sum: 0, multiValued: false };
+  if (values.length === 0) return { min: 0, max: 0, average: 0, sum: 0, multiValued: false };
   const summary: ArrayStats = values.reduce(
     (acc: ArrayStats, value) => {
       if (value < acc.min) acc.min = value;
@@ -349,27 +397,35 @@ export function extractIdAfterColon(value: string): string {
  */
 export function extractIdInBrackets(value: string): string {
   const match = value.match(/\[.*?:([^\]\s]+)\]/);
-  return match ? match[1] : '';
+  return match?.[1] ?? '';
 }
 
 /**
- * UniProt:P11142 HSPA8 ➡️ (default behavior) HSPA8
- * UniProt:P11142 HSPA8 ➡️ True UniProt:P11142
- * @param input
- * @param getBeforeSpace
+ * A molecule's name from its display name, which carries its database and
+ * identifier as well: in front for proteins, DNA and RNA
+ * ("UniProt:P78396 CCNA1", "EMBL:X59360 U2 snRNA"), behind for chemicals and
+ * drugs ("carbon dioxide [ChEBI:16526]", "panobinostat [Guide to Pharmacology -
+ * Ligands:7489]").
+ *
+ * The name itself may hold spaces. Cutting at a space, as the molecule tab did,
+ * showed "carbon" for carbon dioxide, "snRNA" for U2 snRNA and
+ * "1D-myo-inositol" for 1D-myo-inositol 1,4,5,6-tetrakisphosphate(8-).
  */
-export function extractFromSpace(input: string, getBeforeSpace: boolean = false): string {
-  if (!input) return '';
+export function nameAfterIdentifier(displayName: string): string {
+  if (!displayName) return '';
+  const trimmed = displayName.trim();
+  // The database's name may hold spaces ("NCBI Nucleotide:MN908947.3 ..."),
+  // the identifier does not.
+  const match = /^[^:]+:\S+\s+(.+)$/.exec(trimmed);
+  return match?.[1] ?? trimmed;
+}
 
-  const trimmed = input.trim();
-
-  if (getBeforeSpace) {
-    const index = trimmed.indexOf(' ');
-    return index !== -1 ? trimmed.substring(0, index) : trimmed;
-  } else {
-    const index = trimmed.lastIndexOf(' ');
-    return index !== -1 ? trimmed.substring(index + 1) : trimmed;
-  }
+/** See {@link nameAfterIdentifier}: the name before a trailing "[database:identifier]". */
+export function nameBeforeIdentifier(displayName: string): string {
+  if (!displayName) return '';
+  const trimmed = displayName.trim();
+  const name = trimmed.replace(/\s*\[[^[\]]*:[^[\]]*\]$/, '');
+  return name || trimmed;
 }
 
 export function average(numbers: number[]): number {
@@ -390,8 +446,9 @@ export function observeSections(
       .filter((e) => e.isIntersecting)
       .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
 
-    if (visibles.length > 0) {
-      const id = visibles[0].target.id;
+    const [topmost] = visibles;
+    if (topmost) {
+      const id = topmost.target.id;
       if (id && id !== selectedKey()) {
         selectedKey.set(id);
       }
@@ -413,4 +470,13 @@ export function observeSections(
   });
   // return cleanup function
   return () => observer.disconnect();
+}
+
+/**
+ * The first of an object's names. A reference summary often has none (13 of 15
+ * sampled), though its type inherits a required list from PhysicalEntity.
+ */
+export function firstName(obj: { name?: unknown }): string | undefined {
+  const names = obj.name as string[] | string | undefined;
+  return Array.isArray(names) ? names[0] : names;
 }

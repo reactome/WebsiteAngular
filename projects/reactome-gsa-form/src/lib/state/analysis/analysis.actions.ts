@@ -15,7 +15,7 @@ export const analysisActions = createActionGroup({
       reportsRequired: boolean;
     }>(),
     'load success': props<{ analysisId: string }>(),
-    'load failure': props<{ error: any }>(),
+    'load failure': props<{ error: unknown }>(),
     'load overloaded': props<{
       method: Method;
       datasets: Dataset[];
@@ -25,15 +25,15 @@ export const analysisActions = createActionGroup({
 
     'get loading status': props<{ analysisId: string }>(),
     'set loading status': props<{ status: PLoadingStatus }>(),
-    'get loading status error': props<{ error: any }>(),
+    'get loading status error': props<{ error: unknown }>(),
 
     'get analysis results': props<{ analysisId: string }>(),
     'set analysis results': props<{ result: AnalysisResult }>(),
-    'get analysis results error': props<{ error: any }>(),
+    'get analysis results error': props<{ error: unknown }>(),
 
     'get report loading status': props<{ analysisId: string }>(),
     'set report loading status': props<{ status: LoadingStatus }>(),
-    'get report loading status error': props<{ error: any }>(),
+    'get report loading status error': props<{ error: unknown }>(),
 
     cancel: props<{ analysisId: string }>(),
   },

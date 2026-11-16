@@ -1,0 +1,1 @@
+Fabregat A, Sidiropoulos K, Viteri G, Marin-Garcia P, Ping P, Stein L, D'Eustachio P, Hermjakob H. Reactome diagram viewer: data structures and strategies to boost performance. Bioinformatics (Oxford, England). 2018 Apr;34(7) 1208-1214. doi: 10.1093/bioinformatics/btx752. PubMed PMID: 29186351. PubMed Central PMCID: PMC6030826. 

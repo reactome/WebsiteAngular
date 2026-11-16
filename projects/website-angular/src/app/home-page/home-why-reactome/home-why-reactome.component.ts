@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, OnInit } from '@angular/core';
 import { ExternalLink } from '../../../types/link';
@@ -6,7 +7,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 @Component({
   selector: 'app-home-why-reactome',
   standalone: true,
-  imports: [],
+  imports: [NgOptimizedImage],
   templateUrl: './home-why-reactome.component.html',
   styleUrl: './home-why-reactome.component.scss',
 })

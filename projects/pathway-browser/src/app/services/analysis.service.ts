@@ -9,18 +9,29 @@ import {
   untracked,
   WritableSignal,
 } from '@angular/core';
-import { catchError, Observable, of, switchMap, tap } from 'rxjs';
+import {
+  catchError,
+  finalize,
+  MonoTypeOperatorFunction,
+  Observable,
+  of,
+  retry,
+  switchMap,
+  tap,
+  throwError,
+  timer,
+} from 'rxjs';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../environments/environment';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { UrlStateService } from './url-state.service';
 import chroma, { Color, Scale } from 'chroma-js';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { DarkService } from './dark.service';
-import { Params } from '@angular/router';
-import { cleanObject } from '../reacfoam/reacfoam.service';
-import { isDefined, shouldBeScientificFormat } from './utils';
+import type { Params } from '@angular/router';
+import { httpParams } from '../utils/http-params';
+import { fieldByName, isDefined, shouldBeScientificFormat } from './utils';
 import { Report } from 'reactome-gsa-form';
 import { Species } from '../model/graph/species.model';
 import { SpeciesService } from './species.service';
@@ -42,12 +53,12 @@ export type PaletteGroup = 'sequential' | 'diverging' | 'continuous';
 /**
  * The palette an analysis type gets when the user has not chosen one.
  *
- * Every type in Analysis.TYPES needs an entry. GSA_STATISTICS had none, and
+ * Every type in ANALYSIS_TYPES needs an entry. GSA_STATISTICS had none, and
  * because both lookups in `palette` below carried a `!`, the miss produced an
  * undefined palette instead of an error. Every consumer calls .scale() on it,
  * so one missing entry blanked the diagram, the event hierarchy, the Voronoi
  * view and the results table together -- which is what a PADOG run did.
- * analysis-palette.spec.ts walks Analysis.TYPES so the next added type fails a
+ * analysis-palette.spec.ts walks ANALYSIS_TYPES so the next added type fails a
  * test rather than a render.
  */
 export const TYPE_DEFAULT_PALETTE = new Map<Analysis.Type, PaletteName>([
@@ -85,18 +96,23 @@ export function defaultResource(
   const specific = summary
     .map((entry) => entry.resource)
     .filter((resource) => resource !== 'TOTAL');
-  return specific.length === 1 ? specific[0] : null;
+  return specific.length === 1 ? (specific[0] ?? null) : null;
 }
 
 /**
- * What to tell the reader when an analysis result cannot be loaded.
- *
- * The Analysis Service answers 410 for a result it no longer holds -- results
- * are removed at a release -- and for one it never held, which is the case for
- * a result another Reactome server produced. 404 means the same to a reader.
+ * The Analysis Service's "not here": 404 for a pathway the analysis did not
+ * hit, and 404 or 410 for a result it does not hold. It answers 410 for a
+ * result it no longer holds -- results are removed at a release -- and for one
+ * it never held, which is the case for a result another Reactome server
+ * produced. 404 means the same to a reader.
  */
+export function isNotFound(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410);
+}
+
+/** What to tell the reader when an analysis result cannot be loaded. */
 export function describeLoadFailure(error: unknown): string {
-  if (error instanceof HttpErrorResponse && (error.status === 404 || error.status === 410)) {
+  if (isNotFound(error)) {
     return (
       'This analysis result is not available on this server. Results are removed when ' +
       'Reactome releases new data, and a result produced elsewhere cannot be opened here. ' +
@@ -104,6 +120,15 @@ export function describeLoadFailure(error: unknown): string {
     );
   }
   return 'The analysis result could not be loaded. Try again in a moment.';
+}
+
+/** A scale's colour for no value, which chroma-js has and @types/chroma-js leaves out. */
+interface NoDataScale {
+  nodata(color: string | Color): unknown;
+}
+
+function hasNoData(scale: Scale): scale is Scale & NoDataScale {
+  return typeof fieldByName(scale, 'nodata') === 'function';
 }
 
 export class PaletteSummary {
@@ -134,8 +159,7 @@ export class PaletteSummary {
   }
 
   noData(color: string | chroma.Color) {
-    // @ts-expect-error
-    this.scale.nodata(color);
+    if (hasNoData(this.scale)) this.scale.nodata(color);
     return this;
   }
 
@@ -253,6 +277,12 @@ export class AnalysisService {
   private speciesService: SpeciesService = inject(SpeciesService);
   style: Style = new Style(inject(STYLE_ROOT));
 
+  /** The palette drawn when no other can be: 'primary' in paletteOptions. */
+  private readonly primaryPalette = new PaletteSummary([
+    extract(this.style.properties.global.primaryContainer),
+    extract(this.style.properties.global.primary),
+  ]);
+
   paletteOptions: Map<PaletteName, PaletteSummary> = new Map(
     (
       [
@@ -269,13 +299,7 @@ export class AnalysisService {
           'ancient',
           new PaletteSummary(['#1532b3', extract(this.style.properties.global.surface), '#e5e61d']),
         ],
-        [
-          'primary',
-          new PaletteSummary([
-            extract(this.style.properties.global.primaryContainer),
-            extract(this.style.properties.global.primary),
-          ]),
-        ],
+        ['primary', this.primaryPalette],
       ] as [PaletteName, PaletteSummary][]
     ).map(([key, palette]) => [
       key,
@@ -303,12 +327,9 @@ export class AnalysisService {
       // the whole render with it. A type the backend adds before we know about
       // it should draw in the default colours instead.
       const chosen = palette ?? TYPE_DEFAULT_PALETTE.get(type ?? 'OVERREPRESENTATION');
-      // 'primary' is built unconditionally in paletteOptions above, so this last
-      // lookup is the one that genuinely cannot miss.
-      return (
-        this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ??
-        this.paletteOptions.get(FALLBACK_PALETTE)!
-      );
+      // 'primary' is built unconditionally in paletteOptions above: this last
+      // one is what its entry holds (`noData` answers the palette it is given).
+      return this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ?? this.primaryPalette;
     },
   });
 
@@ -354,6 +375,9 @@ export class AnalysisService {
   private readonly _loadFailure = signal<string | null>(null);
   /** Why the last result the reader asked for could not be shown, if it could not. */
   readonly loadFailure = this._loadFailure.asReadonly();
+  private readonly _loadFailureGone = signal(false);
+  /** Whether that failure was a result not on this server (see `isNotFound`). */
+  readonly loadFailureGone = this._loadFailureGone.asReadonly();
 
   dismissLoadFailure(): void {
     this._loadFailure.set(null);
@@ -390,24 +414,43 @@ export class AnalysisService {
     },
   });
 
+  // The service sends the token URL-encoded ("...%3D") and an address opened
+  // from a link holds it decoded ("...="): compared as sent, they never matched
+  // and the Analyze button spun for as long as the page was open.
   readonly isLoading = linkedSignal(
-    () => (this.result()?.summary?.token || null) !== this.state.analysis()
+    () => decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis())
   );
 
+  /**
+   * Whether the result on show is the one the address will settle on: no
+   * token, or the token's result loaded for the resource it will stay on.
+   *
+   * Loaded is not enough. A result holding one resource besides TOTAL is shown
+   * for that resource, which the effect below sets only once the first result
+   * has said what it holds, so a second load follows the first -- and `result`
+   * keeps the first while it runs. A figure captured in between is coloured for
+   * TOTAL, not for what the browser shows (the render page waits on this).
+   */
+  readonly settled = computed(() => {
+    if (!this.state.analysis()) return true;
+    if (this.resultResource.isLoading() || this.isLoading() || !this.result()) return false;
+    return this.state.resourceFilter() !== null || defaultResource(this.resourceOptions()) === null;
+  });
+
   readonly pathwayStIdToData = computed(
-    () => new Map<string, Analysis.Pathway>(this.result()?.pathways?.map((p) => [p.stId, p]))
+    () => new Map<string, Analysis.Pathway>(this.result()?.pathways.map((p) => [p.stId, p]))
   );
 
   result$ = toObservable(this.result);
 
   readonly summary = computed(() => this.result()?.summary);
   readonly hasInteractors = computed(() => this.summary()?.interactors === true);
-  readonly hasPValues = computed(() => this.result()?.summary?.type !== 'GSVA');
+  readonly hasPValues = computed(() => this.result()?.summary.type !== 'GSVA');
   readonly type = computed(() => this.summary()?.type as Analysis.Type | undefined);
   readonly species = computed(() =>
     this.speciesService
       .allShortenSpecies()
-      ?.find((species) => species.dbId === this.result()?.summary?.species)
+      ?.find((species) => species.dbId === this.result()?.summary.species)
   );
   readonly isGSARegulation = computed(() => this.type() === 'GSA_REGULATION');
   readonly isGSA = computed(() => this.type() === 'GSA_REGULATION' || this.type() === 'GSVA');
@@ -435,10 +478,12 @@ export class AnalysisService {
 
   readonly expressionByIdentifier = computed<Map<string, number[]>>(() => {
     const map = new Map<string, number[]>();
-    for (const entity of this.foundForExpression.value()?.entities ?? []) {
-      const exp = (entity.exp ?? []).map(Number).filter((value) => Number.isFinite(value));
+    // value() throws while the request is in error.
+    const found = this.foundForExpression.hasValue() ? this.foundForExpression.value() : undefined;
+    for (const entity of found?.entities ?? []) {
+      const exp = entity.exp.map(Number).filter((value) => Number.isFinite(value));
       if (!exp.length) continue;
-      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      const mapped = entity.mapsTo.flatMap((m) => m.ids);
       for (const id of [entity.id, ...mapped]) {
         if (id) map.set(String(id).toUpperCase(), exp);
       }
@@ -464,7 +509,7 @@ export class AnalysisService {
     computation: ({ result, sample }) =>
       Math.max(
         // Avoid -1 value from indexOf
-        (result && sample && result?.expression.columnNames?.indexOf(sample)) || 0,
+        (result && sample && result.expression.columnNames.indexOf(sample)) || 0,
         0
       ),
   });
@@ -477,8 +522,8 @@ export class AnalysisService {
       [
         expressions.min,
         expressions.max,
-        result!.pathways.at(0)?.entities.exp.at(0),
-        result!.pathways.at(-1)?.entities.exp.at(-1),
+        result.pathways.at(0)?.entities.exp.at(0),
+        result.pathways.at(-1)?.entities.exp.at(-1),
       ].filter(isDefined)
     );
   });
@@ -502,6 +547,7 @@ export class AnalysisService {
       if (!error) return;
       console.warn('Analysis result could not be loaded', error);
       this._loadFailure.set(describeLoadFailure(error));
+      this._loadFailureGone.set(isNotFound(error));
       this.state.analysis.set(null);
     });
     // Any new result supersedes the message about the last one.
@@ -511,8 +557,15 @@ export class AnalysisService {
     // resource, and the guard makes this run once: on the second pass the
     // filter is no longer null. A resource the user picks by hand is never
     // overridden.
+    //
+    // From the token's own result only. `result` keeps the previous token's
+    // while the next one loads, and a default read from that was the previous
+    // result's: a result holding UNIPROT, then one holding only TOTAL, coloured
+    // the second for UNIPROT (spec 018, research R2 audit 6).
     effect(() => {
       if (this.state.resourceFilter() !== null) return;
+      if (decodedToken(this.result()?.summary.token) !== decodedToken(this.state.analysis()))
+        return;
       const resource = defaultResource(this.resourceOptions());
       if (resource) this.state.resourceFilter.set(resource);
     });
@@ -542,11 +595,10 @@ export class AnalysisService {
 
       this.state.significance.set(result.summary.type !== 'GSVA' ? 0.05 : 1);
 
-      if (this.state.palette()) {
+      const palette = this.state.palette();
+      if (palette) {
         const isValidPalette = [...validGroups.values()].some((validGroup) =>
-          this.paletteGroups
-            .find((group) => group.name === validGroup)
-            ?.palettes.includes(this.state.palette()!)
+          this.paletteGroups.find((group) => group.name === validGroup)?.palettes.includes(palette)
         );
         if (!isValidPalette) this.state.palette.set(null);
       }
@@ -562,7 +614,7 @@ export class AnalysisService {
       // Default to the first sample, but never over one the URL already names:
       // a link to a particular sample should open on that sample. Read
       // untracked so this effect does not depend on what it writes.
-      const columns = result?.expression.columnNames ?? [];
+      const columns = result.expression.columnNames;
       const requested = untracked(this.state.sample);
       if (!requested || !columns.includes(requested)) {
         this.state.sample.set(columns[0] || null);
@@ -596,9 +648,15 @@ export class AnalysisService {
     this.clearFilters();
   }
 
+  /**
+   * Seconds until a busy analysis service is asked again, while waiting to;
+   * undefined otherwise. Set by retryWhenBusy, for the form to say so.
+   */
+  readonly busyRetry = signal<number | undefined>(undefined);
+
   analyse(
     data: string,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
@@ -606,9 +664,10 @@ export class AnalysisService {
       .post<Analysis.Result>(
         `${environment.host}/AnalysisService/identifiers/${params?.projectToHuman ? 'projection' : ''}`,
         data,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -618,16 +677,17 @@ export class AnalysisService {
 
   analyseSpecies(
     species: Species,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
     return this.http
       .get<Analysis.Result>(
         `${environment.host}/AnalysisService/species/homoSapiens/${species.dbId}`,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -637,7 +697,7 @@ export class AnalysisService {
 
   analyseFromUrl(
     url: string,
-    params?: Partial<Analysis.Parameters>,
+    params?: Analysis.RequestParameters,
     clearFilters = true
   ): Observable<Analysis.Result> {
     this.isLoading.set(true);
@@ -645,9 +705,10 @@ export class AnalysisService {
       .post<Analysis.Result>(
         `${environment.host}/AnalysisService/identifiers/url${params?.projectToHuman ? '/projection' : ''}`,
         url,
-        { params }
+        { params: httpParams(params) }
       )
       .pipe(
+        retryWhenBusy((seconds) => this.busyRetry.set(seconds)),
         tap((result) => this.result.set(result)),
         tap((result) => this.resultResource.set(result)),
         tap((_result) => clearFilters && this.clearFilters()),
@@ -655,11 +716,10 @@ export class AnalysisService {
       );
   }
 
-  loadAnalysis(token?: string, params?: Partial<Analysis.Parameters>): Observable<Analysis.Result> {
-    cleanObject(params || {});
+  loadAnalysis(token?: string, params?: Analysis.RequestParameters): Observable<Analysis.Result> {
     return this.http.get<Analysis.Result>(
       `${environment.host}/AnalysisService/token/${token || this.state.analysis()}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 
@@ -679,16 +739,20 @@ export class AnalysisService {
         }
       )
       .pipe(
-        catchError(() =>
-          of({
-            pathway,
-            foundEntities: 0,
-            foundInteractors: 0,
-            expNames: [],
-            entities: [],
-            interactors: [],
-            resources: [resource],
-          })
+        // Anything but "not here" is a failure, which an empty answer would
+        // draw as an analysis that hit nothing in this pathway.
+        catchError((error: unknown) =>
+          isNotFound(error)
+            ? of({
+                pathway,
+                foundEntities: 0,
+                foundInteractors: 0,
+                expNames: [],
+                entities: [],
+                interactors: [],
+                resources: [resource],
+              })
+            : throwError(() => error)
         )
       );
   }
@@ -710,14 +774,14 @@ export class AnalysisService {
           params: { resource },
         }
       )
-      .pipe(catchError(() => of([])));
+      .pipe(catchError((error: unknown) => (isNotFound(error) ? of([]) : throwError(() => error))));
   }
 
-  getHitReactions(pathwayId: string, token: string, params?: Partial<Analysis.Parameters>) {
+  getHitReactions(pathwayId: string, token: string, params?: Analysis.RequestParameters) {
     if (!pathwayId || !token) return of([]);
     return this.http.get<number[]>(
       `${environment.host}/AnalysisService/token/${token}/reactions/${pathwayId}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 
@@ -739,4 +803,50 @@ export class AnalysisService {
       }
     );
   }
+}
+
+/**
+ * A token in one form whichever way it arrived; null for none. Decoded, and
+ * without base64's "=" padding, which the service adds back to a token sent
+ * without it -- an old fragment link's lost it -- so the two would differ.
+ */
+export function decodedToken(token: string | null | undefined): string | null {
+  if (!token) return null;
+  let decoded = token;
+  try {
+    decoded = decodeURIComponent(token);
+  } catch {
+    // Not percent-encoded after all: a lone "%" in it.
+  }
+  return decoded.replace(/=+$/, '');
+}
+
+/**
+ * Waits as long as a busy analysis service asks -- a 503 with Retry-After,
+ * which the analysis gateway answers when its queue is full (spec 010 Story
+ * 6) -- and asks once more, telling `onWait` how long so the reader can be
+ * told. Anything else, a wait it does not name or that is unreasonably long,
+ * or a second 503, is the caller's failure to report.
+ */
+export function retryWhenBusy<T>(
+  onWait: (seconds: number | undefined) => void
+): MonoTypeOperatorFunction<T> {
+  return (source) =>
+    source.pipe(
+      retry({
+        count: 1,
+        delay: (error: unknown) => {
+          const named =
+            error instanceof HttpErrorResponse && error.status === 503
+              ? error.headers.get('Retry-After')
+              : null;
+          const seconds = named === null || named.trim() === '' ? NaN : Number(named);
+          if (!Number.isInteger(seconds) || seconds < 0 || seconds > 120)
+            return throwError(() => error);
+          onWait(seconds);
+          return timer(seconds * 1000).pipe(tap(() => onWait(undefined)));
+        },
+      }),
+      finalize(() => onWait(undefined))
+    );
 }

@@ -2,11 +2,14 @@ import {
   AfterViewInit,
   ChangeDetectorRef,
   Component,
+  DestroyRef,
   effect,
   inject,
   input,
   output,
+  signal,
 } from '@angular/core';
+import { Subscription } from 'rxjs';
 import {
   InteractorToken,
   PsicquicResource,
@@ -22,7 +25,7 @@ import { CustomInteractorDialogComponent } from './custom-interactor-dialog/cust
 import { MatCard, MatCardContent } from '@angular/material/card';
 import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
-import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatDivider } from '@angular/material/divider';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -40,7 +43,6 @@ import { DEFAULT_INTERACTOR_SCORE } from './interactor-threshold';
     MatButton,
     MatIconButton,
     MatIcon,
-    NgClass,
     NgTemplateOutlet,
     MatDivider,
     MatGridList,
@@ -79,6 +81,27 @@ export class InteractorsComponent implements AfterViewInit {
   readonly cy = input<cytoscape.Core>();
   readonly cys = input<cytoscape.Core[] | undefined>([]);
   readonly currentResource = this.interactors.currentResource;
+  /**
+   * The PSICQUIC registry could not be asked. A signal: the app is zoneless,
+   * and a plain field set in an HTTP callback schedules no change detection,
+   * so the notice waited for something unrelated to redraw the panel.
+   */
+  readonly psicquicResourcesFailed = signal(false);
+
+  /**
+   * The requests for the resource being loaded. A new choice, or clearing the
+   * overlay, cancels them first: a late answer for a resource the reader has
+   * left -- a failure especially -- reported itself over the one chosen after
+   * it and stopped that one's spinner.
+   */
+  private loading = new Subscription();
+
+  private startLoading() {
+    this.loading.unsubscribe();
+    this.loading = new Subscription();
+    this.isDataFromPsicquicLoading = false;
+    this.loadingResource = null;
+  }
   /** What each resource turned out to hold here, once we have asked it. */
   readonly resourceCounts = this.interactors.resourceCounts;
 
@@ -122,6 +145,9 @@ export class InteractorsComponent implements AfterViewInit {
   readonly panelOpen = input(false);
 
   constructor() {
+    // Requests still out when the panel goes have no one to answer.
+    inject(DestroyRef).onDestroy(() => this.loading.unsubscribe());
+
     // The prefetch needs three things that arrive in any order: the reader
     // opening the panel, the resource list, and a graph to ask about.
     // ngAfterViewInit runs when this panel is created, which is before the
@@ -197,7 +223,7 @@ export class InteractorsComponent implements AfterViewInit {
     // custom resource while `currentResource()` holds its *name*, so the two
     // could never match and clicking an active custom resource never put it
     // away -- the one gesture this branch exists for.
-    const name = typeof resource === 'string' ? resource : resource.summary?.name;
+    const name = typeof resource === 'string' ? resource : resource.summary.name;
     if (chosenByReader && name && this.currentResource().name === name) {
       this.clearInteractors();
       return;
@@ -207,35 +233,39 @@ export class InteractorsComponent implements AfterViewInit {
     // previous resource happened to be showing (FR-004a).
     this.interactors.restoreThreshold(name);
 
-    this.interactors.getResourceType(resource as string).subscribe({
-      next: (resourceType) => {
-        switch (resourceType) {
-          case ResourceType.STATIC:
-          case ResourceType.DISGENET:
-            this.getStaticInteractors(resource as string);
-            break;
-          case ResourceType.PSICQUIC:
-            this.getPsicquicResourceInteractors(resource as string);
-            break;
-          case ResourceType.CUSTOM:
-            // A string here is a token out of the address, not a token object.
-            // It used to be cast straight to InteractorToken, so `summary` was
-            // undefined and `getCustomResourceInteractors` returned at its first
-            // line -- silently. That is why a link carrying a shared overlay
-            // opened with nothing drawn, which is the whole of what the "share
-            // by link" choice promises.
-            this.getCustomResourceInteractors(this.asToken(resource));
-            break;
-          default:
-            throw new Error('Unknown resource type encountered: ' + resourceType);
-        }
-      },
+    // From here this is the choice: whatever an earlier one still has out --
+    // its lookup included, which for a PSICQUIC name is a request of its own --
+    // is cancelled, so a slow answer for it cannot cancel or overwrite this.
+    this.startLoading();
+    this.loading.add(
+      this.interactors.getResourceType(resource as string).subscribe({
+        next: (resourceType) => {
+          switch (resourceType) {
+            case ResourceType.STATIC:
+            case ResourceType.DISGENET:
+              this.getStaticInteractors(resource as string);
+              break;
+            case ResourceType.PSICQUIC:
+              this.getPsicquicResourceInteractors(resource as string);
+              break;
+            case ResourceType.CUSTOM:
+              // A string here is a token out of the address, not a token object.
+              // It used to be cast straight to InteractorToken, so `summary` was
+              // undefined and `getCustomResourceInteractors` returned at its first
+              // line -- silently. That is why a link carrying a shared overlay
+              // opened with nothing drawn, which is the whole of what the "share
+              // by link" choice promises.
+              this.getCustomResourceInteractors(this.asToken(resource));
+              break;
+            default:
+              // Null: the registry that says what a name is could not be asked.
+              this.interactors.failedToLoad(name, null);
+          }
+        },
 
-      error: (error) => {
-        console.error('Error determining resource type:', error);
-        throw new Error('Error determining resource type: ' + error);
-      },
-    });
+        error: (error: unknown) => this.interactors.failedToLoad(name, error),
+      })
+    );
   }
 
   /**
@@ -254,7 +284,7 @@ export class InteractorsComponent implements AfterViewInit {
   private asToken(resource: string | InteractorToken): InteractorToken {
     if (typeof resource !== 'string') return resource;
 
-    const known = this.resourceTokens?.find((token) => token.summary?.token === resource);
+    const known = this.resourceTokens.find((token) => token.summary.token === resource);
     if (known) return known;
 
     const made: InteractorToken = {
@@ -266,7 +296,7 @@ export class InteractorsComponent implements AfterViewInit {
         interactions: 0,
       },
     };
-    this.resourceTokens?.push(made);
+    this.resourceTokens.push(made);
     return made;
   }
 
@@ -278,27 +308,50 @@ export class InteractorsComponent implements AfterViewInit {
     } else {
       return;
     }
+    this.startLoading();
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, resource).subscribe((interactors) => {
-        this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
-        this.initialiseReplaceElements.emit();
-      });
+      this.loading.add(
+        this.interactors.fetchInteractorData(cy, resource).subscribe({
+          next: (interactors) => {
+            this.interactors.addInteractorOccurrenceNode(interactors, cy, resource);
+            this.initialiseReplaceElements.emit();
+          },
+          // Unless the diagram it was for has been replaced since.
+          error: (error: unknown) => {
+            if (!cy.destroyed()) this.interactors.failedToLoad(resource, error);
+          },
+        })
+      );
       this.state.overlay.set(resource);
     });
   }
 
   getPsicquicResourceInteractors(selectedResource: string) {
+    this.startLoading();
     this.isDataFromPsicquicLoading = true;
     this.loadingResource = selectedResource;
     this.clear = false;
     this.updateCurrentResource(selectedResource, ResourceType.PSICQUIC);
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchInteractorData(cy, selectedResource).subscribe((interactors) => {
-        this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
-        this.isDataFromPsicquicLoading = false;
-        this.loadingResource = null;
-        this.state.overlay.set(selectedResource);
-      });
+      this.loading.add(
+        this.interactors.fetchInteractorData(cy, selectedResource).subscribe({
+          next: (interactors) => {
+            this.interactors.addInteractorOccurrenceNode(interactors, cy, selectedResource);
+            this.isDataFromPsicquicLoading = false;
+            this.loadingResource = null;
+            this.state.overlay.set(selectedResource);
+          },
+          // The resource's spinner stopped only on success, so a failure left it
+          // turning for good.
+          error: (error: unknown) => {
+            this.isDataFromPsicquicLoading = false;
+            this.loadingResource = null;
+            if (!cy.destroyed()) this.interactors.failedToLoad(selectedResource, error);
+          },
+        })
+      );
     });
   }
 
@@ -316,7 +369,9 @@ export class InteractorsComponent implements AfterViewInit {
       dialogRef.afterClosed().subscribe((_result) => {
         const resource = dialogRef.componentInstance.token;
         if (resource) {
-          this.resourceTokens!.push(resource);
+          // The dialog drew it; nothing chosen before may answer over it.
+          this.startLoading();
+          this.resourceTokens.push(resource);
           this.clear = false;
           this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
           // Only when there is something a link can resolve. A locally parsed
@@ -330,12 +385,11 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   isSelected(resource: InteractorToken): boolean {
-    return this.resourceTokens!.includes(resource);
+    return this.resourceTokens.includes(resource);
   }
 
   getCustomResourceInteractors(resource: InteractorToken) {
-    if (!resource.summary) return;
-
+    this.startLoading();
     // A resource parsed in this page has no token, because there is nothing on a
     // server to point at. Asking for one would be a request for `token/` with an
     // empty id -- so it redraws from what is already held, and the address is
@@ -351,32 +405,46 @@ export class InteractorsComponent implements AfterViewInit {
       return;
     }
 
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
-      this.interactors.fetchCustomInteractors(resource, cy).subscribe((result) => {
-        this.interactors.addInteractorOccurrenceNode(
-          result.interactors,
-          cy,
-          result.interactors.resource
-        );
-        this.clear = false;
-        this.updateCurrentResource(resource!.summary.name, ResourceType.CUSTOM);
-        this.state.overlay.set(resource.summary.token);
-      });
+      this.loading.add(
+        this.interactors.fetchCustomInteractors(resource, cy).subscribe({
+          next: (result) => {
+            this.interactors.addInteractorOccurrenceNode(
+              result.interactors,
+              cy,
+              result.interactors.resource
+            );
+            this.clear = false;
+            this.updateCurrentResource(resource.summary.name, ResourceType.CUSTOM);
+            this.state.overlay.set(resource.summary.token);
+          },
+          // A link naming an overlay that does not exist is asked for as an
+          // upload's token, and answered 404.
+          error: (error: unknown) => {
+            if (cy.destroyed()) return;
+            const named = resource.summary.token || resource.summary.name;
+            this.interactors.failedToLoad(named, error, 'token');
+          },
+        })
+      );
     });
   }
 
   deleteCustomResource(resource: InteractorToken) {
-    const index = this.resourceTokens!.indexOf(resource);
+    const index = this.resourceTokens.indexOf(resource);
     if (index === -1) return;
 
-    this.resourceTokens!.splice(index, 1);
+    this.resourceTokens.splice(index, 1);
+    // Including one that never drew: a link to an overlay that did not exist.
+    this.interactors.clearLoadFailure();
 
     // The name, not the token object. This read `[resource = '${resource}']`,
     // which interpolates an InteractorToken to the string "[object Object]" --
     // a selector matching nothing, so deleting removed the button and left the
     // interactors drawn. Measured on beta: one badge before, one badge after,
     // and the list empty.
-    const name = resource.summary?.name;
+    const name = resource.summary.name;
     if (!name) return;
 
     // By name *and* by token. A resource read in this page is drawn under its
@@ -385,7 +453,7 @@ export class InteractorsComponent implements AfterViewInit {
     // diagram, which is the same fault this method was just fixed for, still
     // live on the other half of the path. Measured: one badge before deleting,
     // one after.
-    const identifiers = [name, resource.summary?.token].filter(
+    const identifiers = [name, resource.summary.token].filter(
       (identifier): identifier is string => !!identifier
     );
 
@@ -408,6 +476,8 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   clearInteractors() {
+    this.startLoading();
+    this.interactors.clearLoadFailure();
     this.cys()?.forEach((cy) => {
       this.interactors.clearAllInteractorNodes(cy);
       this.clear = true;
@@ -432,13 +502,19 @@ export class InteractorsComponent implements AfterViewInit {
   }
 
   getPsicquicResources() {
-    this.interactors.getPsicquicResources().subscribe((resources) => {
-      this.psicquicResources = resources;
+    this.psicquicResourcesFailed.set(false);
+    this.interactors.getPsicquicResources().subscribe({
+      next: (resources) => {
+        this.psicquicResources = resources;
 
-      // Ask them all what they hold here, without waiting for any of them. The
-      // panel is usable straight away; the counts appear beside each resource as
-      // its answer arrives.
-      this.maybePrefetchCounts();
+        // Ask them all what they hold here, without waiting for any of them. The
+        // panel is usable straight away; the counts appear beside each resource as
+        // its answer arrives.
+        this.maybePrefetchCounts();
+      },
+      // The panel lists none, and says why rather than looking as though
+      // there were none to list.
+      error: () => this.psicquicResourcesFailed.set(true),
     });
   }
 }

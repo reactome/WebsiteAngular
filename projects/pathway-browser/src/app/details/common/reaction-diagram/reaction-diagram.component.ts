@@ -11,18 +11,14 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { Style } from 'ngx-reactome-cytoscape-style';
 import cytoscape from 'cytoscape';
-import { Diagram } from '../../../model/diagram.model';
-import { Graph } from '../../../model/graph.model';
 import { DiagramService } from '../../../services/diagram.service';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
+import type { ReactionLayout } from '../../../../../../contract/reaction-layout.ts';
+import { canonicalReaction } from './canonical-reaction';
+import { drawableReaction } from './drawable-reaction';
 
 /** Space left around the reaction, in pixels of the container. */
 const PADDING = 20;
-
-interface ReactionJson {
-  diagram: Diagram;
-  graph: Graph.Data;
-}
 
 @Component({
   selector: 'cr-reaction-diagram',
@@ -58,26 +54,26 @@ export class ReactionDiagramComponent implements AfterViewInit, OnDestroy {
     this.reactomeStyle = new Style(container);
 
     this.http
-      .get<ReactionJson>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
-      .subscribe(({ diagram, graph }) => {
-        // Ensure required arrays exist (reaction diagrams may omit empty arrays)
-        diagram.links = diagram.links || [];
-        diagram.shadows = diagram.shadows || [];
-        diagram.compartments = diagram.compartments || [];
-        graph.subpathways = graph.subpathways || [];
+      .get<ReactionLayout>(`${CONTENT_SERVICE}/exporter/reaction/${this.stId()}/diagram`)
+      .subscribe((layout) => {
+        // A reaction's layout leaves out the lists it does not have. Its ids and
+        // node order vary from request to request, so it is put in one form
+        // before it is drawn, and those no longer change the picture.
+        const drawable = drawableReaction(layout);
+        const { diagram, graph } = canonicalReaction(drawable.diagram, drawable.graph);
 
         const elements = this.diagramService.diagramFromData(diagram, graph);
 
         this.cy = cytoscape({
           container,
           elements,
-          style: this.reactomeStyle?.getStyleSheet(),
+          ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
           layout: { name: 'preset' },
           boxSelectionEnabled: false,
         });
 
         this.reactomeStyle?.bindToCytoscape(this.cy);
-        this.figureName.set(diagram.displayName ?? '');
+        this.figureName.set(diagram.displayName);
         this.drawn.set(this.cy);
         this.cy.userZoomingEnabled(true);
         this.cy.userPanningEnabled(true);

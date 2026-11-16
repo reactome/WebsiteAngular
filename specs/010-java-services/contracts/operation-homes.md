@@ -1,0 +1,174 @@
+# Contract: where every published operation is answered
+
+> **Amended 5 Nov 2026 (awright).** A Java library with no Java-only dependency may be ported to node rather than kept in Java: ContentService is moved to node as far as it can be, and only what needs a dependency node lacks stays in Java. The first case is the reaction layout ([spec 006](../../006-content-service-to-node/tasks.md) T092, research D21). FR-002's rule reads with that exception: an operation whose substance is a Java library stays in Java unless the library has no Java-only dependency and the port is decided in spec 006 and recorded here. FR-003's list stands except where a later spec replaces it. **Event SBML** is replaced by spec 015: node answers it through `sbml-exporter` (on beta; release and production wait for its T068), the exporter Reactome now keeps for both the bulk file and the website. **Event PDF** is to be replaced by `pdf-export`'s single-event service (its spec 001, Story 2 and FR-014). **Event SBGN** is to follow SBML's pattern: one exporter for both the download page's bulk file and the website (awright, 5 Nov 2026; its spec is to come). The rest stay in Java until spec 006's Phase 9 reconsiders each one.
+
+> **Amended by [spec 015](../../015-graph-exports/spec.md) (24 Oct 2026).** Where this document says otherwise, spec 015 holds:
+>
+> - **SBML:** the library service's SBML operation uses `sbml-exporter`'s fixed graph-only converter, with its layout drawn from the diagram files. It needs no relational database, and its body is proven by spec 015's comparison rather than byte-identical to the old server's relational answer. Status, headers and errors are still Java's.
+> - **BioPAX:** the service gains a BioPAX Level 3 operation through `BioPAX3Exporter`.
+> - **Runtime:** the service runs on JDK 17, because BioPAX3Exporter is built for it. Libraries built for Java 11 run there unchanged.
+> - **SBML is cut over by spec 015** (its T062–T067, which replace its T044), not here. Since 25 Oct 2026 this service is started in this repository for it (spec 015 research R10).
+
+The decision record of FR-001 and FR-002. It covers every operation in the two services' published API descriptions, as served on 2026-10-17: 98 for ContentService and 39 for AnalysisService. Paths are relative to each service's root.
+
+**The rule (FR-002).** An operation whose substance is a Java library, or Java numerical work, stays in Java. One that reads the graph, the search index, or logic Reactome writes for the website moves to node. When the rule does not settle a case, the team decides and the decision is added here.
+
+**Homes:**
+
+- **node:** `tools/content-node`.
+  - **ported:** node answers it today.
+  - **to port:** its task is in [spec 006](../../006-content-service-to-node/tasks.md).
+  - **exporter (#273):** node owns it and the render service draws. Of these, `/exporter/diagram` is implemented (#479) but not yet routed.
+- **java-library:** the Java library service of this spec.
+- **analysis:** AnalysisService, run unchanged.
+
+## ContentService
+
+| Method | Path                                                      | Home          | Reason                                                                                                                                                                          |
+| ------ | --------------------------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/contact`                                                | node — ported | site logic, with Turnstile's check (spec 006 T085, research D23)                                                                                                                |
+| GET    | `/data/complex/{id}/subunits`                             | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/complexes/{resource}/{identifier}`                 | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/content/contributors`                              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/content/doi`                                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/content/toc`                                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/database/name`                                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/database/version`                                  | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/discover/{identifier}`                             | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/diseases`                                          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/diseases/doid`                                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/entity/{id}/componentOf`                           | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/entity/{id}/in-depth`                              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/entity/{id}/otherForms`                            | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/event/{id}/ancestors`                              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/event/{id}/in-depth`                               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/eventsHierarchy/{species}`                         | node — ported | spec 006 T103: sizes counted from the graph as analysis-core counts them, the overlay through the AnalysisService; analysis-core's alias merge recorded (spec 006 research D25) |
+| GET    | `/data/instance/{id}/referrers`                           | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/mapping/{resource}/{identifier}/pathways`          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/mapping/{resource}/{identifier}/reactions`         | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/data/orthologies/ids/species/{speciesId}`               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/orthology/{id}/species/{speciesId}`                | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/participants/{id}`                                 | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/participants/{id}/participatingPhysicalEntities`   | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/participants/{id}/referenceEntities`               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathway/{id}/containedEvents`                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathway/{id}/containedEvents/{attributeName}`      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathways/low/diagram/entity/{id}`                  | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathways/low/diagram/entity/{id}/allForms`         | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathways/low/entity/{id}`                          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathways/low/entity/{id}/allForms`                 | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/pathways/top/{species}`                            | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/people/name/{name}`                                | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/people/name/{name}/exact`                          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}`                                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/authoredPathways`                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/authoredReactions`                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/publications`                          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/reviewedPathways`                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/reviewedReactions`                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/person/{id}/{attributeName}`                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/query/enhanced/v2/{id}`                            | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/query/enhanced/{id}`                               | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/data/query/ids`                                         | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/data/query/ids/map`                                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/query/{id}`                                        | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/query/{id}/{attributeName}`                        | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/model`                                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}`                                | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}/attributes`                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}/count`                          | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}/min`                            | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}/reference`                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/schema/{className}/referrals`                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/species/all`                                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/data/species/main`                                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/exporter/diagram/{identifier}.{ext}`                    | node — ported | drawn by the render service (spec 006 T090, T091; #891, 8 Nov 2026)                                                                                                             |
+| GET    | `/exporter/document/event/{identifier}.pdf`               | node          | pdf-export's single-event service (5 Nov amendment above; spec 006 T100), replacing event-pdf                                                                                   |
+| GET    | `/exporter/event/{identifier}.sbgn`                       | java-library  | libSBGN; to follow SBML's pattern, one exporter for bulk and website (5 Nov)                                                                                                    |
+| GET    | `/exporter/event/{identifier}.sbml`                       | java-library  | JSBML, in sbml-exporter; node answers it through the library service (spec 015, #666)                                                                                           |
+| GET    | `/exporter/fireworks/{species}.{ext}`                     | node — ported | drawn by the render service; Java exporters not needed                                                                                                                          |
+| GET    | `/exporter/reaction/{identifier}.{ext}`                   | node — ported | drawn by the render service (spec 006 T092; #891, 8 Nov 2026)                                                                                                                   |
+| GET    | `/exporter/reaction/{identifier}/diagram`                 | node — ported | a layout, not a drawing; its library has no Java-only dependency (006 T092, D21)                                                                                                |
+| GET    | `/interactors/psicquic/molecule/{resource}/{acc}/details` | java-library  | IntAct clustering and scoring (micluster, miscore, psimitab)                                                                                                                    |
+| GET    | `/interactors/psicquic/molecule/{resource}/{acc}/summary` | java-library  | IntAct clustering and scoring (micluster, miscore, psimitab)                                                                                                                    |
+| POST   | `/interactors/psicquic/molecules/{resource}/details`      | java-library  | IntAct clustering and scoring (micluster, miscore, psimitab)                                                                                                                    |
+| POST   | `/interactors/psicquic/molecules/{resource}/summary`      | java-library  | IntAct clustering and scoring (micluster, miscore, psimitab)                                                                                                                    |
+| GET    | `/interactors/psicquic/resources`                         | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/interactors/static/molecule/enhanced/{acc}/details`     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/interactors/static/molecule/{acc}/details`              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/interactors/static/molecule/{acc}/pathways`             | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/interactors/static/molecule/{acc}/summary`              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/interactors/static/molecule/{acc}/withEntities`         | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/interactors/static/molecules/details`                   | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/interactors/static/molecules/summary`                   | node — ported | graph or search index                                                                                                                                                           |
+| POST   | `/interactors/token/{token}`                              | java-library  | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                                                                                                      |
+| POST   | `/interactors/upload/psicquic/url`                        | java-library  | IntAct clustering and scoring (micluster, miscore, psimitab)                                                                                                                    |
+| POST   | `/interactors/upload/tuple/content`                       | java-library  | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                                                                                                      |
+| POST   | `/interactors/upload/tuple/form`                          | java-library  | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                                                                                                      |
+| POST   | `/interactors/upload/tuple/url`                           | java-library  | interactor-core tuple and PSI-MITAB parsers; the existing Kryo token store                                                                                                      |
+| POST   | `/references/mapping/xrefs`                               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/references/mapping/{identifier}`                        | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/references/mapping/{identifier}/xrefs`                  | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/diagram/{diagram}`                               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/diagram/{diagram}/occurrences/{instance}`        | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/diagram/{pathwayId}/flag`                        | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/facet`                                           | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/facet_query`                                     | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/fireworks`                                       | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/fireworks/flag`                                  | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/icon/facet`                                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/icon/query`                                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/icon/{identifier}`                               | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/pathways/of/{dbId}`                              | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/query`                                           | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/query/paginated`                                 | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/spellcheck`                                      | node — ported | graph or search index                                                                                                                                                           |
+| GET    | `/search/suggest`                                         | node — ported | graph or search index                                                                                                                                                           |
+
+Brought up to date 5 Nov 2026 from spec 006's tasks: the diseases, the batch and attribute queries and the two schema operations (T070–T081), and the species overview, a 301 to `/exporter/voronoi/{species}.{ext}` (T093, #613).
+
+## AnalysisService
+
+All 39 operations are homed in **analysis**: the enrichment statistics, the pathway data held in memory, the Kryo result tokens and the PDF report are Java and stay as they are.
+
+| Method | Path                                                         |
+| ------ | ------------------------------------------------------------ |
+| GET    | `/database/name`                                             |
+| GET    | `/database/version`                                          |
+| GET    | `/download/{token}/entities/found/{resource}/{filename}.csv` |
+| GET    | `/download/{token}/entities/notfound/{filename}.csv`         |
+| GET    | `/download/{token}/pathways/{resource}/{filename}.csv`       |
+| GET    | `/download/{token}/result.json`                              |
+| GET    | `/download/{token}/result.json.gz`                           |
+| GET    | `/identifier/{id}`                                           |
+| GET    | `/identifier/{id}/projection`                                |
+| POST   | `/identifiers/`                                              |
+| POST   | `/identifiers/form`                                          |
+| POST   | `/identifiers/form/projection`                               |
+| POST   | `/identifiers/projection`                                    |
+| POST   | `/identifiers/url`                                           |
+| POST   | `/identifiers/url/projection`                                |
+| POST   | `/import/`                                                   |
+| POST   | `/import/form`                                               |
+| POST   | `/import/url`                                                |
+| POST   | `/mapping/`                                                  |
+| POST   | `/mapping/form`                                              |
+| POST   | `/mapping/form/projection`                                   |
+| POST   | `/mapping/projection`                                        |
+| POST   | `/mapping/url`                                               |
+| POST   | `/mapping/url/projection`                                    |
+| GET    | `/report/{token}/{species}/{filename}.pdf`                   |
+| GET    | `/species/homoSapiens/{species}`                             |
+| GET    | `/token/{token}`                                             |
+| POST   | `/token/{token}/filter/pathways`                             |
+| GET    | `/token/{token}/filter/species/{species}`                    |
+| POST   | `/token/{token}/found/all`                                   |
+| GET    | `/token/{token}/found/all/{pathway}`                         |
+| GET    | `/token/{token}/found/entities/{pathway}`                    |
+| GET    | `/token/{token}/found/interactors/{pathway}`                 |
+| GET    | `/token/{token}/notFound`                                    |
+| GET    | `/token/{token}/page/{pathway}`                              |
+| GET    | `/token/{token}/pathways/binned`                             |
+| POST   | `/token/{token}/reactions/pathways`                          |
+| GET    | `/token/{token}/reactions/{pathway}`                         |
+| GET    | `/token/{token}/resources`                                   |

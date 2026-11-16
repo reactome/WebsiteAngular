@@ -24,6 +24,8 @@
     "esModuleInterop": true,
     "strict": true,
     "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "noPropertyAccessFromIndexSignature": true,
     "allowJs": true,
     "noImplicitReturns": true,
@@ -51,26 +53,29 @@
   // Strictness here is a deliberate trade: each of these was measured against
   // the codebase before being switched on. strictTemplates cost 83 fixes and
   // was worth it; typeCheckHostBindings, strictStandalone and the checks below
-  // all cost nothing. noUncheckedIndexedAccess (185 errors) and
-  // exactOptionalPropertyTypes (72) are not on -- worth revisiting, but not
-  // free. noUncheckedIndexedAccess was trialled properly rather than dismissed:
-  // of its 185 findings, roughly 44% are places the code already checks .length
-  // or iterates a bounded loop and TypeScript simply cannot connect the check to
-  // the access, where the only "fix" is a non-null assertion that documents
-  // nothing. The remainder did contain two real bugs, both since fixed (see
-  // 0178da7). Worth revisiting as its own piece of work, but adopting it in one
-  // go would trade 185 edits, most of them assertions, for that handful.
+  // all cost nothing. noUncheckedIndexedAccess is on (#345): an index
+  // out of range or a missing key is undefined, and the code is made to say so.
+  // It took 346 findings across the app and the libraries, handled with guards
+  // and destructuring rather than non-null assertions, and turned up real bugs
+  // among them (an icon search that threw on no results, names and dates that
+  // read "undefined"). A first trial had set it aside as mostly assertions.
+  // exactOptionalPropertyTypes is on (#337): `x?: T` means the key may be
+  // missing, not that it may hold undefined. Build objects that leave a value
+  // out by leaving the key out; write `x?: T | undefined` only where undefined
+  // is put there on purpose (a field reset, a value copied across that the
+  // source may lack). Query parameters go through httpParams(), which drops
+  // unset ones, rather than handing HttpClient `params: undefined`.
   // strictStandalone is deliberately absent: reactome-table is still an
   // NgModule library with declared, non-standalone components, and it is
   // published, so converting it is not a config change.
   //
-  // Every other template diagnostic is an error, including any a later Angular
-  // adds (defaultCategory), except the two redundancy ones, NG8107/NG8102. They
-  // fire where a type says a value cannot be null, which is not the same as
-  // the API guaranteeing it, so making them errors would push people to delete
-  // defensive code on the word of an optimistic type. (There were ~51; the
-  // honest Solr types of #263 cleared them, and a warning is still the right
-  // weight for a new one.)
+  // Every template diagnostic is an error, including any a later Angular adds
+  // (defaultCategory). The two redundancy ones, NG8107/NG8102, fire where a type
+  // says a value cannot be null. They were warnings while the API types were
+  // optimistic, so as not to push people into deleting defensive code; #344
+  // typed the data as it is sent, so a redundant check now means the type was
+  // measured and the check is the thing to question. If a response can lack the
+  // field, say so in its type, and the check is no longer redundant.
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
@@ -87,8 +92,8 @@
         "suffixNotSupported": "error",
         "skipHydrationNotStatic": "error",
         "unusedStandaloneImports": "error",
-        "nullishCoalescingNotNullable": "warning",
-        "optionalChainNotNullable": "warning"
+        "nullishCoalescingNotNullable": "error",
+        "optionalChainNotNullable": "error"
       }
     }
   }

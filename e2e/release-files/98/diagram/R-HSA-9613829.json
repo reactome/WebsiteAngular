@@ -1,0 +1,3578 @@
+{
+  "dbId" : 9613829,
+  "stableId" : "R-HSA-9613829",
+  "displayName" : "Chaperone Mediated Autophagy",
+  "nodes" : [ {
+    "id" : 66,
+    "reactomeId" : 2029007,
+    "displayName" : "LAMP2",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 539,
+      "y" : 461
+    },
+    "minX" : 481,
+    "maxX" : 603,
+    "minY" : 419,
+    "maxY" : 554,
+    "prop" : {
+      "x" : 481,
+      "y" : 443,
+      "width" : 116,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 515,
+      "y" : 450
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 597,
+          "y" : 443
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 597,
+          "y" : 443
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 65,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 561,
+          "y" : 440
+        },
+        "to" : {
+          "x" : 591,
+          "y" : 419
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 35,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 530,
+          "y" : 482
+        },
+        "to" : {
+          "x" : 495,
+          "y" : 554
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 531,
+          "y" : 490
+        },
+        "b" : {
+          "x" : 530,
+          "y" : 482
+        },
+        "c" : {
+          "x" : 523,
+          "y" : 486
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 523,
+          "y" : 486
+        }
+      }
+    } ]
+  }, {
+    "id" : 67,
+    "reactomeId" : 9622845,
+    "displayName" : "HSP90AA1, HSP90AB1",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 923,
+      "y" : 555
+    },
+    "minX" : 495,
+    "maxX" : 983,
+    "minY" : 512,
+    "maxY" : 580,
+    "prop" : {
+      "x" : 867,
+      "y" : 530,
+      "width" : 112,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 882,
+      "y" : 537
+    },
+    "connectors" : [ {
+      "edgeId" : 35,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 861,
+          "y" : 554
+        },
+        "to" : {
+          "x" : 495,
+          "y" : 554
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 854,
+          "y" : 558
+        },
+        "b" : {
+          "x" : 861,
+          "y" : 554
+        },
+        "c" : {
+          "x" : 854,
+          "y" : 550
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 854,
+          "y" : 550
+        }
+      }
+    }, {
+      "edgeId" : 50,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 957,
+          "y" : 524
+        },
+        "to" : {
+          "x" : 983,
+          "y" : 512
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 68,
+    "reactomeId" : 9624156,
+    "displayName" : "LAMP2a multimer complex",
+    "schemaClass" : "Polymer",
+    "renderableClass" : "Entity",
+    "position" : {
+      "x" : 1242,
+      "y" : 464
+    },
+    "minX" : 1179,
+    "maxX" : 1305,
+    "minY" : 439,
+    "maxY" : 515,
+    "prop" : {
+      "x" : 1179,
+      "y" : 439,
+      "width" : 126,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 1183,
+      "y" : 446
+    },
+    "connectors" : [ {
+      "edgeId" : 46,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 30,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1272,
+          "y" : 492
+        },
+        "to" : {
+          "x" : 1304,
+          "y" : 515
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 69,
+    "reactomeId" : 9626058,
+    "displayName" : "LAMP2a multimer complex:GFAP",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1900,
+      "y" : 617
+    },
+    "minX" : 681,
+    "maxX" : 1963,
+    "minY" : 579,
+    "maxY" : 1296,
+    "prop" : {
+      "x" : 1843,
+      "y" : 585,
+      "width" : 114,
+      "height" : 64
+    },
+    "textPosition" : {
+      "x" : 1841,
+      "y" : 614
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1957,
+          "y" : 585
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1957,
+          "y" : 585
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 34,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1840,
+          "y" : 648
+        },
+        "to" : {
+          "x" : 681,
+          "y" : 1296
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 41,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1840,
+          "y" : 600
+        },
+        "to" : {
+          "x" : 1782,
+          "y" : 583
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 1832,
+          "y" : 602
+        },
+        "b" : {
+          "x" : 1840,
+          "y" : 600
+        },
+        "c" : {
+          "x" : 1834,
+          "y" : 594
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 1834,
+          "y" : 594
+        }
+      }
+    } ]
+  }, {
+    "id" : 70,
+    "reactomeId" : 9626048,
+    "displayName" : "p-GFAP:GFAP:LAMP2a multimer",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 418,
+      "y" : 1298
+    },
+    "minX" : 361,
+    "maxX" : 481,
+    "minY" : 1260,
+    "maxY" : 1330,
+    "prop" : {
+      "x" : 361,
+      "y" : 1266,
+      "width" : 114,
+      "height" : 64
+    },
+    "textPosition" : {
+      "x" : 361,
+      "y" : 1295
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 475,
+          "y" : 1266
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 475,
+          "y" : 1266
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 34,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 55,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 26,
+    "reactomeId" : 9620204,
+    "displayName" : "HSPA8:Substrate:LAMP2a",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 753,
+      "y" : 458
+    },
+    "minX" : 692,
+    "maxX" : 821,
+    "minY" : 427,
+    "maxY" : 483,
+    "prop" : {
+      "x" : 692,
+      "y" : 433,
+      "width" : 123,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 694,
+      "y" : 448
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 815,
+          "y" : 433
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 815,
+          "y" : 433
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 65,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 36,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 27,
+    "reactomeId" : 9626054,
+    "displayName" : "p-GFAP",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1075,
+      "y" : 1476
+    },
+    "minX" : 681,
+    "maxX" : 1142,
+    "minY" : 1296,
+    "maxY" : 1494,
+    "prop" : {
+      "x" : 1014,
+      "y" : 1458,
+      "width" : 122,
+      "height" : 36
+    },
+    "innerProp" : {
+      "x" : 1014,
+      "y" : 1464,
+      "width" : 122,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 1049,
+      "y" : 1465
+    },
+    "nodeAttachments" : [ {
+      "reactomeId" : 9613532,
+      "label" : "P",
+      "description" : "phosphorylated residue at unknown position",
+      "shape" : {
+        "a" : {
+          "x" : 1024,
+          "y" : 1452
+        },
+        "b" : {
+          "x" : 1036,
+          "y" : 1464
+        },
+        "s" : "P",
+        "type" : "BOX",
+        "empty" : true,
+        "centre" : {
+          "x" : 1030,
+          "y" : 1458
+        }
+      }
+    } ],
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1136,
+          "y" : 1458
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1136,
+          "y" : 1458
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 34,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1035,
+          "y" : 1455
+        },
+        "to" : {
+          "x" : 681,
+          "y" : 1296
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 71,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1019,
+          "y" : 1455
+        },
+        "to" : {
+          "x" : 909,
+          "y" : 1422
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 56,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1011,
+          "y" : 1461
+        },
+        "to" : {
+          "x" : 880,
+          "y" : 1431
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 1003,
+          "y" : 1463
+        },
+        "b" : {
+          "x" : 1011,
+          "y" : 1461
+        },
+        "c" : {
+          "x" : 1005,
+          "y" : 1456
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 1005,
+          "y" : 1456
+        }
+      }
+    } ]
+  }, {
+    "id" : 28,
+    "reactomeId" : 9626061,
+    "displayName" : "EEF1A1:GTP",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 582,
+      "y" : 1476
+    },
+    "minX" : 540,
+    "maxX" : 631,
+    "minY" : 1445,
+    "maxY" : 1501,
+    "prop" : {
+      "x" : 540,
+      "y" : 1451,
+      "width" : 85,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 541,
+      "y" : 1480
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 625,
+          "y" : 1451
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 625,
+          "y" : 1451
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 64,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 38,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 29,
+    "reactomeId" : 9626246,
+    "displayName" : "HSPA8:LAMP2a multimers",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 426,
+      "y" : 760
+    },
+    "minX" : 368,
+    "maxX" : 491,
+    "minY" : 736,
+    "maxY" : 778,
+    "prop" : {
+      "x" : 368,
+      "y" : 742,
+      "width" : 117,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 374,
+      "y" : 743
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 485,
+          "y" : 742
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 485,
+          "y" : 742
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 47,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 25,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 32,
+    "reactomeId" : 9625182,
+    "displayName" : "HSPA8",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1446,
+      "y" : 557
+    },
+    "minX" : 1389,
+    "maxX" : 1510,
+    "minY" : 521,
+    "maxY" : 575,
+    "prop" : {
+      "x" : 1389,
+      "y" : 539,
+      "width" : 115,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1422,
+      "y" : 546
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1504,
+          "y" : 539
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1504,
+          "y" : 539
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1465,
+          "y" : 536
+        },
+        "to" : {
+          "x" : 1485,
+          "y" : 521
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 33,
+    "reactomeId" : 9626070,
+    "displayName" : "p-GFAP:EEF1A1",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 754,
+      "y" : 1475
+    },
+    "minX" : 701,
+    "maxX" : 813,
+    "minY" : 1444,
+    "maxY" : 1500,
+    "prop" : {
+      "x" : 701,
+      "y" : 1450,
+      "width" : 106,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 702,
+      "y" : 1479
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 807,
+          "y" : 1450
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 807,
+          "y" : 1450
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 71,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 56,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 37,
+    "reactomeId" : 9626026,
+    "displayName" : "LAMP2a multimer complex",
+    "schemaClass" : "Polymer",
+    "renderableClass" : "Entity",
+    "position" : {
+      "x" : 420,
+      "y" : 1035
+    },
+    "minX" : 307,
+    "maxX" : 500,
+    "minY" : 873,
+    "maxY" : 1165,
+    "prop" : {
+      "x" : 357,
+      "y" : 1010,
+      "width" : 126,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 361,
+      "y" : 1017
+    },
+    "connectors" : [ {
+      "edgeId" : 44,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 402,
+          "y" : 1007
+        },
+        "to" : {
+          "x" : 307,
+          "y" : 873
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 55,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 435,
+          "y" : 1063
+        },
+        "to" : {
+          "x" : 500,
+          "y" : 1165
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 442,
+          "y" : 1067
+        },
+        "b" : {
+          "x" : 435,
+          "y" : 1063
+        },
+        "c" : {
+          "x" : 435,
+          "y" : 1071
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 435,
+          "y" : 1071
+        }
+      }
+    } ]
+  }, {
+    "id" : 40,
+    "reactomeId" : 9615717,
+    "displayName" : "HSPA8 bound autophagic substrates",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 533,
+      "y" : 371
+    },
+    "minX" : 473,
+    "maxX" : 599,
+    "minY" : 340,
+    "maxY" : 419,
+    "prop" : {
+      "x" : 473,
+      "y" : 346,
+      "width" : 120,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 484,
+      "y" : 347
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 593,
+          "y" : 346
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 593,
+          "y" : 346
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 65,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 563,
+          "y" : 399
+        },
+        "to" : {
+          "x" : 591,
+          "y" : 419
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 31,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 42,
+    "reactomeId" : 9626245,
+    "displayName" : "p-GFAP:GFAP",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 411,
+      "y" : 1134
+    },
+    "minX" : 365,
+    "maxX" : 500,
+    "minY" : 1103,
+    "maxY" : 1165,
+    "prop" : {
+      "x" : 365,
+      "y" : 1109,
+      "width" : 92,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 367,
+      "y" : 1138
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 457,
+          "y" : 1109
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 457,
+          "y" : 1109
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 55,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 460,
+          "y" : 1150
+        },
+        "to" : {
+          "x" : 500,
+          "y" : 1165
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 468,
+          "y" : 1149
+        },
+        "b" : {
+          "x" : 460,
+          "y" : 1150
+        },
+        "c" : {
+          "x" : 465,
+          "y" : 1156
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 465,
+          "y" : 1156
+        }
+      }
+    } ]
+  }, {
+    "id" : 43,
+    "reactomeId" : 9625189,
+    "displayName" : "HSPA8:LAMP2a multimeric complex",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1782,
+      "y" : 468
+    },
+    "minX" : 1719,
+    "maxX" : 1851,
+    "minY" : 437,
+    "maxY" : 493,
+    "prop" : {
+      "x" : 1719,
+      "y" : 443,
+      "width" : 126,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 1729,
+      "y" : 444
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1845,
+          "y" : 443
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1845,
+          "y" : 443
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 41,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 53,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 45,
+    "reactomeId" : 9626022,
+    "displayName" : "EEF1A1",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 919,
+      "y" : 1476
+    },
+    "minX" : 827,
+    "maxX" : 986,
+    "minY" : 1422,
+    "maxY" : 1529,
+    "prop" : {
+      "x" : 859,
+      "y" : 1458,
+      "width" : 121,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 892,
+      "y" : 1465
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 980,
+          "y" : 1458
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 980,
+          "y" : 1458
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 64,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 887,
+          "y" : 1497
+        },
+        "to" : {
+          "x" : 827,
+          "y" : 1529
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 71,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 915,
+          "y" : 1455
+        },
+        "to" : {
+          "x" : 909,
+          "y" : 1422
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 56,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 903,
+          "y" : 1455
+        },
+        "to" : {
+          "x" : 880,
+          "y" : 1431
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 895,
+          "y" : 1453
+        },
+        "b" : {
+          "x" : 903,
+          "y" : 1455
+        },
+        "c" : {
+          "x" : 901,
+          "y" : 1447
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 901,
+          "y" : 1447
+        }
+      }
+    } ]
+  }, {
+    "id" : 48,
+    "reactomeId" : 9625195,
+    "displayName" : "GFAP",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 1241,
+      "y" : 549
+    },
+    "minX" : 1188,
+    "maxX" : 1304,
+    "minY" : 515,
+    "maxY" : 567,
+    "prop" : {
+      "x" : 1188,
+      "y" : 531,
+      "width" : 107,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 1221,
+      "y" : 538
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1295,
+          "y" : 531
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1295,
+          "y" : 531
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 30,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1274,
+          "y" : 528
+        },
+        "to" : {
+          "x" : 1304,
+          "y" : 515
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 49,
+    "reactomeId" : 9615715,
+    "displayName" : "Substrates for chaperone mediated autophagy",
+    "schemaClass" : "DefinedSet",
+    "renderableClass" : "EntitySet",
+    "position" : {
+      "x" : 390,
+      "y" : 242
+    },
+    "minX" : 324,
+    "maxX" : 533,
+    "minY" : 217,
+    "maxY" : 297,
+    "prop" : {
+      "x" : 324,
+      "y" : 217,
+      "width" : 133,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 339,
+      "y" : 211
+    },
+    "connectors" : [ {
+      "edgeId" : 31,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 455,
+          "y" : 273
+        },
+        "to" : {
+          "x" : 533,
+          "y" : 297
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 51,
+    "reactomeId" : 9626049,
+    "displayName" : "HSPA8:Substrates for CMA",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1665,
+      "y" : 628
+    },
+    "minX" : 1598,
+    "maxX" : 1782,
+    "minY" : 583,
+    "maxY" : 653,
+    "prop" : {
+      "x" : 1598,
+      "y" : 603,
+      "width" : 135,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 1602,
+      "y" : 618
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1733,
+          "y" : 603
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1733,
+          "y" : 603
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 41,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1730,
+          "y" : 600
+        },
+        "to" : {
+          "x" : 1782,
+          "y" : 583
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 1735,
+          "y" : 594
+        },
+        "b" : {
+          "x" : 1730,
+          "y" : 600
+        },
+        "c" : {
+          "x" : 1738,
+          "y" : 602
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 1738,
+          "y" : 602
+        }
+      }
+    } ]
+  }, {
+    "id" : 52,
+    "reactomeId" : 9626247,
+    "displayName" : "HSPA8:LAMP2a multimers",
+    "schemaClass" : "Polymer",
+    "renderableClass" : "Entity",
+    "position" : {
+      "x" : 432,
+      "y" : 877
+    },
+    "minX" : 374,
+    "maxX" : 491,
+    "minY" : 859,
+    "maxY" : 895,
+    "prop" : {
+      "x" : 374,
+      "y" : 859,
+      "width" : 117,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 380,
+      "y" : 859
+    },
+    "connectors" : [ {
+      "edgeId" : 44,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 47,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 54,
+    "reactomeId" : 9622841,
+    "displayName" : "Substrate:LAMP2a",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 917,
+      "y" : 460
+    },
+    "minX" : 793,
+    "maxX" : 983,
+    "minY" : 401,
+    "maxY" : 512,
+    "prop" : {
+      "x" : 859,
+      "y" : 435,
+      "width" : 117,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 880,
+      "y" : 450
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 976,
+          "y" : 435
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 976,
+          "y" : 435
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 36,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 864,
+          "y" : 432
+        },
+        "to" : {
+          "x" : 793,
+          "y" : 401
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 856,
+          "y" : 433
+        },
+        "b" : {
+          "x" : 864,
+          "y" : 432
+        },
+        "c" : {
+          "x" : 859,
+          "y" : 426
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 859,
+          "y" : 426
+        }
+      }
+    }, {
+      "edgeId" : 50,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 948,
+          "y" : 488
+        },
+        "to" : {
+          "x" : 983,
+          "y" : 512
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 57,
+    "reactomeId" : 9622836,
+    "displayName" : "Substrate:LAMP2a:HSP90",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1073,
+      "y" : 461
+    },
+    "minX" : 1015,
+    "maxX" : 1138,
+    "minY" : 430,
+    "maxY" : 486,
+    "prop" : {
+      "x" : 1015,
+      "y" : 436,
+      "width" : 117,
+      "height" : 50
+    },
+    "textPosition" : {
+      "x" : 1023,
+      "y" : 451
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1132,
+          "y" : 436
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1132,
+          "y" : 436
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 46,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 50,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 58,
+    "reactomeId" : 9626023,
+    "displayName" : "LAMP2a:HSP90",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 426,
+      "y" : 614
+    },
+    "minX" : 332,
+    "maxX" : 488,
+    "minY" : 590,
+    "maxY" : 655,
+    "prop" : {
+      "x" : 370,
+      "y" : 596,
+      "width" : 112,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 375,
+      "y" : 611
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 482,
+          "y" : 596
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 482,
+          "y" : 596
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 35,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 25,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 384,
+          "y" : 635
+        },
+        "to" : {
+          "x" : 332,
+          "y" : 655
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 379,
+          "y" : 641
+        },
+        "b" : {
+          "x" : 384,
+          "y" : 635
+        },
+        "c" : {
+          "x" : 376,
+          "y" : 634
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 376,
+          "y" : 634
+        }
+      }
+    } ]
+  }, {
+    "id" : 59,
+    "reactomeId" : 9625165,
+    "displayName" : "HSPA8:LAMP2a multimeric complex",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1603,
+      "y" : 469
+    },
+    "minX" : 1540,
+    "maxX" : 1672,
+    "minY" : 431,
+    "maxY" : 501,
+    "prop" : {
+      "x" : 1540,
+      "y" : 437,
+      "width" : 126,
+      "height" : 64
+    },
+    "textPosition" : {
+      "x" : 1550,
+      "y" : 452
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1666,
+          "y" : 437
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1666,
+          "y" : 437
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 53,
+      "type" : "INPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 60,
+    "reactomeId" : 9626045,
+    "displayName" : "EEF1A1:GTP",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 402,
+      "y" : 1561
+    },
+    "minX" : 360,
+    "maxX" : 451,
+    "minY" : 1537,
+    "maxY" : 1579,
+    "prop" : {
+      "x" : 360,
+      "y" : 1543,
+      "width" : 85,
+      "height" : 36
+    },
+    "textPosition" : {
+      "x" : 361,
+      "y" : 1558
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 445,
+          "y" : 1543
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 445,
+          "y" : 1543
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 38,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 61,
+    "reactomeId" : 9625181,
+    "displayName" : "LAMP2a multimer complex:GFAP",
+    "schemaClass" : "Complex",
+    "renderableClass" : "Complex",
+    "position" : {
+      "x" : 1439,
+      "y" : 465
+    },
+    "minX" : 1382,
+    "maxX" : 1502,
+    "minY" : 427,
+    "maxY" : 521,
+    "prop" : {
+      "x" : 1382,
+      "y" : 433,
+      "width" : 114,
+      "height" : 64
+    },
+    "textPosition" : {
+      "x" : 1380,
+      "y" : 462
+    },
+    "bgColor" : {
+      "r" : 204,
+      "g" : 255,
+      "b" : 255
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 1496,
+          "y" : 433
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 1496,
+          "y" : 433
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 39,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 1465,
+          "y" : 500
+        },
+        "to" : {
+          "x" : 1485,
+          "y" : 521
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 30,
+      "type" : "OUTPUT",
+      "segments" : [ ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 62,
+    "reactomeId" : 29438,
+    "displayName" : "GTP",
+    "schemaClass" : "SimpleEntity",
+    "renderableClass" : "Chemical",
+    "position" : {
+      "x" : 898,
+      "y" : 1570
+    },
+    "minX" : 827,
+    "maxX" : 945,
+    "minY" : 1529,
+    "maxY" : 1585,
+    "prop" : {
+      "x" : 852,
+      "y" : 1555,
+      "width" : 92,
+      "height" : 30
+    },
+    "textPosition" : {
+      "x" : 882,
+      "y" : 1559
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 939,
+          "y" : 1560
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 939,
+          "y" : 1560
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 64,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 872,
+          "y" : 1552
+        },
+        "to" : {
+          "x" : 827,
+          "y" : 1529
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  }, {
+    "id" : 63,
+    "reactomeId" : 264476,
+    "displayName" : "HSPA8",
+    "schemaClass" : "EntityWithAccessionedSequence",
+    "renderableClass" : "Protein",
+    "position" : {
+      "x" : 586,
+      "y" : 247
+    },
+    "minX" : 307,
+    "maxX" : 793,
+    "minY" : 230,
+    "maxY" : 873,
+    "prop" : {
+      "x" : 537,
+      "y" : 236,
+      "width" : 98,
+      "height" : 22
+    },
+    "textPosition" : {
+      "x" : 561,
+      "y" : 236
+    },
+    "interactorsSummary" : {
+      "type" : "TR",
+      "shape" : {
+        "c" : {
+          "x" : 635,
+          "y" : 236
+        },
+        "r" : 6,
+        "type" : "CIRCLE",
+        "empty" : true,
+        "centre" : {
+          "x" : 635,
+          "y" : 236
+        }
+      }
+    },
+    "connectors" : [ {
+      "edgeId" : 36,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 600,
+          "y" : 261
+        },
+        "to" : {
+          "x" : 793,
+          "y" : 401
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 608,
+          "y" : 262
+        },
+        "b" : {
+          "x" : 600,
+          "y" : 261
+        },
+        "c" : {
+          "x" : 603,
+          "y" : 268
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 603,
+          "y" : 268
+        }
+      }
+    }, {
+      "edgeId" : 44,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 553,
+          "y" : 261
+        },
+        "to" : {
+          "x" : 313,
+          "y" : 339
+        }
+      }, {
+        "from" : {
+          "x" : 313,
+          "y" : 339
+        },
+        "to" : {
+          "x" : 307,
+          "y" : 873
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    }, {
+      "edgeId" : 25,
+      "type" : "OUTPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 567,
+          "y" : 261
+        },
+        "to" : {
+          "x" : 333,
+          "y" : 396
+        }
+      }, {
+        "from" : {
+          "x" : 333,
+          "y" : 396
+        },
+        "to" : {
+          "x" : 332,
+          "y" : 655
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      },
+      "endShape" : {
+        "a" : {
+          "x" : 563,
+          "y" : 268
+        },
+        "b" : {
+          "x" : 567,
+          "y" : 261
+        },
+        "c" : {
+          "x" : 559,
+          "y" : 261
+        },
+        "type" : "ARROW",
+        "centre" : {
+          "x" : 559,
+          "y" : 261
+        }
+      }
+    }, {
+      "edgeId" : 31,
+      "type" : "INPUT",
+      "segments" : [ {
+        "from" : {
+          "x" : 574,
+          "y" : 261
+        },
+        "to" : {
+          "x" : 533,
+          "y" : 297
+        }
+      } ],
+      "stoichiometry" : {
+        "value" : 1
+      }
+    } ]
+  } ],
+  "edges" : [ {
+    "id" : 64,
+    "reactomeId" : 9626038,
+    "displayName" : "EEF1A1 binds GTP",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 700,
+      "y" : 1528
+    },
+    "minX" : 628,
+    "maxX" : 827,
+    "minY" : 1494,
+    "maxY" : 1533,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 827,
+        "y" : 1529
+      },
+      "to" : {
+        "x" : 700,
+        "y" : 1528
+      }
+    }, {
+      "from" : {
+        "x" : 700,
+        "y" : 1528
+      },
+      "to" : {
+        "x" : 628,
+        "y" : 1494
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 636,
+        "y" : 1493
+      },
+      "b" : {
+        "x" : 628,
+        "y" : 1494
+      },
+      "c" : {
+        "x" : 633,
+        "y" : 1501
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 633,
+        "y" : 1501
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 700,
+        "y" : 1528
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 700,
+        "y" : 1528
+      }
+    },
+    "inputs" : [ {
+      "id" : 45,
+      "points" : [ {
+        "x" : 887,
+        "y" : 1497
+      } ]
+    }, {
+      "id" : 62,
+      "points" : [ {
+        "x" : 872,
+        "y" : 1552
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 28
+    } ]
+  }, {
+    "id" : 65,
+    "reactomeId" : 9620197,
+    "displayName" : "HSPA8:Substrate binds LAMP2a",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 615,
+      "y" : 419
+    },
+    "minX" : 591,
+    "maxX" : 689,
+    "minY" : 414,
+    "maxY" : 436,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 591,
+        "y" : 419
+      },
+      "to" : {
+        "x" : 615,
+        "y" : 419
+      }
+    }, {
+      "from" : {
+        "x" : 615,
+        "y" : 419
+      },
+      "to" : {
+        "x" : 642,
+        "y" : 419
+      }
+    }, {
+      "from" : {
+        "x" : 642,
+        "y" : 419
+      },
+      "to" : {
+        "x" : 689,
+        "y" : 436
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 681,
+        "y" : 437
+      },
+      "b" : {
+        "x" : 689,
+        "y" : 436
+      },
+      "c" : {
+        "x" : 684,
+        "y" : 430
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 684,
+        "y" : 430
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 615,
+        "y" : 419
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 615,
+        "y" : 419
+      }
+    },
+    "inputs" : [ {
+      "id" : 66,
+      "points" : [ {
+        "x" : 561,
+        "y" : 440
+      } ]
+    }, {
+      "id" : 40,
+      "points" : [ {
+        "x" : 563,
+        "y" : 399
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 26
+    } ]
+  }, {
+    "id" : 34,
+    "reactomeId" : 9626039,
+    "displayName" : "pGFAP binds GFAP in LAMP2a multimer",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 586,
+      "y" : 1296
+    },
+    "minX" : 478,
+    "maxX" : 681,
+    "minY" : 1291,
+    "maxY" : 1301,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 681,
+        "y" : 1296
+      },
+      "to" : {
+        "x" : 586,
+        "y" : 1296
+      }
+    }, {
+      "from" : {
+        "x" : 586,
+        "y" : 1296
+      },
+      "to" : {
+        "x" : 478,
+        "y" : 1297
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 485,
+        "y" : 1293
+      },
+      "b" : {
+        "x" : 478,
+        "y" : 1297
+      },
+      "c" : {
+        "x" : 485,
+        "y" : 1301
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 485,
+        "y" : 1301
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 586,
+        "y" : 1296
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 586,
+        "y" : 1296
+      }
+    },
+    "inputs" : [ {
+      "id" : 27,
+      "points" : [ {
+        "x" : 1035,
+        "y" : 1455
+      } ]
+    }, {
+      "id" : 69,
+      "points" : [ {
+        "x" : 1840,
+        "y" : 648
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 70
+    } ]
+  }, {
+    "id" : 35,
+    "reactomeId" : 9626276,
+    "displayName" : "HSP90 dissociates from LAMP2a",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 469,
+      "y" : 575
+    },
+    "minX" : 445,
+    "maxX" : 495,
+    "minY" : 554,
+    "maxY" : 593,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 445,
+        "y" : 593
+      },
+      "to" : {
+        "x" : 469,
+        "y" : 575
+      }
+    }, {
+      "from" : {
+        "x" : 469,
+        "y" : 575
+      },
+      "to" : {
+        "x" : 495,
+        "y" : 554
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 469,
+        "y" : 575
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 469,
+        "y" : 575
+      }
+    },
+    "inputs" : [ {
+      "id" : 58
+    } ],
+    "outputs" : [ {
+      "id" : 67,
+      "points" : [ {
+        "x" : 861,
+        "y" : 554
+      } ]
+    }, {
+      "id" : 66,
+      "points" : [ {
+        "x" : 530,
+        "y" : 482
+      } ]
+    } ]
+  }, {
+    "id" : 36,
+    "reactomeId" : 9622840,
+    "displayName" : "HSPA8 dissociates from LAMP2A-bound substrate",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 781,
+      "y" : 415
+    },
+    "minX" : 770,
+    "maxX" : 798,
+    "minY" : 396,
+    "maxY" : 430,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 770,
+        "y" : 430
+      },
+      "to" : {
+        "x" : 781,
+        "y" : 415
+      }
+    }, {
+      "from" : {
+        "x" : 781,
+        "y" : 415
+      },
+      "to" : {
+        "x" : 793,
+        "y" : 401
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 781,
+        "y" : 415
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 781,
+        "y" : 415
+      }
+    },
+    "inputs" : [ {
+      "id" : 26
+    } ],
+    "outputs" : [ {
+      "id" : 54,
+      "points" : [ {
+        "x" : 864,
+        "y" : 432
+      } ]
+    }, {
+      "id" : 63,
+      "points" : [ {
+        "x" : 600,
+        "y" : 261
+      } ]
+    } ]
+  }, {
+    "id" : 38,
+    "reactomeId" : 9626067,
+    "displayName" : "EEF1A1:GTP translocates from lysosomal membrane to cytosol",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 492,
+      "y" : 1514
+    },
+    "minX" : 436,
+    "maxX" : 537,
+    "minY" : 1493,
+    "maxY" : 1540,
+    "reactionType" : "transition",
+    "segments" : [ {
+      "from" : {
+        "x" : 537,
+        "y" : 1493
+      },
+      "to" : {
+        "x" : 492,
+        "y" : 1514
+      }
+    }, {
+      "from" : {
+        "x" : 492,
+        "y" : 1514
+      },
+      "to" : {
+        "x" : 436,
+        "y" : 1540
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 441,
+        "y" : 1533
+      },
+      "b" : {
+        "x" : 436,
+        "y" : 1540
+      },
+      "c" : {
+        "x" : 444,
+        "y" : 1541
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 444,
+        "y" : 1541
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 486,
+        "y" : 1508
+      },
+      "b" : {
+        "x" : 498,
+        "y" : 1520
+      },
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 492,
+        "y" : 1514
+      }
+    },
+    "inputs" : [ {
+      "id" : 28
+    } ],
+    "outputs" : [ {
+      "id" : 60
+    } ]
+  }, {
+    "id" : 71,
+    "reactomeId" : 9626046,
+    "displayName" : "p-GFAP binds EEF1A1",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 827,
+      "y" : 1421
+    },
+    "minX" : 787,
+    "maxX" : 909,
+    "minY" : 1416,
+    "maxY" : 1447,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 909,
+        "y" : 1422
+      },
+      "to" : {
+        "x" : 827,
+        "y" : 1421
+      }
+    }, {
+      "from" : {
+        "x" : 827,
+        "y" : 1421
+      },
+      "to" : {
+        "x" : 787,
+        "y" : 1447
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 791,
+        "y" : 1440
+      },
+      "b" : {
+        "x" : 787,
+        "y" : 1447
+      },
+      "c" : {
+        "x" : 795,
+        "y" : 1447
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 795,
+        "y" : 1447
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 827,
+        "y" : 1421
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 827,
+        "y" : 1421
+      }
+    },
+    "inputs" : [ {
+      "id" : 45,
+      "points" : [ {
+        "x" : 915,
+        "y" : 1455
+      } ]
+    }, {
+      "id" : 27,
+      "points" : [ {
+        "x" : 1019,
+        "y" : 1455
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 33
+    } ]
+  }, {
+    "id" : 39,
+    "reactomeId" : 9625196,
+    "displayName" : "Unfolded substrate in LAMP2a multimeric complex binds HSPA8",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1516,
+      "y" : 522
+    },
+    "minX" : 1485,
+    "maxX" : 1550,
+    "minY" : 504,
+    "maxY" : 527,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1485,
+        "y" : 521
+      },
+      "to" : {
+        "x" : 1516,
+        "y" : 522
+      }
+    }, {
+      "from" : {
+        "x" : 1516,
+        "y" : 522
+      },
+      "to" : {
+        "x" : 1550,
+        "y" : 504
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1546,
+        "y" : 511
+      },
+      "b" : {
+        "x" : 1550,
+        "y" : 504
+      },
+      "c" : {
+        "x" : 1542,
+        "y" : 504
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1542,
+        "y" : 504
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1516,
+        "y" : 522
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1516,
+        "y" : 522
+      }
+    },
+    "inputs" : [ {
+      "id" : 61,
+      "points" : [ {
+        "x" : 1465,
+        "y" : 500
+      } ]
+    }, {
+      "id" : 32,
+      "points" : [ {
+        "x" : 1465,
+        "y" : 536
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 59
+    } ]
+  }, {
+    "id" : 41,
+    "reactomeId" : 9626060,
+    "displayName" : "HSPA8:Substrate dissociates from LAMP2a multimer",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1782,
+      "y" : 552
+    },
+    "minX" : 1777,
+    "maxX" : 1787,
+    "minY" : 496,
+    "maxY" : 583,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 1782,
+        "y" : 496
+      },
+      "to" : {
+        "x" : 1782,
+        "y" : 552
+      }
+    }, {
+      "from" : {
+        "x" : 1782,
+        "y" : 552
+      },
+      "to" : {
+        "x" : 1782,
+        "y" : 583
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 1782,
+        "y" : 552
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 1782,
+        "y" : 552
+      }
+    },
+    "inputs" : [ {
+      "id" : 43
+    } ],
+    "outputs" : [ {
+      "id" : 69,
+      "points" : [ {
+        "x" : 1840,
+        "y" : 600
+      } ]
+    }, {
+      "id" : 51,
+      "points" : [ {
+        "x" : 1730,
+        "y" : 600
+      } ]
+    } ]
+  }, {
+    "id" : 44,
+    "reactomeId" : 9626253,
+    "displayName" : "HSPA8 binds LAMP2a multimers",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 333,
+      "y" : 873
+    },
+    "minX" : 307,
+    "maxX" : 371,
+    "minY" : 868,
+    "maxY" : 878,
+    "reactionType" : "transition",
+    "segments" : [ {
+      "from" : {
+        "x" : 307,
+        "y" : 873
+      },
+      "to" : {
+        "x" : 333,
+        "y" : 873
+      }
+    }, {
+      "from" : {
+        "x" : 333,
+        "y" : 873
+      },
+      "to" : {
+        "x" : 371,
+        "y" : 874
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 364,
+        "y" : 878
+      },
+      "b" : {
+        "x" : 371,
+        "y" : 874
+      },
+      "c" : {
+        "x" : 364,
+        "y" : 870
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 364,
+        "y" : 870
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 327,
+        "y" : 867
+      },
+      "b" : {
+        "x" : 339,
+        "y" : 879
+      },
+      "s" : "",
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 333,
+        "y" : 873
+      }
+    },
+    "inputs" : [ {
+      "id" : 37,
+      "points" : [ {
+        "x" : 402,
+        "y" : 1007
+      } ]
+    }, {
+      "id" : 63,
+      "points" : [ {
+        "x" : 553,
+        "y" : 261
+      }, {
+        "x" : 313,
+        "y" : 339
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 52
+    } ]
+  }, {
+    "id" : 46,
+    "reactomeId" : 9624158,
+    "displayName" : "Substrate:LAMP2a:HSP90 polymerizes",
+    "schemaClass" : "Polymerisation",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1147,
+      "y" : 507
+    },
+    "minX" : 1113,
+    "maxX" : 1186,
+    "minY" : 489,
+    "maxY" : 513,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1113,
+        "y" : 489
+      },
+      "to" : {
+        "x" : 1147,
+        "y" : 507
+      }
+    }, {
+      "from" : {
+        "x" : 1147,
+        "y" : 507
+      },
+      "to" : {
+        "x" : 1186,
+        "y" : 492
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1181,
+        "y" : 498
+      },
+      "b" : {
+        "x" : 1186,
+        "y" : 492
+      },
+      "c" : {
+        "x" : 1178,
+        "y" : 491
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1178,
+        "y" : 491
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1147,
+        "y" : 507
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1147,
+        "y" : 507
+      }
+    },
+    "inputs" : [ {
+      "id" : 57
+    } ],
+    "outputs" : [ {
+      "id" : 68
+    } ]
+  }, {
+    "id" : 47,
+    "reactomeId" : 9626256,
+    "displayName" : "HSPA8:LAMP2a multimers depolymerizes to monomers",
+    "schemaClass" : "Depolymerisation",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 466,
+      "y" : 826
+    },
+    "minX" : 436,
+    "maxX" : 472,
+    "minY" : 781,
+    "maxY" : 856,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 444,
+        "y" : 856
+      },
+      "to" : {
+        "x" : 466,
+        "y" : 826
+      }
+    }, {
+      "from" : {
+        "x" : 466,
+        "y" : 826
+      },
+      "to" : {
+        "x" : 436,
+        "y" : 781
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 443,
+        "y" : 785
+      },
+      "b" : {
+        "x" : 436,
+        "y" : 781
+      },
+      "c" : {
+        "x" : 437,
+        "y" : 789
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 437,
+        "y" : 789
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 466,
+        "y" : 826
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 466,
+        "y" : 826
+      }
+    },
+    "inputs" : [ {
+      "id" : 52
+    } ],
+    "outputs" : [ {
+      "id" : 29
+    } ]
+  }, {
+    "id" : 50,
+    "reactomeId" : 9622831,
+    "displayName" : "Substrate:LAMP2a binds HSP90",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1006,
+      "y" : 512
+    },
+    "minX" : 983,
+    "maxX" : 1040,
+    "minY" : 489,
+    "maxY" : 517,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 983,
+        "y" : 512
+      },
+      "to" : {
+        "x" : 1006,
+        "y" : 512
+      }
+    }, {
+      "from" : {
+        "x" : 1006,
+        "y" : 512
+      },
+      "to" : {
+        "x" : 1040,
+        "y" : 489
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1037,
+        "y" : 496
+      },
+      "b" : {
+        "x" : 1040,
+        "y" : 489
+      },
+      "c" : {
+        "x" : 1032,
+        "y" : 490
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1032,
+        "y" : 490
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1006,
+        "y" : 512
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1006,
+        "y" : 512
+      }
+    },
+    "inputs" : [ {
+      "id" : 54,
+      "points" : [ {
+        "x" : 948,
+        "y" : 488
+      } ]
+    }, {
+      "id" : 67,
+      "points" : [ {
+        "x" : 957,
+        "y" : 524
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 57
+    } ]
+  }, {
+    "id" : 53,
+    "reactomeId" : 9625188,
+    "displayName" : "HSPA8 transports unfolded substrate to lysosomal lumen for degradation",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1693,
+      "y" : 529
+    },
+    "minX" : 1651,
+    "maxX" : 1745,
+    "minY" : 496,
+    "maxY" : 535,
+    "reactionType" : "transition",
+    "segments" : [ {
+      "from" : {
+        "x" : 1651,
+        "y" : 504
+      },
+      "to" : {
+        "x" : 1693,
+        "y" : 529
+      }
+    }, {
+      "from" : {
+        "x" : 1693,
+        "y" : 529
+      },
+      "to" : {
+        "x" : 1745,
+        "y" : 496
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1741,
+        "y" : 503
+      },
+      "b" : {
+        "x" : 1745,
+        "y" : 496
+      },
+      "c" : {
+        "x" : 1737,
+        "y" : 496
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1737,
+        "y" : 496
+      }
+    },
+    "reactionShape" : {
+      "a" : {
+        "x" : 1687,
+        "y" : 523
+      },
+      "b" : {
+        "x" : 1699,
+        "y" : 535
+      },
+      "type" : "BOX",
+      "empty" : true,
+      "centre" : {
+        "x" : 1693,
+        "y" : 529
+      }
+    },
+    "inputs" : [ {
+      "id" : 59
+    } ],
+    "outputs" : [ {
+      "id" : 43
+    } ]
+  }, {
+    "id" : 55,
+    "reactomeId" : 9626242,
+    "displayName" : "p-GFAP:GFAP dissociates from LAMP2a multimer",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 499,
+      "y" : 1223
+    },
+    "minX" : 452,
+    "maxX" : 504,
+    "minY" : 1165,
+    "maxY" : 1263,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 452,
+        "y" : 1263
+      },
+      "to" : {
+        "x" : 499,
+        "y" : 1223
+      }
+    }, {
+      "from" : {
+        "x" : 499,
+        "y" : 1223
+      },
+      "to" : {
+        "x" : 500,
+        "y" : 1165
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 499,
+        "y" : 1223
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 499,
+        "y" : 1223
+      }
+    },
+    "inputs" : [ {
+      "id" : 70
+    } ],
+    "outputs" : [ {
+      "id" : 37,
+      "points" : [ {
+        "x" : 435,
+        "y" : 1063
+      } ]
+    }, {
+      "id" : 42,
+      "points" : [ {
+        "x" : 460,
+        "y" : 1150
+      } ]
+    } ]
+  }, {
+    "id" : 56,
+    "reactomeId" : 9626034,
+    "displayName" : "EEF1A1 dissociates from p-GFAP",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 855,
+      "y" : 1431
+    },
+    "minX" : 810,
+    "maxX" : 880,
+    "minY" : 1426,
+    "maxY" : 1451,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 810,
+        "y" : 1451
+      },
+      "to" : {
+        "x" : 855,
+        "y" : 1431
+      }
+    }, {
+      "from" : {
+        "x" : 855,
+        "y" : 1431
+      },
+      "to" : {
+        "x" : 880,
+        "y" : 1431
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 855,
+        "y" : 1431
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 855,
+        "y" : 1431
+      }
+    },
+    "inputs" : [ {
+      "id" : 33
+    } ],
+    "outputs" : [ {
+      "id" : 45,
+      "points" : [ {
+        "x" : 903,
+        "y" : 1455
+      } ]
+    }, {
+      "id" : 27,
+      "points" : [ {
+        "x" : 1011,
+        "y" : 1461
+      } ]
+    } ]
+  }, {
+    "id" : 25,
+    "reactomeId" : 9626235,
+    "displayName" : "HSPA8 dissociates from LAMP2a",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 333,
+      "y" : 694
+    },
+    "minX" : 328,
+    "maxX" : 400,
+    "minY" : 655,
+    "maxY" : 739,
+    "reactionType" : "dissociation",
+    "segments" : [ {
+      "from" : {
+        "x" : 400,
+        "y" : 739
+      },
+      "to" : {
+        "x" : 333,
+        "y" : 694
+      }
+    }, {
+      "from" : {
+        "x" : 333,
+        "y" : 694
+      },
+      "to" : {
+        "x" : 332,
+        "y" : 655
+      }
+    } ],
+    "reactionShape" : {
+      "c" : {
+        "x" : 333,
+        "y" : 694
+      },
+      "r" : 5,
+      "r1" : 3,
+      "type" : "DOUBLE_CIRCLE",
+      "empty" : true,
+      "centre" : {
+        "x" : 333,
+        "y" : 694
+      }
+    },
+    "inputs" : [ {
+      "id" : 29
+    } ],
+    "outputs" : [ {
+      "id" : 58,
+      "points" : [ {
+        "x" : 384,
+        "y" : 635
+      } ]
+    }, {
+      "id" : 63,
+      "points" : [ {
+        "x" : 567,
+        "y" : 261
+      }, {
+        "x" : 333,
+        "y" : 396
+      } ]
+    } ]
+  }, {
+    "id" : 30,
+    "reactomeId" : 9625197,
+    "displayName" : "GFAP binds LAMP2a multimer",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 1342,
+      "y" : 515
+    },
+    "minX" : 1304,
+    "maxX" : 1379,
+    "minY" : 494,
+    "maxY" : 520,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 1304,
+        "y" : 515
+      },
+      "to" : {
+        "x" : 1342,
+        "y" : 515
+      }
+    }, {
+      "from" : {
+        "x" : 1342,
+        "y" : 515
+      },
+      "to" : {
+        "x" : 1379,
+        "y" : 494
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 1375,
+        "y" : 501
+      },
+      "b" : {
+        "x" : 1379,
+        "y" : 494
+      },
+      "c" : {
+        "x" : 1371,
+        "y" : 494
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 1371,
+        "y" : 494
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 1342,
+        "y" : 515
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 1342,
+        "y" : 515
+      }
+    },
+    "inputs" : [ {
+      "id" : 48,
+      "points" : [ {
+        "x" : 1274,
+        "y" : 528
+      } ]
+    }, {
+      "id" : 68,
+      "points" : [ {
+        "x" : 1272,
+        "y" : 492
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 61
+    } ]
+  }, {
+    "id" : 31,
+    "reactomeId" : 9615721,
+    "displayName" : "HSPA8 binds substrate",
+    "schemaClass" : "Reaction",
+    "renderableClass" : "Reaction",
+    "position" : {
+      "x" : 532,
+      "y" : 321
+    },
+    "minX" : 527,
+    "maxX" : 537,
+    "minY" : 297,
+    "maxY" : 343,
+    "reactionType" : "binding",
+    "segments" : [ {
+      "from" : {
+        "x" : 533,
+        "y" : 297
+      },
+      "to" : {
+        "x" : 532,
+        "y" : 321
+      }
+    }, {
+      "from" : {
+        "x" : 532,
+        "y" : 321
+      },
+      "to" : {
+        "x" : 532,
+        "y" : 343
+      }
+    } ],
+    "endShape" : {
+      "a" : {
+        "x" : 528,
+        "y" : 336
+      },
+      "b" : {
+        "x" : 532,
+        "y" : 343
+      },
+      "c" : {
+        "x" : 536,
+        "y" : 336
+      },
+      "type" : "ARROW",
+      "centre" : {
+        "x" : 536,
+        "y" : 336
+      }
+    },
+    "reactionShape" : {
+      "c" : {
+        "x" : 532,
+        "y" : 321
+      },
+      "r" : 5,
+      "type" : "CIRCLE",
+      "centre" : {
+        "x" : 532,
+        "y" : 321
+      }
+    },
+    "inputs" : [ {
+      "id" : 49,
+      "points" : [ {
+        "x" : 455,
+        "y" : 273
+      } ]
+    }, {
+      "id" : 63,
+      "points" : [ {
+        "x" : 574,
+        "y" : 261
+      } ]
+    } ],
+    "outputs" : [ {
+      "id" : 40
+    } ]
+  } ],
+  "compartments" : [ {
+    "id" : 72,
+    "reactomeId" : 70101,
+    "displayName" : "cytosol",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 1039,
+      "y" : 822
+    },
+    "minX" : 0,
+    "maxX" : 2078,
+    "minY" : 0,
+    "maxY" : 1645,
+    "prop" : {
+      "x" : 0,
+      "y" : 0,
+      "width" : 2078,
+      "height" : 1645
+    },
+    "textPosition" : {
+      "x" : 1076,
+      "y" : 214
+    },
+    "insets" : {
+      "x" : 10,
+      "y" : 10,
+      "width" : 2061,
+      "height" : 1627
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 31, 49, 63, 40, 65, 36, 44, 25, 60, 62, 76, 38, 64 ]
+  }, {
+    "id" : 76,
+    "reactomeId" : 161320,
+    "displayName" : "lysosomal lumen",
+    "schemaClass" : "Compartment",
+    "renderableClass" : "Compartment",
+    "position" : {
+      "x" : 1169,
+      "y" : 969
+    },
+    "minX" : 409,
+    "maxX" : 1929,
+    "minY" : 458,
+    "maxY" : 1480,
+    "prop" : {
+      "x" : 409,
+      "y" : 458,
+      "width" : 1520,
+      "height" : 1022
+    },
+    "textPosition" : {
+      "x" : 1596,
+      "y" : 1392
+    },
+    "insets" : {
+      "x" : 419,
+      "y" : 468,
+      "width" : 1498,
+      "height" : 1001
+    },
+    "bgColor" : {
+      "r" : 250,
+      "g" : 240,
+      "b" : 240
+    },
+    "componentIds" : [ 26, 30, 32, 39, 46, 48, 50, 54, 57, 59, 61, 66, 67, 68, 43, 27, 28, 29, 33, 34, 37, 42, 45, 47, 51, 55, 56, 69, 70, 71, 41, 58, 35, 53, 52 ]
+  } ],
+  "notes" : [ ],
+  "links" : [ ],
+  "shadows" : [ ],
+  "minX" : 0,
+  "maxX" : 2078,
+  "minY" : 0,
+  "maxY" : 1645,
+  "disease" : false
+}

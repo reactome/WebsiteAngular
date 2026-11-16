@@ -52,7 +52,7 @@ export class DatasetEffects {
               name: file.name.substring(0, file.name.lastIndexOf('.')),
             })
           ),
-          catchError((error) => of(datasetActions.uploadError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.uploadError({ error, id })))
         )
       )
     )
@@ -79,7 +79,7 @@ export class DatasetEffects {
               name: fileRNA.name.substring(0, fileRNA.name.lastIndexOf('.')),
             })
           ),
-          catchError((error) => of(datasetActions.uploadError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.uploadError({ error, id })))
         )
       )
     )
@@ -116,7 +116,7 @@ export class DatasetEffects {
       exhaustMap(({ resourceId, parameters, id }) =>
         this.loadDatasetService.submitLoadDataset(resourceId, parameters).pipe(
           map((loadingId) => datasetActions.loadSubmitted({ loadingId, id })),
-          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.loadSubmittedError({ error, id })))
         )
       )
     )
@@ -136,7 +136,7 @@ export class DatasetEffects {
       switchMap(({ loadingId, id }) =>
         this.loadDatasetService.getLoadingStatus(loadingId).pipe(
           mergeMap((loadingStatus) => {
-            const actions: Action<any>[] = [datasetActions.setLoadStatus({ loadingStatus, id })];
+            const actions: Action[] = [datasetActions.setLoadStatus({ loadingStatus, id })];
             if (loadingStatus.status === 'running')
               actions.push(datasetActions.getLoadStatus({ loadingId, id }));
             else if (loadingStatus.status === 'failed') {
@@ -147,7 +147,7 @@ export class DatasetEffects {
           delayWhen((action) =>
             action.type === '[GSA Dataset] get load status' ? timer(500) : timer(0)
           ),
-          catchError((error) => of(datasetActions.getLoadStatusError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.getLoadStatusError({ error, id })))
         )
       )
     )
@@ -156,9 +156,17 @@ export class DatasetEffects {
   loadError = createEffect(
     () =>
       this.actions$.pipe(
-        ofType(datasetActions.loadSubmittedError, datasetActions.getLoadStatusError),
+        ofType(
+          datasetActions.uploadError,
+          datasetActions.loadSubmittedError,
+          datasetActions.getLoadStatusError,
+          datasetActions.getSummaryError
+        ),
+        // The dialog open now, not whichever is open two seconds later: a reader
+        // may have cancelled this one and started another load by then.
+        map(() => this.dialogRef),
         delay(2000),
-        tap(() => this.dialogRef?.close())
+        tap((dialogRef) => dialogRef?.close())
       ),
     { dispatch: false }
   );
@@ -167,11 +175,12 @@ export class DatasetEffects {
     this.actions$.pipe(
       ofType(datasetActions.setLoadStatus),
       filter(({ loadingStatus }) => loadingStatus.status === 'complete'),
+      // A finished load names the dataset it made; one that does not cannot be
+      // summarised, and fails as a summary that could not be had.
       map(({ loadingStatus, id }) =>
-        datasetActions.getSummary({
-          datasetId: loadingStatus.dataset_id!,
-          id,
-        })
+        loadingStatus.dataset_id
+          ? datasetActions.getSummary({ datasetId: loadingStatus.dataset_id, id })
+          : datasetActions.getSummaryError({ error: 'no dataset id', id })
       )
     )
   );
@@ -182,7 +191,7 @@ export class DatasetEffects {
       exhaustMap(({ datasetId, id }) =>
         this.loadDatasetService.getSummary(datasetId).pipe(
           map((summary) => datasetActions.setSummary({ summary, id })),
-          catchError((error) => of(datasetActions.loadSubmittedError({ error, id })))
+          catchError((error: unknown) => of(datasetActions.getSummaryError({ error, id })))
         )
       )
     )
@@ -191,16 +200,21 @@ export class DatasetEffects {
   summaryToAnnotate = createEffect(() =>
     this.actions$.pipe(
       ofType(datasetActions.setSummary),
-      tap(() => setTimeout(() => this.dialogRef?.close(), 500)),
+      tap(() => {
+        const dialogRef = this.dialogRef; // as loadError: this one, not a later one
+        setTimeout(() => dialogRef?.close(), 500);
+      }),
       map(({ summary, id }) => {
         setTimeout(() => (this.tour.paused ? this.tour.resume() : null), 1000);
-        const table: string[][] = !summary.sample_metadata
+        const metadata = summary.sample_metadata;
+        const table: string[][] = !metadata
           ? [[''], ...summary.sample_ids.map((sampleId) => [sampleId])]
           : [
-              ['', ...summary.sample_metadata.map((col) => col.name)],
+              ['', ...metadata.map((col) => col.name)],
               ...summary.sample_ids.map((sampleId, i) => [
                 sampleId,
-                ...summary.sample_metadata!.map((column) => column.values[i]),
+                // A missing value stays missing (sent as null), as it always was.
+                ...metadata.map((column) => column.values[i] as string),
               ]),
             ];
         return datasetActions.setAnnotations({ annotations: table, id });
@@ -252,7 +266,9 @@ export class DatasetEffects {
               .filter((param) => param.scope === 'dataset')
               .map((param) => ({
                 ...param,
-                default: param.value, // Method param is the default value for the dataset param
+                // The method's value is the dataset's default; a method's parameters
+                // are given a value when the methods load, so it is never absent.
+                default: param.value ?? param.default,
               })) || [],
         })
       )

@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { ViewportComponent } from './viewport/viewport.component';
 import { RenderComponent } from './render/render.component';
+import { RENDER_FIGURE } from './render/render-reuse-strategy';
 import { inject, provideEnvironmentInitializer } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { MatIconRegistry } from '@angular/material/icon';
@@ -59,15 +60,16 @@ export const routes: Routes = [
     path: 'render',
     providers: [provideEnvironmentInitializer(registerPathwayBrowserIcons)],
     children: [
-      { path: '', component: RenderComponent },
-      { path: ':pathwayId', component: RenderComponent },
+      // A move to the next figure recreates the component (render-navigation.ts).
+      { path: '', component: RenderComponent, data: { [RENDER_FIGURE]: true } },
+      { path: ':pathwayId', component: RenderComponent, data: { [RENDER_FIGURE]: true } },
     ],
   },
   {
-    matcher: (segments) =>
-      segments.length === 0
-        ? { consumed: segments }
-        : { consumed: segments, posParams: { pathwayId: segments[0] } },
+    matcher: (segments) => {
+      const [pathwayId] = segments;
+      return pathwayId ? { consumed: segments, posParams: { pathwayId } } : { consumed: segments };
+    },
     providers: [
       // ngx-ui-tour 16 stopped providing TourService in root, so it has to be
       // provided explicitly or the GSA form's tour anchors fail with NG0201 and

@@ -8,7 +8,7 @@ import {
   Signal,
   viewChild,
 } from '@angular/core';
-import { MoleculeGroup } from '../molecule-tab.component';
+import type { MoleculeGroup } from '../molecule-tab.component';
 import { MatTable, MatTableModule } from '@angular/material/table';
 import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
@@ -91,14 +91,15 @@ export class MoleculeDownloadTableComponent {
     return this.tableData().filter((molecule) => this.selectedCategory().includes(molecule.type));
   });
 
-  readonly finalData = computed(() => this.filteredData() ?? this.tableData());
+  readonly finalData = this.filteredData;
 
   readonly maxWidths = computed(() => {
     const columns = this.displayedColumns();
     const maxData = new Map<string, string>(columns.map((column) => [column, '']));
     this.filteredData().forEach((row) => {
       columns.forEach((column) => {
-        if (maxData.get(column)!.length < row[column].length) maxData.set(column, row[column]);
+        const value = row[column] ?? '';
+        if ((maxData.get(column) ?? '').length < value.length) maxData.set(column, value);
       });
     });
     return maxData;
@@ -132,7 +133,7 @@ export class MoleculeDownloadTableComponent {
   }
 
   exportToTSV(): void {
-    if (!this.tableData() || this.tableData().length === 0) return;
+    if (this.tableData().length === 0) return;
 
     const exportData = this.getExportData();
 

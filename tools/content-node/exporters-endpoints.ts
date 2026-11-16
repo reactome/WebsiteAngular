@@ -1,0 +1,1241 @@
+/**
+ * The exporter endpoints (spec 014, research R1, a family): /exporter/*,
+ * diagrams, reactions, the species overview and figures drawn by the render
+ * service, with the helpers only they use. Moved from service.ts.
+ */
+import type { RenderRefusal } from '../../projects/contract/render.ts';
+import { get as httpGet, type IncomingMessage } from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { toSbgn, SBGN_MEDIA_TYPE } from 'sbgn-exporter';
+import { reactionAnswer } from './reaction-layout/answer.ts';
+import type { Answer, Endpoint, Request } from './endpoint.ts';
+import { read } from './graph.ts';
+import { settings } from './settings.ts';
+import {
+  deepShare,
+  javaError,
+  notFound,
+  springNotFound,
+  unexpected,
+  unexpectedFailure,
+} from './answers.ts';
+import {
+  pathId,
+  queryValues,
+  rawSegment,
+  springBoolean,
+  springIntegerWithDefault,
+} from './spring.ts';
+import { javaTrim, present } from './java-text.ts';
+import type { Failure } from './answers.ts';
+import {
+  findById,
+  graphCoreId,
+  layoutFailureMessage,
+  longPastRange,
+  speciesFilter,
+  speciesTaxId,
+} from './objects.ts';
+import { diagramResult } from './search-params.ts';
+
+/** The extensions ImageExporterController answers, pdf aside (its own 500). */
+const EXPORT_FORMATS = ['png', 'jpg', 'jpeg', 'svg', 'gif'];
+
+/**
+ * What diagramImage fails on once the id is resolved, in its order, or
+ * undefined: pdf, by its own literal message; a blank quality, unboxed for
+ * the raster budget (the service's generic 500, 'unexpected'); a quality
+ * outside 1-10, which RasterArgs refuses; a blank ehld, unboxed; an
+ * extension DiagramRenderer does not draw, its 500 (measured 8 Nov 2026).
+ */
+export function figureProblem(values: ExportValues, ext: string) {
+  const fail = (message: string) => ({ status: 500, reason: 'INTERNAL_SERVER_ERROR', message });
+  if (ext === 'pdf') return fail('Unsupported file extension pdf');
+  if (values.quality === null) return 'unexpected';
+  // Read with its default, so a number here.
+  const quality = values.quality as number;
+  if (quality < 1 || quality > 10) return fail('quality must be in the range [1-10]');
+  if (values.ehld === null) return 'unexpected';
+  if (!EXPORT_FORMATS.includes(ext)) return fail(`Unsupported file extension ${ext}`);
+  return undefined;
+}
+
+/** Whether a pathway is drawn as its illustration (hasEHLD), as the render page draws it. */
+async function hasIllustration(stId: string) {
+  const [row] = await read<{ ehld: boolean | null }>(
+    'MATCH (p:Pathway{stId:$stId}) RETURN p.hasEHLD AS ehld',
+    { stId }
+  );
+  return row?.ehld === true;
+}
+
+/** Where the render service listens: loopback only, never public. */
+const RENDER_SERVICE = settings.renderService();
+
+/**
+ * Spring's `{identifier}.{ext:.*}`: both variables are `(.*)`, the first
+ * greedy, so the extension is what follows the last dot and a versioned id
+ * keeps its version (graph-core then cuts it). No dot matches nothing.
+ */
+export function splitExportName(segment: string) {
+  const dot = segment.lastIndexOf('.');
+  if (dot === -1) return undefined;
+  return { identifier: segment.slice(0, dot), ext: segment.slice(dot + 1) };
+}
+
+/** A parameter of the exporters, its kind and default (DIAGRAM_EXPORT). */
+type ExportField =
+  | [kind: 'integer', name: string, fallback: number | null]
+  | [kind: 'boolean', name: string, fallback: boolean]
+  | [kind: 'text', name: string, fallback: string | null]
+  | [kind: 'list', name: string];
+
+/** The exporters' parameters, converted, by name. */
+type ExportValues = {
+  sel?: string[];
+  token?: string | null;
+  quality?: number | null;
+  ehld?: boolean | null;
+  margin?: number | null;
+  [name: string]: unknown;
+};
+
+/**
+ * diagramImage's parameters, converted in its order as Spring converts them,
+ * with their defaults: Integers and Booleans as springIntegerWithDefault and
+ * springBoolean read them, `sel` a List<String> -- one value split on commas
+ * and trimmed, several taken as they are.
+ */
+function exporterParameters(
+  request: Request,
+  fields: ExportField[] = DIAGRAM_EXPORT
+): { answer: ReturnType<typeof javaError> } | { values: ExportValues } {
+  const values: ExportValues = {};
+  const integer = (name: string, fallback: number | null) => {
+    const read = springIntegerWithDefault(queryValues(request, name), fallback);
+    if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    values[name] = read.value;
+    return undefined;
+  };
+  // Absent or a single empty value is the default; a blank one converts to
+  // null, which the controller then passes on as it is.
+  const boolean = (name: string, fallback: boolean) => {
+    const given = queryValues(request, name);
+    if (given.length === 0 || (given.length === 1 && given[0] === '')) {
+      values[name] = fallback;
+      return undefined;
+    }
+    const read = springBoolean(given);
+    if (read.error !== undefined) return javaError(request, 400, 'BAD_REQUEST', read.error);
+    values[name] = read.value ?? null;
+    return undefined;
+  };
+  // A String: repeated values arrive joined by ',', as Spring joins a String[].
+  const text = (name: string, fallback: string | null) => {
+    const given = queryValues(request, name);
+    values[name] =
+      given.length > 1
+        ? given.join(',')
+        : given[0] === undefined || given[0] === ''
+          ? fallback
+          : given[0];
+  };
+  const list = (name: string) => {
+    const given = queryValues(request, name);
+    values[name] = (
+      given.length === 1
+        ? present(given[0])
+            .split(',')
+            .map((part) => part.trim())
+        : given.filter((value) => value !== '')
+    ).filter((value) => value !== '');
+    return undefined;
+  };
+  const read = {
+    integer,
+    boolean,
+    text: (name: string, fallback: string | null) => (text(name, fallback), undefined),
+    list,
+  };
+  for (const [kind, name, fallback] of fields) {
+    // Each kind's fallback is its reader's (ExportField); TypeScript cannot
+    // follow that through the index.
+    const answer = (
+      read[kind] as (name: string, fallback: unknown) => ReturnType<typeof javaError> | undefined
+    )(name, fallback);
+    if (answer) return { answer };
+  }
+  return { values };
+}
+
+/** diagramImage's parameters, in its order, with their defaults. */
+const DIAGRAM_EXPORT: ExportField[] = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['boolean', 'ehld', true],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['text', 'analysisProfile', 'Standard'],
+  ['integer', 'expColumn', null],
+];
+
+/** reactionImage's parameters, in its order, with their defaults: diagramImage's but ehld. */
+const REACTION_EXPORT: ExportField[] = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'analysisProfile', 'Standard'],
+  ['text', 'resource', 'TOTAL'],
+  ['integer', 'expColumn', null],
+];
+
+/**
+ * fireworksImage's parameters, in its order, with their defaults. Its
+ * profile has no default in Java's description: any one given is refused.
+ */
+const OVERVIEW_EXPORT: ExportField[] = [
+  ['integer', 'quality', 5],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+  ['boolean', 'title', true],
+  ['integer', 'margin', 15],
+  ['text', 'diagramProfile', null],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['integer', 'expColumn', null],
+  ['boolean', 'coverage', false],
+];
+
+/**
+ * The render service's request for a species' overview: its genome-wide
+ * view, the species by taxId, with an analysis when one is asked for.
+ */
+function overviewExportRequest(
+  taxId: string | number,
+  { ext, token }: { ext: string; token?: string | null | undefined }
+) {
+  const format = ext === 'jpg' ? 'jpeg' : ext;
+  const url = new URL(`${RENDER_SERVICE}/render/genome-wide.${format}`);
+  url.searchParams.set('species', String(taxId));
+  if (token) url.searchParams.set('token', token);
+  return url;
+}
+
+/**
+ * The render service's request for a resolved figure (research D24): the
+ * diagram that draws it, with Java's selection -- the resolved events, then
+ * `sel` -- as `highlight`, which marks them on the whole diagram and frames
+ * nothing, as Java draws a selection; an analysis token as it came; and the
+ * quality as a scale for the formats with pixels. An illustration is drawn
+ * without the selection, which the render page does not mark on one. jpg is
+ * jpeg to the render service.
+ */
+export function diagramExportRequest(
+  result: { diagramStId: string; events?: string[] | null },
+  {
+    ext,
+    sel,
+    token,
+    quality = 5,
+    illustrated = false,
+  }: {
+    ext: string;
+    sel?: string[] | undefined;
+    token?: string | null | undefined;
+    quality?: number;
+    illustrated?: boolean;
+  }
+) {
+  const format = ext === 'jpg' ? 'jpeg' : ext;
+  const url = new URL(`${RENDER_SERVICE}/render/${result.diagramStId}.${format}`);
+  const highlight = [...(result.events ?? []), ...(sel ?? [])];
+  if (highlight.length && !illustrated) url.searchParams.set('highlight', highlight.join(','));
+  if (RASTER.has(format)) url.searchParams.set('scale', String(renderScale(quality)));
+  if (token) url.searchParams.set('token', token);
+  return url;
+}
+
+/**
+ * The Content-Type Java sends with a figure: `image/` and the extension as
+ * asked, in lower case, svg's as `svg+xml` (ImageExporterController), with
+ * UTF-8 on every type, images included: the service forces the encoding.
+ */
+function javaImageType(ext: string) {
+  const type = ext.toLowerCase();
+  return `image/${type === 'svg' ? 'svg+xml' : type};charset=UTF-8`;
+}
+
+/**
+ * RasterArgs.scale: a quality of 1 to 10 as a factor of the layout's size,
+ * 0.1 at 1, 1 at 5 (the default) and 3 at 10, in a straight line between.
+ */
+function qualityFactor(quality: number) {
+  return quality < 5 ? ((quality - 1) / 4) * 0.9 + 0.1 : ((quality - 5) / 5) * 2 + 1;
+}
+
+/**
+ * The render service's scale for a quality (research D24): the same factor
+ * of the layout's size -- the render page's scale is one, a reaction's png at
+ * scale 1 being its layout's size in the website's look -- within what the
+ * render service draws, 0.25 to 2, to three places so one quality is one URL.
+ */
+function renderScale(quality: number) {
+  return Math.round(Math.min(2, Math.max(0.25, qualityFactor(quality))) * 1000) / 1000;
+}
+
+/** The render service's formats with pixels, which a quality scales. */
+const RASTER = new Set(['png', 'jpeg', 'gif']);
+
+/** What DiagramRenderer draws a reaction in, and svg. */
+const REACTION_FORMATS = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
+
+/**
+ * The render service's request for a reaction's figure: its own layout
+ * (`layout=reaction`), as Java's reaction exporter drew it, and the quality
+ * as a scale for the formats with pixels. jpg is jpeg to the render service.
+ */
+function reactionExportRequest(stId: string, format: string, quality: number) {
+  const url = new URL(`${RENDER_SERVICE}/render/${stId}.${format === 'jpg' ? 'jpeg' : format}`);
+  url.searchParams.set('layout', 'reaction');
+  if (RASTER.has(format)) url.searchParams.set('scale', String(renderScale(quality)));
+  return url;
+}
+
+/** Why the render service refused or failed a figure (its RenderRefusal), or null. */
+function refusalReason(body: unknown): RenderRefusal['error'] | null {
+  const field: keyof RenderRefusal = 'error';
+  const error: unknown =
+    typeof body === 'object' && body !== null ? Reflect.get(body, field) : undefined;
+  return typeof error === 'string' ? error : null;
+}
+
+/**
+ * Ask the render service for a figure and pass its bytes on, under Java's
+ * `type`. Its 503 -- a full queue -- is passed on with its Retry-After; any
+ * other failure is a 500 naming it, and a render service that cannot be
+ * reached is a 503.
+ */
+async function renderFigure(request: Request, url: string | URL, type: string) {
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(300_000) });
+  } catch (caught) {
+    const failure = caught as Failure | undefined;
+    const late = failure?.name === 'TimeoutError';
+    return javaError(
+      request,
+      503,
+      'SERVICE_UNAVAILABLE',
+      late ? 'The figure took too long to draw' : 'The figure service cannot be reached'
+    );
+  }
+  if (response.status === 503)
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Too many figures are being drawn; try again shortly'
+      ),
+      headers: { 'Retry-After': response.headers.get('retry-after') ?? '5' },
+    };
+  if (!response.ok) {
+    const reason = await response
+      .json()
+      .then(refusalReason)
+      .catch(() => `the figure service answered ${response.status}`);
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', reason);
+  }
+  return {
+    status: 200,
+    body: Buffer.from(await response.arrayBuffer()),
+    type,
+  };
+}
+
+/** An event an export is asked for: its stable id, and whether it is one an export is made of. */
+export interface ExportEvent {
+  stId: string | null;
+  isEvent: boolean;
+}
+
+/**
+ * The object an id names, as graph-core's findById reads the id (any version,
+ * a dbId, an old REACT_ id), with whether it is a pathway or a reaction: Java
+ * answers 400 for anything else. Decided from its labels, where Java loaded
+ * every relationship of the object to decide it (about 30 s for ATP).
+ */
+async function exportEvent(raw: string): Promise<ExportEvent | null> {
+  const id = await graphCoreId(raw);
+  if (!id) return null;
+  const [found] = await read<ExportEvent>(
+    `MATCH (n:DatabaseObject ${id.object}) RETURN n.stId AS stId, (n:Pathway OR n:ReactionLikeEvent) AS isEvent LIMIT 1`,
+    id.params
+  );
+  return found ?? null;
+}
+
+/**
+ * Each export's own share (research R6): Java made one file at a time; past a
+ * share, a 503 with Retry-After, as the deep pool answers. Separate from the
+ * deep pool, so a burst of exports cannot starve the queries the pages need,
+ * and from each other, so one export cannot take the other's places here. The
+ * service converts two at once across both (spec 015 T069), for its heap: a
+ * BioPAX file may wait there behind two SBML ones, and past the headers' time
+ * at the worst (T069 measured 300–310 s): the reader then gets the 503 below,
+ * and the service, finishing, keeps the file for the next request.
+ */
+const SBML_SHARE = deepShare(2);
+const BIOPAX_SHARE = deepShare(2);
+
+/**
+ * How long the service has to send its headers: under nginx's 300 s, so the
+ * reader gets this envelope rather than nginx's page. Once the body flows it
+ * is not timed: it is a file the service has already written.
+ */
+const EXPORT_HEADERS_MS = 290_000;
+
+/** What differs between the library service's exports: the rest is one answer. */
+interface ExportFormat {
+  /** As the service's path and the messages name it. */
+  path: 'sbml' | 'biopax';
+  label: 'SBML' | 'BioPAX';
+  type: string;
+  /** The download's extension. */
+  download: string;
+  share: ReturnType<typeof deepShare>;
+  /** The reader's message for the service's 503: SBML's is a diagram file it could not have. */
+  unavailable: string;
+}
+
+const SBML: ExportFormat = {
+  path: 'sbml',
+  label: 'SBML',
+  type: 'application/sbml+xml;charset=UTF-8',
+  download: 'sbml',
+  share: SBML_SHARE,
+  unavailable: "The pathway's diagram cannot be had just now; try again shortly",
+};
+
+/**
+ * BioPAX Level 3 (research R6): `application/rdf+xml`, named `{stId}.biopax`.
+ * No URL of Java's, so no download guard to imitate: the name is the server's.
+ */
+const BIOPAX: ExportFormat = {
+  path: 'biopax',
+  label: 'BioPAX',
+  type: 'application/rdf+xml;charset=UTF-8',
+  download: 'biopax',
+  share: BIOPAX_SHARE,
+  unavailable: 'The BioPAX file cannot be made just now; try again shortly',
+};
+
+/**
+ * The service's answer, once its headers are in, or a rejection: 'late' when
+ * none came in time. Node's own client, not fetch: a fetch body converted to
+ * a stream never closes when the connection dies part way -- the failure
+ * escapes as an unhandled rejection -- so the share it held was never given
+ * back. An IncomingMessage closes either way. Plain HTTP: the service is on
+ * loopback.
+ */
+function exportResponse(url: string, headersMs: number): Promise<IncomingMessage> {
+  return new Promise((resolve, reject) => {
+    // A connection per file: a kept-alive one the service has since closed
+    // would fail the next file as unreachable.
+    const asking = httpGet(url, { agent: false }, (response) => {
+      clearTimeout(late);
+      resolve(response);
+    });
+    const late = setTimeout(() => asking.destroy(new Error('late')), headersMs);
+    asking.once('error', (failure) => {
+      clearTimeout(late);
+      reject(failure);
+    });
+  });
+}
+
+/**
+ * A body read whole, for an error's reason: empty if it cannot be read, and
+ * given up after ten seconds, so an error that never ends holds no share.
+ */
+function bodyText(response: IncomingMessage): Promise<string> {
+  return new Promise((resolve) => {
+    const parts: Buffer[] = [];
+    const late = setTimeout(() => response.destroy(), 10_000);
+    response.on('data', (part: Buffer) => parts.push(part));
+    // A connection that dies part way is a close, with what was read; an
+    // error without a listener would end the process.
+    response.on('error', () => undefined);
+    response.once('end', () => {
+      clearTimeout(late);
+      resolve(Buffer.concat(parts).toString('utf8'));
+    });
+    response.once('close', () => {
+      clearTimeout(late);
+      resolve(Buffer.concat(parts).toString('utf8'));
+    });
+  });
+}
+
+/**
+ * An event's SBML, as Java's /exporter/event/{id}.sbml answers it -- its 404,
+ * 400, type and download name -- with the body from the library service
+ * (deploy/java-library, spec 015 T063), passed on as it arrives. Never made
+ * by another implementation: without the service, a 503.
+ */
+export function sbmlAnswer(
+  request: Request,
+  ext: 'sbml' | 'xml',
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS
+): Promise<Answer> {
+  return exportAnswer(request, ext, SBML, find, headersMs);
+}
+
+/**
+ * An event's BioPAX Level 3 at /exporter/event/{id}.biopax (spec 015 T070),
+ * from the library service (T069), answered as SBML is: the same 404 and 400,
+ * R6's type and a `{stId}.biopax` download.
+ */
+export function biopaxAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS
+): Promise<Answer> {
+  return exportAnswer(request, 'biopax', BIOPAX, find, headersMs);
+}
+
+/** An event an SBGN file is asked for: as ExportEvent, and whether it is a pathway. */
+export interface SbgnEvent extends ExportEvent {
+  isPathway: boolean;
+}
+
+/** exportEvent, telling a pathway from a reaction: their layouts come from different places. */
+async function sbgnEvent(raw: string): Promise<SbgnEvent | null> {
+  const id = await graphCoreId(raw);
+  if (!id) return null;
+  const [found] = await read<SbgnEvent>(
+    `MATCH (n:DatabaseObject ${id.object}) RETURN n.stId AS stId, (n:Pathway OR n:ReactionLikeEvent) AS isEvent, (n:Pathway) AS isPathway LIMIT 1`,
+    id.params
+  );
+  return found ?? null;
+}
+
+/** Where an SBGN file's layout comes from: injected by the specs. */
+export interface SbgnLayouts {
+  /** The diagram that holds a pathway: graph-core's DiagramService, as Java asks it. */
+  diagramOf: (stId: string) => Promise<string | undefined>;
+  /** A diagram file's text, or null when the file is not there; undefined: no folder set. */
+  diagramFile: (diagramStId: string) => Promise<string | null | undefined>;
+  /** A reaction's layout, as /exporter/reaction/{id}/diagram answers it. */
+  reactionLayout: (stId: string) => Promise<unknown>;
+}
+
+/**
+ * A diagram file's text from DIAGRAM_FILES: null when it is not there,
+ * undefined when no folder is set.
+ */
+export async function readDiagramFile(diagramStId: string): Promise<string | null | undefined> {
+  const folder = settings.diagramFiles();
+  if (!folder) return undefined;
+  // A stable id, from the graph: no path can be built from it but the file's.
+  if (!/^R-[A-Z]{3,4}-\d+$/.test(diagramStId)) return null;
+  try {
+    return await readFile(join(folder, `${diagramStId}.json`), 'utf8');
+  } catch (failure) {
+    if ((failure as Failure).code === 'ENOENT') return null;
+    throw failure;
+  }
+}
+
+const SBGN_LAYOUTS: SbgnLayouts = {
+  diagramOf: async (stId) => (await diagramResult(stId))?.diagramStId,
+  diagramFile: readDiagramFile,
+  reactionLayout: async (stId) =>
+    (JSON.parse((await reactionAnswer(stId)).answer.serialised) as { diagram: unknown }).diagram,
+};
+
+/**
+ * An event's SBGN-ML, as Java's /exporter/event/{id}.sbgn answers it
+ * (SbxxExporterController.eventSBGN; sbgn-exporter spec 001, contracts
+ * website-endpoint.md): Java's 404 and 400, then the document sbgn-exporter
+ * writes from the event's layout -- a pathway's diagram file (the diagram
+ * that holds it), or a reaction's layout from the reaction-layout module --
+ * named by the event's stable id. Never another implementation's: no file
+ * folder set, a pathway's is a 503.
+ *
+ * A diagram file missing is Java's 500 for it: ExportManager.getDiagram
+ * returns null, SbgnConverter's constructor throws a NullPointerException,
+ * and GlobalExceptionHandler answers its own message for one, after the
+ * download's name was set (read from Java's code, T018: provoking it live
+ * would mail Java's error report). A layout the library refuses is the same
+ * unexpected 500: Java's converter would throw.
+ */
+export async function sbgnAnswer(
+  request: Request,
+  find: (raw: string) => Promise<SbgnEvent | null> = sbgnEvent,
+  layouts: SbgnLayouts = SBGN_LAYOUTS
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  if (name?.ext !== 'sbgn') return springNotFound(request);
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!event.isEvent || !event.stId)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a pathway or reaction`
+    );
+  const download = { 'Content-Disposition': `attachment; filename="${event.stId}.sbgn"` };
+  const failed = (): Answer => ({ ...unexpectedFailure(request), headers: download });
+  let layout: unknown;
+  if (event.isPathway) {
+    const diagramStId = await layouts.diagramOf(event.stId);
+    const text = diagramStId === undefined ? null : await layouts.diagramFile(diagramStId);
+    if (text === undefined)
+      return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The diagram files are not configured');
+    if (text === null) {
+      console.error(`SBGN for ${event.stId}: no diagram file for ${diagramStId ?? 'it'}`);
+      return failed();
+    }
+    layout = JSON.parse(text);
+  } else {
+    // The reaction layout's answer is written as Java's NON_EMPTY mapper
+    // writes it, an empty list left out; Java's converter read the object,
+    // where an empty list is a list (a reaction drawn in no compartment).
+    layout = {
+      compartments: [],
+      nodes: [],
+      edges: [],
+      ...((await layouts.reactionLayout(event.stId)) as object),
+    };
+  }
+  try {
+    return {
+      status: 200,
+      // Java's type, as written: a Buffer body is sent as it is, a string's
+      // charset Express would rewrite.
+      type: SBGN_MEDIA_TYPE,
+      body: Buffer.from(toSbgn(layout as Parameters<typeof toSbgn>[0]), 'utf8'),
+      headers: download,
+    };
+  } catch (failure) {
+    console.error(`SBGN for ${event.stId}: ${(failure as Error).message}`);
+    return failed();
+  }
+}
+
+/**
+ * /exporter/event/{id}: BioPAX for `.biopax`, SBGN for `.sbgn`, SBML for the
+ * rest (any other extension Spring's 404). An event's PDF is at another
+ * address, /exporter/document/event/{id}.pdf (eventPdfAnswer).
+ */
+export function eventExportAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = EXPORT_HEADERS_MS,
+  sbgn: (request: Request) => Promise<Answer> = sbgnAnswer
+): Promise<Answer> {
+  const ext = splitExportName(pathId(rawSegment(request, 4)))?.ext;
+  if (ext === 'sbgn') return sbgn(request);
+  return ext === 'biopax'
+    ? biopaxAnswer(request, find, headersMs)
+    : sbmlAnswer(request, 'sbml', find, headersMs);
+}
+
+/**
+ * The library service's file for an event, answered as Java's SBML export is.
+ * The service's reasons name its own paths, so they are logged here and never
+ * passed on.
+ */
+async function exportAnswer(
+  request: Request,
+  ext: string,
+  format: ExportFormat,
+  find: (raw: string) => Promise<ExportEvent | null>,
+  headersMs: number
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  // Another extension on /exporter/event/ is Spring's 404, as Java answers
+  // it; SBGN is answered before this (sbgnAnswer).
+  if (name?.ext !== ext) return springNotFound(request);
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!event.isEvent || !event.stId)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a pathway or reaction`
+    );
+  // The library service's address: SBML_SERVICE names it, for both its exports.
+  const service = settings.sbmlService();
+  if (!service)
+    return javaError(
+      request,
+      503,
+      'SERVICE_UNAVAILABLE',
+      `The ${format.label} service is not configured`
+    );
+  if (!format.share.enter())
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        `Too many ${format.label} files are being made; try again shortly`
+      ),
+      headers: { 'Retry-After': '5' },
+    };
+  // Held until the body has been passed on, or until no body will be.
+  let streaming = false;
+  try {
+    let response: IncomingMessage;
+    try {
+      response = await exportResponse(
+        `${service.replace(/\/$/, '')}/${format.path}/${event.stId}`,
+        headersMs
+      );
+    } catch (caught) {
+      return javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        (caught as Failure).message === 'late'
+          ? `The ${format.label} file took too long to make`
+          : `The ${format.label} service cannot be reached`
+      );
+    }
+    const status = response.statusCode ?? 0;
+    if (status !== 200) {
+      const reason = await bodyText(response);
+      console.error(`${format.label} for ${event.stId}: the service answered ${status} ${reason}`);
+      // The event was found above, so a 404 here is the service out of step --
+      // an older image without the route, or another release's graph -- not
+      // an answer about the id: unavailable for now, as a 503 is.
+      return status === 503 || status === 404
+        ? {
+            ...javaError(request, 503, 'SERVICE_UNAVAILABLE', format.unavailable),
+            headers: { 'Retry-After': '30' },
+          }
+        : javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            `The ${format.label} of ${event.stId} cannot be made`
+          );
+    }
+    response.once('close', () => format.share.leave());
+    streaming = true;
+    return {
+      status: 200,
+      type: format.type,
+      body: response,
+      headers: {
+        'Content-Disposition': `attachment; filename="${event.stId}.${format.download}"`,
+      },
+    };
+  } finally {
+    if (!streaming) format.share.leave();
+  }
+}
+
+/**
+ * The PDF's own share: two at once, as the PDF service makes two at once
+ * (deploy/pdf-export, its --concurrency). Java made four at once and queued
+ * the rest without limit; past this share, a 503 with Retry-After, as SBML's.
+ */
+const PDF_SHARE = deepShare(2);
+
+/**
+ * How long the PDF service has to send its headers: past its own deadline for
+ * a PDF (120 s, pdf-export's LIMITS.deadlineMs), so its own 503 comes first,
+ * and under nginx's 300 s. It sends the whole PDF at once, with its length.
+ */
+const PDF_HEADERS_MS = 130_000;
+
+/** eventPdf's parameters, in Java's order, with its defaults (EventPdfController). */
+const PDF_EXPORT: ExportField[] = [
+  // Java's name for it, brackets and spaces included: `level` is not read.
+  ['integer', 'level [0 - 1]', 1],
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'token', null],
+  ['text', 'resource', 'TOTAL'],
+  ['boolean', 'importableOnly', false],
+  ['integer', 'expColumn', null],
+  ['text', 'analysisProfile', 'Standard'],
+];
+
+/** The PDF service's reason for a refusal (pdf-export contracts/service.md), or null. */
+function pdfRefusal(text: string): string | null {
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  const reason: unknown =
+    typeof body === 'object' && body !== null ? Reflect.get(body, 'reason') : undefined;
+  return typeof reason === 'string' ? reason : null;
+}
+
+/**
+ * An event's PDF, as Java's /exporter/document/event/{id}.pdf answers it
+ * (EventPdfController.eventPdf) -- its parameters converted as Spring converts
+ * them, its 404 and 400, its type -- with the PDF made by
+ * pdf-export's single-event service (deploy/pdf-export; pdf-export spec 001,
+ * Story 2, FR-014), passed on as it arrives. Never made by another
+ * implementation: without the service, a 503.
+ *
+ * Where Java answers an empty 200 -- its export failed before writing, and
+ * the controller logs and returns -- this answers what failed (the declared
+ * differences, Pathway PDFs): an analysis token the AnalysisService does not
+ * know (404) or no longer holds (410), and the service unable to make the PDF
+ * (503, or 500). A blank level, on which Java fails the same way, is its
+ * default. The analysis options the website does not send (the profiles, the
+ * resource, the expression column, importable only) are converted as Java
+ * converts them, so a value Java refuses is refused, and are otherwise not
+ * read (pdf-export spec 001, Assumptions).
+ */
+export async function eventPdfAnswer(
+  request: Request,
+  find: (raw: string) => Promise<ExportEvent | null> = exportEvent,
+  headersMs = PDF_HEADERS_MS
+): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 5)));
+  if (name?.ext !== 'pdf') return springNotFound(request);
+  const asked = exporterParameters(request, PDF_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const refused = longPastRange([name.identifier]);
+  if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+  const event = await find(name.identifier);
+  if (!event) return notFound(request, `'${name.identifier}' does not exist`);
+  if (!event.isEvent || !event.stId)
+    return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not an event`);
+  const service = settings.pdfService();
+  if (!service)
+    return javaError(request, 503, 'SERVICE_UNAVAILABLE', 'The PDF service is not configured');
+  if (!PDF_SHARE.enter())
+    return {
+      ...javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        'Too many PDFs are being made; try again shortly'
+      ),
+      headers: { 'Retry-After': '5' },
+    };
+  // Java's getLevel: below 0 is 0, above 1 is 1.
+  const level = asked.values['level [0 - 1]'];
+  const depth = typeof level === 'number' && level < 1 ? 0 : 1;
+  const token = asked.values['token'];
+  const url = new URL(
+    `event/${encodeURIComponent(event.stId)}.pdf`,
+    service.endsWith('/') ? service : `${service}/`
+  );
+  url.searchParams.set('depth', String(depth));
+  // Once encoded, as the service is to receive it: the token as Spring read it.
+  if (typeof token === 'string') url.searchParams.set('token', token);
+  // Held until the body has been passed on, or until no body will be.
+  let streaming = false;
+  try {
+    let response: IncomingMessage;
+    try {
+      response = await exportResponse(url.href, headersMs);
+    } catch (caught) {
+      return javaError(
+        request,
+        503,
+        'SERVICE_UNAVAILABLE',
+        caught instanceof Error && caught.message === 'late'
+          ? 'The PDF took too long to make'
+          : 'The PDF service cannot be reached'
+      );
+    }
+    const status = response.statusCode ?? 0;
+    if (status !== 200) {
+      const reason = pdfRefusal(await bodyText(response));
+      // Its reasons carry no path, host or name; the token is never logged.
+      console.error(`PDF for ${event.stId}: the service answered ${status} ${reason ?? '(none)'}`);
+      if (status === 404 && reason === 'unknown-token')
+        return javaError(
+          request,
+          404,
+          'NOT_FOUND',
+          'No analysis result is known for the token; run the analysis again'
+        );
+      if (status === 410 && reason === 'gone-token')
+        return javaError(
+          request,
+          410,
+          'GONE',
+          'The analysis result for the token is no longer held; run the analysis again'
+        );
+      // The event was found above, so the service's no-event or not-an-event
+      // is it out of step -- another release's graph -- not an answer about
+      // the id: unavailable for now, as its own 503 is.
+      return status === 503 || reason === 'no-event' || reason === 'not-an-event'
+        ? {
+            ...javaError(
+              request,
+              503,
+              'SERVICE_UNAVAILABLE',
+              'The PDF cannot be made just now; try again shortly'
+            ),
+            headers: { 'Retry-After': '30' },
+          }
+        : javaError(
+            request,
+            500,
+            'INTERNAL_SERVER_ERROR',
+            `The PDF of ${event.stId} cannot be made`
+          );
+    }
+    response.once('close', () => PDF_SHARE.leave());
+    streaming = true;
+    return {
+      status: 200,
+      type: 'application/pdf;charset=UTF-8',
+      body: response,
+      // The extension inside the quotes: Java writes `filename="{stId}".pdf`,
+      // which a browser may save without it (declared differences, Pathway PDFs).
+      headers: { 'Content-Disposition': `attachment; filename="${event.stId}.pdf"` },
+    };
+  } finally {
+    if (!streaming) PDF_SHARE.leave();
+  }
+}
+
+/** PptxExporterController's parameters, in its order, with their defaults. */
+const PPTX_EXPORT: ExportField[] = [
+  ['text', 'diagramProfile', 'Modern'],
+  ['text', 'flg', null],
+  ['boolean', 'flgInteractors', true],
+  ['list', 'sel'],
+];
+
+/** The PowerPoint's media type, as Java writes it (the service forces UTF-8). */
+const PPTX_TYPE =
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation;charset=UTF-8';
+
+/**
+ * ExportManager.getPPTXFileName: `[stId] displayName.pptx`, or the stable id
+ * alone when the object has no display name. Written as Java writes it, a
+ * quote in a name included.
+ */
+async function pptxDownload(stId: string) {
+  const [row] = await read<{ name: string | null }>(
+    'MATCH (n:DatabaseObject{stId:$stId}) RETURN n.displayName AS name LIMIT 1',
+    { stId }
+  );
+  const name = row?.name ? `[${stId}] ${row.name}` : stId;
+  return { 'Content-Disposition': `attachment; filename="${name}.pptx"` };
+}
+
+/** The render service's PowerPoint, under Java's type and download name. */
+async function renderPptx(request: Request, url: URL, stId: string): Promise<Answer> {
+  const figure = await renderFigure(request, url, PPTX_TYPE);
+  return figure.status === 200 ? { ...figure, headers: await pptxDownload(stId) } : figure;
+}
+
+/**
+ * A diagram's PowerPoint, as PptxExporterController.diagramPPTX answers it
+ * (spec 006 T109, research D24): the diagram that holds the event, with
+ * Java's selection (`sel`, then the resolved events) marked, drawn by the
+ * render service's PowerPoint export. An id that resolves to no diagram is
+ * Java's NullPointerException, its generic 500. diagramProfile, flg and
+ * flgInteractors are accepted and not drawn.
+ */
+async function diagramPptx(request: Request, identifier: string): Promise<Answer> {
+  const asked = exporterParameters(request, PPTX_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  if (longPastRange([identifier])) return unexpected(request);
+  const result = await diagramResult(identifier);
+  if (!result) return unexpected(request);
+  const sel = asked.values.sel ?? [];
+  const url = diagramExportRequest(result, {
+    ext: 'pptx',
+    sel,
+    illustrated:
+      (sel.length > 0 || result.events.length > 0) && (await hasIllustration(result.diagramStId)),
+  });
+  return renderPptx(request, url, result.diagramStId);
+}
+
+/**
+ * A reaction's PowerPoint, as PptxExporterController.reactionPPTX answers it
+ * (spec 006 T109, research D24): getReactionLikeEvent's answers, the
+ * layout's Java exceptions, then the render service's PowerPoint of the
+ * reaction's own layout. Java resolved the id's diagram first, and read it
+ * only to flag: with a flag, an id that resolves to none is its generic 500.
+ * diagramProfile, flg, flgInteractors and sel are accepted and not drawn.
+ */
+async function reactionPptx(request: Request, identifier: string): Promise<Answer> {
+  const asked = exporterParameters(request, PPTX_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const flag = asked.values['flg'];
+  if (typeof flag === 'string' && flag !== '' && !(await diagramResult(identifier)))
+    return unexpected(request);
+  const found = await findById(identifier);
+  if (found && 'failure' in found)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
+  if (!found) return notFound(request, `Identifier '${identifier}' not found`);
+  if (!found.reaction)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${identifier}' does not correspond to a 'ReactionLikeEvent'`
+    );
+  try {
+    await reactionAnswer(found.stId);
+  } catch (failure) {
+    const java = layoutFailureMessage(failure);
+    if (!java) throw failure;
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', java.message);
+  }
+  const url = new URL(`${RENDER_SERVICE}/render/${found.stId}.pptx`);
+  url.searchParams.set('layout', 'reaction');
+  return renderPptx(request, url, found.stId);
+}
+
+/**
+ * A reaction's image, as ImageExporterController.reactionImage answers it
+ * (spec 006 T092, research D24): Java's errors in Java's order -- the
+ * parameters as Spring converts them, the id as getReactionLikeEvent reads it,
+ * a PDF, the layout's own exceptions, a quality outside 1-10, an extension
+ * DiagramRenderer does not draw -- then the figure, drawn by the render
+ * service's reaction view from node's layout of the reaction. The layout is
+ * made here first, as Java made it before anything was drawn, so a reaction
+ * the library fails on is Java's 500 whatever else was asked.
+ *
+ * Of Java's parameters, quality is drawn, as the render service's scale; the
+ * rest are accepted as Java accepts them and not drawn (D24 says why, one by
+ * one): a caller asking for them gets the reaction's figure, as before, and
+ * the URL that names them is answered but never stored (parameters.ts).
+ */
+async function reactionImage(request: Request): Promise<Answer> {
+  const name = splitExportName(pathId(rawSegment(request, 4)));
+  if (!name) return springNotFound(request);
+  // `{identifier}.pptx`, matched by case, is PptxExporterController's.
+  if (name.ext === 'pptx') return reactionPptx(request, name.identifier);
+  const asked = exporterParameters(request, REACTION_EXPORT);
+  if ('answer' in asked) return asked.answer;
+  const found = await findById(name.identifier);
+  if (found && 'failure' in found)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
+  if (!found) return notFound(request, `Identifier '${name.identifier}' not found`);
+  if (!found.reaction)
+    return javaError(
+      request,
+      400,
+      'BAD_REQUEST',
+      `The identifier '${name.identifier}' does not correspond to a 'ReactionLikeEvent'`
+    );
+  if (name.ext.toLowerCase() === 'pdf')
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'Unsupported file extension pdf');
+  try {
+    await reactionAnswer(found.stId);
+  } catch (failure) {
+    const java = layoutFailureMessage(failure);
+    if (!java) throw failure;
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', java.message);
+  }
+  // A blank quality is null, which RasterArgs.setQuality leaves at its 5.
+  const quality = asked.values.quality ?? 5;
+  if (quality < 1 || quality > 10)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', 'quality must be in the range [1-10]');
+  // RasterArgs's format: trimmed, in lower case.
+  const format = javaTrim(name.ext).toLowerCase();
+  if (!REACTION_FORMATS.includes(format))
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', `Unsupported file extension ${format}`);
+  return renderFigure(
+    request,
+    reactionExportRequest(found.stId, format, quality),
+    javaImageType(name.ext)
+  );
+}
+
+export const exportersEndpoints: Endpoint[] = [
+  {
+    path: '/ContentService/exporter/diagram/{id}',
+    // The error path, which is all the diff harness can compare: the figure
+    // itself is drawn by another renderer. Never expanded over --ids, which
+    // would have Java draw a full figure for every one (a versioned id's
+    // version reads as the extension).
+    sample: 'XYZ.svg',
+    samplesOnly: true,
+    differs: [/: \.url: /],
+    /**
+     * A diagram figure, as ImageExporterController.diagramImage answers it
+     * (spec 006 T090, T091, research D24): graph-core's DiagramService
+     * resolves the id to the diagram that draws it and the events to select
+     * there, and the drawing is the render service's (tools/render) -- the
+     * site's own renderer -- asked over loopback, the whole diagram with
+     * those events highlighted.
+     *
+     * Every parameter Java takes is converted as Spring converts it, Java's
+     * errors kept in Java's order. Quality, sel and token are drawn; the
+     * rest are accepted as Java accepts them and not drawn (D24 says why,
+     * one by one), and a URL that names one is answered but never stored.
+     */
+    handler: async (request) => {
+      const name = splitExportName(pathId(rawSegment(request, 4)));
+      if (!name) return springNotFound(request);
+      // `{identifier}.pptx`, matched by case, is PptxExporterController's.
+      if (name.ext === 'pptx') return diagramPptx(request, name.identifier);
+      const asked = exporterParameters(request);
+      if ('answer' in asked) return asked.answer;
+      const refused = longPastRange([name.identifier]);
+      if (refused) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', refused);
+      const result = await diagramResult(name.identifier);
+      if (!result)
+        return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not an event`);
+      const ext = name.ext.toLowerCase();
+      const problem = figureProblem(asked.values, ext);
+      if (problem === 'unexpected') return unexpected(request);
+      if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      const selects = result.events.length > 0 || (asked.values.sel ?? []).length > 0;
+      const figure = diagramExportRequest(result, {
+        ext,
+        sel: asked.values.sel,
+        token: asked.values.token,
+        // figureProblem has refused a blank one.
+        quality: asked.values.quality ?? 5,
+        // Asked only when there is a selection to leave out.
+        illustrated: selects && (await hasIllustration(result.diagramStId)),
+      });
+      return renderFigure(request, figure, javaImageType(ext));
+    },
+  },
+  {
+    path: '/ContentService/exporter/event/{id}',
+    // The error path: the body is compared by sbml-exporter's ci/compare.py
+    // (spec 015 T067), not by the harness. A small object that is no event:
+    // Java loads every relationship to decide it, which is slow for a large one.
+    sample: '9626065.sbml',
+    samplesOnly: true,
+    /**
+     * An event's SBML (spec 015 T065) or BioPAX Level 3 (T070), from the
+     * library service. Both are routed on beta (dev.conf; SBML by T066,
+     * BioPAX by T071), locally and under ng serve; the release and production
+     * keep Java's SBML until T068, and take BioPAX at T055 (Java has none here).
+     */
+    handler: (request) => eventExportAnswer(request),
+  },
+  {
+    path: '/ContentService/exporter/document/event/{id}',
+    // The error path: the PDF itself is pdf-export's, compared by meaning in
+    // its own repository. A small object that is no event, as SBML's.
+    sample: '9626065.pdf',
+    samplesOnly: true,
+    /**
+     * An event's PDF (spec 006 T100), from pdf-export's single-event service.
+     * Routed on beta alone (dev.conf), locally and under ng serve; the release
+     * and production keep Java's until they run the service.
+     */
+    handler: (request) => eventPdfAnswer(request),
+  },
+  {
+    path: '/ContentService/exporter/sbml/{id}',
+    sample: '9626065.xml',
+    samplesOnly: true,
+    /** The same file at the URL the site's download page used (research R6). */
+    handler: (request) => sbmlAnswer(request, 'xml'),
+  },
+  {
+    path: '/ContentService/exporter/voronoi/{id}',
+    // No sample, and none from --ids: Java has no such URL, so the parity
+    // harness has nothing to compare it with. overview-export.spec.ts holds it.
+    samplesOnly: true,
+    /**
+     * A species' overview, the Voronoi map the site shows (Reacfoam), drawn
+     * by the render service's genome-wide view -- at a URL named for it
+     * (spec 006 T093, decided 22 Oct 2026). The old fireworks exporter's URL
+     * redirects here; Fireworks itself is retired. The species is read as
+     * Java's exporter read it: a taxId, a dbId, or a name in any case with
+     * '_' for a space ('Homo_sapiens', 'homo_sapiens' and 9606 are all human).
+     *
+     * Every parameter the old exporter took is converted as Spring converts
+     * it. The token is drawn; the rest are accepted and not drawn, as for
+     * diagrams and reactions (research D24, the user's decision of 8 Nov
+     * 2026): a caller asking for one keeps getting the overview.
+     */
+    handler: async (request) => {
+      const name = splitExportName(pathId(rawSegment(request, 4)));
+      if (!name) return springNotFound(request);
+      const asked = exporterParameters(request, OVERVIEW_EXPORT);
+      if ('answer' in asked) return asked.answer;
+      const taxId = await speciesTaxId(speciesFilter(name.identifier));
+      if (!taxId)
+        return javaError(request, 400, 'BAD_REQUEST', `'${name.identifier}' is not a species`);
+      const ext = name.ext.toLowerCase();
+      const problem = figureProblem(asked.values, ext);
+      if (problem === 'unexpected') return unexpected(request);
+      if (problem) return javaError(request, problem.status, problem.reason, problem.message);
+      // The genome-wide view has no frames to capture, so no GIF.
+      if (ext === 'gif')
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          'Not drawn by this service yet: gif. The renderer’s GIF is the expression animation, not a still.'
+        );
+      return renderFigure(
+        request,
+        overviewExportRequest(taxId, { ext, token: asked.values.token }),
+        javaImageType(ext)
+      );
+    },
+  },
+  {
+    path: '/ContentService/exporter/fireworks/{id}',
+    // No sample, and none from --ids: Java draws here, node redirects.
+    samplesOnly: true,
+    /**
+     * The old fireworks exporter's URL, a 301 to the Voronoi overview with the
+     * same species, extension and query (decided 22 Oct 2026): Fireworks is
+     * retired, and a caller of the old URL gets the overview the site shows.
+     */
+    // Built from its parts, not by rewriting the URL as sent: routing
+    // decodes `fire%77orks` to fireworks, which a text replace would miss
+    // and redirect to itself.
+    handler: async (request) => {
+      const url = String(request.originalUrl);
+      const at = url.indexOf('?');
+      return {
+        status: 301,
+        headers: {
+          Location: `/ContentService/exporter/voronoi/${rawSegment(request, 4)}${at === -1 ? '' : url.slice(at)}`,
+        },
+      };
+    },
+  },
+  {
+    path: '/ContentService/exporter/reaction/{id}',
+    // The error path, a pathway's 400: the figure itself is drawn by another
+    // renderer, in another look (research D24). Never expanded over --ids,
+    // which would have Java draw a figure for every one.
+    sample: 'R-HSA-109581.png',
+    samplesOnly: true,
+    differs: [/^\/ContentService\/exporter\/reaction\/[^/]+: \.url: /],
+    handler: reactionImage,
+  },
+];

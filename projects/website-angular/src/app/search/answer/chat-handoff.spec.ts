@@ -47,8 +47,9 @@ describe('continuing in chat', () => {
     const { win } = fakes();
     const fetcher = respond({ status: 200, body: { path: '/chat/guest/#handoff=abc' } });
     await continueInChat('/chat-handoff', analysis, { win, fetcher });
-    const [, init] = (fetcher as unknown as { mock: { calls: [string, RequestInit][] } }).mock
-      .calls[0];
+    const [call] = (fetcher as unknown as { mock: { calls: [string, RequestInit][] } }).mock.calls;
+    if (!call) throw new Error('the handoff was never asked for');
+    const [, init] = call;
     expect(JSON.parse(init.body as string)).toEqual(analysis);
   });
 

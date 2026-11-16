@@ -26,7 +26,8 @@ interface ArticleList {
 
 function articleListFor(segments: string[]): ArticleList | null {
   const parent = segments.length >= 2 ? segments[segments.length - 2] : null;
-  const slug = segments[segments.length - 1];
+  const slug = segments.at(-1);
+  if (slug === undefined) return null;
   if (parent === 'news') return { path: 'about/news', slug };
   if (parent === 'reactome-research-spotlight') {
     return { path: 'content/reactome-research-spotlight', slug };
@@ -52,7 +53,8 @@ function findActiveItemKey(
 /** The sidebar for a page in the site navigation (not an article). */
 function navFor(segments: string[], navOptions: Record<string, NavOption>): SidebarNav {
   // The first segment is the main section (about, documentation, content...).
-  const section = segments.length > 0 ? navOptions[segments[0]] : undefined;
+  const [first] = segments;
+  const section = first === undefined ? undefined : navOptions[first];
   if (!section) return EMPTY;
 
   const sectionDropdownLinks = section.dropdownLinks || {};
@@ -90,7 +92,7 @@ function navFor(segments: string[], navOptions: Record<string, NavOption>): Side
   // A sub-section with links of its own lists those.
   const nested = matchedSubSection?.dropdownLinks;
   if (nested && Object.keys(nested).length > 0) {
-    let activeItem = findActiveItemKey(nested, segments[segments.length - 1], segments);
+    let activeItem = findActiveItemKey(nested, segments.at(-1) ?? '', segments);
     // Deeper than that: the item whose own links contain this page.
     if (!activeItem && segments.length > 2) {
       const currentPath = '/' + segments.join('/');

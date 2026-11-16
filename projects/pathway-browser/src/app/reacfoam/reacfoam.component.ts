@@ -21,6 +21,7 @@ import {
   defaultDownloadOptions,
   DownloadFormat,
   DownloadService,
+  DownloadTarget,
 } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { isRLE } from '../services/utils';
@@ -31,6 +32,9 @@ import { MatDialog } from '@angular/material/dialog';
 import { BlockingLoaderComponent } from './blocking-loader/blocking-loader.component';
 import { SvgExporterService } from './svg-exporter.service';
 import { FlagBannerComponent } from '../diagram/flag-banner/flag-banner.component';
+
+/** How long a group takes to expose, in milliseconds. */
+const EXPOSE_DURATION = 500;
 
 @Component({
   selector: 'cr-reacfoam',
@@ -62,7 +66,7 @@ export class ReacfoamComponent implements OnDestroy {
         relaxationVisible: false,
         pixelRatio: window.devicePixelRatio || 1,
         wireframePixelRatio: window.devicePixelRatio || 1,
-        exposeDuration: 500,
+        exposeDuration: EXPOSE_DURATION,
         // Lower groupMinDiameter to fit as many groups as possible
         groupMinDiameter: 0.5,
         // Set a simple fading animation. Animated rollouts are very expensive for large hierarchies
@@ -115,6 +119,11 @@ export class ReacfoamComponent implements OnDestroy {
         groupLabelMaxFontSize: 20,
         // Lower the minimum label font size a bit to show more labels
         groupLabelMinFontSize: 3,
+        // Name every pathway under the pointer. FoamTree's default shows the
+        // title bar only for labels drawn smaller than 8px, so hovering named
+        // some pathways and not others -- the ones whose label happened to be
+        // large enough to read in place (#381).
+        maxLabelSizeForTitleBar: Number.MAX_VALUE,
 
         // Roll out in groups
         rolloutMethod: 'groups',
@@ -151,13 +160,12 @@ export class ReacfoamComponent implements OnDestroy {
   readonly foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
   readonly select = linkedSignal(() => this.state.select());
   readonly selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
-  readonly correctedSelectedId = computed(() =>
-    this.state.select()
-      ? this.foamTree().get('hierarchy', this.selectedId())
-        ? this.selectedId()
-        : this.reacfoam.idToStId()?.get(this.select()!)
-      : null
-  );
+  readonly correctedSelectedId = computed(() => {
+    if (!this.state.select()) return null;
+    if (this.foamTree().get('hierarchy', this.selectedId())) return this.selectedId();
+    const selected = this.select();
+    return selected === null ? undefined : this.reacfoam.idToStId()?.get(selected);
+  });
 
   readonly relaxing = signal(false);
 
@@ -179,7 +187,7 @@ export class ReacfoamComponent implements OnDestroy {
                 keepPrevious: false,
               });
             }
-            this.foamTree().set('exposeDuration', this.options().exposeDuration!); // Put back initial exposure time
+            this.foamTree().set('exposeDuration', EXPOSE_DURATION); // Put back initial exposure time
           });
       });
     })
@@ -191,18 +199,42 @@ export class ReacfoamComponent implements OnDestroy {
   readonly flagging = computed(() => this.cleanFlagIdentifiers().size !== 0);
 
   setFlag(groups: PathwayGroup[]) {
-    groups?.forEach((group: PathwayGroup) => {
+    groups.forEach((group: PathwayGroup) => {
       group.flag = this.flagging() ? this.cleanFlagIdentifiers().has(group.stId) : false;
-      group.groups && this.setFlag(group.groups);
+      if (group.groups) this.setFlag(group.groups);
     });
   }
+
+  /**
+   * Whether the tree on screen is the one last fetched for the current token
+   * and resource. The tree is fetched with both, and handed to FoamTree in an
+   * effect, so until then the overview shows the last one's colouring (the
+   * render page waits on this).
+   */
+  showsCurrentData(): boolean {
+    if (this.reacfoam.eventsHierarchyData.isLoading()) return false;
+    const shown: unknown = untracked(this.foamTree).get('dataObject');
+    const groups = (shown as { groups?: unknown } | undefined)?.groups;
+    return !!groups && groups === this.reacfoam.data();
+  }
+
+  /** The last download request this view took up (see the download effect). */
+  private handled = 0;
 
   constructor() {
     effect(() => {
       // Initialise
       this.reacfoam.data(); // Set data whenever it is updated
       // if (!untracked(this.relaxing)) // Avoid errors happening when setting data while relaxing
-      this.foamTree().set('dataObject', { groups: this.reacfoam.data()! });
+      // None while the tree loads: FoamTree reads an empty list as it read none.
+      this.foamTree().set('dataObject', { groups: this.reacfoam.data() ?? [] });
+      untracked(() =>
+        this.download.figureState(
+          this,
+          DownloadTarget.REACFOAM,
+          this.reacfoam.data() ? 'ready' : 'loading'
+        )
+      );
 
       if (untracked(this.correctedSelectedId)) {
         // Initial select
@@ -214,8 +246,9 @@ export class ReacfoamComponent implements OnDestroy {
     });
     effect(() => {
       this.cleanFlagIdentifiers();
-      if (this.reacfoam.data()) {
-        this.setFlag(this.reacfoam.data()!);
+      const data = this.reacfoam.data();
+      if (data) {
+        this.setFlag(data);
         this.foamTree().redraw();
       }
     });
@@ -233,17 +266,15 @@ export class ReacfoamComponent implements OnDestroy {
               this.species.currentSpecies().displayName
             )
           );
-          if (flaggingResult.matches?.length === 1) {
+          const [only, ...others] = flaggingResult.matches;
+          if (only !== undefined && others.length === 0) {
             //console.log('Selecting in reacfoam the parent pathway of a reaction as it is only contained in one pathway')
-            this.select.set(flaggingResult.matches[0]);
+            this.select.set(only);
           }
         }
       })().catch((error) => console.error('Reacfoam selection update failed', error));
     });
-    effect(
-      () =>
-        this.container()?.nativeElement && this.sizeObserver.observe(this.container().nativeElement)
-    );
+    effect(() => this.sizeObserver.observe(this.container().nativeElement));
     effect(() => {
       // Update colors upon analysis column switching
       this.analysis.sampleIndex(); // Update colors on expression column shifting
@@ -378,40 +409,51 @@ export class ReacfoamComponent implements OnDestroy {
       // Kept synchronous so a rejection cannot vanish. Signals read before
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
+      const request = this.download.downloadRequest();
+      // Once per request: it stays set until the file is saved, and this
+      // effect runs again whenever a signal the export reads changes.
+      if (request?.owner !== this || request.id === this.handled) return;
+      this.handled = request.id;
       void (async () => {
-        const request = this.download.downloadRequest();
-        let options = request?.options || defaultDownloadOptions;
+        let options = request.options || defaultDownloadOptions;
         options = { ...defaultDownloadOptions, ...options };
-        if (!request) return;
         const loader = this.dialog.open(BlockingLoaderComponent, {
           disableClose: true,
           width: '150px',
           height: '150px',
         });
-        if (request && this.download.isRasterFormat(request.format)) {
-          const params: FoamTree.ImageFormat = {
-            format: this.download.toFoamtreeType(request.format),
-            ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
-          };
-          this.exportRaster(request.format, params);
-          this.download.resetDownload();
-        } else if (request?.format === DownloadFormat.SVG) {
-          this.download.export(
-            await this.svgExporter.exportReacfoam(this, options),
-            request.format,
-            'reacfoam'
-          );
-          this.download.resetDownload();
+        // Closed whatever happens: it cannot be dismissed, and a failure has a
+        // message to show behind it.
+        try {
+          if (this.download.isRasterFormat(request.format)) {
+            const params: FoamTree.ImageFormat = {
+              format: this.download.toFoamtreeType(request.format),
+              ...(request.format === DownloadFormat.JPEG ? { quality: 0.9 } : {}),
+            };
+            this.exportRaster(request.format, params);
+            this.download.finished(request.id);
+          } else if (request.format === DownloadFormat.SVG) {
+            this.download.export(
+              await this.svgExporter.exportReacfoam(this, options),
+              request.format,
+              'reacfoam'
+            );
+            this.download.finished(request.id);
+          }
+        } finally {
+          loader.close();
         }
-        loader.close();
-      })().catch((error) => this.download.failed(error, 'Genome-wide view export failed'));
+      })().catch((error) =>
+        this.download.failed(error, 'Genome-wide view export failed', request.id)
+      );
     });
   }
 
-  currentSample?: string;
+  currentSample: string | undefined;
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    this.download.figureGone(this);
   }
 
   exportRaster(format: DownloadFormat, params: FoamTree.ImageFormat) {
@@ -419,7 +461,7 @@ export class ReacfoamComponent implements OnDestroy {
   }
 }
 
-function throttle<Args extends any[]>(
+function throttle<Args extends unknown[]>(
   delay: number,
   func: (...args: Args) => void
 ): (...args: Args) => void {

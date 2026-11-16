@@ -32,6 +32,13 @@ jobs:
   verify:
     name: Verify the release
     runs-on: ubuntu-latest
+    # Playwright's own image, with Chromium and its system libraries, rather than
+    # installing them from Ubuntu's package servers each run; the reasons are in
+    # tests.yml's e2e job, and tools/workflows.spec.ts keeps the tag on the
+    # version in package.json.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-resolute
+      options: --ipc=host
     # 30 was not enough, and the way it was not enough hid the answer: the job was
     # killed mid-run, so nobody saw which check failed or why. One test alone
     # budgets 12 minutes -- 21 diagram loads from the release announcement.
@@ -54,9 +61,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
-
       # An empty site is not a harmless mistake here. playwright.config.ts falls
       # back to http://localhost:4200 and starts its own server when
       # E2E_BASE_URL is unset, so these checks would run against a build from
@@ -64,8 +68,11 @@ jobs:
       # want of it. That is exactly the confusion the suite was split in two to
       # end, so it stops here instead.
       - name: Refuse to run against nothing
+        # Through env, never pasted into the script (tools/workflows.spec.ts).
+        env:
+          BASE_URL: ${{ inputs.base_url }}
         run: |
-          if [ -z "${{ inputs.base_url }}" ]; then
+          if [ -z "$BASE_URL" ]; then
             echo "::error::No site given. These checks verify a deployed release; there is nothing to check without one."
             exit 1
           fi

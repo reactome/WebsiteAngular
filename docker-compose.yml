@@ -175,6 +175,97 @@ services:
       # them without anyone deciding to. Neither belongs on an instance the
       # public can reach.
 
+  # Reactome's graph database, as the project publishes it for each release
+  # (developer docs: documentation/dev/graph-database), made read-only on top
+  # (deploy/graphdb/Dockerfile.readonly). Replaces the Neo4j installed on the
+  # host, so the database is a pinned image like everything else here rather
+  # than a system package nobody upgrades in step with a release.
+  #
+  # To move to a new release, change the release in the three places
+  # compose.spec.ts holds together (the build's GRAPHDB_IMAGE, this image's tag
+  # and the volume's name), `docker compose up -d --build graphdb`, then restart
+  # everything that holds the release in memory or in a cache:
+  # deploy/graphdb/next-release.sh does it in order and checks each. A missed
+  # restart of content-node sends every diagram, figure and icon URL to the
+  # previous release's files without an error.
+  graphdb:
+    build:
+      context: ./deploy/graphdb
+      dockerfile: Dockerfile.readonly
+      args:
+        GRAPHDB_IMAGE: public.ecr.aws/reactome/graphdb:Release98
+    image: reactome/graphdb_readonly:Release98
+    restart: unless-stopped
+    # Bolt on loopback only, on the port the host database used, so everything
+    # that reads it -- content-node, the Java ContentService, the analysis
+    # service -- keeps the address it has. Never 0.0.0.0: arbitrary queries are
+    # the cheapest way to make every page on the site slow. Not the HTTP port
+    # (7474): nothing here uses it.
+    ports:
+      - '127.0.0.1:7687:7687'
+    # A network of its own. On the default one, every other container in this
+    # file could reach it by name, which the host install never allowed; its
+    # readers all come in through the loopback port.
+    networks:
+      - graphdb
+    # The image is built with authentication off. The wrapper turns it on with
+    # the credentials the services already hold, read from the same file
+    # content-node mounts (see there for why it is read literally), and refuses
+    # to start if they are missing rather than starting open.
+    entrypoint: ['/bin/bash', '/graphdb-entrypoint.sh']
+    command: ['neo4j']
+    volumes:
+      - ./deploy/graphdb/entrypoint.sh:/graphdb-entrypoint.sh:ro
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/graphdb.env:ro
+      # The store, in a volume named for its release. Docker fills an empty
+      # volume from the image once; after that a restart or a recreate reuses
+      # it. Left in the container's own layer, every start copied all 3.2GB
+      # there, because the image's entrypoint changes the owner of every file.
+      #
+      # Named for the release so that changing the image tag alone cannot keep
+      # serving the previous release's data: the tag and this name move
+      # together (deploy/graphdb/compose.spec.ts checks it), and the old
+      # volume is removed once the new release is live.
+      #
+      # The password is set when the volume is first filled. Changing it later
+      # needs the volume recreated, or ALTER USER in the database.
+      - graphdb-release98:/var/lib/neo4j/data
+      # The image declares both as volumes; named, so a recreate does not leave
+      # another anonymous pair behind each time.
+      - graphdb-logs:/logs
+      - graphdb-unused:/data
+    environment:
+      # The size the host database ran with.
+      - NEO4J_dbms_memory_heap_max__size=3g
+      - NEO4J_dbms_memory_pagecache_size=2g
+      - NEO4J_dbms_default__database=graph.db
+
+  # A bounded queue in front of the AnalysisService's computations (spec 010
+  # Story 6): a few analyses at once, the rest waiting their turn for at most
+  # a minute, then "busy, try again" -- instead of every analysis slowing down
+  # together until all of them pass the edge's 100 s. Everything else passes
+  # through unchanged. Host networking, as content-node: Tomcat's
+  # AnalysisService is on the host's loopback, and nginx reaches this on
+  # 127.0.0.1:4350. Stateless, so a restart costs only the requests in flight.
+  #
+  # The analysis report PDF goes to pdf-export instead (pdf-export spec 002,
+  # T021), unqueued, with the client named in X-Reactome-Client.
+  analysis-gateway:
+    build:
+      context: .
+      dockerfile: deploy/analysis-gateway/Dockerfile
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - ANALYSIS_UPSTREAM=${ANALYSIS_UPSTREAM:-http://127.0.0.1:8080}
+      - REPORT_UPSTREAM=${REPORT_UPSTREAM:-http://127.0.0.1:4370}
+      - ANALYSIS_LIMIT=${ANALYSIS_LIMIT:-4}
+      - QUEUE_LENGTH=${QUEUE_LENGTH:-40}
+      - PER_CLIENT=${PER_CLIENT:-8}
+      - MAX_WAIT_MS=${MAX_WAIT_MS:-60000}
+      - RETRY_AFTER=${RETRY_AFTER:-10}
+      - UPSTREAM_TIMEOUT_MS=${UPSTREAM_TIMEOUT_MS:-300000}
+
   content-node:
     build:
       context: .
@@ -196,12 +287,12 @@ services:
     # **This is the line to delete when the graph becomes a container**, which
     # is the plan: a Neo4j image built per release. Then this joins the compose
     # network, `NEO4J_URI` names that service instead of loopback, and it
-    # publishes 127.0.0.1:4400 like `render` does. `graph.mjs` already reads
+    # publishes 127.0.0.1:4400 like `render` does. `graph.ts` already reads
     # NEO4J_URI from the environment, so that is configuration rather than a
     # change here. Recorded in specs/006 D13 so the reason is findable when the
     # line looks arbitrary.
     network_mode: host
-    # The credentials file is **mounted, not parsed**. graph.mjs reads it
+    # The credentials file is **mounted, not parsed**. graph.ts reads it
     # literally for a documented reason: a generated secret contains characters
     # a shell eats, and sourcing one silently produced an empty password once.
     #
@@ -212,8 +303,30 @@ services:
     # written to avoid, reintroduced by the layer underneath it.
     volumes:
       - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+      # An event's SBGN (sbgn-exporter spec 001 T018) reads a pathway's layout
+      # from the release's diagram files, {stId}.json. DIAGRAM_FILES_DIR (in
+      # .env, which is not committed) names this host's folder for the release
+      # the graph serves; it is mounted read-only. Unset, an empty folder is
+      # mounted and DIAGRAM_FILES left empty, so a pathway's SBGN answers 503
+      # rather than another release's file; a reaction's needs no file. Move it
+      # with the graph's release.
+      - ${DIAGRAM_FILES_DIR:-./deploy/content-node/no-diagram-files}:/data/diagram:ro
+      # The Expression tab's heatmap (spec 024) reads Expression Atlas's tables
+      # as snapshot-expression.ts writes them, one file per listed species.
+      # EXPRESSION_FILES_DIR (in .env) names this host's folder of them,
+      # mounted read-only. Unset, an empty folder is mounted and
+      # EXPRESSION_FILES left empty, so the heatmap answers 503 rather than
+      # any other data. Refresh it when Expression Atlas updates an experiment.
+      - ${EXPRESSION_FILES_DIR:-./deploy/content-node/no-expression-files}:/data/expression:ro
     environment:
       - CONTENT_NODE_ENV_FILE=/run/secrets/content-node.env
+      # The SBML service (java-library, spec 015): node is its only client.
+      - SBML_SERVICE=http://127.0.0.1:4360
+      # The PDF service (pdf-export, spec 006 T100): node is its only client.
+      - PDF_SERVICE=http://127.0.0.1:4370
+      - ANALYSIS_SERVICE=http://127.0.0.1:4350
+      - DIAGRAM_FILES=${DIAGRAM_FILES_DIR:+/data/diagram}
+      - EXPRESSION_FILES=${EXPRESSION_FILES_DIR:+/data/expression}
     # Runs as the owner of that file, which is 0600 and should stay that way.
     # The image's own `node` user is uid 1000 and cannot read it, so the service
     # started, reported "graph credentials: MISSING", and answered 500 -- a
@@ -223,9 +336,118 @@ services:
     # Defaults to this host's operator; override where the file has a different
     # owner. `id -u`, `id -g`.
     user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
-    # No depends_on: Neo4j is not in this compose file. If it is down the
-    # service starts, fails to build its lists, and rebuilds on the next
-    # request -- which is the behaviour specs/006 D10 asks for.
+    # No depends_on graphdb, deliberately: if the graph is down this starts,
+    # fails to build its lists, and rebuilds on the next request -- which is
+    # the behaviour specs/006 D10 asks for -- rather than refusing to start.
+
+  # The library service (spec 015 T063, T064, T069): the website's SBML and
+  # BioPAX Level 3, made on demand from the graph by sbml-exporter's and
+  # BioPAX3Exporter's libraries. Spec 010's Java library service, started here
+  # with those two operations. Node is its only client (T065, T070); nginx
+  # never names it.
+  #
+  # Built here, on this host and in CI, from the commits deploy/java/PINS.md
+  # pins, and never pushed to a registry: no `image:` to pull or push
+  # (research R10's licence reasoning).
+  java-library:
+    build:
+      context: .
+      dockerfile: deploy/java-library/Dockerfile
+    restart: unless-stopped
+    # Host networking, as content-node, for the graph on 127.0.0.1:7687. The
+    # service binds 127.0.0.1:4360 itself (server.address), never 0.0.0.0, so
+    # nothing is published.
+    network_mode: host
+    # The graph's credentials: the same file content-node reads, mounted rather
+    # than parsed, and run as its owner for the same reason (see content-node).
+    volumes:
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+      - java-library-cache:/cache
+    user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
+    environment:
+      - LIBRARY_ENV_FILE=/run/secrets/content-node.env
+      # The release's diagram files, fetched one per converted pathway that has
+      # a diagram and kept per release in the cache (research R10).
+      - DIAGRAM_BASE=https://download.reactome.org/
+      - SBML_CACHE=/cache
+    # A 1 GiB heap (the image's -Xmx1g) within 1.5 GiB (spec 010 research R3).
+    mem_limit: 1536m
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', '-m', '5', '-o', '/dev/null', 'http://127.0.0.1:4360/health']
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # The PDF service (spec 006 T100): an event's PDF, made on demand by
+  # pdf-export's single-event service (pdf-export spec 001, Story 2) from the
+  # graph, its figures drawn by the render service as the website draws them,
+  # an analysis token's results read from the AnalysisService. It replaces
+  # Java's event-pdf for the website, and, through the analysis gateway, the
+  # AnalysisService's report PDF (pdf-export spec 002). Node and the gateway
+  # are its only clients; nginx never names it, as it trusts the client the
+  # gateway names in X-Reactome-Client.
+  #
+  # Built here from the commit deploy/java/PINS.md pins, from GitHub's archive
+  # of it, and never pulled from or pushed to a registry: no `image:`.
+  pdf-export:
+    build:
+      context: .
+      dockerfile: deploy/pdf-export/Dockerfile
+    restart: unless-stopped
+    # Host networking, as content-node: the graph, the render service and the
+    # AnalysisService are on the host's loopback. The service binds
+    # 127.0.0.1:4370 itself (BIND_ADDRESS in its image), never 0.0.0.0, so
+    # nothing is published.
+    network_mode: host
+    volumes:
+      # The graph's credentials: the same file content-node reads, mounted
+      # rather than parsed, read literally by the image's entrypoint and run as
+      # its owner for the same reason (see content-node).
+      - ${CONTENT_NODE_ENV_FILE:-~/.content-node.env}:/run/secrets/content-node.env:ro
+      # The release's folder, as the download site lays it out: its EHLD
+      # summary, ehld/svgsummary.txt, says which pathways are drawn as their
+      # illustration. RELEASE_FILES_DIR (in .env, which is not committed) names
+      # this host's folder for the release the graph serves, the folder that
+      # holds DIAGRAM_FILES_DIR's diagram/. Unset, an empty folder is mounted
+      # and the service refuses to start. Move it with the graph's release.
+      - ${RELEASE_FILES_DIR:-./deploy/pdf-export/no-release-files}:/files:ro
+    user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
+    environment:
+      - PDF_EXPORT_ENV_FILE=/run/secrets/content-node.env
+      - NEO4J_URI=bolt://127.0.0.1:7687
+      - NEO4J_DATABASE=graph.db
+      # Every figure drawn on request by the render service: no figures'
+      # folder (pdf-export's `figures`, contracts/figures.md) is given yet.
+      - RENDER_SERVICE=http://127.0.0.1:4310
+      # Read for a PDF with an analysis token, and for the analysis report
+      # (pdf-export spec 002, contracts/analysis-api.md): the token's results,
+      # never a new analysis, so read from the AnalysisService directly, not
+      # through the analysis gateway, which sends the report here.
+      - ANALYSIS_SERVICE=http://127.0.0.1:8080/AnalysisService
+      # The printer's working folder (pdf-export spec 002, FR-211, research
+      # R7 and R10): a report's page holds the identifiers a user submitted,
+      # and one killed while it printed leaves its page behind until the
+      # service starts again. So it is the tmpfs below, in memory and never
+      # on disk, owned by the service's user alone; the service empties it
+      # as it starts.
+      - PDF_EXPORT_WORK=/work
+      # Where the PDF's links go: the public site, as event-pdf's do.
+      - REACTOME_SITE=${PDF_SITE:-https://reactome.org}
+    tmpfs:
+      - /work:size=256m,mode=0700,uid=${CONTENT_NODE_UID:-1020},gid=${CONTENT_NODE_GID:-1001},noexec,nosuid,nodev
+    # Chromium prints the PDFs; its default 64 MB /dev/shm is too small for a
+    # large page, as for the render service.
+    shm_size: '1gb'
+    # Within it: the reports kept for an hour (512 MB at most, pdf-export's
+    # ServeLimits), two printing at once, and the working folder's tmpfs.
+    mem_limit: 3g
+    healthcheck:
+      test: ['CMD', 'curl', '-fs', '-m', '10', '-o', '/dev/null', 'http://127.0.0.1:4370/health']
+      interval: 30s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
 
   # The front door. Replaces the hand-created `reactome-nginx` container, which
   # mounted its config from /etc/nginx-reactome -- a *copy* of deploy/nginx that
@@ -270,8 +492,15 @@ networks:
   # compose joins it rather than trying to own it, and never removes it.
   reactome_beta:
     external: true
+  graphdb: {}
 
 volumes:
   # Survives a container replacement, which is the point: a cached figure is a
   # file read, and rebuilding the cache means paying for every render again.
   render-cache:
+  # The library service's SBML, BioPAX and diagram files, per release: kept across a
+  # container replacement, as render's figures are.
+  java-library-cache:
+  graphdb-release98:
+  graphdb-logs:
+  graphdb-unused:

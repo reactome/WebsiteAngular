@@ -1,9 +1,10 @@
+import { IconCategory, IconEntry } from '../../../model/icon.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import { IconService, IconCategory, IconEntry } from '../../../services/icon.service';
+import { IconService } from '../../../services/icon.service';
 
 const ICONS_PER_PAGE = 28;
 
@@ -66,7 +67,8 @@ export class IconLibComponent implements OnInit, OnDestroy {
   error = false;
 
   // Categories for filtering
-  categories: IconCategory[] = [];
+  /** The library's categories, merged by display name: each has one. */
+  categories: (IconCategory & { name: string })[] = [];
   totalIcons = 0;
 
   // Grid view
@@ -87,7 +89,9 @@ export class IconLibComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      // Not distinctUntilChanged: clearing the box does not pass through here,
+      // so the same term typed again would look like no change and be dropped.
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
         this.searchIcons();
       });
@@ -119,6 +123,8 @@ export class IconLibComponent implements OnInit, OnDestroy {
       next: (data) => {
         const merged = new Map<string, number>();
         for (const c of data.iconCategoriesFacet?.available || []) {
+          // A count with no name has no category to list.
+          if (!c.name) continue;
           const name = this.formatCategoryName(c.name);
           merged.set(name, (merged.get(name) || 0) + c.count);
         }
@@ -195,8 +201,10 @@ export class IconLibComponent implements OnInit, OnDestroy {
   openDetail(icon: IconEntry) {
     this.detailLoading = true;
     this.view = 'detail';
-    void this.router.navigate(['/community/icon-lib', icon.stId], { replaceUrl: false });
-    this.iconService.getIcon(icon.stId).subscribe({
+    // `id`, not `stId`: the library's search is highlighted, and a search for
+    // an icon's own id wraps its `stId` in markup.
+    void this.router.navigate(['/community/icon-lib', icon.id], { replaceUrl: false });
+    this.iconService.getIcon(icon.id).subscribe({
       next: (entry) => {
         this.selectedIcon = entry;
         this.parsedReferences = this.prepareReferences(entry);
@@ -246,7 +254,7 @@ export class IconLibComponent implements OnInit, OnDestroy {
   }
 
   iconSvgUrl(icon: IconEntry): string {
-    return this.iconService.iconUrl(icon.stId);
+    return this.iconService.iconUrl(icon.id);
   }
 
   formatCategoryName(name: string): string {
@@ -298,12 +306,12 @@ export class IconLibComponent implements OnInit, OnDestroy {
     const map = new Map<string, ParsedReference[]>();
     if (!icon.iconReferences) return map;
     for (const xref of icon.iconReferences) {
-      if (xref.includes(':')) {
-        const db = xref.split(':')[0];
-        const id = xref.split(':')[1];
+      const [db, id] = xref.split(':');
+      if (db !== undefined && id !== undefined) {
         const url = this.getReferenceUrl(db, id);
-        if (!map.has(db)) map.set(db, []);
-        map.get(db)!.push({ db, id, url });
+        const references = map.get(db);
+        if (references) references.push({ db, id, url });
+        else map.set(db, [{ db, id, url }]);
       }
     }
     return map;

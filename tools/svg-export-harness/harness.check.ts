@@ -1,0 +1,59 @@
+import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+
+// The repository's ignored results, wherever the run was started from.
+const OUT_DIR = path.join(import.meta.dirname, '../../test-results/reactome-pathway');
+
+test('Reactome legend — render, PNG and SVG export', async ({ page }) => {
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+
+  const consoleErrors: string[] = [];
+  page.on('console', (msg) => {
+    const text = msg.text();
+    if (msg.type() === 'error') consoleErrors.push(text);
+
+    console.log(`[browser:${msg.type()}] ${text}`);
+  });
+  page.on('pageerror', (err) => {
+    consoleErrors.push(String(err));
+
+    console.log(`[pageerror] ${err}`);
+  });
+
+  await page.setViewportSize({ width: 1800, height: 800 });
+  await page.goto('http://127.0.0.1:3334/index.html');
+
+  // Wait for harness to finish rendering and exporting.
+  await page.waitForFunction(
+    () => {
+      const text = document.getElementById('status')?.textContent ?? '';
+      return ['OK', 'ERRORS', 'fatal'].some((start) => text.startsWith(start));
+    },
+    { timeout: 60000 }
+  );
+
+  const status = await page.textContent('#status');
+
+  console.log('harness status:', status);
+
+  // Capture screenshots and SVG markup.
+  await page.locator('#cy-live').screenshot({ path: path.join(OUT_DIR, 'live-canvas.png') });
+  await page.locator('#out-png').screenshot({ path: path.join(OUT_DIR, 'png-output.png') });
+  await page.locator('#out-svg').screenshot({ path: path.join(OUT_DIR, 'svg-output.png') });
+  await page.screenshot({ path: path.join(OUT_DIR, 'all.png'), fullPage: true });
+
+  const svgText = await page.evaluate(() => (window as Window & { lastSvg?: string }).lastSvg);
+  if (svgText) {
+    fs.writeFileSync(path.join(OUT_DIR, 'legend.svg'), svgText);
+  }
+
+  console.log(`Snapshots saved to ${OUT_DIR}`);
+  if (consoleErrors.length > 0) {
+    console.log(
+      `Console errors during capture (${consoleErrors.length}):\n${consoleErrors.slice(0, 10).join('\n')}`
+    );
+  }
+  expect(status, status ?? 'no status').toMatch(/^OK/);
+  expect(consoleErrors).toEqual([]);
+});

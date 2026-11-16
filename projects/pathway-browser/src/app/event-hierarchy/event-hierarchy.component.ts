@@ -14,6 +14,7 @@ import { Event } from '../model/graph/event/event.model';
 import { EventService, SelectableObject } from '../services/event.service';
 import { SpeciesService } from '../services/species.service';
 import {
+  catchError,
   combineLatest,
   combineLatestWith,
   filter,
@@ -46,7 +47,7 @@ import { RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
 import { MatNestedTreeNode } from '@angular/material/tree';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
+
 import { MatTooltip } from '@angular/material/tooltip';
 import { PassiveDirective } from '../utils/passive.directive';
 import { RevealDirective } from '../utils/reveal.directive';
@@ -67,7 +68,6 @@ import { HierarchyHoverService } from '../services/hierarchy-hover.service';
     MatTreeNodeOutlet,
     MatButton,
     MatIconButton,
-    NgClass,
     MatTooltip,
     PassiveDirective,
     RevealDirective,
@@ -78,7 +78,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
   protected eventService: EventService = inject(EventService);
   private speciesService: SpeciesService = inject(SpeciesService);
   public state: UrlStateService = inject(UrlStateService);
-  private el: ElementRef = inject(ElementRef);
+  private el: ElementRef<HTMLElement> = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly hierarchyHover = inject(HierarchyHoverService);
   private ehldService: EhldService = inject(EhldService);
   private analysis: AnalysisService = inject(AnalysisService);
@@ -99,10 +99,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    * ancestor of the selection, to draw the path.
    */
   readonly revealTarget = computed(() => this.state.select() ?? this.pathwayId());
-  readonly split = input.required<SplitComponent>({ alias: 'eventSplit' });
-  readonly treeControlButton = viewChild('treeControlButton', { read: ElementRef });
-  readonly eventIcon = viewChild('eventIcon', { read: ElementRef });
-  readonly tree = viewChild.required(MatTree);
+  readonly eventSplit = input.required<SplitComponent>();
+  readonly treeControlButton = viewChild<unknown, ElementRef<HTMLElement>>('treeControlButton', {
+    read: ElementRef,
+  });
+  readonly eventIcon = viewChild<unknown, ElementRef<HTMLElement>>('eventIcon', {
+    read: ElementRef,
+  });
+  readonly tree = viewChild.required<MatTree<Event, string>>(MatTree);
 
   private _SCROLL_SPEED = 50; // pixels per second
   private _ICON_PADDING = 16;
@@ -128,7 +132,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
   breadcrumbs: Event[] = [];
   scrollTimeout: undefined | ReturnType<typeof setTimeout>;
-  selectedIdFromUrl?: string;
+  selectedIdFromUrl?: string | null;
   selectedTreeEvent?: Event;
   selectedObj?: DatabaseObject;
   lastSpecieId?: string;
@@ -151,7 +155,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     pathwayId: toObservable(this.pathwayId),
   })
     .pipe(
-      tap(({ select }) => (this.selectedIdFromUrl = select!)),
+      tap(({ select }) => (this.selectedIdFromUrl = select)),
       //todo: revisit here to check the logic
       filter(
         () => !this._ignore && !this._isInitialLoad
@@ -164,19 +168,26 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
           ? this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
               map((enhancedEvent) => ({
                 idToUse,
-                enhancedEvent,
-              }))
+                enhancedEvent: enhancedEvent as SelectableObject | undefined,
+              })),
+              // Caught here, inside the switchMap: an error reaching the outer
+              // stream would end it, and the tree would stop following the URL.
+              // The viewport says the pathway could not be loaded.
+              catchError(() => of({ idToUse, enhancedEvent: undefined }))
             )
           : of({ idToUse, enhancedEvent: undefined });
       }),
       switchMap(({ idToUse, enhancedEvent }) => {
         const token = this.analysis.result()?.summary.token;
-        if (!token) {
-          return of({ idToUse, enhancedEvent, hitReactions: [] }); // Return empty hitReactions if there is no token
+        const pathwayId = this.pathwayId();
+        // Without either there is nothing to fetch (getHitReactions answers
+        // an empty list for a missing one too).
+        if (!token || !pathwayId) {
+          return of({ idToUse, enhancedEvent, hitReactions: [] });
         }
         // Fetch hit reactions using token and pathway ID
         return this.analysis
-          .getHitReactions(this.pathwayId()!, token)
+          .getHitReactions(pathwayId, token)
           .pipe(map((hitReactions) => ({ idToUse, enhancedEvent, hitReactions })));
       }),
       switchMap(({ enhancedEvent, hitReactions }) => {
@@ -265,7 +276,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.breadcrumbs = events as Event[];
     });
 
-    this.split()
+    this.eventSplit()
       .dragProgress$.pipe(untilDestroyed(this))
       .subscribe((_data) => {
         this.adjustWidths();
@@ -296,9 +307,14 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         if (diagramPathway?.stId === idToUse) {
           return of({ enhancedEvent: diagramPathway });
         } else {
-          return this.dboService
-            .fetchEnhancedEntry<SelectableObject>(idToUse)
-            .pipe(map((enhancedEvent) => ({ enhancedEvent })));
+          return this.dboService.fetchEnhancedEntry<SelectableObject>(idToUse).pipe(
+            map((enhancedEvent) => ({
+              enhancedEvent: enhancedEvent as SelectableObject | undefined,
+            })),
+            // No such event, or it could not be loaded: the tree still draws
+            // its top level, and the viewport says what went wrong.
+            catchError(() => of({ enhancedEvent: undefined }))
+          );
         }
       })
     );
@@ -314,11 +330,13 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     // Fetch analysis result
 
     // Fetch reactions based on token and pathway ID
+    const token = this.state.analysis();
+    const pathwayId = this.pathwayId();
     const hitReactions$ =
-      !this.state.analysis() || !this.pathwayId()
+      !token || !pathwayId
         ? of({ hitReactions: [] }) // Return empty if no token
         : this.analysis
-            .getHitReactions(this.pathwayId()!, this.state.analysis()!)
+            .getHitReactions(pathwayId, token)
             .pipe(map((hitReactions) => ({ hitReactions })));
 
     // Combine all data and merged into one object
@@ -418,7 +436,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     if (isPathway(event) && event.hasDiagram) return of(event.stId);
     const lineage = [...(event.ancestors ?? []), event];
     if (lineage.every((ancestor) => this.hasDiagramById.has(ancestor.stId))) {
-      return of(this.diagramIdFromLineage(lineage));
+      return of(this.diagramIdFromLineage(lineage, event));
     }
     return this.eventService.fetchEventAncestors(event.stId).pipe(
       map((lineages) => {
@@ -428,13 +446,13 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
         const withDiagram = new Set(
           lineages
             .flat()
-            .filter((ancestor) => ancestor.hasDiagram)
+            .filter((ancestor) => isPathway(ancestor) && ancestor.hasDiagram)
             .map((a) => a.stId)
         );
         lineage.forEach((ancestor) =>
           this.hasDiagramById.set(ancestor.stId, withDiagram.has(ancestor.stId))
         );
-        return this.diagramIdFromLineage(lineage);
+        return this.diagramIdFromLineage(lineage, event);
       })
     );
   }
@@ -448,12 +466,12 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    * everywhere, e.g. The CARD8 inflammasome, R-HSA-9995698, and a reaction
    * picked under it would otherwise open its ancestor's diagram instead.
    */
-  private diagramIdFromLineage(lineage: Event[]): string {
+  private diagramIdFromLineage(lineage: Event[], event: Event): string {
     const drawn = this.pathwayId();
     const withDiagram = [...lineage]
       .reverse()
       .find((e) => e.stId === drawn || this.hasDiagramById.get(e.stId));
-    return (withDiagram ?? lineage[lineage.length - 1]).stId;
+    return (withDiagram ?? event).stId;
   }
 
   private loadEvents(treeEvent: Event) {
@@ -466,7 +484,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
     if (isPathway(treeEvent)) {
       this.eventService.loadEventData(treeEvent);
-    } else {
+    } else if (treeEvent.parent) {
       this.dboService
         .fetchEnhancedEntry<Event>(treeEvent.parent.stId)
         .pipe(untilDestroyed(this))
@@ -483,7 +501,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       if (isPathway(event) && event.events) {
         this.selectAllParents(
           selectedEvent,
-          event.events?.map((e) => e.element)
+          event.events.map((e) => e.element)
         );
       }
     });
@@ -494,7 +512,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     events.forEach((event) => {
       event.isSelected = false;
       if (isPathway(event) && event.events) {
-        this.clearAllSelectedEvents(event.events?.map((e) => e.element));
+        this.clearAllSelectedEvents(event.events.map((e) => e.element));
       }
     });
   }
@@ -555,8 +573,8 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
    * Adjust widths when loading mat tree data at the initialization.
    */
   adjustWidths() {
-    const treeNodes = this.el.nativeElement.querySelectorAll('.tree-node');
-    treeNodes.forEach((node: HTMLElement) => {
+    const treeNodes = this.el.nativeElement.querySelectorAll<HTMLElement>('.tree-node');
+    treeNodes.forEach((node) => {
       this.adjustWidth(node);
     });
   }
@@ -665,7 +683,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const expanded = new Set<string>();
     const traverse = (items: Event[]) => {
       for (const node of items) {
-        if (this.tree()?.isExpanded(node)) {
+        if (this.tree().isExpanded(node)) {
           expanded.add(node.stId);
         }
         if (isPathway(node) && node.events) {
@@ -682,7 +700,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     const traverse = (items: Event[]) => {
       for (const node of items) {
         if (expandedIds.has(node.stId)) {
-          this.tree()?.expand(node);
+          this.tree().expand(node);
         }
         if (isPathway(node) && node.events) {
           traverse(node.events.map((e) => e.element));

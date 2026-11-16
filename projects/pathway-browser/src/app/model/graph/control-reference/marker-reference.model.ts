@@ -1,8 +1,6 @@
-import { ControlReference } from './control-reference.model';
-import { Cell } from '../physical-entity/cell.model';
-import { EntityWithAccessionedSequence } from '../physical-entity/entity-with-accessioned-sequence.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface MarkerReference extends ControlReference {
-  cell: Cell[];
-  marker: EntityWithAccessionedSequence;
-}
+/** A cell marker's references, as the pathway browser reads it (the contract's, resolved). */
+export type MarkerReference = Resolved<Graph.MarkerReference<JsogReference>>;

@@ -50,7 +50,12 @@ export class SearchComponent implements OnInit {
     },
     {
       validators: (group) => {
-        return group.value.species || group.value.keywords ? null : { noInput: true };
+        // A form group's value is an object of its controls' values.
+        const value: unknown = group.value;
+        if (typeof value !== 'object' || value === null) return { noInput: true };
+        const species = 'species' in value ? value.species : undefined;
+        const keywords = 'keywords' in value ? value.keywords : undefined;
+        return species || keywords ? null : { noInput: true };
       },
     }
   );
@@ -68,7 +73,7 @@ export class SearchComponent implements OnInit {
   search() {
     this.store.dispatch(
       searchResultActions.search({
-        species: this.searchForm.value.species,
+        species: this.searchForm.value.species ?? null,
         keywords: this.searchForm.value.keywords as string,
       })
     );

@@ -1,5 +1,6 @@
-import { type Page, type Download } from '@playwright/test';
+import { type Page, type Download, type Locator } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { bodyOf } from './support/json';
 import { readFileSync } from 'node:fs';
 
 // What an analysis is *for*: the numbers beside the pathways, the table you sort
@@ -61,9 +62,20 @@ test.describe('Analysis results', () => {
     await runGeneList(page);
     await openTab(page, 'Results');
 
-    const rows = page.locator('cr-result-tab table tbody tr');
-    await expect(rows.first()).toBeVisible({ timeout: 60_000 });
-    const before = await rows.count();
+    // The paginator's total, "1 – 20 of N", not the rows on screen: the table
+    // shows 20 a page, and each pathway also has a hidden row of its found
+    // entities, so a row count tops out and does not count pathways. The
+    // results table's own paginator: the not-found identifiers below have one
+    // too.
+    await expect(page.locator('cr-result-tab tr.pathway-row').first()).toBeVisible({
+      timeout: 60_000,
+    });
+    const label = page.locator(
+      'cr-result-tab .controls.mat-elevation-z2 .mat-mdc-paginator-range-label'
+    );
+    const pathways = async () =>
+      Number(/of\s+([\d,]+)/.exec(await label.innerText())?.[1]?.replace(/,/g, '') ?? NaN);
+    const before = await pathways();
     expect(before, 'pathways before filtering').toBeGreaterThan(20);
 
     // The FDR slider rather than the Diseases toggle or a species facet: the
@@ -73,20 +85,34 @@ test.describe('Analysis results', () => {
     const fdr = page.locator('.mat-mdc-menu-panel input[type="range"]').first();
     await fdr.focus();
     // Arrow keys, because a mat-slider thumb is not filled like an input.
-    for (let step = 0; step < 6; step++) {
-      await page.keyboard.press('ArrowLeft');
-      await page.waitForTimeout(150);
-    }
-    expect(await fdr.inputValue(), 'the strictest FDR').toBe('0');
+    for (let step = 0; step < 6; step++) await page.keyboard.press('ArrowLeft');
+    await expect(fdr, 'the strictest FDR').toHaveValue('0');
     await page.keyboard.press('Escape');
-    await page.waitForTimeout(2000);
 
-    const after = await rows.count();
-    expect(after, 'a stricter FDR keeps fewer pathways').toBeLessThan(before);
-    expect(after, 'but not none of them').toBeGreaterThan(0);
+    // Waited for rather than counted after a fixed pause, which a slow
+    // re-render could outrun (#321).
+    await expect
+      .poll(pathways, { message: 'a stricter FDR keeps fewer pathways' })
+      .toBeLessThan(before);
+    await expect.poll(pathways, { message: 'but not none of them' }).toBeGreaterThan(0);
   });
 
-  test('the result files download', async ({ page }) => {
+  test('the result files download', async ({ page, context }) => {
+    // The PDF report is made in the background by pdf-export (its spec 002):
+    // its address answers "being made" until the report is ready. Fetched and
+    // saved by the page, that answer was saved as report.pdf; opened in a tab,
+    // its page asks again and the PDF downloads once ready. Stubbed here, so
+    // no report is made.
+    const reportsAsked: string[] = [];
+    await context.route('**/AnalysisService/report/**', (route) => {
+      reportsAsked.push(route.request().url());
+      return route.fulfill({
+        status: 202,
+        headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
+        contentType: 'text/html;charset=UTF-8',
+        body: '<!doctype html><title>Making your report</title><h1>Making your report</h1>',
+      });
+    });
     await runGeneList(page);
     await openTab(page, 'Download');
 
@@ -103,6 +129,22 @@ test.describe('Analysis results', () => {
       expect(bytes.length, `${label} size`).toBeGreaterThan(100);
       expect(looksRight(bytes), `${label} content`).toBe(true);
     }
+
+    // The PDF report opens in a new tab, and is not downloaded by the page.
+    let downloads = 0;
+    page.on('download', () => downloads++);
+    const [tab] = await Promise.all([
+      context.waitForEvent('page', { timeout: 30_000 }),
+      page.getByText('PDF Result', { exact: true }).click(),
+    ]);
+    await tab.waitForLoadState();
+    expect(new URL(tab.url()).pathname).toMatch(
+      /^\/AnalysisService\/report\/[^/]+\/[^/]+\/report\.pdf$/
+    );
+    await expect(tab.getByRole('heading', { name: 'Making your report' })).toBeVisible();
+    // Asked once, by the new tab: the page itself fetched nothing.
+    expect(reportsAsked).toHaveLength(1);
+    expect(downloads).toBe(0);
   });
 
   test('species comparison overlays the pathways', async ({ page }) => {
@@ -163,6 +205,10 @@ test.describe('Analysis results', () => {
   // arrays changed in place, so the selection never counted as made, and the
   // stepper would not move on to the analysis.
   test('a dragged tissue counts as chosen', async ({ page }) => {
+    // Reaching the last step submits the analysis. Held unanswered: this is
+    // about the stepper, and an answered submission moves the form past the
+    // step this looks for.
+    await page.route('**/AnalysisService/identifiers/url**', () => {});
     await page.goto('/PathwayBrowser?analysisTab=tissue');
     const [available, selected] = [
       page.locator('.tissue-list').nth(0),
@@ -170,21 +216,37 @@ test.describe('Analysis results', () => {
     ];
     const colon = available.getByText('Colon', { exact: true });
     await colon.waitFor({ timeout: READY });
-    const from = await colon.boundingBox();
-    const to = await selected.boundingBox();
-    if (!from || !to) throw new Error('the tissue lists are not on screen');
-    // A drag as a person makes one: press, pause, then move in small steps.
-    // CDK does not start a drag from a single jump of the pointer.
-    const [x0, y0] = [from.x + from.width / 2, from.y + from.height / 2];
-    const [x1, y1] = [to.x + to.width / 2, to.y + 30];
-    await colon.hover();
-    await page.mouse.down();
-    await page.waitForTimeout(150);
-    for (let step = 1; step <= 25; step++) {
-      await page.mouse.move(x0 + ((x1 - x0) * step) / 25, y0 + ((y1 - y0) * step) / 25);
-      await page.waitForTimeout(20);
-    }
+    // The drag follows what the page shows, not the clock. The panel can still
+    // be opening when the drag begins, moving the lists down under the
+    // pointer: a target measured once, before the drag, was then the heading
+    // above the selected list, and the drop went nowhere (CI, Nov 2026).
+    const centre = async (target: Locator) => {
+      const box = await target.boundingBox();
+      if (!box) throw new Error('not on screen');
+      return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    };
+    // CDK starts a drag once the pointer has moved a few pixels, which its
+    // preview shows. Pressed again, on Colon as it is now, until it has.
+    const preview = page.locator('.cdk-drag-preview');
+    await expect(async () => {
+      await page.mouse.up();
+      // The list scrolls, and Colon starts below its fold.
+      await colon.scrollIntoViewIfNeeded();
+      const start = await centre(colon);
+      await page.mouse.move(start.x, start.y);
+      await page.mouse.down();
+      await page.mouse.move(start.x + 10, start.y + 10, { steps: 5 });
+      await expect(preview).toHaveText('Colon', { timeout: 500 });
+    }).toPass({ timeout: READY });
+    // Over the selected list as it is now; measured again until CDK places the
+    // tissue in it, which its placeholder shows.
+    await expect(async () => {
+      const over = await centre(selected);
+      await page.mouse.move(over.x, over.y, { steps: 10 });
+      await expect(selected.locator('.cdk-drag-placeholder')).toBeAttached({ timeout: 500 });
+    }).toPass({ timeout: READY });
     await page.mouse.up();
+    await expect(preview).toHaveCount(0);
     await expect(selected.getByText('Colon', { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: /^Next$/ }).click();
@@ -204,7 +266,7 @@ test.describe('Analysis summary', () => {
         status: 200,
         contentType: 'text/event-stream',
         body:
-          'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+          'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
           `event: token\ndata: {"text": "Summary number ${asked}."}\n\n` +
           'event: done\ndata: {"state": "summarised"}\n\n',
       });
@@ -264,19 +326,19 @@ test.describe('Continuing a summary in the chat', () => {
   test('opens the chat on this summary, in a new tab', async ({ page, context }) => {
     let summarised: unknown = null;
     await page.route('**/analysis-summary', (route) => {
-      summarised = route.request().postDataJSON()?.token;
+      summarised = bodyOf(route.request())?.['token'];
       return route.fulfill({
         status: 200,
         contentType: 'text/event-stream',
         body:
-          'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+          'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
           'event: token\ndata: {"text": "A summary to continue."}\n\n' +
           'event: done\ndata: {"state": "summarised"}\n\n',
       });
     });
     let minted: Record<string, unknown> | null = null;
     await page.route('**/chat-handoff', async (route) => {
-      minted = route.request().postDataJSON();
+      minted = bodyOf(route.request());
       await route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -317,7 +379,7 @@ test.describe('Continuing a summary after the person-check lapsed', () => {
             status: 200,
             contentType: 'text/event-stream',
             body:
-              'event: start\ndata: {"release": "97", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
+              'event: start\ndata: {"release": "98", "analysis_type": "OVERREPRESENTATION", "disclosure": "aggregate"}\n\n' +
               'event: token\ndata: {"text": "A summary to continue."}\n\n' +
               'event: done\ndata: {"state": "summarised"}\n\n',
           })

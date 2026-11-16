@@ -1,9 +1,6 @@
-import { DatabaseObject } from './database-object.model';
+import type * as Graph from '../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface Person extends DatabaseObject {
-  orcidId: string;
-  dbId: number;
-  initial: string;
-  firstname: string;
-  surname: string;
-}
+/** A person, as the pathway browser reads it (the contract's, resolved). */
+export type Person = Resolved<Graph.Person<JsogReference>>;

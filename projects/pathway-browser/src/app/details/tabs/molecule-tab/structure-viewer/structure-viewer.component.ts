@@ -21,9 +21,10 @@ import { catchError, map, of } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { SafePipe } from '../../../../pipes/safe.pipe';
 import { SelectableObject } from '../../../../services/event.service';
-import { MoleculeType } from '../molecule-type';
+import { MoleculeType } from '../../../../model/molecule-type.model';
 import { StructureService } from '../../../../services/structure.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
+import { getProperty } from '../../../../services/utils';
 
 export interface StructureEntry {
   pdb_id: string;
@@ -42,6 +43,10 @@ interface BestStructure {
   [key: string]: StructureEntry[];
 }
 
+/**
+ * AlphaFold's own API, which this site does not control or version against: its
+ * entry may have no structures, and a structure no summary.
+ */
 interface AlphaFoldSummary {
   uniprot_entry: {
     ac: string;
@@ -52,8 +57,8 @@ interface AlphaFoldSummary {
     segment_end: number;
   };
 
-  structures: {
-    summary: {
+  structures?: {
+    summary?: {
       model_identifier: string;
       model_category: string;
       model_url: string;
@@ -93,8 +98,22 @@ export enum Source {
   PDB = 'PDB',
 }
 
-// Global variable avoid typescript errors
-declare const PDBeMolstarPlugin: any;
+/**
+ * PDBe Molstar's plugin, a global its script defines; only what is used here.
+ * https://github.com/molstar/pdbe-molstar/wiki/1.-PDBe-Molstar-as-JS-plugin
+ */
+declare const PDBeMolstarPlugin: new () => {
+  render(target: HTMLElement, options: PdbeMolstarOptions): void;
+};
+
+interface PdbeMolstarOptions {
+  bgColor: string;
+  hideControls: boolean;
+  landscape: boolean;
+  moleculeId?: string;
+  customData?: { url: string; format: string };
+  alphafoldView?: boolean;
+}
 
 @Component({
   selector: 'cr-structure-viewer',
@@ -136,7 +155,7 @@ export class StructureViewerComponent {
     if (!this.isProtein()) return null;
     const summary = this.alphafoldSummary.value();
     if (summary?.structures?.[0]?.summary?.model_url) {
-      const id = this.obj().identifier;
+      const id = getProperty(this.obj(), 'identifier');
       return `AF-${id}-F1`;
     }
     return null;
@@ -182,7 +201,7 @@ export class StructureViewerComponent {
   readonly isAlphafoldSummaryLoading = computed(() => this.alphafoldSummary.isLoading());
 
   bestPdbStructure = rxResource({
-    params: () => this.obj().identifier,
+    params: () => getProperty(this.obj(), 'identifier'),
     stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
@@ -191,6 +210,8 @@ export class StructureViewerComponent {
         .pipe(
           map((response) => {
             const value = response[id];
+            // An id the service has no structures for: none, rather than a throw.
+            if (!value) return undefined;
             const ids = new Set(value.map((item) => item.pdb_id.toUpperCase()));
             return Array.from(ids);
           }),
@@ -200,7 +221,7 @@ export class StructureViewerComponent {
   });
 
   alphafoldSummary = rxResource({
-    params: () => this.obj().identifier,
+    params: () => getProperty(this.obj(), 'identifier'),
     stream: ({ params }) => {
       if (!this.isProtein()) return of(undefined); // NG0991: must emit
       const id = params;
@@ -233,8 +254,8 @@ export class StructureViewerComponent {
         this.getProteinStructure();
       } else if (isChemical) {
         const identifier =
-          this.obj().databaseName === 'ChEBI'
-            ? this.obj().identifier
+          getProperty(this.obj(), 'databaseName') === 'ChEBI'
+            ? getProperty(this.obj(), 'identifier')
             : (this.obj().crossReference as DatabaseIdentifier[]).find(
                 (c) => c.databaseName === 'ChEBI'
               )?.identifier;
@@ -272,7 +293,7 @@ export class StructureViewerComponent {
       // would make the first render depend on a third-party request that has no
       // timeout. Showing the right kind of structure promptly beats showing the
       // best-ranked one eventually.
-      const pdbId = this.pdbIdentifiers()?.[0];
+      const pdbId = this.pdbIdentifiers()[0];
       if (pdbId) {
         this.selected.set(pdbId);
         return;
@@ -338,15 +359,10 @@ export class StructureViewerComponent {
       .filter((ref: DatabaseIdentifier) => ref.databaseName === Source.PDB)
       .map((ref) => ref.identifier)
       .sort((a, b) => {
-        if (bestStructure) {
-          const aIndex = bestStructure.has(a) ? bestStructure.get(a)! : Number.MAX_SAFE_INTEGER;
-          const bIndex = bestStructure.has(b) ? bestStructure.get(b)! : Number.MAX_SAFE_INTEGER;
-
-          if (aIndex !== bIndex) {
-            return aIndex - bIndex;
-          }
-        }
-        // fallback method when no best structure available
+        // By EBI's ranking; those it does not rank, and ties, alphabetically.
+        const aIndex = bestStructure.get(a) ?? Number.MAX_SAFE_INTEGER;
+        const bIndex = bestStructure.get(b) ?? Number.MAX_SAFE_INTEGER;
+        if (aIndex !== bIndex) return aIndex - bIndex;
         return this.sortByAlphabeticalOrder(a, b);
       });
   }

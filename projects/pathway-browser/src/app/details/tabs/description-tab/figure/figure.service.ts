@@ -68,7 +68,8 @@ export class FigureService {
 
   constructor() {
     effect(() => {
-      this.data.selectedElement() && this.expanded.set(undefined); // reset expanded when element changes
+      // reset expanded when element changes
+      if (this.data.selectedElement()) this.expanded.set(undefined);
     });
   }
 }

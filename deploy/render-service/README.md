@@ -1,6 +1,6 @@
 # Deploying the render service
 
-The service is `tools/render/service.mjs`. This directory is how it gets run: a
+The service is `tools/render/service.ts`. This directory is how it gets run: a
 container that compose restarts, rather than something installed on a host.
 
 ## Running it
@@ -54,7 +54,7 @@ Running on the host instead, without a container:
 
 ```bash
 RENDER_CACHE=~/render-cache RENDER_BASE=http://localhost:4200 \
-  setsid nohup node tools/render/service.mjs > ~/render-service.log 2>&1 &
+  setsid nohup node tools/render/service.ts > ~/render-service.log 2>&1 &
 ```
 
 That is what beta runs today. It does not survive a reboot, which is the reason

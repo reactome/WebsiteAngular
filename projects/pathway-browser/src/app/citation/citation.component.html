@@ -2,13 +2,19 @@
   <div class="header">
     <h2 mat-dialog-title>Cite Us!</h2>
 
-    <button class="close-button" mat-dialog-close mat-icon-button>
+    <button type="button" class="close-button" mat-dialog-close mat-icon-button>
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
   </div>
 
   <div class="save">
-    <button class="save-button" mat-button [cdkCopyToClipboard]="citationToCopy()" (click)="onCopyClick()">
+    <button
+      type="button"
+      class="save-button"
+      mat-button
+      [cdkCopyToClipboard]="citationToCopy()"
+      (click)="onCopyClick()"
+    >
       <mat-icon fontSet="symbols">{{ copyIcon() }}</mat-icon>
       {{ copyLabel() }}
     </button>

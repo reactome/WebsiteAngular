@@ -43,7 +43,7 @@ export class HasDiagramService {
     if (unflagged.length === 0) return of(value);
     return forkJoin(unflagged.map((pathway) => this.fetch(pathway.stId))).pipe(
       map((answers) => {
-        unflagged.forEach((pathway, i) => (pathway.hasDiagram = answers[i]));
+        unflagged.forEach((pathway, i) => (pathway.hasDiagram = answers[i] ?? false));
         return value;
       })
     );

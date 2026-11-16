@@ -24,7 +24,8 @@
     <div class="container diagram">
       @if (hasEHLD() && analysis.samples().length > 1) {
         <cr-download-button
-          (click)="onEHLDAnimatedDownload()"
+          (pressed)="onEHLDAnimatedDownload()"
+          [working]="isWorking(DownloadTarget.DIAGRAM, DownloadFormat.SVG, true)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />
@@ -35,15 +36,12 @@
           [label]="item.format.toUpperCase()"
           [icon]="item.icon"
           [download]="item.download"
-          (click)="item.method?.()"
+          [working]="!item.url && isWorking(DownloadTarget.DIAGRAM, item.format)"
+          (pressed)="item.method?.()"
         >
         </cr-download-button>
       }
     </div>
-
-    @if (downloadFailure(); as reason) {
-      <p class="download-failure" role="alert">{{ reason }}</p>
-    }
 
     <!-- One preference rather than a second button beside every format: it is a
          property of the picture, not a different kind of file. -->
@@ -58,7 +56,8 @@
     <div class="container reacfoam">
       @if (analysis.samples().length > 1) {
         <cr-download-button
-          (click)="onReacfoamAnimatedDownload()"
+          (pressed)="onReacfoamAnimatedDownload()"
+          [working]="isWorking(DownloadTarget.REACFOAM, DownloadFormat.SVG, true)"
           label="Animated SVG"
           [icon]="{ id: 'slow_motion_video' }"
         />
@@ -66,7 +65,8 @@
 
       @for (format of reacfoamFormats; track format) {
         <cr-download-button
-          (click)="onReacfoamDownload(format)"
+          (pressed)="onReacfoamDownload(format)"
+          [working]="isWorking(DownloadTarget.REACFOAM, format)"
           [label]="format.toUpperCase()"
           [icon]="{ id: 'image' }"
         />
@@ -74,18 +74,25 @@
     </div>
   }
 
+  <!-- Under both kinds of figure: the genome-wide view's had nowhere to show. -->
+  @if (downloadFailure(); as reason) {
+    <p class="download-failure" role="alert">{{ reason }}</p>
+  }
+
   <!--pathway format-->
   @if (finalEventId()) {
     <h3 class="category">Pathway Format</h3>
     <div class="container pathway">
       @for (item of pathwayItems; track item) {
-        <cr-download-button
-          [url]="item.url()"
-          [download]="item.fileName ? item.fileName() : true"
-          [label]="item.name"
-          [icon]="item.icon"
-        >
-        </cr-download-button>
+        @if (!item.ready || item.ready()) {
+          <cr-download-button
+            [url]="item.url()"
+            [download]="item.fileName ? item.fileName() : true"
+            [label]="item.name"
+            [icon]="item.icon"
+          >
+          </cr-download-button>
+        }
       }
     </div>
   }
@@ -113,6 +120,7 @@
             [url]="item.url()"
             [matTooltip]="item.description"
             [download]="true"
+            [opens]="item.opens ?? false"
             [icon]="item.icon"
             [label]="item.title"
           >

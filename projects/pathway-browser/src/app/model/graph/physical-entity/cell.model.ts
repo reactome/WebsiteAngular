@@ -1,15 +1,6 @@
-import { PhysicalEntity } from './physical-entity.model';
-import { MarkerReference } from '../control-reference/marker-reference.model';
-import { Anatomy } from '../external-ontology/anatomy.model';
-import { EntityWithAccessionedSequence } from './entity-with-accessioned-sequence.model';
-import { Taxon } from '../taxon.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface Cell extends PhysicalEntity {
-  markerReference: MarkerReference[];
-  organ: Anatomy;
-  proteinMarker: EntityWithAccessionedSequence[];
-  rnaMarker: EntityWithAccessionedSequence[];
-  species: Taxon[];
-  tissue: Anatomy;
-  tissueLayer: Anatomy;
-}
+/** A cell, as the pathway browser reads it (the contract's, resolved). */
+export type Cell = Resolved<Graph.Cell<JsogReference>>;

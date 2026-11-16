@@ -1,3 +1,4 @@
+import { Facet, FacetResponse, NamedFacetCount, SearchFilters } from '../../../model/search.model';
 import {
   AfterViewInit,
   Component,
@@ -5,7 +6,6 @@ import {
   inject,
   OnChanges,
   SimpleChanges,
-  HostListener,
   signal,
   linkedSignal,
   ChangeDetectorRef,
@@ -15,12 +15,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import {
-  FacetCount,
-  FacetResponse,
-  SearchFilters,
-  SearchService,
-} from 'projects/website-angular/src/services/search.service';
+import { SearchService } from 'projects/website-angular/src/services/search.service';
 import { DropdownToggleComponent } from '../../reactome-components/dropdown-toggle/dropdown-toggle.component';
 
 /**
@@ -34,6 +29,10 @@ const FILTER_KEYS = ['species', 'types', 'compartments', 'keywords', 'pageCatego
 
 @Component({
   selector: 'app-search-bar',
+  host: {
+    '(window:keydown.arrowdown)': 'onKeyDownArrowDown($event)',
+    '(window:keydown.arrowup)': 'onKeyDownArrowUp($event)',
+  },
   standalone: true,
   imports: [DropdownToggleComponent, RouterLink],
   templateUrl: './search-bar.component.html',
@@ -115,7 +114,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['suggestions']) {
-      this.suggestions = this.suggestions ? [...this.suggestions] : [];
+      this.suggestions = [...this.suggestions];
     }
     if (changes['activeFilters']) {
       // Each array is copied, not just the object. `toggleAdvancedFacet` edits
@@ -123,9 +122,9 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
       // with the page's own `filters` -- and ticking a box here would silently
       // rewrite what the page believes is applied, with no navigation and no
       // change to the URL.
-      const applied = this.activeFilters() || {};
+      const applied = this.activeFilters();
       this.advancedFilters = Object.fromEntries(
-        Object.entries(applied).map(([key, values]) => [key, [...(values ?? [])]])
+        Object.entries(applied).map(([key, values]) => [key, [...values]])
       ) as SearchFilters;
     }
     if (changes['query']) {
@@ -203,7 +202,7 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     }
     this.searchService.getSuggestedTerms(query).subscribe({
       next: (terms) => {
-        this.suggestions = terms || [];
+        this.suggestions = terms;
         this.cdr.markForCheck();
       },
       error: () => {
@@ -226,11 +225,12 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     });
   }
 
-  getFacetItems(
-    facet: { selected: FacetCount[]; available: FacetCount[] } | undefined
-  ): FacetCount[] {
+  /** The counts that can be shown and chosen: an unnamed one cannot. */
+  getFacetItems(facet: Facet | undefined): NamedFacetCount[] {
     if (!facet) return [];
-    return [...(facet.selected || []), ...(facet.available || [])];
+    return [...(facet.selected || []), ...(facet.available || [])].filter(
+      (item): item is NamedFacetCount => !!item.name
+    );
   }
 
   isAdvancedFacetSelected(category: string, value: string): boolean {
@@ -249,22 +249,20 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
     this.advancedFilters[key] = current;
   }
 
-  @HostListener('window:keydown.arrowdown', ['$event'])
   onKeyDownArrowDown(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex = (this.highlightedIndex + 1) % this.suggestions.length;
-      this.text.set(this.suggestions[this.highlightedIndex]);
+      this.text.set(this.suggestions[this.highlightedIndex] ?? '');
     }
   }
 
-  @HostListener('window:keydown.arrowup', ['$event'])
   onKeyDownArrowUp(event: Event): void {
     event.preventDefault();
     if (this.suggestions.length > 0 && this.showSuggestions()) {
       this.highlightedIndex =
         (this.highlightedIndex - 1 + this.suggestions.length) % this.suggestions.length;
-      this.text.set(this.suggestions[this.highlightedIndex]);
+      this.text.set(this.suggestions[this.highlightedIndex] ?? '');
     }
   }
 }

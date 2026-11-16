@@ -3,77 +3,27 @@ import { SpeciesService } from '../services/species.service';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { map, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import { Species } from '../model/graph/species.model';
+import { ShownSpecies } from '../model/graph/species.model';
 import { UrlStateService } from '../services/url-state.service';
 import { FoamTree } from '@carrotsearch/foamtree';
 import { rxResource } from '@angular/core/rxjs-interop';
 import chroma from 'chroma-js';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
-import type { Analysis } from '../model/analysis.model';
 import { extract, Style } from 'ngx-reactome-cytoscape-style';
-import { isArray } from 'lodash';
+import { httpParams } from '../utils/http-params';
+import type * as EventsHierarchy from '../model/events-hierarchy.model';
 
 const LAYOUT_URL = 'assets/reacfoam/layout.tsv';
-export namespace EventsHierarchy {
-  export interface Data {
-    diagram: boolean;
-    name: string;
-    stId: string;
-    type: 'TopLevelPathway' | 'Pathway' | 'CellLineagePath';
-    species: string;
-    llp?: boolean;
-    totalEntity: number;
-    totalEntityAndInteractors: number;
-    children: Data[];
-    reactions?: Analysis.Pathway['reactions'];
-    entities?: Analysis.Pathway['entities'];
-  }
-
-  export interface QueryParams {
-    pathwaysOnly: boolean;
-    token: string;
-    resource: string;
-    interactors: boolean;
-    importableOnly: boolean;
-    view: 'flatten' | 'nested' | 'nested-aggregated';
-  }
+interface LayoutData {
+  stId: string;
+  name: string;
+  distanceFromCenter: number;
+  position: number;
+  family: string;
 }
 
-export namespace Fireworks {
-  export interface Node {
-    dbId: number;
-    stId: string;
-    disease: boolean;
-    name: string;
-    ratio: number;
-    x: number;
-    y: number;
-  }
-
-  export interface Edge {
-    from: number;
-    to: number;
-  }
-
-  export interface Data {
-    speciesId: number;
-    speciesName: string;
-    edges: Edge[];
-    nodes: Node[];
-  }
-}
-
-export namespace Layout {
-  export interface Data {
-    stId: string;
-    name: string;
-    distanceFromCenter: number;
-    position: number;
-    family: string;
-  }
-}
-
+/** Built from the event, whose layout and analysis values may be undefined. */
 export interface PathwayGroup extends FoamTree.DataObject {
   id: string;
   disease: boolean;
@@ -88,9 +38,9 @@ export interface PathwayGroup extends FoamTree.DataObject {
   familyColor: Signal<chroma.Color>;
   depth: number;
   flag?: boolean;
-  expressions?: number[];
-  fdr?: number;
-  pValue?: number;
+  expressions?: number[] | undefined;
+  fdr?: number | undefined;
+  pValue?: number | undefined;
   path: string[];
 }
 
@@ -111,18 +61,16 @@ export class ReacfoamService {
   );
 
   fetchEventsHierarchy(
-    species: Species,
-    params: Partial<EventsHierarchy.QueryParams>
+    species: ShownSpecies,
+    params: EventsHierarchy.QueryParams
   ): Observable<EventsHierarchy.Data[]> {
-    cleanObject(params);
-    //console.log('fetch events hierarchy')
     return this.http.get<EventsHierarchy.Data[]>(
       `${CONTENT_SERVICE}/data/eventsHierarchy/${species.taxId}`,
-      { params }
+      { params: httpParams(params) }
     );
   }
 
-  fetchTLPLayoutMap(): Observable<Map<string, Layout.Data>> {
+  fetchTLPLayoutMap(): Observable<Map<string, LayoutData>> {
     //console.log('fetch tlp layout')
     return this.http.get(LAYOUT_URL, { responseType: 'text' }).pipe(
       map(
@@ -133,7 +81,9 @@ export class ReacfoamService {
               .filter((line) => !line.startsWith('#')) // Remove comments lines
               .filter((line) => line.length > 0) // Remove empty lines
               .map((line) => line.split('\t')) // Split columns
-              .map(([stId, name, distance, angle, family]) => [
+              // Every line of the layout has all five columns; a short one would
+              // read its missing numbers as NaN, as before.
+              .map(([stId = '', name = '', distance = '', angle = '', family = '']) => [
                 stId,
                 {
                   stId,
@@ -159,26 +109,23 @@ export class ReacfoamService {
       params: {
         pathwaysOnly: true,
         token: this.state.analysis() || undefined,
-        resource: this.analysis.resourceFilter(),
-        interactors: this.analysis.result()?.summary?.interactors,
+        resource: this.analysis.resourceFilter() ?? undefined,
+        interactors: this.analysis.result()?.summary.interactors,
         view: 'nested-aggregated',
-      } as EventsHierarchy.QueryParams,
+      } satisfies EventsHierarchy.QueryParams,
     }),
     stream: ({ params }) => this.fetchEventsHierarchy(params.species, params.params),
   });
 
   readonly mergedData = computed(() => {
-    return this.layoutMap.value() && this.eventsHierarchyData.value()
-      ? {
-          layoutMap: this.layoutMap.value()!,
-          events: this.eventsHierarchyData.value()!,
-        }
-      : undefined;
+    const layoutMap = this.layoutMap.value();
+    const events = this.eventsHierarchyData.value();
+    return layoutMap && events ? { layoutMap, events } : undefined;
   });
 
   readonly familyColorMap = computed(() => {
-    if (!this.layoutMap.value()) return new Map<string, Signal<chroma.Color>>();
-    const layoutMap = this.layoutMap.value()!;
+    const layoutMap = this.layoutMap.value();
+    if (!layoutMap) return new Map<string, Signal<chroma.Color>>();
     const families = [...new Set([...layoutMap.values()].map((tlp) => tlp.family))];
     const dH = 360 / families.length;
     const offset = 0;
@@ -252,8 +199,9 @@ export class ReacfoamService {
   > = computed(() => {
     // this.dark.isDark();  // Compute on dark update
     this.filters(); // Compute on filters update
-    if (!this.mergedData()) return;
-    const { layoutMap, events } = this.mergedData()!;
+    const merged = this.mergedData();
+    if (!merged) return;
+    const { layoutMap, events } = merged;
     const stIdToFirstId = new Map<string, string>();
     return {
       data: events.map((e) => this.event2group(e, layoutMap, stIdToFirstId)).flatMap((g) => g),
@@ -266,7 +214,7 @@ export class ReacfoamService {
 
   event2group(
     event: EventsHierarchy.Data,
-    layoutMap: Map<string, Layout.Data>,
+    layoutMap: Map<string, LayoutData>,
     stIdToFirstId: Map<string, string>,
     parentFamily?: string,
     depth = 0,
@@ -278,7 +226,7 @@ export class ReacfoamService {
     const family = parentFamily || layoutNode?.family || 'Unknown family'; // Unknown family with M. tuberculosis
     const familyColor = this.familyColorMap().get(family) || this.surfaceColor; // Unknown family with M. tuberculosis
 
-    const id = this.buildId(event.stId, path)!; // If no path or wrong path given, will use first occurrence of stId
+    const id = this.idAt(event.stId, path); // If no path or wrong path given, will use first occurrence of stId
     if (!stIdToFirstId.has(event.stId)) stIdToFirstId.set(event.stId, id);
 
     const isDisease = [path[0], event.stId].includes('R-HSA-1643685');
@@ -295,43 +243,27 @@ export class ReacfoamService {
       if (this.filters().excludeDiseases && isDisease) return [];
       if (this.filters().excludeGrouping && !event.llp) return children;
       if (children.length === 0) {
-        // if no children because of filters or simple leaf, then apply filters
+        // if no children because of filters or simple leaf, then apply filters.
+        // A filter that is set is the merged filters' own (see filters).
+        const { fdr, minSize, maxSize, minExpression, maxExpression } = this.filters();
+        if (fdr !== undefined && (event.entities?.fdr || 1) > fdr) return [];
+        if (minSize !== undefined && (event.entities?.total || Number.MIN_VALUE) < minSize)
+          return [];
+        if (maxSize !== undefined && (event.entities?.total || Number.MAX_VALUE) > maxSize)
+          return [];
         if (
-          this.filters().fdr !== undefined &&
-          (event.entities?.fdr || 1) > this.mergedFilters().fdr!
+          minExpression !== undefined &&
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MIN_VALUE) < minExpression
         )
           return [];
         if (
-          this.filters().minSize !== undefined &&
-          (event.entities?.total || Number.MIN_VALUE) < this.mergedFilters().minSize!
-        )
-          return [];
-        if (
-          this.filters().maxSize !== undefined &&
-          (event.entities?.total || Number.MAX_VALUE) > this.mergedFilters().maxSize!
-        )
-          return [];
-        if (
-          this.filters().minExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MIN_VALUE) <
-            this.mergedFilters().minExpression!
-        )
-          return [];
-        if (
-          this.filters().maxExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
-            this.mergedFilters().maxExpression!
-        )
-          return [];
-        if (
-          this.filters().maxExpression !== undefined &&
-          (event.entities?.exp[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
-            this.mergedFilters().maxExpression!
+          maxExpression !== undefined &&
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MAX_VALUE) > maxExpression
         )
           return [];
         if (
           this.filters().gsa?.size !== 0 &&
-          !this.filters().gsa?.has(event.entities?.exp[this.analysis.sampleIndex()] || 0)
+          !this.filters().gsa?.has(event.entities?.exp?.[this.analysis.sampleIndex()] || 0)
         )
           return [];
       }
@@ -345,7 +277,8 @@ export class ReacfoamService {
       diagram: event.diagram,
       disease: isDisease,
       weight: event.totalEntity,
-      initialPosition: layoutNode,
+      // FoamTree's own type: present or left out.
+      ...(layoutNode && { initialPosition: layoutNode }),
       familyColor,
       family,
       depth,
@@ -353,7 +286,7 @@ export class ReacfoamService {
       expressions: event.entities?.exp,
       fdr: event.entities?.fdr,
       pValue: event.entities?.pValue,
-      llp: event?.llp || false,
+      llp: event.llp || false,
 
       // exposed: untracked(this.state.select) === event.stId // Untracked to avoid full reloading if select is updated
     };
@@ -361,19 +294,11 @@ export class ReacfoamService {
   }
 
   buildId(stId: string | null, path: string[]): string | null {
-    return stId ? path.join('/') + '/' + stId : null;
+    return stId ? this.idAt(stId, path) : null;
   }
-}
 
-export function cleanObject<O extends object>(object: O): O {
-  for (const key in object) {
-    if (
-      object[key] === null ||
-      object[key] === undefined ||
-      (isArray(object[key]) && object[key].length === 0)
-    ) {
-      delete object[key];
-    }
+  /** A group's id: its event's stId at the end of the path to it. */
+  private idAt(stId: string, path: string[]): string {
+    return path.join('/') + '/' + stId;
   }
-  return object;
 }

@@ -2,7 +2,7 @@ import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angul
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
-import { ContentService } from '../../services/content.service';
+import { ContentService, type PageContent } from '../../services/content.service';
 import { marked } from 'marked';
 import addImageSizes from '../../utils/addImageSizes';
 import renderContentBody from '../../utils/renderContentBody';
@@ -26,13 +26,13 @@ export class PageComponent implements OnInit {
   private contentService = inject(ContentService);
   private sanitizer = inject(DomSanitizer);
   private stats = inject(StatsService);
-  private elementRef = inject(ElementRef);
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private viewportScroller = inject(ViewportScroller);
   // Async callbacks assign to plain fields, so Angular has to be told
   // explicitly that the view needs re-rendering.
   private cdr = inject(ChangeDetectorRef);
 
-  page: any | null = null;
+  page: PageContent | null = null;
   renderedContent: SafeHtml = '';
   loading = false;
   error: string | null = null;
@@ -54,7 +54,8 @@ export class PageComponent implements OnInit {
 
   ngOnInit() {
     this.route.url.subscribe((segments) => {
-      if (segments.length === 0) {
+      const [section] = segments;
+      if (!section) {
         this.notFound = true;
         this.cdr.markForCheck();
         return;
@@ -64,14 +65,14 @@ export class PageComponent implements OnInit {
       let path = segments.map((s) => s.path).join('/');
       this.requestedPath = path;
       // Strip the '{pageType}/' prefix since content is in content/{pageType}/
-      if (path.startsWith(segments[0].path + '/')) {
-        path = path.substring(segments[0].path.length + 1);
-      } else if (path === segments[0].path) {
+      if (path.startsWith(section.path + '/')) {
+        path = path.substring(section.path.length + 1);
+      } else if (path === section.path) {
         path = 'index';
       }
       if (path) {
         // loadPage reports its own failures through the subscribe error handler.
-        void this.loadPage(segments[0].path, path);
+        void this.loadPage(section.path, path);
       }
     });
   }
@@ -100,7 +101,7 @@ export class PageComponent implements OnInit {
             // contents is carried away from it as the images above arrive --
             // measured at 2,793px off on the FIViz page, which has 116.
             this.renderedContent = sanitize(
-              addImageSizes(renderContentBody(html), this.page?.imageSizes),
+              addImageSizes(renderContentBody(html), page.imageSizes),
               this.sanitizer
             );
             this.loading = false;

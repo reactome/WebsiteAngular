@@ -3,7 +3,12 @@
     <div class="loading-container">
       <mat-spinner diameter="48"></mat-spinner>
     </div>
-  } @else if (error() || !person()) {
+  } @else if (failed()) {
+    <div class="error-container" role="alert">
+      <h2>Couldn't load this contributor</h2>
+      <p>Please try again later.</p>
+    </div>
+  } @else if (notFound() || !person()) {
     <div class="error-container">
       <h2>Person not found</h2>
       <p>The requested contributor could not be loaded.</p>
@@ -31,11 +36,11 @@
           <dt>Project</dt>
           <dd>{{ p.project }}</dd>
         }
-        @if (p.affiliation?.length) {
+        @if (affiliations().length) {
           <dt>Affiliation</dt>
           <dd>
             <ul class="affiliation-list">
-              @for (a of p.affiliation; track a.dbId) {
+              @for (a of affiliations(); track a.dbId) {
                 <li>
                   <span class="affiliation-name">{{ a.displayName }}</span>
                   @if (a.address) {
@@ -47,6 +52,13 @@
           </dd>
         }
       </dl>
+
+      @if (contributionsFailed()) {
+        <p class="person-load-error" role="alert">
+          Some of this contributor's pathways and reactions couldn't be loaded, so these lists may be incomplete. Please
+          try again later.
+        </p>
+      }
 
       @if (
         authoredPathways().length +
@@ -127,6 +139,7 @@
                     <span class="event-species">{{ e.speciesName }}</span>
                   }
                   <button
+                    type="button"
                     mat-icon-button
                     class="event-export"
                     [matMenuTriggerFor]="exportMenu"
@@ -202,7 +215,7 @@
           <ol class="publication-list">
             @for (pub of publicationsSorted(); track pub.dbId) {
               <li class="publication">
-                <span class="publication-title">{{ pub.title || pub.displayName }}</span>
+                <span class="publication-title">{{ pub.heading }}</span>
                 @if (pub.journal || pub.year || pub.volume || pub.pages) {
                   <span class="publication-meta">
                     @if (pub.journal) {

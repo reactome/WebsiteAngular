@@ -1,35 +1,12 @@
-import { DatabaseObject } from '../database-object.model';
-import { InstanceEdit } from '../instance-edit.model';
-import { CatalystActivity } from '../catalyst-activity.model';
-import { CellType } from '../external-ontology/cell-type.model';
-import type { Relationship } from '../relationship.model';
-import { DatabaseIdentifier } from '../database-identifier.model';
-import { Disease } from '../external-ontology/disease.model';
-import { MarkerReference } from '../control-reference/marker-reference.model';
-import { InDepth } from '../in-depth.model';
-import { HasFigure } from '../figure.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface PhysicalEntity extends DatabaseObject, InDepth, HasFigure {
-  stId: string;
-  definition: string;
-  compartment: Relationship.HasCompartment[];
-
-  name: string[];
-  authored: InstanceEdit;
-  catalystActivities: CatalystActivity[];
-  cellType: CellType[];
-  componentOf: Relationship.ComponentOf[];
-  consumedByEvent: Relationship.InputOf[];
-  crossReference?: DatabaseIdentifier[];
-  inferredTo: PhysicalEntity[];
-  inferredFrom: PhysicalEntity[];
-  inDisease?: boolean;
-  disease?: Disease[];
-  markingReferences?: MarkerReference[];
-
-  speciesName: string;
-
-  //Tree building
-  composedOf: Relationship.Has<PhysicalEntity>[];
-  type: string;
-}
+/**
+ * Any physical entity, as the pathway browser reads it (the contract's,
+ * resolved), and the summary of one, which it treats as one: Java's
+ * SummaryEntity is not a PhysicalEntity, but stands in for one on the page.
+ */
+export type PhysicalEntity = Resolved<
+  Graph.PhysicalEntity<JsogReference> | Graph.SummaryEntity<JsogReference>
+>;

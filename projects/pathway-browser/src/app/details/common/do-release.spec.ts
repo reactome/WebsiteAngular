@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { doReleaseFlag } from './do-release';
 import { DatabaseObject } from '../../model/graph/database-object.model';
 

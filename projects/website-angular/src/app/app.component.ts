@@ -1,4 +1,4 @@
-import { Component, HostListener, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { ViewportScroller } from '@angular/common';
@@ -10,11 +10,14 @@ import { CiteUsComponent } from './cite-us/cite-us.component';
 import { ScrollToTopComponent } from './scroll-to-top/scroll-to-top.component';
 import { MatIconRegistry } from '@angular/material/icon';
 import { DomSanitizer } from '@angular/platform-browser';
-import { SUBJECT_ICONS } from '../utils/subjectIcons';
+import { SUBJECT_ICONS, subjectIconUrl } from '../utils/subjectIcons';
 import { IS_CURATOR } from '../../../pathway-browser/src/environments/environment';
 
 @Component({
   selector: 'app-root',
+  host: {
+    '(document:click)': 'onDocumentClick($event)',
+  },
   standalone: true,
   imports: [
     RouterOutlet,
@@ -74,16 +77,13 @@ export class AppComponent implements OnInit {
       registered.add(icon.name);
       this.matIconRegistry.addSvgIcon(
         icon.name,
-        this.domSanitizer.bypassSecurityTrustResourceUrl(
-          `assets/icons/reactome-subject/${icon.route}.svg`
-        )
+        this.domSanitizer.bypassSecurityTrustResourceUrl(subjectIconUrl(icon))
       );
     }
   }
 
   // Intercept hash-only anchor clicks so Angular's <base href="/"> doesn't
   // resolve them as navigations to /#anchor (which lands on the home page).
-  @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     const anchor = (event.target as Element | null)?.closest('a');

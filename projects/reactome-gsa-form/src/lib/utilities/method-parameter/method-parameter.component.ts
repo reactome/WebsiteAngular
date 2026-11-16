@@ -16,9 +16,9 @@ import { BreakpointObserver, Breakpoints } from '@angular/cdk/layout';
 import { FormControl, Validators, FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { map, Observable } from 'rxjs';
 import { UntilDestroy } from '@ngneat/until-destroy';
-import { Parameter } from '../../model/parameter.model';
+import { Parameter, ParameterValue } from '../../model/parameter.model';
 import { LetDirective } from '@ngrx/component';
-import { NgClass } from '@angular/common';
+
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { MatFormField, MatError } from '@angular/material/form-field';
@@ -33,7 +33,6 @@ import { MatInput } from '@angular/material/input';
   styleUrls: ['./method-parameter.component.scss'],
   imports: [
     LetDirective,
-    NgClass,
     MatTooltip,
     MatIcon,
     MatFormField,
@@ -77,7 +76,9 @@ export class MethodParameterComponent implements OnInit, OnChanges {
 
   private readonly destroyRef = inject(DestroyRef);
 
-  control = new FormControl('', {
+  // Text, a number or a toggle's boolean, by the parameter's type.
+  control = new FormControl<ParameterValue | undefined>('', {
+    nonNullable: true,
     validators: [],
     updateOn: 'blur',
   });
@@ -148,6 +149,6 @@ export class MethodParameterComponent implements OnInit, OnChanges {
  * The single predicate for "this parameter holds an e-mail address", used by
  * both the validator and the render branch so they cannot disagree.
  */
-export function isEmailParameter(parameter: Parameter): boolean {
+export function isEmailParameter(parameter: { name: string; type: string }): boolean {
   return parameter.type === ParameterType.email || parameter.name.toLowerCase().includes('email');
 }

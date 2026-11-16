@@ -77,24 +77,35 @@ module.exports = tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
-      // `any` flowing through the code: an API answer read as any, then passed,
-      // returned or dereferenced as if its shape were known. Warned, and held
-      // at today's count rule by rule (scripts/check-lint.mjs), so new code
-      // types what it reads while the existing ones (990, tests and e2e
-      // included) are worked down.
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      '@typescript-eslint/no-empty-object-type': 'warn',
-      '@typescript-eslint/no-namespace': 'warn',
-      '@typescript-eslint/no-unused-expressions': 'warn',
-      '@typescript-eslint/no-require-imports': 'warn',
-      'prefer-const': 'warn',
-      'no-useless-escape': 'warn',
+      // `any` declared, or flowing through the code: an API answer read as
+      // any, then passed, returned or dereferenced as if its shape were known.
+      // All were typed (spec 025 T002-T013), so a new one is a new mistake.
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      // A `!` tells the compiler a value is there without checking. All were
+      // replaced by a check (spec 025 T015-T017), so a new one is a new mistake.
+      '@typescript-eslint/no-non-null-assertion': 'error',
+      // A check the types say can never matter: a `?.` on a value typed as
+      // never null, an `if` that is always true. Where the value is API data,
+      // the answer is not to delete the check but to make the type say the
+      // field can be missing, from what the data shows -- the types were set by
+      // measuring the services' answers (#344), and several "unnecessary" guards
+      // turned out to be the only thing between a missing field and a crash.
+      '@typescript-eslint/no-unnecessary-condition': 'error',
+      // Cleared, with the small rules below and in the templates' section,
+      // and promoted (spec 025 T001): a new violation of any is a new mistake.
+      '@typescript-eslint/no-empty-object-type': 'error',
+      // The model namespaces became modules, read as `import type * as Analysis`
+      // (spec 025 T001b).
+      '@typescript-eslint/no-namespace': 'error',
+      '@typescript-eslint/no-unused-expressions': 'error',
+      '@typescript-eslint/no-require-imports': 'error',
+      'prefer-const': 'error',
+      'no-useless-escape': 'error',
       // Migrated in full with ng generate @angular/core:inject-migration, so
       // any new constructor injection is a step backwards.
       '@angular-eslint/prefer-inject': 'error',
@@ -126,20 +137,21 @@ module.exports = tseslint.config(
         { considerDefaultExhaustiveForUnions: true },
       ],
       '@angular-eslint/no-async-lifecycle-method': 'error',
-      '@angular-eslint/prefer-standalone': 'warn',
-      '@angular-eslint/no-output-native': 'warn',
-      '@angular-eslint/no-input-rename': 'warn',
+      '@angular-eslint/prefer-standalone': 'error',
+      '@angular-eslint/no-output-native': 'error',
+      '@angular-eslint/no-input-rename': 'error',
       // All twelve removed, so a new empty hook is a new mistake.
       '@angular-eslint/no-empty-lifecycle-method': 'error',
-      '@angular-eslint/use-lifecycle-interface': 'warn',
-      '@typescript-eslint/ban-ts-comment': 'warn',
-      '@typescript-eslint/no-wrapper-object-types': 'warn',
-      '@typescript-eslint/no-extra-non-null-assertion': 'warn',
-      '@typescript-eslint/prefer-as-const': 'warn',
-      '@angular-eslint/no-output-rename': 'warn',
-      'no-useless-assignment': 'warn',
-      'no-unused-vars': 'warn',
-      'no-empty-pattern': 'warn',
+      '@angular-eslint/use-lifecycle-interface': 'error',
+      '@typescript-eslint/ban-ts-comment': 'error',
+      '@typescript-eslint/no-wrapper-object-types': 'error',
+      '@typescript-eslint/no-extra-non-null-assertion': 'error',
+      // The last one went with search's constant currentMode (#344).
+      '@typescript-eslint/prefer-as-const': 'error',
+      '@angular-eslint/no-output-rename': 'error',
+      'no-useless-assignment': 'error',
+      'no-unused-vars': 'error',
+      'no-empty-pattern': 'error',
     },
   },
   {
@@ -154,10 +166,15 @@ module.exports = tseslint.config(
       // `(value | async) !== true`. (The rule's own `=== false` would not be the
       // same -- it is false while pending.)
       '@angular-eslint/template/no-negated-async': 'error',
-      '@angular-eslint/template/prefer-control-flow': 'warn',
-      // A <button> with no type submits its form. Most here are outside forms,
-      // where it does nothing, so warned and held rather than required.
-      '@angular-eslint/template/button-has-type': 'warn',
+      '@angular-eslint/template/prefer-control-flow': 'error',
+      // A <button> with no type submits its form. Every button says its type
+      // now (spec 025), so one that doesn't is new.
+      '@angular-eslint/template/button-has-type': 'error',
+      // NgOptimizedImage (ngSrc) reserves an image's box before it loads, lazy-
+      // loads by default, and takes a priority hint (#338). An <img> that
+      // cannot use it -- a data URL, a src swapped on error, a size nothing here
+      // knows -- says why in a disable comment where it stands.
+      '@angular-eslint/template/prefer-ngsrc': 'error',
     },
   },
   {
@@ -189,6 +206,7 @@ module.exports = tseslint.config(
         clearTimeout: 'readonly',
         URL: 'readonly',
         AbortSignal: 'readonly',
+        AbortController: 'readonly',
         TextEncoder: 'readonly',
         TextDecoder: 'readonly',
         window: 'readonly',
@@ -201,7 +219,9 @@ module.exports = tseslint.config(
     extends: [eslint.configs.recommended],
     rules: {
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // An error like every other rule (spec 025 T018); no .mjs is left under
+      // tools/ (spec 013), so this holds any that comes back.
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {
@@ -223,5 +243,39 @@ module.exports = tseslint.config(
     // Same reason, everywhere: keep only the TypeScript-aware rule.
     files: ['**/*.ts'],
     rules: { 'no-unused-vars': 'off' },
+  },
+  {
+    // The server-side services run as written: Node 24 strips the types and
+    // runs what is left (spec 013). A type imported without `type` survives
+    // the stripping and fails the import; an enum, a namespace or a parameter
+    // property is code Node will not strip, nor is `import x = require()`. Vitest accepts all four, so a
+    // service could pass its tests and not start. The type checker cannot hold
+    // tools/ to this alone: it would hold the site's model types to it too.
+    // The contract (spec 016) is read by the services as they run, so it is
+    // held to the same.
+    files: ['tools/**/*.ts', 'projects/contract/**/*.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        { prefer: 'type-imports', fixStyle: 'separate-type-imports' },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        { selector: 'TSEnumDeclaration', message: 'Node cannot strip an enum: use a union.' },
+        {
+          // An ambient `declare module`/`declare namespace` is stripped whole.
+          selector: 'TSModuleDeclaration[declare!=true][kind!="global"]',
+          message: 'Node cannot strip a namespace: use a module.',
+        },
+        {
+          selector: 'TSImportEqualsDeclaration',
+          message: 'Node cannot strip `import x = require()`: use an import.',
+        },
+        {
+          selector: 'TSParameterProperty',
+          message: 'Node cannot strip a parameter property: assign it in the constructor.',
+        },
+      ],
+    },
   }
 );

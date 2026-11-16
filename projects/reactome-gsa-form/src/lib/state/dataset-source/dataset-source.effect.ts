@@ -3,7 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { catchError, exhaustMap, map, mergeMap, of, take } from 'rxjs';
 import { FetchDatasetService } from '../../services/fetch-dataset.service';
 import { datasetSourceActions } from './dataset-source.action';
-import { typeToParse } from '../../services/analysis-methods.service';
+import { readDefault } from '../../services/analysis-methods.service';
 
 @Injectable()
 export class DatasetSourceEffects {
@@ -19,7 +19,7 @@ export class DatasetSourceEffects {
           map((datasetSources) =>
             datasetSourceActions.loadLocalsSuccess({ locals: datasetSources })
           ),
-          catchError((err) => of(datasetSourceActions.loadLocalsFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadLocalsFailure({ error: err })))
         )
       )
     )
@@ -34,7 +34,7 @@ export class DatasetSourceEffects {
           map((datasetSources) =>
             datasetSourceActions.loadExamplesSuccess({ examples: datasetSources })
           ),
-          catchError((err) => of(datasetSourceActions.loadExamplesFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadExamplesFailure({ error: err })))
         )
       )
     )
@@ -50,8 +50,8 @@ export class DatasetSourceEffects {
             externals.forEach((external) =>
               external.parameters.forEach((param) => {
                 //  param.id = `${external.id} - ${param.name}`;
-                param.value = typeToParse[param.type](param.default);
-                param.default = typeToParse[param.type](param.default);
+                param.value = readDefault(param.type, param.default);
+                param.default = readDefault(param.type, param.default);
               })
             );
             return externals;
@@ -60,7 +60,7 @@ export class DatasetSourceEffects {
             datasetSourceActions.loadExternalSuccess({ externals: datasetSources }),
             // parameterActions.addMany({parameters: datasetSources.flatMap(source => source.parameters)})
           ]),
-          catchError((err) => of(datasetSourceActions.loadExternalFailure({ error: err })))
+          catchError((err: unknown) => of(datasetSourceActions.loadExternalFailure({ error: err })))
         )
       )
     )

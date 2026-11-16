@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest';
 import { CastPipe } from './cast.pipe';
 
 describe('CastPipe', () => {

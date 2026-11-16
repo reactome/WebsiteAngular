@@ -1,9 +1,6 @@
-import { DatabaseObject } from './database-object.model';
-import { DatabaseIdentifier } from './database-identifier.model';
+import type * as Graph from '../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface Taxon extends DatabaseObject {
-  taxId: string;
-  name?: string[];
-  crossReference?: DatabaseIdentifier[];
-  superTaxon?: Taxon;
-}
+/** A taxon or a species, as the pathway browser reads it (the contract's, resolved). */
+export type Taxon = Resolved<Graph.AnyTaxon<JsogReference>>;

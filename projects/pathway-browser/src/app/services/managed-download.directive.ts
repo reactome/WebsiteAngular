@@ -1,4 +1,12 @@
-import { Directive, ElementRef, HostListener, computed, inject, signal } from '@angular/core';
+import {
+  Directive,
+  ElementRef,
+  booleanAttribute,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import {
   DownloadPhase,
   FileDownloadService,
@@ -28,6 +36,7 @@ import {
   selector: 'a[crManagedDownload]',
   exportAs: 'managedDownload',
   host: {
+    '(click)': 'onClick($event)',
     '[class.dl--busy]': 'busy()',
     '[class.dl--failed]': 'failed()',
     '[attr.data-download-state]': 'label()',
@@ -39,6 +48,14 @@ export class ManagedDownloadDirective {
   private downloads = inject(FileDownloadService);
   private anchor = inject<ElementRef<HTMLAnchorElement>>(ElementRef);
   private readonly active = signal<ManagedDownload | null>(null);
+
+  /**
+   * Whether this link is fetched here. Bound false, the link is the browser's:
+   * an address that answers a page while its file is made (the analysis
+   * report, made in the background, pdf-export spec 002) opens in its tab
+   * rather than being fetched and saved, which would save that page.
+   */
+  readonly managed = input(true, { alias: 'crManagedDownload', transform: booleanAttribute });
 
   // Deliberately not cancelled when the link goes away. A reader who clicked
   // download asked for the file, and some of these links live inside a menu
@@ -65,8 +82,8 @@ export class ManagedDownloadDirective {
     return null;
   });
 
-  @HostListener('click', ['$event'])
   onClick(event: MouseEvent) {
+    if (!this.managed()) return;
     // A modified click is the reader asking the browser to handle it.
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
       return;

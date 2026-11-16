@@ -1,0 +1,1252 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TableStore through an editing session > adds and removes rows and columns 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+      "A",
+    ],
+    [
+      "2",
+      "P3",
+    ],
+    [
+      "3",
+      "P5",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+    "E",
+  ],
+  "columnByIndex": [
+    "A",
+    "P3",
+    "P5",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+    "",
+  ],
+  "hasData": true,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "2",
+    "P3",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [
+    "P3",
+    "",
+    "",
+    "",
+  ],
+  "rowNames": [
+    "2",
+    "3",
+    "4",
+    "6",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > clears back to the template 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+  ],
+  "columnByIndex": [
+    "A",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+    "",
+  ],
+  "hasData": false,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [
+    "",
+    "",
+    "",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+    "4",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > deletes the last row while a cell in it is selected 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+  ],
+  "columnByIndex": [
+    "A",
+    "",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+  ],
+  "hasData": false,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [
+    "",
+    "",
+    "",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > generates a template 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+  ],
+  "columnByIndex": [
+    "A",
+    "",
+    "",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+    "",
+  ],
+  "hasData": false,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [
+    "",
+    "",
+    "",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+    "4",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > imports a table, mapping its headers onto the template 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+      "A",
+      "B",
+    ],
+    [
+      "1",
+      "TP53",
+      "2.5",
+    ],
+    [
+      "2",
+      "BRCA1",
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+    "Extra",
+  ],
+  "columnByIndex": [
+    "A",
+    "TP53",
+    "BRCA1",
+    "",
+    "",
+    "ATM",
+  ],
+  "columnByName": [
+    "2.5",
+    "",
+    "",
+    "",
+    "-1",
+  ],
+  "hasData": true,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "TP53",
+    "2.5",
+    "",
+    "x",
+  ],
+  "rowByName": [
+    "BRCA1",
+    "",
+    "",
+    "y",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "New",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > imports without mapping headers 1`] = `
+{
+  "cleanData": [
+    [
+      "h1",
+      "h2",
+    ],
+    [
+      "v1",
+      "v2",
+    ],
+  ],
+  "colNames": [
+    "h2",
+    "B",
+    "C",
+    "E",
+  ],
+  "columnByIndex": [
+    "h2",
+    "v2",
+    "",
+    "",
+    "",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+    "",
+  ],
+  "hasData": true,
+  "range": [
+    [
+      "h1",
+    ],
+  ],
+  "rowByIndex": [
+    "v1",
+    "v2",
+    "",
+    "",
+    "",
+  ],
+  "rowByName": [],
+  "rowNames": [
+    "v1",
+    "v3",
+    "4",
+    "6",
+  ],
+  "value": "h1",
+}
+`;
+
+exports[`TableStore through an editing session > pastes over a range, and deletes one 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+      "A",
+    ],
+    [
+      "1",
+      "P1",
+    ],
+    [
+      "2",
+      "P3",
+    ],
+    [
+      "3",
+      "P5",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+    "Extra",
+  ],
+  "columnByIndex": [
+    "A",
+    "P1",
+    "P3",
+    "P5",
+    "",
+    "ATM",
+  ],
+  "columnByName": [
+    "",
+    "",
+    "",
+    "",
+    "-1",
+  ],
+  "hasData": true,
+  "range": [
+    [
+      "",
+    ],
+    [
+      "",
+    ],
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "P1",
+    "",
+    "",
+    "x",
+  ],
+  "rowByName": [
+    "P3",
+    "",
+    "",
+    "y",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "New",
+  ],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > starts empty 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+    ],
+  ],
+  "colNames": [],
+  "columnByIndex": [
+    undefined,
+  ],
+  "columnByName": [],
+  "hasData": false,
+  "range": [
+    [
+      "",
+    ],
+  ],
+  "rowByIndex": "no row 1",
+  "rowByName": [],
+  "rowNames": [],
+  "value": "",
+}
+`;
+
+exports[`TableStore through an editing session > types into the selected cell, moving the column maximum up and down 1`] = `
+{
+  "cleanData": [
+    [
+      "",
+      "A",
+      "B",
+    ],
+    [
+      "1",
+      "TP53",
+      "2.5",
+    ],
+    [
+      "2",
+      "X",
+      "",
+    ],
+  ],
+  "colNames": [
+    "A",
+    "B",
+    "C",
+    "Extra",
+  ],
+  "columnByIndex": [
+    "A",
+    "TP53",
+    "X",
+    "",
+    "",
+    "ATM",
+  ],
+  "columnByName": [
+    "2.5",
+    "",
+    "",
+    "",
+    "-1",
+  ],
+  "hasData": true,
+  "range": [
+    [
+      "X",
+    ],
+  ],
+  "rowByIndex": [
+    "1",
+    "TP53",
+    "2.5",
+    "",
+    "x",
+  ],
+  "rowByName": [
+    "X",
+    "",
+    "",
+    "y",
+  ],
+  "rowNames": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "New",
+  ],
+  "value": "X",
+}
+`;
+
+exports[`TableStore through an editing session > went through every step as recorded 1`] = `
+[
+  {
+    "state": {
+      "cells": [
+        "·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "@0,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "new",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C",
+        "1 | · | · | ·",
+        "2 | · | · | ·",
+        "3 | · | · | ·",
+        "4 | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "1@0,1",
+        "A@1,0",
+        "B@2,0",
+        "C@3,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "init 4x5",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2 | BRCA1 | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "BRCA1@1,2",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "import mapped",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A* | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2* | A-much-longer-gene-name*^ | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "A-much-longer-gene-name@1,2",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 1,
+        "y": 2,
+      },
+      "stop": {
+        "x": 1,
+        "y": 2,
+      },
+    },
+    "step": "write longer",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A* | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2* | X*^ | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 1,
+        "y": 2,
+      },
+      "stop": {
+        "x": 1,
+        "y": 2,
+      },
+    },
+    "step": "write shorter",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A* | B | C | Extra",
+        "1* | TP53*^ | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 1,
+        "y": 1,
+      },
+      "stop": {
+        "x": 1,
+        "y": 1,
+      },
+    },
+    "step": "focusFirst",
+  },
+  {
+    "state": {
+      "cells": [
+        "·* | A*^ | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 1,
+        "y": 0,
+      },
+      "stop": {
+        "x": 1,
+        "y": 0,
+      },
+    },
+    "step": "up wraps",
+  },
+  {
+    "state": {
+      "cells": [
+        "·*^ | A | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "left wraps",
+  },
+  {
+    "state": {
+      "cells": [
+        "·* | A | B | C | Extra",
+        "1*^ | TP53 | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 5,
+      "start": {
+        "x": 0,
+        "y": 1,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "down shift",
+  },
+  {
+    "state": {
+      "cells": [
+        "·* | A* | B | C | Extra",
+        "1* | TP53*^ | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 10,
+      "start": {
+        "x": 1,
+        "y": 1,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "right shift",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | Extra*",
+        "1 | TP53 | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New* | ATM | -1 | · | ·*^",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 4,
+        "y": 5,
+      },
+      "stop": {
+        "x": 4,
+        "y": 5,
+      },
+    },
+    "step": "focusLast",
+  },
+  {
+    "state": {
+      "cells": [
+        "·*^ | A | B | C | Extra",
+        "1 | TP53 | 2.5 | · | x",
+        "2 | X | · | · | y",
+        "3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "TP53@1,1",
+        "2.5@2,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "down wraps",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A* | B* | C | Extra",
+        "1* | P1*^ | P2* | · | x",
+        "2* | P3* | ·* | · | y",
+        "3* | P5* | P6* | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,5",
+        "P2@1,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 14,
+      "start": {
+        "x": 1,
+        "y": 1,
+      },
+      "stop": {
+        "x": 2,
+        "y": 3,
+      },
+    },
+    "step": "paste",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B* | C | Extra",
+        "1* | P1 | ·*^ | · | x",
+        "2* | P3 | ·* | · | y",
+        "3* | P5 | ·* | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,5",
+        "P2@1,1",
+        "C@3,0",
+        "Extra@4,0",
+      ],
+      "selected": 7,
+      "start": {
+        "x": 2,
+        "y": 1,
+      },
+      "stop": {
+        "x": 2,
+        "y": 3,
+      },
+    },
+    "step": "delete range",
+  },
+  {
+    "state": {
+      "cells": [
+        "·* | A | B | C | Extra | E*^",
+        "1 | P1 | · | · | x | ·",
+        "2 | P3 | · | · | y | ·",
+        "3 | P5 | · | · | · | ·",
+        "4 | · | · | · | · | ·",
+        "New | ATM | -1 | · | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,5",
+        "P2@1,1",
+        "C@3,0",
+        "Extra@4,0",
+        "E@5,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 5,
+        "y": 0,
+      },
+      "stop": {
+        "x": 5,
+        "y": 0,
+      },
+    },
+    "step": "addColumn",
+  },
+  {
+    "state": {
+      "cells": [
+        "·* | A | B | C | Extra | E",
+        "1 | P1 | · | · | x | ·",
+        "2 | P3 | · | · | y | ·",
+        "3 | P5 | · | · | · | ·",
+        "4 | · | · | · | · | ·",
+        "New | ATM | -1 | · | · | ·",
+        "6*^ | · | · | · | · | ·",
+      ],
+      "hasFocus": true,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,5",
+        "P2@1,1",
+        "C@3,0",
+        "Extra@4,0",
+        "E@5,0",
+      ],
+      "selected": 3,
+      "start": {
+        "x": 0,
+        "y": 6,
+      },
+      "stop": {
+        "x": 0,
+        "y": 6,
+      },
+    },
+    "step": "addRow",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | E",
+        "1 | P1 | · | · | ·",
+        "2 | P3 | · | · | ·",
+        "3 | P5 | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,5",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteColumn by name",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | E",
+        "2 | P3 | · | · | ·",
+        "3 | P5 | · | · | ·",
+        "4 | · | · | · | ·",
+        "New | ATM | -1 | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "ATM@1,4",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteRow by index",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | E",
+        "2 | P3 | · | · | ·",
+        "3 | P5 | · | · | ·",
+        "4 | · | · | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "P3@1,1",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteRow by name",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C | E",
+        "2 | P3 | · | · | ·",
+        "3 | P5 | · | · | ·",
+        "4 | · | · | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "P3@1,1",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteColumn refused at 0",
+  },
+  {
+    "state": {
+      "cells": [
+        "h1 | h2 | B | C | E",
+        "v1 | v2 | · | · | ·",
+        "v3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "P3@1,1",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "import unmapped",
+  },
+  {
+    "state": {
+      "cells": [
+        "h1 | h2 | B | C | E",
+        "v1 | v2 | · | · | ·",
+        "v3 | · | · | · | ·",
+        "4 | · | · | · | ·",
+        "6 | · | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "New@0,5",
+        "P3@1,1",
+        "P2@1,1",
+        "C@3,0",
+        "E@5,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "blur",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C",
+        "1 | · | · | ·",
+        "2 | · | · | ·",
+        "3 | · | · | ·",
+        "4 | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "@0,0",
+        "A@1,0",
+        "B@2,0",
+        "C@3,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "clear",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C",
+        "1 | · | · | ·",
+        "2 | · | · | ·",
+        "3 | · | · | ·",
+        "4 | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "@0,0",
+        "A@1,0",
+        "B@2,0",
+        "C@3,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 1,
+        "y": 1,
+      },
+      "stop": {
+        "x": 1,
+        "y": 1,
+      },
+    },
+    "step": "deselect",
+  },
+  {
+    "state": {
+      "cells": [
+        "· | A | B | C",
+        "1 | · | · | ·",
+        "2 | · | · | ·",
+        "3 | · | · | ·",
+      ],
+      "hasFocus": false,
+      "maxCols": [
+        "@0,0",
+        "A@1,0",
+        "B@2,0",
+        "C@3,0",
+      ],
+      "selected": 0,
+      "start": {
+        "x": 0,
+        "y": 0,
+      },
+      "stop": {
+        "x": 0,
+        "y": 0,
+      },
+    },
+    "step": "deleteRow of the selected last row",
+  },
+]
+`;

@@ -1,0 +1,204 @@
+// @vitest-environment node
+//
+// /exporter/diagram/{identifier}.{ext}, as far as no database or render
+// service is needed: how the path splits, how the parameters convert, what is
+// refused before anything is resolved, and how a resolution becomes the render
+// request. Java's answers measured on 15 Oct 2026.
+import type { Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { app } from './server.ts';
+import { diagramExportRequest, figureProblem, splitExportName } from './exporters-endpoints.ts';
+
+let base: string;
+let server: Server;
+
+beforeAll(async () => {
+  await new Promise<void>((resolve) => {
+    server = app().listen(0, '127.0.0.1', () => resolve());
+  });
+  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+});
+
+afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+
+const at = (path: string) => fetch(`${base}/ContentService/exporter/diagram/${path}`);
+/** Status, reason and messages: Java's error envelope, as every answer here is. */
+const envelope = async (response: Response): Promise<[number, string, string[]]> => {
+  const body = (await response.json()) as { reason: string; messages: string[] };
+  return [response.status, body.reason, body.messages];
+};
+
+describe('splitExportName, Spring’s {identifier}.{ext:.*}', () => {
+  it('takes the extension after the last dot, as the greedy identifier leaves it', () => {
+    expect(splitExportName('R-HSA-69620.svg')).toEqual({ identifier: 'R-HSA-69620', ext: 'svg' });
+    expect(splitExportName('R-HSA-69620.5.png')).toEqual({
+      identifier: 'R-HSA-69620.5',
+      ext: 'png',
+    });
+  });
+
+  it('matches nothing without a dot: Spring’s own 404', () => {
+    expect(splitExportName('R-HSA-69620')).toBe(undefined);
+  });
+});
+
+describe('the parameters, converted before anything is resolved', () => {
+  it('names an Integer or a Boolean it cannot read, as Spring does', async () => {
+    expect(await envelope(await at('R-HSA-69620.svg?quality=abc'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      [
+        "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Integer'; nested exception is java.lang.NumberFormatException: For input string: \"abc\"",
+      ],
+    ]);
+    expect(await envelope(await at('R-HSA-69620.svg?title=maybe'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      [
+        "Failed to convert value of type 'java.lang.String' to required type 'java.lang.Boolean'; nested exception is java.lang.IllegalArgumentException: Invalid boolean value [maybe]",
+      ],
+    ]);
+  });
+
+  it('answers an id that is no event with Java’s 400', async () => {
+    expect(await envelope(await at('XYZ.svg'))).toEqual([
+      400,
+      'BAD_REQUEST',
+      ["'XYZ' is not an event"],
+    ]);
+  });
+
+  it('leaves a quality outside 1-10 to the resolution, where Java fails on it', async () => {
+    expect((await envelope(await at('XYZ.svg?quality=11')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+
+  it('takes a parameter it does not draw on to the resolution, as Java takes it (research D24)', async () => {
+    const response = await at(
+      'XYZ.svg?quality=10&flg=TP53&flgInteractors=false&title=false&margin=3&ehld=false' +
+        '&diagramProfile=Standard&analysisProfile=Strosobar&resource=UNIPROT&expColumn=2'
+    );
+    expect((await envelope(response))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+
+  it('takes a parameter at its default, which is what every caller gets', async () => {
+    const response = await at('XYZ.svg?quality=5&title=true&margin=15&diagramProfile=Modern');
+    // Past the parameters to the resolution, which this id fails.
+    expect((await envelope(response))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+});
+
+describe('the diagram’s parameters, in diagramImage’s order', () => {
+  it('converts title before margin', async () => {
+    expect((await envelope(await at('XYZ.svg?margin=x&title=maybe')))[2][0]).toContain(
+      "to required type 'java.lang.Boolean'"
+    );
+  });
+
+  it('drops empty selections, which select nothing', async () => {
+    expect(
+      diagramExportRequest(
+        { diagramStId: 'R-HSA-1', events: [] },
+        { ext: 'svg', sel: [] }
+      ).searchParams.has('highlight')
+    ).toBe(false);
+    expect((await envelope(await at('XYZ.svg?sel=,')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+});
+
+describe('repeated and blank values, as Spring binds them', () => {
+  it('takes a repeated String, as Spring joins it, on to the resolution', async () => {
+    expect((await envelope(await at('XYZ.svg?flg=&flg=TP53')))[2]).toEqual([
+      "'XYZ' is not an event",
+    ]);
+  });
+
+  it('takes a blank margin as its default, as RasterArgs.setMargin(null) does', async () => {
+    expect((await envelope(await at('XYZ.svg?margin=%20')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+
+  it('takes a blank title on, as RasterArgs.setWriteTitle(null) does', async () => {
+    expect((await envelope(await at('XYZ.svg?title=%20')))[2]).toEqual(["'XYZ' is not an event"]);
+  });
+});
+
+describe('figureProblem, what diagramImage fails on once the id is resolved', () => {
+  const values = { quality: 5, ehld: true };
+
+  it('names pdf by its own literal, whatever the case it was asked in', () => {
+    expect(figureProblem(values, 'pdf')).toEqual({
+      status: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      message: 'Unsupported file extension pdf',
+    });
+  });
+
+  it('refuses a quality outside 1-10 with RasterArgs’ message, not as undrawn', () => {
+    expect(figureProblem({ ...values, quality: 11 }, 'svg')).toEqual({
+      status: 500,
+      reason: 'INTERNAL_SERVER_ERROR',
+      message: 'quality must be in the range [1-10]',
+    });
+  });
+
+  it('is the service’s generic 500 for a blank quality or ehld', () => {
+    expect(figureProblem({ ...values, quality: null }, 'svg')).toBe('unexpected');
+    expect(figureProblem({ ...values, ehld: null }, 'svg')).toBe('unexpected');
+  });
+
+  it('draws svg, png, jpeg and gif', () => {
+    for (const ext of ['svg', 'png', 'jpg', 'jpeg', 'gif'])
+      expect(figureProblem(values, ext), ext).toBe(undefined);
+  });
+});
+
+describe('diagramExportRequest, a resolution as the render request', () => {
+  it('draws the diagram that holds the event, the event highlighted, nothing framed', () => {
+    const url = diagramExportRequest(
+      { diagramStId: 'R-HSA-69620', events: ['R-HSA-69608'] },
+      { ext: 'svg', sel: [], token: undefined }
+    );
+    expect(url.pathname).toBe('/render/R-HSA-69620.svg');
+    expect(url.searchParams.get('highlight')).toBe('R-HSA-69608');
+    expect(url.searchParams.has('select')).toBe(false);
+  });
+
+  it('adds sel to the events, as Java’s toSelect.addAll(sel) does', () => {
+    const url = diagramExportRequest(
+      { diagramStId: 'R-HSA-69620', events: ['R-HSA-1', 'R-HSA-2'] },
+      { ext: 'png', sel: ['R-HSA-3'], token: 'abc%3D' }
+    );
+    expect(url.searchParams.get('highlight')).toBe('R-HSA-1,R-HSA-2,R-HSA-3');
+    expect(url.searchParams.get('token')).toBe('abc%3D');
+  });
+
+  it("asks for Java's quality as the render service's scale, for the formats with pixels", () => {
+    const at = (ext: string, quality: number) =>
+      diagramExportRequest({ diagramStId: 'R-HSA-1' }, { ext, quality }).searchParams.get('scale');
+    expect([at('png', 5), at('png', 1), at('jpg', 7), at('gif', 10), at('svg', 9)]).toEqual([
+      '1',
+      '0.25',
+      '1.8',
+      '2',
+      null,
+    ]);
+  });
+
+  it('leaves the selection off an illustration, which the render page does not mark', () => {
+    const url = diagramExportRequest(
+      { diagramStId: 'R-HSA-1640170', events: ['R-HSA-2'] },
+      { ext: 'svg', sel: ['R-HSA-3'], token: 'abc', illustrated: true }
+    );
+    expect(url.searchParams.has('highlight')).toBe(false);
+    expect(url.searchParams.get('token')).toBe('abc');
+  });
+
+  it('highlights nothing for a pathway drawn as itself', () => {
+    const url = diagramExportRequest(
+      { diagramStId: 'R-HSA-69620', events: [] },
+      { ext: 'jpg', sel: [], token: undefined }
+    );
+    expect(url.searchParams.has('highlight')).toBe(false);
+    expect(url.pathname).toBe('/render/R-HSA-69620.jpeg');
+  });
+});

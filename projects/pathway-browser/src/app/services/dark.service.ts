@@ -24,7 +24,7 @@ export class DarkService {
     // });
 
     const localValue = localStorage.getItem('is-dark');
-    if (localValue) this.isDark.set(JSON.parse(localValue));
+    if (localValue) this.isDark.set(JSON.parse(localValue) === true);
     else if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
       this.isDark.set(window.matchMedia('(prefers-color-scheme: dark)').matches);
     }

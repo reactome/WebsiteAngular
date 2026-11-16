@@ -4,11 +4,11 @@ Renders a pathway to SVG, PNG, PDF, animated GIF or PowerPoint from outside the
 browser, by driving the site's own render page.
 
 ```bash
-node tools/render/render.mjs --pathway R-HSA-73857 --format svg --out out.svg
-node tools/render/render.mjs --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
-node tools/render/render.mjs --pathway R-HSA-73857 --format pptx --out slide.pptx
-node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
+node tools/render/render.ts --pathway R-HSA-73857 --format svg --out out.svg
+node tools/render/render.ts --pathway R-HSA-109606 --format pdf --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-109606 --format gif --token "$ANALYSIS_TOKEN"
+node tools/render/render.ts --pathway R-HSA-73857 --format pptx --out slide.pptx
+node tools/render/render.ts --format svg --out genome-wide.svg     # no pathway
 ```
 
 | flag               | meaning                                                  |
@@ -21,7 +21,42 @@ node tools/render/render.mjs --format svg --out genome-wide.svg     # no pathway
 | `--delay`          | GIF milliseconds per frame (default 1000)                |
 | `--max-size`       | GIF longest side in pixels (default 2000)                |
 | `--no-subpathways` | leave out sub-pathway tints and labels                   |
+| `--select`         | frame the figure on one event                            |
+| `--highlight`      | events to mark on the whole diagram, comma-separated     |
+| `--species`        | genome-wide only: whose overview, by taxId               |
 | `--out`            | output path                                              |
+
+## Framing one event, or marking several
+
+`select` and `highlight` (the service's query parameters, and the CLI's flags)
+draw different figures, and the service refuses both together. `select` frames
+the figure on one event: what a reaction page wants. `highlight` marks events as
+selected on the whole diagram and frames nothing: what ContentService's
+`/exporter/diagram/<id>.<ext>` has always answered for a subpathway (its
+parent's diagram, its reactions selected) or a reaction (the diagram that holds
+it). content-node resolves those ids (graph-core's DiagramRepository) and asks
+for the diagram with `highlight` (#273).
+
+## Whose overview
+
+The genome-wide view is the species overview, the Reacfoam (Voronoi) map, of
+the site's default species unless `species` names another by taxId
+(`/render/genome-wide.svg?species=10090`). It is refused with a pathway, which is
+its own species. The page reports which species it drew, and a render is
+refused unless that is the one asked for: a site too old to know `species`
+draws the default one, which would otherwise come back as a success.
+content-node answers `/ContentService/exporter/voronoi/<species>.<ext>` with it,
+and redirects the old `/exporter/fireworks/<species>.<ext>` there (spec 006
+T093).
+
+## A reaction's own layout
+
+`layout=reaction` draws a reaction's own layout, the figure the reaction page
+shows, rather than the diagram that holds it. content-node answers
+ContentService's `/exporter/reaction/<id>.<ext>` with it, in every format Java
+drew (png, jpg, jpeg, svg and a still gif), with Java's `quality` as `scale`
+(spec 006 research D24). The view is never coloured by an analysis and marks
+no selection, so content-node asks for neither.
 
 ## The theme is an explicit choice
 
@@ -75,7 +110,7 @@ sub-pathway tint, editable the moment the file opens. Curators reported that
 holding one picture is, however good the picture.
 
 The page decides every position, colour, opacity, dash and font from the live
-style and hands them over as `RenderShapes`; `pptx.mjs` is the OOXML spelling of
+style and hands them over as `RenderShapes`; `pptx.ts` is the OOXML spelling of
 a rectangle and nothing more, so it is not a second opinion about what the
 diagram looks like. R-HSA-109606 comes out as **635 shapes in 32 KB**, against
 976 shapes in 74 KB from the Java exporter and 1.5 MB for the picture version.
@@ -117,11 +152,11 @@ Two things are easy to miss, and both leave the site serving the old artefact
 while the code and its tests say otherwise:
 
 - **The service holds the code in memory.** It is a long-running node process,
-  so editing `pptx.mjs` changes nothing until it is restarted. A download taken
+  so editing `pptx.ts` changes nothing until it is restarted. A download taken
   from the site is the only check that says whether the running service has your
   change — the CLI reads the files from disk and will happily agree with you.
 - **The cache is keyed on the request, not on the code.** Bump `CACHE_KEY` in
-  `service.mjs` when the output of a format changes, or every diagram rendered
+  `service.ts` when the output of a format changes, or every diagram rendered
   before your change keeps its old file.
 
 ## Why this exists
@@ -137,7 +172,7 @@ curator sees is what the file contains.
 
 The CLI came first deliberately, with no queue, cache or HTTP API, so that the
 cost of a render and the fidelity of an analysis overlay were measured before
-anything was designed around them. `service.mjs`, below, is what those numbers
+anything was designed around them. `service.ts`, below, is what those numbers
 argued for.
 
 ## Measured on this host
@@ -171,7 +206,8 @@ cytoscape themselves.
 
 Readiness is a signal, not a delay, because a diagram fetches its layout, its
 overlays and its fonts and no fixed wait is both correct and quick. Two things
-made that harder than expected and are worth knowing if you touch it:
+made that harder than expected, and a third was found late, and all are worth
+knowing if you touch it:
 
 - The diagram component draws the **legend** as a second cytoscape instance,
   which appears well before the pathway. Any check that accepts "a canvas exists
@@ -179,6 +215,13 @@ made that harder than expected and are worth knowing if you touch it:
 - The diagram will not load at all until something calls
   `EventService.setDiagramPathway`, which only the viewport used to do. Without
   it the page renders the legend and nothing else.
+- With a token, every view is drawn **before** its analysis colouring arrives,
+  and a result holding one resource besides TOTAL is loaded a second time for
+  that resource, as the pathway browser shows it. Until v12 the page was ready
+  as soon as something was drawn, so a figure could be cached uncoloured or
+  coloured for TOTAL. It now waits until the view carries the result it settles
+  on, and says which in `__renderState.analysis`; a token whose result cannot be
+  read is an error, not an uncoloured figure.
 
 ## Two traps in the genome-wide view
 
@@ -198,10 +241,10 @@ proxy for it.
 
 ## The service
 
-`tools/render/service.mjs` serves the same renders over HTTP.
+`tools/render/service.ts` serves the same renders over HTTP.
 
 ```bash
-node tools/render/service.mjs
+node tools/render/service.ts
 curl -o out.svg 'http://127.0.0.1:4310/render/R-HSA-73857.svg'
 curl -o out.pdf "http://127.0.0.1:4310/render/R-HSA-109606.pdf?token=$ANALYSIS_TOKEN"
 curl -o gw.svg  'http://127.0.0.1:4310/render/genome-wide.svg'
@@ -210,20 +253,69 @@ curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
-| variable             | default               |                                                                            |
-| -------------------- | --------------------- | -------------------------------------------------------------------------- |
-| `RENDER_PORT`        | 4310                  |                                                                            |
-| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work        |
-| `RENDER_BASE`        | http://localhost:4200 | site to render against                                                     |
-| `RENDER_CACHE`       | `.render-cache`       |                                                                            |
-| `RENDER_CACHE_KEY`   | the code's (`v9`)     | override only to invalidate by hand; the code bumps it when output changes |
-| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                       |
-| `RENDER_QUEUE`       | 8                     | pending renders before 503                                                 |
-| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                            |
+| variable             | default               |                                                                                                                            |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `RENDER_PORT`        | 4310                  |                                                                                                                            |
+| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work                                                        |
+| `RENDER_BASE`        | http://localhost:4200 | site to render against                                                                                                     |
+| `RENDER_CACHE`       | `.render-cache`       |                                                                                                                            |
+| `RENDER_CACHE_KEY`   | the code's (`v13`)    | override only to invalidate by hand; the code bumps it when output changes                                                 |
+| `RENDER_CACHE_MAX`   | 2 GB                  | bytes of figures kept; 0 keeps everything. The cache cannot be turned off: for a cold run, give a fresh `RENDER_CACHE_KEY` |
+| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                                                                       |
+| `RENDER_QUEUE`       | 8                     | pending renders before 503                                                                                                 |
+| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                                                                            |
+| `RENDER_FILES`       | unset                 | a folder laid out as the download site; see below                                                                          |
+| `RENDER_REUSE`       | off                   | `on` holds loaded pages between figures; see below                                                                         |
+
+**Held pages** (spec 018). Loading the render page is most of a figure's time:
+starting the site's code, not fetching it. With `RENDER_REUSE=on` the service
+keeps a page that has drawn a figure, one per concurrent render, each in a
+browser context of its own, and moves it to the next figure inside the app
+(`window.__renderNavigate`) instead of loading it again. The render page
+recreates its component on each move and resets what outlives it, so a figure
+is drawn as a fresh page draws it. A page whose figure failed, or that cannot be
+moved (a PDF is printed in its place; a site built before the entry point has
+none), is closed and the next figure loads a new one. `/health` says `reuse`,
+and with it on, `reused`: figures drawn on a held page. Off, every figure has a
+fresh page; `tools/render/reuse-compare.ts` compares the two.
+
+**The release's files.** The render page fetches a diagram's layout
+(`{release}/diagram/{id}.json`, `.graph.json`) and an illustration
+(`{release}/ehld/{id}.svg`) from the download site, as a reader's browser does.
+With `RENDER_FILES` set (`--files` for the CLI), every request the page makes to
+the download site is answered from that folder instead, laid out as the site is
+(`<folder>/98/diagram/R-HSA-73857.json`), and a file the folder lacks is a 404,
+never a request to the site. Set it for any bulk run, and for a release's own
+figures, whose files are not on the download site until the release is
+published. In a container, mount the folder read-only and point the variable at
+it:
+
+```sh
+docker run ... -v /path/to/release-files:/files:ro -e RENDER_FILES=/files websiteangular-render
+```
+
+A file missing from the folder is not reported as such by the page: the render
+waits out `RENDER_TIMEOUT`. So check the folder holds every file before a bulk
+run. The service refuses to start if `RENDER_FILES` is not a directory, and
+`/health` says which source is in use (`files`). A link inside the folder is
+followed only if it stays inside it.
+
+Only requests to the download site are answered from the folder; a deployment
+whose profile takes its assets from the site's own host (`assetsFromHost`,
+`downloadBase`) is not redirected. The page also asks the download site for
+icons and structure films, which the render page does not draw; from a folder
+without them they are 404s. Figures cached from the download site and from a
+folder have different cache keys, so switching `RENDER_FILES` on or off never
+serves one for the other.
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache
 key, so two variants of a pathway never masquerade as each other.
+
+The service runs on Express 5 with Express 4's query parser (`extended`), set
+explicitly: `?x[y]=1` is the parameter `x`, refused as unknown under that name.
+A parameter given more than once is refused, as is one the service does not
+take; the refusal names it and the URL to use instead.
 
 ### Measured behaviour
 

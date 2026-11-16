@@ -20,22 +20,53 @@ import {
 import { UrlStateService } from './url-state.service';
 import { Event } from '../model/graph/event/event.model';
 import { MatTree } from '@angular/material/tree';
-import type { Analysis } from '../model/analysis.model';
+import type * as Analysis from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
 import { HasDiagramService } from './has-diagram.service';
 import { EhldService } from './ehld.service';
-import { TopLevelPathway } from '../model/graph/event/top-level-pathway.model';
+import {
+  type PlainTopLevelPathway,
+  TopLevelPathway,
+} from '../model/graph/event/top-level-pathway.model';
 import { DatabaseObject } from '../model/graph/database-object.model';
 import { isDefined, isPathway, isPhysicalEntity, isRLE } from './utils';
 import { DatabaseObjectService } from './database-object.service';
 import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
-import type { Relationship } from '../model/graph/relationship.model';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { Pathway } from '../model/graph/event/pathway.model';
-type HasEvent = Relationship.HasEvent;
 import { SummaryEntity } from '../model/graph/physical-entity/summary-entity.model';
 
 export type SelectableObject = Event | PhysicalEntity | SummaryEntity;
+
+/**
+ * The top-level pathways with each species the plain answer wrote as a dbId
+ * replaced by the species it wrote whole earlier (the writer writes a
+ * pathway's species once, then by dbId, as Java's Jackson does). A species
+ * is the only reference this answer holds: no other related object is
+ * written (6,260 recorded pathways), so with the species resolved each is the
+ * tree's event, which is what the one cast below says.
+ */
+export function resolveSpecies(answer: PlainTopLevelPathway[]): TopLevelPathway[] {
+  const written = new Map<
+    number,
+    Exclude<NonNullable<PlainTopLevelPathway['species']>[number], number>
+  >();
+  for (const pathway of answer)
+    for (const species of pathway.species ?? [])
+      if (typeof species !== 'number') written.set(species.dbId, species);
+  return answer.map(({ species, ...rest }) => {
+    // A pathway without species is left without, as it came.
+    const resolved = species
+      ? {
+          ...rest,
+          species: species
+            .map((each) => (typeof each === 'number' ? written.get(each) : each))
+            .filter(isDefined),
+        }
+      : rest;
+    return resolved as TopLevelPathway;
+  });
+}
 
 @Injectable({
   providedIn: 'root',
@@ -61,7 +92,7 @@ export class EventService {
 
   private _subpathwayColors = new BehaviorSubject<Map<number, string> | undefined>(undefined);
   subpathwayColors$ = this._subpathwayColors.asObservable();
-  subpathwayColors?: Map<number, string>;
+  subpathwayColors: Map<number, string> | undefined;
 
   // Todo replace with dataState.currentPathway()
   private _diagramPathway = new BehaviorSubject<Pathway | undefined>(undefined);
@@ -97,12 +128,13 @@ export class EventService {
 
   fetchTlpsBySpecies(taxId: string): Observable<TopLevelPathway[]> {
     const url = `${this._TOP_LEVEL_PATHWAYS}${taxId}`;
-    return this.http.get<TopLevelPathway[]>(url);
+    return this.http.get<PlainTopLevelPathway[]>(url).pipe(map(resolveSpecies));
   }
 
-  fetchEventAncestors(stId: string): Observable<Pathway[][]> {
+  /** An event's lineages, each from the event itself up to a top-level pathway, reversed here: top first. */
+  fetchEventAncestors(stId: string): Observable<Event[][]> {
     const url = `${this._ANCESTORS}${stId}/ancestors`;
-    return this.http.get<Pathway[][]>(url).pipe(
+    return this.http.get<Event[][]>(url).pipe(
       map((ancestorsOptions) =>
         ancestorsOptions.map((ancestorsOption) => ancestorsOption.reverse())
       ),
@@ -112,7 +144,7 @@ export class EventService {
       // The backend 404s instead of returning an empty list for an event with
       // no ancestors (see DataStateService.fetchAncestors). Treat it as such so
       // callers still emit and can render the event on its own.
-      catchError(() => of([] as Pathway[][]))
+      catchError(() => of<Event[][]>([]))
     );
   }
 
@@ -191,9 +223,7 @@ export class EventService {
 
   getAncestors(array: Event[] | null, stId: string): Event[] | null {
     if (!Array.isArray(array)) return null;
-    for (let i = 0; i < array.length; i++) {
-      const node = array[i];
-
+    for (const node of array) {
       if (node.stId === stId) {
         return [node]; // Node itself is part of the path
       }
@@ -341,9 +371,11 @@ export class EventService {
     tree: MatTree<Event, string>,
     _hitReactions: number[]
   ): void {
+    // Not yet known: nothing to decide about.
+    const ancestors = selectedReaction.ancestors ?? [];
     // The diagram on screen counts as one whatever its flag says -- see
     // EventHierarchyComponent.diagramIdFromLineage.
-    const reactionDiagramStId = [...selectedReaction.ancestors]
+    const reactionDiagramStId = [...ancestors]
       .reverse()
       .find(
         (ancestor) => ancestor.stId === diagramId || (isPathway(ancestor) && ancestor.hasDiagram)
@@ -355,14 +387,14 @@ export class EventService {
       diagramId = this.getPathwayWithDiagram(selectedReaction)?.stId;
       if (diagramId) {
         this.state.pathwayId.set(diagramId);
-        const ancestorIds = new Set(selectedReaction.ancestors.map((a) => a.stId));
+        const ancestorIds = new Set(ancestors.map((a) => a.stId));
         allVisibleTreeNodes
           .filter((node) => !ancestorIds.has(node.stId))
           .forEach((node) => {
             node.isSelected = false;
             tree.collapse(node);
           });
-        this.setBreadcrumbs(selectedReaction.ancestors);
+        this.setBreadcrumbs(ancestors);
       }
     }
   }
@@ -393,7 +425,8 @@ export class EventService {
     }
   }
 
-  clearAllSelectedEvents(events: Event[]) {
+  // A pathway's events are missing until loaded.
+  clearAllSelectedEvents(events: Event[] | undefined) {
     events?.forEach((event) => {
       event.isSelected = false;
       if (isPathway(event)) {
@@ -402,7 +435,7 @@ export class EventService {
     });
   }
 
-  clearAllHitEvents(events: Event[]) {
+  clearAllHitEvents(events: Event[] | undefined) {
     events?.forEach((event) => {
       event.hit = false;
       if (isPathway(event)) {
@@ -534,7 +567,7 @@ export class EventService {
           (treeNode) => (treeNode.isSelected = ancestorStIds.has(treeNode.stId))
         );
         treeEvent.ancestors = finalAncestor;
-        treeEvent.parent = finalAncestor[finalAncestor.length - 2];
+        treeEvent.parent = finalAncestor.at(-2);
         this.setTreeData(this.treeData$.value);
         this.setBreadcrumbs(finalAncestor);
         this.expandAllAncestors(finalAncestor, tree);
@@ -586,7 +619,7 @@ export class EventService {
         // Search in last matched event's children or full tree
         const treeEventResources =
           this.lastMatchedEvent && isPathway(this.lastMatchedEvent)
-            ? this.lastMatchedEvent.events?.map((e) => e.element)
+            ? (this.lastMatchedEvent.events?.map((e) => e.element) ?? [])
             : tree;
         let targetTreeEvent = this.findTreeEvent(treeEventResources, ancestor.stId);
         if (!targetTreeEvent) targetTreeEvent = this.findTreeEvent(tree, ancestor.stId); // Not found in previous pathway, search in the global tree
@@ -684,7 +717,7 @@ export class EventService {
     totalAncestors: number
   ) {
     if (isPathway(object) && isPathway(treeEvent)) {
-      treeEvent.events = object.events?.map((child: HasEvent) => {
+      const events = object.events?.map((child) => {
         const ancestors = treeEvent.ancestors || [];
 
         // Append parent (treeEvent) if not already included
@@ -704,6 +737,9 @@ export class EventService {
           },
         };
       });
+      // An optional field takes no explicit undefined: left out as the answer leaves it out.
+      if (events) treeEvent.events = events;
+      else delete treeEvent.events;
       matTree.expand(treeEvent);
       treeEvent.isSelected = true;
 
@@ -771,7 +807,7 @@ export class EventService {
       if (!isPathway(event)) return;
       if (event.events && event.events.length > 0) {
         this.addHitReactions(
-          event.events?.map((e) => e.element),
+          event.events.map((e) => e.element),
           hitReactions
         );
       }
@@ -785,7 +821,7 @@ export class EventService {
       }
       if (isPathway(event) && event.events) {
         const found = this.findTreeEvent(
-          event.events?.map((e) => e.element),
+          event.events.map((e) => e.element),
           targetId
         );
         if (found) return found;
@@ -797,7 +833,7 @@ export class EventService {
   setSubtreeColors(event: Event, colors: Map<number, string> | undefined) {
     if (colors && isPathway(event) && event.events) {
       event.events
-        ?.map((e) => e.element)
+        .map((e) => e.element)
         .forEach((e) => {
           if (isPathway(e) && !e.hasDiagram) {
             e.subpathwayColor = colors.get(e.dbId);
@@ -806,11 +842,11 @@ export class EventService {
     }
   }
 
-  getFinalAncestor(ancestors: Pathway[][], pathIds?: string[]): Event[] {
+  getFinalAncestor(ancestors: Event[][], pathIds?: string[]): Event[] {
     pathIds = pathIds || this.state.path();
-    let finalAncestor: Event[];
+    let finalAncestor: Event[] | undefined;
     // When path is given through URL, this link is from Location in PWB on detail page
-    if (pathIds && ancestors.length > 1) {
+    if (ancestors.length > 1) {
       finalAncestor = this.findBestAncestors(ancestors, pathIds);
     } else {
       // Take the first ancestor if no path is given
@@ -820,14 +856,15 @@ export class EventService {
     // map over the result, so hand them an empty list rather than undefined.
     return finalAncestor ?? [];
   }
-  private findBestAncestors(lineages: Pathway[][], path: string[]): Pathway[] {
-    if (!lineages) return [];
-    if (lineages.length === 1) return lineages[0];
+  private findBestAncestors(lineages: Event[][], path: string[]): Event[] {
+    const [first, ...others] = lineages;
+    if (!first) return [];
+    if (others.length === 0) return first;
 
     const idealIds = new Set(path);
-    let bestAncestors: Pathway[] = lineages[0];
-    let bestAncestorsScore = this.getAncestorsMatchingScore(lineages[0], idealIds);
-    for (const ancestors of lineages.slice(1)) {
+    let bestAncestors: Event[] = first;
+    let bestAncestorsScore = this.getAncestorsMatchingScore(first, idealIds);
+    for (const ancestors of others) {
       const score = this.getAncestorsMatchingScore(ancestors, idealIds);
       if (score > bestAncestorsScore) {
         bestAncestors = ancestors;
@@ -837,7 +874,7 @@ export class EventService {
     return bestAncestors;
   }
 
-  private getAncestorsMatchingScore(ancestors: Pathway[], path: Set<string>) {
+  private getAncestorsMatchingScore(ancestors: Event[], path: Set<string>) {
     return ancestors.reduce((score, ancestor) => (path.has(ancestor.stId) ? score + 1 : score), 0);
   }
 
@@ -904,7 +941,7 @@ export class EventService {
       nodes.forEach((node) => {
         flatTreeData.push(node);
         if (isPathway(node)) {
-          flatten(node.events?.map((e) => e.element));
+          flatten(node.events?.map((e) => e.element) ?? []);
         }
       });
     };
@@ -925,7 +962,10 @@ export class EventService {
     return this.hasChild(0, event);
   }
 
-  getPathwayWithDiagram(event: Event, lineage: Event[] = event.ancestors): Event | undefined {
+  getPathwayWithDiagram(
+    event: Event,
+    lineage: Event[] | undefined = event.ancestors
+  ): Event | undefined {
     const parents = [...(lineage ?? [])].reverse();
     return parents.find((p) => isPathway(p) && p.stId !== event.stId && p.hasDiagram);
   }
@@ -937,7 +977,7 @@ export class EventService {
     if (!parentTree) return;
     if (!isPathway(parentTree)) return;
     // Loop through the parent's children to collapse any expanded siblings
-    parentTree.events.forEach((childEvent) => {
+    parentTree.events?.forEach((childEvent) => {
       if (childEvent.element !== event && matTree.isExpanded(childEvent.element)) {
         matTree.collapse(childEvent.element);
         childEvent.element.isSelected = false;

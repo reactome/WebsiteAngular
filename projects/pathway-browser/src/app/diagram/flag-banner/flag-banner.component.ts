@@ -1,8 +1,9 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
 import { MatTooltip } from '@angular/material/tooltip';
 import { UrlStateService } from '../../services/url-state.service';
+import { DataStateService } from '../../services/data-state.service';
 
 /**
  * Shows what is flagged and offers a way out of it.
@@ -12,6 +13,9 @@ import { UrlStateService } from '../../services/url-state.service';
  * showing that state and is not present at all in the genome-wide view -- so
  * there was no way to clear a flag you had not just set yourself (#142). Used
  * by both the diagram and Reacfoam.
+ *
+ * It also carries any other failure the view has to report, stacked beneath,
+ * so two messages at the top of a diagram cannot overlap.
  */
 @Component({
   selector: 'cr-flag-banner',
@@ -22,6 +26,16 @@ import { UrlStateService } from '../../services/url-state.service';
 })
 export class FlagBannerComponent {
   protected state = inject(UrlStateService);
+  private data = inject(DataStateService);
+
+  /** Something else the view could not do, said beneath the banner. */
+  readonly notice = input<string | null>(null);
+
+  /**
+   * The search behind the flag failed. Without this, nothing highlighted read
+   * as "not in this diagram".
+   */
+  readonly searchFailed = computed(() => this.data.flagResource.status() === 'error');
 
   /**
    * Tokens are either an identifier the user searched for ("uniprot:P60484")

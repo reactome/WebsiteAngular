@@ -1,12 +1,17 @@
 # nginx for reactome.org
 
-Four environments, one set of shared routes. **None of this is in use yet** —
-beta is still served by hand-configured Apache on the dev box. This exists so
-the configuration is reviewable, diffable and rebuildable, and so the site can
-eventually be started locally.
+Four environments, one set of shared routes. **`dev.conf` is live:** beta
+(beta.reactome.org) is served by the `nginx` service in `docker-compose.yml`,
+built from this directory. `release.conf` and `production.conf` are not deployed
+anywhere yet; they are what those sites would run if deployed from this
+repository. The sections below on the move from Apache were written before beta
+switched over, and record how it was planned.
 
 ```
-common/     what every environment shares
+common/          routes-core.conf: the routes every environment shares
+                 routes.conf: routes-core.conf plus what only a deployed
+                 environment has (rate-limited exporters, DeltaSignal, the
+                 chatbot, MCP, the render service)
 local.conf       your machine          compose service names, no TLS
 dev.conf         beta.reactome.org     the development box
 release.conf     release.reactome.org  the staged release
@@ -62,13 +67,18 @@ Found by asking the running config rather than by reading it.
 ## Local is not runnable yet, and says so
 
 `local.conf` expects compose services named `app`, `content-service`,
-`deltasignal` and `chatbot`. **Only `app` exists** in `docker-compose.yml` today.
-So this file is the shape of the answer, not the answer: starting the site
-locally still needs those services defined.
+`content-node`, `deltasignal` and `chatbot`, all reachable by name on one compose
+network. `docker-compose.yml` does not provide that today: `content-service` and
+the two others are not defined, and `content-node` and `nginx` run on the host's
+network, where no service name resolves. So this file is the shape of the answer,
+not the answer: starting the site locally still needs those services defined on
+a shared network.
 
 DeltaSignal and the chatbot are resolved _per request_ rather than at startup,
 through a variable and a resolver, so their absence gives a 502 on those two
-routes instead of stopping nginx entirely. Named in an upstream block they would
+routes instead of stopping nginx entirely. ReactomeGSA (`/GSAServer/`, in
+`common/routes.conf`) is resolved the same way in every deployment, being a host
+outside ours. Named in an upstream block they would
 be resolved at startup, and one missing service would refuse to start the whole
 site — which is a poor welcome for someone who only wanted to look at a pathway.
 
@@ -77,16 +87,20 @@ service is not worth starting, and failing loudly is the right answer.
 
 ## Upstreams move; that is expected
 
-`common/routes.conf` names `site`, `content`, `analysis`, `deltasignal` and
-`chatbot`. Each environment defines them. Two changes are coming and this shape
+The shared routes name `site`, `content`, `analysis`, `content_node`,
+`deltasignal` and `chatbot`. Each environment defines them. Two changes are coming and this shape
 absorbs both: node in this repository taking over most of what Tomcat serves, and
 the site being startable locally, where they become compose service names.
 
-`/api/` for DeltaSignal exists in none of the Apache configuration, which is why
-DeltaSignal cannot work on beta today — the Angular side calls it as a bare
-relative path, routed only by the dev server's proxy, which does not exist in a
-built artifact. Note the port on the dev box: **8090**, not the 8080 DeltaSignal's
-own compose binds, because 8080 there is Tomcat.
+`/api/` is DeltaSignal's: the Angular side calls `/api/pathways`, `/api/parse` and
+`/api/solve` as bare relative paths, which `common/routes.conf` sends to the
+`deltasignal` upstream (the dev server's proxy does the same under `ng serve`).
+Beta's site profile turns the Perturb button on because of this route; only a
+deployment with this route may turn `deltaSignal` on. The DeltaSignal service is not part of
+this repository's compose: it runs from DeltaSignal's own repository on the same
+host, published on loopback only, at **8090**, not the 8080 DeltaSignal's own
+compose binds, because 8080 there is Tomcat. If it stops, the button's calls fail;
+`/api/pathways` answering a list confirms it is up.
 
 ## Connections, which is a reason this is worth doing
 
@@ -178,6 +192,6 @@ Then: ports 80 and 443 handed over atomically, with a one-command rollback, and
 
 ## What is deliberately absent
 
-No `docker-compose` service. Adding one would invite `docker compose up` to take
-port 443 from Apache on a box where that is the live site. It belongs in the same
-change as the cutover.
+Nothing now. This section used to say there was no `docker-compose` service,
+so that `docker compose up` could not take port 443 from Apache while Apache was
+serving beta. That service was added with the switch, and is what serves beta.

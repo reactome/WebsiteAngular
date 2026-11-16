@@ -39,6 +39,118 @@ export interface DeltaSignalSolveResult {
   converged: boolean;
   iterations: number;
   solve_time: number;
+  /** How far from steady state the solve stopped (deltasignal specs/142: a
+   *  non-converged answer is cap-decided, not a steady state — say so). */
+  residual?: number;
+  /** deltasignal specs/154: cyclic components with a second stable state.
+   *  `[]` means detection ran and found none; absent means detection was off
+   *  or the solve did not converge — no second-state claim either way. Passed
+   *  back to `/api/readouts` verbatim, never interpreted here. */
+  switch_components?: DeltaSignalSwitchComponent[];
+  /** deltasignal specs/156: what the server did with the request's soft
+   *  observations — rendered verbatim, never recomputed client-side. Absent
+   *  on servers from before the feature. */
+  soft_obs_rule?: 'off' | 'blend';
+  soft_observed?: number;
+  soft_overridden?: { uuid: string; reason: string }[];
+}
+
+/** One bistable component from `/api/solve` (deltasignal specs/154):
+ *  `alt_activities` holds only the nodes whose value at the other stable
+ *  state differs, on the solve's own scale. */
+interface DeltaSignalSwitchComponent {
+  id: string;
+  size: number;
+  alt_activities: Record<string, number>;
+}
+
+/**
+ * One pinned node from `/api/pins`: a ROOT of the logic network that is, or
+ * contains, the perturbed entity. Every DeltaSignal benchmark figure was
+ * measured by pinning exactly these and computing every downstream copy
+ * (deltasignal specs/140); pinning anything else runs a protocol those
+ * figures do not apply to.
+ */
+interface DeltaSignalPin {
+  uuid: string;
+  name: string;
+}
+
+/**
+ * How a query resolved: at true roots; through the catalytic-cycle fallback
+ * (the entity has no root because its own cycle regenerates it); or not at
+ * all — the entity has no perturbable starting form in this network.
+ */
+type DeltaSignalPinBasis = 'root' | 'root_cycle' | 'none';
+
+export interface DeltaSignalPinResult {
+  id: string | null;
+  pins: DeltaSignalPin[];
+  basis: DeltaSignalPinBasis;
+  occurrences: number;
+}
+
+export interface DeltaSignalPinsResponse {
+  status: 'success';
+  protocol: { pin_scope: string; root_ignore: string };
+  results: DeltaSignalPinResult[];
+}
+
+/** One ranked row of an inverse answer (deltasignal specs/158), verbatim. */
+interface DeltaSignalInverseRow {
+  candidates: string[];
+  names: string[];
+  dose: 'knockout' | 'overexpression';
+  activity: number;
+  fold: number;
+  call: 'up' | 'down' | 'normal';
+  converged: boolean;
+}
+
+export interface DeltaSignalInverseResponse {
+  status: 'success';
+  direction: string;
+  cap: number;
+  ordering: string;
+  counts: {
+    candidates_total: number;
+    self_excluded: number;
+    reachable: number;
+    solved: number;
+    capped: number;
+    moved: number;
+    returned: number;
+  };
+  results: DeltaSignalInverseRow[];
+}
+
+/** The inverse-query state for the selected entity (deltasignal specs/158). */
+export interface DeltaSignalInverseState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  reactomeId: string | null;
+  result: DeltaSignalInverseResponse | null;
+  message: string | null;
+}
+
+/** The resolution state for the entity selected on the diagram. */
+export interface DeltaSignalPinState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  reactomeId: string | null;
+  result: DeltaSignalPinResult | null;
+  message: string | null;
+}
+
+/**
+ * A measured level entered on a solved readout row (deltasignal specs/156):
+ * the next solve soft-observes the row's resolved node uuids at `fold` with
+ * `weight` — the engine reconciles it with the network instead of pinning.
+ */
+export interface DeltaSignalMeasurement {
+  reactomeId: string;
+  name: string;
+  fold: number;
+  weight: number;
+  nodeUuids: string[];
 }
 
 export interface DeltaSignalPerturbation {
@@ -46,6 +158,7 @@ export interface DeltaSignalPerturbation {
   name: string;
   activity: number;
   nodeUuids: string[];
+  basis: DeltaSignalPinBasis;
 }
 
 export interface DeltaSignalResultRow {
@@ -60,3 +173,211 @@ export interface DeltaSignalResultRow {
 }
 
 export type DeltaSignalStatus = 'idle' | 'loading' | 'ready' | 'solving' | 'error';
+
+/**
+ * How a readout query resolved (deltasignal specs/141): a direct node match;
+ * the flux of the entity's proxy reactions (a curated species the generator
+ * expanded into variants has no node of its own); its set members; or not at
+ * all. Every benchmark figure read entities through this ladder with each
+ * curated entity weighed once — never a flat mean over matching node copies.
+ */
+type DeltaSignalReadoutBasis = 'direct' | 'proxy' | 'set_members' | 'none';
+
+interface DeltaSignalReadoutResult {
+  id: string | null;
+  mode: 'forms' | 'abundance';
+  basis: DeltaSignalReadoutBasis;
+  groups: string[][];
+  pinned: string[];
+  value?: number | null;
+  fold?: number | null;
+  call?: 'up' | 'down' | 'normal' | null;
+  /** deltasignal specs/142: true when the fold is at the model's stop — a
+   *  switch state, not a measured magnitude. Null exactly where fold is. */
+  railed?: boolean | null;
+  /** deltasignal specs/146: the measured share of same-stratum
+   *  validation-record calls that matched the curators. Null for an
+   *  untouched readout (stratum "untouched": the perturbation has no route
+   *  to it here) and when the table is unavailable. */
+  confidence?: number | null;
+  confidence_stratum?: string | null;
+  /** deltasignal specs/155: on each covered axis's validation record, the
+   *  middle `share` of MEASURED folds for answers in this readout's class
+   *  landed in [lo, hi] over n recorded pairs — a share of the record, never
+   *  a probability. Absent (never null) where the record is silent. */
+  measured_fold_ranges?: DeltaSignalFoldRange[];
+  /** deltasignal specs/157: the share of recorded ensemble pairs in this
+   *  readout's class whose call flipped under at least one recorded
+   *  near-equivalent rule variant — stability across contested structure,
+   *  never correctness. Absent where the record is silent. */
+  fragility?: { rate: number; n: number };
+  /** deltasignal specs/154: true when the readout's fold at the other stable
+   *  state would produce a DIFFERENT call — this number is a basin's
+   *  coordinates, not a magnitude. Served only when the request carried the
+   *  solve's `switch_components` back. */
+  switch?: boolean | null;
+  /** Which state this perturbation selected, by the readout's own value. */
+  state?: 'high' | 'low' | null;
+  /** The readout's fold at the unselected state, same scale as `fold`. */
+  other_state_fold?: number | null;
+}
+
+export interface DeltaSignalReadoutsResponse {
+  status: 'success';
+  protocol: {
+    ko_agg: string;
+    total_readout: string;
+    baseline: number;
+    down_cutoff: number;
+    up_cutoff: number;
+    /** The rail stops the railed flag was computed with (specs/142) —
+     *  rendered, never hardcoded client-side. */
+    rail_low?: number;
+    rail_high?: number;
+    /** The switch detection rule and its served thresholds (specs/154) —
+     *  present when the request carried switch components back. */
+    switch_rule?: string;
+    switch_floor?: number;
+    switch_max_sweeps?: number;
+    switch_components?: number;
+  };
+  missing_tables: string[];
+  malformed_tables: string[];
+  /** specs/146: "ok", or why every confidence is null. */
+  confidence_table?: string;
+  /** deltasignal specs/155: "ok: <version>", or why no ranges are served
+   *  (absent table, malformed, or a provenance mismatch with the served
+   *  catalog — rendered as absence, never substituted). */
+  fold_ranges?: string;
+  fold_ranges_min_cell?: number | null;
+  /** deltasignal specs/157: "ok: <version>", or why no rates are served. */
+  fragility_table?: string;
+  fragility_min_cell?: number | null;
+  results: DeltaSignalReadoutResult[];
+}
+
+/** One served measured-fold range (deltasignal specs/155), verbatim. */
+interface DeltaSignalFoldRange {
+  axis: string;
+  share: number;
+  lo: number;
+  hi: number;
+  n: number;
+}
+
+/** One entity row of the results table, built from `/api/readouts`. */
+export interface DeltaSignalReadoutRow {
+  reactomeId: string;
+  name: string;
+  basis: DeltaSignalReadoutBasis;
+  fold: number;
+  call: 'up' | 'down' | 'normal';
+  railed: boolean;
+  /** The perturbation selected one of two stable states (deltasignal
+   *  specs/154): which one, and the readout's fold at the other. Null when
+   *  the loop has one state under these constraints. */
+  switchState: DeltaSignalSwitchState | null;
+  /** The served measured ranges (specs/155), verbatim; empty when the record
+   *  is silent for this readout's class. */
+  ranges: DeltaSignalFoldRange[];
+  /** The served structural-fragility rate (specs/157), verbatim or null. */
+  fragility: { rate: number; n: number } | null;
+  lead: DeltaSignalLead | null;
+  confidence: number | null;
+  /** The perturbation has no route to this readout in this network. */
+  untouched: boolean;
+  influence: number;
+  perturbed: boolean;
+}
+
+/**
+ * One level of a Reactome ContentService entity: what the specs/020 member
+ * walk reads (`/data/query/enhanced/{id}`). The answer carries far more; the
+ * index signature says so without naming it.
+ */
+type ContentServiceValue =
+  string | number | boolean | null | ContentServiceValue[] | { [key: string]: ContentServiceValue };
+
+export interface ContentServiceEntity {
+  stId?: string;
+  schemaClass?: string;
+  hasMember?: ContentServiceEntity[];
+  hasCandidate?: ContentServiceEntity[];
+  [key: string]: ContentServiceValue | ContentServiceEntity[] | undefined;
+}
+
+/** The served curator-drawn leads table (deltasignal specs/149), verbatim. */
+export interface DeltaSignalLeadsResponse {
+  status: 'success';
+  leads: {
+    composite_prefix: string;
+    centres: Record<
+      string,
+      {
+        name: string;
+        composite_id: string;
+        arrows: {
+          source_pathway: string;
+          entity: string;
+          rate: { class: 'measured' | 'unrated'; statement: string };
+        }[];
+      }
+    >;
+  };
+}
+
+/** A served switch readout's state pair, verbatim from `/api/readouts`. */
+interface DeltaSignalSwitchState {
+  state: 'high' | 'low';
+  otherStateFold: number;
+}
+
+/** One lead answer for a not-reached readout: the composite's call, with the
+ *  pathway's served rate statement. Presentation only — never a main call. */
+interface DeltaSignalLead {
+  call: 'up' | 'down' | 'normal';
+  fold: number;
+  statement: string;
+}
+
+export interface DeltaSignalLeadState {
+  status: 'idle' | 'loading' | 'ready' | 'error' | 'none';
+  byId: Map<string, DeltaSignalLead>;
+}
+
+/** The served scope statement (deltasignal specs/143), rendered verbatim. */
+export interface DeltaSignalScopeResponse {
+  status: 'success';
+  statement: {
+    version: string;
+    provenance_build: string;
+    summary: string[];
+    validated: {
+      axis: string;
+      statement: string;
+      value: string;
+      catalog_build: string;
+      solver_commit: string;
+      date: string;
+      spec: string;
+    }[];
+    limitations: { name: string; statement: string; spec: string }[];
+    protocols: { name: string; endpoint: string; statement: string; spec: string }[];
+  };
+  served_catalog: string | null;
+  measured_on_served_catalog: boolean;
+}
+
+/** The scope statement for this session, or why there is none. */
+export interface DeltaSignalScopeState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  scope: DeltaSignalScopeResponse | null;
+}
+
+/** The readout batch for the current solve, or why there is none. */
+export interface DeltaSignalReadoutState {
+  status: 'idle' | 'loading' | 'ready' | 'error';
+  byId: Map<string, DeltaSignalReadoutResult>;
+  protocol: DeltaSignalReadoutsResponse['protocol'] | null;
+  message: string | null;
+}

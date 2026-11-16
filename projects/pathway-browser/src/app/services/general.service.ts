@@ -33,11 +33,18 @@ export class GeneralService {
         .pipe(catchError(() => this.http.get<number>(VERSION_FALLBACK))),
   });
 
-  readonly download = computed(() =>
-    !environment.assetsFromHost && this.version.value()
-      ? `${environment.s3}/${this.version.value()}`
-      : DOWNLOAD
-  );
+  /**
+   * The version, or undefined until it is known -- and when it cannot be.
+   * `version.value()` throws while the resource is in error, so a template or
+   * computed reading it directly threw on every redraw and stopped the rest of
+   * the view from rendering.
+   */
+  readonly current = computed(() => (this.version.hasValue() ? this.version.value() : undefined));
+
+  readonly download = computed(() => {
+    const version = this.current();
+    return !environment.assetsFromHost && version ? `${environment.s3}/${version}` : DOWNLOAD;
+  });
 
   // Emits the download base URL once it is settled. When S3 is preferred we
   // must wait for the version to resolve, otherwise the base URL falls back to

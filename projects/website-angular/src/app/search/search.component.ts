@@ -1,37 +1,44 @@
 import {
+  SearchResult,
+  SearchEntry,
+  FacetResponse,
+  SearchFilters,
+  Facet,
+  NamedFacetCount,
+  ShownGroup,
+  ShownResult,
+} from '../../model/search.model';
+import {
   Component,
   inject,
   OnInit,
   OnDestroy,
-  AfterViewInit,
   ElementRef,
   ChangeDetectorRef,
   viewChild,
+  signal,
+  effect,
+  untracked,
 } from '@angular/core';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink, type Params } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subscription, forkJoin, catchError, Observable } from 'rxjs';
+import { Subscription, forkJoin, catchError, map, Observable } from 'rxjs';
 import { of } from 'rxjs';
 import { IconService } from '../../services/icon.service';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { TileComponent } from '../reactome-components/tile/tile.component';
 import { SearchBarComponent } from './search-bar/search-bar.component';
-import {
-  SearchService,
-  SearchResult,
-  SearchEntry,
-  FacetResponse,
-  SearchFilters,
-  FacetCount,
-  ResultGroup,
-} from '../../services/search.service';
+import { SearchService } from '../../services/search.service';
 import { DatePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { MatTooltip } from '@angular/material/tooltip';
 import { getSubjectIcon, SubjectIcon } from '../../utils/subjectIcons';
 import { SiteSearchService, SitePageHit } from '../../services/site-search.service';
-import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import { ChallengeWidget, renderWidget } from './answer/turnstile';
+
+/** Our own route: ContentService's /contact takes only an hCaptcha token. */
+const CONTACT_ROUTE = '/contact';
 import { SearchAnswerComponent } from './answer/search-answer.component';
 
 @Component({
@@ -51,7 +58,7 @@ import { SearchAnswerComponent } from './answer/search-answer.component';
   templateUrl: './search.component.html',
   styleUrl: './search.component.scss',
 })
-export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
+export class SearchComponent implements OnInit, OnDestroy {
   private icons = inject(IconService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -73,7 +80,19 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   readonly captchaContainer = viewChild<ElementRef<HTMLDivElement>>('captchaContainer');
 
   captchaToken: string | null = null;
-  private captchaWidgetId: string | null = null;
+  private challenge: ChallengeWidget | undefined;
+  private challengeSub?: Subscription;
+  /** A message is on its way: Send waits for its answer, so it goes once. */
+  contactSending = false;
+
+  constructor() {
+    // A widget per form: a search that finds nothing again draws a new form,
+    // whose container had no challenge when it was drawn only once.
+    effect(() => {
+      const container = this.captchaContainer()?.nativeElement;
+      untracked(() => this.prepareChallenge(container));
+    });
+  }
 
   query = '';
   searchSubmitted = false;
@@ -90,12 +109,25 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     this.cdr.markForCheck();
   }
   suggestedTerms: string[] = [];
-  results: SearchResult | null = null;
+  results: ShownResult | null = null;
   facets: FacetResponse | null = null;
   loading = false;
   error = '';
   hasNoResults = false;
   formSubmitted = false;
+  /** The help-desk message could not be sent; the form stays, with what was written. */
+  contactFailed = false;
+  /**
+   * The form cannot be sent from here: this deployment does not send, or the
+   * check that the reader is a person could not be loaded.
+   */
+  contactUnavailable = false;
+  /**
+   * Email and message are filled in. Held as a signal set on input: the button
+   * read the fields directly, and with nothing to re-check it when they were
+   * typed in, solving the captcha first left Send disabled for good.
+   */
+  readonly contactReady = signal(false);
 
   currentPage = 0;
   pageSize = 30;
@@ -123,44 +155,47 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // Site-search hit counts by category, populated from the merged Pages
   // results so the sidebar can offer them as a facet group.
-  pageCategoryCounts: FacetCount[] = [];
+  pageCategoryCounts: NamedFacetCount[] = [];
 
   // Protein deduplication: all forms grouped by referenceIdentifier
   proteinForms = new Map<string, SearchEntry[]>();
   uniqueProteins: SearchEntry[] = [];
   proteinTotalForms = 0;
   proteinLoading = false;
+  /** Some batches of the protein list failed, so it is short of them. */
+  proteinsIncomplete = false;
+  /** Groups whose last page change failed, and stayed on the page they show. */
+  groupPageFailed: Record<string, boolean> = {};
+  /** The website's pages could not be searched; only data results are shown. */
+  pagesFailed = false;
 
-  // Unified search now always uses reference-style aggregation: one row per
-  // reference entity (e.g. one TP53) with modified forms / isoforms collapsed
-  // under it. The old simple/advanced/site-search tabs are gone — the
-  // `currentMode` field is retained as a compile-time-only constant so the
-  // existing template branches (and the URL params for inbound links)
-  // continue to work without conditional logic.
-  currentMode: 'reference' = 'reference';
-
-  private paramsSub!: Subscription;
+  private paramsSub?: Subscription;
 
   ngOnInit(): void {
     this.paramsSub = this.route.queryParams.subscribe((params) => {
       // Check query params first, then fall back to query embedded in URL path (e.g. /content/query=kj)
-      let q = params['q'] || '';
+      // the router gives a parameter given twice as a list: its first value is the query
+      const given = paramValues(params, 'q');
+      let q = (Array.isArray(given) ? given[0] : given) || '';
       if (!q) {
         const pathSegments = this.route.snapshot.url;
-        if (pathSegments.length === 2 && pathSegments[1].path.startsWith('query=')) {
-          q = decodeURIComponent(pathSegments[1].path.substring('query='.length));
+        const querySegment = pathSegments.length === 2 ? pathSegments[1] : undefined;
+        if (querySegment?.path.startsWith('query=')) {
+          q = decodeURIComponent(querySegment.path.substring('query='.length));
         }
       }
 
       this.query = q;
-      this.currentPage = params['page'] ? parseInt(params['page'], 10) - 1 : 0;
+      const pages = paramValues(params, 'page');
+      const page = Array.isArray(pages) ? pages[0] : pages;
+      this.currentPage = page ? parseInt(page, 10) - 1 : 0;
 
       this.filters = {
-        species: toArray(params['species']),
-        types: toArray(params['types']),
-        compartments: toArray(params['compartments']),
-        keywords: toArray(params['keywords']),
-        pageCategories: toArray(params['pageCategories']),
+        species: toArray(paramValues(params, 'species')),
+        types: toArray(paramValues(params, 'types')),
+        compartments: toArray(paramValues(params, 'compartments')),
+        keywords: toArray(paramValues(params, 'keywords')),
+        pageCategories: toArray(paramValues(params, 'pageCategories')),
       };
 
       // ?advanced / ?reference / ?site-search URL params from legacy inbound
@@ -176,12 +211,23 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.renderCaptchaWhenReady();
-  }
-
   ngOnDestroy(): void {
     this.paramsSub?.unsubscribe();
+    this.cancelSearchRequests();
+    this.prepareChallenge(undefined);
+  }
+
+  /** Requests of an earlier search, which must not write into this one. */
+  private searchSub?: Subscription;
+  private proteinSub?: Subscription;
+  private groupPageSubs: Record<string, Subscription> = {};
+
+  private cancelSearchRequests(): void {
+    this.searchSub?.unsubscribe();
+    this.proteinSub?.unsubscribe();
+    this.proteinLoading = false;
+    Object.values(this.groupPageSubs).forEach((sub) => sub.unsubscribe());
+    this.groupPageSubs = {};
   }
 
   private getSuggestions(query: string): void {
@@ -191,7 +237,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     this.searchService.getSpellCheckTerms(query).subscribe({
       next: (terms) => {
-        this.suggestedTerms = terms || [];
+        this.suggestedTerms = terms;
         this.cdr.markForCheck();
       },
       error: () => {
@@ -201,84 +247,66 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  private renderCaptchaWhenReady(): void {
-    // Wait until the captcha container is available in the DOM
-    const checkContainer = () => {
-      if (this.captchaContainer()?.nativeElement) {
-        this.loadHCaptchaScript()
-          .then(() => this.renderCaptcha())
-          // Without the widget the form cannot be submitted at all, so say so
-          // rather than leaving an empty box.
-          .catch((error) => console.error('Could not load hCaptcha', error));
-      } else {
-        setTimeout(checkContainer, 200);
-      }
-    };
-    checkContainer();
-  }
-
-  private loadHCaptchaScript(): Promise<void> {
-    return new Promise((resolve) => {
-      if ((window as any).hcaptcha) {
-        resolve();
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://js.hcaptcha.com/1/api.js?render=explicit';
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      document.head.appendChild(script);
-    });
-  }
-
-  private renderCaptcha(): void {
-    const hcaptcha = (window as any).hcaptcha;
-    const captchaContainer = this.captchaContainer();
-    if (!hcaptcha || !captchaContainer?.nativeElement) return;
-
-    this.captchaWidgetId = hcaptcha.render(captchaContainer.nativeElement, {
-      sitekey: 'a7e45eb1-ba7a-47a7-95da-5c67d948dd4f',
-      theme: 'light',
-      callback: (token: string) => {
-        this.captchaToken = token;
-        this.cdr.markForCheck();
-      },
-      'expired-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-      'error-callback': () => {
-        this.captchaToken = null;
-        this.cdr.markForCheck();
-      },
-    });
-  }
-
-  private resetCaptcha(): void {
-    const hcaptcha = (window as any).hcaptcha;
-    if (hcaptcha && this.captchaWidgetId != null) {
-      hcaptcha.reset(this.captchaWidgetId);
-    }
+  /**
+   * Readies the help form drawn into `container`, or clears up after the one
+   * that has gone. The reader proves they are a person with Turnstile, whose
+   * sitekey comes from the route the message goes to: a deployment that cannot
+   * send says so there.
+   */
+  private prepareChallenge(container: HTMLDivElement | undefined): void {
+    // Whatever the last form's challenge said does not belong to this one, and
+    // its widget must not go on writing into this form's token.
+    this.challengeSub?.unsubscribe();
+    this.challenge?.remove();
+    this.challenge = undefined;
     this.captchaToken = null;
-    this.cdr.markForCheck();
+    this.contactUnavailable = false;
+    if (!container) return;
+    const unavailable = (error: unknown) => {
+      console.error('The help form cannot be sent from here', error);
+      if (this.captchaContainer()?.nativeElement !== container) return;
+      this.contactUnavailable = true;
+      this.cdr.markForCheck();
+    };
+    this.challengeSub = this.http.get<{ sitekey: string }>(CONTACT_ROUTE).subscribe({
+      next: ({ sitekey }) =>
+        void renderWidget(container, sitekey, (token) => {
+          this.captchaToken = token;
+          this.cdr.markForCheck();
+        }).then((widget) => {
+          // Gone already: a later search replaced the form while this loaded.
+          if (this.captchaContainer()?.nativeElement !== container) widget.remove();
+          else this.challenge = widget;
+        }, unavailable),
+      error: unavailable,
+    });
   }
 
   private doSearch(): void {
+    this.cancelSearchRequests();
     this.loading = true;
     this.error = '';
     this.hasNoResults = false;
+    // A new search shows a new help form, if any.
+    this.formSubmitted = false;
+    this.contactFailed = false;
+    this.contactReady.set(false);
+    this.groupLoading = {};
 
-    forkJoin({
+    this.searchSub = forkJoin({
       results: this.searchService
         .search(this.query, this.filters, this.currentPage, this.pageSize)
         .pipe(catchError((err) => this.handleSearchError(err))),
       facets: this.searchService
         .getFacets(this.query, this.filters)
         .pipe(catchError(() => of(null))),
-      pages: this.siteSearch.search(this.query).pipe(catchError(() => of([] as SitePageHit[]))),
+      pages: this.siteSearch.search(this.query).pipe(
+        map((hits) => ({ hits, failed: false })),
+        catchError(() => of({ hits: [] as SitePageHit[], failed: true }))
+      ),
     }).subscribe({
-      next: ({ results, facets, pages }) => {
+      next: ({ results, facets, pages: { hits: pages, failed: pagesFailed } }) => {
+        this.pagesFailed = pagesFailed;
         // If either API call failed, show error
         if (!results || !facets) {
           this.error = 'An error occurred while searching. Please try again.';
@@ -287,26 +315,33 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.hasNoResults = false;
         } else {
           // Successful API response - check if we have results
-          const res = results as SearchResult;
+          const answer = results as SearchResult;
+          const res: ShownResult = {
+            ...answer,
+            results: answer.results.map((group) => ({
+              ...group,
+              entries: group.entries ?? [],
+              typeName: group.typeName ?? '',
+            })),
+          };
           // Solr's true total across the whole result set; per-group
           // pagination chops each `group.entries` down to ~30, so we
           // must NOT recompute this from entries.length later.
-          const biologyTotal = res.numberOfMatches ?? 0;
-          const hasNonDeleted = res.results?.some((group) => group.entries.some((e) => !e.deleted));
-          res.results =
-            res.results
-              ?.map((group) => {
-                const entries = hasNonDeleted
-                  ? group.entries.filter((e) => !e.deleted)
-                  : group.entries;
+          const biologyTotal = res.numberOfMatches;
+          const hasNonDeleted = res.results.some((group) => group.entries.some((e) => !e.deleted));
+          res.results = res.results
+            .map((group) => {
+              const entries = hasNonDeleted
+                ? group.entries.filter((e) => !e.deleted)
+                : group.entries;
 
-                return {
-                  ...group,
-                  entries,
-                  entriesCount: entries.length,
-                };
-              })
-              .filter((group) => group.entries.length > 0) || [];
+              return {
+                ...group,
+                entries,
+                entriesCount: entries.length,
+              };
+            })
+            .filter((group) => group.entries.length > 0);
           // Build the Pages facet counts from the raw site-search hits so
           // the sidebar shows the full set of categories even when one is
           // currently selected (matches how Species / Types behave).
@@ -369,7 +404,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
                 typeName: 'Pages',
                 entries: pageEntries,
                 entriesCount: pageEntries.length,
-              } as ResultGroup,
+              } as ShownGroup,
             ];
           }
           // Keep Solr's biology total; add Pages count (when shown); zero
@@ -378,9 +413,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.results = res;
           this.facets = facets;
           this.totalPages = this.totalPages = Math.max(
-            ...(results.results || []).map((group) =>
-              Math.ceil((group.entriesCount || 0) / this.pageSize)
-            ),
+            ...results.results.map((group) => Math.ceil((group.entriesCount || 0) / this.pageSize)),
             0
           );
           this.hasNoResults = ((results as SearchResult).numberOfMatches || 0) === 0;
@@ -390,6 +423,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
           this.groupPages = {};
           this.groupPageEntries = {};
           this.groupLoading = {};
+          this.groupPageFailed = {};
           this.expandedForms = {};
 
           // If there's a Protein group, fetch ALL protein entries for deduplication
@@ -417,13 +451,14 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  private handleSearchError(err: any): Observable<SearchResult | null> {
+  private handleSearchError(err: unknown): Observable<SearchResult | null> {
     // Check if this is a 404 with "No entries found" message
-    if (err.status === 404 && err.error?.messages?.[0]?.includes('No entries found')) {
+    if (isRecord(err) && err['status'] === 404 && saysNoEntries(err['error'])) {
       // Return empty results instead of throwing error
       return of({
         results: [],
         rowCount: 0,
+        numberOfGroups: 0,
         numberOfMatches: 0,
       });
     }
@@ -433,6 +468,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private fetchAllProteins(totalCount: number): void {
     this.proteinLoading = true;
+    this.proteinsIncomplete = false;
     this.proteinForms = new Map();
     this.uniqueProteins = [];
     this.proteinTotalForms = 0;
@@ -446,29 +482,33 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       batchRequests.push(
         this.searchService
           .search(this.query, proteinFilters, batchPage, batchSize)
-          .pipe(catchError(() => of(null)))
+          .pipe(catchError((err) => this.handleSearchError(err)))
       );
     }
 
-    forkJoin(batchRequests).subscribe((results) => {
+    this.proteinSub = forkJoin(batchRequests).subscribe((results) => {
+      // null is a batch that failed, rather than one that found nothing.
+      this.proteinsIncomplete = results.some((result) => result === null);
       const allProteins: SearchEntry[] = [];
       for (const result of results) {
-        if (!result?.results?.length) continue;
+        if (!result?.results.length) continue;
         const group = result.results.find((g) => g.typeName === 'Protein');
-        if (group) allProteins.push(...group.entries);
+        if (group) allProteins.push(...(group.entries ?? []));
       }
 
-      // Group by referenceIdentifier
+      // Group by referenceIdentifier, else the entry's own id (its stId, or
+      // its dbId when it has none, so never empty).
       const formsMap = new Map<string, SearchEntry[]>();
       const representativeMap = new Map<string, SearchEntry>();
 
       for (const entry of allProteins) {
-        const key = entry.referenceIdentifier || entry.id || entry.stId;
-        if (!formsMap.has(key)) {
-          formsMap.set(key, []);
+        const key = entry.referenceIdentifier || entry.id;
+        const forms = formsMap.get(key);
+        if (forms) forms.push(entry);
+        else {
+          formsMap.set(key, [entry]);
           representativeMap.set(key, entry);
         }
-        formsMap.get(key)!.push(entry);
       }
 
       this.proteinForms = formsMap;
@@ -480,12 +520,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   toggleForms(entry: SearchEntry): void {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     this.expandedForms[key] = !this.expandedForms[key];
   }
 
   getProteinForms(entry: SearchEntry): SearchEntry[] {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     return this.proteinForms.get(key) || [];
   }
 
@@ -494,27 +534,8 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   isFormsExpanded(entry: SearchEntry): boolean {
-    const key = entry.referenceIdentifier || entry.id || entry.stId;
+    const key = entry.referenceIdentifier || entry.id;
     return !!this.expandedForms[key];
-  }
-
-  getSpriteClass(entry: SearchEntry): string {
-    const reactionSubtypes = new Set([
-      'association',
-      'binding',
-      'dissociation',
-      'omitted',
-      'transition',
-      'uncertain',
-      'depolymerisation',
-      'polymerisation',
-    ]);
-
-    const rawType = (entry.exactType || entry.type || '').trim();
-    const spriteType = reactionSubtypes.has(rawType.toLowerCase())
-      ? 'Reaction'
-      : rawType || 'Pathway';
-    return `sprite sprite-resize sprite-${spriteType}`;
   }
 
   // Resolve the Reactome subject icon (Protein, Pathway, Complex, …) for a
@@ -525,7 +546,9 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   iconSvgUrl(entry: SearchEntry): string {
-    return this.icons.iconUrl(entry.stId);
+    // `id` is the stId, never highlighted: a search for the id itself wraps
+    // `stId` in markup.
+    return this.icons.iconUrl(entry.id);
   }
 
   /**
@@ -604,7 +627,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   // }
 
   private filterDeletedEntries(entries: SearchEntry[]): SearchEntry[] {
-    if (!entries?.length) return [];
+    if (!entries.length) return [];
 
     const nonDeleted = entries.filter((e) => !e.deleted);
     if (nonDeleted.length > 0) {
@@ -622,11 +645,12 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     });
   }
 
-  getFacetItems(
-    facet: { selected: FacetCount[]; available: FacetCount[] } | undefined
-  ): FacetCount[] {
+  /** The counts that can be shown and chosen: an unnamed one cannot. */
+  getFacetItems(facet: Facet | undefined): NamedFacetCount[] {
     if (!facet) return [];
-    return [...(facet.selected || []), ...(facet.available || [])];
+    return [...(facet.selected || []), ...(facet.available || [])].filter(
+      (item): item is NamedFacetCount => !!item.name
+    );
   }
 
   getActiveFilters(): { category: string; label: string; value: string }[] {
@@ -639,7 +663,7 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       pageCategories: 'Pages',
     };
     for (const [key, values] of Object.entries(this.filters)) {
-      if (values?.length) {
+      if (values.length) {
         for (const v of values) {
           active.push({ category: key, label: labels[key] || key, value: v });
         }
@@ -651,36 +675,16 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   getDetailLink(entry: SearchEntry): string {
     // Site-search hits carry their own absolute URL into pageUrl.
     if (entry.exactType === 'Pages') {
-      return (entry as any).pageUrl || '/';
+      return 'pageUrl' in entry && typeof entry.pageUrl === 'string' && entry.pageUrl
+        ? entry.pageUrl
+        : '/';
     }
-    if (this.currentMode === 'reference') {
-      const id = entry.id || entry.stId;
-      if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
-      if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
-      return '/content/detail/' + id;
-    }
-    //Remove HTML tags from entry.stId if present
-    entry.stId = entry.stId?.replace(/<[^>]*>/g, '');
-
-    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + entry.stId;
-    if (entry.exactType === 'Icon') return '/content/detail/icon/' + entry.stId;
-    return '/content/detail/' + entry.stId;
-  }
-
-  getPageNumbers(): number[] {
-    const pages: number[] = [];
-    const maxVisible = 5;
-    let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    const end = Math.min(this.totalPages, start + maxVisible);
-
-    if (end - start < maxVisible) {
-      start = Math.max(0, end - maxVisible);
-    }
-
-    for (let i = start; i < end; i++) {
-      pages.push(i);
-    }
-    return pages;
+    // Search aggregates by reference entity (one TP53, its forms collapsed
+    // under it), so an entry links to its reference id where it has one.
+    const id = entry.id || entry.stId;
+    if (entry.exactType === 'Interactor') return '/content/detail/interactor/' + id;
+    if (entry.exactType === 'Icon') return '/content/detail/icon/' + id;
+    return '/content/detail/' + id;
   }
 
   getReferencePageNumbers(): (number | '...')[] {
@@ -713,18 +717,18 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // Per-group pagination
-  getGroupPage(group: ResultGroup): number {
+  getGroupPage(group: ShownGroup): number {
     return this.groupPages[group.typeName] || 0;
   }
 
-  getGroupTotalPages(group: ResultGroup): number {
+  getGroupTotalPages(group: ShownGroup): number {
     if (group.typeName === 'Protein') {
       return Math.ceil(this.uniqueProteins.length / this.groupPageSize) || 1;
     }
     return Math.ceil(group.entriesCount / this.groupPageSize);
   }
 
-  getGroupPageEntries(group: ResultGroup): SearchEntry[] {
+  getGroupPageEntries(group: ShownGroup): SearchEntry[] {
     if (group.typeName === 'Protein') {
       // While still loading all proteins, show nothing (loading message is displayed)
       if (this.proteinLoading) return [];
@@ -732,33 +736,48 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
       const start = page * this.groupPageSize;
       return this.uniqueProteins.slice(start, start + this.groupPageSize);
     }
+    if (group.typeName === 'Pages') {
+      const start = (this.groupPages['Pages'] || 0) * this.groupPageSize;
+      return group.entries.slice(start, start + this.groupPageSize);
+    }
     return this.groupPageEntries[group.typeName] || group.entries.slice(0, this.groupPageSize);
   }
 
-  goToGroupPage(group: ResultGroup, page: number): void {
+  goToGroupPage(group: ShownGroup, page: number): void {
     const total = this.getGroupTotalPages(group);
     if (page < 0 || page >= total) return;
-    this.groupPages[group.typeName] = page;
 
-    // Protein group is paginated client-side — no server call needed
-    if (group.typeName === 'Protein') return;
+    // Protein and Pages groups are paginated client-side — no server call
+    // needed, and Pages are not in the search service to be asked for.
+    if (group.typeName === 'Protein' || group.typeName === 'Pages') {
+      this.groupPages[group.typeName] = page;
+      return;
+    }
 
+    // Only the last page asked for may answer.
+    this.groupPageSubs[group.typeName]?.unsubscribe();
     this.groupLoading[group.typeName] = true;
-    this.searchService
+    this.groupPageSubs[group.typeName] = this.searchService
       .search(this.query, { ...this.filters, types: [group.typeName] }, page, this.groupPageSize)
-      .pipe(catchError(() => of(null)))
+      .pipe(catchError((err) => this.handleSearchError(err)))
       .subscribe((result) => {
         this.groupLoading[group.typeName] = false;
-        if (!result?.results?.length) {
+        // Failed, or empty although the count said otherwise: the page number
+        // stays on the entries still shown.
+        const entries = result?.results[0]?.entries;
+        this.groupPageFailed[group.typeName] = !entries?.length;
+        if (!entries?.length) {
           this.cdr.markForCheck();
           return;
         }
-        this.groupPageEntries[group.typeName] = result.results[0].entries;
+        // The number moves with the entries, not ahead of them.
+        this.groupPages[group.typeName] = page;
+        this.groupPageEntries[group.typeName] = entries;
         this.cdr.markForCheck();
       });
   }
 
-  getGroupPageNumbers(group: ResultGroup): (number | '...')[] {
+  getGroupPageNumbers(group: ShownGroup): (number | '...')[] {
     return this.buildPageNumbers(this.getGroupPage(group), this.getGroupTotalPages(group));
   }
 
@@ -766,28 +785,59 @@ export class SearchComponent implements OnInit, OnDestroy, AfterViewInit {
     event.preventDefault();
     event.stopPropagation();
 
-    if (!this.captchaToken) {
+    if (!this.captchaToken || this.contactSending) {
       return;
     }
 
-    const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    formData.set('h-captcha-response', this.captchaToken);
+    const form = new FormData(event.target as HTMLFormElement);
+    const field = (name: string) => String(form.get(name) ?? '');
+    const message = {
+      contactName: field('contactName'),
+      mailAddress: field('mailAddress'),
+      subject: field('subject'),
+      message: field('message'),
+      token: this.captchaToken,
+    };
 
-    this.http.post(`${CONTENT_SERVICE}/contact`, formData).subscribe({
+    this.contactFailed = false;
+    this.contactSending = true;
+    // A token is good for one try; this one is spent whatever the answer.
+    this.captchaToken = null;
+    this.http.post(CONTACT_ROUTE, message).subscribe({
       next: () => {
+        this.contactSending = false;
         this.formSubmitted = true;
-        this.resetCaptcha();
         this.cdr.markForCheck();
       },
       error: (err) => {
+        this.contactSending = false;
         console.error('Error submitting contact form:', err);
-        this.formSubmitted = true; // Still show thank you message even if there's an error
-        this.resetCaptcha();
+        // Not sent, so not thanked for: the form stays, with what was written,
+        // and a fresh challenge, as a token is good for one try.
+        this.contactFailed = true;
+        this.challenge?.reset();
         this.cdr.markForCheck();
       },
     });
   }
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+/** A query parameter's values as the router gives them: one, several (given more than once), or none. */
+function paramValues(params: Params, key: string): string | string[] | undefined {
+  const value: unknown = params[key];
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.filter((v): v is string => typeof v === 'string');
+  return undefined;
+}
+
+/** The content service's 404 for a search with no results: its first message says so. */
+function saysNoEntries(body: unknown): boolean {
+  const messages = isRecord(body) ? body['messages'] : undefined;
+  const first: unknown = Array.isArray(messages) ? messages[0] : undefined;
+  return typeof first === 'string' && first.includes('No entries found');
 }
 
 function toArray(value: string | string[] | undefined): string[] {

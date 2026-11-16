@@ -1,0 +1,806 @@
+/**
+ * What each GET endpoint takes, and whether a URL is in its standard form
+ * (spec 011). A standard-form URL is labelled cacheable at the edge; any
+ * other is answered just the same but never stored. Java answers many
+ * spellings of one request -- a padded id, `includeRef=TRUE`, `maxDepth=01`
+ * -- and the edge's cache key is the URL, so each spelling stored would be
+ * another copy of one answer, without end. Standard form admits one spelling
+ * (a few, where the site itself sends them) and nothing Java would refuse.
+ *
+ * A documented endpoint's query parameters are not restated here: they are
+ * read from Java's published description (openapi-snapshot.json), so the two
+ * cannot drift. The record adds what that description lacks: the kind of
+ * each path variable, the parameters of the endpoints it leaves out, and the
+ * endpoints never stored whatever the URL.
+ *
+ * Only aliases of a successful answer matter. A value Java refuses gets an
+ * error status, and errors are never stored, so no range is checked here.
+ */
+import { readFileSync } from 'node:fs';
+import { SCHEMA_CLASSES } from './schema.ts';
+import type { StoredSnapshot } from './domain.ts';
+import type { OpenApiSnapshot } from './snapshot-openapi.ts';
+
+let openapi: OpenApiSnapshot | undefined;
+const OPENAPI = () =>
+  (openapi ??= JSON.parse(
+    readFileSync(new URL('./openapi-snapshot.json', import.meta.url), 'utf8')
+  ) as OpenApiSnapshot);
+
+/** graph-names.json: names from the graph, as written (snapshot-graph-names.ts). */
+export interface GraphNames {
+  referenceDatabases: string[];
+  speciesTaxIds: string[];
+}
+
+let names: GraphNames | undefined;
+const GRAPH_NAMES = () =>
+  (names ??= JSON.parse(
+    readFileSync(new URL('./graph-names.json', import.meta.url), 'utf8')
+  ) as GraphNames);
+const DATABASES = () => GRAPH_NAMES().referenceDatabases;
+
+let attributes: Set<string> | undefined;
+/** Every getter's attribute name, as Java's getProperty is meant to be asked. */
+const ATTRIBUTES = () =>
+  (attributes ??= new Set(
+    (
+      JSON.parse(
+        readFileSync(new URL('./domain-snapshot.json', import.meta.url), 'utf8')
+      ) as StoredSnapshot
+    ).getterEntries.map(([, getter]) => getter.charAt(3).toLowerCase() + getter.slice(4))
+  ));
+
+const STABLE_ID = /^R-[A-Z]{3}-[1-9]\d*$/;
+const DB_ID = /^[1-9]\d{0,18}$/;
+const LONG_MAX = 2n ** 63n - 1n;
+const dbId = (text: string) => DB_ID.test(text) && BigInt(text) <= LONG_MAX;
+
+/**
+ * Path variable kinds. Each refuses what Java also answers -- surrounding
+ * spaces, percent-encoding, leading zeros, digits from other scripts, a
+ * resource written as a regular expression -- since each is another URL for
+ * the same answer.
+ */
+/** A check of one value's text. */
+type Kind = (text: string) => boolean;
+
+export const PATH_KINDS: Record<string, Kind> = {
+  // A stable id with up to three version digits (Java drops the version),
+  // a dbId, an old REACT_ id, or a `resource:identifier` the Pathway Browser
+  // sends for an external entity.
+  oid: (text) =>
+    /^R-[A-Z]{3}-[1-9]\d*(\.[1-9]\d{0,2})?$/.test(text) ||
+    dbId(text) ||
+    /^REACT_[1-9]\d*$/.test(text) ||
+    /^[A-Za-z][A-Za-z0-9]*:[A-Za-z0-9][A-Za-z0-9_.-]*$/.test(text),
+  // Search endpoints hand the id to Solr as it came: a version finds nothing.
+  stId: (text) => STABLE_ID.test(text),
+  stIdOrDbId: (text) => STABLE_ID.test(text) || dbId(text),
+  long: dbId,
+  taxId: dbId,
+  person: (text) => dbId(text) || /^\d{4}-\d{4}-\d{4}-\d{3}[\dX]$/.test(text),
+  className: (text) => Object.hasOwn(SCHEMA_CLASSES, text),
+  attribute: (text) => ATTRIBUTES().has(text),
+  // /data/complexes matches it as a case-sensitive pattern: another case is
+  // another (empty) answer, not this one again. No pattern characters.
+  resource: (text) => /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(text),
+  // /data/mapping finds it ignoring case: only the name as the graph has it.
+  database: (text) => DATABASES().some((name) => encodeURIComponent(name) === text),
+  identifier: (text) => /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$/.test(text),
+  // As the icons are numbered: six digits, zero-padded. Solr is asked for
+  // the id as it came, so R-ICO-13748 finds nothing where R-ICO-013748 does.
+  icon: (text) => /^R-ICO-\d{6}$/.test(text),
+  // Never stored whatever it is (`cache` below).
+  any: () => true,
+};
+// An event's SBML, BioPAX (spec 015) or SBGN: an id as `oid` takes it, and the extension.
+PATH_KINDS['eventExport'] = (text) => {
+  const ext = /\.(sbml|biopax|sbgn)$/.exec(text);
+  return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
+};
+// An event's PDF (spec 006 T100): an id as `oid` takes it, and `.pdf`.
+PATH_KINDS['eventPdf'] = (text) =>
+  text.endsWith('.pdf') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
+// A diagram's or a reaction's figure or PowerPoint: an id as `oid` takes it, and an
+// extension it is drawn in.
+PATH_KINDS['figure'] = (text) => {
+  const ext = /\.(png|jpg|jpeg|svg|gif|pptx)$/.exec(text);
+  return Boolean(ext) && Boolean(PATH_KINDS['oid']?.(text.slice(0, -(ext?.[0].length ?? 0))));
+};
+PATH_KINDS['sbmlXml'] = (text) =>
+  text.endsWith('.xml') && Boolean(PATH_KINDS['oid']?.(text.slice(0, -4)));
+
+/**
+ * Values that standard form narrows past their declared type, where Java
+ * gives one answer to many:
+ *
+ *  - `species`, a known species' taxId. Java reads a name in any case, `_`
+ *    for a space, digits of any script, and a Species dbId as well as a
+ *    taxId; on /pathways/low one it cannot find filters nothing, so
+ *    `species=1` is the unfiltered answer again.
+ *  - `maxDepth`, -1 (no limit) or 1 to 10. Every negative is -1 and 0 is 1,
+ *    and a depth past an object's own tree is -1's answer again.
+ *  - `attributes`, a list the site asks for. Java joins the names into a
+ *    relationship pattern, where an unknown name, a name in another case or
+ *    another order matches what the list without it matches.
+ */
+const VALUE_KINDS: Record<string, Kind> = {
+  species: (text) => GRAPH_NAMES().speciesTaxIds.includes(text),
+  depth: (text) => text === '-1' || /^([1-9]|10)$/.test(text),
+  attributes: (text) =>
+    ['species,compartment', 'species,compartment,referenceEntity'].includes(text),
+};
+const TAX_ID = { species: 'species' };
+const IN_DEPTH = { maxDepth: 'depth', attributes: 'attributes' };
+
+const bool = (name: string, extra = {}) => ({
+  name,
+  in: 'query',
+  type: 'boolean',
+  default: false,
+  ...extra,
+});
+
+/** A query parameter an endpoint declares: its name, where it goes, and its kind. */
+export interface Parameter {
+  name: string;
+  in?: string;
+  type?: string;
+  required?: boolean;
+  enum?: string[];
+  [property: string]: unknown;
+}
+
+/** One endpoint's record (see RECORD). */
+export interface RecordEntry {
+  /** The operation in Java's description it answers for, or null with `why`. */
+  java: string | null;
+  why?: string;
+  /** Each path variable's kind (PATH_KINDS). */
+  path?: Record<string, string>;
+  /** The query parameters, where Java's description declares none (`java: null`). */
+  query?: Parameter[];
+  /** Each query parameter's value kind (VALUE_KINDS). */
+  values?: Record<string, string>;
+  /** Parameters Java declares and ignores. */
+  ignored?: string[];
+  /** What is never stored, or only privately. */
+  cache?: 'never' | 'private';
+  /** /data/query/{id}/{attributeName} and its kin: the attribute names are open. */
+  attributeOf?: boolean;
+  /** A rule across the path variables: the rule broken, or undefined. */
+  check?: (path: Record<string, string>) => string | undefined;
+}
+
+/**
+ * One entry per GET endpoint, keyed by node's path. `java` is the operation
+ * in Java's description it answers for; `null` says why there is none and
+ * declares the query parameters itself. `cache` marks what is never stored.
+ */
+export const RECORD: Record<string, RecordEntry> = {
+  '/ContentService/data/database/version': { java: '/data/database/version' },
+  '/ContentService/data/database/name': { java: '/data/database/name' },
+  '/ContentService/data/database/info': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the release the database holds, whole.',
+    query: [],
+  },
+  '/ContentService/data/query/enhanced/v2/{id}': {
+    java: '/data/query/enhanced/v2/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/enhanced/{id}': {
+    java: '/data/query/enhanced/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/abridged/{id}/{attribute}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: /data/query/{id}/{attributeName} on the object without its relationships.',
+    path: { id: 'oid', attribute: 'attribute' },
+    query: [],
+  },
+  '/ContentService/data/query/abridged/{id}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: the object without its relationships.',
+    path: { id: 'oid' },
+    query: [],
+  },
+  '/ContentService/data/query/{id}/more': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: /data/query/enhanced/v2/{id} with its flags fixed.',
+    path: { id: 'oid' },
+    query: [],
+  },
+  '/ContentService/data/query/{id}/stId': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}': { java: '/data/query/{id}', path: { id: 'oid' } },
+  '/ContentService/data/diseases': { java: '/data/diseases' },
+  '/ContentService/data/diseases/doid': { java: '/data/diseases/doid' },
+  '/ContentService/data/query/ids/map': {
+    java: null,
+    why: 'Java maps only POST here; a GET is always its 404, which is never stored.',
+    query: [],
+  },
+  '/ContentService/data/query/{id}/normalPathway': {
+    java: '/data/query/{id}/{attributeName}',
+    attributeOf: true,
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/query/{id}/{attribute}': {
+    java: '/data/query/{id}/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/discover/{id}': {
+    java: '/data/discover/{identifier}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/instance/{id}/referrers': {
+    java: '/data/instance/{id}/referrers',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/eventsHierarchy/{id}': {
+    java: '/data/eventsHierarchy/{species}',
+    path: { id: 'taxId' },
+  },
+  '/ContentService/data/pathways/top/{id}': {
+    java: '/data/pathways/top/{species}',
+    path: { id: 'taxId' },
+  },
+  '/ContentService/data/pathways/top/{id}/curated': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): /data/pathways/top/{species} without the inferred pathways.',
+    path: { id: 'taxId' },
+    query: [],
+  },
+  '/ContentService/data/event/{id}/ancestors': {
+    java: '/data/event/{id}/ancestors',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathways/low/entity/{id}': {
+    java: '/data/pathways/low/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/entity/{id}/allForms': {
+    java: '/data/pathways/low/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}': {
+    java: '/data/pathways/low/diagram/entity/{id}',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/entity/{id}/allForms': {
+    java: '/data/pathways/low/diagram/entity/{id}/allForms',
+    path: { id: 'oid' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/pathways/low/diagram/identifier/{id}/allForms': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the lower-level pathways of an outside identifier’s entities, in a species.',
+    path: { id: 'identifier' },
+    query: [{ name: 'species', in: 'query', type: 'string' }],
+    values: TAX_ID,
+  },
+  '/ContentService/data/diagram/{id}/entities/{instance}': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description (@Hidden): the entities of a diagram, and the pathways among those given, an identifier names.',
+    path: { id: 'stId', instance: 'identifier' },
+    query: [{ name: 'pathways', in: 'query', type: 'string' }],
+  },
+  '/ContentService/data/pathway/{id}/containedEvents': {
+    java: '/data/pathway/{id}/containedEvents',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/pathway/{id}/containedEvents/{attribute}': {
+    java: '/data/pathway/{id}/containedEvents/{attributeName}',
+    path: { id: 'oid', attribute: 'attribute' },
+  },
+  '/ContentService/data/detail/{id}/locationsInPWB': {
+    java: null,
+    why: 'An undocumented controller (the Pathway Browser’s locations tree).',
+    path: { id: 'oid' },
+    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
+  },
+  '/ContentService/data/detail/{id}/getReverseGraph': {
+    java: null,
+    why: 'A hidden controller (HierarchyController): the tree locationsInPWB is built from.',
+    path: { id: 'oid' },
+    query: [bool('directParticipants'), bool('omitNonDisplayableItems')],
+  },
+  '/ContentService/data/detail/{id}/getSubGraph': {
+    java: null,
+    why: 'A hidden controller (HierarchyController): everything below an object.',
+    path: { id: 'oid' },
+    query: [],
+  },
+  '/ContentService/data/entity/{id}/in-depth': {
+    java: '/data/entity/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
+  },
+  '/ContentService/data/event/{id}/in-depth': {
+    java: '/data/event/{id}/in-depth',
+    path: { id: 'oid' },
+    values: IN_DEPTH,
+  },
+  '/ContentService/data/content/toc': { java: '/data/content/toc' },
+  '/ContentService/data/content/doi': { java: '/data/content/doi' },
+  '/ContentService/data/content/contributors': { java: '/data/content/contributors' },
+  '/ContentService/data/person/{id}': { java: '/data/person/{id}', path: { id: 'person' } },
+  '/ContentService/data/person/{id}/publications': {
+    java: '/data/person/{id}/publications',
+    path: { id: 'person' },
+  },
+  '/ContentService/data/person/{id}/authoredPathways': {
+    java: '/data/person/{id}/authoredPathways',
+    path: { id: 'person' },
+  },
+  '/ContentService/data/person/{id}/authoredReactions': {
+    java: '/data/person/{id}/authoredReactions',
+    path: { id: 'person' },
+  },
+  '/ContentService/data/person/{id}/reviewedPathways': {
+    java: '/data/person/{id}/reviewedPathways',
+    path: { id: 'person' },
+  },
+  '/ContentService/data/person/{id}/reviewedReactions': {
+    java: '/data/person/{id}/reviewedReactions',
+    path: { id: 'person' },
+  },
+  '/ContentService/data/person/{id}/{attribute}': {
+    java: '/data/person/{id}/{attributeName}',
+    path: { id: 'person', attribute: 'attribute' },
+  },
+  // A person's name in the URL: never stored at the edge, so no cache keeps a
+  // name someone searched for.
+  '/ContentService/data/people/name/{name}/exact': {
+    java: '/data/people/name/{name}/exact',
+    path: { name: 'any' },
+    cache: 'never',
+  },
+  '/ContentService/data/people/name/{name}': {
+    java: '/data/people/name/{name}',
+    path: { name: 'any' },
+    cache: 'never',
+  },
+  '/ContentService/data/species/main': { java: '/data/species/main' },
+  '/ContentService/data/species/all': { java: '/data/species/all' },
+  '/ContentService/data/mapping/{resource}/{identifier}/reactions': {
+    java: '/data/mapping/{resource}/{identifier}/reactions',
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
+  },
+  // GO is asked by its accession, cut to digits whatever letters lead it.
+  '/ContentService/data/mapping/{resource}/{identifier}/pathways': {
+    java: '/data/mapping/{resource}/{identifier}/pathways',
+    path: { resource: 'database', identifier: 'identifier' },
+    values: TAX_ID,
+    check: ({ resource, identifier }) =>
+      resource === 'GO' && !/^GO:\d{7}$/.test(identifier ?? '') ? 'path:identifier' : undefined,
+  },
+  '/ContentService/references/mapping/{identifier}/xrefs': {
+    java: '/references/mapping/{identifier}/xrefs',
+    path: { identifier: 'identifier' },
+  },
+  '/ContentService/references/mapping/{identifier}': {
+    java: '/references/mapping/{identifier}',
+    path: { identifier: 'identifier' },
+  },
+  '/ContentService/data/orthology/{id}/species/{speciesId}': {
+    java: '/data/orthology/{id}/species/{speciesId}',
+    path: { id: 'oid', speciesId: 'long' },
+  },
+  '/ContentService/data/participants/{id}/referenceEntities': {
+    java: '/data/participants/{id}/referenceEntities',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/participants/{id}/participatingPhysicalEntities': {
+    java: '/data/participants/{id}/participatingPhysicalEntities',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/participants/{id}': {
+    java: '/data/participants/{id}',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/entity/{id}/otherForms': {
+    java: '/data/entity/{id}/otherForms',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/entity/{id}/componentOf': {
+    java: '/data/entity/{id}/componentOf',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/complex/{id}/subunits': {
+    java: '/data/complex/{id}/subunits',
+    path: { id: 'oid' },
+  },
+  '/ContentService/data/complexes/{resource}/{identifier}': {
+    java: '/data/complexes/{resource}/{identifier}',
+    path: { resource: 'resource', identifier: 'identifier' },
+  },
+  // Hidden from Java's description (@Hidden), and asked for by nothing of the site's.
+  '/ContentService/data/referenceMolecules': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: every ReferenceMolecule.',
+    query: [],
+  },
+  '/ContentService/data/referenceMolecules/identifiers': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: every ReferenceMolecule, a line each.',
+    query: [],
+  },
+  '/ContentService/data/referenceSequences': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences.',
+    query: [
+      { name: 'page', in: 'query', type: 'integer', required: true },
+      { name: 'offset', in: 'query', type: 'integer', required: true },
+    ],
+  },
+  '/ContentService/data/referenceSequences/identifiers': {
+    java: null,
+    why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences, a line each.',
+    query: [
+      { name: 'page', in: 'query', type: 'integer', required: true },
+      { name: 'offset', in: 'query', type: 'integer', required: true },
+    ],
+  },
+  '/ContentService/data/schema/{id}/count': {
+    java: '/data/schema/{className}/count',
+    path: { id: 'className' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/schema/{id}/min': {
+    java: '/data/schema/{className}/min',
+    path: { id: 'className' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/schema/model': { java: '/data/schema/model' },
+  '/ContentService/data/schema/{id}': {
+    java: '/data/schema/{className}',
+    path: { id: 'className' },
+    values: TAX_ID,
+  },
+  '/ContentService/data/schema/{id}/reference': {
+    java: '/data/schema/{className}/reference',
+    path: { id: 'className' },
+  },
+  '/ContentService/data/schema/{id}/attributes': {
+    java: '/data/schema/{className}/attributes',
+    path: { id: 'className' },
+  },
+  '/ContentService/data/schema/{id}/referrals': {
+    java: '/data/schema/{className}/referrals',
+    path: { id: 'className' },
+  },
+  '/ContentService/interactors/static/molecule/{id}/details': {
+    java: '/interactors/static/molecule/{acc}/details',
+    path: { id: 'identifier' },
+  },
+  '/ContentService/interactors/static/molecule/{id}/summary': {
+    java: '/interactors/static/molecule/{acc}/summary',
+    path: { id: 'identifier' },
+  },
+  '/ContentService/interactors/static/molecule/{id}/pathways': {
+    java: '/interactors/static/molecule/{acc}/pathways',
+    path: { id: 'identifier' },
+  },
+  // Re-read from an outside registry every five minutes.
+  '/ContentService/interactors/psicquic/resources': {
+    java: '/interactors/psicquic/resources',
+    cache: 'never',
+  },
+  '/ContentService/interactors/static/molecule/enhanced/{id}/details': {
+    java: '/interactors/static/molecule/enhanced/{acc}/details',
+    path: { id: 'identifier' },
+  },
+  '/ContentService/interactors/static/molecule/{id}/withEntities': {
+    java: '/interactors/static/molecule/{acc}/withEntities',
+    path: { id: 'identifier' },
+  },
+  // A diagram's figure (spec 006 T090, T091, research D24): one per event,
+  // format and quality per release, as the render service draws
+  // it. A token makes it private, as on every endpoint; a parameter node does
+  // not draw makes a URL that is answered and never stored. A change to how
+  // the render page draws purges /ContentService/exporter/diagram/* when it is
+  // deployed, as for a reaction's figure.
+  '/ContentService/exporter/diagram/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/diagram/{identifier}.{ext}; only quality is standard: sel is drawn, but any text is a figure (an id that names nothing selects nothing), so it is answered and never stored (spec 006 research D24).',
+    path: { id: 'figure' },
+    query: [{ name: 'quality', in: 'query', type: 'integer' }],
+  },
+  // An event's SBML, BioPAX or SBGN, the same file for every reader of a release (spec 015; sbgn-exporter T018).
+  '/ContentService/exporter/event/{id}': {
+    java: null,
+    why: "Java documents it as /exporter/event/{identifier}.sbml, with includeRef and view, which it never reads: any value is the same file, and as /exporter/event/{identifier}.sbgn, with no parameter. The .biopax form is no URL of Java's (spec 015 research R6).",
+    path: { id: 'eventExport' },
+    query: [],
+  },
+  // An event's PDF, the same for every reader of a release; with a token (or
+  // any parameter) it is not in standard form, so never stored.
+  '/ContentService/exporter/document/event/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/document/event/{identifier}.pdf, with the level and the analysis options; each makes another PDF, or the same one again.',
+    path: { id: 'eventPdf' },
+    query: [],
+  },
+  '/ContentService/exporter/sbml/{id}': {
+    java: null,
+    why: 'Java answers it but does not describe it: the same file as /exporter/event/{identifier}.sbml.',
+    path: { id: 'sbmlXml' },
+    query: [],
+  },
+  // Both take an analysis token: one person's result.
+  '/ContentService/exporter/voronoi/{id}': {
+    java: null,
+    why: 'No Java counterpart: the Voronoi overview, which replaced /exporter/fireworks/{species}.{ext}; never stored at the edge anyway.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'private',
+  },
+  // A redirect to the Voronoi overview, keeping the query (an analysis token).
+  '/ContentService/exporter/fireworks/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/fireworks/{species}.{ext}; node redirects it to /exporter/voronoi/.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'private',
+  },
+  // A reaction's figure (spec 006 T092, research D24): one per reaction,
+  // format and quality per release, as the render service draws it. Only the
+  // quality changes the figure; the parameters node accepts and does not draw
+  // are left out, so a URL that names one is answered and never stored. A
+  // change to how the render page draws a reaction purges
+  // /ContentService/exporter/reaction/* when it is deployed, as a change to
+  // the layout does.
+  '/ContentService/exporter/reaction/{id}': {
+    java: null,
+    why: 'Java documents it as /exporter/reaction/{identifier}.{ext}; of its parameters only quality changes the figure node answers (spec 006 research D24).',
+    path: { id: 'figure' },
+    query: [{ name: 'quality', in: 'query', type: 'integer' }],
+  },
+  // A reaction's layout (spec 006 T092). Stored like any graph answer: Java's
+  // varies between requests (research D21), but node's is laid out from
+  // glyph id 1 every time, so it is one answer per reaction per release.
+  '/ContentService/exporter/reaction/{id}/diagram': {
+    java: '/exporter/reaction/{identifier}/diagram',
+    path: { id: 'oid' },
+    // Declared and never read: the answer is a Map of the diagram and the
+    // graph, which no view changes (measured: view=nested, view=bogus and
+    // includeRef=true give Java's same layout).
+    ignored: ['includeRef', 'view'],
+  },
+  '/ContentService/search/suggest': { java: '/search/suggest' },
+  '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
+  '/ContentService/search/facet': { java: '/search/facet' },
+  '/ContentService/search/facet_query': { java: '/search/facet_query' },
+  '/ContentService/search/pathways/of/{dbId}': {
+    java: '/search/pathways/of/{dbId}',
+    path: { dbId: 'long' },
+  },
+  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
+  '/ContentService/search/query': { java: '/search/query' },
+  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
+  '/ContentService/search/icon/query': { java: '/search/icon/query' },
+  '/ContentService/search/icon/{identifier}': {
+    java: '/search/icon/{identifier}',
+    path: { identifier: 'icon' },
+  },
+  '/ContentService/search/diagram/summary': {
+    java: null,
+    why: 'An undocumented controller (the Pathway Browser’s search counts).',
+    query: [
+      { name: 'query', in: 'query', type: 'string', required: true },
+      { name: 'species', in: 'query', type: 'string' },
+      { name: 'diagram', in: 'query', type: 'string' },
+      {
+        name: 'scope',
+        in: 'query',
+        type: 'string',
+        default: 'REFERENCE_ENTITY',
+        enum: ['REFERENCE_ENTITY', 'PHYSICAL_ENTITY', 'BOTH'],
+      },
+      bool('includeInteractors'),
+    ],
+  },
+  '/ContentService/search/diagram/{pathwayId}/flag': {
+    java: '/search/diagram/{pathwayId}/flag',
+    path: { pathwayId: 'stId' },
+  },
+  '/ContentService/search/diagram/{diagram}/occurrences/{instance}': {
+    java: '/search/diagram/{diagram}/occurrences/{instance}',
+    path: { diagram: 'stId', instance: 'stIdOrDbId' },
+    // Java binds it and never reads it: any value is the same answer.
+    ignored: ['types'],
+  },
+  '/ContentService/search/diagram/{diagram}': {
+    java: '/search/diagram/{diagram}',
+    path: { diagram: 'stId' },
+  },
+  '/ContentService/search/fireworks/flag': { java: '/search/fireworks/flag' },
+  '/ContentService/search/fireworks': { java: '/search/fireworks' },
+  // The Europe PMC answers are live, and the site sends today's date to the
+  // pathway's, so each day would be another entry for one answer.
+  '/ContentService/citation/pathway/{id}': {
+    java: null,
+    why: 'An undocumented controller; never stored.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'never',
+  },
+  '/ContentService/citation/static/{id}': {
+    java: null,
+    why: 'An undocumented controller; never stored.',
+    path: { id: 'any' },
+    query: [],
+    cache: 'never',
+  },
+  // On a Europe PMC failure this answers an empty 200, which would be kept
+  // until the next release's purge.
+  '/ContentService/citation/export': {
+    java: null,
+    why: 'An undocumented controller; never stored.',
+    query: [],
+    cache: 'never',
+  },
+  // The download page's citation: the release's number, so it changes only
+  // with a release, when the edge's copies are purged.
+  '/ContentService/citation/download': {
+    java: null,
+    why: 'An undocumented controller: the citation the download page offers, naming the release.',
+    query: [],
+  },
+  // The API description (spec 016, T028): it changes with a deployment, not a
+  // release, and the edge's copies are purged only at a release.
+  '/ContentService/openapi.json': {
+    java: null,
+    why: "No Java counterpart: the description generated from the contract (Java's is /v3/api-docs).",
+    query: [],
+    cache: 'never',
+  },
+  '/ContentService/expression/{id}': {
+    java: null,
+    why: "No Java counterpart: the Expression tab's heatmap of a selection's genes, from Expression Atlas's published tables (spec 024).",
+    path: { id: 'oid' },
+    query: [],
+  },
+};
+
+/** The query parameters an endpoint declares: Java's, or the record's own. */
+export function declaredQuery(endpoint: string): Parameter[] {
+  const entry = RECORD[endpoint];
+  if (!entry) return [];
+  if (entry.java === null) return entry.query ?? [];
+  return (OPENAPI().paths[entry.java]?.['get'] ?? []).filter(
+    (parameter) => parameter.in === 'query' && !entry.ignored?.includes(parameter.name)
+  );
+}
+
+const INT32 = 2 ** 31;
+/** One value, decoded, in the one spelling standard form takes for its type. */
+function valid(parameter: Parameter, value: string, kind: string | undefined) {
+  // A kind the record names, which VALUE_KINDS has.
+  if (kind) return (VALUE_KINDS[kind] as Kind)(value);
+  if (parameter.type === 'array')
+    return value
+      .split(',')
+      .every((item) => (parameter.enum ? parameter.enum.includes(item) : plainText(item)));
+  if (parameter.enum) return parameter.enum.includes(value);
+  if (parameter.type === 'boolean') return value === 'true' || value === 'false';
+  if (parameter.type === 'integer') {
+    if (!/^(0|-?[1-9]\d*)$/.test(value)) return false;
+    const number = Number(value);
+    return parameter['format'] === 'int64'
+      ? Number.isSafeInteger(number)
+      : number >= -INT32 && number < INT32;
+  }
+  return plainText(value);
+}
+const plainText = (text: string) => text !== '' && text.trim() === text;
+
+/**
+ * A value as sent must be one encoding of what it decodes to: the strict
+ * one, or Angular's HttpParams, which the site uses and which leaves
+ * `@ : $ , ; = ? /` bare. Anything else -- `%31` for 1, `+` for a space --
+ * is the same value spelled again.
+ */
+function encodedOnce(raw: string, value: string) {
+  const strict = encodeURIComponent(value);
+  const angular = strict.replace(/%(40|3A|24|2C|3B|3D|3F|2F)/gi, (escape) =>
+    decodeURIComponent(escape)
+  );
+  return raw === strict || raw === angular;
+}
+
+function decode(text: string) {
+  try {
+    return decodeURIComponent(text.replace(/\+/g, ' '));
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Whether `originalUrl` -- the request exactly as sent, never Express's
+ * rewritten or decoded form -- is in standard form for `endpoint`, a key of
+ * RECORD. `{ ok: true }`, or `{ ok: false, rule }` naming what failed:
+ * `form`, `path:<variable>` or `parameter:<name>`.
+ */
+export function standardForm(
+  endpoint: string,
+  originalUrl: string
+): { ok: true } | { ok: false; rule: string } {
+  const entry = RECORD[endpoint];
+  if (!entry) return { ok: false, rule: 'form' };
+  const at = originalUrl.indexOf('?');
+  const path = at === -1 ? originalUrl : originalUrl.slice(0, at);
+  const query = at === -1 ? undefined : originalUrl.slice(at + 1);
+
+  const template = endpoint.split('/');
+  const segments = path.split('/');
+  if (segments.length !== template.length) return { ok: false, rule: 'form' };
+  for (const [index, part] of template.entries()) {
+    const variable = /^\{([^}]+)\}$/.exec(part)?.[1];
+    if (variable === undefined) {
+      if (segments[index] !== part) return { ok: false, rule: 'form' };
+    } else if (
+      // Both are there: the lengths matched above.
+      !PATH_KINDS[entry.path?.[variable] ?? '']?.(segments[index] ?? '')
+    ) {
+      return { ok: false, rule: `path:${variable}` };
+    }
+  }
+  if (entry.check) {
+    const values = Object.fromEntries(
+      template.flatMap((part, index): [string, string][] => {
+        const variable = /^\{([^}]+)\}$/.exec(part)?.[1];
+        // There: the lengths matched above.
+        return variable === undefined ? [] : [[variable, segments[index] ?? '']];
+      })
+    );
+    const rule = entry.check(values);
+    if (rule) return { ok: false, rule };
+  }
+
+  if (query === undefined) return { ok: true };
+  const declared = new Map(declaredQuery(endpoint).map((parameter) => [parameter.name, parameter]));
+  const seen = new Set();
+  const items = new Set();
+  for (const pair of query.split('&')) {
+    if (pair === '') return { ok: false, rule: 'form' };
+    const equals = pair.indexOf('=');
+    const rawName = equals === -1 ? pair : pair.slice(0, equals);
+    const name = decode(rawName);
+    if (name === undefined) return { ok: false, rule: 'form' };
+    const parameter = declared.get(name);
+    // One spelling of a name: Java's spaced names as the site sends them.
+    if (!parameter || rawName !== encodeURIComponent(name))
+      return { ok: false, rule: `parameter:${name}` };
+    if (seen.has(name) && parameter.type !== 'array')
+      return { ok: false, rule: `parameter:${name}` };
+    seen.add(name);
+    const raw = equals === -1 ? undefined : pair.slice(equals + 1);
+    const value = raw === undefined ? undefined : decode(raw);
+    if (
+      value === undefined ||
+      // A value is decoded from a raw one: there is one here.
+      !encodedOnce(raw as string, value) ||
+      !valid(parameter, value, entry.values?.[name])
+    )
+      return { ok: false, rule: `parameter:${name}` };
+    // A list's item given twice is the list given once.
+    if (parameter.type === 'array')
+      for (const item of value.split(',')) {
+        if (items.has(`${name}=${item}`)) return { ok: false, rule: `parameter:${name}` };
+        items.add(`${name}=${item}`);
+      }
+  }
+  return { ok: true };
+}

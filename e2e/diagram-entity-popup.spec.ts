@@ -1,5 +1,6 @@
 import { Page } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { isRecord } from './support/json';
 
 // Right-click inspector on diagram entities (issue #122).
 //
@@ -42,7 +43,8 @@ async function openPopupOnAnyEntity(page: Page): Promise<string> {
 
   for (const offset of [0, 0.017]) {
     await page.waitForTimeout(3_000);
-    const box = (await container.boundingBox())!;
+    const box = await container.boundingBox();
+    if (!box) throw new Error('the diagram container has no box');
 
     for (let fy = 0.12 + offset; fy <= 0.92; fy += 0.04) {
       for (let fx = 0.08 + offset; fx <= 0.94; fx += 0.035) {
@@ -56,6 +58,64 @@ async function openPopupOnAnyEntity(page: Page): Promise<string> {
     }
   }
   throw new Error('no diagram entity found to right-click');
+}
+
+type DiagramNode = {
+  data(key: string): unknown;
+  renderedPosition(): { x: number; y: number };
+  selected(): boolean;
+  hasClass(name: string): boolean;
+};
+type DiagramCy = {
+  nodes(): { filter(test: (node: DiagramNode) => boolean): DiagramNode[] };
+  zoom(level: number): void;
+  center(node: DiagramNode): void;
+};
+
+/**
+ * Right-click the node drawn for one entity. Canvas nodes have no element to
+ * click, so cytoscape is asked where it is drawn, the diagram is zoomed and
+ * centred on it, and the right-click lands there.
+ */
+async function rightClickNode(page: Page, stId: string): Promise<void> {
+  const container = page.locator('#cytoscape').first();
+  await expect(container).toBeVisible({ timeout: BOOT });
+  const at = (zoomIn: boolean) =>
+    page.evaluate(
+      ({ stId, zoomIn }) => {
+        const el = document.querySelector('#cytoscape') as
+          (HTMLElement & { _cyreg?: { cy?: DiagramCy } }) | null;
+        const cy = el?._cyreg?.cy;
+        const node = cy?.nodes().filter((n) => n.data('graph.stId') === stId)[0];
+        if (!cy || !node) return null;
+        if (zoomIn) {
+          cy.zoom(2);
+          cy.center(node);
+        }
+        return node.renderedPosition();
+      },
+      { stId, zoomIn }
+    );
+  await expect.poll(() => at(false), { timeout: BOOT }).not.toBeNull();
+  await at(true);
+  // Wait for the node to stop moving: a page opened with a selection fits the
+  // view to it with an animation, which can still be running here.
+  let point = await at(false);
+  await expect
+    .poll(
+      async () => {
+        await page.waitForTimeout(300);
+        const next = await at(false);
+        const still = !!next && !!point && next.x === point.x && next.y === point.y;
+        point = next;
+        return still;
+      },
+      { timeout: BOOT }
+    )
+    .toBe(true);
+  const box = await container.boundingBox();
+  if (!point || !box) throw new Error(`${stId} is not drawn`);
+  await page.mouse.click(box.x + point.x, box.y + point.y, { button: 'right' });
 }
 
 test.describe('Diagram entity popup', () => {
@@ -131,6 +191,91 @@ test.describe('Diagram entity popup', () => {
     const rows = page.locator('.entity-popup__content li');
     const note = page.locator('.entity-popup__note');
     await expect(rows.first().or(note)).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('choosing a pathway in it selects that pathway, even one drawn in this diagram', async ({
+    page,
+  }) => {
+    // PTEN in PI Metabolism. Its pathways are mostly sub-pathways without a
+    // diagram of their own, drawn in this same diagram: choosing one hands off
+    // back here. The choice has to say which pathway it was, or the hand-off
+    // keeps the entity selected and the reader's click appears to do nothing.
+    const PARENT = 'R-HSA-1483255';
+    const SUBPATHWAY = 'R-HSA-1660499';
+    const PTEN = 'R-HSA-199420';
+    await page.goto(`/PathwayBrowser/${PARENT}`);
+    const container = page.locator('#cytoscape').first();
+    await expect(container).toBeVisible({ timeout: BOOT });
+    await rightClickNode(page, PTEN);
+    await expect(page.locator('.entity-popup')).toBeVisible({ timeout: 20_000 });
+
+    await page.locator('.entity-popup__tabs button', { hasText: 'Pathways' }).click();
+    await page
+      .locator('.entity-popup__content li', { hasText: 'Synthesis of PIPs at the plasma membrane' })
+      .first()
+      .click({ timeout: 20_000 });
+
+    await expect
+      .poll(() => new URL(page.url()).searchParams.get('select'), { timeout: BOOT })
+      .toBe(SUBPATHWAY);
+    // Drawn in its parent's diagram, which is the one it was chosen from.
+    await expect
+      .poll(() => new URL(page.url()).pathname, { timeout: BOOT })
+      .toBe(`/PathwayBrowser/${PARENT}`);
+    expect(new URL(page.url()).searchParams.get('select')).toBe(SUBPATHWAY);
+  });
+
+  test('right-clicking the entity already selected leaves later selections working', async ({
+    page,
+  }) => {
+    // The right-click selects the entity as an in-diagram selection, flagging
+    // it so the select effect does not fit the view to it. When the entity was
+    // selected already the selection did not change, the effect never ran, and
+    // the flag stayed up: the next selection from outside the diagram -- a
+    // search hit, a link, the details panel -- was then ignored by it.
+    const PARENT = 'R-HSA-1483255';
+    const PTEN = 'R-HSA-199420';
+    await page.goto(`/PathwayBrowser/${PARENT}?select=${PTEN}`);
+    await rightClickNode(page, PTEN);
+    await expect(page.locator('.entity-popup')).toBeVisible({ timeout: 20_000 });
+    await page.keyboard.press('Escape');
+
+    // Another entity drawn here, chosen from outside the diagram.
+    const other = await page.evaluate((pten) => {
+      const cy = (
+        document.querySelector('#cytoscape') as HTMLElement & { _cyreg: { cy: DiagramCy } }
+      )._cyreg.cy;
+      const node = cy
+        .nodes()
+        .filter(
+          (n) =>
+            n.hasClass('PhysicalEntity') && n.data('graph.stId') !== pten && !!n.data('graph.stId')
+        )[0];
+      return node ? String(node.data('graph.stId')) : null;
+    }, PTEN);
+    expect(other).not.toBeNull();
+    await page.evaluate((stId) => {
+      const url = new URL(location.href);
+      url.searchParams.set('select', stId);
+      history.pushState({}, '', url);
+      dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+    }, other);
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate((stId) => {
+            const cy = (
+              document.querySelector('#cytoscape') as HTMLElement & { _cyreg: { cy: DiagramCy } }
+            )._cyreg.cy;
+            return cy
+              .nodes()
+              .filter((n) => n.data('graph.stId') === stId)
+              .some((n) => n.selected());
+          }, other),
+        { timeout: BOOT }
+      )
+      .toBe(true);
   });
 
   test('explains itself when an entity cannot have interactors', async ({ page }) => {
@@ -213,8 +358,10 @@ test.describe('Popup with an analysis running', () => {
       }
     );
     test.skip(!res.ok(), 'analysis service unavailable on this backend');
-    const token: string | undefined = (await res.json())?.summary?.token;
-    if (!token) {
+    const answer: unknown = await res.json();
+    const summary = isRecord(answer) ? answer['summary'] : undefined;
+    const token = isRecord(summary) ? summary['token'] : undefined;
+    if (typeof token !== 'string' || !token) {
       test.skip(true, 'analysis returned no token');
       // Unreachable: test.skip() above aborts the test. The return is what tells
       // TypeScript so -- skip narrows nothing, which is why this line read as a

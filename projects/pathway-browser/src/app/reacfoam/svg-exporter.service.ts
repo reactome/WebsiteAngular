@@ -8,32 +8,36 @@ import { UrlStateService } from '../services/url-state.service';
 import { EhldComponent } from '../ehld/ehld.component';
 import { EhldService } from '../services/ehld.service';
 
-namespace SvgDecoration {
-  export interface Style {
-    surface: string;
-    onSurface: string;
-    primary: string;
-    onPrimary: string;
-    sw: number;
-    decorationSize: number;
-  }
-
-  export interface Dimensions {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  }
-
-  export interface Output {
-    css: string;
-    elements: string;
-  }
+interface DecorationStyle {
+  surface: string;
+  onSurface: string;
+  primary: string;
+  onPrimary: string;
+  sw: number;
+  decorationSize: number;
 }
+
+interface DecorationDimensions {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+interface DecorationOutput {
+  css: string;
+  elements: string;
+}
+
+/**
+ * A frame's style. A property kept as undefined is one the element lost, and
+ * still counts as a change from the frame before, so it is not left out.
+ */
+type FrameStyle = Record<string, string | undefined>;
 
 type FrameDiff = {
   frame: number; // the frame at which the property changes
-  style: Partial<Record<string, string>>;
+  style: FrameStyle;
 };
 
 type Padding = { left: number; right: number; top: number; bottom: number };
@@ -47,7 +51,7 @@ export class SvgExporterService {
   private state = inject(UrlStateService);
   private ehld = inject(EhldService);
 
-  style!: SvgDecoration.Style;
+  style!: DecorationStyle;
   options!: DownloadOptions & { halfTransition: number; totalTime: number };
 
   readonly hasExpressionFilter = computed(
@@ -65,6 +69,8 @@ export class SvgExporterService {
     const { decorationSize } = this.initExport(options);
     const foamtree = untracked(reacfoam.foamTree);
     const geometry = foamtree.get('geometry', foamtree.get('dataObject'));
+    // None until the map has been laid out: an export then would be empty.
+    if (!geometry) throw new Error('The pathway map has not been laid out yet.');
 
     const width = geometry.boxWidth;
     const height = geometry.boxHeight;
@@ -80,7 +86,7 @@ export class SvgExporterService {
 
     let svg: SVGSVGElement | undefined;
     let css = '';
-    let padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
+    let padding: Padding;
 
     const samples = untracked(this.analysis.samples);
     if (samples.length === 0 || !options.animate) {
@@ -93,7 +99,7 @@ export class SvgExporterService {
       padding = result.padding;
     } else {
       const initSample = untracked(this.state.sample);
-      const idToSampleStyle = new Map<string, { fill?: string; stroke?: string }[]>();
+      const idToSampleStyle = new Map<string, FrameStyle[]>();
       const frames: SVGGElement[] = [];
 
       for (const sample of samples) {
@@ -137,6 +143,8 @@ export class SvgExporterService {
           css += this.generateCompressedKeyframes(id, diffs);
         });
       }
+      // Each sample drew one, and there is at least one sample.
+      if (!svg) throw new Error('Failed to generate SVG');
 
       const result = this.addTitle(svg, width, height, options, css);
       css = result.css;
@@ -162,7 +170,7 @@ export class SvgExporterService {
     const height = initialSvg.getBoundingClientRect().height;
     let svg: SVGSVGElement | undefined;
     let css = '';
-    let padding: Padding = { left: 0, right: 0, top: 0, bottom: 0 };
+    let padding: Padding;
     const samples = untracked(this.analysis.samples);
 
     if (samples.length === 0 || !options.animate) {
@@ -172,11 +180,10 @@ export class SvgExporterService {
       padding = result.padding;
     } else {
       const initSample = untracked(this.state.sample);
-      const idToSampleStyle = new Map<string, { fill?: string; stroke?: string }[]>();
+      const idToSampleStyle = new Map<string, FrameStyle[]>();
       const patternIdToContent = new Map<string, string[]>();
 
-      for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex++) {
-        const sample = samples[sampleIndex];
+      for (const [sampleIndex, sample] of samples.entries()) {
         this.state.sample.set(sample);
         await this.waitFor(() => ehld.currentSample === sample, 500);
 
@@ -190,12 +197,15 @@ export class SvgExporterService {
       // Restore the original options.
       this.state.sample.set(initSample);
 
-      svg = document.querySelector('#ehld svg')?.cloneNode(true) as SVGSVGElement;
+      // Gone if the reader left the diagram while its samples were drawn.
+      const shown = document.querySelector('#ehld svg')?.cloneNode(true);
+      if (!(shown instanceof SVGSVGElement)) throw new Error('The diagram is no longer on screen');
+      svg = shown;
       const animationDuration = `${this.options.totalTime}s`;
-      let defs = svg!.querySelector('defs');
+      let defs = shown.querySelector('defs');
       if (!defs) {
         defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
-        svg.prepend(defs);
+        shown.prepend(defs);
       }
 
       // build animation
@@ -204,9 +214,9 @@ export class SvgExporterService {
         if (uniquePatterns.length <= 1) return;
 
         // Get the original pattern to copy attributes
-        const originalPattern = svg!.querySelector(
+        const originalPattern = shown.querySelector<SVGPatternElement>(
           `pattern[id="${patternId}"]`
-        ) as SVGPatternElement;
+        );
         if (!originalPattern) return;
         const contentToIndexId = this.createVersionedPatterns(
           originalPattern,
@@ -216,11 +226,12 @@ export class SvgExporterService {
         const keyframeName = `kf_${this.sanitizeId(patternId)}`;
         const patternKeyframes = this.generatePatternKeyframes(
           patternId,
-          patterns.map((content) => contentToIndexId.get(content)!)
+          // Every content has its pattern: they were made from these contents.
+          patterns.map((content) => contentToIndexId.get(content) ?? patternId)
         );
         css += patternKeyframes;
         // find all overlay rects that use this pattern and apply animation
-        this.applyPatternAnimation(svg, patternId, keyframeName, animationDuration);
+        this.applyPatternAnimation(shown, patternId, keyframeName, animationDuration);
       });
 
       const result = this.addTitle(svg, width, height, options, css);
@@ -282,15 +293,15 @@ export class SvgExporterService {
   }
 
   private compressFrameStyles(
-    idToSampleStyle: Map<string, Partial<Record<string, string>>[]>
+    idToSampleStyle: Map<string, FrameStyle[]>
   ): Map<string, FrameDiff[]> {
     const compressed = new Map<string, FrameDiff[]>();
     idToSampleStyle.forEach((frameStyles, id) => {
-      let currentStyle = frameStyles[0];
-      const diffs = [{ frame: 0, style: frameStyles[0] }] as FrameDiff[];
+      let currentStyle = frameStyles[0] ?? {};
+      const diffs = [{ frame: 0, style: currentStyle }] as FrameDiff[];
 
-      for (let i = 1; i < frameStyles.length; i++) {
-        const frameStyle = frameStyles[i];
+      for (const [i, frameStyle] of frameStyles.entries()) {
+        if (i === 0) continue;
         const diff = this.getStyleDiff(currentStyle, frameStyle);
         if (Object.keys(diff).length > 0) {
           diffs.push({ frame: i, style: diff });
@@ -304,11 +315,8 @@ export class SvgExporterService {
     return compressed;
   }
 
-  private getStyleDiff(
-    prev: Partial<Record<string, string>>,
-    curr: Partial<Record<string, string>>
-  ) {
-    const diff: Partial<Record<string, string>> = {};
+  private getStyleDiff(prev: FrameStyle, curr: FrameStyle) {
+    const diff: FrameStyle = {};
     Object.keys(curr).forEach((key) => {
       if (prev[key] !== curr[key]) diff[key] = curr[key];
     });
@@ -354,7 +362,7 @@ export class SvgExporterService {
   private generateCompressedKeyframes(id: string, diffs: FrameDiff[]): string {
     const keyframeName = `kf_${this.sanitizeId(id)}`;
     let keyframes = `@keyframes ${keyframeName} {\n`;
-    const lastValues: Partial<Record<string, string>> = { ...diffs[diffs.length - 1].style }; // start with the last value as it loops
+    const lastValues: FrameStyle = { ...diffs.at(-1)?.style }; // start with the last value as it loops
 
     diffs.forEach((diff, _i) => {
       const { start, stop } = this.calcTransitionTime(diff.frame);
@@ -381,7 +389,7 @@ export class SvgExporterService {
     return keyframes;
   }
 
-  private generateAnalysisLegend({ x, y, height }: SvgDecoration.Dimensions): SvgDecoration.Output {
+  private generateAnalysisLegend({ x, y, height }: DecorationDimensions): DecorationOutput {
     const { onSurface, sw, decorationSize } = this.style;
     const gWidth = decorationSize;
     const fontSize = 12;
@@ -410,8 +418,8 @@ export class SvgExporterService {
           `<tspan dy="${fontSize}" x="${labelX}">Sig. Down</tspan><tspan dy="${fontSize}" x="${labelX}">Regulated</tspan>`,
         ]
       : [
-          this.analysis.palette().domainRange[1].toFixed(2),
-          this.analysis.palette().domainRange[0].toFixed(2),
+          (this.analysis.palette().domainRange[1] ?? 0).toFixed(2),
+          (this.analysis.palette().domainRange[0] ?? 0).toFixed(2),
         ];
 
     const labelSpace = (height * (4 / 5)) / (labels.length - 1);
@@ -432,8 +440,8 @@ export class SvgExporterService {
 
   private generateTimeline(
     titles: string[],
-    { x, y, width, height }: SvgDecoration.Dimensions
-  ): SvgDecoration.Output {
+    { x, y, width, height }: DecorationDimensions
+  ): DecorationOutput {
     const tlHeight = this.style.decorationSize;
     const { primary, onPrimary, onSurface } = this.style;
 
@@ -552,8 +560,8 @@ export class SvgExporterService {
 
   private generateTitle(
     titles: string[],
-    { x, y, width, height }: SvgDecoration.Dimensions
-  ): SvgDecoration.Output {
+    { x, y, width, height }: DecorationDimensions
+  ): DecorationOutput {
     const { sw, onSurface } = this.style;
     const fontSize = height - 2 * sw;
     const output = {
@@ -630,8 +638,7 @@ export class SvgExporterService {
    * <img>, or in most viewers embedding it, it does not -- which is why the
    * hover fallback and the native <title> tooltips carry the no-script case.
    */
-  private addTimelineControls(svg: SVGSVGElement | undefined) {
-    if (!svg) return;
+  private addTimelineControls(svg: SVGSVGElement) {
     const script = document.createElementNS('http://www.w3.org/2000/svg', 'script');
     script.setAttribute('data-generated', 'true');
     script.textContent = `
@@ -700,7 +707,7 @@ export class SvgExporterService {
     g.setAttribute('data-generated', 'true');
     g.setAttribute('id', id);
     g.innerHTML = elements;
-    svg!.append(g);
+    svg.append(g);
     return g;
   }
 
@@ -719,17 +726,18 @@ export class SvgExporterService {
     const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     style.setAttribute('data-generated', 'true');
     style.textContent = css; // your generated CSS
-    svg!.prepend(style);
+    svg.prepend(style);
 
     document.body.appendChild(svg);
     svg.appendChild(g);
 
-    const bbox = g.getBBox({ stroke: true, clipped: false, fill: true, markers: true });
-
-    // cleanup
-    svg.remove();
-
-    return bbox;
+    // Removed even when measuring throws: the render service draws many figures
+    // on one page, and every host left on `body` stays for all that follow.
+    try {
+      return g.getBBox({ stroke: true, clipped: false, fill: true, markers: true });
+    } finally {
+      svg.remove();
+    }
   }
 
   private collectPatternContents(
@@ -791,12 +799,11 @@ export class SvgExporterService {
   }
 
   private applyPatternAnimation(
-    svg: SVGSVGElement | undefined,
+    svg: SVGSVGElement,
     patternId: string,
     keyframeName: string,
     duration: string
   ) {
-    if (!svg) return;
     const rects = svg.querySelectorAll(
       // .analysis-info-container matches nothing today: that class is applied only
       // to an analysis box the illustration gives a <text> label to, and no
@@ -837,7 +844,7 @@ export class SvgExporterService {
   }
 
   private async finalizeSVG(
-    svg: SVGSVGElement | undefined,
+    svg: SVGSVGElement,
     width: number,
     height: number,
     padding: Padding,
@@ -848,22 +855,22 @@ export class SvgExporterService {
     const animStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
     animStyle.setAttribute('data-generated', 'true');
     animStyle.textContent = css; // your generated CSS
-    svg!.prepend(animStyle);
+    svg.prepend(animStyle);
 
-    svg!.setAttribute(
+    svg.setAttribute(
       'viewBox',
       `${-left} ${-top} ${width + left + right} ${height + top + bottom}`
     );
-    svg!.removeAttribute('width');
-    svg!.removeAttribute('height');
-    svg!.style.background = this.reacfoam.surfaceColor().hex();
+    svg.removeAttribute('width');
+    svg.removeAttribute('height');
+    svg.style.background = this.reacfoam.surfaceColor().hex();
 
     // // Get the serialized SVG representation of the visualization.
     await this.embedFontInSvg(
-      svg!,
+      svg,
       'https://fonts.gstatic.com/s/roboto/v49/KFO7CnqEu92Fr1ME7kSn66aGLdTylUAMa3yUBHMdazQ.woff2'
     );
-    const blob = new Blob([new XMLSerializer().serializeToString(svg!)], {
+    const blob = new Blob([new XMLSerializer().serializeToString(svg)], {
       type: 'image/svg+xml;charset=utf-8',
     });
     return URL.createObjectURL(blob);
@@ -887,7 +894,7 @@ export class SvgExporterService {
         width: width,
       });
       css += title.css;
-      const titleGroup = this.addElementToSVG('title', title.elements, svg!);
+      const titleGroup = this.addElementToSVG('title', title.elements, svg);
       const bbox = this.measureGroup(titleGroup, width, height, css);
       padding.bottom = bbox.height;
       padding.left = Math.max(-bbox.x + this.style.sw, 0);
@@ -897,7 +904,7 @@ export class SvgExporterService {
   }
 
   private addLegend(
-    svg: SVGSVGElement | undefined,
+    svg: SVGSVGElement,
     width: number,
     height: number,
     decorationSize: number,
@@ -915,7 +922,7 @@ export class SvgExporterService {
         height: height,
       });
       css += legend.css;
-      const legendElement = this.addElementToSVG('legend-group', legend.elements, svg!);
+      const legendElement = this.addElementToSVG('legend-group', legend.elements, svg);
       padding.right = Math.max(
         padding.right,
         this.measureGroup(legendElement, width, height, css).width + 2 * this.style.sw
@@ -925,7 +932,7 @@ export class SvgExporterService {
   }
 
   private addTitle(
-    svg: SVGSVGElement | undefined,
+    svg: SVGSVGElement,
     width: number,
     height: number,
     options: DownloadOptions,
@@ -942,7 +949,7 @@ export class SvgExporterService {
       ? this.generateTimeline(samples, { x: 0, y: height, height: timelineHeight, width: width })
       : this.generateTitle(samples, { x: 0, y: height, height: decorationSize, width: width });
     css += title.css;
-    const titleGroup = this.addElementToSVG('title-group', title.elements, svg!);
+    const titleGroup = this.addElementToSVG('title-group', title.elements, svg);
     if (options.includeTimeline) this.addTimelineControls(svg);
 
     // Add space for labels

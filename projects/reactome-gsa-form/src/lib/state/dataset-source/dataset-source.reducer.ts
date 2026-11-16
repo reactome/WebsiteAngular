@@ -44,11 +44,15 @@ export const datasetSourceReducer: ActionReducer<DatasetSourceState> = createRed
     selectedSourceId: toBeSelected.id,
   })),
   on(datasetSourceActions.setParameter, (state, { id, param }) =>
-    helper.update(id, state, (source) => ({
-      parameters: source.parameters?.map((originalParam) =>
-        originalParam.name === param.name ? param : originalParam
-      ),
-    }))
+    helper.update(id, state, (source) =>
+      source.parameters
+        ? {
+            parameters: source.parameters.map((originalParam) =>
+              originalParam.name === param.name ? param : originalParam
+            ),
+          }
+        : {}
+    )
   ),
   on(datasetSourceActions.setParameters, (state, { id, parameters }) =>
     datasetSourceAdapter.updateOne(

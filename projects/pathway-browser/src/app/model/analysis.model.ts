@@ -1,228 +1,107 @@
-export namespace Analysis {
-  export type SortBy =
-    | 'NAME'
-    | 'TOTAL_ENTITIES'
-    | 'TOTAL_INTERACTORS'
-    | 'TOTAL_REACTIONS'
-    | 'FOUND_ENTITIES'
-    | 'FOUND_INTERACTORS'
-    | 'FOUND_REACTIONS'
-    | 'ENTITIES_RATIO'
-    | 'ENTITIES_PVALUE'
-    | 'ENTITIES_FDR'
-    | 'REACTION_RATIO';
+import type * as Contract from '../../../../contract/analysis.ts';
 
-  export type Resource =
-    | 'TOTAL'
-    | 'UNIPROT'
-    | 'ENSEMBL'
-    | 'CHEBI'
-    | 'IUPHAR'
-    | 'MIRBASE'
-    | 'NCBI_PROTEIN'
-    | 'EMBL'
-    | 'COMPOUND'
-    | 'PUBCHEM_COMPOUND';
+// The analysis service as the pathway browser asks it: how a request sorts and
+// filters, and the names it reads the service's answers by. Read as a
+// namespace: `import type * as Analysis from '…/analysis.model'`.
 
-  export interface Parameters {
-    /**
-     * Include interactors.
-     *
-     * Default: false
-     */
-    interactors?: boolean;
-    /**
-     * list of species to filter the result (accepts taxonomy ids, species names and dbId).
-     *
-     * Default: empty
-     */
-    species?: string;
-    /**
-     * pathways per page.
-     *
-     * Default: 20
-     */
-    pageSize?: number;
-    /**
-     * page number.
-     *
-     * Default: 1
-     */
-    page?: number;
-    /**
-     * Default: 'ENTITIES_FDR'
-     */
-    sortBy?: SortBy;
-    /**
-     * Default: 'ASC'
-     */
-    order?: 'ASC' | 'DESC';
-    /**
-     * Default: TOTAL
-     */
-    resource?: Resource;
-    /**
-     * defines the pValue threshold. Only hit pathway with pValue equals or below the threshold will be returned.
-     *
-     * Default: 0.05
-     */
-    pValue?: number;
-    /**
-     * set to 'false' to exclude the disease pathways from the result (it does not alter the statistics)
-     *
-     * Default: true
-     */
-    includeDisease?: boolean;
-    /**
-     * minimum number of contained entities per pathway (takes into account the resource)
-     *
-     * Default: empty
-     */
-    min?: number;
-    /**
-     * maximum number of contained entities per pathway (takes into account the resource)
-     *
-     * Default: empty
-     */
-    max?: number;
-    /**
-     * Filters resources to only includes importable ones
-     *
-     * Default: false
-     */
-    importableOnly?: boolean;
+type SortBy =
+  | 'NAME'
+  | 'TOTAL_ENTITIES'
+  | 'TOTAL_INTERACTORS'
+  | 'TOTAL_REACTIONS'
+  | 'FOUND_ENTITIES'
+  | 'FOUND_INTERACTORS'
+  | 'FOUND_REACTIONS'
+  | 'ENTITIES_RATIO'
+  | 'ENTITIES_PVALUE'
+  | 'ENTITIES_FDR'
+  | 'REACTION_RATIO';
 
-    /**
-     *  All non-human identifiers are converted to their human equivalents. (default = true)
-     */
-    projectToHuman?: boolean;
-  }
+export type Resource = Contract.AnalysisResource;
 
-  export interface Pathway {
-    dbId: number;
-    stId: string;
-    name: string;
-    /**
-     * Lower Level Pathway
-     */
-    llp: boolean;
-    inDisease: boolean;
-    entities: {
-      resource: Resource;
-      total: number;
-      found: number;
-      ratio: number;
-      pValue: number;
-      fdr: number;
-      exp: number[];
-      curatedFound?: number;
-      curatedTotal?: number;
-      interactorsFound?: number;
-      interactorsTotal?: number;
-    };
-    reactions: {
-      resource: Resource;
-      total: number;
-      found: number;
-      ratio: number;
-    };
-    species: {
-      dbId: number;
-      taxId: string;
-      name: string;
-    };
-  }
+interface Parameters {
+  /**
+   * Include interactors.
+   *
+   * Default: false
+   */
+  interactors?: boolean;
+  /**
+   * list of species to filter the result (accepts taxonomy ids, species names and dbId).
+   *
+   * Default: empty
+   */
+  species?: string;
+  /**
+   * pathways per page.
+   *
+   * Default: 20
+   */
+  pageSize?: number;
+  /**
+   * page number.
+   *
+   * Default: 1
+   */
+  page?: number;
+  /**
+   * Default: 'ENTITIES_FDR'
+   */
+  sortBy?: SortBy;
+  /**
+   * Default: 'ASC'
+   */
+  order?: 'ASC' | 'DESC';
+  /**
+   * Default: TOTAL
+   */
+  resource?: Resource;
+  /**
+   * defines the pValue threshold. Only hit pathway with pValue equals or below the threshold will be returned.
+   *
+   * Default: 0.05
+   */
+  pValue?: number;
+  /**
+   * set to 'false' to exclude the disease pathways from the result (it does not alter the statistics)
+   *
+   * Default: true
+   */
+  includeDisease?: boolean;
+  /**
+   * minimum number of contained entities per pathway (takes into account the resource)
+   *
+   * Default: empty
+   */
+  min?: number;
+  /**
+   * maximum number of contained entities per pathway (takes into account the resource)
+   *
+   * Default: empty
+   */
+  max?: number;
+  /**
+   * Filters resources to only includes importable ones
+   *
+   * Default: false
+   */
+  importableOnly?: boolean;
 
   /**
-   * Every analysis type the backend can return.
-   *
-   * This is the AnalysisService's own enum -- `AnalysisSummary.type` in
-   * /AnalysisService/v3/api-docs -- and it is kept as data rather than only as a
-   * union so a test can walk it. GSA_STATISTICS, which is what PADOG produces,
-   * was missing here and from the palette map, and the result was not a type
-   * error but a blank view: see TYPE_DEFAULT_PALETTE in analysis.service.ts.
+   *  All non-human identifiers are converted to their human equivalents. (default = true)
    */
-  export const TYPES = [
-    'OVERREPRESENTATION',
-    'EXPRESSION',
-    'GSA_REGULATION',
-    'GSA_STATISTICS',
-    'GSVA',
-    'SPECIES_COMPARISON',
-  ] as const;
-
-  export type Type = (typeof TYPES)[number];
-
-  export interface Result {
-    expression: {
-      columnNames: string[];
-      min: number;
-      max: number;
-    };
-    identifiersNotFound: number;
-    pathwaysFound: number;
-    warnings?: string[];
-    pathways: Pathway[];
-
-    resourceSummary: {
-      resource: Resource;
-      pathways: number;
-      filtered: number;
-    }[];
-
-    speciesSummary: {
-      dbId: number;
-      taxId: string;
-      name: string;
-      pathways: number;
-      filtered: number;
-    }[];
-
-    summary: {
-      token: string;
-      type: Type | string;
-      sampleName: string;
-      text: boolean;
-      projection: boolean;
-      interactors: boolean;
-      includeDisease: boolean;
-
-      species?: number;
-      fileName?: string;
-      gsaMethod?: string;
-      gsaToken?: string;
-    };
-  }
-
-  type Identifiers = {
-    ids: string[];
-    resource: Resource;
-  };
-
-  export interface FoundEntities {
-    pathway: string;
-    foundEntities: number;
-    foundInteractors: number;
-
-    expNames: string[];
-    resources: Resource[];
-    entities: FoundEntity[];
-    interactors?: {
-      id: string;
-      interactsWith: Identifiers;
-      mapsTo: string[];
-      exp: number[];
-    }[];
-  }
-
-  export interface FoundEntity {
-    id: string;
-    mapsTo: Identifiers[];
-    exp: number[];
-  }
-
-  export interface NotFoundIdentifier {
-    id: string;
-    exp: number[];
-  }
+  projectToHuman?: boolean;
 }
+
+/**
+ * Parameters as a request takes them. One left undefined is not sent (see
+ * httpParams()), so a caller can pass a filter that may not be set.
+ */
+export type RequestParameters = { [K in keyof Parameters]?: Parameters[K] | undefined };
+
+// The service's answers are the contract's (projects/contract/analysis.ts).
+export type Type = Contract.AnalysisType;
+export type Pathway = Contract.AnalysisPathway;
+export type Result = Contract.AnalysisResult;
+export type FoundEntities = Contract.FoundEntities;
+export type NotFoundIdentifier = Contract.NotFoundIdentifier;

@@ -1,5 +1,4 @@
 import { Position } from 'cytoscape';
-import { add, array, NDArray, subtract } from 'vectorious';
 
 /**
  * Add roundness to a segment edge by adding for each anchor position an additional point just before and just after
@@ -22,51 +21,40 @@ export function addRoundness(
   anchors: Position[],
   radius = 60
 ): Position[] {
-  const output: NDArray[] = [];
+  const output: Position[] = [];
   if (anchors.length === 0) return output;
 
   const points = [source, ...anchors, target];
   for (let i = 1; i < points.length - 1; i++) {
-    let previousPoint = toVector(points[i - 1]);
-    const currentPoint = toVector(points[i]);
-    let nextPoint = toVector(points[i + 1]);
-
-    const previousVector = subtract(previousPoint.copy(), currentPoint);
-    const nextVector = subtract(nextPoint.copy(), currentPoint);
+    const previous = points[i - 1];
+    const current = points[i];
+    const next = points[i + 1];
+    if (!previous || !current || !next) continue;
 
     // Scaling to fit to radius
-    scaleTo([previousVector, nextVector], radius);
+    const [toPrevious, toNext] = scaleTo(minus(previous, current), minus(next, current), radius);
 
-    previousPoint = add(currentPoint.copy(), previousVector);
-    nextPoint = add(currentPoint.copy(), nextVector);
-
-    output.push(previousPoint, currentPoint, nextPoint);
+    output.push(plus(current, toPrevious), { x: current.x, y: current.y }, plus(current, toNext));
   }
-  return output.map(toPosition);
+  return output;
 }
 
 /**
- * Scale a list of vectors to a desired length.
+ * Scale two vectors to a desired length.
  *
- * If limit is true, limiting the resulting length to half the minimum norm of all vectors, in order to avoid clashing
- * @param vectors
- * @param length
- * @param limit
+ * If limit is true, limiting the resulting length to half the shorter vector's norm, in order to avoid clashing
  * @private
  */
-function scaleTo(vectors: NDArray[], length: number, limit = true): NDArray[] {
-  const norms = vectors.map((vector) => vector.norm());
+function scaleTo(a: Position, b: Position, length: number, limit = true): [Position, Position] {
+  const normA = Math.hypot(a.x, a.y);
+  const normB = Math.hypot(b.x, b.y);
   if (limit) {
-    const minNorm = Math.min(...norms);
+    const minNorm = Math.min(normA, normB);
     if (length >= minNorm) length = minNorm / 2.1;
   }
-  return vectors.map((vector, i) => vector.scale(length / norms[i]));
+  return [scale(a, length / normA), scale(b, length / normB)];
 }
 
-function toVector(position: Position): NDArray {
-  return array([position.x, position.y]);
-}
-
-function toPosition(vector: NDArray): Position {
-  return { x: vector.x, y: vector.y };
-}
+const scale = (v: Position, factor: number): Position => ({ x: v.x * factor, y: v.y * factor });
+const minus = (a: Position, b: Position): Position => ({ x: a.x - b.x, y: a.y - b.y });
+const plus = (a: Position, b: Position): Position => ({ x: a.x + b.x, y: a.y + b.y });

@@ -6,6 +6,13 @@ import {
   CONTENT_SERVICE,
   IDG_SERVICE,
 } from '../../../../pathway-browser/src/environments/environment';
+import type { PlainEvent } from '../../../../pathway-browser/src/app/model/graph/plain.model';
+import { getProperty } from '../../../../pathway-browser/src/app/services/utils';
+import type { DatabaseObject } from '../../../../pathway-browser/src/app/model/graph/database-object.model';
+import {
+  JSOGDeserializer,
+  type JsogObject,
+} from '../../../../pathway-browser/src/app/utils/JSOGDeserializer';
 
 /**
  * One of the interaction datasets the IDG portal knows about.
@@ -86,11 +93,21 @@ function plainText(html: string | undefined) {
     .trim();
 }
 
+/** A value that was loaded, or undefined for one that could not be. */
+function loaded<T>(source: Observable<T>): Observable<{ value: T } | undefined> {
+  return source.pipe(
+    map((value) => ({ value })),
+    catchError(() => of(undefined))
+  );
+}
+
 /** What a pathway row expands to show: what it is, and where it sits. */
 export interface IdgPathwayDetail {
   summation?: string;
   /** Root first, the pathway itself last, as a breadcrumb reads. */
   hierarchy: { stId: string; name: string }[];
+  /** The parts that could not be loaded, so may yet exist. */
+  failed: { summation: boolean; hierarchy: boolean };
 }
 
 /**
@@ -127,16 +144,22 @@ function decodeToken(token: string | undefined) {
 export class IdgService {
   private http = inject(HttpClient);
 
-  /** Whether the service knows this gene or protein at all. */
+  /**
+   * Whether the service knows this gene or protein at all.
+   *
+   * A failure fails: read as "no", it told the reader their gene was not in the
+   * data when the server had not answered.
+   */
   checkTerm(term: string): Observable<boolean> {
-    return this.http
-      .get<boolean>(`${IDG_SERVICE}/checkTerm/${encodeURIComponent(term)}`)
-      .pipe(catchError(() => of(false)));
+    return this.http.get<boolean>(`${IDG_SERVICE}/checkTerm/${encodeURIComponent(term)}`);
   }
 
   /** Every dataset on offer, for the picker. */
   datasets(): Observable<IdgDataset[]> {
-    return this.http.get<IdgDataset[]>(`${IDG_SERVICE}/datadesc`);
+    // An empty body arrives as null: none.
+    return this.http
+      .get<IdgDataset[] | null>(`${IDG_SERVICE}/datadesc`)
+      .pipe(map((datasets) => datasets ?? []));
   }
 
   /**
@@ -147,9 +170,11 @@ export class IdgService {
    * 0.89, which is why a fixed 0.9 threshold returns nothing at all for it.
    */
   interactorScores(term: string): Observable<Record<string, number>> {
-    return this.http.get<Record<string, number>>(
-      `${IDG_SERVICE}/relationships/combinedScoreGenesForTerm/${encodeURIComponent(term)}`
-    );
+    return this.http
+      .get<Record<string, number> | null>(
+        `${IDG_SERVICE}/relationships/combinedScoreGenesForTerm/${encodeURIComponent(term)}`
+      )
+      .pipe(map((scores) => scores ?? {}));
   }
 
   /**
@@ -212,19 +237,18 @@ export class IdgService {
             const id = data['id'];
             const weightedTDL = data['weightedTDL'];
             if (typeof id !== 'string' || typeof weightedTDL !== 'number') continue;
+            const colour = data['weightedTDLColorHex'];
+            const genes = data['geneNumber'];
             levels[id] = {
               weightedTDL,
-              colour:
-                typeof data['weightedTDLColorHex'] === 'string'
-                  ? data['weightedTDLColorHex']
-                  : undefined,
-              genes: typeof data['geneNumber'] === 'number' ? data['geneNumber'] : undefined,
+              ...(typeof colour === 'string' && { colour }),
+              ...(typeof genes === 'number' && { genes }),
             };
           }
           return levels;
-        }),
-        // A missing level is a missing column, not a broken page.
-        catchError(() => of({}))
+        })
+        // A failure reaches the page, which says the column is empty because
+        // of it, not because no pathway has a level.
       );
   }
 
@@ -236,7 +260,8 @@ export class IdgService {
    * scatter across all of it. Served hierarchically ordered, which is also the
    * order the plot puts them in, so the colours form bands rather than confetti.
    *
-   * 283KB and the same for everyone, so it is fetched once and shared.
+   * 283KB and the same for everyone, so it is fetched once and shared. A failure
+   * is not shared: the next page to ask asks again.
    */
   private topPathways?: Observable<Record<string, string>>;
   hierarchy(): Observable<Record<string, string>> {
@@ -250,7 +275,6 @@ export class IdgService {
           for (const entry of entries) order[entry.stId] = entry.topPathway;
           return order;
         }),
-        catchError(() => of<Record<string, string>>({})),
         shareReplay({ bufferSize: 1, refCount: false })
       );
     return this.topPathways;
@@ -279,8 +303,7 @@ export class IdgService {
             const [provenance = id, species = '', dataType = ''] = id.split('|');
             return [{ id, provenance, species, dataType, count: entry.posNum }];
           })
-        ),
-        catchError(() => of<IdgFeature[]>([]))
+        )
       );
   }
 
@@ -290,20 +313,29 @@ export class IdgService {
    * From our own content service rather than the IDG server -- which is what the
    * portal does too, and it means an expanded row costs nothing extra from a
    * machine we do not control. Two calls because the description and the
-   * ancestry live on different endpoints.
+   * ancestry live on different endpoints. Either can fail without the other, so
+   * each is kept apart from "there is none".
    */
   pathwayDetail(stId: string): Observable<IdgPathwayDetail> {
     const detail = this.http
-      .get<{ summation?: { text?: string }[] }>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`)
+      // With includeRef, a summation written earlier in the answer (one a
+      // neighbouring event shares) is a reference to it, which the
+      // deserializer resolves. Asked plain, it came as its bare dbId, and the
+      // panel showed no description (#762).
+      .get<JsogObject<DatabaseObject>>(`${CONTENT_SERVICE}/data/query/enhanced/${stId}`, {
+        params: { includeRef: true },
+      })
       .pipe(
-        map((event) => plainText(event.summation?.[0]?.text)),
-        catchError(() => of(undefined))
+        map((response) => new JSOGDeserializer().deserialize(response)),
+        map((object) => {
+          // A pathway's first summation.
+          const [first] = getProperty(object, 'summation') ?? [];
+          return plainText(first?.text);
+        })
       );
 
     const ancestors = this.http
-      .get<{ stId: string; displayName: string }[][]>(
-        `${CONTENT_SERVICE}/data/event/${stId}/ancestors`
-      )
+      .get<PlainEvent[][]>(`${CONTENT_SERVICE}/data/event/${stId}/ancestors`)
       .pipe(
         // The first branch, reversed: the service returns the pathway first and
         // the root last, which is the opposite of how a breadcrumb reads.
@@ -311,12 +343,15 @@ export class IdgService {
           [...(branches[0] ?? [])]
             .reverse()
             .map((event) => ({ stId: event.stId, name: event.displayName }))
-        ),
-        catchError(() => of<{ stId: string; name: string }[]>([]))
+        )
       );
 
-    return combineLatest([detail, ancestors]).pipe(
-      map(([summation, hierarchy]) => ({ summation, hierarchy }))
+    return combineLatest([loaded(detail), loaded(ancestors)]).pipe(
+      map(([summation, hierarchy]) => ({
+        ...(summation?.value !== undefined && { summation: summation.value }),
+        hierarchy: hierarchy?.value ?? [],
+        failed: { summation: !summation, hierarchy: !hierarchy },
+      }))
     );
   }
 

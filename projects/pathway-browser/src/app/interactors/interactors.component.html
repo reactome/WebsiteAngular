@@ -15,13 +15,14 @@
     <mat-card-content>
       <div class="button-container">
         <button
+          type="button"
           mat-raised-button
           class="raised-full-width-button"
           [disabled]="hasEHLD()"
           (click)="clearInteractors()"
-          [ngClass]="{ 'active-button': clear }"
+          [class.active-button]="clear"
         >
-          <mat-icon [ngClass]="{ 'active-icon': clear }" color="primary">clear</mat-icon>
+          <mat-icon [class.active-icon]="clear" color="primary">clear</mat-icon>
           Clear overlays
         </button>
       </div>
@@ -31,11 +32,12 @@
 
       <div class="main-resource">
         <button
+          type="button"
           class="full-width"
           mat-button
           [disabled]="hasEHLD()"
           (click)="getInteractors(INTACT_RESOURCE)"
-          [ngClass]="{ 'active-button': currentResource().type === ResourceType.STATIC }"
+          [class.active-button]="currentResource().type === ResourceType.STATIC"
         >
           <!--
             IntAct carries the same count as the others. It is the resource a
@@ -65,6 +67,9 @@
         made every button disappear and come back, and meant the spinner below
         could never be seen: it lives inside the thing that was being hidden.
       -->
+      @if (psicquicResourcesFailed()) {
+        <p class="load-error" role="alert">Couldn't load the list of PSICQUIC resources. Try again later.</p>
+      }
       @if (psicquicResources.length > 0) {
         <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: 'PSICQUIC' }"></ng-container>
 
@@ -72,11 +77,12 @@
           @for (resource of psicquicResources; track resource) {
             <mat-grid-tile class="rounded-corner">
               <button
+                type="button"
                 class="full-width psicquic-button"
                 mat-button
                 [disabled]="hasEHLD() || (!!loadingResource && loadingResource !== resource.name)"
                 (click)="getInteractors(resource.name)"
-                [ngClass]="{ 'active-button': currentResource().name === resource.name }"
+                [class.active-button]="currentResource().name === resource.name"
               >
                 <div class="resource-name">
                   <span>{{ resource.name }}</span>
@@ -115,7 +121,7 @@
               [value]="resourceToken"
               [selected]="isSelected(resourceToken)"
               (click)="getInteractors(resourceToken)"
-              [ngClass]="{ 'active-button': currentResource().name === resourceToken.summary.name }"
+              [class.active-button]="currentResource().name === resourceToken.summary.name"
               class="full-width"
             >
               <div class="resource-name surface-variant">
@@ -127,6 +133,7 @@
                   removed. That threw on the page every time.
                 -->
                 <button
+                  type="button"
                   mat-icon-button
                   [disabled]="hasEHLD()"
                   (click)="deleteCustomResource(resourceToken); $event.stopPropagation()"
@@ -141,6 +148,7 @@
 
       <div class="button-container">
         <button
+          type="button"
           mat-raised-button
           class="raised-full-width-button"
           [disabled]="hasEHLD()"

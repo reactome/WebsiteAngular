@@ -9,14 +9,14 @@ import {
   inject,
 } from '@angular/core';
 import { CdkScrollable } from '@angular/cdk/scrolling';
-import { KeyValuePipe, NgClass } from '@angular/common';
+import { KeyValuePipe } from '@angular/common';
 import { Subscription } from 'rxjs';
 
 export type Side = 'top' | 'bottom' | 'left' | 'right';
 
 @Component({
   selector: 'shadow-scroll',
-  imports: [CdkScrollable, KeyValuePipe, NgClass],
+  imports: [CdkScrollable, KeyValuePipe],
   templateUrl: './shadow-scroll.component.html',
   styleUrl: './shadow-scroll.component.scss',
 })

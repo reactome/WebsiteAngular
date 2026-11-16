@@ -4,7 +4,7 @@
     <h2>DeltaSignal</h2>
     <p>Change one or more entities, solve the steady state, and overlay the predicted response.</p>
   </div>
-  <button mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
+  <button type="button" mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
     <mat-icon>close</mat-icon>
   </button>
 </header>
@@ -33,17 +33,93 @@
         <span class="network-count">{{ network.nodes.length }} logic nodes</span>
       </div>
 
-      @if (selectedNodes().length) {
-        <div class="selected-entity">
+      @if (pinsLoading()) {
+        <div class="selection-help">
+          <mat-spinner [diameter]="20" />
           <div>
-            <span class="label">Selected in diagram</span>
-            <strong>{{ selectedName() || selectedStId() }}</strong>
-            <span class="stable-id">
-              {{ selectedStId() }} · {{ selectedNodes().length }} matching logic
-              {{ selectedNodes().length === 1 ? 'node' : 'nodes' }}
-            </span>
+            <strong>{{ selectedStId() }}</strong>
+            <span>Finding its starting forms in this network…</span>
           </div>
-          <mat-icon>check_circle</mat-icon>
+        </div>
+      } @else if (selectedPins(); as pins) {
+        @if (pins.pins.length) {
+          <div class="selected-entity">
+            <div>
+              <span class="label">Selected in diagram</span>
+              <strong>{{ selectedName() || selectedStId() }}</strong>
+              <span class="stable-id">
+                {{ selectedStId() }} · pins {{ pins.pins.length }} starting
+                {{ pins.pins.length === 1 ? 'form' : 'forms' }}
+                @if (pins.basis === 'root_cycle') {
+                  (its cycle's resting form)
+                }
+                @if (pins.occurrences > pins.pins.length) {
+                  · {{ pins.occurrences - pins.pins.length }} downstream
+                  {{ pins.occurrences - pins.pins.length === 1 ? 'copy' : 'copies' }} computed
+                }
+              </span>
+              @if (selectedReadout(); as readout) {
+                @if (readout.call) {
+                  <span class="stable-id">
+                    Predicted: {{ readout.fold | number: '1.2-2' }}× —
+                    {{ readout.call === 'normal' ? 'no change' : readout.call }}
+                    @if (readout.basis === 'proxy') {
+                      (read from its producing reactions)
+                    }
+                    @if (readout.basis === 'set_members') {
+                      (read through its member species)
+                    }
+                    @if (readout.railed) {
+                      — at the model's bound, a switch state rather than a measured level
+                    }
+                    @if (readout.confidence_stratum === 'untouched') {
+                      — the perturbation does not reach this entity here
+                    } @else if (readout.confidence !== null && readout.confidence !== undefined) {
+                      ({{ readout.confidence | percent: '1.0-0' }} of record calls like this matched)
+                    }
+                  </span>
+                }
+              }
+            </div>
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        } @else {
+          <div class="selection-help">
+            <mat-icon>block</mat-icon>
+            <div>
+              <strong>{{ selectedName() || selectedStId() }} cannot be perturbed here</strong>
+              <span>
+                @if (pins.occurrences) {
+                  Every copy of it in this network is produced by the pathway itself, so there is no starting form to
+                  set. Perturb what makes it instead.
+                } @else {
+                  {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
+                }
+              </span>
+              @if (selectedReadout(); as readout) {
+                @if (readout.call) {
+                  <span>
+                    It can still be read: {{ readout.fold | number: '1.2-2' }}× —
+                    {{ readout.call === 'normal' ? 'no change' : readout.call }}
+                    @if (readout.basis === 'proxy') {
+                      (from its producing reactions)
+                    }
+                    @if (readout.basis === 'set_members') {
+                      (through its member species)
+                    }
+                  </span>
+                }
+              }
+            </div>
+          </div>
+        }
+      } @else if (pinsError(); as message) {
+        <div class="selection-help">
+          <mat-icon>error_outline</mat-icon>
+          <div>
+            <strong>{{ selectedStId() }}</strong>
+            <span>{{ message }}</span>
+          </div>
         </div>
       } @else {
         <div class="selection-help">
@@ -51,17 +127,14 @@
           <div>
             <strong>Select a molecule on the pathway diagram</strong>
             <span>
-              @if (selectedStId()) {
-                {{ selectedStId() }} is not represented in this DeltaSignal network. Choose another entity.
-              } @else {
-                The selected Reactome entity will be matched to its logic-network node or nodes.
-              }
+              A perturbation pins the entity's starting forms — the same protocol DeltaSignal's benchmarks were measured
+              under — and the network computes every downstream copy.
             </span>
           </div>
         </div>
       }
 
-      <div class="activity-control" [class.disabled]="!selectedNodes().length">
+      <div class="activity-control" [class.disabled]="!canAdd()">
         <div class="activity-heading">
           <label for="deltasignal-activity">Input activity</label>
           <div class="activity-value">
@@ -72,7 +145,7 @@
               max="100"
               step="1"
               [value]="activity()"
-              [disabled]="!selectedNodes().length"
+              [disabled]="!canAdd()"
               (input)="setActivity($any($event.target).value)"
             />
             <span>× baseline</span>
@@ -86,19 +159,106 @@
           max="100"
           step="1"
           [value]="activity()"
-          [disabled]="!selectedNodes().length"
+          [disabled]="!canAdd()"
           (input)="setActivity($any($event.target).value)"
         />
         <div class="presets">
-          <button mat-button (click)="setActivity(0)" [disabled]="!selectedNodes().length">Knock out · 0</button>
-          <button mat-button (click)="setActivity(1)" [disabled]="!selectedNodes().length">Baseline · 1</button>
-          <button mat-button (click)="setActivity(80)" [disabled]="!selectedNodes().length">Activate · 80</button>
+          <button type="button" mat-button (click)="setActivity(0)" [disabled]="!canAdd()">Knock out · 0</button>
+          <button type="button" mat-button (click)="setActivity(1)" [disabled]="!canAdd()">Baseline · 1</button>
+          <button type="button" mat-button (click)="setActivity(80)" [disabled]="!canAdd()">Activate · 80</button>
         </div>
-        <button mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!selectedNodes().length">
+        <button type="button" mat-flat-button class="add-button" (click)="addSelected()" [disabled]="!canAdd()">
           <mat-icon>add</mat-icon>
           Add perturbation
         </button>
       </div>
+
+      @if (selectedStId() && service.network()) {
+        <div class="inverse-control">
+          <button
+            type="button"
+            mat-stroked-button
+            (click)="askInverse()"
+            [disabled]="service.inverseState().status === 'loading'"
+          >
+            <mat-icon>swap_vert</mat-icon>
+            What moves this entity?
+          </button>
+          @if (inverseForSelection(); as inv) {
+            @if (inv.status === 'loading') {
+              <div class="selection-help">
+                <mat-spinner [diameter]="18" /><span>Solving every candidate perturbation…</span>
+              </div>
+            } @else if (inv.status === 'error') {
+              <div class="inline-error" role="alert"><mat-icon>error_outline</mat-icon>{{ inv.message }}</div>
+            } @else if (inv.result; as result) {
+              <small class="inverse-counts">
+                {{ result.counts.candidates_total }} candidate perturbations · {{ result.counts.reachable }} with a
+                route here · {{ result.counts.solved }} solved · {{ result.counts.moved }} move it
+                @if (result.counts.capped > 0) {
+                  · <strong>{{ result.counts.capped }} not solved (capped — this answer is not exhaustive)</strong>
+                }
+              </small>
+              @if (result.results.length) {
+                <div class="inverse-rows">
+                  @for (row of result.results.slice(0, 12); track row.candidates[0] + row.dose) {
+                    <div class="inverse-row">
+                      <strong>{{ row.names.join(' / ') }}</strong>
+                      <span
+                        >{{ row.dose === 'knockout' ? 'knock out' : 'over-express' }} →
+                        {{ row.fold | number: '1.2-2' }}× ({{ row.call === 'normal' ? 'no change' : row.call }})</span
+                      >
+                    </div>
+                  }
+                </div>
+              } @else {
+                <small class="inverse-counts">No solved perturbation moves this entity here.</small>
+              }
+            }
+          }
+        </div>
+      }
+
+      @if (canMeasure()) {
+        <div class="measure-control">
+          <div class="measure-heading">
+            <strong>Or: I measured this entity</strong>
+            <span>
+              The next solve reconciles your measured level with the network instead of pinning it — weight 1 pins it
+              hard, weight 0 ignores it. Weight 0.5 was the strongest on DeltaSignal's record.
+            </span>
+          </div>
+          <div class="measure-inputs">
+            <label>
+              Measured level
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                [value]="measuredFold()"
+                (input)="setMeasuredFold($any($event.target).value)"
+              />
+              <span>× baseline</span>
+            </label>
+            <label>
+              Weight
+              <input
+                type="number"
+                min="0"
+                max="1"
+                step="0.05"
+                [value]="measuredWeight()"
+                (input)="setMeasuredWeight($any($event.target).value)"
+              />
+            </label>
+            <button type="button" mat-stroked-button (click)="addMeasurement()">
+              <mat-icon>straighten</mat-icon>
+              Condition next solve
+            </button>
+          </div>
+        </div>
+      }
     </section>
 
     <section class="queue card">
@@ -108,7 +268,7 @@
           <h3>Run prediction</h3>
         </div>
         @if (service.perturbations().length) {
-          <button mat-button class="clear" (click)="service.clear()">Clear all</button>
+          <button type="button" mat-button class="clear" (click)="service.clear()">Clear all</button>
         }
       </div>
 
@@ -119,11 +279,12 @@
               <div>
                 <strong>{{ item.name }}</strong>
                 <span
-                  >{{ item.reactomeId }} · {{ item.activity }}× · {{ item.nodeUuids.length }} logic
-                  {{ item.nodeUuids.length === 1 ? 'node' : 'nodes' }}</span
+                  >{{ item.reactomeId }} · {{ item.activity }}× · pins {{ item.nodeUuids.length }} starting
+                  {{ item.nodeUuids.length === 1 ? 'form' : 'forms' }}</span
                 >
               </div>
               <button
+                type="button"
                 mat-icon-button
                 (click)="service.removePerturbation(item.reactomeId)"
                 matTooltip="Remove perturbation"
@@ -133,7 +294,31 @@
             </div>
           }
         </div>
+        @if (service.measurements().length) {
+          <div class="measurements">
+            @for (item of service.measurements(); track item.reactomeId) {
+              <div class="perturbation measurement">
+                <div>
+                  <strong>{{ item.name }}</strong>
+                  <span
+                    >measured {{ item.fold | number: '1.2-2' }}× · weight {{ item.weight | number: '1.2-2' }} ·
+                    {{ item.nodeUuids.length }} node{{ item.nodeUuids.length === 1 ? '' : 's' }}</span
+                  >
+                </div>
+                <button
+                  type="button"
+                  mat-icon-button
+                  (click)="service.removeMeasurement(item.reactomeId)"
+                  matTooltip="Remove measured level"
+                >
+                  <mat-icon>delete_outline</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        }
         <button
+          type="button"
           mat-flat-button
           class="run-button"
           (click)="service.solve()"
@@ -161,7 +346,7 @@
             <span class="step">3</span>
             <h3>Predicted response</h3>
           </div>
-          <button mat-button (click)="service.clearResult()">Remove overlay</button>
+          <button type="button" mat-button (click)="service.clearResult()">Remove overlay</button>
         </div>
 
         <div class="summary" [class.warning]="!result.converged">
@@ -171,6 +356,19 @@
           </div>
           <span>{{ result.iterations }} iterations · {{ result.solve_time | number: '1.3-3' }} s</span>
         </div>
+        @if (softLine(); as line) {
+          <p class="method-note soft-note">{{ line }}</p>
+        }
+        @if (!result.converged) {
+          <p class="method-note nonconverged" role="alert">
+            The solve stopped at its iteration budget before reaching a steady state
+            @if (result.residual !== undefined) {
+              (how far off: {{ result.residual | number: '1.2-4' }})
+            }
+            — the values below are where the iteration stopped, not a settled answer. DeltaSignal's published accuracy
+            was measured on converged solves; treat these calls with caution.
+          </p>
+        }
 
         <div class="view-toggle" role="tablist" aria-label="DeltaSignal result view">
           <button
@@ -206,33 +404,227 @@
             entity, all values appear as a gradient. The pathway diagram remains interactive beside this panel.
           </p>
 
-          <div class="result-table" role="table" aria-label="DeltaSignal predictions">
-            <div class="result-row header" role="row">
-              <span>Entity</span><span>Activity</span><span>Change</span><span>Influence</span>
-            </div>
-            @for (row of visibleRows(); track row.uuid) {
-              <div class="result-row" role="row" [class.perturbed]="row.perturbed">
-                <span class="entity">
-                  <strong>{{ row.name }}</strong>
-                  <small>{{ row.reactomeId }}</small>
-                </span>
-                <span>{{ row.activity | number: '1.1-1' }}×</span>
-                <span [class.positive]="row.change > 0" [class.negative]="row.change < 0">
-                  {{ row.change > 0 ? '+' : '' }}{{ row.change | number: '1.1-1' }}
-                </span>
-                <span>{{ row.influence | number: '1.2-2' }}</span>
-              </div>
-            }
-          </div>
-          @if (service.entityRows().length > visibleRows().length) {
-            <p class="truncated">
-              Showing the 40 largest predicted changes across {{ service.entityRows().length }} Reactome entities.
+          <details class="column-help">
+            <summary>What do these columns mean?</summary>
+            <dl>
+              <dt>Predicted level</dt>
+              <dd>
+                The entity's predicted level once the network settles, as a fold over its resting level: 1× is normal,
+                0× is gone, higher is more. It is read exactly the way DeltaSignal's published accuracy was measured:
+                the entity resolves to the network's copies of it, each curated entity counts once (never once per
+                internal copy), and a curated species the network only represents through its reactions is read from
+                those reactions' flux.
+              </dd>
+              <dt>Call</dt>
+              <dd>
+                The direction at the validated thresholds
+                @if (service.readoutState().protocol; as protocol) {
+                  (down below {{ protocol.down_cutoff }}×, up at {{ protocol.up_cutoff }}× or more)
+                }
+                — the same rule the benchmark figures used. Between the thresholds the model calls no change.
+              </dd>
+              <dt>Structurally fragile</dt>
+              <dd>
+                Twenty near-equivalent modelling choices were measured on DeltaSignal's record (deltasignal specs/157).
+                A row carries this note when answers in its class flipped under at least one of them unusually often —
+                the call rests on a contested choice. It is stability across recorded model structure, never
+                correctness; on the record, fragile drug-record calls were right one time in five.
+              </dd>
+              <dt>Confidence</dt>
+              <dd>
+                How often predictions in the same measured class (same direction, size band, resolution and convergence)
+                matched the expert expectations of DeltaSignal's 25,000-case validation record. It is a measured
+                agreement rate with that record, not a probability that an experiment would agree — the record itself
+                shows experts and experiments differ on some classes. "Not reached here" means the perturbation has no
+                route to that entity in this network: the model offers no prediction for it, because the record shows
+                such cases are usually missing knowledge, not real "no change".
+              </dd>
+              <dt>Lead via curator-drawn connections</dt>
+              <dd>
+                Reactome's diagrams carry arrows curators drew from other pathways into this one. Where this pathway
+                alone cannot reach a readout, DeltaSignal can run your perturbation through those drawn connections and
+                show the result as a lead — always with how often such calls matched the measured record, or "no
+                measured rate yet" when no dataset has tested that connection. A lead is a pointer to follow up, never a
+                prediction of this pathway's own model.
+              </dd>
+              <dt>At the model's bound</dt>
+              <dd>
+                Node levels live between hard stops
+                @if (service.readoutState().protocol; as protocol) {
+                  @if (protocol.rail_low !== undefined && protocol.rail_high !== undefined) {
+                    ({{ protocol.rail_low }}× and {{ protocol.rail_high }}× here)
+                  }
+                }
+                — a prediction at a stop is a switch pushed to one side, not a measured magnitude. The direction call
+                still stands, but read the number as "as far as the model can go", the same rule DeltaSignal's own
+                validation record uses to set such values aside.
+              </dd>
+              <dt>A switch</dt>
+              <dd>
+                Some curated loops hold two stable states, and a prediction there is the coordinates of one state, not a
+                level on a dial. Where the loop still has both states under your perturbation, DeltaSignal re-solves it
+                from both sides and says which state your perturbation selects and what the readout would be at the
+                other. A loop your perturbation itself drives has only one state left, so it shows no switch note — the
+                "at the model's bound" rule keeps carrying those. The detection rule and its thresholds are the
+                engine's, served with the results, never recomputed here.
+              </dd>
+              <dt>Measured range</dt>
+              <dd>
+                For answers in the same measured class, where the validation record's MEASURED folds actually landed:
+                the middle half of recorded cases, with how many cases stand behind it and which record they come from.
+                It is a share of the record, never a probability — and it is served by the engine from a
+                provenance-checked table fitted under registered out-of-sample gates; nothing is computed in the
+                browser. Where the record is silent for a class, no range is shown.
+              </dd>
+              <dt>Influence</dt>
+              <dd>
+                How strongly everything this entity feeds directly in the logic network (the reactions it is an input
+                to, catalyses or regulates, a set it belongs to, and so on; the “Logic nodes &amp; edges” view shows
+                these links) responds to a small change in it, at the predicted state. It ranks direct, local effect,
+                not effect on the whole pathway, and has no unit; an entity that feeds nothing scores 0.
+              </dd>
+            </dl>
+            <p>
+              Rows are sorted by how far the fold departs from 1×; a highlighted row is one you perturbed. These values
+              come from the same readout service the benchmarks ran, not from averaging the table's rows in the browser.
             </p>
+          </details>
+
+          @if (service.readoutState().status === 'loading') {
+            <p class="method-note">Reading entities through the measured protocol…</p>
+          } @else if (service.readoutState().status === 'error') {
+            <p class="method-note">
+              The measured readout protocol is unavailable, so no per-entity values are shown:
+              {{ service.readoutState().message }}
+            </p>
+          } @else {
+            <div class="result-table" role="table" aria-label="DeltaSignal predictions">
+              <div class="result-row header" role="row">
+                <span role="columnheader">Entity</span>
+                <span role="columnheader">Predicted level</span>
+                <span role="columnheader">Call</span>
+                <span role="columnheader">Confidence</span>
+                <span role="columnheader">Influence</span>
+              </div>
+              @for (row of visibleRows(); track row.reactomeId) {
+                <div class="result-row" role="row" [class.perturbed]="row.perturbed">
+                  <span class="entity" role="cell">
+                    <strong>{{ row.name }}</strong>
+                    <small>
+                      {{ row.reactomeId }}
+                      @if (row.basis === 'proxy') {
+                        · read from its producing reactions
+                      }
+                    </small>
+                  </span>
+                  @if (row.untouched) {
+                    <span role="cell" class="untouched-note">
+                      not reached here
+                      @if (row.lead) {
+                        <small class="lead-note">
+                          Lead via curator-drawn connections:
+                          {{ row.lead.call === 'normal' ? 'no change' : row.lead.call }} —
+                          {{ row.lead.statement }}
+                        </small>
+                      }
+                    </span>
+                    <span role="cell" class="untouched-note">—</span>
+                    <span role="cell" class="untouched-note">—</span>
+                  } @else {
+                    <span role="cell">
+                      {{ row.fold | number: '1.2-2' }}×
+                      @if (row.railed) {
+                        <small class="railed-note">at the model's bound</small>
+                      }
+                      @if (row.switchState; as switchState) {
+                        <small class="switch-note">
+                          a switch: this perturbation selects its {{ switchState.state }} state — the other stable state
+                          reads {{ switchState.otherStateFold | number: '1.2-2' }}×
+                        </small>
+                      }
+                      @for (range of rowRanges(row); track range.axis) {
+                        <small class="range-note">
+                          on {{ axisLabel(range.axis) }}, answers like this measured {{ range.lo | number: '1.2-2' }}–{{
+                            range.hi | number: '1.2-2'
+                          }}× half the time ({{ range.n }} cases)
+                        </small>
+                      }
+                      @if (fragileNote(row); as fragility) {
+                        <small class="fragility-note">
+                          structurally fragile class: calls like this flipped under contested model rules in
+                          {{ fragility.rate | percent: '1.0-1' }} of the record ({{ fragility.n }} cases)
+                        </small>
+                      }
+                    </span>
+                    <span role="cell" [class.positive]="row.call === 'up'" [class.negative]="row.call === 'down'">
+                      {{ row.call === 'normal' ? 'no change' : row.call }}
+                    </span>
+                    <span role="cell">
+                      @if (row.confidence !== null) {
+                        {{ row.confidence | percent: '1.0-0' }}
+                      } @else {
+                        —
+                      }
+                    </span>
+                  }
+                  <span role="cell">{{ row.influence | number: '1.2-2' }}</span>
+                </div>
+              }
+            </div>
+            @if (service.readoutRows().length > visibleRows().length) {
+              <p class="truncated">
+                Showing the 40 predictions furthest from 1× across {{ service.readoutRows().length }} Reactome entities.
+              </p>
+            }
           }
         } @else {
           <cr-deltasignal-logic-graph />
         }
       </section>
     }
+
+    <details class="column-help scope" (toggle)="onScopeToggle($event)">
+      <summary>What is DeltaSignal validated for?</summary>
+      @if (service.scopeState().status === 'loading' || service.scopeState().status === 'idle') {
+        <p class="method-note">Loading the scope statement…</p>
+      } @else if (service.scopeState().status === 'error') {
+        <p class="method-note">
+          The scope statement is unavailable right now. It is served by the DeltaSignal engine, not stored in this page,
+          so nothing can be shown in its place.
+        </p>
+      } @else if (service.scopeState().scope; as scope) {
+        @if (!scope.measured_on_served_catalog) {
+          <p class="method-note nonconverged" role="alert">
+            These figures were measured on catalog build {{ scope.statement.provenance_build }}; this server is serving
+            {{ scope.served_catalog ?? 'an unrecorded build' }}. Read them as the predecessor's record.
+          </p>
+        }
+        @for (paragraph of scope.statement.summary; track $index) {
+          <p>{{ paragraph }}</p>
+        }
+        <h4>Validated</h4>
+        <dl>
+          @for (axis of scope.statement.validated; track axis.axis) {
+            <dt>{{ axis.value }}</dt>
+            <dd>
+              {{ axis.statement }}
+              <small class="provenance">
+                Measured {{ axis.date }} on {{ axis.catalog_build }} (solver {{ axis.solver_commit }}) —
+                {{ axis.spec }}
+              </small>
+            </dd>
+          }
+        </dl>
+        <h4>Known limits</h4>
+        <dl>
+          @for (limit of scope.statement.limitations; track limit.name) {
+            <dd>
+              {{ limit.statement }}
+              <small class="provenance">{{ limit.spec }}</small>
+            </dd>
+          }
+        </dl>
+      }
+    </details>
   </main>
 }

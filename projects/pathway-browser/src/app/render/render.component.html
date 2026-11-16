@@ -8,6 +8,6 @@
   } @else {
     <cr-diagram [(pathwayId)]="pathwayId" />
   }
-} @else {
+} @else if (speciesReady()) {
   <cr-reacfoam />
 }

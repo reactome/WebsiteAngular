@@ -34,7 +34,7 @@ import { FormsModule } from '@angular/forms';
 export class CitationComponent {
   citation = inject(CitationService);
 
-  data: Citation = inject(MAT_DIALOG_DATA);
+  data = inject<Citation>(MAT_DIALOG_DATA);
 
   id = this.data.id;
   citationContent = this.data.content;
@@ -58,7 +58,7 @@ export class CitationComponent {
   });
 
   readonly citationToCopy = computed(() => {
-    if (this.staticCitation()) return (this.staticCitation() as string) ?? '';
+    if (this.staticCitation()) return this.staticCitation() as string;
     const content = [];
     if (this.pathwayCitation()) content.push('Pathway: ' + this.pathwayCitation());
     if (this.imageCitation()) content.push('Image: ' + this.imageCitation());

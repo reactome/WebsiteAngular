@@ -15,7 +15,7 @@ export class SearchResultEffects {
       exhaustMap(() =>
         this.service.fetchSpeciesDataSources().pipe(
           map((speciesList) => searchResultActions.loadSpeciesSuccess({ speciesList })),
-          catchError((err) => of(searchResultActions.loadSpeciesFailure({ error: err })))
+          catchError((err: unknown) => of(searchResultActions.loadSpeciesFailure({ error: err })))
         )
       )
     )
@@ -27,7 +27,7 @@ export class SearchResultEffects {
       switchMap(({ species, keywords }) =>
         this.service.search(keywords, species).pipe(
           map((results) => searchResultActions.searchSuccess({ results })),
-          catchError((err) => of(searchResultActions.searchError({ error: err })))
+          catchError((err: unknown) => of(searchResultActions.searchError({ error: err })))
         )
       )
     )

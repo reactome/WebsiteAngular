@@ -22,7 +22,7 @@
  *   - without the header, the first pair is read as the header and dropped,
  *     which the service reports as a warning rather than an error
  */
-import { InteractorEntity, Interactors } from './model/interactor.model';
+import { DrawnInteractorEntity, DrawnInteractors } from './model/interactor.model';
 
 /** What the service gives an interaction it was told nothing about. */
 const ASSUMED_SCORE = 1;
@@ -32,7 +32,8 @@ const UNIPROT = 'http://www.uniprot.org/uniprot/';
 
 export interface ParsedInteractions {
   /** Drawable, in the shape the overlay already consumes. */
-  interactors: Interactors;
+  // Built here, so always with its entities.
+  interactors: DrawnInteractors & { entities: DrawnInteractorEntity[] };
   /** Accepted, but the reader should know. */
   warnings: string[];
   /** Nothing usable was found, and why. */
@@ -59,7 +60,8 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  if (lines.length === 0) {
+  const [first] = lines;
+  if (first === undefined) {
     return {
       interactors: { entities: [], resource },
       warnings,
@@ -70,9 +72,9 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
   // The header, if there is one. Said rather than assumed, because the service
   // treats its absence as a warning and silently eats a pair -- the one part of
   // this format that costs a reader data without telling them.
-  const hasHeader = lines[0].startsWith('#');
+  const hasHeader = first.startsWith('#');
   if (hasHeader) {
-    const columns = fields(lines[0].slice(1));
+    const columns = fields(first.slice(1));
     if (columns.length > 2) {
       return {
         interactors: { entities: [], resource },
@@ -124,7 +126,7 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     // diagram happens to draw -- except a self-interaction, which has one end.
     // The service does the same otherwise: a two-line file comes back as four
     // interactors.
-    const directions =
+    const directions: [owner: string, partner: string][] =
       from === to
         ? [[from, to]]
         : [
@@ -151,11 +153,13 @@ export function parseCustomInteractions(text: string, resource: string): ParsedI
     );
   }
 
-  const entities: InteractorEntity[] = [...byAccession.entries()].map(([acc, interactors]) => ({
-    acc,
-    count: interactors.length,
-    interactors,
-  })) as InteractorEntity[];
+  const entities: DrawnInteractorEntity[] = [...byAccession.entries()].map(
+    ([acc, interactors]) => ({
+      acc,
+      count: interactors.length,
+      interactors,
+    })
+  );
 
   if (entities.length === 0) {
     return {

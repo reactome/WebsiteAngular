@@ -14,7 +14,7 @@ import { AnalysisService } from '../../../services/analysis.service';
 import { AnalysisSummaryComponent } from '../../../analysis-summary/analysis-summary.component';
 import { RevealDirective } from '../../../utils/reveal.directive';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
-import type { Analysis } from '../../../model/analysis.model';
+import type * as Analysis from '../../../model/analysis.model';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule, Sort } from '@angular/material/sort';
 import { DecimalPipe } from '@angular/common';
@@ -35,10 +35,20 @@ import { ExpressionTagComponent } from './expression-tag/expression-tag.componen
 import { MatExpansionModule } from '@angular/material/expansion';
 import { FoundTableComponent } from './found-table/found-table.component';
 import { MatSliderModule } from '@angular/material/slider';
-import { getArrayStats } from '../../../services/utils';
+import { fieldByName, getArrayStats, textField } from '../../../services/utils';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { MatDivider } from '@angular/material/divider';
+import { sortKey, sortRows, valueAtPath } from './sort-rows';
 import { MatFormField, MatOption, MatSelect } from '@angular/material/select';
+
+/**
+ * A pathway's value for one sample. Out of range it compares false, as reading
+ * past the end always did; a null stays null, as the filters always saw it.
+ */
+function expressionAt(pathway: { entities: { exp: number[] } }, sample: number): number {
+  const value = pathway.entities.exp[sample];
+  return value === undefined ? NaN : value;
+}
 
 @Component({
   selector: 'cr-result-tab',
@@ -87,7 +97,7 @@ export class ResultTabComponent {
 
   trackBy = (index: number, pathway: Analysis.Pathway) => pathway.stId + '-' + index;
 
-  readonly hasExpression = computed(() => this.analysis.result()?.expression?.min !== undefined);
+  readonly hasExpression = computed(() => this.analysis.result()?.expression.min !== undefined);
 
   /**
    * Expression of the entity currently selected in the diagram, across every
@@ -104,28 +114,31 @@ export class ResultTabComponent {
   readonly selectedExpression = computed<{ name: string; values: number[] } | undefined>(() => {
     const element = this.data.selectedElement();
     if (!element || this.analysis.samples().length === 0) return undefined;
-    const reference = (element as Record<string, unknown>)['referenceEntity'] as
-      { identifier?: string; variantIdentifier?: string } | undefined;
+    // A molecule's own identifier, or its reference entity's (its isoform's
+    // too); each read as text, which is all the analysis matches on.
+    const reference = fieldByName(element, 'referenceEntity');
     const values = this.analysis.expressionFor([
-      (element as Record<string, unknown>)['identifier'] as string | undefined,
-      reference?.identifier,
-      reference?.variantIdentifier,
+      textField(element, 'identifier'),
+      textField(reference, 'identifier'),
+      textField(reference, 'variantIdentifier'),
     ]);
     return values ? { name: element.displayName, values } : undefined;
   });
-  readonly minExpression = computed(() =>
-    this.hasExpression() ? Math.floor(this.analysis.result()!.expression.min) : 0
-  );
-  readonly maxExpression = computed(() =>
-    this.hasExpression() ? Math.ceil(this.analysis.result()!.expression.max) : 1
-  );
+  readonly minExpression = computed(() => {
+    const min = this.analysis.result()?.expression.min;
+    return min === undefined ? 0 : Math.floor(min);
+  });
+  readonly maxExpression = computed(() => {
+    const max = this.analysis.result()?.expression.max;
+    return max === undefined ? 1 : Math.ceil(max);
+  });
 
   readonly pValuesColumnIds = computed(() =>
     this.analysis.hasPValues() ? ['entities-pValue', 'entities-fdr'] : []
   );
 
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
 
   readonly expressionColumnIds = computed(() =>
@@ -179,23 +192,17 @@ export class ResultTabComponent {
   );
 
   fdrValues = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1];
-  readonly filterFDR = linkedSignal(() =>
-    this.state.fdrFilter() !== undefined ? this.state.fdrFilter()! : 1
-  );
+  readonly filterFDR = linkedSignal(() => this.state.fdrFilter() ?? 1);
   readonly fdrIndex = linkedSignal(() => this.fdrValues.indexOf(this.filterFDR()));
   fdrLabel = (index: number) => '' + this.fdrValues[index];
 
   readonly fdrFilterActive = computed(() => this.fdrIndex() < this.fdrValues.length - 1);
 
-  readonly filterMinSize = linkedSignal(() =>
-    this.state.pathwayMinSizeFilter() !== undefined
-      ? this.state.pathwayMinSizeFilter()!
-      : this.pathwaySizeStats().min
+  readonly filterMinSize = linkedSignal(
+    () => this.state.pathwayMinSizeFilter() ?? this.pathwaySizeStats().min
   );
-  readonly filterMaxSize = linkedSignal(() =>
-    this.state.pathwayMaxSizeFilter() !== undefined
-      ? this.state.pathwayMaxSizeFilter()!
-      : this.pathwaySizeStats().max
+  readonly filterMaxSize = linkedSignal(
+    () => this.state.pathwayMaxSizeFilter() ?? this.pathwaySizeStats().max
   );
   readonly sizeFilterActive = computed(
     () =>
@@ -203,15 +210,11 @@ export class ResultTabComponent {
       this.filterMaxSize() !== this.pathwaySizeStats().max
   );
 
-  readonly filterMinExpression = linkedSignal(() =>
-    this.state.minExpressionFilter() !== undefined
-      ? this.state.minExpressionFilter()!
-      : this.minExpression()
+  readonly filterMinExpression = linkedSignal(
+    () => this.state.minExpressionFilter() ?? this.minExpression()
   );
-  readonly filterMaxExpression = linkedSignal(() =>
-    this.state.maxExpressionFilter() !== undefined
-      ? this.state.maxExpressionFilter()!
-      : this.maxExpression()
+  readonly filterMaxExpression = linkedSignal(
+    () => this.state.maxExpressionFilter() ?? this.maxExpression()
   );
   readonly expressionFilterActive = computed(
     () =>
@@ -231,22 +234,21 @@ export class ResultTabComponent {
     if (this.includeDisease() === false) {
       data = data.filter((p) => !p.inDisease);
     }
-    if (this.state.fdrFilter() !== undefined) {
-      data = data.filter((p) => p.entities.fdr <= this.state.fdrFilter()!);
+    const fdr = this.state.fdrFilter();
+    if (fdr !== undefined) {
+      data = data.filter((p) => p.entities.fdr <= fdr);
     }
-    if (this.state.minExpressionFilter() !== undefined) {
-      data = data.filter(
-        (p) => p.entities.exp[this.analysis.sampleIndex()] >= this.state.minExpressionFilter()!
-      );
+    const minExpression = this.state.minExpressionFilter();
+    if (minExpression !== undefined) {
+      data = data.filter((p) => expressionAt(p, this.analysis.sampleIndex()) >= minExpression);
     }
-    if (this.state.maxExpressionFilter() !== undefined) {
-      data = data.filter(
-        (p) => p.entities.exp[this.analysis.sampleIndex()] <= this.state.maxExpressionFilter()!
-      );
+    const maxExpression = this.state.maxExpressionFilter();
+    if (maxExpression !== undefined) {
+      data = data.filter((p) => expressionAt(p, this.analysis.sampleIndex()) <= maxExpression);
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter((p) =>
-        this.gsaFilterSet().has(p.entities.exp[this.analysis.sampleIndex()])
+        this.gsaFilterSet().has(expressionAt(p, this.analysis.sampleIndex()))
       );
     }
     return data;
@@ -258,11 +260,13 @@ export class ResultTabComponent {
 
   readonly filteredData = computed(() => {
     let data = this.filteredDataNoSize();
-    if (this.state.pathwayMinSizeFilter()) {
-      data = data.filter((p) => p.entities.total >= this.state.pathwayMinSizeFilter()!);
+    const minSize = this.state.pathwayMinSizeFilter();
+    if (minSize) {
+      data = data.filter((p) => p.entities.total >= minSize);
     }
-    if (this.state.pathwayMaxSizeFilter()) {
-      data = data.filter((p) => p.entities.total <= this.state.pathwayMaxSizeFilter()!);
+    const maxSize = this.state.pathwayMaxSizeFilter();
+    if (maxSize) {
+      data = data.filter((p) => p.entities.total <= maxSize);
     }
     return data;
   });
@@ -282,16 +286,16 @@ export class ResultTabComponent {
 
   readonly gsaOptions = computed(() => {
     const activatedFilters = untracked(this.gsaFilterSet);
-    return [2, 1, 0, -1, -2].map((exp) => ({
+    return [...gsaValueToLabel].map(([exp, label]) => ({
       exp,
       value: activatedFilters.has(exp),
-      label: gsaValueToLabel.get(exp)!,
+      label,
     }));
   });
 
   constructor() {
-    this.dataSource.sortingDataAccessor = (data, header) =>
-      header.split('-').reduce((a: any, b) => a?.[b], data);
+    this.dataSource.sortData = (rows, sort) =>
+      sortRows(rows, sort, (row, columnId) => sortKey(valueAtPath(row, columnId)));
     effect(() => {
       this.sizeObserver.observe(this.container().nativeElement);
     });
@@ -300,9 +304,14 @@ export class ResultTabComponent {
       this.dataSource.sort = this.sort();
     });
     effect(() => (this.dataSource.data = this.filteredData()));
-    effect(() => this.currentSort() && this.paginator().firstPage());
+    // Read to follow the sort: a new sort starts at the first page.
     effect(() => {
-      if (this.currentSort()) setTimeout(() => (this.dataSource.sort = this.sort()));
+      this.currentSort();
+      this.paginator().firstPage();
+    });
+    effect(() => {
+      this.currentSort();
+      setTimeout(() => (this.dataSource.sort = this.sort()));
     });
     effect(() => {
       const stId = this.data.selectedPathwayStId();

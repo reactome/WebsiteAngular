@@ -49,7 +49,7 @@ RUN node -e " \
     && npm cache clean --force \
     && rm root-package.json
 
-COPY tools/render/*.mjs ./
+COPY tools/render/*.ts ./
 
 # Renders arrive from the network. Nothing here needs root, and the browser is
 # the part handling input.
@@ -72,4 +72,4 @@ EXPOSE 4310
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
     CMD node -e "fetch('http://127.0.0.1:4310/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
-CMD ["node", "service.mjs"]
+CMD ["node", "service.ts"]

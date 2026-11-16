@@ -13,12 +13,13 @@ import { MatPaginatorModule } from '@angular/material/paginator';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { TypeSafeMatCellDef } from '../../../../utils/type-safe-mat-cell-def.directive';
 import { TypeSafeMatRowDef } from '../../../../utils/type-safe-mat-row-def.directive';
-import type { Analysis } from '../../../../model/analysis.model';
+import type * as Analysis from '../../../../model/analysis.model';
 import { AnalysisService } from '../../../../services/analysis.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { UrlStateService } from '../../../../services/url-state.service';
 import { ExpressionTagComponent } from '../expression-tag/expression-tag.component';
 import { MatSort, MatSortModule } from '@angular/material/sort';
+import { sortKey, sortRows, valueAtPath } from '../sort-rows';
 
 @Component({
   selector: 'cr-not-found-table',
@@ -40,10 +41,10 @@ export class NotFoundTableComponent {
   public analysis: AnalysisService = inject(AnalysisService);
   public state: UrlStateService = inject(UrlStateService);
 
-  readonly isGSA = computed(() => this.analysis.result()?.summary?.type === 'GSA_REGULATION');
+  readonly isGSA = computed(() => this.analysis.result()?.summary.type === 'GSA_REGULATION');
 
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
 
   readonly expressionColumnIds = computed(() =>
@@ -72,9 +73,8 @@ export class NotFoundTableComponent {
   constructor() {
     effect(() => (this.dataSource.data = this.data()));
     effect(() => (this.dataSource.sort = this.sort()));
-    this.dataSource.sortingDataAccessor = (data, header) => {
-      const value = header.split('-').reduce((a: any, b) => a?.[b], data);
-      if (value) return value; // Expressions + identifier
-    };
+    // A falsy value (an expression of 0 among them) sorts as a missing one.
+    this.dataSource.sortData = (rows, sort) =>
+      sortRows(rows, sort, (row, columnId) => sortKey(valueAtPath(row, columnId) || undefined));
   }
 }

@@ -1,6 +1,7 @@
 import { renderServiceAvailable } from './fixtures/serves';
 import { type Page, type Download } from '@playwright/test';
 import { test, expect } from './support/backend';
+import { copyOf } from './support/release-files';
 import { readFileSync } from 'node:fs';
 import { unzipSync, strFromU8 } from 'fflate';
 
@@ -81,6 +82,7 @@ function slideOf(bytes: Buffer) {
   const size = /<p:sldSz cx="(\d+)" cy="(\d+)"\/>/.exec(strFromU8(parts['ppt/presentation.xml']));
   return {
     shapes: (slide.match(/<p:sp>/g) ?? []).length,
+    groups: (slide.match(/<p:grpSp>/g) ?? []).length,
     pictures: (slide.match(/<p:pic>/g) ?? []).length,
     width: Number(size?.[1] ?? 0),
   };
@@ -159,15 +161,181 @@ test.describe('Diagram downloads', () => {
     ).toBeGreaterThan(500);
   });
 
+  test("an illustration's pictures are saved through a short link", async ({ page }) => {
+    // Drawn at three times its size on screen, an illustration's PNG or JPEG
+    // is megabytes. Written into the link as a data: URL, it was more than the
+    // 2 MB Chrome will follow, and the download failed as "Site wasn't
+    // available" while the SVG saved. Playwright's downloads take any link, so
+    // the file arriving proves nothing here: what the page clicks is the test.
+    await page.addInitScript(() => {
+      const links: string[] = [];
+      (window as unknown as { savedLinks: string[] }).savedLinks = links;
+      const click = HTMLAnchorElement.prototype.click;
+      HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
+        if (this.download) links.push(this.href);
+        click.call(this);
+      };
+    });
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    for (const format of ['PNG', 'JPEG']) assertLooksLike(format, await grab(page, format));
+
+    const links = await page.evaluate(
+      () => (window as unknown as { savedLinks: string[] }).savedLinks
+    );
+    expect(
+      links.map((link) => `${link.slice(0, 5)} ${link.length < 200 ? 'short' : link.length}`)
+    ).toEqual(['blob: short', 'blob: short']);
+  });
+
+  test('a figure made in the page says it is being made until it is saved', async ({ page }) => {
+    // A large illustration takes seconds to draw, and its buttons said nothing
+    // in that time. The encoding is held back a little so the state is there to
+    // see however fast the machine.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 1500);
+      };
+    });
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const button = page.locator('.container.diagram cr-download-button').filter({
+      has: page.getByText('PNG', { exact: true }),
+    });
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 240_000 }),
+      (async () => {
+        await button.locator('a').click();
+        await expect(button.locator('a')).toHaveClass(/button--busy/);
+        await expect(button.locator('mat-progress-spinner')).toBeVisible();
+        await expect(button.getByRole('status')).toHaveText('Preparing…');
+      })(),
+    ]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+
+    await expect(button.locator('a')).not.toHaveClass(/button--busy/);
+    // By class: an empty live region leaves the accessibility tree, so a role
+    // lookup finds nothing once it has nothing to say.
+    await expect(button.locator('.button__state')).toHaveText('');
+    await expect(page.locator('.download-failure')).toHaveCount(0);
+  });
+
+  test("a diagram's figure says it is being made until it is saved", async ({ page }) => {
+    // The diagram is drawn by cytoscape rather than from an illustration, and
+    // its drawer picks the request up before it has drawn anything: the
+    // spinner has to last until the file, not until the pickup.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 1500);
+      };
+    });
+    await openDownloadTab(page, DIAGRAM);
+    const button = page.locator('.container.diagram cr-download-button').filter({
+      has: page.getByText('PNG', { exact: true }),
+    });
+
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 240_000 }),
+      (async () => {
+        await button.locator('a').click();
+        await expect(button.locator('a')).toHaveClass(/button--busy/);
+        await expect(button.getByRole('status')).toHaveText('Preparing…');
+      })(),
+    ]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(button.locator('a')).not.toHaveClass(/button--busy/);
+  });
+
+  test('a figure asked for before the diagram has loaded says so at once', async ({ page }) => {
+    // Handed to a drawer with nothing drawn yet, the click failed with "no
+    // diagram on screen" a second before the diagram appeared. The diagram's
+    // file is held back here so the click lands while it is still loading.
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => (release = resolve));
+    await page.route(`**/diagram/${DIAGRAM}.json`, async (route) => {
+      await held;
+      await route.fallback();
+    });
+    await page.goto(`/PathwayBrowser/${DIAGRAM}`);
+    await page
+      .locator('[role="tab"]')
+      .filter({ hasText: /Download/i })
+      .first()
+      .click();
+    const png = page.locator('.container.diagram').getByText('PNG', { exact: true }).first();
+    await png.click();
+
+    const reason = page.locator('.download-failure');
+    await expect(reason).toHaveText('The figure is still loading; try again once it is on screen.');
+    await expect(page.locator('.button--busy'), 'and nothing is left working').toHaveCount(0);
+
+    release();
+    await page.waitForSelector('#cytoscape canvas', { timeout: 90_000 });
+    await page.waitForTimeout(2500);
+    const [download] = await Promise.all([page.waitForEvent('download'), png.click()]);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(reason).toHaveCount(0);
+  });
+
+  test('moving to another pathway mid-export saves the first one, and blames nothing', async ({
+    page,
+  }) => {
+    // The view being drawn from is replaced while its figure is encoding. The
+    // new view used to take the same request up, find nothing drawn, and report
+    // "no illustration on screen" while the old one went on to save a file
+    // named after the new pathway.
+    await page.addInitScript(() => {
+      const toBlob = HTMLCanvasElement.prototype.toBlob;
+      HTMLCanvasElement.prototype.toBlob = function (
+        this: HTMLCanvasElement,
+        ...args: Parameters<HTMLCanvasElement['toBlob']>
+      ) {
+        setTimeout(() => toBlob.apply(this, args), 4000);
+      };
+    });
+    await openDownloadTab(page, HEAVY_ILLUSTRATION);
+    const saved = page.waitForEvent('download', { timeout: 240_000 });
+    await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
+    await expect(page.locator('.button--busy')).toHaveCount(1);
+
+    await page.getByRole('button', { name: 'Cell Cycle', exact: true }).first().click();
+    await expect(page).toHaveURL(/R-HSA-1640170/);
+
+    const download = await saved;
+    expect(download.suggestedFilename()).toBe(`${HEAVY_ILLUSTRATION}.png`);
+    assertLooksLike('PNG', readFileSync(await download.path()));
+    await expect(page.locator('.button--busy')).toHaveCount(0);
+    await expect(page.locator('.download-failure')).toHaveCount(0);
+  });
+
   test('a figure that cannot be made says so, rather than doing nothing', async ({ page }) => {
-    // Circadian clock builds six of its shapes out of <foreignObject>, which is
+    // Circadian clock built six of its shapes out of <foreignObject>, which is
     // how a design tool exports a conic gradient. Chromium taints a canvas the
-    // moment one is drawn onto it and refuses toDataURL, so this illustration
-    // cannot be turned into a picture in any browser.
+    // moment one is drawn onto it and refuses toDataURL, so such an
+    // illustration cannot be turned into a picture in any browser.
     //
     // That part is not fixable here. What was fixable: the click produced no
     // file, no message and no sign it had registered, because every client-side
     // exporter reported failure with console.error and nothing else.
+    //
+    // Release 98's copy was redrawn without them, so the test puts one back.
+    await page.route(/\/ehld\/R-HSA-9909396\.svg$/, (route) =>
+      route.fulfill({
+        contentType: 'image/svg+xml',
+        headers: { 'access-control-allow-origin': '*' },
+        body: readFileSync(copyOf(route.request().url()), 'utf8').replace(
+          '</svg>',
+          '<foreignObject width="10" height="10"><div xmlns="http://www.w3.org/1999/xhtml"></div></foreignObject></svg>'
+        ),
+      })
+    );
     await openDownloadTab(page, 'R-HSA-9909396');
     await page.locator('.container.diagram').getByText('PNG', { exact: true }).first().click();
 
@@ -214,6 +382,9 @@ test.describe('Server-rendered figures', () => {
           100
         );
         expect(slide.pictures, 'no picture of the diagram').toBe(0);
+        // And an entity or a reaction is one object to drag, not a border, a
+        // centre and a line for every segment to select one by one (#299).
+        expect(slide.groups, 'entities and reactions grouped').toBeGreaterThan(10);
       }
     });
   }
@@ -468,7 +639,7 @@ test.describe('Logo downloads', () => {
           els.map((e) => ({
             href: e.getAttribute('href') ?? '',
             download: e.getAttribute('download'),
-            label: e.textContent ?? '',
+            label: e.textContent,
           }))
         ))
       );
@@ -504,5 +675,369 @@ test.describe('Logo downloads', () => {
       page.getByRole('menuitem', { name: 'Large' }).click(),
     ]);
     expect(file.suggestedFilename()).toBe('Reactome_Imagotype_Positive_100mm.png');
+  });
+});
+
+/** A made-up analysis token, answered by `holdAnalysisForUniprot`. */
+const TOKEN = 'MADE-UP-RENDER-TOKEN';
+
+/**
+ * Answer a made-up analysis holding one resource besides TOTAL, so the page
+ * loads it for TOTAL and then again for UNIPROT, as the browser shows it.
+ * Every load for UNIPROT is held back: the result three seconds, and what a
+ * view reads for its own colouring (a diagram's found entities and pathways,
+ * the overview's tree) six, so a page ready on the result alone is caught as
+ * well as one ready before it. Each load says whether the page was already
+ * ready when it arrived, as `host()` names the figure's host at that moment:
+ * on a held page, the figure a move made (`data-render-nav`), not the last.
+ */
+async function holdAnalysisForUniprot(page: Page, host: () => string = () => 'cr-render') {
+  const loads: { url: string; resource: string; host: string; readyBefore: boolean }[] = [];
+  const arrive = async (url: URL) => {
+    const resource = url.searchParams.get('resource') ?? 'TOTAL';
+    const result = url.pathname.endsWith(`/token/${TOKEN}`);
+    // Whose load this is, as asked rather than as answered.
+    const figure = host();
+    if (resource === 'UNIPROT')
+      await new Promise((resolve) => setTimeout(resolve, result ? 3_000 : 6_000));
+    const ready = await page
+      .locator(`${figure}[data-render-ready="true"]`)
+      .count()
+      .catch(() => 0);
+    loads.push({ url: url.pathname, resource, host: figure, readyBefore: ready > 0 });
+  };
+  const result = {
+    summary: {
+      token: TOKEN,
+      type: 'OVERREPRESENTATION',
+      sampleName: 'made up',
+      text: true,
+      projection: false,
+      interactors: false,
+      includeDisease: true,
+    },
+    expression: { columnNames: [] },
+    identifiersNotFound: 0,
+    pathwaysFound: 0,
+    pathways: [],
+    resourceSummary: [
+      { resource: 'TOTAL', pathways: 1, filtered: 1 },
+      { resource: 'UNIPROT', pathways: 1, filtered: 1 },
+    ],
+    speciesSummary: [],
+  };
+  await page.route(`**/AnalysisService/token/${TOKEN}**`, async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.endsWith('/notFound')) return route.fulfill({ json: [] });
+    await arrive(url);
+    if (url.pathname.endsWith(`/token/${TOKEN}`)) return route.fulfill({ json: result });
+    if (url.pathname.endsWith('/filter/pathways')) return route.fulfill({ json: [] });
+    if (url.pathname.includes('/found/all/')) {
+      return route.fulfill({
+        json: {
+          pathway: url.pathname.split('/').at(-1),
+          foundEntities: 0,
+          foundInteractors: 0,
+          expNames: [],
+          resources: [url.searchParams.get('resource') ?? 'TOTAL'],
+          entities: [],
+          interactors: [],
+        },
+      });
+    }
+    return route.fulfill({ status: 404, json: { code: 404 } });
+  });
+  // The overview's tree is fetched with the token, which the content service
+  // cannot read: it is answered with the recorded tree without one.
+  await page.route('**/ContentService/data/eventsHierarchy/**', async (route) => {
+    const url = new URL(route.request().url());
+    if (url.searchParams.get('token') !== TOKEN) return route.fallback();
+    await arrive(url);
+    for (const name of ['token', 'resource', 'interactors']) url.searchParams.delete(name);
+    return route.fallback({ url: url.toString() });
+  });
+  return loads;
+}
+
+/**
+ * Moves a held page to the render address `to`, as the render service moves
+ * one (spec 018): the figure it makes carries `nav` on its host.
+ */
+async function moveHeld(page: Page, to: string, nav: string) {
+  const moved = await page.evaluate(
+    async ([address, id]) =>
+      await (
+        window as unknown as {
+          __renderNavigate: (to: string, nav: string) => Promise<boolean>;
+        }
+      ).__renderNavigate(address, id),
+    [to, nav] as const
+  );
+  expect(moved, `the page moved to ${to}`).toBe(true);
+}
+
+test.describe('The render page, without the render service', () => {
+  // The slide's grouping (#299) was checked only inside the PPTX download
+  // test, which needs the render service and so never runs in CI. What makes
+  // the groups is the render page, which CI does serve: its shapes are read
+  // here directly.
+  test('names a group for every entity and reaction it draws', async ({ page }) => {
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const shapes = await page.evaluate(() => {
+      const api = (window as unknown as Record<string, { shapes: () => unknown }>)[
+        '__renderExport'
+      ];
+      return api.shapes() as { shapes: { group?: string; groupName?: string }[] } | null;
+    });
+    expect(shapes, 'the render page drew shapes').not.toBeNull();
+    const grouped = (shapes?.shapes ?? []).filter((shape) => shape.group);
+    const groups = new Set(grouped.map((shape) => shape.group));
+    expect(groups.size, 'entities and reactions grouped').toBeGreaterThan(10);
+    // A group that holds more than one node -- an entity with its
+    // modification badge -- or the name check below holds trivially.
+    const nodesIn = (group: string) =>
+      grouped.filter(
+        (shape) => shape.group === group && (shape as { kind?: string }).kind === 'node'
+      ).length;
+    expect([...groups].some((group) => group?.startsWith('entity-') && nodesIn(group) > 1)).toBe(
+      true
+    );
+    // Each group is one thing, so it has one name; not every shape carries
+    // it (the slide takes the first that does), but none may carry another.
+    for (const group of groups) {
+      const names = new Set(
+        grouped
+          .filter((shape) => shape.group === group && shape.groupName)
+          .map((shape) => shape.groupName)
+      );
+      expect([...names], `group ${group} has one name`).toHaveLength(1);
+    }
+  });
+
+  // The page drew a figure and said it was ready before its analysis
+  // colouring arrived -- and, for a result holding one resource besides TOTAL,
+  // before the second load that colours it for that resource. The render
+  // service then cached the uncoloured figure under the token. The analysis
+  // here is made up and answered in the test, and finds nothing, so these say
+  // when the page is ready and what it says it carries, not what colour it is;
+  // the figures are recorded ones. The illustration colours itself as its
+  // result arrives, so its own wait is not one these can tell apart.
+  // Each view waits for the load its own colouring comes from: a page ready on
+  // the result alone was ready before the diagram even asked for its entities.
+  for (const [view, path, own] of [
+    ['a diagram', `/PathwayBrowser/render/${DIAGRAM}`, '/found/all/'],
+    ['an illustration', `/PathwayBrowser/render/${ILLUSTRATION}`, `/token/${TOKEN}`],
+    ['the genome-wide view', '/PathwayBrowser/render?species=9606', '/eventsHierarchy/'],
+  ] as const) {
+    test(`is not ready until ${view} has its analysis, for the result’s resource`, async ({
+      page,
+    }) => {
+      const loads = await holdAnalysisForUniprot(page);
+      const at = `${path}${path.includes('?') ? '&' : '?'}analysis=${TOKEN}`;
+      await page.goto(at);
+      await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      const state = await page.evaluate(
+        () => (window as unknown as { __renderState: { analysis: unknown } }).__renderState
+      );
+      expect(state.analysis, 'coloured for the one resource besides TOTAL').toEqual({
+        token: TOKEN,
+        resource: 'UNIPROT',
+      });
+      // Waited for rather than read: a page ready too early would be read
+      // before the held-back loads even arrived.
+      await expect
+        .poll(
+          () =>
+            loads.filter((load) => load.resource === 'UNIPROT' && load.url.includes(own)).length,
+          { message: `the page read ${own} for UNIPROT`, timeout: 20_000 }
+        )
+        .toBeGreaterThan(0);
+      expect(
+        loads.filter((load) => load.readyBefore),
+        'no colouring arrived after the page said it was ready'
+      ).toEqual([]);
+    });
+  }
+
+  // A token whose result cannot be read -- one a release has removed -- is
+  // dropped by the analysis service, and the page then drew the figure with no
+  // colouring at all and said it was ready.
+  test('fails, rather than draw uncoloured, when the analysis cannot be read', async ({ page }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 410, json: { code: 410, reason: 'Gone' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`);
+    const render = page.locator('cr-render');
+    // Gone, not merely unread: a release removed it, which a retry will not mend.
+    await expect(render).toHaveAttribute('data-render-error', /analysis result is gone/, {
+      timeout: 120_000,
+    });
+    await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
+
+  // A result the service holds but cannot answer for is not one a release
+  // removed: a retry may mend it, so the caller is not told it is gone.
+  test('says an analysis it could not read is unread, not gone', async ({ page }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 500, json: { code: 500, reason: 'Internal Server Error' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`);
+    const render = page.locator('cr-render');
+    await expect(render).toHaveAttribute('data-render-error', /analysis result could not be read/, {
+      timeout: 120_000,
+    });
+    await expect(render).not.toHaveAttribute('data-render-error', new RegExp(TOKEN));
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
+
+  // On a held page (spec 018) the next figure is a new render component in the
+  // same app, whose analysis service can already hold a settled result: the
+  // last figure's. A wait that trusted that would be ready before the new
+  // view had coloured itself, and the render service would cache the figure
+  // under the token (pdf-export spec 002, T017).
+  for (const [view, from, to, own] of [
+    [
+      'a diagram, after an illustration with no analysis',
+      `/PathwayBrowser/render/${ILLUSTRATION}`,
+      `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`,
+      '/found/all/',
+    ],
+    [
+      'the genome-wide view, after a diagram with the same analysis',
+      `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`,
+      `/PathwayBrowser/render?species=9606&analysis=${TOKEN}`,
+      '/eventsHierarchy/',
+    ],
+  ] as const) {
+    test(`on a held page, is not ready until ${view} has its analysis`, async ({ page }) => {
+      // Two figures, each with loads held back for seconds.
+      test.slow();
+      let figure = 'cr-render';
+      const loads = await holdAnalysisForUniprot(page, () => figure);
+      await page.goto(from);
+      await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      figure = 'cr-render[data-render-nav="next"]';
+      await moveHeld(page, to, 'next');
+      await expect(page.locator(`${figure}[data-render-ready="true"]`)).toHaveCount(1, {
+        timeout: 120_000,
+      });
+      const state = await page.evaluate(
+        () =>
+          (window as unknown as { __renderState: { nav?: string; analysis: unknown } })
+            .__renderState
+      );
+      expect(state.nav).toBe('next');
+      expect(state.analysis, 'coloured for the one resource besides TOTAL').toEqual({
+        token: TOKEN,
+        resource: 'UNIPROT',
+      });
+      await expect
+        .poll(
+          () =>
+            loads.filter(
+              (load) =>
+                load.host === figure && load.resource === 'UNIPROT' && load.url.includes(own)
+            ).length,
+          { message: `the moved page read ${own} for UNIPROT`, timeout: 20_000 }
+        )
+        .toBeGreaterThan(0);
+      expect(
+        loads.filter((load) => load.readyBefore),
+        'no colouring arrived after its figure said it was ready'
+      ).toEqual([]);
+    });
+  }
+
+  // A held page's analysis service has settled before, so a dead token must
+  // still end the next figure in its error, not in a figure without colour.
+  test('on a held page, fails rather than draw uncoloured when the analysis cannot be read', async ({
+    page,
+  }) => {
+    await page.route(`**/AnalysisService/token/${TOKEN}**`, (route) =>
+      route.fulfill({ status: 410, json: { code: 410, reason: 'Gone' } })
+    );
+    await page.goto(`/PathwayBrowser/render/${ILLUSTRATION}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    await moveHeld(page, `/PathwayBrowser/render/${DIAGRAM}?analysis=${TOKEN}`, 'next');
+    const render = page.locator('cr-render[data-render-nav="next"]');
+    await expect(render).toHaveAttribute('data-render-error', /analysis result is gone/, {
+      timeout: 120_000,
+    });
+    await expect(render).not.toHaveAttribute('data-render-ready', 'true');
+  });
+
+  // The reaction's own layout is never coloured, so the figure it draws
+  // carries no analysis, whatever the address asked for.
+  test('says the reaction view carries no analysis', async ({ page, request }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
+    await holdAnalysisForUniprot(page);
+    await page.goto(`/PathwayBrowser/render/${REACTION}?layout=reaction&analysis=${TOKEN}`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const state = await page.evaluate(
+      () =>
+        (window as unknown as { __renderState: { view: string; analysis: unknown } }).__renderState
+    );
+    expect(state.view).toBe('reaction');
+    expect(state.analysis).toBeNull();
+  });
+
+  // ContentService's reaction image is drawn from here in every format Java
+  // drew it in (spec 006 research D24): a .jpeg was a PNG with a transparent
+  // background, and a .gif failed for want of a frame.
+  test('draws the reaction view as JPEG, and as a frame for a GIF', async ({ page, request }) => {
+    test.skip(
+      !(await servesReactionDiagram(request)),
+      'this backend does not serve a reaction its own diagram'
+    );
+    await page.goto(`/PathwayBrowser/render/${REACTION}?layout=reaction`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const drawn = await page.evaluate(async () => {
+      const api = (
+        window as unknown as {
+          __renderExport: {
+            jpeg: (scale: number) => Promise<string> | string;
+            png: (scale: number) => Promise<string> | string;
+            frameCanvas: (scale: number) => Promise<HTMLCanvasElement>;
+          };
+        }
+      ).__renderExport;
+      const size = async (url: string) => {
+        const image = new Image();
+        image.src = url;
+        await image.decode();
+        return [image.naturalWidth, image.naturalHeight];
+      };
+      const jpeg = await api.jpeg(1);
+      const png = await api.png(1);
+      const frame = await api.frameCanvas(1);
+      return {
+        jpeg: jpeg.slice(0, 'data:image/jpeg'.length),
+        jpegSize: await size(jpeg),
+        pngSize: await size(png),
+        frameSize: [frame.width, frame.height],
+      };
+    });
+    expect(drawn.jpeg).toBe('data:image/jpeg');
+    expect(drawn.pngSize[0]).toBeGreaterThan(100);
+    // One picture in each: the same size whichever way it is asked for.
+    expect(drawn.jpegSize).toEqual(drawn.pngSize);
+    expect(drawn.frameSize).toEqual(drawn.pngSize);
   });
 });

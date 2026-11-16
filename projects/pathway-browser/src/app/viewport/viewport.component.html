@@ -17,14 +17,19 @@
       [attr.inert]="panels().hierarchy ? null : ''"
     >
       <div class="left-panel">
-        <!-- Hidden from the curator build rather than from everyone: it was
-             commented out wholesale in "Remove Overlay feature, feedback, and
-             revert to old site", which took it off the public site too. -->
-        @if (!isCurator) {
-          <div class="search">
-            <cr-search />
-          </div>
-        }
+        <div class="left-top" [class.with-home]="homeInPanel()">
+          @if (homeInPanel()) {
+            <ng-container [ngTemplateOutlet]="homeLink" />
+          }
+          <!-- Hidden from the curator build rather than from everyone: it was
+               commented out wholesale in "Remove Overlay feature, feedback, and
+               revert to old site", which took it off the public site too. -->
+          @if (!isCurator) {
+            <div class="search">
+              <cr-search />
+            </div>
+          }
+        </div>
         <!--        <div class="sidebar">-->
 
         <div class="species-interactor-container">
@@ -48,7 +53,7 @@
             (keydown.enter)="toggleVisibility('species')"
             (keydown.space)="toggleVisibility('species'); $event.preventDefault()"
             (keydown.escape)="closePanels()"
-            [ngClass]="{ selected: visibility.species }"
+            [class.selected]="visibility.species"
           >
             <mat-icon class="custom-icon" svgIcon="species"></mat-icon>
             <div class="species-content">
@@ -70,7 +75,7 @@
               (keydown.enter)="toggleVisibility('interactor')"
               (keydown.space)="toggleVisibility('interactor'); $event.preventDefault()"
               (keydown.escape)="closePanels()"
-              [ngClass]="{ selected: visibility.interactor }"
+              [class.selected]="visibility.interactor"
             >
               <mat-icon class="custom-icon" svgIcon="overlay"></mat-icon>
               <div class="overlay-content">
@@ -133,9 +138,18 @@
       <div class="right-panel">
         <div class="top">
           <div class="top-left">
+            @if (!homeInPanel()) {
+              <ng-container [ngTemplateOutlet]="homeLink" />
+            }
             <div class="analysis-button-group">
               @if (!isCurator) {
-                <button (click)="toggleAnalysis()" mat-ripple class="primary" [class.loading]="analysisLoading()">
+                <button
+                  type="button"
+                  (click)="toggleAnalysis()"
+                  mat-ripple
+                  class="primary"
+                  [class.loading]="analysisLoading()"
+                >
                   <mat-icon>query_stats</mat-icon>
                   Analyze
                   @if (analysisLoading()) {
@@ -144,6 +158,7 @@
                 </button>
                 @if (showDeltaSignal) {
                   <button
+                    type="button"
                     (click)="toggleDeltaSignal()"
                     mat-ripple
                     class="primary"
@@ -168,6 +183,7 @@
                   </div>
                   <div class="buttons">
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Previous sample"
@@ -177,6 +193,7 @@
                       <mat-icon>skip_previous</mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       (click)="toggleIterate()"
@@ -185,6 +202,7 @@
                       <mat-icon [fontIcon]="interval ? 'pause' : 'play_arrow'"></mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Next sample"
@@ -194,6 +212,7 @@
                       <mat-icon>skip_next</mat-icon>
                     </button>
                     <button
+                      type="button"
                       mat-ripple
                       class="primary"
                       matTooltip="Set sample display duration"
@@ -206,7 +225,7 @@
               }
 
               @if (analysis.result()) {
-                <button class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
+                <button type="button" class="error" mat-ripple (click)="clear()" matTooltip="Clear analyis">
                   <mat-icon>close</mat-icon>
                 </button>
               }
@@ -222,7 +241,7 @@
             </mat-menu>
 
             <mat-menu #an="matMenu">
-              <button mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
+              <button type="button" mat-menu-item (click)="state.analysis.set('MjAyNTA2MjQxMDI3MTNfNzgx')">GSA</button>
             </mat-menu>
 
             @if (!isCurator) {
@@ -231,19 +250,24 @@
                    root, which drops the /PathwayBrowser prefix and lands the
                    user on the website app instead of the diagram. -->
               @if (normalPathway(); as normal) {
-                <button mat-stroked-button (click)="compareWith(normal.stId)">
+                <button type="button" mat-stroked-button (click)="compareWith(normal.stId)">
                   <mat-icon>compare</mat-icon>
                   <span>Compare</span>
                   <mat-icon iconPositionEnd>check</mat-icon>
                 </button>
               } @else {
-                <button mat-stroked-button [disabled]="diseasePathways().length === 0" [matMenuTriggerFor]="compare">
+                <button
+                  type="button"
+                  mat-stroked-button
+                  [disabled]="diseasePathways().length === 0"
+                  [matMenuTriggerFor]="compare"
+                >
                   <mat-icon>compare</mat-icon>
                   Compare
                 </button>
                 <mat-menu #compare="matMenu">
                   @for (comparablePathway of diseasePathways(); track comparablePathway.stId) {
-                    <button mat-menu-item (click)="compareWith(comparablePathway.stId)">
+                    <button type="button" mat-menu-item (click)="compareWith(comparablePathway.stId)">
                       {{ comparablePathway.displayName }}
                     </button>
                   }
@@ -258,16 +282,20 @@
 
           <div class="top-right">
             <!-- reactome.org's Tour and Layout controls, behaving as they did there. -->
+            @if (hasTour) {
+              <button
+                type="button"
+                mat-icon-button
+                class="quote"
+                aria-label="Tour"
+                matTooltip="Pathway Browser tour"
+                (click)="openTour()"
+              >
+                <mat-icon fontSet="symbols">smart_display</mat-icon>
+              </button>
+            }
             <button
-              mat-icon-button
-              class="quote"
-              aria-label="Tour"
-              matTooltip="Pathway Browser tour"
-              (click)="openTour()"
-            >
-              <mat-icon fontSet="symbols">smart_display</mat-icon>
-            </button>
-            <button
+              type="button"
               mat-icon-button
               class="quote"
               aria-label="Layout"
@@ -278,6 +306,7 @@
             </button>
             <mat-menu #layoutMenu="matMenu">
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="panels().hierarchy"
@@ -289,6 +318,7 @@
                 Hierarchy panel
               </button>
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="panels().details"
@@ -298,6 +328,7 @@
                 Details panel
               </button>
               <button
+                type="button"
                 mat-menu-item
                 role="menuitemcheckbox"
                 [attr.aria-checked]="!panels().hierarchy && !panels().details"
@@ -309,26 +340,6 @@
                 Expand the centre view
               </button>
             </mat-menu>
-            @if (!isCurator) {
-              <a
-                [href]="formerPathwayBrowserURL()"
-                mat-icon-button
-                class="quote warn history"
-                matTooltip="Open former Pathway Browser"
-              >
-                <mat-icon fontSet="symbols">history</mat-icon>
-              </a>
-              <a
-                href="https://forms.gle/3238xqbShhF8t9BQA"
-                target="_blank"
-                mat-stroked-button
-                class="feedback warn"
-                matTooltip="Send feedback for the beta version"
-              >
-                <mat-icon fontSet="symbols" iconPositionEnd>feedback</mat-icon>
-                <span class="feedback-label">Feedback</span>
-              </a>
-            }
             <mat-slide-toggle
               color="primary"
               [(ngModel)]="dark.isDark"
@@ -336,21 +347,29 @@
               [matTooltip]="dark.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
               id="dark-toggle"
             ></mat-slide-toggle>
-            <button mat-icon-button class="quote" (click)="openCitationDialog()" matTooltip="Cite us">
+            <button
+              type="button"
+              mat-icon-button
+              class="quote"
+              aria-label="Cite us"
+              (click)="openCitationDialog()"
+              matTooltip="Cite us"
+            >
               <mat-icon [svgIcon]="'format-quote'"></mat-icon>
             </button>
-            <div class="logo" matTooltip="Go to the main page">
-              <a [href]="isCurator ? '' : '/'" id="main">
-                <mat-icon [svgIcon]="'logo'"></mat-icon>
-              </a>
-              <div class="version-container">
-                @if (isCurator) {
-                  <span class="beta">curator</span>
-                } @else {
-                  <span class="version">v{{ general.version.value() }}</span>
-                  <span class="beta">beta</span>
+            <!-- Which release this is: information, not a control, so it
+                 sits apart from the way home and is styled as a label. -->
+            <div class="version-container">
+              @if (isCurator) {
+                <span class="beta">curator</span>
+              } @else {
+                @if (general.current(); as version) {
+                  <span class="version" [title]="'Reactome release ' + version"
+                    ><span aria-hidden="true">v{{ version }}</span
+                    ><span class="visually-hidden">Reactome release {{ version }}</span></span
+                  >
                 }
-              </div>
+              }
             </div>
           </div>
         </div>
@@ -367,6 +386,16 @@
                     <cr-ehld [(pathwayId)]="pathwayId" />
                   } @else if (hasDiagram()) {
                     <cr-diagram [(pathwayId)]="pathwayId" #diagram [interactor]="interactors" />
+                  } @else if (dataState.pathwayNotFound()) {
+                    <div class="no-diagram">
+                      <mat-icon>search_off</mat-icon>
+                      <p role="status">There is no pathway {{ pathwayId() }}.</p>
+                    </div>
+                  } @else if (dataState.loadFailed()) {
+                    <div class="no-diagram">
+                      <mat-icon>error</mat-icon>
+                      <p role="alert">Couldn't load this pathway. Please try again later.</p>
+                    </div>
                   } @else {
                     <div class="no-diagram">
                       <mat-icon>hide_image</mat-icon>
@@ -380,7 +409,7 @@
               }
               @let analysisStatus = dropdown() === 'analysis' ? 'open' : 'closed';
               <div class="dropdown" [class.open]="dropdown() === 'analysis'">
-                <cr-analysis-form (close)="closeAnalysis()" [status]="analysisStatus" />
+                <cr-analysis-form (closed)="closeAnalysis()" [status]="analysisStatus" />
               </div>
               @if (showingInteractors() || resourceFoundNothing() || badgesHiddenByZoom()) {
                 <cr-interactor-threshold />
@@ -421,3 +450,16 @@
     </as-split-area>
   </as-split>
 </div>
+
+<!-- The way home, top left as readers expect it: over the search row while
+     the hierarchy panel is open and wide enough, at the start of the top bar
+     otherwise. Drawn in one place at a time, so the id stays unique. -->
+<ng-template #homeLink>
+  <!-- A plain title rather than matTooltip: the Material tooltip opened below
+       the logo, over the species picker, and took the clicks meant for it. -->
+  <div class="logo">
+    <a [href]="isCurator ? '' : '/'" id="main" aria-label="Reactome home" title="Reactome home">
+      <mat-icon [svgIcon]="'logo'"></mat-icon>
+    </a>
+  </div>
+</ng-template>

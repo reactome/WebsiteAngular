@@ -1,15 +1,6 @@
-// Http post:
-
-export namespace Abstract {}
-
-export namespace Library {
-  export interface Dataset {
-    species: string;
-    categories: string[];
-    id: string;
-    label: string;
-    description?: string;
-  }
+/** The paging the dataset library's search starts from. */
+export interface SearchLibraryDataset {
+  page: number;
+  pageCount: number;
+  title: string;
 }
-
-export interface SearchLibraryDataset {}

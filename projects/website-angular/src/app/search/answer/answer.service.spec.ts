@@ -265,7 +265,34 @@ describe('cancellation', () => {
 
     await answers.ask('what is CDK5');
 
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
+    const body: unknown = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
     expect(body).toEqual({ question: 'what is CDK5' });
+  });
+});
+
+describe('a challenge', () => {
+  /** The endpoint's 401: a challenge's body, or another. */
+  const challenged = (body: unknown): Response =>
+    ({ ok: false, status: 401, json: async () => body }) as unknown as Response;
+
+  it('is shown when the 401 names a site key and where to verify', async () => {
+    serve(challenged({ sitekey: 'placeholder-key', verify: '/placeholder/verify' }));
+    const answers = service();
+    await answers.ask('what is CDK5');
+    expect(answers.challenge()).toEqual({
+      sitekey: 'placeholder-key',
+      verify: '/placeholder/verify',
+    });
+  });
+
+  it('is a failure when the 401 lacks either, or is not JSON', async () => {
+    for (const body of [{ sitekey: 'placeholder-key' }, { verify: '/placeholder/verify' }, null]) {
+      serve(challenged(body));
+      const answers = service();
+      await answers.ask('what is CDK5');
+      expect(answers.challenge()).toBeNull();
+      expect(answers.state()).toBe('failed');
+      TestBed.resetTestingModule();
+    }
   });
 });

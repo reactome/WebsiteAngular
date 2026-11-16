@@ -1,3 +1,6 @@
-import { TranslationalModification } from './translational-modification.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ModifiedResidue extends TranslationalModification {}
+/** A modified residue, as the pathway browser reads it (the contract's, resolved). */
+export type ModifiedResidue = Resolved<Graph.ModifiedResidue<JsogReference>>;

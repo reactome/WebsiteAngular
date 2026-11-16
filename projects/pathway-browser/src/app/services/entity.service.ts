@@ -1,16 +1,16 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { PhysicalEntity } from '../model/graph/physical-entity/physical-entity.model';
 import { Pathway } from '../model/graph/event/pathway.model';
-import { catchError, filter, map, Observable, of, take } from 'rxjs';
+import { catchError, filter, map, Observable, of, take, throwError } from 'rxjs';
 import { DataStateService } from './data-state.service';
 import { ReferenceEntity } from '../model/graph/reference-entity/reference-entity.model';
-import { DatabaseObject } from '../model/graph/database-object.model';
 import { rxResource, toObservable } from '@angular/core/rxjs-interop';
 import { ParticipantService } from './participant.service';
 import { DataKeys, Labels } from '../constants/constants';
-import { isDefined, isRefEntity, isReferenceEntityStId } from './utils';
+import { fieldByName, isDefined, isRefEntity, isReferenceEntityStId } from './utils';
+import type { JsogObject } from '../utils/JSOGDeserializer';
 
 @Injectable({
   providedIn: 'root',
@@ -59,13 +59,23 @@ export class EntityService {
     const url = `${CONTENT_SERVICE}/data/pathways/low/entity/${stId}`;
     return this.http
       .get<Pathway[]>(url, { params: { species: taxId } })
-      .pipe(catchError(() => of([])));
+      .pipe(
+        catchError((error: unknown) =>
+          error instanceof HttpErrorResponse && error.status === 404
+            ? of([] as Pathway[])
+            : throwError(() => error)
+        )
+      );
   }
 
-  getEntityInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  /**
+   * Null for an id the service does not know: it answers that with 200 and an
+   * empty body, unlike the event endpoint's 404.
+   */
+  getEntityInDepth<E extends object>(id: string | number, depth: number): Observable<E | null> {
     const url = `${CONTENT_SERVICE}/data/entity/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<JsogObject<E> | null>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -73,13 +83,16 @@ export class EntityService {
           maxDepth: depth,
         },
       })
-      .pipe(map(this.dataStateService.flattenReferences));
+      .pipe(
+        // Before deserialising: it reads the answer's @id, and null has none.
+        map((entity) => (entity === null ? null : this.dataStateService.flattenReferences(entity)))
+      );
   }
 
-  getEventInDepth<E extends DatabaseObject>(id: string | number, depth: number): Observable<E> {
+  getEventInDepth<E extends object>(id: string | number, depth: number): Observable<E> {
     const url = `${CONTENT_SERVICE}/data/event/${id}/in-depth`;
     return this.http
-      .get<E>(url, {
+      .get<JsogObject<E>>(url, {
         params: {
           includeRef: true,
           view: 'nested-aggregated',
@@ -100,9 +113,9 @@ export class EntityService {
       { key: 'referenceGene', label: 'Reference Genes' },
       { key: 'referenceTranscript', label: 'Reference Transcript' },
     ];
-    const results: { label: string; value: any }[] = [];
+    const results: { label: string; value: unknown }[] = [];
     for (const property of properties) {
-      const value = externalRef[property.key];
+      const value = fieldByName(externalRef, property.key);
       if (!value) continue;
       results.push({
         label: property.label || property.key,
@@ -113,8 +126,8 @@ export class EntityService {
   }
 
   // Generic function to group by any property
-  getGroupedData<T>(data: T[], getKey: (item: T) => string): Map<string, T[]> {
-    const grouped = new Map<string, T[]>();
+  getGroupedData<T, K = string>(data: T[], getKey: (item: T) => K): Map<K, T[]> {
+    const grouped = new Map<K, T[]>();
 
     // Loop over unique keys and group data by the key
     const uniqueKeys = [...new Set(data.map((item) => getKey(item)))];

@@ -2,9 +2,8 @@ import { computed, effect, Injectable, signal, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError, map, Observable, of } from 'rxjs';
 import { CONTENT_SERVICE } from '../../environments/environment';
-import { OrthologousMap, Species } from '../model/graph/species.model';
+import { ListedSpecies, OrthologousMap, ShownSpecies, Species } from '../model/graph/species.model';
 import { Event } from '../model/graph/event/event.model';
-import { ActivatedRoute } from '@angular/router';
 import { UrlStateService } from './url-state.service';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { isDefined } from './utils';
@@ -16,14 +15,11 @@ import { SelectableObject } from './event.service';
 export class SpeciesService {
   private http = inject(HttpClient);
   private state = inject(UrlStateService);
-  // Optional: the embeddable diagram has no router. It is read only when the
-  // reader switches species in the browser, which the embed does not offer.
-  private route = inject(ActivatedRoute, { optional: true });
 
   private readonly _MAIN_SPECIES = `${CONTENT_SERVICE}/data/species/main`;
   private readonly _ORTHOLOGIES = `${CONTENT_SERVICE}/data/orthologies/ids/species/`;
 
-  defaultSpecies: Species = {
+  defaultSpecies: ShownSpecies = {
     displayName: 'Homo sapiens',
     taxId: '9606',
     dbId: 48887,
@@ -32,7 +28,7 @@ export class SpeciesService {
     schemaClass: 'Species',
   };
 
-  readonly currentSpecies = signal<Species>(this.defaultSpecies);
+  readonly currentSpecies = signal<ShownSpecies>(this.defaultSpecies);
 
   private allSpecies = rxResource({
     params: () => null,
@@ -102,7 +98,7 @@ export class SpeciesService {
     identifiers: string[],
     speciesDbId: number
   ): Observable<OrthologousMap> {
-    if (identifiers.length === 0) return of(new Map());
+    if (identifiers.length === 0) return of<OrthologousMap>(new Map());
     const url = `${this._ORTHOLOGIES}${speciesDbId}`;
     return this.http
       .post<{ [p: string]: SelectableObject }>(
@@ -126,13 +122,14 @@ export class SpeciesService {
     );
   }
 
-  private setShortName(s: Species): Species {
-    const [genus, species, ..._] = s.displayName.split(' ');
+  private setShortName(s: Species): ListedSpecies {
+    // A one-word name has no species part, and used to end in "undefined".
+    const [genus = '', species = '', ..._] = s.displayName.split(' ');
     return { ...s, shortName: `${genus.charAt(0)}. ${species}` };
   }
 
   updateQueryParams(map: OrthologousMap, pathwayId: string | undefined) {
-    const params = { ...this.route?.snapshot.queryParams };
+    const params = this.state.queryParams();
     for (const [key, value] of Object.entries(params)) {
       let newValue = JSON.stringify(value);
       for (const [initial, replacement] of map) {
@@ -141,7 +138,10 @@ export class SpeciesService {
       newValue = newValue.replaceAll(',""', '').replaceAll('""', '').trim(); // Remove trailing commas and quotes from lists
       // console.log(value, " => ", newValue);
       if (newValue.length === 0) delete params[key];
-      else params[key] = JSON.parse(newValue);
+      else {
+        const parsed: unknown = JSON.parse(newValue);
+        params[key] = parsed;
+      }
     }
 
     void this.state.navigateTo(pathwayId ?? null, {

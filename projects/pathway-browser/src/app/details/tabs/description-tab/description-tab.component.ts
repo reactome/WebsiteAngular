@@ -2,6 +2,7 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   OnDestroy,
@@ -10,9 +11,10 @@ import {
   TemplateRef,
   viewChild,
 } from '@angular/core';
-import type { Analysis } from '../../../model/analysis.model';
+import type * as Analysis from '../../../model/analysis.model';
 import { IconService } from '../../../services/icon.service';
 import {
+  fieldByName,
   getProperty,
   groupAndSortBy,
   isDefined,
@@ -22,12 +24,13 @@ import {
   isReferenceSummary,
   isRLE,
   observeSections,
+  firstName,
 } from '../../../services/utils';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
 import { ReferenceEntity } from '../../../model/graph/reference-entity/reference-entity.model';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { InstanceEdit } from '../../../model/graph/instance-edit.model';
-import { LiteratureReference } from '../../../model/graph/publication/literature-reference.model';
+import { Publication } from '../../../model/graph/publication/publication.model';
 import { SelectableObject } from '../../../services/event.service';
 import { of } from 'rxjs';
 import { PhysicalEntity } from '../../../model/graph/physical-entity/physical-entity.model';
@@ -38,11 +41,11 @@ import { CatalystActivity } from '../../../model/graph/catalyst-activity.model';
 import { CatalystActivityReference } from '../../../model/graph/control-reference/catalyst-activity-reference.model';
 import { Regulation } from '../../../model/graph/Regulation/regulation.model';
 import { RegulationReference } from '../../../model/graph/control-reference/regulation-reference.model';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { DatabaseIdentifier } from '../../../model/graph/database-identifier.model';
 import { EntityWithAccessionedSequence } from '../../../model/graph/physical-entity/entity-with-accessioned-sequence.model';
 import { MarkerReference } from '../../../model/graph/control-reference/marker-reference.model';
-import { camelCase, isArray } from 'lodash';
+import { camelCase } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
 import {
   CONTENT_DETAIL,
@@ -55,7 +58,15 @@ import { SpeciesService } from '../../../services/species.service';
 import { Summation } from '../../../model/graph/summation.model';
 import { FigureService } from './figure/figure.service';
 type HasModifiedResidue = Relationship.HasModifiedResidue;
-import { KeyValuePipe, NgClass, NgTemplateOutlet } from '@angular/common';
+
+/** What the controller tree takes: graph objects or relationship entries, one or a list. */
+type TreeNode = DatabaseObject | Relationship.Has<DatabaseObject>;
+type TreeData = TreeNode | TreeNode[];
+
+/** A graph object (it has a dbId) or a relationship entry (it has an element). */
+const isTreeNode = (value: unknown): value is TreeNode =>
+  typeof value === 'object' && value !== null && ('dbId' in value || 'element' in value);
+import { KeyValuePipe, NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 import { IncludeRefPipe } from '../../../pipes/include-ref.pipe';
@@ -90,7 +101,6 @@ import { doReleaseFlag } from '../../common/do-release';
   standalone: true,
   imports: [
     NgTemplateOutlet,
-    NgClass,
     KeyValuePipe,
     RouterLink,
     SortByTextPipe,
@@ -157,8 +167,8 @@ export class DescriptionTabComponent implements OnDestroy {
       if (!isPhysicalEntity(obj) || isReferenceSummary(obj) || !obj.stId) return undefined;
       return { stId: obj.stId, taxId: this.species.currentSpecies().taxId };
     },
-    stream: ({ params }) =>
-      params ? this.entity.getParticipatingPathways(params.stId, params.taxId) : of([]),
+    // Not called without params: the resource stays idle.
+    stream: ({ params }) => this.entity.getParticipatingPathways(params.stId, params.taxId),
   });
 
   /** Everything except the pathway already open, which is not "other". */
@@ -178,8 +188,13 @@ export class DescriptionTabComponent implements OnDestroy {
 
   readonly otherPathways = computed<Pathway[]>(() => {
     const current = this.state.pathwayId();
-    return (this._otherPathways.value() ?? []).filter((pathway) => pathway.stId !== current);
+    // value() throws while the resource is in error.
+    const pathways = this._otherPathways.hasValue() ? this._otherPathways.value() : [];
+    return pathways.filter((pathway) => pathway.stId !== current);
   });
+
+  /** The list could not be loaded: not the same as an entity in no other pathway. */
+  readonly otherPathwaysFailed = computed(() => this._otherPathways.status() === 'error');
 
   _interactors = rxResource({
     params: () => isPhysicalEntity(this.obj()) && this.referenceEntity()?.identifier,
@@ -190,6 +205,8 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly obj = input.required<SelectableObject>();
   readonly analysisResult = input<Analysis.Result>();
   readonly showLocations = input(false);
+  /** Open a short Locations tree for the reader: content pages do, the browser's details do not. */
+  readonly openLocations = input(false);
   readonly showReactionDiagram = input(true);
 
   static referenceTypeToNameSuffix = new Map<string, string>([
@@ -205,7 +222,9 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly name = computed(() => {
     const obj = this.obj();
 
-    let name = obj.name ? (isArray(obj.name) ? obj.name[0] : obj.name) : obj.displayName;
+    // An empty list of names, or a reference type with no suffix below, used to
+    // put the word "undefined" into the name.
+    let name = firstName(obj) ?? obj.displayName;
 
     if (isReferenceSummary(obj)) {
       const suffix = DescriptionTabComponent.referenceTypeToNameSuffix.get(
@@ -215,10 +234,10 @@ export class DescriptionTabComponent implements OnDestroy {
         isReferenceSequence(obj.referenceEntity) &&
         isDefinedAndNotEmpty(obj.referenceEntity.geneName)
       )
-        name = obj.referenceEntity.geneName[0];
+        name = obj.referenceEntity.geneName[0] ?? name;
       return obj.referenceEntity.schemaClass === 'ReferenceIsoform'
         ? `${name} Isoform ${obj.variantIdentifier} `
-        : name + suffix;
+        : name + (suffix ?? '');
     }
 
     return name;
@@ -227,32 +246,52 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly symbol = computed(() => this.getSymbol(this.obj()));
   /** Curation-only release flag; undefined (so nothing renders) on the public site. */
   readonly doRelease = computed(() => doReleaseFlag(this.obj(), IS_CURATOR));
-  readonly literatureRefs: Signal<LiteratureReference[]> = computed(() =>
+  readonly literatureRefs: Signal<Publication[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.LITERATURE_REFERENCE)
   );
   readonly groupedReferences = computed(() =>
     groupAndSortBy(
-      this.literatureRefs(),
-      (ref) => ref.year,
-      (key1, key2) => key2 - key1
+      this.literatureRefs() ?? [],
+      // A web page has no year: its key is undefined, and compares as NaN, as it always did.
+      (ref) => ('year' in ref ? ref.year : undefined),
+      (key1, key2) => (key2 ?? NaN) - (key1 ?? NaN)
     )
   );
 
-  readonly summations: Signal<Summation[]> = computed(() =>
+  readonly summations: Signal<Summation[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.SUMMATION)
   );
   readonly allRefs = computed(() => {
     const literatureRefs = this.literatureRefs();
-    const summation = getProperty(this.obj(), DataKeys.SUMMATION) as Summation[];
+    const summation = getProperty(this.obj(), DataKeys.SUMMATION);
     return [
       ...(literatureRefs || []),
-      ...(summation
-        .flatMap((s) => s.literatureReference as LiteratureReference[])
-        .filter(isDefined) || []),
+      ...(summation ?? []).flatMap((s) => s.literatureReference).filter(isDefined),
     ];
   });
 
-  readonly referenceEntity: Signal<ReferenceEntity> = computed(() =>
+  /** A sequence entity's start or end coordinate; none for an entity of another class. */
+  coordinate(entity: PhysicalEntity, key: 'startCoordinate' | 'endCoordinate') {
+    return getProperty(entity, key);
+  }
+
+  /** The selected object's field of that name, whichever kind of object it is; undefined if it has none. */
+  fieldOf(key: string): unknown {
+    return fieldByName(this.obj(), key);
+  }
+
+  /**
+   * The selected object's field of that name, as the controller tree takes it:
+   * graph objects or relationship entries, one or a list; undefined for
+   * anything else, which no configured key holds.
+   */
+  treeData(key: string): TreeData | undefined {
+    const value = fieldByName(this.obj(), key);
+    if (Array.isArray(value)) return value.every(isTreeNode) ? value : undefined;
+    return isTreeNode(value) ? value : undefined;
+  }
+
+  readonly referenceEntity: Signal<ReferenceEntity | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REFERENCE_ENTITY)
   );
 
@@ -277,7 +316,7 @@ export class DescriptionTabComponent implements OnDestroy {
   });
 
   readonly inferences = computed(() => {
-    const inferences: PhysicalEntity[] = getProperty(this.obj(), DataKeys.INFERRED_TO);
+    const inferences: PhysicalEntity[] | undefined = getProperty(this.obj(), DataKeys.INFERRED_TO);
     if (!inferences) return new Map<string, PhysicalEntity[]>();
     return this.getGroupedInferences(inferences);
   });
@@ -413,20 +452,20 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly interactors = computed(() => this._interactors.value() || []);
   readonly interactorsLength = computed(() => this._interactors.value()?.length || 0);
 
-  readonly catalystActivity: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivity: Signal<CatalystActivity[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY)
   );
-  readonly catalystActivities: Signal<CatalystActivity[]> = computed(() =>
+  readonly catalystActivities: Signal<CatalystActivity[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITIES)
   );
-  readonly catalystRef: Signal<CatalystActivityReference> = computed(() =>
+  readonly catalystRef: Signal<CatalystActivityReference | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.CATALYST_ACTIVITY_REFERENCE)
   );
 
-  readonly regulations: Signal<Regulation[]> = computed(() =>
+  readonly regulations: Signal<Regulation[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATED_BY)
   );
-  readonly regulationRefs: Signal<RegulationReference[]> = computed(() =>
+  readonly regulationRefs: Signal<RegulationReference[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.REGULATION_REFERENCE)
   );
 
@@ -435,16 +474,18 @@ export class DescriptionTabComponent implements OnDestroy {
     ...(getProperty(this.obj(), DataKeys.NEGATIVELY_REGULATES) || []),
   ]);
 
-  readonly modifications: Signal<HasModifiedResidue[]> = computed(() =>
+  readonly modifications: Signal<HasModifiedResidue[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.MODIFIED_RESIDUES)
   );
 
   readonly crossReference = computed(() => {
-    if (this.referenceEntity()?.crossReference) {
-      return this.referenceEntity().crossReference;
-    }
+    const fromReference = this.referenceEntity()?.crossReference;
+    if (fromReference) return fromReference;
 
-    const crossReference: DatabaseIdentifier[] = getProperty(this.obj(), DataKeys.CROSS_REFERENCE);
+    const crossReference: DatabaseIdentifier[] | undefined = getProperty(
+      this.obj(),
+      DataKeys.CROSS_REFERENCE
+    );
     return crossReference ? [...crossReference] : [];
   });
 
@@ -454,54 +495,63 @@ export class DescriptionTabComponent implements OnDestroy {
   readonly rnaMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
     () => getProperty(this.obj(), DataKeys.RNA_MARKERS) || []
   );
-  readonly markerReference: Signal<MarkerReference[]> = computed(() =>
+  readonly markerReference: Signal<MarkerReference[] | undefined> = computed(() =>
     getProperty(this.obj(), DataKeys.MARKER_REFERENCE)
   );
 
-  readonly repeatedUnits: Signal<PhysicalEntity[]> = computed(() =>
-    getProperty(this.obj(), DataKeys.REPEATED_UNIT)
-  );
+  readonly repeatedUnits = computed(() => getProperty(this.obj(), DataKeys.REPEATED_UNIT));
 
   readonly hasRhea = computed(() =>
-    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName)
+    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName ?? '')
   );
 
   // Disable the navigation control for inferred event when there is no associated pathway
   // https://reactome.org/beta/PathwayBrowser/R-HSA-9931510?select=R-HSA-9909400&path=R-HSA-9909396#inferredFrom
   readonly inferenceNavigationVisibility = computed(() => {
     const isHuman = this.species.currentSpecies().taxId === this.species.defaultSpecies.taxId;
-    const isInferred = this.obj().isInferred;
-    return isHuman && isRLE(this.obj()) && isInferred;
+    const obj = this.obj();
+    return isHuman && isRLE(obj) && obj.isInferred === true;
   });
 
-  readonly overview$ = viewChild<HTMLDivElement>('overview');
-  readonly overviewTemplate$ = viewChild.required<TemplateRef<any>>('overviewTemplate');
-  readonly referenceTemplate$ = viewChild.required<TemplateRef<any>>('referenceTemplate');
-  readonly modificationsTemplate$ = viewChild.required<TemplateRef<any>>('modificationsTemplate');
+  readonly overview$ = viewChild<ElementRef<HTMLElement>>('overview');
+  /**
+   * The overview's height, for the icon beside it (--icon-height), measured
+   * as it changes. Read in the template as clientHeight, it changed after
+   * Angular had checked it whenever the icon arrived (NG0100 in development,
+   * a height a step behind in production).
+   */
+  readonly overviewHeight = signal<number | null>(null);
+  private overviewResize?: ResizeObserver;
+
+  readonly overviewTemplate$ = viewChild.required<TemplateRef<unknown>>('overviewTemplate');
+  readonly referenceTemplate$ = viewChild.required<TemplateRef<unknown>>('referenceTemplate');
+  readonly modificationsTemplate$ =
+    viewChild.required<TemplateRef<unknown>>('modificationsTemplate');
   readonly crossReferencesTemplate$ =
-    viewChild.required<TemplateRef<any>>('crossReferencesTemplate');
-  readonly markerTemplate$ = viewChild.required<TemplateRef<any>>('markerTemplate');
+    viewChild.required<TemplateRef<unknown>>('crossReferencesTemplate');
+  readonly markerTemplate$ = viewChild.required<TemplateRef<unknown>>('markerTemplate');
   readonly otherPathwaysTemplate$ =
     viewChild.required<TemplateRef<unknown>>('otherPathwaysTemplate');
-  readonly regulationTemplate$ = viewChild.required<TemplateRef<any>>('regulationTemplate');
-  readonly regulatesTemplate$ = viewChild.required<TemplateRef<any>>('regulatesTemplate');
-  readonly catalystActivityTemplate$ = viewChild.required<TemplateRef<any>>(
+  readonly regulationTemplate$ = viewChild.required<TemplateRef<unknown>>('regulationTemplate');
+  readonly regulatesTemplate$ = viewChild.required<TemplateRef<unknown>>('regulatesTemplate');
+  readonly catalystActivityTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'catalystActivityTemplate'
   );
-  readonly catalystActivitiesTemplate$ = viewChild.required<TemplateRef<any>>(
+  readonly catalystActivitiesTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'catalystActivitiesTemplate'
   );
-  readonly inferencesTemplate$ = viewChild.required<TemplateRef<any>>('inferencesTemplate');
+  readonly inferencesTemplate$ = viewChild.required<TemplateRef<unknown>>('inferencesTemplate');
   readonly orthologousEventsTemplate$ = viewChild.required<TemplateRef<unknown>>(
     'orthologousEventsTemplate'
   );
-  readonly otherFormsTemplate$ = viewChild.required<TemplateRef<any>>('otherFormsTemplate');
-  readonly literatureRefsTemplate$ = viewChild.required<TemplateRef<any>>('literatureRefsTemplate');
-  readonly authorsTemplate$ = viewChild.required<TemplateRef<any>>('authorsTemplate');
-  readonly interactorsTemplate$ = viewChild.required<TemplateRef<any>>('interactorsTemplate');
-  readonly rheaTemplate$ = viewChild.required<TemplateRef<any>>('rheaTemplate');
-  readonly locationsTemplate$ = viewChild<TemplateRef<any>>('locationsTemplate');
-  readonly reactionDiagramTemplate$ = viewChild<TemplateRef<any>>('reactionDiagramTemplate');
+  readonly otherFormsTemplate$ = viewChild.required<TemplateRef<unknown>>('otherFormsTemplate');
+  readonly literatureRefsTemplate$ =
+    viewChild.required<TemplateRef<unknown>>('literatureRefsTemplate');
+  readonly authorsTemplate$ = viewChild.required<TemplateRef<unknown>>('authorsTemplate');
+  readonly interactorsTemplate$ = viewChild.required<TemplateRef<unknown>>('interactorsTemplate');
+  readonly rheaTemplate$ = viewChild.required<TemplateRef<unknown>>('rheaTemplate');
+  readonly locationsTemplate$ = viewChild<TemplateRef<unknown>>('locationsTemplate');
+  readonly reactionDiagramTemplate$ = viewChild<TemplateRef<unknown>>('reactionDiagramTemplate');
 
   readonly isReaction = computed(() => isRLE(this.obj()));
 
@@ -519,7 +569,7 @@ export class DescriptionTabComponent implements OnDestroy {
     hasDepthControl?: boolean;
     manual?: boolean;
     scope?: 'entity' | 'event';
-    template?: Signal<TemplateRef<any>>;
+    template?: Signal<TemplateRef<unknown> | undefined>;
     isPresent?: Signal<boolean>;
     disableNavigation?: Signal<boolean>;
   }[] = [
@@ -534,14 +584,14 @@ export class DescriptionTabComponent implements OnDestroy {
       key: 'locationsInPWB',
       label: 'Locations',
       manual: true,
-      template: this.locationsTemplate$ as Signal<TemplateRef<any>>,
+      template: this.locationsTemplate$,
       isPresent: computed(() => this.showLocations()),
     },
     {
       key: 'reactionDiagram',
       label: 'Reaction Diagram',
       manual: true,
-      template: this.reactionDiagramTemplate$ as Signal<TemplateRef<any>>,
+      template: this.reactionDiagramTemplate$,
       isPresent: computed(() => this.isReaction() && this.showReactionDiagram()),
     },
     {
@@ -586,7 +636,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: 'Other Pathways',
       manual: true,
       template: this.otherPathwaysTemplate$,
-      isPresent: computed(() => this.otherPathways().length > 0),
+      isPresent: computed(() => this.otherPathways().length > 0 || this.otherPathwaysFailed()),
     },
 
     {
@@ -608,7 +658,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CATALYST_ACTIVITIES,
       manual: true,
       template: this.catalystActivitiesTemplate$,
-      isPresent: computed(() => this.catalystActivities()?.length > 0),
+      isPresent: computed(() => (this.catalystActivities()?.length ?? 0) > 0),
     },
 
     {
@@ -616,7 +666,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CATALYST_ACTIVITY,
       manual: true,
       template: this.catalystActivityTemplate$,
-      isPresent: computed(() => this.catalystActivity()?.length > 0),
+      isPresent: computed(() => (this.catalystActivity()?.length ?? 0) > 0),
     },
 
     {
@@ -624,7 +674,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CROSS_REFERENCES,
       manual: true,
       template: this.crossReferencesTemplate$,
-      isPresent: computed(() => this.crossReference()?.length > 0 && !this.hasRhea()),
+      isPresent: computed(() => this.crossReference().length > 0 && !this.hasRhea()),
     },
     // Rhea structure
     {
@@ -719,7 +769,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.OTHER_FORMS,
       manual: true,
       template: this.otherFormsTemplate$,
-      isPresent: computed(() => this.otherForms()?.size > 0),
+      isPresent: computed(() => this.otherForms().size > 0),
     },
 
     {
@@ -733,7 +783,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.AUTHORSHIP,
       manual: true,
       template: this.authorsTemplate$,
-      isPresent: computed(() => this.authorship()?.length > 0),
+      isPresent: computed(() => this.authorship().length > 0),
     },
     {
       key: DataKeys.INTERACTORS,
@@ -745,6 +795,14 @@ export class DescriptionTabComponent implements OnDestroy {
   ];
 
   constructor() {
+    // Measure the overview as it changes (overviewHeight).
+    effect(() => {
+      const element = this.overview$()?.nativeElement;
+      this.overviewResize?.disconnect();
+      if (!element) return;
+      this.overviewResize = new ResizeObserver(() => this.overviewHeight.set(element.clientHeight));
+      this.overviewResize.observe(element);
+    });
     effect(() => {
       const section = this.state.section();
       if (section) {
@@ -761,6 +819,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.observer?.();
+    this.overviewResize?.disconnect();
   }
 
   getSymbol(obj: DatabaseObject) {
@@ -792,23 +851,23 @@ export class DescriptionTabComponent implements OnDestroy {
       case DataKeys.PROTEIN_MARKER:
         return this.proteinMarkers().length + this.rnaMarkers().length > 0;
       case DataKeys.CATALYST_ACTIVITY:
-        return this.catalystActivity() && this.catalystActivity().length > 0;
+        return (this.catalystActivity()?.length ?? 0) > 0;
       case DataKeys.CROSS_REFERENCE:
         return this.crossReference().length > 0 && !this.hasRhea();
       case camelCase(Labels.BIOCHEMICAL_REACTION):
         return this.hasRhea();
       case DataKeys.OTHER_FORMS:
-        return this.otherForms() && this.otherForms().size > 0;
+        return this.otherForms().size > 0;
       case DataKeys.ORTHOLOGOUS_EVENT:
         return this.orthologousEvents().size > 0;
       case camelCase(Labels.AUTHORSHIP):
-        return this.authorship() && this.authorship().length > 0;
+        return this.authorship().length > 0;
       case DataKeys.INTERACTORS:
-        return this.interactors() && this.interactors().length > 0;
+        return this.interactors().length > 0;
       case 'otherPathways':
-        return this.otherPathways().length > 0;
+        return this.otherPathways().length > 0 || this.otherPathwaysFailed();
       default:
-        return obj[key] !== undefined && obj[key];
+        return fieldByName(obj, key) !== undefined && fieldByName(obj, key);
     }
   }
 
@@ -848,9 +907,10 @@ export class DescriptionTabComponent implements OnDestroy {
    */
   private consumeFragment(): void {
     if (!this.route.snapshot.fragment) return;
+    // Navigating without a fragment drops it: the router keeps one only when
+    // asked to (preserveFragment).
     void this.router.navigate([], {
       relativeTo: this.route,
-      fragment: undefined,
       queryParamsHandling: 'preserve',
       replaceUrl: true,
     });

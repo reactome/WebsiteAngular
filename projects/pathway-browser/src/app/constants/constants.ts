@@ -183,22 +183,3 @@ export enum SchemaClasses {
   LITERATURE_REFERENCE = 'LiteratureReference',
   BOOK = 'Book',
 }
-
-export enum Type {
-  CANDIDATE = 'candidate',
-  COMPARTMENT = 'compartment',
-  COMPONENT = 'component',
-  COMPONENT_OF = 'componentOf',
-  ENCAPSULATED_EVENT = 'encapsulatedEvent',
-  EVENT = 'event',
-  MEMBER = 'member',
-  MODIFIED_RESIDUE = 'modifiedResident',
-  INPUT = 'input',
-  OUTPUT = 'output',
-  INPUT_OF = 'inputOf',
-  OUTPUT_OF = 'outputOf',
-  AUTHOR = 'author',
-  PUBLICATION = 'publication',
-  REPEATED_UNIT = 'repeatedUnit',
-  REPEATED_UNIT_OF = 'repeatedUnitOf',
-}

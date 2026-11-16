@@ -9,10 +9,12 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import stripFirstH from '../../../utils/stripFirstH';
 import { marked } from 'marked';
 import rewriteContentUrls from '../../../utils/rewriteContentUrls';
+import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
+import { articleIndexItem } from '../../../utils/articleIndexItem';
 
 @Component({
   selector: 'app-article-page',
-  imports: [PageLayoutComponent, TileComponent, MatIcon, RouterLink],
+  imports: [PageLayoutComponent, TileComponent, MatIcon, RouterLink, LoadErrorComponent],
   templateUrl: './article-page.component.html',
   styleUrl: './article-page.component.scss',
 })
@@ -30,6 +32,7 @@ export class ArticlePageComponent implements OnInit {
 
   articles: ArticleIndexItem[] = [];
   loading = true;
+  failed = false;
 
   // Build the routerLink commands for a given article. Passing a single
   // string containing slashes (e.g. 'about/news') as one routerLink segment
@@ -44,7 +47,7 @@ export class ArticlePageComponent implements OnInit {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
       const path_segments = segments.map((s) => s.path);
 
-      if (path_segments.length > 0 && path_segments) {
+      if (path_segments.length > 0) {
         if (path_segments.includes('about')) {
           this.loadArticles('about/news');
           this.pageTile = 'News & Updates';
@@ -63,27 +66,21 @@ export class ArticlePageComponent implements OnInit {
 
   private loadArticles(path: string) {
     this.loading = true;
+    this.failed = false;
     // Fetch all articles from TinaCMS GraphQL API
     this.contentService.getAllArticles(path).subscribe({
       next: (result) => {
         // Callback kept synchronous: an async one hands a promise to code
         // that ignores it, so any rejection in here would vanish.
         void (async () => {
-          this.articles = result.map((item: ArticleIndexItem) => ({
-            title: item.title,
-            date: new Date(item.date),
-            author: item.author,
-            tags: item.tags || [],
-            slug: item.slug,
-            excerpt: item.excerpt,
-          }));
+          this.articles = result.map(articleIndexItem);
 
           // Awaited as a batch: previously these were started and abandoned,
           // so loading flipped to false while the excerpts were still raw
           // markdown, and any failure went unreported.
           await Promise.all(
             this.articles.map(async (article) => {
-              const html = await marked(article?.excerpt || '');
+              const html = await marked(article.excerpt || '');
               article.excerpt = stripFirstH(rewriteContentUrls(html));
             })
           );
@@ -94,6 +91,7 @@ export class ArticlePageComponent implements OnInit {
       error: (err) => {
         console.error('Error loading articles:', err);
         this.articles = [];
+        this.failed = true;
         this.loading = false;
         this.cdr.markForCheck();
       },

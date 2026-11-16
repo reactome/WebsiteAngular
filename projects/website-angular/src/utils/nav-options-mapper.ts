@@ -10,40 +10,44 @@ function resolveLink(link: string, external: boolean): string {
   return external ? `${environment.host}${link}` : link;
 }
 
-function mapDropdownLinks(raw: any): Record<string, NavLink> | undefined {
-  if (!raw || typeof raw !== 'object') {
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+/** A field of nav-options.json read as text: empty where it is none. */
+const text = (value: unknown): string => (typeof value === 'string' ? value : '');
+
+/** An entry's own fields, as both a menu and its dropdowns have them. */
+function linkOf(value: Record<string, unknown>): NavLink {
+  const external = Boolean(value['external']);
+  const dropdownLinks = mapDropdownLinks(value['dropdown-links']);
+  return {
+    label: text(value['label']),
+    link: resolveLink(text(value['link']), external),
+    external,
+    ...(dropdownLinks && { dropdownLinks }),
+  };
+}
+
+function mapDropdownLinks(raw: unknown): Record<string, NavLink> | undefined {
+  if (!isRecord(raw)) {
     return undefined;
   }
 
   const mapped: Record<string, NavLink> = {};
-  Object.entries(raw).forEach(([key, value]: [string, any]) => {
-    if (value && typeof value === 'object') {
-      const external = value.external || false;
-      mapped[key] = {
-        label: value.label || '',
-        link: resolveLink(value.link || '', external),
-        external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
-      };
-    }
+  Object.entries(raw).forEach(([key, value]) => {
+    if (isRecord(value)) mapped[key] = linkOf(value);
   });
 
   return Object.keys(mapped).length > 0 ? mapped : undefined;
 }
 
-export function mapNavOptions(raw: Record<string, any>): Record<string, NavOption> {
+export function mapNavOptions(raw: Record<string, unknown>): Record<string, NavOption> {
   const mapped: Record<string, NavOption> = {};
 
-  Object.entries(raw).forEach(([key, value]: [string, any]) => {
-    if (value && typeof value === 'object') {
-      const external = value.external || false;
-      mapped[key] = {
-        label: value.label || '',
-        link: resolveLink(value.link || '', external),
-        icon: value.icon,
-        external,
-        dropdownLinks: mapDropdownLinks(value['dropdown-links']),
-      };
+  Object.entries(raw).forEach(([key, value]) => {
+    if (isRecord(value)) {
+      const icon = value['icon'];
+      mapped[key] = { ...linkOf(value), ...(typeof icon === 'string' && { icon }) };
     }
   });
 

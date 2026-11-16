@@ -5,13 +5,21 @@ export enum TableOrder {
   ROW_BY_ROW,
 }
 
-export const width = (table: any[][]) => table[0].length - 1;
-export const height = (table: any[][]) => table.length - 1;
+/** The first row of a table; one with no rows throws, as reading its width did. */
+const firstRow = <T>(table: T[][]): T[] => {
+  const [first] = table;
+  if (!first) throw new RangeError('The table has no rows.');
+  return first;
+};
+
+export const width = <T>(table: T[][]) => firstRow(table).length - 1;
+export const height = <T>(table: T[][]) => table.length - 1;
 
 export const cp = <T>(obj: T) => JSON.parse(JSON.stringify(obj)) as T;
 
 export const transpose = <T>(table: T[][]): T[][] =>
-  table[0].map((_, colIndex) => table.map((row) => row[colIndex]));
+  // Rows as wide as the first, so each has a value at every index of it.
+  firstRow(table).map((_, colIndex) => table.map((row) => row[colIndex] as T));
 export const findColumnValuesByName = <T>(table: T[][], columnHeader: T): T[] | undefined =>
   transpose(table)
     .find((col) => col[0] === columnHeader)
@@ -21,8 +29,8 @@ export const pushAll = <T>(table: T[][], value: T): number =>
   table.reduce((_, col) => col.push(cp(value)), 0);
 
 export const numberToLetter = (nb: number) => {
-  let baseChar = 'A'.charCodeAt(0),
-    letters = '';
+  const baseChar = 'A'.charCodeAt(0);
+  let letters = '';
 
   do {
     nb -= 1;

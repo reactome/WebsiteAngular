@@ -1,4 +1,4 @@
-import { Component, inject, effect, ChangeDetectorRef, OnInit } from '@angular/core';
+import { Component, inject, effect, ChangeDetectorRef, DestroyRef, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatIcon } from '@angular/material/icon';
@@ -7,6 +7,9 @@ import { NavLink } from '../../types/link';
 import { ContentService } from '../../services/content.service';
 import { SearchHistoryService } from '../../services/search-history.service';
 import { CONTENT_SERVICE } from '../../../../pathway-browser/src/environments/environment';
+import type { PlainGraphObject } from '../../../../pathway-browser/src/app/model/graph/plain.model';
+import { getProperty } from '../../../../pathway-browser/src/app/services/utils';
+import type { Person } from '../../model/person.model';
 
 // Breadcrumb entries used by this component carry an optional set of
 // query params so a link can preserve query-string state (notably the
@@ -34,7 +37,14 @@ export class BreadcrumbComponent implements OnInit {
   /** Last segments seen, so the effect can rebuild once navOptions resolves. */
   private lastSegments: string[] | null = null;
 
+  /** The page shown, so a leaf asked for by a page since left is dropped. */
+  private currentPath = '';
+
+  /** Set once destroyed, so a leaf still waiting for navOptions stops waiting. */
+  private destroyed = false;
+
   constructor() {
+    inject(DestroyRef).onDestroy(() => (this.destroyed = true));
     effect(() => {
       if (Object.keys(this.navOptions()).length === 0) return;
       if (this.lastSegments) this.updateBreadcrumbs(this.lastSegments);
@@ -48,8 +58,9 @@ export class BreadcrumbComponent implements OnInit {
     this.route.url.subscribe((segments) => {
       // Build the path from URL segments (e.g., about/userguide/pathway-browser)
       const path_segments = segments.map((s) => s.path);
+      this.currentPath = '/' + path_segments.join('/');
 
-      if (path_segments.length > 0 && path_segments) {
+      if (path_segments.length > 0) {
         const second_lastSegment =
           path_segments.length >= 2 ? path_segments[path_segments.length - 1] : null;
 
@@ -63,7 +74,7 @@ export class BreadcrumbComponent implements OnInit {
             }, 50);
           }
 
-          const articleSegment = path_segments[path_segments.length - 1];
+          const articleSegment = path_segments.at(-1) ?? '';
           this.contentService
             .getArticleIndexItem(
               second_lastSegment === 'news' ? 'about/news' : 'content/reactome-research-spotlight',
@@ -93,16 +104,16 @@ export class BreadcrumbComponent implements OnInit {
           // ORCID or numeric dbId). Resolve to displayName via the
           // ContentService person endpoint which accepts both forms.
           this.breadcrumbs = [{ label: 'Search', link: '/content/query' }];
-          const id = path_segments[3];
+          const id = path_segments[3] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http
-            .get<{ displayName?: string }>(`${CONTENT_SERVICE}/data/person/${id}`)
-            .subscribe({
-              next: (p) => {
-                if (p?.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
-              },
-            });
+          this.http.get<Person>(`${CONTENT_SERVICE}/data/person/${id}`).subscribe({
+            next: (p) => {
+              if (p.displayName) this.replaceLeafBreadcrumb(p.displayName, fullPath);
+            },
+            // The leaf keeps the id; the page itself says what went wrong.
+            error: () => undefined,
+          });
         } else if (
           path_segments[0] === 'content' &&
           path_segments[1] === 'detail' &&
@@ -115,23 +126,22 @@ export class BreadcrumbComponent implements OnInit {
           // visited (preserving ?q= etc.), so they don't land on an empty
           // search form. The leaf starts as the raw stId and is replaced
           // with the entity displayName once /data/query/{id} responds.
-          const { path: searchPath, queryParams: searchQueryParams } = this.splitUrl(
-            this.searchHistory.lastSearchUrl()
-          );
-          this.breadcrumbs = [
-            { label: 'Search', link: searchPath, queryParams: searchQueryParams },
-          ];
-          const id = path_segments[2];
+          const { path: searchPath, ...search } = this.splitUrl(this.searchHistory.lastSearchUrl());
+          this.breadcrumbs = [{ label: 'Search', link: searchPath, ...search }];
+          const id = path_segments[2] ?? '';
           const fullPath = '/' + path_segments.join('/');
           this.appendLeafBreadcrumb(id, fullPath);
-          this.http
-            .get<{ displayName?: string; name?: string[] }>(`${CONTENT_SERVICE}/data/query/${id}`)
-            .subscribe({
-              next: (entity) => {
-                const label = entity?.displayName || entity?.name?.[0] || id;
-                this.replaceLeafBreadcrumb(label, fullPath);
-              },
-            });
+          this.http.get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/${id}`).subscribe({
+            next: (entity) => {
+              // Its names where its class has a list of them (a GO term's name is one text).
+              const names = getProperty(entity, 'name');
+              const label =
+                entity.displayName || (Array.isArray(names) ? names[0] : undefined) || id;
+              this.replaceLeafBreadcrumb(label, fullPath);
+            },
+            // The leaf keeps the id; the page itself says what went wrong.
+            error: () => undefined,
+          });
         } else if (path_segments.includes('faq') && path_segments.length > 2) {
           //In in an FAQ page, but not the main FAQ page
           //Remove all segements after 'faq' and before the last segment (which is the question)
@@ -216,26 +226,31 @@ export class BreadcrumbComponent implements OnInit {
    * an immediate push gets clobbered when the deferred update resolves.
    */
   private appendLeafBreadcrumb(label: string, link: string) {
-    if (Object.keys(this.navOptions).length === 0) {
+    if (this.destroyed || link !== this.currentPath) return;
+    if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.appendLeafBreadcrumb(label, link), 50);
       return;
     }
     if (this.breadcrumbs[this.breadcrumbs.length - 1]?.link !== link) {
       this.breadcrumbs.push({ label, link });
+      this.cdr.markForCheck();
     }
   }
 
   private replaceLeafBreadcrumb(label: string, link: string) {
-    if (Object.keys(this.navOptions).length === 0) {
+    if (this.destroyed || link !== this.currentPath) return;
+    if (Object.keys(this.navOptions()).length === 0) {
       setTimeout(() => this.replaceLeafBreadcrumb(label, link), 50);
       return;
     }
+    // The leaf may not be there yet: its append can still be waiting.
     const last = this.breadcrumbs[this.breadcrumbs.length - 1];
     if (last?.link === link) {
       this.breadcrumbs[this.breadcrumbs.length - 1] = { label, link };
     } else {
       this.breadcrumbs.push({ label, link });
     }
+    this.cdr.markForCheck();
   }
 
   /**

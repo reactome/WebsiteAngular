@@ -1,40 +1,6 @@
-import { DatabaseObject } from '../database-object.model';
-import { Summation } from '../summation.model';
-import { ReviewStatus } from '../review-status.model';
-import { LiteratureReference } from '../publication/literature-reference.model';
-import { InstanceEdit } from '../instance-edit.model';
-import type { Relationship } from '../relationship.model';
-type HasCompartment = Relationship.HasCompartment;
-import { Species } from '../species.model';
-import { Disease } from '../external-ontology/disease.model';
-import { InDepth } from '../in-depth.model';
-import { HasFigure } from '../figure.model';
-import { GO_BiologicalProcess } from '../go-term/go-biological-process.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface Event extends DatabaseObject, InDepth, HasFigure {
-  stId: string;
-  authored: InstanceEdit[];
-  reviewed: InstanceEdit[];
-  literatureReference?: LiteratureReference[];
-  isInferred: boolean;
-  releaseStatus: string;
-  // Curation-only: whether a curator has marked this event to go out in the next release. Sent
-  // only by the curation graph, and omitted there too when unset -- see doReleaseFlag().
-  doRelease?: boolean;
-  isInDisease: boolean;
-  summation: Summation[];
-  reviewStatus: ReviewStatus;
-  name: string[];
-  hasCompartment?: HasCompartment[];
-  species: Species[];
-  speciesName?: string;
-  disease?: Disease[];
-  goBiologicalProcess?: GO_BiologicalProcess;
-
-  // not from API endpoint but are needed in the tree view
-  isSelected?: boolean;
-  isHovered?: boolean;
-  ancestors: Event[];
-  parent: Event;
-  hit?: boolean;
-}
+/** Any event, as the pathway browser reads it (the contract's, resolved). */
+export type Event = Resolved<Graph.Event<JsogReference>>;

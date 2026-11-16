@@ -224,7 +224,7 @@ export function mergeCitation(list: Citation[], citation: Citation): Citation[] 
   const at = list.findIndex((c) => c.stId === citation.stId);
   if (at < 0) return [...list, citation];
   const held = list[at];
-  if (held.displayName === held.stId && citation.displayName !== citation.stId) {
+  if (held && held.displayName === held.stId && citation.displayName !== citation.stId) {
     return list.map((c, i) => (i === at ? citation : c));
   }
   return list;

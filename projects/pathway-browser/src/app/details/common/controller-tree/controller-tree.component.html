@@ -3,6 +3,7 @@
     <div class="depth-controller" gaCategory="depth-controller">
       @if (depthControl()) {
         <button
+          type="button"
           mat-icon-button
           class="arrow"
           [disabled]="depthIndex() === 1"
@@ -14,6 +15,7 @@
           <mat-icon fontSet="symbols">vertical_align_top</mat-icon>
         </button>
         <button
+          type="button"
           mat-icon-button
           class="arrow"
           [disabled]="depthIndex() === 1"
@@ -28,6 +30,7 @@
         <span class="counter">{{ depthIndex() }}</span>
 
         <button
+          type="button"
           mat-icon-button
           class="arrow"
           [disabled]="depthIndex() === maxDepth()"
@@ -40,6 +43,7 @@
           <mat-icon fontSet="symbols">step_into</mat-icon>
         </button>
         <button
+          type="button"
           mat-icon-button
           class="arrow"
           [disabled]="depthIndex() === maxDepth()"

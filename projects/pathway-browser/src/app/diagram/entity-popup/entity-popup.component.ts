@@ -2,7 +2,6 @@ import { HttpClient } from '@angular/common/http';
 import {
   Component,
   ElementRef,
-  HostListener,
   computed,
   effect,
   inject,
@@ -22,6 +21,16 @@ import { SchemaClasses } from '../../constants/constants';
 import { PropertyType } from '../../model/property-type';
 import { AnalysisService } from '../../services/analysis.service';
 import { UrlStateService } from '../../services/url-state.service';
+import type { Interactors } from '../../../../../contract/interactors.ts';
+import type {
+  PlainGraphObject,
+  PlainPathway,
+  PlainReferenceEntity,
+} from '../../model/graph/plain.model';
+import { getProperty } from '../../services/utils';
+import type { DatabaseObject } from '../../model/graph/database-object.model';
+import type { JsogObject } from '../../utils/JSOGDeserializer';
+import { moleculesOf } from './molecules-of';
 
 export type EntityPopupTab = 'molecules' | 'pathways' | 'interactors';
 
@@ -39,12 +48,6 @@ export interface EntityPopupTarget {
 }
 
 /** One row of any of the three lists, normalised so the template stays simple. */
-/** The parts of a reference entity this popup reads: what an analysis could
- *  have matched it by. */
-interface ReferenceEntityIds {
-  identifier?: string;
-  geneName?: string[];
-}
 
 /** What the second lookup tells us about a component: its reference class, and
  *  the identifiers an analysis might have matched it by. */
@@ -63,6 +66,8 @@ interface PopupRow {
   detail?: string;
   /** Diagram entity or pathway to go to when clicked. */
   stId?: string;
+  /** For a pathway: whether it has a diagram of its own, or is drawn in a parent's. */
+  hasDiagram?: boolean;
   /** External link, for interactors. */
   href?: string;
 }
@@ -135,6 +140,11 @@ const TYPE_ORDER: string[] = [
  */
 @Component({
   selector: 'cr-entity-popup',
+  host: {
+    '(document:keydown.escape)': 'onEscape()',
+    '(document:click)': 'onDocumentPointer($event)',
+    '(document:contextmenu)': 'onDocumentPointer($event)',
+  },
   standalone: true,
   imports: [MatIcon, MatTooltip, DecimalPipe],
   templateUrl: './entity-popup.component.html',
@@ -144,12 +154,12 @@ export class EntityPopupComponent {
   private readonly http = inject(HttpClient);
   private readonly analysis = inject(AnalysisService);
   private readonly state = inject(UrlStateService);
-  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly target = input<EntityPopupTarget | null>(null);
 
   /** A row was chosen; the diagram decides whether to select or navigate. */
-  readonly navigate = output<{ stId: string; kind: EntityPopupTab }>();
+  readonly navigate = output<{ stId: string; kind: EntityPopupTab; hasDiagram?: boolean }>();
   /** The title was clicked: return the diagram to the entity this is about. */
   readonly recenter = output<void>();
   readonly dismissed = output<void>();
@@ -200,52 +210,56 @@ export class EntityPopupComponent {
     params: () => (this.tab() === 'molecules' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
-        ? this.http.get<any>(`${CONTENT_SERVICE}/data/query/enhanced/${params}`).pipe(
-            switchMap((entity) => {
-              const components = [
-                ...(entity?.hasComponent ?? []),
-                ...(entity?.hasMember ?? []),
-                ...(entity?.hasCandidate ?? []),
-              ].filter((c) => c && typeof c === 'object');
-
-              // A protein or small molecule has no components; show itself so
-              // the tab is never mysteriously blank.
-              const source = components.length > 0 ? components : entity ? [entity] : [];
-
-              // Only EntityWithAccessionedSequence needs a second look, and an
-              // entity typically has none or one of those, so this is a request
-              // or two rather than one per row.
-              const ambiguous = source.filter(
-                (c: any) => c.schemaClass === SchemaClasses.EWAS && c.stId
-              );
-              if (ambiguous.length === 0)
-                return of(this.group(source, new Map<string, ComponentRef>()));
-
-              return forkJoin(
-                ambiguous.map((c: any) =>
-                  this.http.get<any>(`${CONTENT_SERVICE}/data/query/${c.stId}`).pipe(
-                    map((full) => {
-                      const ref = full?.referenceEntity;
-                      // The identifiers come from this lookup too: components
-                      // arrive from the enhanced query with no referenceEntity,
-                      // so there is nothing to match an analysis against until
-                      // this second request is made.
-                      return [
-                        c.stId,
-                        {
-                          schemaClass: ref?.schemaClass,
-                          ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(Boolean),
-                        },
-                      ] as [string, ComponentRef];
-                    }),
-                    // One failed lookup should not empty the whole tab; that
-                    // row just falls back to Others.
-                    catchError(() => of([c.stId, {}] as [string, ComponentRef]))
-                  )
-                )
-              ).pipe(map((pairs) => this.group(source, new Map(pairs))));
+        ? this.http
+            // With includeRef, an object written earlier in the answer is a
+            // reference to it, which the deserializer resolves. Asked plain, it
+            // came as its bare dbId and the component was dropped (#762).
+            .get<JsogObject<DatabaseObject>>(`${CONTENT_SERVICE}/data/query/enhanced/${params}`, {
+              params: { includeRef: true },
             })
-          )
+            .pipe(
+              map(moleculesOf),
+              switchMap((source) => {
+                // Only EntityWithAccessionedSequence needs a second look, and an
+                // entity typically has none or one of those, so this is a request
+                // or two rather than one per row.
+                const ambiguous = source.flatMap((c) =>
+                  c.schemaClass === 'EntityWithAccessionedSequence' && c.stId ? [c.stId] : []
+                );
+                if (ambiguous.length === 0)
+                  return of(this.group(source, new Map<string, ComponentRef>()));
+
+                return forkJoin(
+                  ambiguous.map((stId) =>
+                    this.http.get<PlainGraphObject>(`${CONTENT_SERVICE}/data/query/${stId}`).pipe(
+                      map((full) => {
+                        const ref =
+                          full.schemaClass === 'EntityWithAccessionedSequence' &&
+                          typeof full.referenceEntity === 'object'
+                            ? full.referenceEntity
+                            : undefined;
+                        // The identifiers come from this lookup too: components
+                        // arrive from the enhanced query with no referenceEntity,
+                        // so there is nothing to match an analysis against until
+                        // this second request is made.
+                        return [
+                          stId,
+                          {
+                            schemaClass: ref?.schemaClass,
+                            ids: [ref?.identifier, ...(ref?.geneName ?? [])].filter(
+                              (id): id is string => typeof id === 'string' && id !== ''
+                            ),
+                          },
+                        ] as [string, ComponentRef];
+                      }),
+                      // One failed lookup should not empty the whole tab; that
+                      // row just falls back to Others.
+                      catchError(() => of([stId, {}] as [string, ComponentRef]))
+                    )
+                  )
+                ).pipe(map((pairs) => this.group(source, new Map(pairs))));
+              })
+            )
         : of<PopupGroup[] | undefined>(undefined),
   });
 
@@ -274,12 +288,13 @@ export class EntityPopupComponent {
 
   private readonly analysisHits = computed<Map<string, number[]> | undefined>(() => {
     if (!this.state.analysis()) return undefined;
-    const entities = this.found.value()?.entities;
+    // value() throws while the request is in error: no markers, as without one.
+    const entities = this.found.hasValue() ? this.found.value().entities : undefined;
     if (!entities) return undefined;
     const map = new Map<string, number[]>();
     for (const entity of entities) {
-      const exp = entity.exp ?? [];
-      const mapped = (entity.mapsTo ?? []).flatMap((m) => m.ids ?? []);
+      const exp = entity.exp;
+      const mapped = entity.mapsTo.flatMap((m) => m.ids);
       for (const id of [entity.id, ...mapped]) {
         if (id) map.set(String(id).toUpperCase(), exp);
       }
@@ -313,14 +328,14 @@ export class EntityPopupComponent {
       return forkJoin(
         stIds.map((stId) =>
           this.http
-            .get<ReferenceEntityIds[]>(
+            .get<PlainReferenceEntity[]>(
               `${CONTENT_SERVICE}/data/participants/${stId}/referenceEntities`
             )
             .pipe(
-              map((refs) => [stId, refs ?? []] as [string, ReferenceEntityIds[]]),
+              map((refs) => [stId, refs] as [string, PlainReferenceEntity[]]),
               // A row we cannot resolve stays unmarked rather than being called
               // absent, which would be a claim we cannot make.
-              catchError(() => of([stId, []] as [string, ReferenceEntityIds[]]))
+              catchError(() => of([stId, []] as [string, PlainReferenceEntity[]]))
             )
         )
       ).pipe(map((pairs) => this.annotate(params.groups, new Map(pairs), params.hits)));
@@ -340,7 +355,7 @@ export class EntityPopupComponent {
    */
   private annotate(
     groups: PopupGroup[],
-    participants: Map<string, ReferenceEntityIds[]>,
+    participants: Map<string, PlainReferenceEntity[]>,
     hits: Map<string, number[]>
   ): PopupGroup[] {
     const byExpression = this.hasExpressionValues();
@@ -350,7 +365,10 @@ export class EntityPopupComponent {
         const refs = row.stId ? (participants.get(row.stId) ?? []) : [];
         if (!refs.length) return row;
 
-        const ids = refs.flatMap((r) => [r?.identifier, ...(r?.geneName ?? [])].filter(Boolean));
+        // A gene product's gene names too: the other reference entities have none.
+        const ids = refs.flatMap((r) =>
+          [r.identifier, ...(getProperty(r, 'geneName') ?? [])].filter(Boolean)
+        );
         const hit = ids.map((id) => hits.get(String(id).toUpperCase())).find(Boolean);
         return {
           ...row,
@@ -372,7 +390,7 @@ export class EntityPopupComponent {
 
   /** Whether the running analysis carries per-sample values to show. */
   private readonly hasExpressionValues = computed(
-    () => (this.analysis.result()?.expression?.columnNames?.length ?? 0) > 0
+    () => (this.analysis.result()?.expression.columnNames.length ?? 0) > 0
   );
 
   /** Sample names, for labelling the values a row carries. */
@@ -397,21 +415,22 @@ export class EntityPopupComponent {
   });
 
   /** Group components by molecule type, in a stable order, as production does. */
-  private group(components: any[], refs: Map<string, ComponentRef>): PopupGroup[] {
+  private group(components: DatabaseObject[], refs: Map<string, ComponentRef>): PopupGroup[] {
     const byType = new Map<string, PopupRow[]>();
 
     for (const component of components) {
-      const label = component.displayName ?? component.name?.[0] ?? component.stId;
-      // Components occasionally come back without a name; a blank row is worse
-      // than no row.
+      // Every graph object is written with its displayName; an empty one would
+      // be a blank row, which is worse than no row.
+      const label = component.displayName;
       if (!label) continue;
 
-      const ref = refs.get(component.stId);
+      const stId = component.stId;
+      const ref = stId === undefined ? undefined : refs.get(stId);
       const type =
         typeFromSchemaClass(component.schemaClass) ?? typeFromReferenceClass(ref?.schemaClass);
 
       const rows = byType.get(type) ?? [];
-      rows.push({ label, stId: component.stId });
+      rows.push({ label, ...(stId !== undefined && { stId }) });
       byType.set(type, rows);
     }
 
@@ -420,21 +439,28 @@ export class EntityPopupComponent {
       .map(([label, rows]) => ({ label, rows }));
   }
 
+  // Each answer is a pathway; one new or updated in this release says which
+  // (releaseStatus, as Event has it), which the popup does not show.
   private readonly pathways = rxResource({
     params: () => (this.tab() === 'pathways' ? this.target()?.stId : undefined),
     stream: ({ params }) =>
       params
-        ? this.http.get<any[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`).pipe(
-            map((items): PopupGroup[] => [
-              {
-                rows: (items ?? []).map((p) => ({
-                  label: p.displayName,
-                  detail: p.speciesName,
-                  stId: p.stId,
-                })),
-              },
-            ])
-          )
+        ? this.http
+            .get<PlainPathway[]>(`${CONTENT_SERVICE}/data/pathways/low/entity/${params}`)
+            .pipe(
+              map((items): PopupGroup[] => [
+                {
+                  rows: items.map((p) => ({
+                    label: p.displayName,
+                    ...(p.speciesName !== undefined && { detail: p.speciesName }),
+                    stId: p.stId,
+                    // As given: absent stays absent, so the diagram keeps the
+                    // selection (the #168 default) rather than guessing.
+                    ...(p.hasDiagram !== undefined && { hasDiagram: p.hasDiagram }),
+                  })),
+                },
+              ])
+            )
         : of<PopupGroup[] | undefined>(undefined),
   });
 
@@ -443,18 +469,15 @@ export class EntityPopupComponent {
     stream: ({ params }) =>
       params
         ? this.http
-            .get<any>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
+            .get<Interactors>(`${CONTENT_SERVICE}/interactors/static/molecule/${params}/details`)
             .pipe(
               map((result): PopupGroup[] => [
                 {
                   // Production lists evidence count alongside the score, and
                   // both matter when judging an interaction.
-                  rows: (result?.entities?.[0]?.interactors ?? []).map((i: any) => ({
+                  rows: (result.entities[0]?.interactors ?? []).map((i) => ({
                     label: i.alias || i.acc,
-                    detail: [
-                      i.evidences != null ? `${i.evidences} evidence` : null,
-                      i.score != null ? `score ${i.score}` : null,
-                    ]
+                    detail: [`${i.evidences} evidence`, i.score != null ? `score ${i.score}` : null]
                       .filter(Boolean)
                       .join(' · '),
                     href: i.accURL,
@@ -516,7 +539,13 @@ export class EntityPopupComponent {
       window.open(row.href, '_blank', 'noopener');
       return;
     }
-    if (row.stId) this.navigate.emit({ stId: row.stId, kind: this.tab() });
+    if (row.stId) {
+      this.navigate.emit({
+        stId: row.stId,
+        kind: this.tab(),
+        ...(row.hasDiagram !== undefined && { hasDiagram: row.hasDiagram }),
+      });
+    }
   }
 
   close(): void {
@@ -527,18 +556,15 @@ export class EntityPopupComponent {
     this.pinned.update((v) => !v);
   }
 
-  @HostListener('document:keydown.escape')
   onEscape(): void {
     if (this.target()) this.dismissed.emit();
   }
 
   // A right-click elsewhere fires `contextmenu` rather than `click`, so both
   // are needed to dismiss reliably.
-  @HostListener('document:click', ['$event'])
-  @HostListener('document:contextmenu', ['$event'])
   onDocumentPointer(event: Event): void {
     if (!this.target() || this.pinned()) return;
-    if (this.host.nativeElement.contains(event.target as Node)) return;
+    if (event.target instanceof Node && this.host.nativeElement.contains(event.target)) return;
     this.dismissed.emit();
   }
 }

@@ -75,7 +75,7 @@ export function filenameFrom(disposition: string | null, fallback: string): stri
 
 /** The name to fall back on, taken from the URL's last path segment. */
 export function filenameFromUrl(url: string, fallback = 'download'): string {
-  const path = url.split(/[?#]/)[0];
+  const [path = url] = url.split(/[?#]/);
   const last = path.slice(path.lastIndexOf('/') + 1);
   return last || fallback;
 }
@@ -236,7 +236,7 @@ export class FileDownloadService {
     return {
       phase: phase.asReadonly(),
       cancel: () => {
-        subscription?.unsubscribe();
+        subscription.unsubscribe();
         phase.set({ status: 'idle' });
       },
     };
@@ -260,7 +260,7 @@ export class FileDownloadService {
   }
 
   private async readError(error: HttpErrorResponse): Promise<string> {
-    const body = error.error;
+    const body: unknown = error.error;
     if (body instanceof Blob) {
       try {
         return messageFrom(error.status, await body.text());

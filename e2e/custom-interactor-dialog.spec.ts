@@ -368,7 +368,7 @@ test.describe('The dialog layout', () => {
           ),
         ];
         const boxes = blocks.map((block) => ({
-          text: (block.textContent ?? '').trim().slice(0, 30),
+          text: block.textContent.trim().slice(0, 30),
           box: block.getBoundingClientRect(),
         }));
         const found: string[] = [];

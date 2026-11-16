@@ -14,7 +14,7 @@
  */
 
 import { DatabaseObject } from '../../model/graph/database-object.model';
-import { isEvent } from '../../services/utils';
+import { fieldByName, isEvent } from '../../services/utils';
 
 export interface DoReleaseFlag {
   /** Whether the event is marked to go out in the next release. */
@@ -52,7 +52,8 @@ export function doReleaseFlag(
 ): DoReleaseFlag | undefined {
   if (!obj || !isEvent(obj)) return undefined;
 
-  const doRelease = obj.doRelease;
-  if (doRelease === undefined || doRelease === null) return isCuratorSite ? HELD : undefined;
+  // Not in the contract, which describes the public content service: read by name.
+  const doRelease = fieldByName(obj, 'doRelease');
+  if (typeof doRelease !== 'boolean') return isCuratorSite ? HELD : undefined;
   return doRelease ? MARKED : HELD;
 }

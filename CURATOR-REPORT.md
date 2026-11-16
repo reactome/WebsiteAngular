@@ -38,7 +38,7 @@ section grows as the fixes land.
 | Computationally predicted events in Details                      | A human pathway now lists the events predicted from it in other species, by species, and a predicted event says it was computationally inferred                                                                                                                                                                                                                                               | `/PathwayBrowser/R-HSA-109582` and `/PathwayBrowser/R-MMU-1640170` → Details |
 | Hovering a sub-pathway does not highlight it in the illustration | It does now, and the highlight clears when you move away                                                                                                                                                                                                                                                                                                                                      | `/PathwayBrowser/R-HSA-1640170`: hover "Cell Cycle Checkpoints"              |
 | Hovering sub-events in the hierarchy at diagram level            | Nothing reached the diagram. Now the hovered reaction or sub-pathway stands out: drawn thicker in its own colours, with the rest of the diagram faded. Not yellow: sub-pathways here are tinted in colours spread around the whole spectrum, so any single highlight colour would match one of them                                                                                           | Any pathway diagram: hover a reaction in the tree                            |
-| Tour and Layout buttons missing from the menu bar                | They had never been carried over to the new browser. Both are in the top bar now and behave as on reactome.org: Tour plays the same Pathway Browser tour video, and Layout shows or hides the hierarchy and details panels, or expands the centre view                                                                                                                                        | Any pathway: the two buttons left of Feedback, at the top right              |
+| Tour and Layout buttons missing from the menu bar                | They had never been carried over to the new browser. Layout is in the top bar now and behaves as on reactome.org: it shows or hides the hierarchy and details panels, or expands the centre view. Tour was added too, but its video shows the old website, so it is taken off until there is a tutorial of this one (#446)                                                                    | Any pathway: the Layout button left of Feedback, at the top right            |
 | Content Service and Analysis Service pages full of broken links  | Opened directly, as Tools and Download opened them, these addresses showed the backend's own page, wrapped in a copy of the old reactome.org menu whose links lead nowhere here. They now show this site's API pages, under the site's header, and the links open them in the site                                                                                                            | Tools → Content Service, or type `/ContentService` into the address bar      |
 | The ReactomeGSA link in news (reactome.org/gsa)                  | reactome.org's /gsa is a separate ReactomeGSA page; this site has the same analysis built into the Pathway Browser. /gsa now opens it, and the news links go straight there. Its Guided tour, which could not be started and sent you to a missing page when it was, has a button, and the method's citation is shown                                                                         | Any V97-era news link to ReactomeGSA, or type `/gsa`                         |
 | Quantitative results not appearing                               | ReactomeGSA hands each result to a Reactome server, and beta was asking for reactome.org, whose results beta cannot open. Beta now asks ReactomeGSA to use this server (dev.reactome.org), so results are stored where beta can open them, and beta's test runs no longer touch the production server. A result that still cannot be loaded says so rather than vanishing                     | Run Camera on the MelanomaRNA-seq example                                    |
@@ -96,8 +96,12 @@ If it still does nothing with Ctrl held, tell us, because then it is ours.
   is a fair description ([#299](https://github.com/reactome/WebsiteAngular/issues/299)) — the fix is grouping each entity's parts, not fewer shapes.
 - **EHLD hover highlight** — hovering a subpathway in the hierarchy highlights
   it on the live site and not here ([#297](https://github.com/reactome/WebsiteAngular/issues/297)).
-- **Trivial molecules at zoom** — H2O and H+ still disappear when zooming out,
-  which contradicts the OK on that row ([#298](https://github.com/reactome/WebsiteAngular/issues/298)). We will take yours.
+- **Trivial molecules at zoom** — H2O and H+ disappearing when you zoom out is
+  intended when nothing is flagged: trivial molecules fade out below 60% zoom
+  and are hidden at 40%, to keep a whole pathway readable. While something is
+  flagged they stay visible at every zoom, and that is what the #150 row below
+  asks you to check. If you saw them vanish with a flag on, please send us the
+  URL ([#298](https://github.com/reactome/WebsiteAngular/issues/298)).
 
 ### Questions you asked
 
@@ -145,7 +149,7 @@ If it still does nothing with Ctrl held, tell us, because then it is ours.
 
 | #                                                             | What to check                                                                                                                                                                                        | Why we are asking                                                                                                                                                                                                                                                                                                                                                                                     |
 | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [#150](https://github.com/reactome/WebsiteAngular/issues/150) | Flag something, then confirm trivial molecules (H₂O, ATP…) stay visible at every zoom, and that their chemical structures never appear without the molecule underneath                               | Two real defects were fixed, but the original reports say "sometimes, but not always", and we could not make the failure happen on demand. We need someone who has seen it to confirm                                                                                                                                                                                                                 |
+| [#150](https://github.com/reactome/WebsiteAngular/issues/150) | Flag something, then confirm trivial molecules (H₂O, ATP…) stay visible at every zoom while the flag is on, and that their chemical structures never appear without the molecule underneath          | Two real defects were fixed, but the original reports say "sometimes, but not always", and we could not make the failure happen on demand. We need someone who has seen it to confirm                                                                                                                                                                                                                 |
 | [#143](https://github.com/reactome/WebsiteAngular/issues/143) | Same as above, specifically while navigating between pathways with a flag active                                                                                                                     | As above                                                                                                                                                                                                                                                                                                                                                                                              |
 | [#154](https://github.com/reactome/WebsiteAngular/issues/154) | Right-click a complex or set after running an analysis: components are listed and the ones in your data are marked                                                                                   | Closed on the basis that the right-click panel delivers this. **Reopen if "within a diagram" meant drawing components as nodes inside the canvas** — that is a much larger piece, and the old GWT browser does not do it either                                                                                                                                                                       |
 | [#81](https://github.com/reactome/WebsiteAngular/issues/81)   | Community → Events: confirm every attachment you expect is present                                                                                                                                   | All 5 "Poster" links on the page resolve, but if a specific event is missing an attachment we have not spotted it                                                                                                                                                                                                                                                                                     |
@@ -269,6 +273,15 @@ Not bugs, so as not to waste your time:
 
 ## Decisions they should know about
 
+- **Downloaded and exported figures show every protein and molecule label at
+  full size** (from 5 November 2026). On the site, zooming in shrinks a protein's
+  or molecule's label and moves it aside, to make room for its 3D structure or
+  chemical picture. Those pictures are never part of a downloaded figure, so a
+  download left the shrunken label beside empty space. Whether a download had the
+  shrunken label at all was chance, because the picture loads late. The site
+  itself is unchanged. **If a downloaded label, a structure or a drug badge looks
+  wrong, this change is the first suspect:** the render page turns structures off
+  with `--structures: 0`.
 - **PowerPoint files are built out of shapes**, one per compartment, connector,
   entity and sub-pathway tint, editable the moment the file opens. They carried
   the diagram as a single vector image until now, on the argument that one click
@@ -506,5 +519,11 @@ notice:
   there is a **Release verification** workflow that takes the site as an input. It
   ran nightly against beta until 2026-09-15, which was a poor proxy for a
   quarterly event and had quietly stopped reporting.
+- **Expression data** (the Expression tab, spec 024): the tissue tables are not
+  in the repository. `node tools/content-node/snapshot-expression.ts --out <folder>`
+  fetches each listed experiment from Expression Atlas and refuses to write one
+  that does not match its source; the folder is `EXPRESSION_FILES_DIR` in the
+  host's `.env`. Run it when Expression Atlas updates an experiment or a species
+  is added, then restart the content service and purge `/ContentService/expression/*`.
 - **Content**: `npm run build` stages content itself now. It used to only index
   it, so a build could list a new announcement and serve an empty page for it.

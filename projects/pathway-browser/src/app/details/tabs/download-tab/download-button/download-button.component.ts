@@ -36,13 +36,26 @@ export class DownloadButtonComponent {
   readonly download = input<string | boolean>();
   readonly icon = input<Icon>();
 
+  /**
+   * A figure made in the page is under way. Those have no link for the
+   * directive to fetch, so the page says so instead; it looks and reads the
+   * same as a file being made on the server.
+   */
+  readonly working = input(false);
+
   readonly label = input<string>();
   readonly tooltip = input<string>();
   readonly openInNewTab = input<string>('_blank');
-  click = output<void>();
+  /**
+   * Opens the address in a new tab instead of downloading it: for a file made
+   * in the background, whose address shows a page that asks again until the
+   * file is ready, then downloads it (the analysis report, pdf-export spec 002).
+   */
+  readonly opens = input(false);
+  readonly pressed = output<void>();
 
   onClick(event: MouseEvent) {
     event.stopPropagation();
-    this.click.emit();
+    this.pressed.emit();
   }
 }

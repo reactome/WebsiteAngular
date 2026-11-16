@@ -15,7 +15,8 @@ export type PLoadingStatus = PartialRequired<LoadingStatus, 'id' | 'status'>;
 
 export interface LoadParameter {
   name: string;
-  value: any;
+  /** As sent: the value's text. */
+  value: string;
 }
 
 export interface SampleMetadata {
@@ -31,7 +32,8 @@ export class DataSummary {
   group?: string;
   sample_ids!: string[];
   sample_metadata?: SampleMetadata[];
-  default_parameters?: Parameter[];
+  /** As the service sends them: each value its text (e2e/fixtures/gsa-melanoma-example.json). */
+  default_parameters?: { name: string; value: string }[];
   parameters?: Parameter[];
   complete?: boolean = false;
 }

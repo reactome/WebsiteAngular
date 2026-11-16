@@ -4,27 +4,10 @@ import { ReferenceEntity } from '../model/graph/reference-entity/reference-entit
 import { CONTENT_SERVICE } from '../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { PropertyType } from '../model/property-type';
-import { extractFromSpace } from './utils';
+import { nameAfterIdentifier, nameBeforeIdentifier } from './utils';
 import { SchemaClasses } from '../constants/constants';
-
-export interface Molecule {
-  dbId: number;
-  identifier: string;
-  schemaClass: string;
-  displayName: string;
-  icon: string;
-  displayIcon: string;
-  url: string;
-  formattedName: string;
-  type: string;
-}
-
-export interface Participant {
-  peDbId: number;
-  displayName: string;
-  schemaClass: string;
-  refEntities: Molecule[];
-}
+import type { Participant, ShownParticipant } from '../model/participant.model';
+import type { ParticipantReference } from '../../../../contract/participants.ts';
 
 @Injectable({
   providedIn: 'root',
@@ -32,7 +15,7 @@ export interface Participant {
 export class ParticipantService {
   private http = inject(HttpClient);
 
-  getParticipants(stId: string): Observable<Participant[]> {
+  getParticipants(stId: string): Observable<ShownParticipant[]> {
     const url = `${CONTENT_SERVICE}/data/participants/${stId}`;
     return this.http.get<Participant[]>(url).pipe(
       map((participants) =>
@@ -49,9 +32,9 @@ export class ParticipantService {
     );
   }
 
-  getNameAndType(molecule: Molecule): { type: string; name: string } {
-    let type = '';
-    let name = '';
+  getNameAndType(molecule: ParticipantReference): { type: string; name: string } {
+    let type: string;
+    let name: string;
 
     const schemaClass = molecule.schemaClass;
     switch (schemaClass) {
@@ -59,24 +42,24 @@ export class ParticipantService {
       case SchemaClasses.REFERENCE_GENE_PRODUCT:
       case SchemaClasses.REFERENCE_ISOFORM:
         type = PropertyType.PROTEINS;
-        name = extractFromSpace(molecule.displayName, false);
+        name = nameAfterIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.REFERENCE_RNA_SEQUENCE:
       case SchemaClasses.REFERENCE_DNA_SEQUENCE:
         type = PropertyType.SEQUENCES;
-        name = extractFromSpace(molecule.displayName, false);
+        name = nameAfterIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.SIMPLE_ENTITY:
       case SchemaClasses.REFERENCE_MOLECULE:
         type = PropertyType.CHEMICAL_COMPOUNDS;
-        name = extractFromSpace(molecule.displayName, true);
+        name = nameBeforeIdentifier(molecule.displayName);
 
         break;
       case SchemaClasses.REFERENCE_THERAPEUTIC:
         type = PropertyType.DRUG;
-        name = extractFromSpace(molecule.displayName, true);
+        name = nameBeforeIdentifier(molecule.displayName);
 
         break;
       default:
@@ -87,7 +70,7 @@ export class ParticipantService {
     return { type, name };
   }
 
-  getDisplayIcon(molecule: Molecule) {
+  getDisplayIcon(molecule: ParticipantReference) {
     const schemaClass = molecule.schemaClass;
     if (schemaClass === SchemaClasses.REFERENCE_DNA_SEQUENCE) {
       return schemaClass;

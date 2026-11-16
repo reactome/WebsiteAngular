@@ -12,7 +12,6 @@ import { MatIconModule } from '@angular/material/icon';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 
 @NgModule({
-  declarations: [TableComponent, UploadTableComponent, DownloadTableComponent],
   imports: [
     CommonModule,
     FormsModule,
@@ -22,6 +21,9 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
     MatTooltipModule,
     MatIconModule,
     ScrollingModule,
+    TableComponent,
+    UploadTableComponent,
+    DownloadTableComponent,
   ],
   exports: [TableComponent],
 })

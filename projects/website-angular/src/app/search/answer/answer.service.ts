@@ -251,9 +251,13 @@ export class AnswerService {
     // A challenge is not a failure: the server is willing to answer once it
     // knows a human is asking. The panel renders the widget and asks again.
     if (response.status === 401) {
-      const body = await response.json().catch(() => null);
-      if (typeof body?.sitekey === 'string' && typeof body?.verify === 'string') {
-        this._challenge.set({ sitekey: body.sitekey, verify: body.verify });
+      const body: unknown = await response.json().catch(() => null);
+      const sitekey: unknown =
+        typeof body === 'object' && body !== null ? Reflect.get(body, 'sitekey') : undefined;
+      const verify: unknown =
+        typeof body === 'object' && body !== null ? Reflect.get(body, 'verify') : undefined;
+      if (typeof sitekey === 'string' && typeof verify === 'string') {
+        this._challenge.set({ sitekey, verify });
       } else {
         this._state.set('failed');
       }

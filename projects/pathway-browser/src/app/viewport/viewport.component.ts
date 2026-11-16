@@ -23,7 +23,8 @@ import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
 import { DarkService } from '../services/dark.service';
 import { EventService } from '../services/event.service';
-import { UrlParam, UrlStateService } from '../services/url-state.service';
+import { UrlStateService } from '../services/url-state.service';
+import { NgTemplateOutlet } from '@angular/common';
 import { MatSlideToggle } from '@angular/material/slide-toggle';
 import { GeneralService } from '../services/general.service';
 import { DataStateService } from '../services/data-state.service';
@@ -32,7 +33,7 @@ import { Pathway } from '../model/graph/event/pathway.model';
 import { CitationService } from '../services/citation.service';
 import { of } from 'rxjs';
 import { rxResource } from '@angular/core/rxjs-interop';
-import { environment, IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
+import { IS_CURATOR, SHOW_DELTASIGNAL } from '../../environments/environment';
 import { FigureService } from '../details/tabs/description-tab/figure/figure.service';
 // angular-split 20 renamed IOutputData -> SplitGutterInteractionEvent; same
 // shape ({gutterNum, sizes}).
@@ -54,13 +55,13 @@ import {
 } from '@angular/material/snack-bar';
 import { MatMenu, MatMenuItem, MatMenuTrigger } from '@angular/material/menu';
 import { MatButton, MatIconButton } from '@angular/material/button';
-import { NgClass } from '@angular/common';
+
 import { AnalysisFormComponent } from './analysis-form/analysis-form.component';
 import { FormsModule } from '@angular/forms';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
 import { DeltaSignalPanelComponent } from '../deltasignal/deltasignal-panel.component';
 import { MatDialog } from '@angular/material/dialog';
-import { ALL_PANELS, type LayoutControl, togglePanels } from './layout';
+import { ALL_PANELS, type LayoutControl, togglePanels, TOUR_VIDEO_URL } from './layout';
 import { TourDialogComponent } from './tour-dialog/tour-dialog.component';
 
 const DETAIL_MIN_HEIGHT = 0;
@@ -75,9 +76,9 @@ const DROPDOWN_DURATION = 500;
   standalone: true,
   imports: [
     AngularSplitModule,
+    NgTemplateOutlet,
     SearchComponent,
     MatIcon,
-    NgClass,
     SpeciesComponent,
     InteractorsComponent,
     EventHierarchyComponent,
@@ -109,7 +110,7 @@ export class ViewportComponent {
   private figure: FigureService = inject(FigureService);
   public analysis: AnalysisService = inject(AnalysisService);
   private readonly snackBar = inject(MatSnackBar);
-  private loadFailureNotice?: MatSnackBarRef<TextOnlySnackBar>;
+  private loadFailureNotice: MatSnackBarRef<TextOnlySnackBar> | undefined;
   public dark: DarkService = inject(DarkService);
   public eventService: EventService = inject(EventService);
   public state: UrlStateService = inject(UrlStateService);
@@ -127,6 +128,14 @@ export class ViewportComponent {
    * and would put a dragged width back to the default.
    */
   readonly hierarchyShare = signal(20);
+  /**
+   * Whether the way home is drawn in the hierarchy panel, over its search row.
+   * Not when the panel is closed, and not when it has been dragged narrow: the
+   * panel has no minimum, and dragged to nothing it took the logo with it,
+   * leaving no way home on screen. Below this share of the width it moves to
+   * the top bar instead.
+   */
+  readonly homeInPanel = computed(() => this.panels().hierarchy && this.hierarchyShare() >= 12);
 
   onSideDragEnd($event: SplitGutterInteractionEvent) {
     this.hierarchyShare.set($event.sizes[0] as number);
@@ -135,6 +144,9 @@ export class ViewportComponent {
   toggleLayout(control: LayoutControl) {
     this.panels.update((layout) => togglePanels(layout, control));
   }
+
+  /** Whether there is a tour video to offer (#446: not until a new one is made). */
+  readonly hasTour = TOUR_VIDEO_URL !== undefined;
 
   openTour() {
     this.dialog.open(TourDialogComponent, { maxWidth: '95vw', autoFocus: 'dialog' });
@@ -321,11 +333,10 @@ export class ViewportComponent {
         }, this.dropdownDuration);
       }
     });
-    effect(
-      () =>
-        this.dataState.currentPathway() &&
-        this.eventService.setDiagramPathway(this.dataState.currentPathway()!)
-    );
+    effect(() => {
+      const pathway = this.dataState.currentPathway();
+      if (pathway) this.eventService.setDiagramPathway(pathway);
+    });
     effect(() => this.sizeObserver.observe(this.content().nativeElement));
     effect(() => {
       if (this.exampleAnalysis.value()) this.state.example.set(null);
@@ -356,11 +367,11 @@ export class ViewportComponent {
   readonly glyphs = afterNextRender(() => {
     const element = this.darkToggle()._switchElement.nativeElement;
     element
-      ?.querySelector('.mdc-switch__icon--on')
+      .querySelector('.mdc-switch__icon--on')
       ?.querySelector('path')
       ?.setAttribute('d', this.moon);
     element
-      ?.querySelector('.mdc-switch__icon--off')
+      .querySelector('.mdc-switch__icon--off')
       ?.querySelector('path')
       ?.setAttribute('d', this.sun);
   });
@@ -400,7 +411,7 @@ export class ViewportComponent {
     }
   }
 
-  interval?: number;
+  interval: number | undefined;
   readonly isFirstProfile = computed(() => this.analysis.sampleIndex() === 0);
   readonly isLastProfile = computed(
     () => this.analysis.sampleIndex() >= this.analysis.samples().length - 1
@@ -431,7 +442,7 @@ export class ViewportComponent {
 
   updateProfile(index: number) {
     this.analysis.sampleIndex.set(index);
-    this.state.sample.set(this.analysis.samples()[index]);
+    this.state.sample.set(this.analysis.samples()[index] ?? null);
   }
 
   toggleIterate() {
@@ -457,40 +468,11 @@ export class ViewportComponent {
   }
 
   openCitationDialog() {
-    this.citation.openDialog();
+    // A failed fetch of the dialog's code would otherwise go unreported.
+    this.citation
+      .openDialog()
+      .catch((error) => console.error('Could not open the citation', error));
   }
-
-  readonly formerPathwayBrowserURL = computed(() => {
-    let url = `${environment.host}/PathwayBrowser/#/`;
-    if (this.state.pathwayId() || this.state.select())
-      url += this.state.pathwayId() || this.state.select();
-    if (this.state.select()) url += `&SEL=${this.state.select()}`;
-    if (this.state.analysis()) url += `&ANALYSIS=${this.state.analysis()}`;
-    if (this.state.path().length > 0) url += `&PATH=${this.state.path().join(',')}`;
-    const flags = this.dataState.flagIdentifiers().filter((f) => f.startsWith('R-'));
-    if (flags.length > 0) url += `&FLG=${flags[0]}`;
-    if (this.state.flagInteractors()) url += `&FLGINT`;
-    if (this.state.tab()) {
-      const oldTab = this.state.newToOldTab.get(this.state.tab()!);
-      if (oldTab) url += `&DTAB=${oldTab}`;
-    }
-
-    const filters: [UrlParam<any>, { token: string; checker?: (value: any) => boolean }][] = [
-      [this.state.resourceFilter, { token: 'resource' }],
-      [this.state.speciesFilter, { token: 'species', checker: (species) => species.length > 0 }],
-      [this.state.fdrFilter, { token: 'pValue' }],
-      [this.state.pathwayMinSizeFilter, { token: 'min' }],
-      [this.state.pathwayMaxSizeFilter, { token: 'max' }],
-      [this.state.includeDisease, { token: 'includeDisease' }],
-    ];
-    const filterValue = filters
-      .filter(([value, { checker }]) => (checker ? checker(value()) : value()))
-      .map(([value, { token }]) => `${token}:${value()}`)
-      .join('$');
-    if (filterValue.length > 0) url += `&FILTER=${filterValue}`;
-
-    return url;
-  });
 
   onViewDetailDragEnd($event: SplitGutterInteractionEvent) {
     this.detailDraggedSize.set($event.sizes[1] as number);

@@ -51,7 +51,7 @@ function normalise(term: string) {
 const BUCKETS = 28;
 
 /** Rows per page, and the portal's own default first. */
-const PAGE_SIZES = [10, 25, 50, 100];
+const PAGE_SIZES = [10, 25, 50, 100] as const;
 
 /**
  * The portal's own starting threshold.
@@ -141,7 +141,7 @@ export class IdgPageComponent {
     // throw inside a computed the template depends on takes the render with it.
     source: () => (this.datasets.hasValue() ? this.datasets.value() : undefined),
     computation: (available, previous) => {
-      if (previous?.value?.length) return previous.value;
+      if (previous?.value.length) return previous.value;
       const fallback = available?.find((dataset) => dataset.id === DEFAULT_DATASET);
       return fallback ? [fallback.digitalKey] : [];
     },
@@ -150,7 +150,7 @@ export class IdgPageComponent {
   /** Datasets grouped by species, which is how a person narrows this down. */
   readonly bySpecies = computed(() => {
     const groups = new Map<string, IdgDataset[]>();
-    for (const dataset of (this.datasets.hasValue() ? this.datasets.value() : []) ?? []) {
+    for (const dataset of this.datasets.hasValue() ? this.datasets.value() : []) {
       const species = (dataset.bioSource ?? 'Other').replace(/_/g, ' ');
       groups.set(species, [...(groups.get(species) ?? []), dataset]);
     }
@@ -182,8 +182,10 @@ export class IdgPageComponent {
    */
   readonly scoreRange = computed(() => {
     const sorted = this.sortedScores();
-    if (!sorted.length) return undefined;
-    return { min: sorted[0], max: sorted[sorted.length - 1] };
+    const [min] = sorted;
+    const max = sorted.at(-1);
+    if (min === undefined || max === undefined) return undefined;
+    return { min, max };
   });
 
   /** Starts at the 90th percentile: the confident tail, without being empty. */
@@ -191,8 +193,8 @@ export class IdgPageComponent {
     source: () => (this.sortedScores().length ? this.sortedScores() : undefined),
     computation: (sorted, previous) => {
       if (previous?.value !== undefined && previous.source) return previous.value;
-      if (!sorted?.length) return DEFAULT_THRESHOLD;
-      const best = sorted[sorted.length - 1];
+      const best = sorted?.at(-1);
+      if (best === undefined) return DEFAULT_THRESHOLD;
       return Math.min(DEFAULT_THRESHOLD, Math.round(best * 100) / 100);
     },
   });
@@ -248,7 +250,7 @@ export class IdgPageComponent {
     const counts = new Array<number>(BUCKETS).fill(0);
     for (const score of sorted) {
       const bucket = Math.min(BUCKETS - 1, Math.floor((score - range.min) / width));
-      counts[bucket]++;
+      counts[bucket] = (counts[bucket] ?? 0) + 1;
     }
     const tallest = Math.max(...counts, 1);
     return counts.map((count, index) => ({
@@ -270,11 +272,7 @@ export class IdgPageComponent {
       // Waiting for the scores means the threshold is the data's, not a guess.
       return this.scores.hasValue() ? { term, score: this.threshold() } : undefined;
     },
-    stream: ({ params }) =>
-      this.idg.enrichedPathways(params.term, {
-        datasets: 'datasets' in params ? params.datasets : undefined,
-        score: 'score' in params ? params.score : undefined,
-      }),
+    stream: ({ params }) => this.idg.enrichedPathways(params.term, params),
   });
 
   /**
@@ -294,11 +292,7 @@ export class IdgPageComponent {
       }
       return this.scores.hasValue() ? { term, score: this.threshold() } : undefined;
     },
-    stream: ({ params }) =>
-      this.idg.druggability(params.term, {
-        datasets: 'datasets' in params ? params.datasets : undefined,
-        score: 'score' in params ? params.score : undefined,
-      }),
+    stream: ({ params }) => this.idg.druggability(params.term, params),
   });
 
   /**
@@ -327,7 +321,7 @@ export class IdgPageComponent {
 
   /** The interactors the threshold kept, strongest first. */
   readonly interactors = computed(() => {
-    const scores = (this.scores.hasValue() ? this.scores.value() : {}) ?? {};
+    const scores = this.scores.hasValue() ? this.scores.value() : {};
     return this.kept()
       .genes.map((gene) => ({ gene, score: scores[gene] ?? 0 }))
       .sort((a, b) => b.score - a.score);
@@ -417,19 +411,22 @@ export class IdgPageComponent {
   readonly significantOnly = signal(true);
 
   readonly pageSizes = PAGE_SIZES;
-  readonly perPage = signal(PAGE_SIZES[0]);
+  readonly perPage = signal<number>(PAGE_SIZES[0]);
   readonly page = signal(0);
 
   private readonly matching = computed<IdgRow[]>(() => {
-    const found = (this.results.hasValue() ? this.results.value() : []) ?? [];
-    const levels = (this.druggability.hasValue() ? this.druggability.value() : {}) ?? {};
+    const found = this.results.hasValue() ? this.results.value() : [];
+    const levels = this.druggability.hasValue() ? this.druggability.value() : {};
     return found
       .filter(
         (pathway) =>
           (!this.leavesOnly() || pathway.bottomLevel) &&
           (!this.significantOnly() || pathway.fdr <= 0.05)
       )
-      .map((pathway) => ({ ...pathway, tdl: levels[pathway.stId] }));
+      .map((pathway) => {
+        const tdl = levels[pathway.stId];
+        return tdl ? { ...pathway, tdl } : pathway;
+      });
   });
 
   readonly pathways = computed(() => {
@@ -454,7 +451,7 @@ export class IdgPageComponent {
   readonly counts = computed(() => ({
     shown: this.pathways().length,
     matching: this.matching().length,
-    total: ((this.results.hasValue() ? this.results.value() : []) ?? []).length,
+    total: (this.results.hasValue() ? this.results.value() : []).length,
   }));
 
   /**
@@ -468,7 +465,7 @@ export class IdgPageComponent {
   readonly pathwayPlot = computed(() => {
     const rows = this.matching();
     if (!rows.length) return undefined;
-    const tops = (this.hierarchy.hasValue() ? this.hierarchy.value() : {}) ?? {};
+    const tops = this.hierarchy.hasValue() ? this.hierarchy.value() : {};
 
     const significance = (value: number) => (value > 0 ? -Math.log10(value) : 20);
     const tallest = Math.max(...rows.map((row) => significance(row.pVal)), 1);
@@ -520,7 +517,8 @@ export class IdgPageComponent {
       let high = sorted.length;
       while (low < high) {
         const middle = (low + high) >> 1;
-        if (sorted[middle] < score) low = middle + 1;
+        // `middle` is below the length, so the value is there.
+        if ((sorted[middle] ?? score) < score) low = middle + 1;
         else high = middle;
       }
       return { score, genes: sorted.length - low };
@@ -545,7 +543,7 @@ export class IdgPageComponent {
    * reports, coloured by what kind of evidence it is.
    */
   readonly featurePlot = computed(() => {
-    const found = (this.features.hasValue() ? this.features.value() : []) ?? [];
+    const found = this.features.hasValue() ? this.features.value() : [];
     if (!found.length) return undefined;
     const most = Math.max(...found.map((feature) => feature.count), 1);
     const kinds = new Map<string, number>();
@@ -704,7 +702,7 @@ export class IdgPageComponent {
   readonly chosen = computed(() => {
     const keys = new Set(this.selected());
     const available = this.datasets.hasValue() ? this.datasets.value() : [];
-    return (available ?? []).filter((dataset) => keys.has(dataset.digitalKey));
+    return available.filter((dataset) => keys.has(dataset.digitalKey));
   });
 
   format(value: number) {

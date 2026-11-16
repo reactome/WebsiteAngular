@@ -1,51 +1,33 @@
 import cytoscape from 'cytoscape';
 
-export interface InteractorEntity {
-  acc: string;
-  count: number;
-  interactors: Interactor[] | null;
-}
+import type { Interactor, InteractorEntity } from '../../../../../contract/interactors.ts';
 
-export interface Interactor {
-  acc: string;
-  accURL: string;
-  alias: string;
-  evidences: number;
-  evidencesURL: string;
-  id: number;
-  score: number;
-  type: string;
+export type { CustomInteraction, PsicquicResource } from '../../../../../contract/interactors.ts';
+
+/**
+ * An interactor as the pathway browser draws it: the answer's, with the diagram's
+ * nodes it is drawn on. A custom upload's interactors are built here from pairs of
+ * accessions, with no evidence, so the evidence the service always sends is optional.
+ */
+export interface DrawnInteractor extends Omit<Interactor, 'evidences' | 'evidencesURL'> {
+  evidences?: number;
+  evidencesURL?: string;
   existingNodes?: cytoscape.NodeCollection;
 }
 
-export interface Interactors {
-  entities: InteractorEntity[];
-  resource: string; //STATIC, DisGeNet PSICQUIC resource (e.g. IntAct, MINT, etc) or Custom resource
+/** An entity's interactors as the pathway browser draws them. */
+export interface DrawnInteractorEntity extends Omit<InteractorEntity, 'interactors'> {
+  interactors?: DrawnInteractor[] | null;
 }
 
-export interface CustomInteraction {
-  dbId: number;
-  identifier: string;
-  score: number;
-  evidenceCount: number;
-  evidenceURL: string;
-  geneName?: string[];
-  databaseName: string;
-  entitiesCount: number;
-  speciesName: string;
-  displayName: string;
-  variantIdentifier?: string; //Q99IB8-PRO_0000045603
-
-  // Additional properties
-  finalGeneName?: string;
-  formattedIdentifier?: string;
-}
-
-export interface PsicquicResource {
-  name: string;
-  soapURL: string;
-  restURL: string;
-  active: boolean;
+/**
+ * Interactors as the pathway browser draws them, from any source: Reactome's own
+ * (the contract's `Interactors`), DisGeNET, a PSICQUIC registry, or a custom upload.
+ */
+export interface DrawnInteractors {
+  entities?: DrawnInteractorEntity[];
+  /** "static", DisGeNET, a PSICQUIC resource (IntAct, MINT and the like), or a custom one. */
+  resource: string;
 }
 
 export interface InteractorToken {
@@ -71,8 +53,9 @@ interface Summary {
   name: string;
 }
 
-export class InputCategory {
-  url: string | undefined;
+/** Where a custom resource is sent, and what is sent (nothing when its field is empty). */
+export interface InputCategory {
+  url: string;
   content: string | FormData | undefined;
 }
 

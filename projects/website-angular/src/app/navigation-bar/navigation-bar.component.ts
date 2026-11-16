@@ -1,5 +1,5 @@
-import { Component, HostListener, inject, viewChild, AfterViewInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, viewChild, AfterViewInit } from '@angular/core';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSlideToggle, MatSlideToggleModule } from '@angular/material/slide-toggle';
@@ -12,7 +12,11 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 @Component({
   standalone: true,
   selector: 'app-navigation-bar',
+  host: {
+    '(window:resize)': 'onResize()',
+  },
   imports: [
+    NgOptimizedImage,
     CommonModule,
     RouterModule,
     MatIconModule,
@@ -47,10 +51,10 @@ export class NavigationBarComponent implements AfterViewInit {
       const toggle = this.darkToggle();
       if (toggle) {
         const onIcon = toggle._switchElement.nativeElement
-          ?.querySelector('.mdc-switch__icon--on')
+          .querySelector('.mdc-switch__icon--on')
           ?.querySelector('path');
         const offIcon = toggle._switchElement.nativeElement
-          ?.querySelector('.mdc-switch__icon--off')
+          .querySelector('.mdc-switch__icon--off')
           ?.querySelector('path');
         if (onIcon) onIcon.setAttribute('d', this.moon);
         if (offIcon) offIcon.setAttribute('d', this.sun);
@@ -118,7 +122,7 @@ export class NavigationBarComponent implements AfterViewInit {
     return !!links && Object.keys(links).length > 0;
   }
 
-  @HostListener('window:resize', ['$event']) onResize(_event: any) {
+  onResize() {
     this.windowWidth = window.innerWidth;
   }
 }

@@ -50,15 +50,33 @@ failed=()
 # without this an abandoned push leaves the render service running and a
 # production build in /tmp.
 render_pid=""
+content_pid=""
 scratch=()
 cleanup() {
   # Waited for, so it is not still writing its cache while that is removed.
   [ -n "$render_pid" ] && { kill "$render_pid" 2>/dev/null; wait "$render_pid" 2>/dev/null; }
+  [ -n "$content_pid" ] && { kill "$content_pid" 2>/dev/null; wait "$content_pid" 2>/dev/null; }
   [ ${#scratch[@]} -gt 0 ] && rm -rf -- "${scratch[@]}"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
+
+# Ports free now, as many as asked for, for this run's own servers. Fixed ports
+# made two pushes on one host collide: the second could not start the servers it
+# tests with, and failed for it, though nothing in its tree was wrong. Each is
+# held until all are chosen, so no two are the same.
+free_ports() {
+  node -e '
+    const net = require("node:net");
+    const open = Array.from({ length: Number(process.argv[1]) }, () => net.createServer());
+    Promise.all(open.map((server) => new Promise((done) => server.listen(0, "127.0.0.1", done))))
+      .then(() => {
+        console.log(open.map((server) => server.address().port).join(" "));
+        open.forEach((server) => server.close());
+      });
+  ' "$1"
+}
 
 step() {
   local name=$1; shift
@@ -94,6 +112,7 @@ step "libraries" npm run build:libs
 step "types" npm run check:types
 step "lint" npm run check:lint
 step "dead code" npm run check:dead
+step "ratchet totals" npm run check:totals
 step "unit tests" npm test
 step "e2e recordings" npm run check:har
 
@@ -139,8 +158,11 @@ if [ "$mode" != "fast" ]; then
   # that build instead of the commit about to be pushed (#243). It cost a
   # `--no-verify` push on a branch that was in fact fine, and it could as easily
   # have waved through one that was not.
+  read -r smoke_site smoke_embed smoke_host < <(free_ports 3)
   step "diagram + download smoke" env \
-    E2E_PORT=4201 \
+    E2E_PORT="$smoke_site" \
+    E2E_EMBED_PORT="$smoke_embed" \
+    E2E_HOST_PAGE_PORT="$smoke_host" \
     REACTOME_BACKEND=http://127.0.0.1:9 \
     RENDER_TARGET=http://127.0.0.1:1 \
     npx playwright test e2e/diagram-behaviour.spec.ts e2e/downloads.spec.ts --project=code --reporter=line
@@ -158,7 +180,7 @@ if [ "$mode" != "fast" ]; then
   # Only when the push touches what a figure is made from -- it adds minutes,
   # and a pre-push that runs long enough makes GitHub drop the waiting push.
   # PREFLIGHT_RENDER=always runs it regardless.
-  render_paths='^(tools/render/|projects/pathway-browser/src/app/(render|diagram|ehld|reacfoam)/|projects/pathway-browser/src/app/details/tabs/download-tab/|package-lock\.json$|e2e/(downloads|download-feedback|detail-contents)\.spec\.ts$|e2e/fixtures/serves\.ts$|proxy\.conf\.js$|scripts/preflight\.sh$)'
+  render_paths='^(tools/render/|projects/pathway-browser/src/app/(render|diagram|ehld|reacfoam)/|projects/pathway-browser/src/app/details/tabs/download-tab/|package-lock\.json$|e2e/(downloads|download-feedback|detail-contents)\.spec\.ts$|e2e/fixtures/serves\.ts$|proxy\.conf\.js$|scripts/preflight\.sh$|tools/content-node/)'
   # With no origin/main to compare against, what changed is unknown: run it.
   if render_base=$(git merge-base HEAD origin/main 2>/dev/null); then
     render_touched=$(
@@ -174,38 +196,49 @@ if [ "$mode" != "fast" ]; then
   elif ! curl -fsS -m 5 http://localhost:8080/ContentService/data/database/version >/dev/null 2>&1; then
     echo
     echo "  render, live: skipped -- no local backend on :8080 to draw from"
-  elif curl -fsS -m 2 http://127.0.0.1:4312/health >/dev/null 2>&1; then
-    # Something already answers on 4312 -- most likely a service an interrupted
-    # run left behind, drawing with an older tree. Testing it would test that.
-    printf '  %-34s FAILED\n' "render, live"
-    echo "      port 4312 is already serving a render service; stop it and push again"
-    failed+=("render, live")
   elif ! render_cache=$(mktemp -d) || [ -z "$render_cache" ]; then
     printf '  %-34s FAILED\n' "render, live"
     echo "      could not make a directory for the render cache"
     failed+=("render, live")
   else
     scratch+=("$render_cache")
-    RENDER_PORT=4312 RENDER_BASE=http://localhost:4202 RENDER_CACHE="$render_cache" \
-      node tools/render/service.mjs >"$render_cache/service.log" 2>&1 &
+    # Ports of this run's own, so neither another push's services nor ones an
+    # interrupted run left behind (drawing with an older tree) can answer here.
+    read -r render_site render_port content_port render_embed render_host < <(free_ports 5)
+    # The content service from THIS tree too, for the same reason: the dev
+    # server sends the endpoints node serves to CONTENT_NODE_TARGET, which is
+    # otherwise the deployed one -- and a pushed port the deployed one lacks
+    # (the renderer reads /data/query/{id}) failed every figure here.
+    CONTENT_NODE_PORT="$content_port" node tools/content-node/server.ts >"$render_cache/content-node.log" 2>&1 &
+    content_pid=$!
+    RENDER_PORT="$render_port" RENDER_BASE="http://localhost:$render_site" RENDER_CACHE="$render_cache" \
+      node tools/render/service.ts >"$render_cache/service.log" 2>&1 &
     render_pid=$!
     render_up=""
     for _ in $(seq 1 60); do
       kill -0 "$render_pid" 2>/dev/null || break
-      curl -fsS -m 2 http://127.0.0.1:4312/health >/dev/null 2>&1 && { render_up=1; break; }
+      kill -0 "$content_pid" 2>/dev/null || break
+      curl -fsS -m 2 "http://127.0.0.1:$render_port/health" >/dev/null 2>&1 &&
+        curl -fsS -m 2 "http://127.0.0.1:$content_port/health" 2>/dev/null | grep -q '"graph":true' &&
+        { render_up=1; break; }
       sleep 1
     done
     # Refused, not skipped: with no service the render tests skip themselves and
     # the step would read "ok" having checked nothing.
     if [ -z "$render_up" ]; then
       printf '  %-34s FAILED\n' "render, live"
-      echo "      the render service did not start; its log:"
+      echo "      the render service did not start, or the content service has no graph"
+      echo "      (it reads ~/.content-node.env); their logs:"
       tail -12 "$render_cache/service.log" | sed 's/^/      /'
+      tail -12 "$render_cache/content-node.log" | sed 's/^/      /'
       failed+=("render, live")
     else
       step "render, live" env \
-      E2E_PORT=4202 \
-      RENDER_TARGET=http://127.0.0.1:4312 \
+      E2E_PORT="$render_site" \
+      E2E_EMBED_PORT="$render_embed" \
+      E2E_HOST_PAGE_PORT="$render_host" \
+      CONTENT_NODE_TARGET="http://127.0.0.1:$content_port" \
+      RENDER_TARGET="http://127.0.0.1:$render_port" \
       E2E_REQUIRE_RENDER=1 \
       npx playwright test e2e/downloads.spec.ts e2e/download-feedback.spec.ts e2e/detail-contents.spec.ts \
       --project=code --reporter=line
@@ -213,6 +246,9 @@ if [ "$mode" != "fast" ]; then
     kill "$render_pid" 2>/dev/null
     wait "$render_pid" 2>/dev/null
     render_pid=""
+    kill "$content_pid" 2>/dev/null
+    wait "$content_pid" 2>/dev/null
+    content_pid=""
   fi
 fi
 

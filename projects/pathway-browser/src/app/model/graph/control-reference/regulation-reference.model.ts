@@ -1,6 +1,6 @@
-import { ControlReference } from './control-reference.model';
-import { Regulation } from '../Regulation/regulation.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface RegulationReference extends ControlReference {
-  regulatedBy: Regulation;
-}
+/** A regulation's references, as the pathway browser reads it (the contract's, resolved). */
+export type RegulationReference = Resolved<Graph.RegulationReference<JsogReference>>;

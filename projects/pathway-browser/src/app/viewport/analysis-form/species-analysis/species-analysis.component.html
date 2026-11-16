@@ -55,27 +55,40 @@
     </div>
 
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious disabled>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious disabled>Previous</button>
+      <button type="button" mat-stroked-button (click)="closed.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">Next</button>
+      <button type="button" mat-flat-button matStepperNext [disabled]="selectedSpecies() === null" (click)="analyse()">
+        Next
+      </button>
     </div>
   </mat-step>
   <mat-step label="Analysis">
     <div class="loader-container">
       @if (analysisLaunched()) {
         <canvas #lottie class="loader"></canvas>
+        @if (analysis.busyRetry(); as seconds) {
+          <p role="status">The analysis service is busy; trying again in {{ seconds }} seconds.</p>
+        }
+      } @else if (analysisError(); as message) {
+        <div class="analysis-error" role="alert">
+          <mat-icon class="red">error_outline</mat-icon>
+          <p>{{ message }}</p>
+          <button mat-stroked-button type="button" (click)="analyse()">Try again</button>
+        </div>
       }
     </div>
     <div class="stepper-controls">
-      <button mat-stroked-button matStepperPrevious>Previous</button>
-      <button mat-stroked-button (click)="close.emit({ status: 'premature' })">
+      <button type="button" mat-stroked-button matStepperPrevious>Previous</button>
+      <button type="button" mat-stroked-button (click)="closed.emit({ status: 'premature' })">
         <mat-icon class="red">close</mat-icon>
         Close
       </button>
-      <button mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">See results</button>
+      <button type="button" mat-flat-button (click)="loadAnalysis()" [disabled]="!analysisAvailable()">
+        See results
+      </button>
     </div>
   </mat-step>
 </mat-stepper>

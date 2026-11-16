@@ -16,6 +16,7 @@ import { AnalysisService } from '../../services/analysis.service';
 import { analysisActions } from './analysis.actions';
 import { Action } from '@ngrx/store';
 import { Injectable, inject } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Injectable()
 export class AnalysisEffects {
@@ -29,8 +30,8 @@ export class AnalysisEffects {
         this.analysisService.submitQuery(method, parameters, datasets).pipe(
           tap(() => (this.reportsRequired = reportsRequired)),
           map((analysisId) => analysisActions.loadSuccess({ analysisId })),
-          catchError((error) =>
-            error.status === 503
+          catchError((error: unknown) =>
+            error instanceof HttpErrorResponse && error.status === 503
               ? of(
                   analysisActions.loadOverloaded({ method, parameters, datasets, reportsRequired })
                 )
@@ -64,7 +65,7 @@ export class AnalysisEffects {
           ? this.analysisService.cancelAnalysis(analysisId)
           : this.analysisService.getAnalysisLoadingStatus(analysisId).pipe(
               mergeMap((status) => {
-                const actions: Action<any>[] = [analysisActions.setLoadingStatus({ status })];
+                const actions: Action[] = [analysisActions.setLoadingStatus({ status })];
                 if (status.status === 'failed')
                   actions.push(
                     analysisActions.getLoadingStatusError({ error: status.description })
@@ -76,7 +77,7 @@ export class AnalysisEffects {
               delayWhen((action) =>
                 action.type === analysisActions.getLoadingStatus.type ? timer(1000) : timer(0)
               ),
-              catchError((error) => of(analysisActions.getLoadingStatusError({ error })))
+              catchError((error: unknown) => of(analysisActions.getLoadingStatusError({ error })))
             )
       )
     )
@@ -89,12 +90,12 @@ export class AnalysisEffects {
       switchMap(({ status }) =>
         this.analysisService.getAnalysisResults(status.id).pipe(
           mergeMap((result) => {
-            const actions: Action<any>[] = [analysisActions.setAnalysisResults({ result })];
+            const actions: Action[] = [analysisActions.setAnalysisResults({ result })];
             if (this.reportsRequired)
               actions.push(analysisActions.getReportLoadingStatus({ analysisId: status.id }));
             return actions;
           }),
-          catchError((error) => of(analysisActions.getAnalysisResultsError({ error })))
+          catchError((error: unknown) => of(analysisActions.getAnalysisResultsError({ error })))
         )
       )
     )
@@ -108,7 +109,7 @@ export class AnalysisEffects {
           ? this.analysisService.cancelAnalysis(analysisId)
           : this.analysisService.getReportLoadingStatus(analysisId).pipe(
               mergeMap((status) => {
-                const actions: Action<any>[] = [analysisActions.setReportLoadingStatus({ status })];
+                const actions: Action[] = [analysisActions.setReportLoadingStatus({ status })];
                 if (status.status === 'failed')
                   actions.push(
                     analysisActions.getLoadingStatusError({ error: status.description })
@@ -120,7 +121,9 @@ export class AnalysisEffects {
               delayWhen((action) =>
                 action.type === analysisActions.getReportLoadingStatus.type ? timer(1000) : timer(0)
               ),
-              catchError((error) => of(analysisActions.getReportLoadingStatusError({ error })))
+              catchError((error: unknown) =>
+                of(analysisActions.getReportLoadingStatusError({ error }))
+              )
             )
       )
     )

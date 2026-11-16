@@ -1,11 +1,11 @@
-import { Injectable, signal, inject } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Injectable, effect, signal, inject, untracked } from '@angular/core';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
 import cytoscape, { NodeCollection, NodeSingular } from 'cytoscape';
 import { catchError, map, Observable, of, switchMap } from 'rxjs';
 import {
   CustomInteraction,
-  Interactor,
-  Interactors,
+  DrawnInteractor,
+  DrawnInteractors,
   InteractorToken,
   PsicquicResource,
   ResourceAndType,
@@ -15,8 +15,18 @@ import {
 import InteractorsLayout from '../layout/interactors-layout';
 import { DiagramService } from '../../services/diagram.service';
 import { clampThreshold, DEFAULT_INTERACTOR_SCORE, passesThreshold } from '../interactor-threshold';
+import type { ExportableInteraction } from '../interactor-export';
 import { INTERACTOR_BADGE_MIN_ZOOM } from 'ngx-reactome-cytoscape-style';
 import { UrlStateService } from '../../services/url-state.service';
+import {
+  allData,
+  drawnInteractors,
+  listData,
+  nodeData,
+  numberData,
+  recordData,
+  textData,
+} from '../../diagram/element-data';
 
 /**
  * What the drawn badges add up to, counted once per protein.
@@ -31,8 +41,8 @@ import { UrlStateService } from '../../services/url-state.service';
 function tallyBadges(badges: cytoscape.NodeCollection): ResourceTally {
   const byAccession = new Map<string, number>();
   badges.forEach((badge) => {
-    const accession = (badge.data('acc') as string | undefined) ?? badge.id();
-    const interactions = (badge.data('interactors') as unknown[] | undefined)?.length ?? 0;
+    const accession = textData(badge, 'acc') ?? badge.id();
+    const interactions = listData(badge, 'interactors')?.length ?? 0;
     byAccession.set(accession, Math.max(byAccession.get(accession) ?? 0, interactions));
   });
   return {
@@ -58,11 +68,54 @@ export class InteractorService {
   private diagramService = inject(DiagramService);
   private urlState = inject(UrlStateService);
 
+  /**
+   * Why the interactors asked for are not on the diagram, said on it; null
+   * while they are, or none were asked for. Before, a failed request left the
+   * diagram as it was, with only an uncaught error in the console.
+   */
+  private readonly _loadFailure = signal<string | null>(null);
+  readonly loadFailure = this._loadFailure.asReadonly();
+
+  /**
+   * Says why `resource`'s interactors could not be drawn. Only an upload's
+   * token can name something that does not exist; any other 404 is the
+   * service's, not the reader's.
+   */
+  failedToLoad(resource: string, error: unknown, kind: 'resource' | 'token' = 'resource') {
+    const missing = kind === 'token' && error instanceof HttpErrorResponse && error.status === 404;
+    this._loadFailure.set(
+      missing
+        ? `There is no interactor overlay "${resource}".`
+        : `Couldn't load the interactors from ${resource}. Try again in a moment.`
+    );
+    // Not drawn, so not chosen: clicking it again should fetch it, not put it
+    // away, which took a second click before it was asked for again.
+    if (this.currentResource().name === resource)
+      this.currentResource.set({ name: null, type: null });
+  }
+
+  clearLoadFailure() {
+    this._loadFailure.set(null);
+  }
+
+  constructor() {
+    // A notice is about the pathway it was for; on another, it would be wrong.
+    // Only on a change: the effect's first run can come after a failure on the
+    // pathway already open, and would take its notice down.
+    let shownFor = untracked(this.urlState.pathwayId);
+    effect(() => {
+      const pathway = this.urlState.pathwayId();
+      if (pathway === shownFor) return;
+      shownFor = pathway;
+      untracked(() => this._loadFailure.set(null));
+    });
+  }
+
   private readonly _PREFIX_INTERACTOR = `${CONTENT_SERVICE}/interactors/`;
   private readonly _PREFIX_DISEASE = `${OVERLAYS}/disgenet/`;
 
   private readonly _STATIC_URL = this._PREFIX_INTERACTOR + 'static/molecules/details';
-  private readonly _PSICQUIC_RESOURCE_URL = this._PREFIX_INTERACTOR + 'psicquic/resources/';
+  private readonly _PSICQUIC_RESOURCE_URL = this._PREFIX_INTERACTOR + 'psicquic/resources';
   private readonly _PSICQUIC_URL = this._PREFIX_INTERACTOR + 'psicquic/molecules/';
   public readonly UPLOAD_URL = this._PREFIX_INTERACTOR + 'upload/tuple/';
   public readonly UPLOAD_PSICQUIC_URL = this._PREFIX_INTERACTOR + 'upload/psicquic/url';
@@ -117,6 +170,7 @@ export class InteractorService {
    * Keyed by pathway, because the answer is a property of the diagram.
    */
   readonly resourceCounts = signal<Record<string, ResourceTally>>({});
+
   private countsForPathway: string | null = null;
 
   /**
@@ -331,7 +385,7 @@ export class InteractorService {
     // so fitting to them moved nothing at all: nine badges, zoom 0.283 before
     // and 0.283 after. Their entities are on the diagram and visible.
     const entities = badges.reduce((collection, badge) => {
-      const entity = badge.data('entity') as NodeSingular | undefined;
+      const entity = nodeData(badge, 'entity');
       return entity ? collection.union(entity) : collection;
     }, cy.collection() as cytoscape.Collection);
     if (entities.length > 0) cy.fit(entities, 80);
@@ -355,13 +409,13 @@ export class InteractorService {
    * is no token, because there is nothing on a server to point at. Choosing one
    * again redraws from here instead of asking for a token that does not exist.
    */
-  private localResources = new Map<string, Interactors>();
+  private localResources = new Map<string, DrawnInteractors>();
 
-  public rememberLocalResource(name: string, interactors: Interactors): void {
+  public rememberLocalResource(name: string, interactors: DrawnInteractors): void {
     this.localResources.set(name, interactors);
   }
 
-  public localResource(name: string | null | undefined): Interactors | undefined {
+  public localResource(name: string | null | undefined): DrawnInteractors | undefined {
     return name ? this.localResources.get(name) : undefined;
   }
 
@@ -409,9 +463,7 @@ export class InteractorService {
    * diagram cannot disagree: whatever the threshold is hiding is absent from
    * both.
    */
-  readonly exportableInteractions = signal<
-    { acc?: string; alias?: string; score?: number; evidences?: number; entity?: string }[]
-  >([]);
+  readonly exportableInteractions = signal<ExportableInteraction[]>([]);
 
   readonly interactorCounts = signal<{ shown: number; drawn: number; offered: number }>({
     shown: 0,
@@ -438,13 +490,17 @@ export class InteractorService {
   }
 
   public getIdentifiersFromGraph(cy: cytoscape.Core) {
-    const graphNodes = cy?.nodes(`[graph]`);
+    const graphNodes = cy.nodes(`[graph]`);
     const result: string[] = [];
 
-    graphNodes?.forEach((entity) => {
-      const schemaClass = entity.data('graph').schemaClass;
-      if (schemaClass === 'EntityWithAccessionedSequence' || schemaClass === 'SimpleEntity') {
-        result.push(entity.data('acc'));
+    graphNodes.forEach((entity) => {
+      const schemaClass = textData(entity, 'graph.schemaClass');
+      const acc = textData(entity, 'acc');
+      if (
+        acc !== undefined &&
+        (schemaClass === 'EntityWithAccessionedSequence' || schemaClass === 'SimpleEntity')
+      ) {
+        result.push(acc);
       }
     });
 
@@ -452,7 +508,7 @@ export class InteractorService {
     return [...new Set(result)].join(',');
   }
 
-  public fetchInteractorData(cy: cytoscape.Core, resource: string): Observable<Interactors> {
+  public fetchInteractorData(cy: cytoscape.Core, resource: string): Observable<DrawnInteractors> {
     this.updateIdentifiers(cy);
     let url;
     if (resource === ResourceType.STATIC) {
@@ -463,7 +519,7 @@ export class InteractorService {
       url = this._PSICQUIC_URL + resource.toLowerCase() + '/details';
     }
 
-    return this.http.post<Interactors>(url, this.identifiers, {
+    return this.http.post<DrawnInteractors>(url, this.identifiers, {
       headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
     });
   }
@@ -474,10 +530,13 @@ export class InteractorService {
   }
 
   public addInteractorOccurrenceNode(
-    interactors: Interactors,
+    interactors: DrawnInteractors,
     cy: cytoscape.Core,
     resource: string
   ) {
+    // Every way of drawing interactors comes through here, and a drawing means
+    // whatever failed before is no longer what is on screen.
+    this._loadFailure.set(null);
     if (this.cyToSelectedResource.has(cy) && this.cyToSelectedResource.get(cy) !== resource) {
       const previousResource = this.cyToSelectedResource.get(cy);
       cy.elements(`[resource='${previousResource}']`).remove();
@@ -507,7 +566,7 @@ export class InteractorService {
   }
 
   public createInteractorOccurrenceNode(
-    interactors: Interactors,
+    interactors: DrawnInteractors,
     cy: cytoscape.Core,
     resource: string
   ) {
@@ -521,8 +580,8 @@ export class InteractorService {
     interactors.entities
       .filter((interactorEntity) => interactorEntity.count > 0)
       .forEach((interactorEntity) => {
-        const entities = cy?.nodes(`[acc = '${interactorEntity.acc}']`);
-        entities?.forEach((entityNode) => {
+        const entities = cy.nodes(`[acc = '${interactorEntity.acc}']`);
+        entities.forEach((entityNode) => {
           const pos = { ...entityNode.position() };
           pos.x += entityNode.width() / 2;
           pos.y -= entityNode.height() / 2;
@@ -530,9 +589,9 @@ export class InteractorService {
           const id = entityNode.id() + '-occ' + '-' + resource.toLowerCase();
 
           if (!entityNode.classes().includes('Modification')) {
-            const occurrenceNode = cy?.add({
+            const occurrenceNode = cy.add({
               data: {
-                ...entityNode.data(),
+                ...allData(entityNode),
                 exp: undefined,
                 id: id,
                 displayName: interactorEntity.count,
@@ -568,7 +627,7 @@ export class InteractorService {
    */
   public applyInteractorThreshold(cy: cytoscape.Core, threshold: number): void {
     const show = (element: cytoscape.NodeSingular | cytoscape.EdgeSingular): void => {
-      const score = element.data('score') as number | undefined;
+      const score = numberData(element, 'score');
       element.style('display', passesThreshold({ score }, threshold) ? 'element' : 'none');
     };
 
@@ -588,11 +647,7 @@ export class InteractorService {
     // against what the whole pathway offers -- a true number and a useless one.
     const offered = cy
       .nodes('.InteractorOccurrences.opened')
-      .reduce(
-        (total, badge) =>
-          total + ((badge.data('interactors') as unknown[] | undefined)?.length ?? 0),
-        0
-      );
+      .reduce((total, badge) => total + (listData(badge, 'interactors')?.length ?? 0), 0);
     this.interactorCounts.set({
       shown: drawn.filter((node) => node.visible()).length,
       drawn: drawn.length,
@@ -613,37 +668,27 @@ export class InteractorService {
     // It also means the cap cannot truncate the file: draw 100 of 150 and the
     // file still carries 150.
     this.exportableInteractions.set(
-      cy
-        .nodes('.InteractorOccurrences.opened')
-        .reduce<
-          { acc?: string; alias?: string; score?: number; evidences?: number; entity?: string }[]
-        >((rows, badge) => {
-          const entity = badge.data('entity')?.data('displayName') as string | undefined;
-          const interactions = (badge.data('interactors') ?? []) as {
-            acc?: string;
-            alias?: string;
-            score?: number;
-            evidences?: number;
-          }[];
-          return rows.concat(
-            interactions.map((interaction) => ({
-              acc: interaction.acc,
-              alias: interaction.alias,
-              score: interaction.score,
-              evidences: interaction.evidences,
-              entity,
-            }))
-          );
-        }, [])
+      cy.nodes('.InteractorOccurrences.opened').reduce<ExportableInteraction[]>((rows, badge) => {
+        const entityNode = nodeData(badge, 'entity');
+        const entity = entityNode && textData(entityNode, 'displayName');
+        return rows.concat(
+          drawnInteractors(badge).map((interaction) => ({
+            acc: interaction.acc,
+            alias: interaction.alias,
+            score: interaction.score,
+            evidences: interaction.evidences,
+            entity,
+          }))
+        );
+      }, [])
     );
 
     this.openedScores.set(
       cy
         .nodes('.InteractorOccurrences.opened')
         .reduce<number[]>((scores, badge) => {
-          const interactions = (badge.data('interactors') ?? []) as { score?: number }[];
           return scores.concat(
-            interactions
+            drawnInteractors(badge)
               .map((interaction) => interaction.score)
               .filter((score): score is number => typeof score === 'number')
           );
@@ -667,8 +712,8 @@ export class InteractorService {
       other.removeClass('opened');
     });
 
-    const interactorsData = occurrenceNode.data('interactors');
-    const resource = occurrenceNode.data('resource');
+    const interactorsData = drawnInteractors(occurrenceNode);
+    const resource = textData(occurrenceNode, 'resource') ?? '';
     InteractorsLayout.BOX_WIDTH =
       resource === ResourceType.DISGENET
         ? this.DEFAULT_DISGENET_WIDTH / 2
@@ -679,7 +724,7 @@ export class InteractorService {
       cy,
       numberToAdd
     );
-    const allNodes: Interactor[] = [...dynamicInteractors, ...existingInteractors];
+    const allNodes: DrawnInteractor[] = [...dynamicInteractors, ...existingInteractors];
     cy.batch(() => {
       const nodes = this.createInteractorNodes(
         dynamicInteractors,
@@ -695,7 +740,11 @@ export class InteractorService {
     this.showingInteractors.set(cy.nodes('.Interactor').length > 0);
   }
 
-  public getAllInteractors(interactorsData: Interactor[], cy: cytoscape.Core, numberToAdd: number) {
+  public getAllInteractors(
+    interactorsData: DrawnInteractor[],
+    cy: cytoscape.Core,
+    numberToAdd: number
+  ): [drawn: DrawnInteractor[], existing: DrawnInteractor[]] {
     const dynamicInteractors = [];
     const existingInteractors = [];
     // Best supported first, so that the cap keeps the interactions worth keeping.
@@ -707,13 +756,13 @@ export class InteractorService {
     // which is what makes a cap defensible: the ones you lose are the ones with
     // the least evidence behind them.
     interactorsData = [...interactorsData].sort(
-      (a, b) => (b.score ?? -1) - (a.score ?? -1) || (a.acc ?? '').localeCompare(b.acc ?? '')
+      (a, b) => (b.score ?? -1) - (a.score ?? -1) || a.acc.localeCompare(b.acc)
     );
     // get interactors to draw with a provided a number, collect existing interactors for creating edge
     for (const interactor of interactorsData) {
-      const diagramNodes = cy?.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
+      const diagramNodes = cy.nodes(`.PhysicalEntity[acc = '${interactor.acc}']`);
 
-      if (!diagramNodes || diagramNodes.length === 0) {
+      if (diagramNodes.length === 0) {
         dynamicInteractors.push(interactor);
       } else {
         interactor.existingNodes = diagramNodes;
@@ -727,29 +776,31 @@ export class InteractorService {
     // by name costs nothing and the two decisions stop fighting each other.
     const drawn = dynamicInteractors
       .slice(0, numberToAdd)
-      .sort((a, b) => (a.alias ?? a.acc ?? '').localeCompare(b.alias ?? b.acc ?? ''));
+      .sort((a, b) => (a.alias ?? a.acc).localeCompare(b.alias ?? b.acc));
     return [drawn, existingInteractors];
   }
 
   public createInteractorNodes(
-    interactorsData: Interactor[],
+    interactorsData: DrawnInteractor[],
     targetNode: NodeSingular,
     cy: cytoscape.Core,
     numberToAdd: number,
     resource: string
   ) {
+    const entity = nodeData(targetNode, 'entity');
+    if (!entity) return cy.collection();
     const interactorNodes: cytoscape.NodeDefinition[] = [];
     const interactorLayout = new InteractorsLayout();
 
-    interactorsData.forEach((interactor: Interactor, index: number) => {
-      const position = interactorLayout.getPosition(targetNode, index, numberToAdd);
+    interactorsData.forEach((interactor: DrawnInteractor, index: number) => {
+      const position = interactorLayout.getPosition(entity.position(), index, numberToAdd);
       const displayName = interactor.alias ? interactor.alias : interactor.acc;
       const defaultType = ['Protein', 'PhysicalEntity']; // Default interactor type for custom resource when there is no type data provided
       const classes =
         resource === ResourceType.DISGENET
           ? ['PhysicalEntity', 'Interactor', 'disease']
           : [
-              ...(this.diagramService.nodeTypeMap.get(interactor.type) || defaultType),
+              ...(this.diagramService.nodeTypeMap.get(interactor.type ?? '') || defaultType),
               'Interactor',
             ];
       const width =
@@ -762,10 +813,10 @@ export class InteractorService {
       const id = 'interactor-' + interactor.acc;
       interactorNodes.push({
         data: {
-          ...targetNode.data(),
+          ...allData(targetNode),
           id: id,
           graph: {
-            ...targetNode.data('graph'),
+            ...recordData(targetNode, 'graph'),
             leaves: undefined,
             identifier: interactor.acc,
           },
@@ -793,11 +844,11 @@ export class InteractorService {
         selectable: false,
       });
     });
-    return cy?.add(interactorNodes);
+    return cy.add(interactorNodes);
   }
 
   public createInteractorEdges(
-    interactorsData: Interactor[],
+    interactorsData: DrawnInteractor[],
     occurrenceNode: NodeSingular,
     cy: cytoscape.Core | undefined,
     resource: string
@@ -807,16 +858,18 @@ export class InteractorService {
     const resourceClass =
       resource === ResourceType.DISGENET ? ['Interactor', 'disease'] : ['Interactor'];
 
+    const entity = nodeData(occurrenceNode, 'entity');
+    if (!entity) return;
+
     const interactorEdges: cytoscape.EdgeDefinition[] = [];
-    interactorsData.forEach((interactor: Interactor) => {
-      const entity = occurrenceNode.data('entity');
+    interactorsData.forEach((interactor: DrawnInteractor) => {
       const targetNodes = interactor.existingNodes
         ? interactor.existingNodes
         : [cy.getElementById('interactor-' + interactor.acc)];
       targetNodes.forEach((targetNode) => {
         interactorEdges.push({
           data: {
-            ...targetNode.data(),
+            ...allData(targetNode),
             id: interactor.acc + '-' + entity.id(),
             source: entity.id(),
             target: targetNode.id(),
@@ -834,7 +887,7 @@ export class InteractorService {
         });
       });
     });
-    cy?.add(interactorEdges);
+    cy.add(interactorEdges);
   }
 
   public displayInteractors(interactorsToDisplay: NodeCollection, _cy: cytoscape.Core) {
@@ -846,16 +899,18 @@ export class InteractorService {
   }
 
   public removeInteractorNodes(occurrenceNode: cytoscape.NodeSingular) {
-    const entityNode = occurrenceNode.data('entity');
-    const interactors = entityNode.closedNeighborhood('node.Interactor');
+    const entityNode = nodeData(occurrenceNode, 'entity');
     const cy = occurrenceNode.cy();
 
-    entityNode.connectedEdges('.Interactor').remove();
-    interactors.forEach((interactor: cytoscape.NodeSingular) => {
-      if (interactor.connectedEdges().empty()) {
-        interactor.remove();
-      }
-    });
+    if (entityNode) {
+      const interactors = entityNode.closedNeighborhood('node.Interactor');
+      entityNode.connectedEdges('.Interactor').remove();
+      interactors.forEach((interactor: cytoscape.NodeSingular) => {
+        if (interactor.connectedEdges().empty()) {
+          interactor.remove();
+        }
+      });
+    }
 
     // The confidence control follows this, so it has to be true after a close as
     // well as after an open. It was only ever set when interactors were added,
@@ -922,7 +977,7 @@ export class InteractorService {
       );
   }
 
-  public getInteractorsToken(name: string, url: string, body: string | FormData) {
+  public getInteractorsToken(name: string, url: string, body: string | FormData | undefined) {
     return this.http.post<InteractorToken>(url, body, {
       params: new HttpParams().set('name', name),
     });
@@ -940,11 +995,11 @@ export class InteractorService {
   public getInteractorsFromToken(
     name: string,
     url: string,
-    body: string | FormData,
+    body: string | FormData | undefined,
     cy: cytoscape.Core
   ): Observable<{
     token: InteractorToken;
-    interactors: Interactors;
+    interactors: DrawnInteractors;
   }> {
     this.updateIdentifiers(cy);
     return this.getInteractorsToken(name, url, body).pipe(
@@ -957,34 +1012,14 @@ export class InteractorService {
     cy: cytoscape.Core
   ): Observable<{
     token: InteractorToken;
-    interactors: Interactors;
+    interactors: DrawnInteractors;
   }> {
     this.updateIdentifiers(cy);
     return this.http
-      .post<Interactors>(this._TOKEN_URL + token.summary.token, this.identifiers, {
+      .post<DrawnInteractors>(this._TOKEN_URL + token.summary.token, this.identifiers, {
         headers: new HttpHeaders({ 'Content-Type': 'text/plain' }),
       })
       .pipe(map((interactors) => ({ token: token, interactors: interactors })));
-  }
-
-  public getResourceTypeStatic(resource: string): ResourceType | null {
-    if (resource === ResourceType.STATIC) {
-      return ResourceType.STATIC;
-    }
-    if (resource === ResourceType.DISGENET) {
-      return ResourceType.DISGENET;
-    }
-
-    // isFromPSICQUIC will be a function with a static dictionary to map to result, not Observable
-    if (this.isFromPSICQUIC(resource)) {
-      return ResourceType.PSICQUIC;
-    }
-    // none of above then is custom
-    if (this.isCustomResource(resource)) {
-      return ResourceType.CUSTOM;
-    }
-
-    return null;
   }
 
   public getResourceType(resource: string): Observable<ResourceType | null> {

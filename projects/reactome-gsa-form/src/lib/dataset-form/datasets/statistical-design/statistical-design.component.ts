@@ -74,7 +74,7 @@ export class StatisticalDesignComponent implements OnInit {
     this.store.dispatch(datasetActions.setCovariatesValue({ id: this.datasetId(), value: value }));
   }
 
-  comparisonGroup2Values(groups: string[], group1: string) {
+  comparisonGroup2Values(groups: string[] | undefined, group1: string) {
     if (!groups) return [];
     return groups.filter((group) => group !== group1);
   }

@@ -33,7 +33,7 @@ export class RheaComponent {
   private rheaService = inject(RheaService);
   private dark = inject(DarkService);
 
-  readonly _xRefs = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
+  readonly crossRefs = input.required<DatabaseIdentifier[]>();
 
   //todo: custom layout, remove it when dropping this layout
   readonly reactionContainer = viewChildren<ElementRef<HTMLDivElement>>('reactionContainer');
@@ -66,10 +66,8 @@ export class RheaComponent {
         ? '{filter:hue-rotate(180deg) invert(1)}'
         : '{fill:transparent !important}';
       if (this.rheaResources()) {
-        console.log('run...');
         setTimeout(() => {
-          const elements = document.querySelectorAll('rhea-visualizer') as NodeListOf<HTMLElement>;
-          if (!elements) return;
+          const elements = document.querySelectorAll<HTMLElement>('rhea-visualizer');
 
           elements.forEach((element) => {
             if (!element.shadowRoot) return;
@@ -136,7 +134,7 @@ export class RheaComponent {
   }
 
   _rheaResources = rxResource({
-    params: () => this._xRefs(),
+    params: () => this.crossRefs(),
     stream: (params) => {
       const identifiers = params.params;
 

@@ -41,10 +41,10 @@ import { DecimalPipe } from '@angular/common';
   ],
 })
 export class InteractorsTableComponent {
-  readonly _interactors = input.required<CustomInteraction[]>({ alias: 'interactors' });
+  readonly interactors = input.required<CustomInteraction[]>();
 
-  readonly interactors = computed(() => {
-    const interactors = this._interactors();
+  readonly rows = computed(() => {
+    const interactors = this.interactors();
     return interactors.map((interactor) => ({
       ...interactor,
       finalGeneName: interactor.geneName?.[0] || interactor.variantIdentifier,
@@ -52,7 +52,7 @@ export class InteractorsTableComponent {
     }));
   });
 
-  // displayedColumns: string[] = Object.keys(this.interactors()[0] || {});
+  // displayedColumns: string[] = Object.keys(this.rows()[0] || {});
   displayedColumns = [
     'geneName',
     'identifier',

@@ -8,6 +8,9 @@ on:
     branches:
       - main
   pull_request:
+  # The library-update workflow opens its pull request with a token that starts
+  # no workflows, and dispatches this one on the branch instead.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,6 +19,10 @@ jobs:
   unit:
     name: Unit tests
     runs-on: ubuntu-latest
+    # It takes 4 to 7 minutes. Without a limit a hung spec held the runner for
+    # GitHub's default of six hours; each spec has a minute of its own
+    # (vitest.config.ts), so this only stops a run that is stuck.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -81,6 +88,11 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      # The site and the server-side services (tools/tsconfig.json, spec 013).
+      # The build checks the site's types; only this checks the services'.
+      - name: Type check
+        run: npm run check:types
+
       - name: Lint
         run: npm run check:lint
 
@@ -91,11 +103,56 @@ jobs:
       - name: Check unreachable code has not increased
         run: npm run check:dead
 
+      # A pull request that moves code between modules rewrites the
+      # per-module baselines, so a rise could hide inside the move (spec 014):
+      # each baseline's total is held to the base branch's.
+      - name: Check the ratchets' totals have not risen
+        # A dispatched run (the library-update branch's) is held to main.
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        env:
+          BASE_REF: ${{ github.base_ref || 'main' }}
+        run: |
+          git fetch --no-tags --depth=1 origin "$BASE_REF"
+          node scripts/check-baseline-totals.mjs "origin/$BASE_REF"
+
       # A recorded answer cut off after its headers replayed as a successful
       # empty one, and the page quietly showed nothing. The harness aborts
       # those now; this refuses a recording that has one.
       - name: E2E recordings
         run: npm run check:har
+
+  nginx:
+    # nginx -t on the image each deployment builds. The unit tests read the
+    # routes as text; only nginx says whether they parse -- an unquoted ';' in
+    # a location regex passed them all and was refused at deploy time.
+    name: nginx configuration
+    runs-on: ubuntu-latest
+    # Seconds of work; the limit is for a docker pull that never finishes.
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: nginx -t, dev, release and production
+        run: deploy/nginx/test-config.sh
+
+  java-library:
+    # The library service's image (spec 015 T063): each Reactome library built
+    # from its pinned commit, the service's unit tests, and its answers over
+    # sbml-exporter's fixture graph compared with that commit's expected files.
+    # CI's alone: preflight builds no images.
+    name: Java library service
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: python-libsbml, as sbml-exporter's CI has it
+        run: pip install python-libsbml==5.21.2
+      - name: Build the image
+        run: docker build -f deploy/java-library/Dockerfile -t java-library .
+      - name: Its answers over the fixture graph
+        run: deploy/java-library/check.sh java-library
 
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
@@ -107,6 +164,16 @@ jobs:
     # wall clock stays a few minutes rather than the 30 that got a job killed.
     name: End-to-end (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
+    # Playwright's own image, which carries Chromium and every system library it
+    # needs. `playwright install --with-deps` fetched those from Ubuntu's package
+    # servers on every shard, and when the runners could not reach them (11 Nov
+    # 2026) every shard failed before a test ran. The tag is the version in
+    # package.json: the browsers in the image are the ones that version drives,
+    # and tools/workflows.spec.ts fails while the two differ.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-resolute
+      # Chromium uses shared memory freely; the container's default is small.
+      options: --ipc=host
     timeout-minutes: 25
     strategy:
       fail-fast: false
@@ -137,9 +204,6 @@ jobs:
         run: |
           npm run generate:indices
           npm run stage:content
-
-      - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
 
       # playwright.config.ts starts `ng serve` itself and waits for :4200.
       # Backend data comes from the recordings in e2e/har, replayed inside the

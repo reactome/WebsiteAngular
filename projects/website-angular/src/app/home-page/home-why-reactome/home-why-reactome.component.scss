@@ -27,6 +27,10 @@
 .sponsor-logo {
   max-width: 80px;
   max-height: 50px;
+  // Sized by the limits alone, keeping the logo's shape; the width and height
+  // attributes NgOptimizedImage needs only give the browser that shape early.
+  width: auto;
+  height: auto;
 }
 
 .grant-link {

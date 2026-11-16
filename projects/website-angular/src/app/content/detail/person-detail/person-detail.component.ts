@@ -1,8 +1,9 @@
-import { Component, computed, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
-import { catchError, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { catchError, EMPTY, map, merge, type Observable, switchMap, tap } from 'rxjs';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatIcon } from '@angular/material/icon';
 import { MatIconButton } from '@angular/material/button';
@@ -14,51 +15,46 @@ import {
   CONTENT_SERVICE,
   CONTENT_DETAIL_PATH,
 } from '../../../../../../pathway-browser/src/environments/environment';
+import {
+  Person,
+  PersonAffiliation,
+  PersonPublication,
+  SimpleEvent,
+} from '../../../../model/person.model';
 
-interface Affiliation {
+/** A publication as the page lists it: what each kind has, the rest left out. */
+interface PublicationRow {
   dbId: number;
-  displayName: string;
-  address?: string;
-  name?: string[];
-}
-
-interface Publication {
-  dbId: number;
-  title?: string;
-  displayName?: string;
-  author?: number[];
+  heading: string;
   journal?: string;
+  year?: number;
+  volume?: number;
   pages?: string;
   pubMedIdentifier?: number;
-  url?: string;
-  volume?: number;
-  year?: number;
 }
 
-interface Person {
-  dbId: number;
-  displayName: string;
-  firstname?: string;
-  surname?: string;
-  initial?: string;
-  orcidId?: string;
-  project?: string;
-  affiliation?: Affiliation[];
-  publications?: Publication[];
+/** The fields the page shows, by kind: only an article has a journal, a volume and a PubMed id. */
+function publicationRow(pub: PersonPublication): PublicationRow {
+  const row: PublicationRow = { dbId: pub.dbId, heading: pub.title || pub.displayName };
+  if (pub.schemaClass === 'URL') return row;
+  row.year = pub.year;
+  if (pub.pages !== undefined) row.pages = pub.pages;
+  if (pub.schemaClass === 'Book') return row;
+  if (pub.journal !== undefined) row.journal = pub.journal;
+  if (pub.volume !== undefined) row.volume = pub.volume;
+  if (pub.pubMedIdentifier !== undefined) row.pubMedIdentifier = pub.pubMedIdentifier;
+  return row;
 }
+
+/** The objects of a list, without the dbIds that stand for objects written earlier in the answer. */
+const objects = <T extends object>(list: (T | number)[] | undefined): T[] =>
+  (list ?? []).filter((each): each is T => typeof each === 'object');
 
 type SectionKey =
   'authoredPathways' | 'authoredReactions' | 'reviewedPathways' | 'reviewedReactions';
 
-// Returned by /data/person/{id}/{authored,reviewed}{Pathways,Reactions}.
-// Matches Reactome's SimpleEventProjection DTO.
-interface SimpleEvent {
-  dbId: number;
-  stId: string;
-  displayName: string;
-  speciesName?: string;
-  schemaClass?: string;
-}
+/** Only a 404 means "there is none"; anything else is a failure to say so. */
+const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
 
 @Component({
   selector: 'app-person-detail',
@@ -83,82 +79,97 @@ interface SimpleEvent {
 export class PersonDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
+  private destroyRef = inject(DestroyRef);
 
   readonly person = signal<Person | null>(null);
   readonly loading = signal(true);
-  readonly error = signal(false);
+  readonly notFound = signal(false);
+  readonly failed = signal(false);
+  readonly contributionsFailed = signal(false);
 
   readonly authoredPathways = signal<SimpleEvent[]>([]);
   readonly authoredReactions = signal<SimpleEvent[]>([]);
   readonly reviewedPathways = signal<SimpleEvent[]>([]);
   readonly reviewedReactions = signal<SimpleEvent[]>([]);
 
-  readonly publicationsSorted = computed(() => {
-    const pubs = this.person()?.publications ?? [];
-    return [...pubs].sort((a, b) => (b.year ?? 0) - (a.year ?? 0));
-  });
+  readonly publicationsSorted = computed(() =>
+    objects<PersonPublication>(this.person()?.publications)
+      .map(publicationRow)
+      .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+  );
+
+  readonly affiliations = computed(() => objects<PersonAffiliation>(this.person()?.affiliation));
 
   protected readonly CONTENT_DETAIL_PATH = CONTENT_DETAIL_PATH;
 
   ngOnInit() {
-    // paramMap subscription (not snapshot) so navigating between
-    // /content/detail/person/A and /content/detail/person/B re-fetches.
-    this.route.paramMap.subscribe((params) => {
-      const id = params.get('id');
-      if (!id) {
-        this.loading.set(false);
-        this.error.set(true);
-        return;
-      }
-      this.loading.set(true);
-      this.error.set(false);
-      this.person.set(null);
-      this.authoredPathways.set([]);
-      this.authoredReactions.set([]);
-      this.reviewedPathways.set([]);
-      this.reviewedReactions.set([]);
-      this.resetSectionExtras();
-
-      // /data/person/{id} accepts either the numeric dbId or the ORCID.
-      this.http.get<Person>(`${CONTENT_SERVICE}/data/person/${id}`).subscribe({
-        next: (data) => {
-          this.person.set(data);
-          this.loading.set(false);
-        },
-        error: () => {
-          this.error.set(true);
-          this.loading.set(false);
-        },
-      });
-
-      // Authored/reviewed pathways and reactions come from four separate
-      // endpoints. We fire them in parallel and tolerate 404s (some persons
-      // have no contributions of a given type, or the backend may not have
-      // the new endpoints deployed yet -- the section just stays empty).
-      this.fetchEvents(
-        `${CONTENT_SERVICE}/data/person/${id}/authoredPathways`,
-        this.authoredPathways
-      );
-      this.fetchEvents(
-        `${CONTENT_SERVICE}/data/person/${id}/authoredReactions`,
-        this.authoredReactions
-      );
-      this.fetchEvents(
-        `${CONTENT_SERVICE}/data/person/${id}/reviewedPathways`,
-        this.reviewedPathways
-      );
-      this.fetchEvents(
-        `${CONTENT_SERVICE}/data/person/${id}/reviewedReactions`,
-        this.reviewedReactions
-      );
-    });
+    // paramMap (not snapshot) so navigating between /content/detail/person/A
+    // and /content/detail/person/B re-fetches; switchMap so A's answers,
+    // arriving late, are dropped rather than drawn over B's.
+    this.route.paramMap
+      .pipe(
+        map((params) => params.get('id')),
+        switchMap((id) => this.load(id)),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe();
   }
 
-  private fetchEvents(url: string, target: ReturnType<typeof signal<SimpleEvent[]>>) {
-    this.http
-      .get<SimpleEvent[]>(url)
-      .pipe(catchError(() => of<SimpleEvent[]>([])))
-      .subscribe((list) => target.set(list ?? []));
+  private load(id: string | null): Observable<unknown> {
+    this.person.set(null);
+    this.notFound.set(false);
+    this.failed.set(false);
+    this.contributionsFailed.set(false);
+    this.authoredPathways.set([]);
+    this.authoredReactions.set([]);
+    this.reviewedPathways.set([]);
+    this.reviewedReactions.set([]);
+    this.resetSectionExtras();
+    if (!id) {
+      this.loading.set(false);
+      this.notFound.set(true);
+      return EMPTY;
+    }
+    this.loading.set(true);
+
+    // /data/person/{id} accepts either the numeric dbId or the ORCID.
+    const person = this.http.get<Person>(`${CONTENT_SERVICE}/data/person/${id}`).pipe(
+      tap((data) => {
+        this.person.set(data);
+        this.loading.set(false);
+      }),
+      catchError((error: unknown) => {
+        if (isNotFound(error)) this.notFound.set(true);
+        else this.failed.set(true);
+        this.loading.set(false);
+        return EMPTY;
+      })
+    );
+
+    // Authored/reviewed pathways and reactions come from four separate
+    // endpoints, fetched in parallel. Someone with no contributions of a
+    // kind gets an empty list; a 404 (a backend without the endpoint) leaves
+    // the section empty too. Anything else is said on the page, so a failed
+    // list does not read as someone who contributed nothing.
+    return merge(
+      person,
+      this.fetchEvents(id, 'authoredPathways'),
+      this.fetchEvents(id, 'authoredReactions'),
+      this.fetchEvents(id, 'reviewedPathways'),
+      this.fetchEvents(id, 'reviewedReactions')
+    );
+  }
+
+  private fetchEvents(id: string, key: SectionKey) {
+    // The Java service answers an id it cannot read with an empty body, which
+    // arrives as null.
+    return this.http.get<SimpleEvent[] | null>(`${CONTENT_SERVICE}/data/person/${id}/${key}`).pipe(
+      tap((list) => this[key].set(list ?? [])),
+      catchError((error: unknown) => {
+        if (!isNotFound(error)) this.contributionsFailed.set(true);
+        return EMPTY;
+      })
+    );
   }
 
   pubMedUrl(pmid: number): string {

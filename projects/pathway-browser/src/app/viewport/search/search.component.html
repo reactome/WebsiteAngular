@@ -8,7 +8,7 @@
   (keydown.enter)="search(currentSuggest())"
   #inputBox
 >
-  <button mat-icon-button class="search-icon" (click)="search()">
+  <button type="button" mat-icon-button class="search-icon" (click)="search()">
     <mat-icon fontSet="symbols">search</mat-icon>
   </button>
   <div class="text-container">
@@ -23,8 +23,8 @@
       (keydown)="hasFocus.set(true)"
     />
   </div>
-  @if (scopes[currentScopeName()].found() || searchedNoResult()) {
-    <button mat-icon-button (click)="clear($event)">
+  @if (scopes[currentScopeName()].found() || searchedNoResult() || searchFailed()) {
+    <button type="button" mat-icon-button class="clear" aria-label="Clear the search" (click)="clear($event)">
       <mat-icon fontSet="symbols">close</mat-icon>
     </button>
   }
@@ -45,12 +45,12 @@
   }
 </div>
 
-@if (scopes.global.found() || searchedNoResult()) {
+@if (scopes.global.found() || searchedNoResult() || searchFailed()) {
   <div class="results">
     @if (collapsed() !== 'collapsed') {
       <div class="collapsable">
         <div class="scope-container">
-          @if (scopes.global.found() > 0 || searchedNoResult()) {
+          @if (scopes.global.found() > 0 || searchedNoResult() || searchFailed()) {
             @if (state.pathwayId() && scopes.local.found()) {
               <div
                 class="scope"
@@ -99,6 +99,18 @@
           </div>
         }
 
+        @if (searchFailed()) {
+          <div class="no-result-message failed" role="alert">
+            <mat-icon class="no-results-icon">error</mat-icon>
+            <p>{{ searchFailed() }} Please try again later.</p>
+          </div>
+        } @else if (currentScope().failed()) {
+          <div class="no-result-message failed" role="alert">
+            <mat-icon class="no-results-icon">error</mat-icon>
+            <p>Some results couldn't be loaded. Scroll to try again.</p>
+          </div>
+        }
+
         <div class="results-content">
           <cdk-virtual-scroll-viewport
             [style.height.px]="resultHeight()"
@@ -128,7 +140,7 @@
 
                 <div class="right">
                   <cr-flag-button
-                    [id]="entry.stId"
+                    [id]="entry.id"
                     class="flag-button"
                     (click)="$event.stopPropagation()"
                   ></cr-flag-button>

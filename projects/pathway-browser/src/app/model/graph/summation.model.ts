@@ -1,7 +1,6 @@
-import { DatabaseObject } from './database-object.model';
-import { Publication } from './publication/publication.model';
+import type * as Graph from '../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface Summation extends DatabaseObject {
-  text: string;
-  literatureReference: Publication[];
-}
+/** An event's or an entity's description, as the pathway browser reads it (the contract's, resolved). */
+export type Summation = Resolved<Graph.Summation<JsogReference>>;

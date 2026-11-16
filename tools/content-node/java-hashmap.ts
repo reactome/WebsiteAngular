@@ -1,0 +1,434 @@
+/**
+ * A java.util.HashMap's iteration order, for answers Java writes from one --
+ * its put, resize and tree bins ported from the JDK the service runs on
+ * (11). A key's bucket is String.hashCode, its high half folded in, masked
+ * to the table size; the table starts at 16 and doubles past three quarters
+ * full. A bucket keeps keys in the order they arrived until a ninth arrives:
+ * then, under 64 buckets, the table doubles; at 64, the bucket becomes a
+ * red-black tree ordered by hash then String.compareTo, whose root is moved
+ * to the front and whose later keys are linked in after their parent -- so
+ * eleven ids sharing a hash come out in Java's order, not arrival's. Checked
+ * against the JDK's own HashMap (orthology.spec.ts).
+ */
+/**
+ * One key in a bucket. A bucket that becomes a tree gives its nodes the tree
+ * fields, all set together (#treeifyBin), and a split back to a list clears
+ * them.
+ */
+interface HashNode {
+  hash: number;
+  key: unknown;
+  value: unknown;
+  next: HashNode | null;
+  tree?: boolean;
+  prev?: HashNode | null | undefined;
+  parent?: HashNode | null | undefined;
+  left?: HashNode | null | undefined;
+  right?: HashNode | null | undefined;
+  red?: boolean;
+}
+
+export class JavaHashMap<K = string, V = unknown> {
+  #table: (HashNode | null)[] = new Array<HashNode | null>(16).fill(null);
+  #keyHash: ((key: K) => number) | undefined;
+  size = 0;
+
+  /**
+   * `hash` is the key's hashCode, String.hashCode unless given -- a
+   * TargetResult's is Objects.hash(term), 31 more than its term's.
+   * `capacity` is Java's initialCapacity: the table starts at the power of
+   * two at or above it (tableSizeFor), 16 when it is not given.
+   */
+  constructor({ hash, capacity }: { hash?: (key: K) => number; capacity?: number } = {}) {
+    this.#keyHash = hash;
+    if (capacity !== undefined)
+      this.#table = new Array<HashNode | null>(tableSizeFor(capacity)).fill(null);
+  }
+
+  /**
+   * The initialCapacity `new HashSet<>(collection)` gives its map for a
+   * collection of `size`: Math.max((int) (size / .75f) + 1, 16), in float as
+   * Java divides -- so 16 buckets up to 11 entries and 32 from 12, where a
+   * set filled one by one grows on its 13th.
+   */
+  static capacityFor(size: number): number {
+    return Math.max(Math.trunc(Math.fround(Math.fround(size) / Math.fround(0.75))) + 1, 16);
+  }
+
+  /**
+   * Objects.hash(id) for a long id: 31 + Long.hashCode(id), the high half
+   * folded into the low -- the hash of a reaction layout's glyphs.
+   */
+  static longObjectsHash(id: number): number {
+    const big = BigInt.asUintN(64, BigInt(id));
+    return (31 + Number(BigInt.asIntN(32, big ^ (big >> 32n)))) | 0;
+  }
+
+  /** The node holding `key`, or null: a bucket's list or its tree, walked in order. */
+  #find(key: K): HashNode | null {
+    const hash = this.#hashOf(key);
+    for (let node = this.#table[(this.#table.length - 1) & hash] ?? null; node; node = node.next)
+      if (node.hash === hash && node.key === key) return node;
+    return null;
+  }
+
+  /**
+   * HashMap.computeIfAbsent, as JDK 11 does it -- not put's order: the table
+   * grows first if it is already past three quarters full, and a new key goes
+   * to the head of its bucket, not the tail. `make` runs only for a key not
+   * there. A tree bin is refused, as delete refuses one: never reached by the
+   * maps it serves.
+   */
+  computeIfAbsent(key: K, make: (key: K) => V): V {
+    if (this.size > this.#table.length * 0.75) this.#resize();
+    const hash = this.#hashOf(key);
+    const table = this.#table;
+    const index = (table.length - 1) & hash;
+    const first = table[index] ?? null;
+    if (first?.tree) throw new Error('JavaHashMap.computeIfAbsent on a tree bin is not ported');
+    let count = 0;
+    for (let node = first; node; node = node.next) {
+      if (node.hash === hash && node.key === key) return node.value as V;
+      count += 1;
+    }
+    const value = make(key);
+    table[index] = { hash, key, value, next: first };
+    if (count >= 7) this.#treeifyBin(hash);
+    this.size += 1;
+    return value;
+  }
+
+  get(key: K): V | undefined {
+    return this.#find(key)?.value as V | undefined;
+  }
+
+  has(key: K): boolean {
+    return this.#find(key) !== null;
+  }
+
+  #hashOf(key: K): number {
+    // Without a hash of its own, a key is a string: String.hashCode.
+    if (!this.#keyHash) return JavaHashMap.#hash(key as string);
+    const h = this.#keyHash(key) | 0;
+    return h ^ (h >>> 16);
+  }
+
+  /** String.hashCode, as an int. */
+  static stringHash(key: string): number {
+    let h = 0;
+    for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
+    return h;
+  }
+
+  static #hash(key: string): number {
+    let h = 0;
+    for (let at = 0; at < key.length; at += 1) h = (Math.imul(31, h) + key.charCodeAt(at)) | 0;
+    return h ^ (h >>> 16);
+  }
+
+  set(key: K, value: V) {
+    const hash = this.#hashOf(key);
+    const table = this.#table;
+    const index = (table.length - 1) & hash;
+    const p: HashNode | null = table[index] ?? null;
+    let existing: HashNode | null = null;
+    if (p === null) table[index] = { hash, key, value, next: null };
+    else if (p.hash === hash && p.key === key) existing = p;
+    else if (p.tree) existing = this.#putTreeValue(table, hash, key, value);
+    else {
+      let last: HashNode = p;
+      for (let count = 0; ; count += 1) {
+        const e = last.next;
+        if (e === null) {
+          last.next = { hash, key, value, next: null };
+          if (count >= 7) this.#treeifyBin(hash);
+          break;
+        }
+        if (e.hash === hash && e.key === key) {
+          existing = e;
+          break;
+        }
+        last = e;
+      }
+    }
+    if (existing) {
+      existing.value = value;
+      return this;
+    }
+    this.size += 1;
+    if (this.size > this.#table.length * 0.75) this.#resize();
+    return this;
+  }
+
+  /**
+   * HashSet.remove: the key unlinked from its bucket, the rest in order. A
+   * tree bin -- eight keys sharing a bucket of 64 or more, which sets of
+   * stable ids never come near -- is refused: Java rebalances it and moves
+   * a new root to the front, which is not ported, and unlinking alone
+   * would leave the tree to give wrong answers later.
+   */
+  delete(key: K): boolean {
+    const hash = this.#hashOf(key);
+    const index = (this.#table.length - 1) & hash;
+    if (this.#table[index]?.tree)
+      throw new Error('JavaHashMap.delete from a tree bin is not ported');
+    let previous: HashNode | null = null;
+    for (let node = this.#table[index] ?? null; node; previous = node, node = node.next) {
+      if (node.hash !== hash || node.key !== key) continue;
+      if (previous) previous.next = node.next;
+      else this.#table[index] = node.next;
+      this.size -= 1;
+      return true;
+    }
+    return false;
+  }
+
+  *entries(): Generator<[K, V]> {
+    // Every key and value went in through set, as a K and a V.
+    for (let node of this.#table)
+      for (; node; node = node.next) yield [node.key as K, node.value as V];
+  }
+
+  *keys() {
+    for (const [key] of this.entries()) yield key;
+  }
+
+  *values() {
+    for (const [, value] of this.entries()) yield value;
+  }
+
+  #resize() {
+    const old = this.#table;
+    const table = new Array<HashNode | null>(old.length * 2).fill(null);
+    this.#table = table;
+    for (let index = 0; index < old.length; index += 1) {
+      const head = old[index];
+      if (!head) continue;
+      if (head.next === null) table[head.hash & (table.length - 1)] = head;
+      else if (head.tree) this.#split(table, head, index, old.length);
+      else {
+        const [lo, hi]: [HashNode[], HashNode[]] = [[], []];
+        for (let node: HashNode | null = head; node; node = node.next)
+          ((node.hash & old.length) === 0 ? lo : hi).push(node);
+        const halves: [HashNode[], number][] = [
+          [lo, index],
+          [hi, index + old.length],
+        ];
+        for (const [list, at] of halves) {
+          if (!list.length) continue;
+          list.forEach((node, i) => (node.next = list[i + 1] ?? null));
+          table[at] = list[0] ?? null;
+        }
+      }
+    }
+  }
+
+  #treeifyBin(hash: number) {
+    const table = this.#table;
+    if (table.length < 64) return this.#resize();
+    const index = (table.length - 1) & hash;
+    let previous: HashNode | null = null;
+    for (let node = table[index] ?? null; node; node = node.next) {
+      Object.assign(node, {
+        tree: true,
+        prev: previous,
+        parent: null,
+        left: null,
+        right: null,
+        red: false,
+      });
+      previous = node;
+    }
+    this.#treeify(table, table[index]);
+  }
+
+  /** TreeNode.split: the bucket's nodes, in order, to the two halves of a doubled table. */
+  #split(table: (HashNode | null)[], head: HashNode, index: number, bit: number) {
+    const [lo, hi]: [HashNode[], HashNode[]] = [[], []];
+    for (let node: HashNode | null = head; node; node = node.next)
+      ((node.hash & bit) === 0 ? lo : hi).push(node);
+    const halves: [HashNode[], number, HashNode[]][] = [
+      [lo, index, hi],
+      [hi, index + bit, lo],
+    ];
+    for (const [list, at, other] of halves) {
+      if (!list.length) continue;
+      list.forEach((node, i) => {
+        node.next = list[i + 1] ?? null;
+        node.prev = list[i - 1] ?? null;
+      });
+      if (list.length <= 6) {
+        for (const node of list) {
+          node.tree = false;
+          node.parent = node.left = node.right = node.prev = null;
+        }
+        table[at] = list[0] ?? null;
+      } else {
+        table[at] = list[0] ?? null;
+        if (other.length) this.#treeify(table, list[0] ?? null);
+      }
+    }
+  }
+
+  static #direction(hash: number, key: unknown, node: HashNode): number {
+    if (node.hash > hash) return -1;
+    if (node.hash < hash) return 1;
+    // A tree orders equal hashes by String.compareTo: the keys are strings.
+    const [a, b] = [key as string, node.key as string];
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+
+  #treeify(table: (HashNode | null)[], head: HashNode | null | undefined) {
+    let root: HashNode | null = null;
+    for (let x: HashNode | null = head ?? null, next: HashNode | null; x; x = next) {
+      next = x.next;
+      x.left = x.right = null;
+      if (root === null) {
+        x.parent = null;
+        x.red = false;
+        root = x;
+        continue;
+      }
+      for (let p: HashNode = root; ;) {
+        const dir = JavaHashMap.#direction(x.hash, x.key, p);
+        const xp = p;
+        // A tree node's children are set, to null at least, when it joins.
+        const child = (dir <= 0 ? p.left : p.right) ?? null;
+        if (child === null) {
+          x.parent = xp;
+          if (dir <= 0) xp.left = x;
+          else xp.right = x;
+          root = JavaHashMap.#balanceInsertion(root, x);
+          break;
+        }
+        p = child;
+      }
+    }
+    // Called on a bucket with nodes in it, so a root was made.
+    JavaHashMap.#moveRootToFront(table, root as HashNode);
+  }
+
+  #putTreeValue(table: (HashNode | null)[], hash: number, key: K, value: V): HashNode | null {
+    // A tree bin: its head is its root.
+    const root = table[(table.length - 1) & hash] as HashNode;
+    for (let p: HashNode = root; ;) {
+      if (p.hash === hash && p.key === key) return p;
+      const dir = JavaHashMap.#direction(hash, key, p);
+      const xp = p;
+      // A tree node's children are set, to null at least, when it joins.
+      const child = (dir <= 0 ? p.left : p.right) ?? null;
+      if (child === null) {
+        const xpn = xp.next;
+        const x: HashNode = {
+          hash,
+          key,
+          value,
+          next: xpn,
+          tree: true,
+          prev: xp,
+          parent: xp,
+          left: null,
+          right: null,
+          red: false,
+        };
+        if (dir <= 0) xp.left = x;
+        else xp.right = x;
+        xp.next = x;
+        if (xpn) xpn.prev = x;
+        JavaHashMap.#moveRootToFront(table, JavaHashMap.#balanceInsertion(root, x));
+        return null;
+      }
+      p = child;
+    }
+  }
+
+  static #moveRootToFront(table: (HashNode | null)[], root: HashNode) {
+    const index = (table.length - 1) & root.hash;
+    const first = table[index] ?? null;
+    if (root === first) return;
+    table[index] = root;
+    const { prev: rp, next: rn } = root;
+    if (rn) rn.prev = rp;
+    if (rp) rp.next = rn;
+    if (first) first.prev = root;
+    root.next = first;
+    root.prev = null;
+  }
+
+  static #rotateLeft(root: HashNode, p: HashNode): HashNode {
+    const r = p.right;
+    if (!r) return root;
+    const rl = (p.right = r.left);
+    if (rl) rl.parent = p;
+    const pp = (r.parent = p.parent);
+    if (!pp) (root = r).red = false;
+    else if (pp.left === p) pp.left = r;
+    else pp.right = r;
+    r.left = p;
+    p.parent = r;
+    return root;
+  }
+
+  static #rotateRight(root: HashNode, p: HashNode): HashNode {
+    const l = p.left;
+    if (!l) return root;
+    const lr = (p.left = l.right);
+    if (lr) lr.parent = p;
+    const pp = (l.parent = p.parent);
+    if (!pp) (root = l).red = false;
+    else if (pp.right === p) pp.right = l;
+    else pp.left = l;
+    l.right = p;
+    p.parent = l;
+    return root;
+  }
+
+  static #balanceInsertion(root: HashNode, x: HashNode): HashNode {
+    x.red = true;
+    for (;;) {
+      const xp = x.parent;
+      if (!xp) {
+        x.red = false;
+        return x;
+      }
+      const xpp = xp.parent;
+      if (!xp.red || !xpp) return root;
+      const xppl = xpp.left;
+      const xppr = xpp.right;
+      const uncle = xp === xppl ? xppr : xppl;
+      if (uncle?.red) {
+        uncle.red = false;
+        xp.red = false;
+        xpp.red = true;
+        x = xpp;
+        continue;
+      }
+      // x's parent is red and its uncle black: rotate x up to where its parent
+      // was if it is the inner grandchild, then rotate the grandparent.
+      const left = xp === xppl;
+      let parent: HashNode | null | undefined = xp;
+      if (x === (left ? xp.right : xp.left)) {
+        x = xp;
+        root = left ? JavaHashMap.#rotateLeft(root, x) : JavaHashMap.#rotateRight(root, x);
+        parent = x.parent;
+      }
+      const grand = parent ? parent.parent : null;
+      if (parent) {
+        parent.red = false;
+        if (grand) {
+          grand.red = true;
+          root = left
+            ? JavaHashMap.#rotateRight(root, grand)
+            : JavaHashMap.#rotateLeft(root, grand);
+        }
+      }
+    }
+  }
+}
+
+/** HashMap.tableSizeFor: the power of two at or above `capacity`, at least 1. */
+function tableSizeFor(capacity: number): number {
+  let size = 1;
+  while (size < capacity) size *= 2;
+  return size;
+}

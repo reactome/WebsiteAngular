@@ -46,6 +46,20 @@ async function waitForServer(url: string, timeoutMs = 20_000) {
   return false;
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+/** The health route's answer: its services by name, refused unless it has them. */
+async function health(
+  base: string
+): Promise<{ ok: unknown; bundle: unknown; services: Record<string, unknown> }> {
+  const body: unknown = await (await fetch(base + '/health')).json();
+  if (!isRecord(body) || !isRecord(body['services'])) {
+    throw new Error('the health route answered without its services');
+  }
+  return { ok: body['ok'], bundle: body['bundle'], services: body['services'] };
+}
+
 describe('serve-prod', () => {
   let dist = '';
   let embed = '';
@@ -53,10 +67,23 @@ describe('serve-prod', () => {
   let server: ChildProcess | undefined;
 
   beforeAll(async () => {
-    dist = await mkdtemp(path.join(tmpdir(), 'serve-prod-'));
+    // Under a directory whose name starts with a dot, as a checkout under
+    // ~/.something or .claude/worktrees is: Express 5's sendFile refuses a
+    // dotfile anywhere in an absolute path, and every page was a 500.
+    dist = await mkdtemp(path.join(tmpdir(), '.serve-prod-'));
     await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
     await mkdir(path.join(dist, 'assets'), { recursive: true });
     await writeFile(path.join(dist, 'assets', 'thing.txt'), 'an asset', 'utf8');
+    // Build output named by its content, and files that keep their names.
+    await writeFile(path.join(dist, 'main-AB12CD34.js'), 'export {};', 'utf8');
+    await writeFile(path.join(dist, 'chunk-EF56GH78.js'), 'export {};', 'utf8');
+    await mkdir(path.join(dist, 'media'), { recursive: true });
+    await writeFile(path.join(dist, 'media', 'Roboto-IJ90KL12.ttf'), 'font', 'utf8');
+    await mkdir(path.join(dist, 'content', 'documentation'), { recursive: true });
+    await writeFile(path.join(dist, 'content', 'documentation', 'page.json'), '{}', 'utf8');
+    await mkdir(path.join(dist, 'uploads'), { recursive: true });
+    // Looks content-named, but an upload's name is whatever the author chose.
+    await writeFile(path.join(dist, 'uploads', 'figure-ABCDEFGH.png'), 'png', 'utf8');
     embed = await mkdtemp(path.join(tmpdir(), 'serve-prod-embed-'));
     await writeFile(path.join(embed, 'main.js'), 'export const diagram = 1;', 'utf8');
     await writeFile(path.join(embed, 'loader.gif'), 'GIF89a', 'utf8');
@@ -99,14 +126,16 @@ describe('serve-prod', () => {
    * sibling was down would be reporting the estate under the name of the site.
    */
   it('reports each service, and says which are down', async () => {
-    const body = await (await fetch(base + '/health')).json();
+    const body = await health(base);
     expect(Object.keys(body.services)).toEqual(
       expect.arrayContaining(['content-node', 'render', 'mcp'])
     );
     // Nothing is running in this suite, so every one of them is down and each
     // says so on its own rather than collapsing into a single failure.
-    for (const [name, state] of Object.entries(body.services as Record<string, { up: boolean }>)) {
-      expect(state.up, `${name} should report its own state`).toBe(false);
+    for (const [name, state] of Object.entries(body.services)) {
+      expect(isRecord(state) ? state['up'] : state, `${name} should report its own state`).toBe(
+        false
+      );
     }
   });
 
@@ -114,7 +143,7 @@ describe('serve-prod', () => {
     // `ok` is the site's answer, not the estate's. The site renders without the
     // render service; telling a monitor otherwise pages somebody for the wrong
     // thing, and what is actually wrong is named in `services`.
-    const body = await (await fetch(base + '/health')).json();
+    const body = await health(base);
     expect(body.ok).toBe(true);
     expect(body.bundle === null || typeof body.bundle === 'string').toBe(true);
   });
@@ -131,6 +160,29 @@ describe('serve-prod', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toMatch(/text\/plain/);
     expect(await response.text()).toBe('an asset');
+  });
+
+  it('caches content-named build output for good', async () => {
+    for (const file of ['/main-AB12CD34.js', '/chunk-EF56GH78.js', '/media/Roboto-IJ90KL12.ttf']) {
+      const response = await fetch(base + file);
+      expect(response.headers.get('cache-control'), file).toBe(
+        'public, max-age=31536000, immutable'
+      );
+    }
+  });
+
+  it('has browsers check back for files that change under the same name', async () => {
+    // Pages, uploads and assets keep their names when they change. Cached for
+    // a year as immutable, a rewritten documentation page stayed old in every
+    // browser that had seen it.
+    const content = await fetch(base + '/content/documentation/page.json');
+    expect(content.headers.get('cache-control')).toBe('no-cache');
+    // Pictures and other files: minutes, not a year.
+    for (const file of ['/uploads/figure-ABCDEFGH.png', '/assets/thing.txt']) {
+      const response = await fetch(base + file);
+      expect(response.status, file).toBe(200);
+      expect(response.headers.get('cache-control'), file).toBe('public, max-age=300');
+    }
   });
 
   it('answers an application route with the application', async () => {
@@ -220,6 +272,7 @@ describe('serve-prod and the API roots', () => {
   let base = '';
   let server: ChildProcess | undefined;
   let backend: Server | undefined;
+  let contentNode: Server | undefined;
   const reached: string[] = [];
 
   beforeAll(async () => {
@@ -235,6 +288,14 @@ describe('serve-prod and the API roots', () => {
     backend = upstream;
     await new Promise<void>((resolve) => upstream.listen(backendPort, '127.0.0.1', resolve));
 
+    const contentNodePort = await freePort();
+    const node = createHttpServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(`content-node ${req.url}`);
+    });
+    contentNode = node;
+    await new Promise<void>((resolve) => node.listen(contentNodePort, '127.0.0.1', resolve));
+
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
     server = spawn('node', [SCRIPT], {
@@ -244,6 +305,7 @@ describe('serve-prod and the API roots', () => {
         PORT: String(port),
         HOST: '127.0.0.1',
         REACTOME_BACKEND: `http://127.0.0.1:${backendPort}`,
+        CONTENT_NODE_TARGET: `http://127.0.0.1:${contentNodePort}`,
         HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
         HEALTH_RENDER: 'http://127.0.0.1:9/health',
         HEALTH_MCP: 'http://127.0.0.1:9/health',
@@ -256,8 +318,39 @@ describe('serve-prod and the API roots', () => {
   afterAll(async () => {
     server?.kill('SIGTERM');
     backend?.close();
+    contentNode?.close();
     if (dist) await rm(dist, { recursive: true, force: true });
   });
+
+  // The same routes the dev server's are checked against (proxy-order.spec.ts):
+  // the person, their publications, the four lists and every other attribute
+  // go to node; nothing below an attribute does.
+  for (const [url, to] of [
+    ['/ContentService/data/person/68285/authoredPathways', 'content-node'],
+    ['/ContentService/data/person/68285/reviewedReactions?page=1', 'content-node'],
+    ['/ContentService/data/person/68285', 'content-node'],
+    ['/ContentService/data/person/68285/publications', 'content-node'],
+    ['/ContentService/data/person/68285/displayName', 'content-node'],
+    ['/ContentService/data/person/68285/authoredPathwaysAndMore', 'content-node'],
+    ['/ContentService/data/person/68285/displayName/x', 'backend'],
+    ['/ContentService/data/query/70486/displayName', 'content-node'],
+    ['/ContentService/data/query/70486/more', 'content-node'],
+    ['/ContentService/data/query/abridged/70486', 'content-node'],
+    ['/ContentService/data/query/abridged/70486/displayName', 'content-node'],
+    ['/ContentService/data/query/abridged/70486/displayName/x', 'backend'],
+    ['/ContentService/data/query/70486/moreover', 'content-node'],
+    ['/ContentService/data/query/R-HSA-70486', 'content-node'],
+    ['/ContentService/data/query/R-HSA-70486?view=nested', 'content-node'],
+    ['/ContentService/data/query/enhanced/R-HSA-70486', 'content-node'],
+    ['/ContentService/data/query/enhanced/v2/R-HSA-70486', 'content-node'],
+    // The batch lookup is node's too (spec 006 T071).
+    ['/ContentService/data/query/ids', 'content-node'],
+    ['/ContentService/data/query/ids/map', 'content-node'],
+  ]) {
+    it(`sends ${url} to ${to}`, async () => {
+      expect(await (await fetch(base + url)).text()).toBe(`${to} ${url}`);
+    });
+  }
 
   for (const root of [
     '/ContentService',
@@ -267,9 +360,13 @@ describe('serve-prod and the API roots', () => {
   ]) {
     it(`answers ${root} with this site's API page`, async () => {
       const before = reached.length;
-      const body = await (await fetch(base + root)).text();
+      const response = await fetch(base + root);
+      const body = await response.text();
       expect(body).toContain(INDEX_MARKER);
       expect(reached.length, 'the service was not asked').toBe(before);
+      // Never kept at the edge: the API's addresses are cached there, and a
+      // stored page would outlive the next deploy's scripts (spec 011).
+      expect(response.headers.get('cache-control')).toBe('no-store');
     });
   }
 
@@ -279,7 +376,12 @@ describe('serve-prod and the API roots', () => {
   });
 
   for (const api of [
-    '/ContentService/data/database/version',
+    // A path still answered by Java (spec 010: the PSICQUIC interactors stay
+    // there). /database/version, then /query/{id}/displayName, then
+    // /query/abridged/{id}, then /pathways/top/{species}/curated, then
+    // /detail/{id}/getSubGraph, were the example until each moved to the node
+    // content service.
+    '/ContentService/interactors/psicquic/molecule/MINT/P04637/details',
     '/ContentService/v3/api-docs',
     '/AnalysisService/v3/api-docs',
     '/ContentService/swagger-ui/index.html',
@@ -289,6 +391,22 @@ describe('serve-prod and the API roots', () => {
       expect(body).toBe(`backend ${api}`);
     });
   }
+
+  it('sends /ContentService/data/database/version to the node content service', async () => {
+    const body = await (await fetch(base + '/ContentService/data/database/version')).text();
+    expect(body).toBe('content-node /ContentService/data/database/version');
+  });
+
+  it("sends beta's BioPAX download by dbId to the legacy service, as nginx does", async () => {
+    // Level 3 by dbId only (dev.conf): any other form is the app, there too.
+    const api = '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/109862';
+    expect(await (await fetch(base + api)).text()).toBe(`backend ${api}`);
+    for (const other of [`${api}/`, '/ReactomeRESTfulAPI/RESTfulWS/biopaxExporter/Level3/R-HSA-1'])
+      expect([other, await (await fetch(base + other)).text()]).toEqual([
+        other,
+        expect.stringContaining(INDEX_MARKER),
+      ]);
+  });
 
   it('leaves ExperimentDigester alone, which has no page here', async () => {
     const body = await (await fetch(base + '/ExperimentDigester/')).text();

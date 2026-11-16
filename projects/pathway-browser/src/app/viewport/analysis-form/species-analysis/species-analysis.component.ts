@@ -15,7 +15,7 @@ import type { DotLottie } from '@lottiefiles/dotlottie-web';
 import { MatIcon } from '@angular/material/icon';
 import { UrlStateService } from '../../../services/url-state.service';
 import { AnalysisService } from '../../../services/analysis.service';
-import { Species } from '../../../model/graph/species.model';
+import { ListedSpecies } from '../../../model/graph/species.model';
 import { SpeciesService } from '../../../services/species.service';
 import { FormControl } from '@angular/forms';
 import { LottieService } from '../../../services/lottie.service';
@@ -23,6 +23,7 @@ import { MatRipple } from '@angular/material/core';
 import { MatTooltip } from '@angular/material/tooltip';
 import { DarkService } from '../../../services/dark.service';
 import { IconService } from '../../../services/icon.service';
+import { describeAnalysisFailure } from '../analysis-failure';
 
 @Component({
   selector: 'cr-species-analysis',
@@ -40,14 +41,14 @@ import { IconService } from '../../../services/icon.service';
   styleUrl: './species-analysis.component.scss',
 })
 export class SpeciesAnalysisComponent {
-  private analysis = inject(AnalysisService);
+  protected readonly analysis = inject(AnalysisService);
   private state = inject(UrlStateService);
   private speciesService = inject(SpeciesService);
   private lottieService = inject(LottieService);
   private darkService = inject(DarkService);
   private iconService = inject(IconService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
@@ -55,12 +56,12 @@ export class SpeciesAnalysisComponent {
   readonly comparableSpecies = computed(() =>
     (this.speciesService.allShortenSpecies() || []).filter((s) => s.taxId !== '9606')
   );
-  readonly selectedSpecies = signal<Species | null>(null);
-  speciesControl = new FormControl<Species | null>(null, (control) =>
+  readonly selectedSpecies = signal<ListedSpecies | null>(null);
+  speciesControl = new FormControl<ListedSpecies | null>(null, (control) =>
     control.getRawValue() !== undefined ? null : { invalid: true }
   );
 
-  toggle(species: Species): void {
+  toggle(species: ListedSpecies): void {
     this.selectedSpecies.update((s) => (s === species ? null : species));
   }
 
@@ -76,7 +77,8 @@ export class SpeciesAnalysisComponent {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (!this.lottieCanvas() || this.lottie) return;
+        const canvas = this.lottieCanvas();
+        if (!canvas || this.lottie) return;
         this.lottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
@@ -84,7 +86,7 @@ export class SpeciesAnalysisComponent {
           },
           autoplay: true,
           loop: !this.analysisAvailable(),
-          canvas: this.lottieCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`,
         });
       })().catch((error) => console.error('Could not build animation', error));
@@ -106,7 +108,8 @@ export class SpeciesAnalysisComponent {
     });
 
     effect(() => {
-      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie!.play(), 800);
+      // Read when it fires, as before: once set it is never unset.
+      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie?.play(), 800);
     });
   }
 
@@ -118,24 +121,34 @@ export class SpeciesAnalysisComponent {
 
   readonly analysisLaunched = signal(false);
   readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
 
   analyse() {
-    if (this.selectedSpecies() === null) return;
+    const species = this.selectedSpecies();
+    if (species === null) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
-    this.analysis.analyseSpecies(this.selectedSpecies()!).subscribe((result) => {
-      this.analysisAvailable.set(true);
-      this.token = result.summary.token;
-      this.close.emit({ status: 'finished' });
+    this.analysisError.set(null);
+    this.analysis.analyseSpecies(species).subscribe({
+      next: (result) => {
+        this.analysisAvailable.set(true);
+        this.token = result.summary.token;
+        this.closed.emit({ status: 'finished' });
+      },
+      // Without this the loader spins forever and the reader is never told.
+      error: (error: unknown) => {
+        this.analysisLaunched.set(false);
+        this.analysisError.set(describeAnalysisFailure(error));
+      },
     });
   }
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
-  getSpeciesIconName(species: Species): string {
+  getSpeciesIconName(species: ListedSpecies): string {
     const normalizedTaxId = (species.taxId || '').replace(/\D/g, '');
     return this.availableSpeciesIcons.has(normalizedTaxId)
       ? normalizedTaxId

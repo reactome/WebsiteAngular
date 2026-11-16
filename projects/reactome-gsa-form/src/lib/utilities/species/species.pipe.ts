@@ -4,6 +4,7 @@ import { Pipe, PipeTransform } from '@angular/core';
 export class SpeciesPipe implements PipeTransform {
   transform(value: string): unknown {
     const words = value.split(' ');
-    return words[0].charAt(0).toUpperCase() + '. ' + words.slice(1).join(' ');
+    const [genus = ''] = words;
+    return genus.charAt(0).toUpperCase() + '. ' + words.slice(1).join(' ');
   }
 }

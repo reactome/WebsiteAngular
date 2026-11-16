@@ -8,11 +8,16 @@ playwright-report
 test-results
 
 # Captured from the running site, not authored. Reformatting it would make every
-# recapture a two-step job and the diff unreadable; see tools/render/pptx.spec.mjs
+# recapture a two-step job and the diff unreadable; see tools/render/pptx.spec.ts
 # for how it is taken.
 tools/render/fixtures
 
 # Generated, not authored
+# Written by tools/content-node/snapshot-jsoup/JsoupTables.java from Jsoup's jar.
+tools/content-node/jsoup-tables.json
+tools/content-node/openapi-snapshot.json
+# Written by tools/contract/generate.ts; generate.spec.ts holds it to that.
+projects/contract/openapi.json
 projects/website-angular/content-dist
 projects/website-angular/tina/__generated__
 projects/website-angular/tina/tina-lock.json
@@ -36,3 +41,14 @@ projects/website-angular/public/admin/index.html
 # by the replayer, and reformatting them would put thousands of lines of churn in
 # every re-record's diff.
 e2e/har/
+
+# Java's schema answers, captured by tools/content-node/snapshot-schema.ts and
+# written one class per line so a regeneration's diff names what changed.
+tools/content-node/schema-snapshot.json
+# graph-core's classes as Jackson and Spring Data Neo4j read them, written one
+# entry per line by tools/content-node/snapshot-domain.ts so a model change is
+# a readable diff. Generated; reflowing it would undo that.
+tools/content-node/domain-snapshot.json
+
+# Saved from download.reactome.org, not authored (e2e/support/release-files.ts)
+e2e/release-files

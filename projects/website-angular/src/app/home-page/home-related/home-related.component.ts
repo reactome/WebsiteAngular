@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { ExternalLink } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
@@ -5,7 +6,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 @Component({
   selector: 'app-home-related',
   standalone: true,
-  imports: [],
+  imports: [NgOptimizedImage],
   templateUrl: './home-related.component.html',
   styleUrl: './home-related.component.scss',
 })

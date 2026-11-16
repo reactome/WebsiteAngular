@@ -14,11 +14,25 @@
     "projects/*/src/public-api.ts",
     "projects/*/src/index.ts",
     "projects/website-angular/tina/config.ts",
-    "tools/render/{render,service}.mjs",
-    "tools/svg-export-harness/*.mjs"
+    "tools/render/{render,service}.ts",
+    "tools/content-node/snapshot-*.ts",
+    "tools/content-node/*-check.ts",
+    "tools/analysis-types/record.ts",
+    "tools/svg-export-harness/{harness,harness.check,playwright.config}.ts",
+    "tools/java-parity/parity.ts",
+    "tools/library-update/check-library-update.ts",
+    "projects/contract/routes.ts",
+    "projects/contract/graph-core.ts"
   ],
-  "project": ["src/**/*.ts", "projects/**/*.ts", "scripts/**/*.mjs", "tools/**/*.mjs"],
+  "project": [
+    "src/**/*.ts",
+    "projects/**/*.ts",
+    "scripts/**/*.mjs",
+    "tools/**/*.mjs",
+    "tools/**/*.ts"
+  ],
   "ignore": [
+    "tools/**/fixtures/**",
     "**/*.d.ts",
     "**/__generated__/**",
     "web-component-demo/**",

@@ -13,12 +13,12 @@ import { SortByTextPipe } from '../../../pipes/sort-by-text.pipe';
 export class CrossReferencesComponent {
   private entity = inject(EntityService);
 
-  readonly _crossReferences = input.required<DatabaseIdentifier[]>({ alias: 'crossRefs' });
+  readonly crossRefs = input.required<DatabaseIdentifier[]>();
 
   readonly crossReferences = computed(() => {
-    if (this._crossReferences().length == 0) return new Map<string, DatabaseIdentifier[]>();
-    const crossRefs = [...this._crossReferences()];
-    const grouped = this.entity.getGroupedData(crossRefs, (ref) => ref.databaseName);
+    if (this.crossRefs().length == 0) return new Map<string, DatabaseIdentifier[]>();
+    const refs = [...this.crossRefs()];
+    const grouped = this.entity.getGroupedData(refs, (ref) => ref.databaseName);
     // Sort the identifiers within each database group so e.g. RefSeq IDs
     // come out in stable, human-friendly order. numeric: true keeps
     // "NM_000546.5" before "NM_000546.10" instead of lexicographic.

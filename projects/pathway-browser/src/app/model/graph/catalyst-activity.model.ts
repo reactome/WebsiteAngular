@@ -1,13 +1,6 @@
-import { DatabaseObject } from './database-object.model';
-import { PhysicalEntity } from './physical-entity/physical-entity.model';
-import { Publication } from './publication/publication.model';
-import { GO_MolecularFunction } from './go-term/go-molecular-function.model';
-import { ReactionLikeEvent } from './event/reaction-like-event.model';
+import type * as Graph from '../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../contract/graph.ts';
+import type { Resolved } from '../../utils/JSOGDeserializer';
 
-export interface CatalystActivity extends DatabaseObject {
-  physicalEntity: PhysicalEntity;
-  literatureReference?: Publication[];
-  activity?: GO_MolecularFunction;
-  activeUnit?: PhysicalEntity[];
-  catalyzedEvent?: ReactionLikeEvent[];
-}
+/** A catalyst activity, as the pathway browser reads it (the contract's, resolved). */
+export type CatalystActivity = Resolved<Graph.CatalystActivity<JsogReference>>;

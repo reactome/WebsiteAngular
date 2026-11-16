@@ -1,5 +1,6 @@
 import {
   DeltaSignalEdge,
+  DeltaSignalMeasurement,
   DeltaSignalNetwork,
   DeltaSignalPerturbation,
   DeltaSignalResultRow,
@@ -28,6 +29,33 @@ export function buildObservations(
   );
 }
 
+/**
+ * The `soft_observations` map a solve sends (deltasignal specs/156): each
+ * measurement's resolved node uuids at [fold, weight]. Two entities resolving
+ * to one shared node: the first entry stands — the server treats a
+ * contradiction as a conflict, not a set — and the result line's
+ * server-applied count keeps any mismatch visible.
+ */
+export function buildSoftObservations(
+  measurements: Iterable<DeltaSignalMeasurement>
+): Record<string, [number, number]> {
+  const soft: Record<string, [number, number]> = {};
+  for (const measurement of measurements)
+    for (const uuid of measurement.nodeUuids) soft[uuid] ??= [measurement.fold, measurement.weight];
+  return soft;
+}
+
+/**
+ * The display floor for the served structural-fragility rate (deltasignal
+ * specs/157, WA specs/029): the record's typical class is under 1%, where
+ * the note would be noise; at or above 5% the class is named.
+ */
+export function fragilityAtFloor(
+  fragility: { rate: number; n: number } | null
+): { rate: number; n: number } | null {
+  return fragility && fragility.rate >= 0.05 ? fragility : null;
+}
+
 export function resultRows(
   network: DeltaSignalNetwork | null,
   result: DeltaSignalSolveResult | null,
@@ -40,7 +68,8 @@ export function resultRows(
     .filter((node) => result.node_activities[node.uuid] !== undefined)
     .map((node) => {
       const baseline = toDisplayActivity(node.baseline);
-      const activity = toDisplayActivity(result.node_activities[node.uuid]);
+      // Present: the filter above keeps only nodes that have one.
+      const activity = toDisplayActivity(result.node_activities[node.uuid] ?? 0);
       return {
         uuid: node.uuid,
         reactomeId: node.reactome_id,
@@ -69,29 +98,6 @@ export function groupChangesByReactomeId(rows: DeltaSignalResultRow[]): Map<stri
     grouped.set(row.reactomeId, values);
   }
   return grouped;
-}
-
-/** Collapse internal solver duplicates for a readable one-entity-per-row table. */
-export function aggregateRowsByReactomeId(rows: DeltaSignalResultRow[]): DeltaSignalResultRow[] {
-  const grouped = new Map<string, DeltaSignalResultRow[]>();
-  for (const row of rows) {
-    if (!row.reactomeId) continue;
-    grouped.set(row.reactomeId, [...(grouped.get(row.reactomeId) ?? []), row]);
-  }
-
-  const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
-  return [...grouped.entries()]
-    .map(([reactomeId, members]) => ({
-      uuid: reactomeId,
-      reactomeId,
-      name: [...new Set(members.map((member) => member.name))].join(' / '),
-      baseline: mean(members.map((member) => member.baseline)),
-      activity: mean(members.map((member) => member.activity)),
-      change: mean(members.map((member) => member.change)),
-      influence: Math.max(...members.map((member) => member.influence)),
-      perturbed: members.some((member) => member.perturbed),
-    }))
-    .sort((a, b) => Math.abs(b.change) - Math.abs(a.change) || b.influence - a.influence);
 }
 
 /**

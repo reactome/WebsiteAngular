@@ -17,7 +17,8 @@ import {
 } from '@angular/core';
 import { Settings } from '../../model/table.model';
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Cell, Coords, Ranges, TableStore } from '../../state/table.store';
+import { Cell, Coords, TableStore } from '../../state/table.store';
+import * as Ranges from '../../state/ranges';
 import {
   combineLatest,
   combineLatestWith,
@@ -34,17 +35,39 @@ import {
 } from 'rxjs';
 import { isDefined } from '../../model/utils.model';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
-import { safeInput } from '../../utils/web-component-utils';
+import { settingsInput, tableInput } from '../../utils/web-component-utils';
 import { outputFromObservable, toSignal } from '@angular/core/rxjs-interop';
-import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { downloadTable } from '../download-table/download-table.component';
+import {
+  CdkVirtualScrollViewport,
+  CdkFixedSizeVirtualScroll,
+  CdkVirtualForOf,
+} from '@angular/cdk/scrolling';
+import { downloadTable, DownloadTableComponent } from '../download-table/download-table.component';
+import { LetDirective } from '@ngrx/component';
+import { FormsModule } from '@angular/forms';
+import { MatIconButton, MatButton } from '@angular/material/button';
+import { MatIcon } from '@angular/material/icon';
+import { UploadTableComponent } from '../upload-table/upload-table.component';
+import { AsyncPipe } from '@angular/common';
 @UntilDestroy()
 @Component({
   selector: 'reactome-table',
   templateUrl: './table.component.html',
   styleUrls: ['./table.component.scss'],
   providers: [TableStore],
-  standalone: false,
+  imports: [
+    LetDirective,
+    CdkVirtualScrollViewport,
+    CdkFixedSizeVirtualScroll,
+    FormsModule,
+    MatIconButton,
+    MatIcon,
+    MatButton,
+    CdkVirtualForOf,
+    UploadTableComponent,
+    DownloadTableComponent,
+    AsyncPipe,
+  ],
 })
 export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   private clipboard = inject(Clipboard);
@@ -59,9 +82,16 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   isDraggingMouse: boolean = false;
   isDraggingFile: boolean = false;
 
-  readonly userSettings = input<Partial<Settings>>({});
+  readonly userSettings = input<Partial<Settings>, Partial<Settings> | string>(
+    {},
+    {
+      transform: settingsInput,
+    }
+  );
   readonly name = input<string>('default-name');
-  readonly table = input<string[][]>();
+  readonly table = input<string[][] | undefined, string[][] | string | undefined>(undefined, {
+    transform: tableInput,
+  });
 
   readonly numberOfColumns = input<number | undefined>(undefined);
   readonly numberOfRows = input<number | undefined>(undefined);
@@ -81,7 +111,8 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     let height =
       (this.data().length + (this.settings()?.addRow ? 1 : 0)) * this.rowHeight() +
       this.scrollDimensions().bottom;
-    if (this.maxHeight()) height = height < this.maxHeight()! ? height : this.maxHeight()!;
+    const maxHeight = this.maxHeight();
+    if (maxHeight) height = height < maxHeight ? height : maxHeight;
     return height;
   });
   readonly scrollOffset = signal(0);
@@ -124,7 +155,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   cleanData$: Observable<string[][]> = this.tableStore.cleanData$;
   start$: Observable<Coords> = this.tableStore.start$;
   stop$: Observable<Coords> = this.tableStore.stop$;
-  startCell$: Observable<HTMLTableCellElement> = this.start$.pipe(
+  startCell$: Observable<HTMLTableCellElement | null> = this.start$.pipe(
     distinctUntilChanged(Ranges.equals),
     delay(0), // Allow resizing of cell before updating size of input
     tap((start) => {
@@ -138,6 +169,8 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     delay(0), // Make sure cell is rendered after having been scrolled to
     map((start) => this.getHTMLCellElement(start.x, start.y)),
     tap((cell) => {
+      // Not drawn: a virtual scroll renders only the rows near the viewport.
+      if (!cell) return;
       cell.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
       if (isHiddenBehindSticky(cell, this.viewport().elementRef.nativeElement, this.rowHeight()))
         scrollToElementManually(cell, this.viewport().elementRef.nativeElement, this.rowHeight());
@@ -164,10 +197,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     delay(0),
     map(([cell]) => {
       const cellRect = cell.getBoundingClientRect();
-      if (!cellRect) return cellRect;
       const tableCoords = this.viewport().elementRef.nativeElement.getBoundingClientRect();
-      cellRect.x += this.viewport().measureScrollOffset('left') - tableCoords?.x;
-      cellRect.y += this.viewport().measureScrollOffset('top') - tableCoords?.y;
+      cellRect.x += this.viewport().measureScrollOffset('left') - tableCoords.x;
+      cellRect.y += this.viewport().measureScrollOffset('top') - tableCoords.y;
       const style = window.getComputedStyle(cell);
       cellRect.width -=
         parseFloat(style.getPropertyValue('padding-left')) +
@@ -214,9 +246,6 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   }
 
   ngOnInit(): void {
-    safeInput(this, 'table');
-    safeInput(this, 'userSettings');
-
     //Initialize settings
     this.tableStore.settings({ settings: this.userSettings() });
 
@@ -267,7 +296,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
   mousemove($event: MouseEvent) {
     if (this.isDraggingMouse) {
       const stop = this.getCell($event);
-      if (this.previousStop?.x !== stop.x || this.previousStop?.y !== stop.y)
+      if (this.previousStop?.x !== stop.x || this.previousStop.y !== stop.y)
         this.tableStore.selectRange({ stop });
       this.previousStop = stop;
     }
@@ -297,7 +326,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.tableStore.deleteRow({ y });
   }
 
-  focusLastCell(_$event: any) {
+  focusLastCell(_$event: Event) {
     this.tableStore.focusLast();
   }
 
@@ -334,7 +363,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     $event.preventDefault();
     const pastedData = $event.clipboardData
       ?.getData('text')
-      ?.split('\n')
+      .split('\n')
       .map((row) => row.split('\t'));
     if (pastedData) this.tableStore.paste({ table: pastedData });
   }
@@ -345,10 +374,9 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
       .subscribe((range) => this.clipboard.copy(range.map((row) => row.join('\t')).join('\n')));
   }
 
-  getHTMLCellElement(x: number, y: number): HTMLTableCellElement {
-    return this.rootRef()?.nativeElement.querySelector(
-      `[x='${x}'][y='${y}']`
-    ) as HTMLTableCellElement;
+  /** The cell's element, or null when the virtual scroll has not drawn it. */
+  getHTMLCellElement(x: number, y: number): HTMLTableCellElement | null {
+    return this.rootRef().nativeElement.querySelector<HTMLTableCellElement>(`[x='${x}'][y='${y}']`);
   }
 
   getCell($event: MouseEvent): Coords {
@@ -383,7 +411,7 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     this.scrollOffset.set(this.viewport().getRenderedRange().start * this.rowHeight());
   }
 
-  trackByIndex: TrackByFunction<any> = <T>(index: number, _element: T) => {
+  trackByIndex: TrackByFunction<Cell[]> = (index: number) => {
     return index;
   };
 
@@ -394,11 +422,10 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
 
     const settings = await firstValueFrom(this.settings$);
 
-    const firstFile = $event.dataTransfer.items
-      ? Array.from($event.dataTransfer.items)
-          .filter((item) => item.kind === 'file') // If dropped items aren't files, reject them
-          .map((item) => item.getAsFile()!)?.[0]
-      : $event.dataTransfer.files?.[0];
+    // The first dropped item that is a file; anything else is ignored.
+    const firstFile = Array.from($event.dataTransfer.items)
+      .find((item) => item.kind === 'file')
+      ?.getAsFile();
 
     if (firstFile) this.importFile(firstFile, settings.dropReplace);
   }

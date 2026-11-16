@@ -1,0 +1,271 @@
+/**
+ * The citation endpoints (spec 014, research R1, a family): /citation/*,
+ * CitationController's -- a pathway's or a paper's citation, and its export
+ * as BibTeX, RIS or text, and the download page's citation -- with the
+ * helpers only they use. Moved unchanged from service.ts.
+ */
+import type { Endpoint, Request } from './endpoint.ts';
+import { inDepthId } from './objects.ts';
+import { read } from './graph.ts';
+import type { MappedRow } from './domain.ts';
+import { enhancedQuery, isA, mapResult } from './domain.ts';
+import { databaseVersion } from './release.ts';
+import {
+  citationOfEvent,
+  eventText,
+  formatEventCitation,
+  formatStaticCitation,
+  imageText,
+  staticCitationFrom,
+} from './citation.ts';
+import type { Citation } from './citation.ts';
+import { javaError, unexpectedFailure } from './answers.ts';
+import type { Failure } from './answers.ts';
+import type { PathwayCitation } from '../../projects/contract/citation.ts';
+import { hashSetOf, tomcatHeader } from './java-text.ts';
+import { URLSearchParams } from 'node:url';
+import { settings } from './settings.ts';
+import {
+  negotiate,
+  pathId,
+  queryValues,
+  rawSegment,
+  requiredString,
+  springBoolean,
+  stringContentType,
+} from './spring.ts';
+import { encodeText } from './body.ts';
+
+/**
+ * CitationController.getEventCitationObject: an event's citation from its
+ * enhanced object (graph-core's findEnhancedObjectById); undefined for an id
+ * that is no event. What goes into it is citationOfEvent's.
+ */
+async function eventCitationFor(raw: string) {
+  const id = inDepthId(raw);
+  if (!id) return undefined;
+  const [row] = await read<MappedRow>(
+    enhancedQuery({
+      idType: id.idType,
+      summarise: false,
+      includeDisease: true,
+      outgoingOnly: false,
+    }),
+    { id: id.id }
+  );
+  if (!row) return undefined;
+  const event = mapResult(row);
+  if (!isA(event.schemaClass, 'Event')) return undefined;
+  const release = String((await databaseVersion({ params: {}, query: {} })).body);
+  return citationOfEvent(event, raw, release, isA(event.schemaClass, 'Pathway'));
+}
+
+/**
+ * An event's citation, or Java's GlobalExceptionHandler 500 when Java's
+ * getEventCitationObject throws -- no release date, or a person with no
+ * initial.
+ */
+async function eventCitationOrFailure(request: Request, raw: string) {
+  try {
+    return { citation: await eventCitationFor(raw) };
+  } catch (failure) {
+    return { failure: citationFailure(request, failure) };
+  }
+}
+
+/** GlobalExceptionHandler's 500 for what citation.ts throws as Java does; anything else is ours. */
+function citationFailure(request: Request, caught: unknown) {
+  const failure = caught as Failure;
+  if (failure.unexpected) return unexpectedFailure(request);
+  if (failure.javaMessage)
+    return javaError(request, 500, 'INTERNAL_SERVER_ERROR', failure.javaMessage);
+  throw failure;
+}
+
+/**
+ * The two citations of /citation/pathway/{id} (the contract's PathwayCitation),
+ * in the order Java's HashMap writes them. Each order is a full literal of the
+ * contract's type, and the keys are its keys, so a field renamed there fails
+ * here too.
+ */
+export function pathwayCitations(citation: Citation, date: string): PathwayCitation {
+  const pathwayCitation = eventText(citation, date);
+  const imageCitation = imageText(citation, date);
+  // Only the order changes: hashSetOf gives back the keys it was given, in
+  // the order Java's HashMap holds them.
+  const keys: (keyof PathwayCitation)[] = ['pathwayCitation', 'imageCitation'];
+  const [first] = hashSetOf(keys).keys();
+  return first === 'imageCitation'
+    ? { imageCitation, pathwayCitation }
+    : { pathwayCitation, imageCitation };
+}
+
+/** CitationController.getStaticCitationObject: Europe PMC's record of a PubMed id, or undefined. */
+async function staticCitationFor(id: string) {
+  const query = new URLSearchParams();
+  query.set('query', `src:med ext_id:${id}`);
+  query.set('format', 'json');
+  query.set('resultType', 'core');
+  const base = settings.europePmcUrl();
+  // Java's try covers the request and every read of the answer, so anything
+  // Europe PMC sends that Java cannot read is "unable to fetch". Only a name
+  // we got wrong is a mistake of ours.
+  try {
+    const response = await fetch(`${base}?${query.toString()}`, {
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (response.status !== 200) {
+      await response.body?.cancel();
+      return undefined;
+    }
+    return staticCitationFrom(await response.json());
+  } catch (failure) {
+    if (failure instanceof ReferenceError) throw failure;
+    return undefined;
+  }
+}
+
+export const citationEndpoints: Endpoint[] = [
+  {
+    path: '/ContentService/citation/pathway/{id}',
+    // CitationController.pathwayCitation: the Pathway Browser's "cite this"
+    // -- the pathway's citation and its image's, as a HashMap writes them;
+    // {} for an id that is no event.
+    handler: async (request) => {
+      const raw = pathId(rawSegment(request, 4));
+      const date = queryValues(request, 'dateAccessed');
+      if (date.length === 0)
+        return javaError(request, 400, 'BAD_REQUEST', requiredString('dateAccessed'));
+      const { citation, failure } = await eventCitationOrFailure(request, raw);
+      if (failure) return failure;
+      return {
+        status: 200,
+        type: 'application/json',
+        body: citation ? pathwayCitations(citation, date.join(',')) : {},
+      };
+    },
+  },
+  {
+    path: '/ContentService/citation/static/{id}',
+    // CitationController.staticCitation: a paper's citation, by PubMed id,
+    // from Europe PMC; Java's 500 text when it cannot be had.
+    handler: async (request) => {
+      const citation = await staticCitationFor(pathId(rawSegment(request, 4)));
+      if (!citation)
+        return {
+          status: 500,
+          type: 'text/plain;charset=UTF-8',
+          body: 'Unable to fetch static citation',
+        };
+      let body;
+      try {
+        body = formatStaticCitation(citation, 'txt', null);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
+      return { status: 200, type: 'text/plain;charset=UTF-8', body };
+    },
+  },
+  {
+    path: '/ContentService/citation/export',
+    // CitationController.export: a citation to download as BibTeX, RIS or
+    // text, a pathway's or a paper's. Nothing to cite is an empty 200.
+    handler: async (request) => {
+      const flag = queryValues(request, 'isPathway');
+      if (flag.length === 0)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is not present"
+        );
+      const isPathway = springBoolean(flag);
+      if (isPathway.error !== undefined)
+        return javaError(request, 400, 'BAD_REQUEST', isPathway.error);
+      if (isPathway.value === undefined)
+        return javaError(
+          request,
+          400,
+          'BAD_REQUEST',
+          "Required request parameter 'isPathway' for method parameter type Boolean is present but converted to null"
+        );
+      const values: { id?: string; ext?: string; dateAccessed?: string } = {};
+      for (const name of ['id', 'ext', 'dateAccessed'] as const) {
+        const given = queryValues(request, name);
+        if (given.length === 0) return javaError(request, 400, 'BAD_REQUEST', requiredString(name));
+        values[name] = given.join(',');
+      }
+      let citation: Citation | undefined;
+      if (isPathway.value) {
+        // Set above, or the 400 was answered.
+        const found = await eventCitationOrFailure(request, values.id as string);
+        if (found.failure) return found.failure;
+        citation = found.citation;
+      } else citation = await staticCitationFor(values.id as string);
+      if (!citation) return { status: 200 };
+      const format = isPathway.value ? formatEventCitation : formatStaticCitation;
+      let body;
+      try {
+        // Set above, or the 400 was answered.
+        body = format(citation, values.ext as string, values.dateAccessed as string);
+      } catch (failure) {
+        return citationFailure(request, failure);
+      }
+      const [extension, type] =
+        values.ext === 'bib'
+          ? ['bib', 'application/x-bibtex']
+          : values.ext === 'ris'
+            ? ['ris', 'application/x-research-info-systems']
+            : ['txt', 'text/plain'];
+      return {
+        status: 200,
+        type: `${type};charset=UTF-8`,
+        headers: {
+          'Content-Disposition': tomcatHeader(
+            `attachment; filename="reactome_citation_${values.id}.${extension}"`
+          ),
+        },
+        body,
+      };
+    },
+  },
+  {
+    path: '/ContentService/citation/download',
+    // CitationController.downloadCitation: the citation the download page
+    // offers for its files, naming the release, as StringHttpMessageConverter
+    // writes it under the type negotiated from Accept -- in the charset that
+    // names, if any. Spring's 406 and 500s for an Accept it cannot use
+    // (negotiate, stringContentType); a database with no DBInfo is Java's
+    // NullPointerException.
+    handler: async (request) => {
+      const negotiated = negotiate(request.get?.('accept'), ['text', 'plain']);
+      if (negotiated.kind === 'not-acceptable')
+        return javaError(
+          request,
+          406,
+          'NOT_ACCEPTABLE',
+          'Could not find acceptable representation'
+        );
+      if (negotiated.kind === 'failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
+      const version = await databaseVersion({ params: {}, query: {} });
+      if (version.status !== 200) return unexpectedFailure(request);
+      if (negotiated.kind === 'write-failed')
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message);
+      const written = stringContentType(negotiated.media);
+      if ('failure' in written)
+        return javaError(request, 500, 'INTERNAL_SERVER_ERROR', written.failure);
+      const text = `"Name of file", Reactome, ${String(version.body)}, https://reactome.org/download-data/`;
+      const body = encodeText(text, written.charset);
+      // A charset the JVM only reads (ISO-2022-CN): Java's 500, with no message.
+      if (!body) return javaError(request, 500, 'INTERNAL_SERVER_ERROR', null);
+      // Bytes, so the type is sent as written; counted, so a HEAD says how many.
+      return {
+        status: 200,
+        type: written.type,
+        headers: { 'Content-Length': String(body.length) },
+        body,
+      };
+    },
+  },
+];

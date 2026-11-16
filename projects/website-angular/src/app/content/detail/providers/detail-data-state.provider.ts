@@ -5,7 +5,7 @@ import { SelectableObject } from '../../../../../../pathway-browser/src/app/serv
 import { DatabaseObject } from '../../../../../../pathway-browser/src/app/model/graph/database-object.model';
 import {
   JSOGDeserializer,
-  JSOGObject,
+  type JsogObject,
 } from '../../../../../../pathway-browser/src/app/utils/JSOGDeserializer';
 import { CONTENT_SERVICE } from '../../../../../../pathway-browser/src/environments/environment';
 import { HasDiagramService } from '../../../../../../pathway-browser/src/app/services/has-diagram.service';
@@ -42,7 +42,7 @@ export class DetailDataState implements Partial<DataStateService> {
     if (id === null) return of(undefined);
     const url = `${CONTENT_SERVICE}/data/query/enhanced/v2/${id}`;
     return this.http
-      .get<T>(url, {
+      .get<JsogObject<T>>(url, {
         params: {
           fetchIncomingRelationships: true,
           summariseReferenceEntity: true,
@@ -60,9 +60,8 @@ export class DetailDataState implements Partial<DataStateService> {
       );
   }
 
-  flattenReferences<T>(response: T): T {
-    const deserializer = new JSOGDeserializer();
-    return deserializer.deserialize<T>(response as JSOGObject);
+  flattenReferences<T>(response: JsogObject<T>): T {
+    return new JSOGDeserializer().deserialize(response);
   }
 }
 

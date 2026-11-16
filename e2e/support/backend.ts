@@ -48,12 +48,26 @@ import {
   expect,
   type APIRequestContext,
   type BrowserContext,
+  type Page,
+  type Request,
+  type Route,
   type TestInfo,
 } from '@playwright/test';
 import path from 'node:path';
-import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  unlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { createHash } from 'node:crypto';
 import { BACKEND, hasBody, isTruncated } from './har-entry.mjs';
+import { fullyStubbed, harKey, stubsFile } from './har-stubs.mjs';
+import { serveReleaseFiles } from './release-files';
+import { serveDescription } from './description';
+import { isRecord } from './json';
 
 const RECORD = process.env['E2E_RECORD'] === '1';
 
@@ -106,8 +120,11 @@ const ALLOWED = new Map<string, string>([
   ['fonts.googleapis.com', 'index.html asks for Material Icons, Material Symbols and Roboto'],
   ['fonts.gstatic.com', 'the font files those stylesheets point at'],
   ['cdn.jsdelivr.net', 'pdbe-molstar, loaded by src/index.html'],
-  ['download.reactome.org', "Reactome's own download host, linked from the download pages"],
-  ['www.ebi.ac.uk', 'Expression Atlas suggestions and the EBI pages the site links to'],
+  [
+    'download.reactome.org',
+    "Reactome's own download host: images and links. What a page reads from it is served from saved copies (release-files.ts)",
+  ],
+  ['www.ebi.ac.uk', 'ChEBI structures and the EBI pages the site links to'],
   ['alphafold.ebi.ac.uk', 'structure images on the entity pages'],
   ['rest.uniprot.org', 'protein records the detail pages resolve'],
   [
@@ -138,10 +155,9 @@ const BLOCKED = new Map<string, string>([
   ['www.googletagmanager.com', 'test runs must not appear in the public property'],
   ['www.google-analytics.com', 'test runs must not appear in the public property'],
   [
-    'js.hcaptcha.com',
-    'the widget is never solved by a test; loading it only tells hCaptcha we ran',
+    'challenges.cloudflare.com',
+    'Turnstile: tests stand in for the widget; loading it only tells Cloudflare we ran',
   ],
-  ['newassets.hcaptcha.com', 'assets for that widget'],
   ['www.youtube.com', 'see below: the player is a doorway to ten more hosts'],
   ['www.youtube-nocookie.com', 'the pathway browser tour video; the same player, privacy-enhanced'],
   ['static.hsappstatic.net', 'the HubSpot meetings widget, same reason'],
@@ -222,10 +238,9 @@ interface HarEntry {
 }
 
 /** `METHOD /path?query` -- deliberately without the origin. */
-function key(method: string, url: string): string {
-  const u = new URL(url);
-  return `${method.toUpperCase()} ${u.pathname}${u.search}`;
-}
+// One definition, shared with the stub stripping (har-stubs.mjs): the two must
+// key a request alike, or stripping silently stops matching.
+const key = harKey;
 
 /** Playwright writes large bodies beside the HAR and references them by name. */
 function bodyOf(entry: HarEntry, harDir: string): Buffer {
@@ -301,7 +316,7 @@ function fakeResponse(rec: ApiRecording) {
     headers: () => rec.headers,
     body: async () => buffer,
     text: async () => buffer.toString('utf8'),
-    json: async () => JSON.parse(buffer.toString('utf8')),
+    json: async (): Promise<unknown> => JSON.parse(buffer.toString('utf8')),
     dispose: async () => {},
   };
 }
@@ -378,6 +393,80 @@ function trackBackendRequests(context: BrowserContext) {
 }
 
 /**
+ * Notes the requests a test answers itself, so they can be left out of its
+ * recording (#404; see e2e/support/har-stubs.mjs).
+ *
+ * The test's `page.route` and `context.route` are wrapped so a `fulfill` is
+ * counted against its request. `unroute` is wrapped to match: a test removing
+ * the handler it passed must remove the wrapper that stands for it. Routes the
+ * fixture set up itself, before this, are not the test's and are not counted.
+ */
+function noteStubs(context: BrowserContext) {
+  const asked = new Map<string, number>();
+  const fulfilled = new Map<string, number>();
+  const bump = (counts: Map<string, number>, request: Request) => {
+    const key = harKey(request.method(), request.url());
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  };
+  context.on('request', (request) => {
+    if (/^https?:/.test(request.url())) bump(asked, request);
+  });
+
+  type Handler = (route: Route, request: Request) => unknown;
+  // A handler may be registered for several URLs; each has its own wrapper.
+  const wrappers = new WeakMap<Handler, Handler[]>();
+  const counting = (handler: Handler): Handler => {
+    const wrapper: Handler = (route, request) =>
+      handler(
+        new Proxy(route, {
+          get(target, property) {
+            if (property === 'fulfill') {
+              return (options: Parameters<Route['fulfill']>[0]) => {
+                bump(fulfilled, request);
+                return target.fulfill(options);
+              };
+            }
+            const value: unknown = Reflect.get(target, property);
+            return typeof value === 'function'
+              ? (value as (...args: unknown[]) => unknown).bind(target)
+              : value;
+          },
+        }),
+        request
+      );
+    wrappers.set(handler, [...(wrappers.get(handler) ?? []), wrapper]);
+    return wrapper;
+  };
+  const wrap = (target: Page | BrowserContext) => {
+    const route = target.route.bind(target) as (...args: unknown[]) => Promise<void>;
+    const unroute = target.unroute.bind(target) as (...args: unknown[]) => Promise<void>;
+    Object.assign(target, {
+      route: (url: unknown, handler: Handler, options?: unknown) =>
+        route(url, counting(handler), options),
+      // Playwright removes a route only when both URL and handler match, so
+      // trying each wrapper of the handler removes just the one for this URL.
+      unroute: async (url: unknown, handler?: Handler) => {
+        if (!handler) return unroute(url);
+        for (const wrapper of wrappers.get(handler) ?? [handler]) await unroute(url, wrapper);
+      },
+    });
+  };
+  wrap(context);
+  context.pages().forEach(wrap);
+  context.on('page', wrap);
+
+  return {
+    /** Writes the note beside the recording, or clears a stale one. */
+    write(har: string) {
+      const file = stubsFile(har);
+      const keys = fullyStubbed(asked, fulfilled);
+      if (keys.length) writeFileSync(file, JSON.stringify(keys));
+      else if (existsSync(file)) unlinkSync(file);
+    },
+  };
+}
+
+/**
  * Watches a test's pages for Angular errors, and fails the test on any once it
  * is done. Attached where the browser context is made, so only tests that use
  * a page pay for it -- an API-only test makes no context at all.
@@ -433,15 +522,21 @@ function watchAngularErrors(context: BrowserContext) {
  * (e2e/fixtures). Keyed by the path after `/GSAServer/0.1/`.
  */
 const GSA_READS: Record<string, unknown> = (() => {
-  const fixture = (name: string) =>
+  const fixture = (name: string): unknown =>
     JSON.parse(readFileSync(path.join(__dirname, '..', 'fixtures', name), 'utf8'));
-  const example = fixture('gsa-melanoma-example.json') as Record<string, { body: unknown }>;
+  const example = fixture('gsa-melanoma-example.json');
+  const bodyAt = (key: string): unknown => {
+    const read = isRecord(example) ? example[key] : undefined;
+    if (!isRecord(read) || !('body' in read))
+      throw new Error(`gsa-melanoma-example.json has no ${key} read`);
+    return read['body'];
+  };
   return {
     methods: fixture('gsa-methods.json'),
     ...Object.fromEntries(
       ['types', 'data/sources', 'data/examples', 'data/search/species'].map((key) => [
         key,
-        example[key].body,
+        bodyAt(key),
       ])
     ),
   };
@@ -481,16 +576,19 @@ export const test = base.extend({
   context: async ({ context, baseURL }, use, testInfo) => {
     const angular = watchAngularErrors(context);
     const gsa = await answerGsa(context);
+    const releaseFiles = await serveReleaseFiles(context);
     const har = path.join(testInfo.project.testDir, 'har', `${recordingName(testInfo)}.har`);
 
     if (RECORD) {
       await context.routeFromHAR(har, { url: BACKEND, update: true, notFound: 'fallback' });
       const settle = trackBackendRequests(context);
+      const stubs = noteStubs(context);
       // The wait below happens in this fixture's teardown, which counts against
       // the test's own time limit; give it room so a slow test does not time out
       // only when it is being recorded.
       // (A limit of 0 means none, and stays none.)
       if (testInfo.timeout) testInfo.setTimeout(testInfo.timeout + RECORDING_SETTLE_MS);
+      await serveDescription(context);
       await use(context);
       // The HAR is written when the context closes, and a response still
       // streaming then is recorded as a 200 with no body -- replayed, a
@@ -498,13 +596,22 @@ export const test = base.extend({
       // open until the test's backend requests have finished, up to a ceiling.
       // Recording only: a replay has nothing to wait for.
       await settle(RECORDING_SETTLE_MS);
+      stubs.write(har);
       await angular.check(testInfo);
       gsa.check(testInfo);
+      releaseFiles.check(testInfo);
       return;
     }
 
     const harDir = path.dirname(har);
     const entries = existsSync(har) ? load(har) : new Map<string, HarEntry>();
+    // Counted by entries, not by the file: a test recorded while it skipped
+    // leaves a HAR with nothing in it, which is no recording at all.
+    const own = entries.size > 0;
+    // The first backend request answered from the pool by a test that has no
+    // recording of its own (#321). Such a test runs entirely on other tests'
+    // recordings, so re-recording one of them silently changes it.
+    let borrowed: string | undefined;
 
     const ownOrigin = new URL(baseURL ?? 'http://localhost:4200').origin;
     // host -> the first URL that asked for it, so the message can show one.
@@ -556,6 +663,21 @@ export const test = base.extend({
       if (!undeclared.has(url.host)) undeclared.set(url.host, request.url());
     });
 
+    // Spec 011: with E2E_CACHE_AUDIT naming a file, each content API request
+    // the site makes is written there, to be classified afterwards
+    // (`node tools/content-node/classify.ts <file>`): one not in standard
+    // form is never kept at the edge, so the site would take the slow path
+    // without anyone seeing it. Recorded only: it fails nothing.
+    const audit = process.env['E2E_CACHE_AUDIT'];
+    if (audit)
+      context.on('request', (request) => {
+        if (!request.url().includes('/ContentService/')) return;
+        appendFileSync(
+          audit,
+          `${JSON.stringify({ test: testInfo.titlePath.join(' > '), method: request.method(), url: request.url() })}\n`
+        );
+      });
+
     await context.route(BACKEND, async (route) => {
       const method = route.request().method();
       const asked = key(method, route.request().url());
@@ -568,6 +690,7 @@ export const test = base.extend({
       // A miss on a write is an abort, and an abort is visible.
       const shareable = method === 'GET' || method === 'HEAD';
       const entry = entries.get(asked) ?? (shareable ? pool(harDir).get(asked) : undefined);
+      if (entry && !own) borrowed ??= asked;
       if (!entry) {
         // Aborted, never passed through. Falling back to the network would
         // quietly restore the thing this removes, and the first sign would be an
@@ -589,9 +712,30 @@ export const test = base.extend({
       });
     });
 
+    await serveDescription(context);
     await use(context);
     await angular.check(testInfo);
     gsa.check(testInfo);
+    releaseFiles.check(testInfo);
+
+    // Only when the test otherwise did what it expected, as the Angular check
+    // does: a test that failed or skipped has a better thing to report.
+    if (borrowed && testInfo.status === testInfo.expectedStatus) {
+      // -g is a regular expression, matched against the file, the describe
+      // path and the title together, so the titles are escaped: a `?` or `(` in
+      // one would break the command. The describe path with the title keeps it
+      // to this test rather than every test whose title contains this one's.
+      const pattern = testInfo.titlePath
+        .slice(1)
+        .join(' ')
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      throw new Error(
+        `This test has no recording of its own, and was answered from other tests'\n` +
+          `recordings (first: ${borrowed}). Re-recording one of those would change it\n` +
+          'without anyone touching it. Record it:\n\n' +
+          `  npm run e2e:record -- ${path.relative(process.cwd(), testInfo.file)} -g ${JSON.stringify(pattern)}`
+      );
+    }
 
     // Thrown from the fixture rather than inside the handler, because a route
     // handler cannot fail a test -- it can only abort a request, which surfaces
@@ -621,10 +765,19 @@ export const test = base.extend({
       'har',
       `${recordingName(testInfo)}.api.json`
     );
+    // Keyed again as `key` keys a request now: a file written before the
+    // query's parameters were put in order holds them as the request wrote them.
     const recorded: Record<string, ApiRecording> = RECORD
       ? {}
       : existsSync(sidecar)
-        ? (JSON.parse(readFileSync(sidecar, 'utf8')) as Record<string, ApiRecording>)
+        ? Object.fromEntries(
+            Object.entries(
+              JSON.parse(readFileSync(sidecar, 'utf8')) as Record<string, ApiRecording>
+            ).map(([asked, rec]) => {
+              const [method = '', where = ''] = asked.split(' ', 2);
+              return [key(method, `http://recorded${where}`), rec];
+            })
+          )
         : {};
 
     const absolute = (url: string) => new URL(url, baseURL ?? 'http://localhost:4200').toString();

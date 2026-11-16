@@ -1,0 +1,74 @@
+// Unscoped (the figure's nodes are inserted by hand): every selector starts
+// with the component's tag. Its outline and organs take the theme's colours
+// (FR-017), whatever colours the figure was drawn in.
+cr-expression-anatomogram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 240px;
+  color: var(--on-surface);
+  font: var(--mat-sys-body-small);
+
+  .figure-switch {
+    display: inline-flex;
+    border: 1px solid var(--outline-variant);
+    border-radius: 16px;
+    overflow: hidden;
+
+    button {
+      border: none;
+      background: none;
+      color: var(--on-surface);
+      font: var(--mat-sys-label-medium);
+      padding: 3px 10px;
+      cursor: pointer;
+      text-transform: capitalize;
+
+      &.on {
+        background: var(--primary-container);
+        color: var(--on-primary-container);
+      }
+    }
+  }
+
+  .figure {
+    width: 100%;
+    height: 420px;
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    // The body and every organ: the theme's neutral, drawn in outline.
+    svg path,
+    svg polygon,
+    svg ellipse,
+    svg circle,
+    svg rect {
+      fill: var(--surface-container-high, var(--surface-variant)) !important;
+      stroke: var(--outline-variant) !important;
+      stroke-width: 0.5 !important;
+    }
+
+    // The experiment's tissues, before any gene is pointed at.
+    svg .measured,
+    svg .measured * {
+      fill: var(--surface-variant) !important;
+      cursor: pointer;
+    }
+  }
+
+  // The figures' licence asks for attribution, given wherever one is drawn.
+  .licence {
+    font: var(--mat-sys-label-small);
+    color: var(--on-surface-variant);
+  }
+
+  .caption {
+    min-height: 1.4em;
+    color: var(--on-surface-variant);
+    text-align: center;
+  }
+}

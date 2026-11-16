@@ -2,7 +2,6 @@ import {
   AfterViewInit,
   Component,
   ElementRef,
-  HostListener,
   OnDestroy,
   signal,
   input,
@@ -12,6 +11,9 @@ import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-carousel',
+  host: {
+    '(window:resize)': 'onWindowResize()',
+  },
   imports: [MatIcon],
   templateUrl: './carousel.component.html',
   styleUrl: './carousel.component.scss',
@@ -32,7 +34,6 @@ export class CarouselComponent implements AfterViewInit, OnDestroy {
 
   private resizeObserver?: ResizeObserver;
 
-  @HostListener('window:resize')
   onWindowResize(): void {
     this.checkOverflow();
   }

@@ -86,12 +86,12 @@ async function compile(from: string, to: string): Promise<{ pages: number; asset
       const raw = await fs.readFile(src, 'utf8');
       const { frontmatter, body } = parseFrontmatter(raw);
       const slug = entry.name.replace(/\.mdx?$/, '');
-      const imageSizes = await sizesFor(body ?? '');
+      const imageSizes = await sizesFor(body);
       await fs.writeFile(
         path.join(to, `${slug}.json`),
         JSON.stringify({
           ...frontmatter,
-          body: body ?? '',
+          body,
           ...(Object.keys(imageSizes).length ? { imageSizes } : {}),
         })
       );

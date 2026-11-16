@@ -2,12 +2,14 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   input,
   model,
   signal,
   TrackByFunction,
   inject,
+  untracked,
   viewChild,
 } from '@angular/core';
 import {
@@ -19,7 +21,13 @@ import {
   isRefEntity,
   isReferenceSummary,
   isRLE,
+  type Classed,
+  fieldByName,
+  getProperty,
+  isEntry,
   isSelectableObject,
+  textField,
+  firstName,
 } from '../../../services/utils';
 import {
   MatNestedTreeNode,
@@ -28,25 +36,26 @@ import {
   MatTreeNodeDef,
   MatTreeNodeOutlet,
 } from '@angular/material/tree';
-import { rxResource } from '@angular/core/rxjs-interop';
-import { forkJoin, map, Observable, of } from 'rxjs';
+import { rxResource, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, forkJoin, map, Observable, of, switchMap, throwError } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { SelectableObject } from '../../../services/event.service';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
+import type { Participant, TreeMolecule } from '../../../model/participant.model';
+import type { PlainPathway } from '../../../model/graph/plain.model';
 import { SchemaClasses } from '../../../constants/constants';
 import { IconService } from '../../../services/icon.service';
 import { EntityService } from '../../../services/entity.service';
 import { DataStateService } from '../../../services/data-state.service';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
 import { cloneDeep, isArray } from 'lodash';
 import { UrlStateService } from '../../../services/url-state.service';
-import { NgClass } from '@angular/common';
 import { MatTooltip } from '@angular/material/tooltip';
 import { MatIcon } from '@angular/material/icon';
 import { ExtractCompartmentPipe } from '../../../pipes/extract-compartment.pipe';
 import { MatIconButton } from '@angular/material/button';
-import { Species } from '../../../model/graph/species.model';
 import { ObjectTreeDetailsComponent } from './object-details/object-tree-details.component';
-import { CONTENT_DETAIL } from '../../../../environments/environment';
+import { CONTENT_DETAIL, CONTENT_SERVICE } from '../../../../environments/environment';
 import { AnalysisService } from '../../../services/analysis.service';
 import { ExpressionTagComponent } from '../../tabs/result-tab/expression-tag/expression-tag.component';
 
@@ -59,7 +68,6 @@ type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
     ExpressionTagComponent,
     MatTree,
     MatNestedTreeNode,
-    NgClass,
     MatTooltip,
     MatIcon,
     MatTreeNodeOutlet,
@@ -70,10 +78,19 @@ type Connector = { type: string; shape: 'L' | 'I' | 'T' } | null;
   styleUrl: './object-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationship.Has<E>> {
+/**
+ * The tree's nodes are graph objects, or, in the molecules view, the
+ * participant service's molecules (Molecule), which stand for them.
+ */
+export class ObjectTreeComponent<
+  E extends DatabaseObject | TreeMolecule,
+  R extends Relationship.Has<E>,
+> {
   private iconService = inject(IconService);
   private entity = inject(EntityService);
   private dataStateService = inject(DataStateService);
+  private http = inject(HttpClient);
+  private readonly destroyRef = inject(DestroyRef);
   private state = inject(UrlStateService);
   private extractCompartmentPipe = inject(ExtractCompartmentPipe);
   private analysis = inject(AnalysisService);
@@ -100,13 +117,12 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
    * not what the tag is for.
    */
   expressionOf(element: E): number | undefined {
-    // Both reach the element through its index signature.
-    const reference = element['referenceEntity'] as
-      { identifier?: string; variantIdentifier?: string } | undefined;
+    // A molecule's own identifier, or its reference entity's (its isoform's too), as text.
+    const reference = fieldByName(element, 'referenceEntity');
     const exp = this.analysis.expressionFor([
-      element['identifier'] as string | undefined,
-      reference?.identifier,
-      reference?.variantIdentifier,
+      textField(element, 'identifier'),
+      textField(reference, 'identifier'),
+      textField(reference, 'variantIdentifier'),
     ]);
     return exp?.[this.analysis.sampleIndex()];
   }
@@ -135,14 +151,17 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const moleculeStoichiometry = this.stoichiometry();
     const moleculeView = this.moleculeView();
     const highlight = this.highlight();
-    if (!data || (isArray(data) && data.length === 0)) return [];
+    if (isArray(data) && data.length === 0) return [];
     if (!isArray(data)) data = [data];
-    if (data[0].stoichiometry)
-      return data.map((r, index) => ({
-        ...r,
-        element: { ...r.element, composedOf: r.element.composedOf || [] },
-        index: index,
-      })) as R[];
+    const [first] = data;
+    if (first && isEntry<E, R>(first) && first.stoichiometry)
+      return data
+        .filter((r) => isEntry<E, R>(r))
+        .map((r, index) => ({
+          ...r,
+          element: { ...r.element, composedOf: r.element.composedOf || [] },
+          index: index,
+        })) as R[];
     return (data as E[]).map(
       (e) =>
         ({
@@ -160,6 +179,14 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   dataSource = new MatTreeNestedDataSource<R>();
 
   constructor() {
+    // Another pathway opened: a molecule's diagrams were the last one's.
+    effect(() => {
+      const pathwayId = this.state.pathwayId() ?? null;
+      untracked(() => {
+        const choices = this.diagramChoices();
+        if (choices && choices.pathwayId !== pathwayId) this.diagramChoices.set(undefined);
+      });
+    });
     // Initial tree data
     effect(() => {
       if (this.treeData().length > 0) {
@@ -182,7 +209,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const source = this.depthChangeSource();
 
       const tree = this.tree();
-      if (index === 1 && tree) {
+      if (index === 1) {
         tree.collapseAll();
         return;
       }
@@ -211,7 +238,9 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
       const depthInQuery = depth - 1; // Ignore the default depth 1
       const results = [...this.treeData()].map((node) =>
         this.fetchTreeAtDepth(node, depthInQuery).pipe(
-          map((result) => this.updateTree(this.dataSource.data, result.element)!)
+          // The node fetched is one of the tree's own, so it is found; were it
+          // not, it is kept as fetched rather than left out as undefined.
+          map((result) => this.updateTree(this.dataSource.data, result.element) ?? result)
         )
       );
 
@@ -219,15 +248,18 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     },
   });
 
-  inDepth(id: string | number, depth: number): Observable<E> {
+  inDepth(id: string | number, depth: number): Observable<E | null> {
     return this.scope() === 'entity'
-      ? this.entity.getEntityInDepth(id, depth)
-      : this.entity.getEventInDepth(id, depth);
+      ? this.entity.getEntityInDepth<E>(id, depth)
+      : this.entity.getEventInDepth<E>(id, depth);
   }
 
   // TODO only query for the required data, no need to know where the molecule is acting in this view
   _selectedTreeNodeData = rxResource({
-    params: () => this.selectedTreeNode()?.stId || this.selectedTreeNode()?.dbId,
+    params: () => {
+      const node = this.selectedTreeNode();
+      return node ? node.stId || node.dbId : undefined;
+    },
     stream: (param) => {
       const selectedNode = this.selectedTreeNode();
       // Check the condition to determine which method to call
@@ -244,8 +276,10 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
         // PE -> Complex and Set
         return this.inDepth(param.params, 1) // This is from user interaction on the tree itself, so the depth is always 1
           .pipe(
-            map((entityResult) => {
-              if (entityResult && entityResult.composedOf) {
+            map((entityResult): E | null => {
+              // An entity the service no longer knows: nothing to add.
+              if (!entityResult) return null;
+              if (entityResult.composedOf) {
                 entityResult.composedOf = entityResult.composedOf.map((composed, index) => ({
                   ...composed,
                   element: {
@@ -255,18 +289,18 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
                   index: index,
                 }));
               }
-              return {
-                ...entityResult,
-                isLoaded: true,
-              };
+              return { ...entityResult, isLoaded: true };
             })
           );
       }
     },
   });
 
-  childrenAccessor = (node: R): R[] => {
-    if (!node || !node.element.composedOf) {
+  childrenAccessor = (node: R | undefined): R[] => {
+    // The details' wrapper is a mat-nested-tree-node with no data (it is there
+    // for Firefox's layout, see the template), and the tree asks it for its
+    // children all the same: it has none.
+    if (!node?.element.composedOf) {
       return []; // Return an empty array when composedOf is undefined
     }
     return node.element.composedOf as R[];
@@ -316,7 +350,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
     return this.inDepth(id, depth).pipe(
       map((entityResult) => {
-        const composedOf = entityResult.composedOf || [];
+        const composedOf = entityResult?.composedOf || [];
         const nestedElement = {
           ...element,
           ...entityResult,
@@ -333,13 +367,13 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
   // Recursively tracks the deepest level of the tree
   getTreeDepth(nodes: R[], level = 1, respectExpansion = false): number {
-    if (!nodes || nodes.length === 0) return level;
+    if (nodes.length === 0) return level;
 
     return Math.max(
       ...nodes.map((node) => {
-        const children = node.element?.composedOf || [];
+        const children = node.element.composedOf || [];
 
-        const isExpanded = this.tree()?.isExpanded(node);
+        const isExpanded = this.tree().isExpanded(node);
         const isNested = this.isNestedView(node.element);
 
         // Stop if not expanded or not nested
@@ -368,7 +402,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     if (!Array.isArray(composedArray)) return [];
 
     return composedArray.map((composed, index) => {
-      const element = composed?.element ?? [];
+      const element = composed.element;
       const nestedComposedOf = Array.isArray(element.composedOf)
         ? this.getComposedOfRecursively(element.composedOf)
         : [];
@@ -407,7 +441,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   isEllipsisActive(e: HTMLElement): boolean {
-    return e ? e.offsetWidth < e.scrollWidth : false;
+    return e.offsetWidth < e.scrollWidth;
   }
 
   // Important to use the updateCounter to trigger the update on the parent node when the child node is updated
@@ -423,8 +457,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   //TODO because of MatNestedTree, we are only able to update a leaf node by updating as well its parent, all the way till the root. To optimise more, we need to use a MatFlatTree which would allow us to really just update the targeted node
 
   updateTree(existingTreeData: R[], result: E): R | void {
-    for (let i = 0; i < existingTreeData.length; i++) {
-      const node = existingTreeData[i];
+    for (const node of existingTreeData) {
       if (node.element.dbId === result.dbId) {
         Object.assign(node.element, result); // MUTATES ORIGINAL ELEMENT
         node.element._updateCounter = (node.element._updateCounter || 0) + 1;
@@ -447,7 +480,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     ]);
   }
 
-  getSymbol(obj: DatabaseObject | string) {
+  getSymbol(obj: Classed | string) {
     return this.iconService.getIconDetails(obj);
   }
 
@@ -461,7 +494,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getCurrentNodeConnector(size: number, node: R): Connector {
-    if (!size || !node) return null;
+    if (!size) return null;
     const index = node.index;
 
     return {
@@ -527,16 +560,17 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     // Start from index 1 to exclude the root
     for (let i = 1; i < parents.length; i++) {
       const parent = parents[i];
-      const grandParent = i > 0 ? parents[i - 1] : null;
+      const grandParent = parents[i - 1];
+      if (!parent || !grandParent) continue;
 
-      const grandParentChildCount = grandParent?.element.composedOf?.length
+      const grandParentChildCount = grandParent.element.composedOf?.length
         ? grandParent.element.composedOf.length
         : null;
       // Compare the order of current parent with the size of previous parent composedOf to determine if the parent is the last kid, adding empty string as connector
       if (grandParentChildCount && parent.index === grandParentChildCount - 1) {
         connectorClasses.push(null);
       } else {
-        connectorClasses.push(this.getParentConnector(grandParent!, node));
+        connectorClasses.push(this.getParentConnector(grandParent, node));
       }
     }
 
@@ -544,14 +578,15 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
   }
 
   getParentConnector(parentNode: R, node: R): Connector {
-    if (!parentNode.element.composedOf || parentNode.element.composedOf.length === 0) return null;
+    const [firstChild] = parentNode.element.composedOf ?? [];
+    if (!firstChild) return null;
 
     // Find a child with the same type as the clicked node
-    const matchedChild = parentNode.element.composedOf.find((child) => child.type === node.type);
+    const matchedChild = parentNode.element.composedOf?.find((child) => child.type === node.type);
     // Fallback to the first child if no match is found and use the first child to know the connector type, because the parent could be input or output type
     // Cannot use the composedOf[0] directly is because the elements in composedOf could have different types, for instance, member and candidate, composedOf[0] will always
     // return member type not candidate
-    const typeReference = matchedChild || parentNode.element.composedOf[0];
+    const typeReference = matchedChild || firstChild;
 
     return { shape: 'I', type: typeReference.type };
   }
@@ -589,34 +624,195 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     return arr.reduce((a, b) => (a.length <= b.length ? a : b));
   }
 
+  /**
+   * Whether the open pathway is drawn as an illustration (or not drawn at all,
+   * the overview): it has no shape for a molecule to select, so selecting one
+   * there changed the address and nothing on screen.
+   */
+  private readonly noMoleculeShapes = computed(() => {
+    // While the pathway loads (or fails to), it is not taken for an
+    // illustration: the button selects, as it always did, rather than claim a
+    // diagram pathway draws the molecule nowhere.
+    const pathway = this.dataStateService.currentPathway();
+    if (!this.state.pathwayId()) return true;
+    return pathway?.hasEHLD === true;
+  });
+
   onSelectClick(event: MouseEvent, node: E) {
     event.stopPropagation();
-    if (!node.stId) return;
+    const stId = node.stId;
+    if (!stId) return;
+    // In the molecule tab the button shows the molecule above. A diagram selects
+    // its every shape (and the complexes holding it) and zooms to them. An
+    // illustration has none -- selecting there changed the address and nothing
+    // on screen -- so the button finds the diagrams inside the open pathway
+    // that draw the molecule: one opens, several are offered by name.
+    if (this.moleculeView() && !this.requireNavigate(node) && this.noMoleculeShapes()) {
+      this.findDiagrams(node, stId);
+      return;
+    }
     if (this.requireNavigate(node)) {
-      this.state.pathwayId.set(node.stId);
+      this.state.pathwayId.set(stId);
       this.state.select.set(null);
     } else {
-      this.state.select.set(node.stId);
+      this.state.select.set(stId);
     }
   }
 
+  /**
+   * The name a molecule's row shows (the molecule tab's formattedName), not its
+   * display name, which carries its database and identifier as well.
+   */
+  private shownName(node: E): string {
+    const shown =
+      'formattedName' in node && typeof node.formattedName === 'string' ? node.formattedName : '';
+    return shown || node.displayName;
+  }
+
+  /** The diagrams offered under a molecule's row, while it has several. */
+  readonly diagramChoices = signal<DiagramChoices | undefined>(undefined);
+
+  /**
+   * The diagrams inside the open pathway that draw a molecule. One free form
+   * of it is taken from the pathway's participants (which go all the way
+   * down, so a molecule drawn only bound still has one), and the diagrams
+   * drawing any of its variants are asked for, then kept to those inside the
+   * open pathway. A complex is asked about only when there is no free form:
+   * its answer is every diagram drawing any of its parts (449 for one holding
+   * cortisol, and for a cortisol receptor complex one that draws its other
+   * ligand only), and every free form answers the same (measured, release 98).
+   * Asking by identifier answers in one request but took 16 s for every
+   * molecule measured; this takes about 1 s. Only a 404 means "none": any
+   * other failure says so, rather than "not drawn" or an unfiltered list.
+   */
+  private findDiagrams(node: E, stId: string) {
+    if (this.diagramChoices()?.dbId === node.dbId) {
+      this.diagramChoices.set(undefined);
+      return;
+    }
+    const name = this.shownName(node);
+    const pathwayId = this.state.pathwayId();
+    const species = this.dataStateService.currentPathway()?.speciesName ?? 'Homo sapiens';
+    const asked = (diagrams: DiagramChoices['diagrams']): DiagramChoices => ({
+      dbId: node.dbId,
+      name,
+      diagrams,
+      pathwayId: pathwayId ?? null,
+    });
+    this.diagramChoices.set(asked('loading'));
+    forkJoin({
+      diagrams: this.http
+        .get<Participant[]>(`${CONTENT_SERVICE}/data/participants/${pathwayId ?? stId}`)
+        .pipe(
+          map((participants) =>
+            participants.filter((participant) =>
+              participant.refEntities.some((reference) => reference.dbId === node.dbId)
+            )
+          ),
+          map((forms) => {
+            const free = forms.filter((form) => !isAssembly(form.schemaClass ?? ''));
+            return free.length ? free.slice(0, 1) : forms.slice(0, FORMS_ASKED);
+          }),
+          switchMap((forms) =>
+            forms.length
+              ? forkJoin(
+                  forms.map((form) =>
+                    this.http
+                      .get<PlainPathway[]>(
+                        `${CONTENT_SERVICE}/data/pathways/low/diagram/entity/${form.peDbId}/allForms`,
+                        { params: { species } }
+                      )
+                      // A 404 is "drawn in no diagram"; anything else is a failure.
+                      .pipe(
+                        catchError((error: unknown) =>
+                          error instanceof HttpErrorResponse && error.status === 404
+                            ? of([])
+                            : throwError(() => error)
+                        )
+                      )
+                  )
+                ).pipe(
+                  map((answers) => [...new Map(answers.flat().map((d) => [d.stId, d])).values()])
+                )
+              : of([])
+          ),
+          catchError(() => of('error' as const))
+        ),
+      inside: pathwayId
+        ? this.http
+            .get(`${CONTENT_SERVICE}/data/pathway/${pathwayId}/containedEvents/stId`, {
+              responseType: 'text',
+            })
+            .pipe(
+              map((text) => new Set(text.match(/R-[A-Z]{3}-\d+/g) ?? [])),
+              // Unknown, the diagrams cannot be kept to the open pathway: a
+              // list of every diagram in Reactome would read as this one's.
+              catchError(() => of('error' as const))
+            )
+        : of(undefined),
+    })
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ diagrams, inside }) => {
+        // Another row was asked since, or another pathway opened: an answer for
+        // the one left must not take the reader back to it.
+        if (this.diagramChoices()?.dbId !== node.dbId) return;
+        if ((this.state.pathwayId() ?? null) !== (pathwayId ?? null)) return;
+        if (diagrams === 'error' || inside === 'error') {
+          this.diagramChoices.set(asked('error'));
+          return;
+        }
+        const here = (
+          inside ? diagrams.filter((diagram) => inside.has(diagram.stId)) : diagrams
+        ).sort((a, b) => a.displayName.localeCompare(b.displayName));
+        const [only] = here;
+        if (here.length === 1 && only) this.openDiagram(only.stId, stId);
+        else this.diagramChoices.set(asked(here.length ? here : 'none'));
+      });
+  }
+
+  /** Opens a diagram with the molecule selected: its every shape highlighted. */
+  openDiagram(diagram: string, molecule: string) {
+    this.diagramChoices.set(undefined);
+    this.state.pathwayId.set(diagram);
+    this.state.select.set(molecule);
+  }
+
+  readonly openPathwayName = computed(
+    () => this.dataStateService.currentPathway()?.displayName ?? 'this pathway'
+  );
+
   selectTooltip(node: E) {
+    if (this.moleculeView() && !this.requireNavigate(node)) {
+      const name = this.shownName(node);
+      return this.noMoleculeShapes() ? `Find ${name} in a diagram` : `Show ${name} in the diagram`;
+    }
     const id = node.stId || node.dbId;
     const action = this.requireNavigate(node) ? 'Navigate to' : 'Select ';
     return `${action} ${id}`;
   }
 
+  /**
+   * Whether the open pathway's id carries this species abbreviation. With none
+   * this is false, as `includes(undefined)` was: it looks for "undefined".
+   */
+  private inOpenPathwaySpecies(abbreviation: string | undefined): boolean {
+    return abbreviation !== undefined && !!this.state.pathwayId()?.includes(abbreviation);
+  }
+
   private requireNavigate(node: E) {
     return (
       isPathway(node) &&
-      (node.hasDiagram || !this.state.pathwayId()?.includes(node.species?.[0]?.abbreviation))
+      (node.hasDiagram || !this.inOpenPathwaySpecies(node.species?.[0]?.abbreviation))
     );
   }
 
   getUrl(element: E): string {
     if (isReferenceSummary(element)) return element.url;
-    if ((isEWAS(element) || isChemical(element)) && element.referenceEntity?.url) {
-      return element.referenceEntity.url;
+    // The tree's elements come from the in-depth projection, which leaves an
+    // entity's reference out, though the full entity types always carry one.
+    const reference = (element as { referenceEntity?: { url?: string } }).referenceEntity;
+    if ((isEWAS(element) || isChemical(element)) && reference?.url) {
+      return reference.url;
     }
     if (this.moleculeView() && isMolecule(element)) {
       return element.url;
@@ -633,7 +829,7 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
 
     if (isSelectableObject(element)) {
       const displayName = this.extractCompartmentPipe.transform(element.displayName, true);
-      return element.name?.[0] || displayName || element.displayName;
+      return firstName(element) || displayName || element.displayName;
     }
     return element.displayName;
   }
@@ -665,17 +861,38 @@ export class ObjectTreeComponent<E extends DatabaseObject, R extends Relationshi
     const speciesName: string | null | undefined = isSelectableObject(element)
       ? element.speciesName
       : null;
-    const species: Species = isSelectableObject(element) ? element.species : null;
+    // An event's species are a list; the reader declared one Species and read
+    // either through `any`. Read as the object has it, and taken as a list below.
+    const holder: SelectableObject | null = isSelectableObject(element) ? element : null;
+    const species = holder ? getProperty(holder, 'species') : null;
 
     if (!speciesName) return null;
 
     const maxStringLength = 30; // Use Molluscum contagiosum virus's length
     const speciesArr = Array.isArray(species) ? species : [species];
-    const firstSpeciesName = speciesArr?.[0]?.name;
-    const shouldShorten = speciesName.length >= maxStringLength && firstSpeciesName.length > 1;
-
-    return shouldShorten ? this.getShortest(firstSpeciesName) : speciesName;
+    const firstSpeciesName = speciesArr[0]?.name;
+    // A species without names (never one recorded) keeps the name as it is.
+    return speciesName.length >= maxStringLength && firstSpeciesName && firstSpeciesName.length > 1
+      ? this.getShortest(firstSpeciesName)
+      : speciesName;
   }
 
   protected readonly isRefEntity = isRefEntity;
+}
+
+/** The diagrams a molecule's row offers: still being found, none, or a list. */
+interface DiagramChoices {
+  dbId: number;
+  name: string;
+  diagrams: 'loading' | 'none' | 'error' | { stId: string; displayName: string }[];
+  /** The pathway open when the diagrams were asked for: an answer for another is dropped. */
+  pathwayId: string | null;
+}
+
+/** How many of a molecule's forms are asked about at once. */
+const FORMS_ASKED = 6;
+
+/** A complex, set or polymer: a form holding the molecule, not the molecule alone. */
+function isAssembly(schemaClass: string): boolean {
+  return /Complex|Set|Polymer/.test(schemaClass);
 }

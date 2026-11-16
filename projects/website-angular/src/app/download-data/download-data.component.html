@@ -79,7 +79,12 @@
           <div class="subsection">
             <h3 class="subsection-title">
               Reactome Knowledge Graph (Neo4j)
-              <button class="info-btn" (click)="toggleInfo('graphDb')" [attr.aria-expanded]="isInfoExpanded('graphDb')">
+              <button
+                type="button"
+                class="info-btn"
+                (click)="toggleInfo('graphDb')"
+                [attr.aria-expanded]="isInfoExpanded('graphDb')"
+              >
                 <span class="material-symbols-rounded">{{ isInfoExpanded('graphDb') ? 'expand_less' : 'info' }}</span>
               </button>
             </h3>
@@ -128,6 +133,7 @@
             Mapping of external database identifiers to Reactome pathways and reactions at various hierarchy levels.
           </p>
           <button
+            type="button"
             class="info-btn inline"
             (click)="toggleInfo('identifierMapping')"
             [attr.aria-expanded]="isInfoExpanded('identifierMapping')"
@@ -185,6 +191,7 @@
             Mapping files using Physical Entity stable IDs for more granular molecular-level references.
           </p>
           <button
+            type="button"
             class="info-btn inline"
             (click)="toggleInfo('peMapping')"
             [attr.aria-expanded]="isInfoExpanded('peMapping')"
@@ -249,6 +256,7 @@
                 </a>
                 @if (item.infoKey && infoPanels[item.infoKey]) {
                   <button
+                    type="button"
                     class="info-btn small"
                     (click)="toggleInfo(item.infoKey!)"
                     [attr.aria-expanded]="isInfoExpanded(item.infoKey!)"

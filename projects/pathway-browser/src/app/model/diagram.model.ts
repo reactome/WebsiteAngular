@@ -12,36 +12,48 @@ export type Rectangle = { left: number; right: number; top: number; bottom: numb
 
 export type Segment = { from: Position; to: Position };
 
+/**
+ * A diagram's layout .json, typed as the files are written: a field the
+ * exporter has nothing for is left out. Measured over 42 diagrams of release
+ * 97 and 75 of the exporter's reaction layouts, which use the same types but
+ * write some shapes differently (#344).
+ */
 export interface Diagram {
   displayName: string;
   edges: Edge[];
   nodes: Node[];
-  compartments: Compartment[];
+  compartments: DiagramCompartment[];
   links: Link[];
   /**
    * The list of contained shadows(subpathways)
    */
   shadows: SubPathway[];
-  forNormalDraw: boolean;
+  /** Only on a disease diagram (16 of 42): false, drawn over its normal one. */
+  forNormalDraw?: boolean;
   dbId: number;
   stableId: string;
 }
 
+/**
+ * Box shapes give a and b, circles c and r; a diagram file adds a centre, the
+ * exporter's reaction layouts do not.
+ */
 export interface ReactionShape {
-  a: Position;
-  b: Position;
-  centre: Position;
+  a?: Position;
+  b?: Position;
+  c?: Position;
+  r?: number;
+  centre?: Position;
   type: string;
 }
 
 export interface ConnectorHolder {
-  [k: string]: EdgeConnector[];
-
-  catalysts: EdgeConnector[];
-  inputs: EdgeConnector[];
-  outputs: EdgeConnector[];
-  inhibitors: EdgeConnector[];
-  activators: EdgeConnector[];
+  /** Left out by the exporter for a black box event without inputs. */
+  inputs?: EdgeConnector[];
+  outputs?: EdgeConnector[];
+  catalysts?: EdgeConnector[];
+  inhibitors?: EdgeConnector[];
+  activators?: EdgeConnector[];
 }
 
 export type Entity = {
@@ -51,7 +63,7 @@ export type Entity = {
   position: Position;
   renderableClass: string;
   schemaClass: string;
-  isDisease: boolean;
+  isDisease?: boolean;
   isFadeOut?: boolean;
   isCrossed?: boolean;
   // Added by service
@@ -62,7 +74,7 @@ export type Entity = {
 // reactions
 export type Edge = {
   reactionShape: ReactionShape;
-  reactionType: string;
+  reactionType?: string;
   segments: Segment[];
 } & ConnectorHolder &
   Entity;
@@ -79,7 +91,8 @@ export interface NodeConnector {
   type: 'INPUT' | 'OUTPUT' | 'CATALYST' | 'ACTIVATOR' | 'INHIBITOR';
   segments: Segment[];
   stoichiometry: { value: number };
-  endShape: { centre: Position; c?: Position };
+  /** `centre` in a diagram file, `c` in the exporter's reaction layouts. */
+  endShape?: { centre?: Position; c?: Position };
   isFadeOut?: boolean;
 }
 
@@ -87,16 +100,24 @@ export interface NodeConnector {
 export interface Node extends Entity {
   prop: Prop;
   connectors: NodeConnector[];
-  interactorsSummary: InteractorsSummary;
+  interactorsSummary?: InteractorsSummary;
   nodeAttachments?: Attachment[];
   needDashedBorder?: boolean;
   trivial?: boolean;
 }
 
-export interface Compartment extends Entity {
+/**
+ * A compartment as the diagram draws it: a shape of the layout, not the graph's
+ * Compartment. One an exporter's reaction layout adds from the GO tree, to hold
+ * others, has no object in the graph, so no reactomeId or schemaClass.
+ */
+export interface DiagramCompartment
+  extends
+    Omit<Entity, 'reactomeId' | 'schemaClass'>,
+    Partial<Pick<Entity, 'reactomeId' | 'schemaClass'>> {
   componentIds: number[];
   prop: Prop;
-  insets: Prop;
+  insets?: Prop;
   textPosition: Position;
 }
 
@@ -129,14 +150,18 @@ interface Shape {
   type: string;
   a: Position;
   b: Position;
-  centre: Position;
+  /** Not in the exporter's reaction layouts, which give only a and b. */
+  centre?: Position;
   empty: boolean;
-  s: string;
+  /** A box's text: left out by the exporter's reaction layouts where it has none. */
+  s?: string;
 }
 
 interface Attachment {
-  description: string;
-  label: string;
+  /** Not in the exporter's reaction layouts. */
+  description?: string;
+  /** Left out by the exporter's reaction layouts where the modification has none. */
+  label?: string;
   reactomeId: number;
   shape: Shape;
 }

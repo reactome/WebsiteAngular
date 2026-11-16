@@ -58,7 +58,7 @@ test.describe('Homepage', () => {
     expect(box).not.toBeNull();
     // Full width at this viewport is ~1368 (1400 less page padding); the
     // regression capped it at 1040.
-    expect(box!.width).toBeGreaterThan(1200);
+    expect(box?.width).toBeGreaterThan(1200);
   });
 
   test('every shortcut card points at its real route', async ({ page }) => {

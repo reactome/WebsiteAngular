@@ -27,6 +27,19 @@ for (const [root, service] of [
   });
 }
 
+test('the Content Service page reads the description generated from the contract', async ({
+  page,
+}) => {
+  const asked = page.waitForRequest(/\/ContentService\/openapi\.json$/);
+  await page.goto('/ContentService');
+  await asked;
+  // Its title, not Java's ("Content Service"), and an answer's schema by name.
+  await expect(page.locator('.swagger-ui .info .title')).toContainText('Reactome Content Service', {
+    timeout: BOOT,
+  });
+  await expect(page.locator('.swagger-ui .models')).toContainText('SearchEntry');
+});
+
 test('the Tools page opens the API pages here, not in a new tab', async ({ page }) => {
   await page.goto('/tools');
   for (const [name, root] of [

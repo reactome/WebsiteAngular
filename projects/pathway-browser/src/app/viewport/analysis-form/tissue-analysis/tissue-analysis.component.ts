@@ -14,7 +14,7 @@ import { MatFormField, MatLabel, MatOption, MatSelect } from '@angular/material/
 import { TissueExperimentService } from './tissue-experiment/tissue-experiment.service';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { MatTooltip } from '@angular/material/tooltip';
-import type { TissueExperiment } from './tissue-experiment/tissue-experiment.model';
+import type * as TissueExperiment from './tissue-experiment/tissue-experiment.model';
 import { AnalysisService } from '../../../services/analysis.service';
 import type { DotLottie } from '@lottiefiles/dotlottie-web';
 import { LottieService } from '../../../services/lottie.service';
@@ -29,9 +29,10 @@ import { MatButton, MatIconButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 type Summary = TissueExperiment.Summary;
 import { MatStep, MatStepper, MatStepperNext, MatStepperPrevious } from '@angular/material/stepper';
-import { FormBuilder, FormControl } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl } from '@angular/forms';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DarkService } from '../../../services/dark.service';
+import { describeAnalysisFailure } from '../analysis-failure';
 
 @Component({
   selector: 'cr-tissue-analysis',
@@ -57,13 +58,13 @@ import { DarkService } from '../../../services/dark.service';
 })
 export class TissueAnalysisComponent {
   tissue = inject(TissueExperimentService);
-  private analysis = inject(AnalysisService);
+  protected readonly analysis = inject(AnalysisService);
   private state = inject(UrlStateService);
   private lottieService = inject(LottieService);
   private fb = inject(FormBuilder);
   private darkService = inject(DarkService);
 
-  close = output<{ status: 'finished' | 'premature' }>();
+  readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
   readonly summaries = computed(() => this.tissue.summaries.value()?.summaries || []);
@@ -71,16 +72,22 @@ export class TissueAnalysisComponent {
 
   readonly tissuesMap = computed(() => this.experiment()?.tissuesMap || {});
   readonly availableTissues = linkedSignal(() => Object.keys(this.tissuesMap()).sort());
-  readonly selectedTissues = linkedSignal<string[]>(() => this.tissuesMap() && []);
+  // Emptied whenever the experiment's tissues change.
+  readonly selectedTissues = linkedSignal<Record<string, unknown>, string[]>({
+    source: this.tissuesMap,
+    computation: () => [],
+  });
 
   readonly lottieCanvas = viewChild<ElementRef<HTMLCanvasElement>>('lottie');
   readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
-  selectTissuesControl: FormControl;
+  selectTissuesControl: FormControl<string[]>;
 
   constructor() {
-    this.selectTissuesControl = this.fb.nonNullable.control([] as string[], (selected) =>
-      selected.getRawValue().length === 0 ? { invalid: true } : null
+    this.selectTissuesControl = this.fb.nonNullable.control<string[]>(
+      [],
+      (selected: AbstractControl<string[]>) =>
+        selected.value.length === 0 ? { invalid: true } : null
     );
     effect(() => this.selectTissuesControl.setValue(this.selectedTissues()));
 
@@ -104,7 +111,8 @@ export class TissueAnalysisComponent {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (!this.lottieCanvas()) return;
+        const canvas = this.lottieCanvas();
+        if (!canvas) return;
         this.lottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
@@ -112,14 +120,15 @@ export class TissueAnalysisComponent {
           },
           autoplay: true,
           loop: true,
-          canvas: this.lottieCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: `assets/animations/${this.theme()}/loader-animation.json`,
         });
       })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {
-      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie!.play(), 800);
+      // Read when it fires, as before: once set it is never unset.
+      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie?.play(), 800);
     });
   }
 
@@ -148,7 +157,7 @@ export class TissueAnalysisComponent {
       this.settle(shift);
       this.availableTissues.set([...availableTissues]);
       this.selectedTissues.set([...this.selectedTissues(), shift]);
-    } else if (this.interval) {
+    } else if (this.interval()) {
       clearInterval(this.interval());
       this.interval.set(undefined);
     }
@@ -161,7 +170,7 @@ export class TissueAnalysisComponent {
       this.settle(shift);
       this.selectedTissues.set([...selectedTissues]);
       this.availableTissues.set([...this.availableTissues(), shift]);
-    } else if (this.interval) {
+    } else if (this.interval()) {
       clearInterval(this.interval());
       this.interval.set(undefined);
     }
@@ -225,7 +234,7 @@ export class TissueAnalysisComponent {
       (fromAvailable ? this.availableTissues : this.selectedTissues).set(from);
       (toAvailable ? this.availableTissues : this.selectedTissues).set(to);
     }
-    this.dropped.set(new Set(this.dropped()).add(tissue));
+    if (tissue !== undefined) this.dropped.set(new Set(this.dropped()).add(tissue));
   }
 
   lottie?: DotLottie;
@@ -233,27 +242,40 @@ export class TissueAnalysisComponent {
 
   readonly analysisLaunched = signal(false);
   readonly analysisAvailable = signal(false);
+  readonly analysisError = signal<string | null>(null);
 
   analyse() {
+    // The button is disabled until tissues are chosen, and they are chosen
+    // from an experiment's: there is one.
+    const experiment = this.experiment();
+    if (!experiment) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
+    this.analysisError.set(null);
     this.analysis
       .analyseFromUrl(
-        this.tissue.getSampleURL(this.experiment()!.id, {
+        this.tissue.getSampleURL(experiment.id, {
           omitNulls: true,
-          columns: this.selectedTissues().map((tissue) => this.tissuesMap()[tissue]),
+          columns: this.selectedTissues().flatMap((tissue) => this.tissuesMap()[tissue] ?? []),
         })
       )
-      .subscribe((result) => {
-        this.analysisAvailable.set(true);
-        this.token = result.summary.token;
-        this.close.emit({ status: 'finished' });
+      .subscribe({
+        next: (result) => {
+          this.analysisAvailable.set(true);
+          this.token = result.summary.token;
+          this.closed.emit({ status: 'finished' });
+        },
+        // Without this the loader spins forever and the reader is never told.
+        error: (error: unknown) => {
+          this.analysisLaunched.set(false);
+          this.analysisError.set(describeAnalysisFailure(error));
+        },
       });
   }
 
   loadAnalysis() {
     this.state.analysis.set(this.token);
-    this.close.emit({ status: 'finished' });
+    this.closed.emit({ status: 'finished' });
   }
 
   protected readonly Math = Math;

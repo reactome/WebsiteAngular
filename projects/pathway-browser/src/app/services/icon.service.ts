@@ -1,12 +1,20 @@
+import type * as Search from '../model/search.model';
 import { computed, Injectable, signal, inject } from '@angular/core';
 import { map, Observable, of, switchMap } from 'rxjs';
 import { CONTENT_SERVICE, ICON_BASE, environment } from '../../environments/environment';
 import { GeneralService } from './general.service';
 import { HttpClient } from '@angular/common/http';
-import { isExactlyCellLineagePath, isRLE } from './utils';
-import { DatabaseObject } from '../model/graph/database-object.model';
+import { type Classed, isExactlyCellLineagePath, isRLE, textField } from './utils';
 import { SchemaClasses } from '../constants/constants';
-import { Search } from '../viewport/search/search.component';
+
+/**
+ * An icon, of the entries a search answers: its type says so. The indexer
+ * never deletes an icon, but a deleted entry keeps the type it had, so the
+ * mark is checked too: only then is the entry the contract's icon kind.
+ */
+function isIcon(entry: Search.Entry): entry is Search.Entry & Search.IconEntry {
+  return entry.type === 'Icon' && !entry.deleted;
+}
 
 /**
  * Where an icon's artwork comes from, given the release the site is serving.
@@ -34,14 +42,14 @@ export class IconService {
   private http = inject(HttpClient);
   private general = inject(GeneralService);
 
-  private readonly iconBase = computed(() => iconArtworkBase(this.general.version.value()));
+  private readonly iconBase = computed(() => iconArtworkBase(this.general.current()));
 
   /** The URL of an icon's SVG, wherever icons are being served from. */
   iconUrl(stId: string) {
     return `${this.iconBase()}/${stId}.svg`;
   }
 
-  readonly currentIcon = signal<Search.Icon.Entry | undefined>(undefined);
+  readonly currentIcon = signal<Search.IconEntry | undefined>(undefined);
 
   protein = { name: 'protein', tooltip: 'Protein', route: 'protein' };
   negativeRegulation = {
@@ -108,6 +116,8 @@ export class IconService {
       route: 'genome-encoded-entity',
     },
     ProteinDrug: { name: 'protein-drug', tooltip: 'Protein Drug', route: 'protein-drug' },
+    // No artwork of its own yet: the generic drug's, as reference therapeutics use.
+    RNADrug: { name: 'rna-drug', tooltip: 'RNA Drug', route: 'chemical-drug' },
     ChemicalDrug: {
       name: 'chemical-drug',
       tooltip: 'A therapeutic agent that is a chemically synthesized substance',
@@ -182,7 +192,7 @@ export class IconService {
     { name: 'format-quote', route: 'format-quote' },
 
     { name: 'details-tab', tooltip: 'Details Tab', route: 'details-tab' },
-    { name: 'molecule-tab', tooltip: 'Molecule Tab', route: 'molecule-tab' },
+    { name: 'molecule-tab', tooltip: 'Molecules Tab', route: 'molecule-tab' },
     { name: 'results-tab', tooltip: 'Results Tab', route: 'results-tab' },
     { name: 'expression-tab', tooltip: 'Expression Tab', route: 'expression-tab' },
     { name: 'info-tab', tooltip: 'Info Tab', route: 'info-tab' },
@@ -252,15 +262,18 @@ export class IconService {
 
   fetchIcon(identifier: string): Observable<string | null> {
     return this.http
-      .get<Search.Icon.Result>(`${CONTENT_SERVICE}/search/query?query=${identifier}&types=Icon`)
+      .get<Search.IconResult>(`${CONTENT_SERVICE}/search/query?query=${identifier}&types=Icon`)
       .pipe(
-        map((response) =>
-          response.results[0].typeName === 'Icon' ? response.results[0].entries[0] : null
-        ),
+        // No result group at all is no icon, not an error.
+        map((response) => {
+          const [group] = response.results;
+          const [entry] = group?.typeName === 'Icon' ? (group.entries ?? []) : [];
+          return entry && isIcon(entry) ? entry : null;
+        }),
         switchMap((entry) => {
           if (entry) {
             this.currentIcon.set(entry);
-            return this.loadIcon(entry.stId);
+            return this.loadIcon(entry.id);
           } else {
             this.currentIcon.set(undefined);
             return of(null);
@@ -269,7 +282,7 @@ export class IconService {
       );
   }
 
-  getIconDetails(obj: DatabaseObject | string): { name: string; tooltip?: string; route?: string } {
+  getIconDetails(obj: Classed | string): { name: string; tooltip?: string; route?: string } {
     const defaultIcon = { name: '?', tooltip: '' + obj };
 
     let key: string | undefined;
@@ -277,8 +290,10 @@ export class IconService {
     if (typeof obj === 'string') {
       key = obj;
     } else {
-      if (obj['referenceType'] !== undefined) {
-        key = obj['referenceType'] as string;
+      // A reference entity's, or a summary's; read as text from anything else.
+      const referenceType = textField(obj, 'referenceType');
+      if (referenceType !== undefined) {
+        key = referenceType;
       } else if (isRLE(obj) && obj.category) {
         key = obj.category;
       } else if (isExactlyCellLineagePath(obj)) {

@@ -27,10 +27,17 @@ updates:
           - 'prettier'
           - 'typescript*'
           - 'vitest'
-          - '@playwright/*'
           - 'knip'
           - 'husky'
           - 'lint-staged'
+      # A group of its own because a Playwright update cannot pass alone: the
+      # e2e jobs run in Playwright's image, whose tag names the version (in
+      # tests.yml and release-verification.yml), and tools/workflows.spec.ts
+      # fails until both tags are moved to match. Dependabot does not move them,
+      # so edit the two tags on its branch; held apart, the edit blocks only this.
+      playwright:
+        patterns:
+          - '@playwright/*'
     ignore:
       # Majors change behaviour and want a person driving them, as the Angular
       # upgrade showed.

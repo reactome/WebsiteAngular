@@ -3,14 +3,22 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { NgTemplateOutlet, TitleCasePipe } from '@angular/common';
 import { DatabaseObject } from '../../../model/graph/database-object.model';
 
-export type OntologyTerm = DatabaseObject & {
+/**
+ * A GO term or a term of an external ontology, as this link shows it. A term
+ * of a class never recorded (an anatomy term, a cell type) may lack its link
+ * and its database, as the contract says.
+ */
+/** What the link reads of a term, each field optional as each kind of term has some. */
+interface OntologyFields {
   name?: string[] | string;
-  url: string;
-  databaseName: string;
+  url?: string;
+  databaseName?: string;
   definition?: string;
   identifier?: string;
   accession?: string;
-};
+}
+
+export type OntologyTerm = DatabaseObject & OntologyFields;
 
 /** Classes whose terms always come from the Gene Ontology. */
 const GO_CLASSES = new Set([
@@ -31,12 +39,11 @@ export class OntologyTermComponent {
   readonly titleCase = input<boolean>(false);
   readonly displayId = input<boolean>(true);
 
-  readonly name = computed(
-    () =>
-      (this.term().name instanceof Array ? this.term().name![0] : (this.term().name as string)) ||
-      this.term().displayName
-  );
-  readonly id = computed(() => this.term().identifier! || this.term().accession!);
+  readonly name = computed(() => {
+    const name = this.term().name;
+    return (Array.isArray(name) ? name[0] : name) || this.term().displayName;
+  });
+  readonly id = computed(() => this.term().identifier || this.term().accession);
 
   // The release pipeline fills in databaseName and url, so the curation graph
   // can send a GO term with only its identifier. A GO term's database and link

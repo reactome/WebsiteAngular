@@ -1,0 +1,81 @@
+// @vitest-environment node
+//
+// Every recorded content API answer against the type the site reads it as
+// (spec 012, User Story 1). Until a route's type is fixed, its problems are a
+// count in known-problems.json that may only go down: a change that makes any
+// route's answers fit its type worse fails here.
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { describe, expect, it } from 'vitest';
+import { CALLS, where, type Call } from './calls.ts';
+import { describe as line, type Problem } from './compile.ts';
+import { checkAnswers, groupOf, matchAnswers, ratchet } from './content.ts';
+
+const KNOWN = JSON.parse(
+  readFileSync(path.join(import.meta.dirname, 'known-problems.json'), 'utf8')
+) as Record<string, number>;
+
+/**
+ * Paths the recordings hold answers for that no call of the site reads. Java's
+ * /v3/api-docs was one, read by the API page's Swagger UI; the page reads the
+ * description generated from the contract now, served in the suite from the
+ * committed file (T028).
+ */
+const NOT_READ: string[] = [];
+
+describe('recorded content API answers', () => {
+  const matched = matchAnswers();
+  const groups = [...new Set(matched.checks.map((c) => groupOf(c.route.split(' ')[1])))].sort();
+  const problems: Problem[] = [];
+
+  it('reads every recorded answer, apart from the routes listed as not read', () => {
+    expect([...matched.notRead.keys()].sort()).toEqual(NOT_READ);
+  });
+
+  it('has answers for every call except those the table names as gaps, and none for those', () => {
+    const covered = (c: Call) => (matched.coverage.get(c) ?? 0) > 0;
+    const json = CALLS.filter((c) => !c.indirect && !['text', 'blob'].includes(c.type));
+    expect(json.filter((c) => !c.gap && !covered(c)).map(where)).toEqual([]);
+    expect(json.filter((c) => c.gap && covered(c)).map(where)).toEqual([]);
+  });
+
+  for (const group of groups)
+    it(`compiles the ${group} answers as their types`, () => {
+      const members = matched.checks.filter((c) => groupOf(c.route.split(' ')[1]) === group);
+      const found = checkAnswers(members);
+      problems.push(...found);
+      // A route not in known-problems.json is held to none: say what is wrong.
+      const strict = found.filter((p) => !(p.route in KNOWN)).map(line);
+      expect(strict.slice(0, 40)).toEqual([]);
+    }, 180_000);
+
+  it('finds exactly the problems known-problems.json allows, route by route', () => {
+    expect(ratchet(problems, KNOWN)).toEqual([]);
+  });
+});
+
+describe('the ratchet', () => {
+  const found = (route: string, n: number) => Array.from({ length: n }, () => ({ route }));
+
+  it('fails when a route has more problems than before', () => {
+    expect(ratchet(found('GET /a', 3), { 'GET /a': 2 })).toEqual([
+      'GET /a: 3 problems, known-problems.json allows 2 (more than before)',
+    ]);
+  });
+
+  it('fails when a route has fewer, until the file is lowered', () => {
+    expect(ratchet(found('GET /a', 1), { 'GET /a': 2 })).toEqual([
+      'GET /a: 1 problems, known-problems.json still allows 2 (lower it)',
+    ]);
+    expect(ratchet([], { 'GET /a': 2 })).toEqual([
+      'GET /a: 0 problems, known-problems.json still allows 2 (lower it)',
+    ]);
+  });
+
+  it('holds a route it does not name to none', () => {
+    expect(ratchet(found('GET /b', 1), {})).toEqual([
+      'GET /b: 1 problems, known-problems.json allows 0 (more than before)',
+    ]);
+    expect(ratchet(found('GET /a', 2), { 'GET /a': 2 })).toEqual([]);
+  });
+});

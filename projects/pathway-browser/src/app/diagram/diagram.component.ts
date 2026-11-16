@@ -12,11 +12,11 @@ import {
   signal,
   viewChild,
   inject,
-  HostListener,
   untracked,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DiagramService } from '../services/diagram.service';
+import { canvasBlob } from './canvas-blob';
 import {
   extract,
   interactivityOf,
@@ -38,6 +38,7 @@ import {
   of,
   share,
   Subject,
+  Subscription,
   switchMap,
   take,
   tap,
@@ -46,19 +47,21 @@ import { UrlStateService } from '../services/url-state.service';
 import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
-import { Graph } from '../model/graph.model';
 import { average, isDefined, isPathwayWithDiagram, isReferenceEntityStId } from '../services/utils';
-import type { Analysis } from '../model/analysis.model';
-import { Router } from '@angular/router';
+import type * as Analysis from '../model/analysis.model';
 import { InteractorsComponent } from '../interactors/interactors.component';
 import { EventService } from '../services/event.service';
 import { Event as EventModel } from '../model/graph/event/event.model';
 
 import { DarkService } from '../services/dark.service';
-import { DownloadFormat, DownloadService, includeSubpathways } from '../services/download.service';
+import {
+  DownloadFormat,
+  DownloadService,
+  DownloadTarget,
+  includeSubpathways,
+} from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
-import { Interactor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -68,12 +71,28 @@ import { EntityPopupComponent } from './entity-popup/entity-popup.component';
 import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-popup.component';
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
+import { nodeExpression } from './node-expression';
+import {
+  graphLeaves,
+  interactorAccessions,
+  isGraphNode,
+  numberData,
+  selectedStId,
+  shadowEdges,
+  styleOf,
+  textData,
+} from './element-data';
 import { DeltaSignalService } from '../deltasignal/deltasignal.service';
 import { HierarchyHoverService } from '../services/hierarchy-hover.service';
 import {
   DiagramSearchComponent,
   DiagramSearchTarget,
 } from './diagram-search/diagram-search.component';
+
+/** An event on one element: what the graph's `add` and `remove` carry. */
+type ElementEvent = Omit<cytoscape.EventObject, 'target'> & {
+  target: cytoscape.SingularElementArgument;
+};
 
 const INIT_RX = 2;
 
@@ -84,6 +103,11 @@ const FIT_PADDING = 100;
 @UntilDestroy({ checkProperties: true })
 @Component({
   selector: 'cr-diagram',
+  host: {
+    '(window:pointermove)': 'onWindowPointerMove($event)',
+    '(window:pointerup)': 'endThumbnailDrag()',
+    '(window:pointercancel)': 'endThumbnailDrag()',
+  },
   templateUrl: './diagram.component.html',
   styleUrls: ['./diagram.component.scss'],
   standalone: true,
@@ -113,31 +137,33 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   protected state = inject(UrlStateService);
   analysis = inject(AnalysisService);
   private event = inject(EventService);
-  // Optional: the embeddable diagram (projects/reactome-diagram-element) has no
-  // router -- it must never read or write its host page's address.
-  private router = inject(Router, { optional: true });
   private download = inject(DownloadService);
   private data = inject(DataStateService);
   private deltaSignal = inject(DeltaSignalService);
 
   title = 'pathway-browser';
-  readonly cytoscapeContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscape');
+  readonly cytoscapeContainer = viewChild.required<ElementRef<HTMLDivElement>>('cytoscape');
   // The compare diagram's own canvas: cytoscape's container, which the layer
   // below holds.
-  readonly compareContainer = viewChild<ElementRef<HTMLDivElement>>('cytoscapeCompare');
+  readonly compareContainer = viewChild.required<ElementRef<HTMLDivElement>>('cytoscapeCompare');
   /** The disease layer: slides to set where the normal pathway ends. */
   readonly compareLayer = viewChild<ElementRef<HTMLDivElement>>('compareLayer');
-  readonly legendContainer = viewChild<ElementRef<HTMLDivElement>>('legend');
+  readonly legendContainer = viewChild.required<ElementRef<HTMLDivElement>>('legend');
   readonly thumbnailRef = viewChild<ElementRef<HTMLImageElement>>('thumbnail');
 
-  readonly interactorsComponent = input<InteractorsComponent>(undefined, {
-    alias: 'interactor',
-  });
+  readonly interactor = input<InteractorsComponent>();
   readonly pathwayId = model.required<string>();
   /** A diagram has been drawn, with the stable id of the pathway it shows. */
   readonly diagramLoaded = output<string>();
   /** The pathway's diagram could not be loaded. */
   readonly diagramFailed = output<string>();
+  /**
+   * Whether the diagram says so itself when it could not be loaded. A host
+   * with its own message for that, like the embeddable diagram, turns it off.
+   */
+  readonly reportFailure = input(true);
+  /** The last diagram asked for could not be loaded or drawn. */
+  readonly loadFailed = signal(false);
 
   /** The entity a right-click landed on, or null when no popup is open. */
   readonly popupTarget = signal<EntityPopupTarget | null>(null);
@@ -179,7 +205,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private readonly hierarchyHover = inject(HierarchyHoverService);
 
   constructor() {
-    this.isInitialLoad = Boolean(!this.router?.currentNavigation()?.previousNavigation);
+    this.isInitialLoad = this.state.isFirstNavigation();
     effect(() => this.pathwayId() && this.loadDiagram());
     // A reaction or sub-pathway pointed at in the hierarchy stands out here,
     // as the old browser drew it in yellow; nothing reached the diagram before.
@@ -198,7 +224,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (lit.empty()) return [];
           // The reader's own selection and flags stay: sweeping down the tree
           // must not hide them. The hovered sub-pathway's name stays too.
-          const litPathways = new Set(lit.edges().map((edge) => edge.data('pathway')));
+          const litPathways = new Set(lit.edges().map((edge): unknown => edge.data('pathway')));
           const dimmed = cy
             .elements()
             .not(lit)
@@ -256,28 +282,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     );
     effect(
       () => {
-        if (this.state.select() && !this.selecting)
-          this.avoidSideEffect(() =>
-            this.cys.forEach((cy) => this.select(this.state.select()!, cy))
-          );
+        const selected = this.state.select();
+        if (selected && !this.selecting)
+          this.avoidSideEffect(() => this.cys.forEach((cy) => this.select(selected, cy)));
         this.selecting = false;
       },
       { debugName: 'diagram selecting' }
     );
     effect(() => {
-      const result = this.state.analysis(); // Not in one line to make sure to trigger the update
+      // Both read here, not left to whatever loadAnalysis happens to read: a new
+      // token or a new resource each reload the colouring.
+      const result = this.state.analysis();
+      this.state.resourceFilter();
       this.avoidSideEffect(() => this.loadAnalysis(result));
     });
-    effect(
-      () =>
-        this.analysis.palette() &&
-        this.reactomeStyle?.loadAnalysis(this.cy, this.analysis.palette().scale)
-    );
-    effect(
-      () =>
-        this.analysis.sampleIndex() !== undefined &&
-        this._loadAnalysisFn?.(this.analysis.sampleIndex())
-    );
+    effect(() => {
+      const scale = this.analysis.palette().scale;
+      if (this.cy) this.reactomeStyle?.loadAnalysis(this.cy, scale);
+    });
+    effect(() => {
+      const index = this.analysis.sampleIndex();
+      this._loadAnalysisFn?.(index);
+    });
     effect(() => {
       // Update style upon dark change
       this.dark.isDark();
@@ -289,13 +315,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       this.avoidSideEffect(() => this.applyDeltaSignalOverlay(overlay, palette));
     });
 
+    this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading');
     effect(() => {
       const request = this.download.downloadRequest();
-      if (request) {
+      // Only a request made while this diagram was the one on screen.
+      if (request?.owner === this) {
         // Nothing here awaits, so the effect never needed to be async. The
         // export runs on its own and reports its own failure.
-        void this.export(request.format).catch((error) =>
-          this.download.failed(error, `Diagram ${request.format} export failed`)
+        void this.export(request.format).then(
+          () => this.download.finished(request.id),
+          (error: unknown) =>
+            this.download.failed(error, `Diagram ${request.format} export failed`, request.id)
         );
         this.download.resetDownload();
       }
@@ -345,23 +375,26 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (blobs.length > 1) {
       const images = await Promise.all(blobs.map((blob) => blob.then(createImageBitmap)));
       const bbs = this.cys.map((cy) => cy.elements().boundingBox({ includeLabels: false }));
-      const bgColors = this.cys.map((cy) => getComputedStyle(cy.container()!).backgroundColor);
+      // Each layer is drawn in a container; without one, as mergeImages fills a missing colour.
+      const bgColors = this.cys.map((cy) => {
+        const container = cy.container();
+        return container ? getComputedStyle(container).backgroundColor : 'transparent';
+      });
       blob = await this.mergeImages(
         images,
         bbs,
         bgColors,
         format === DownloadFormat.JPEG ? 'image/jpeg' : 'image/png',
-        options?.quality
+        options.quality
       );
     } else {
-      blob = await blobs[0];
+      // The diagram itself is always the first layer.
+      const [only] = blobs;
+      if (only === undefined) throw new Error('There is no diagram on screen to export');
+      blob = await only;
     }
 
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.pathwayId()}.${format}`;
-    a.click();
-    a.remove();
+    this.download.export(blob, format as DownloadFormat, this.pathwayId());
   }
 
   /**
@@ -435,17 +468,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    */
   private exportSvg() {
     const svgs = this.cys.map((cy) => cy.svg({ full: true }));
-    if (!svgs.length) return;
+    if (!svgs.length) throw new Error('There is no diagram on screen to export');
 
     const blob = new Blob([this.withDiagramFont(this.composeSvgs(svgs))], {
       type: 'image/svg+xml;charset=utf-8',
     });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `${this.pathwayId()}.svg`;
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
+    // Saved as every figure is: revoking the link straight after the click, as
+    // this used to, can cancel the download before the browser has read it.
+    this.download.export(blob, DownloadFormat.SVG, this.pathwayId());
   }
 
   /**
@@ -479,7 +509,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * bitmaps to do the same thing.
    */
   private composeSvgs(svgs: string[]): string {
-    if (svgs.length === 1) return svgs[0];
+    const [first = ''] = svgs;
+    if (svgs.length === 1) return first;
 
     const sized = svgs.map((svg) => ({
       svg,
@@ -489,7 +520,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const width = sized.reduce((total, s) => total + s.width, 0);
     const height = Math.max(...sized.map((s) => s.height));
-    if (!width || !height) return svgs[0];
+    if (!width || !height) return first;
 
     let x = 0;
     const children = sized
@@ -521,8 +552,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     // Calculate scale ratio between pixel space (image) and model space (bounding box)
     // Assume all images have the same scale - use the first one
-    const bbWidth = bbs[0].x2 - bbs[0].x1;
-    const scale = images[0].width / bbWidth;
+    const [firstBb] = bbs;
+    const [firstImage] = images;
+    if (!firstBb || !firstImage) throw new Error('There are no layers to merge.');
+    const bbWidth = firstBb.x2 - firstBb.x1;
+    const scale = firstImage.width / bbWidth;
 
     const mergedWidth = (xMax - xMin) * scale;
     const mergedHeight = (yMax - yMin) * scale;
@@ -530,18 +564,22 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     const canvas = document.createElement('canvas');
     canvas.width = mergedWidth;
     canvas.height = mergedHeight;
-    const ctx = canvas.getContext('2d')!;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('The browser gave no canvas to merge the layers on.');
     if (format === 'image/jpeg') {
       ctx.fillStyle = this.dark.isDark() ? '#000' : '#fff';
       ctx.fillRect(0, 0, mergedWidth, mergedHeight);
     }
 
     images.forEach((image, i) => {
-      const offsetX = (bbs[i].x1 - xMin) * scale; // shift relative to merged bbox, scaled to pixel space
-      const offsetY = (bbs[i].y1 - yMin) * scale;
+      // One box and one colour per layer, as images has.
+      const bb = bbs[i];
+      if (!bb) return;
+      const offsetX = (bb.x1 - xMin) * scale; // shift relative to merged bbox, scaled to pixel space
+      const offsetY = (bb.y1 - yMin) * scale;
 
       // Fill background color for this layer
-      ctx.fillStyle = bgColors[i];
+      ctx.fillStyle = bgColors[i] ?? 'transparent';
       ctx.fillRect(0, 0, mergedWidth, mergedHeight);
 
       // Draw image on top
@@ -549,7 +587,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       image.close();
     });
 
-    return new Promise((resolve) => canvas.toBlob((blob) => resolve(blob!), format, quality));
+    return canvasBlob(canvas, format, quality);
   }
 
   zoomToCytoscapeTransform = (x: number) =>
@@ -627,11 +665,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     };
   });
 
-  cy!: cytoscape.Core;
-  reactomeStyle!: Style;
-  cyCompare!: cytoscape.Core;
-  reactomeStyleCompare!: Style;
-  legend!: cytoscape.Core;
+  cy?: cytoscape.Core;
+  reactomeStyle?: Style;
+  cyCompare?: cytoscape.Core;
+  reactomeStyleCompare?: Style;
+  legend?: cytoscape.Core;
   cys: cytoscape.Core[] = [];
   reactomeStyles: Style[] = [];
 
@@ -642,9 +680,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   flagging = false; // Avoid flagging in diagram when flagging came from in diagram
 
   ngAfterViewInit(): void {
-    const container = this.cytoscapeContainer()!.nativeElement;
-    const compareContainer = this.compareContainer()!.nativeElement;
-    const legendContainer = this.legendContainer()!.nativeElement;
+    const container = this.cytoscapeContainer().nativeElement;
+    const compareContainer = this.compareContainer().nativeElement;
+    const legendContainer = this.legendContainer().nativeElement;
 
     Object.values(ReactomeEventTypes).forEach((type) => {
       container.addEventListener(type, (e) => this._reactomeEvents$.next(e as ReactomeEvent));
@@ -668,7 +706,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         this.legend = cytoscape({
           container: legendContainer,
           elements: legend,
-          style: this.reactomeStyle?.getStyleSheet(),
+          ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
           layout: { name: 'preset' },
           boxSelectionEnabled: false,
         });
@@ -736,13 +774,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.panFromThumbnail(event);
   }
 
-  @HostListener('window:pointermove', ['$event'])
   onWindowPointerMove(event: PointerEvent) {
     if (this.thumbnailDragging) this.panFromThumbnail(event);
   }
 
-  @HostListener('window:pointerup')
-  @HostListener('window:pointercancel')
   endThumbnailDrag() {
     this.thumbnailDragging = false;
   }
@@ -799,6 +834,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
+    this.download.figureGone(this);
     // Cytoscape binds resize, scroll and pointer listeners on window, and only
     // destroy() removes them. A new instance in the same container destroys the
     // old one itself, so this is only for the last: without it, every diagram
@@ -808,36 +844,45 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     for (const cy of instances) cy?.destroy();
   }
 
+  // The controls below are on screen while the diagram loads, when there is no
+  // graph yet to move: until then they do nothing.
+
   // Needs Input event binding to react to mouse drag instead of mouse drop on slider
   zoom(inputEvent: Event) {
-    this.cy.zoom({
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
       level: this.zoomToCytoscapeTransform((inputEvent.target as HTMLInputElement).valueAsNumber),
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   zoomIn() {
-    this.cy.zoom({
-      level: this.cy.zoom() * 1.2,
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
+      level: cy.zoom() * 1.2,
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   zoomOut() {
-    this.cy.zoom({
-      level: this.cy.zoom() / 1.2,
-      renderedPosition: { x: this.cy.width() / 2, y: this.cy.height() / 2 },
+    const cy = this.cy;
+    if (!cy) return;
+    cy.zoom({
+      level: cy.zoom() / 1.2,
+      renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
     });
   }
 
   move(direction: 'up' | 'right' | 'down' | 'left', distance = 50) {
     const x = direction === 'right' ? -distance : direction === 'left' ? distance : 0;
     const y = direction === 'up' ? distance : direction === 'down' ? -distance : 0;
-    this.cy.panBy({ x, y });
+    this.cy?.panBy({ x, y });
   }
 
   fitScreen() {
-    this.cy.animate({
+    this.cy?.animate({
       fit: {
         eles: '*',
         padding: FIT_PADDING,
@@ -871,6 +916,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       )
       .subscribe((drawn) => {
         this.isInitialLoad = false;
+        this.loadFailed.set(!drawn);
+        this.download.figureState(this, DownloadTarget.DIAGRAM, drawn ? 'ready' : 'failed');
         if (drawn) this.diagramLoaded.emit(this.pathwayId());
         else this.diagramFailed.emit(this.pathwayId());
       });
@@ -888,14 +935,18 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private drawing?: string;
 
   loadElvDiagram(): Observable<ElementsDefinition> {
-    const cytoscapeContainer = this.cytoscapeContainer();
-    if (!cytoscapeContainer) return EMPTY; // Prevent execution if the container is not present
+    // Prevent execution until the view is ready: the style ngAfterViewInit
+    // makes for the container, which then loads the diagram itself.
+    const style = this.reactomeStyle;
+    if (!style) return EMPTY;
     const pathwayId = this.pathwayId();
     if (this.drawing === pathwayId) return EMPTY;
     this.drawing = pathwayId;
+    this.loadFailed.set(false);
+    this.download.figureState(this, DownloadTarget.DIAGRAM, 'loading');
 
-    const container = cytoscapeContainer.nativeElement;
-    return this.diagram.getDiagram(this.pathwayId()!).pipe(
+    const container = this.cytoscapeContainer().nativeElement;
+    return this.diagram.getDiagram(pathwayId).pipe(
       tap((elements) => {
         this.comparing.set(
           elements.nodes.some((node) => node.data['isFadeOut']) ||
@@ -906,41 +957,43 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // one's handle was left.
         this.resetCompare();
 
-        this.cy = cytoscape({
+        const cy = cytoscape({
           container: container,
           elements: elements,
-          style: this.reactomeStyle?.getStyleSheet(),
+          style: style.getStyleSheet(),
           layout: { name: 'preset' },
         });
-        this.cys[0] = this.cy;
-        this.reactomeStyles[0] = this.reactomeStyle;
+        this.cy = cy;
+        this.cys[0] = cy;
+        this.reactomeStyles[0] = style;
         // A pathway with no disease has no compare layer: the previous
         // disease pathway's must not stay in the list exports draw from.
         if (!this.comparing()) {
           this.cys.length = 1;
           this.reactomeStyles.length = 1;
         }
-        this.reactomeStyle.bindToCytoscape(this.cy);
+        style.bindToCytoscape(cy);
 
         this.leafIdToParentIds.clear();
-        this.cy.nodes().forEach((node) => {
-          node.data('graph.leaves')?.forEach((leaf: Graph.Node) => {
-            if (!this.leafIdToParentIds.has(leaf.stId)) this.leafIdToParentIds.set(leaf.stId, []);
+        cy.nodes().forEach((node) => {
+          const stId = textData(node, 'graph.stId');
+          graphLeaves(node)?.forEach((leaf) => {
+            let parents = this.leafIdToParentIds.get(leaf.stId);
+            if (!parents) {
+              parents = [];
+              this.leafIdToParentIds.set(leaf.stId, parents);
+            }
             if (leaf.standardIdentifier && !this.leafIdToParentIds.has(leaf.standardIdentifier))
-              this.leafIdToParentIds.set(
-                leaf.standardIdentifier,
-                this.leafIdToParentIds.get(leaf.stId)!
-              );
-            const parents = this.leafIdToParentIds.get(leaf.stId)!;
-            parents.push(node.data('graph.stId'));
+              this.leafIdToParentIds.set(leaf.standardIdentifier, parents);
+            if (stId !== undefined) parents.push(stId);
           });
         });
 
-        this.cy.on('zoom', () => this.controlZoom.set(this.zoomToControlTransform(this.cy.zoom())));
+        cy.on('zoom', () => this.controlZoom.set(this.zoomToControlTransform(cy.zoom())));
 
-        this.reactomeStyle.clearCache();
-        this.cy.on('dblclick', '.SUB.Pathway', (e) => {
-          void this.state.navigateTo(e.target.data('graph.stId'), {
+        style.clearCache();
+        cy.on('dblclick', '.SUB.Pathway', (e: cytoscape.EventObjectNode) => {
+          void this.state.navigateTo(textData(e.target, 'graph.stId') ?? null, {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
@@ -949,30 +1002,31 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Right-click menu on entities. The old site offered Molecule /
         // Pathways / Interactors here and curators still reach for it; each
         // item is a shortcut to somewhere the details panel already goes.
-        this.cy.on('cxttap', '.PhysicalEntity', (e) => {
-          const stId = e.target.data('graph.stId');
+        cy.on('cxttap', '.PhysicalEntity', (e: cytoscape.EventObjectNode) => {
+          const stId = textData(e.target, 'graph.stId');
           if (!stId) return;
           const pointer = e.originalEvent as MouseEvent | undefined;
           if (!pointer) return;
+          const acc = textData(e.target, 'acc');
           this.popupTarget.set({
             x: pointer.clientX,
             y: pointer.clientY,
             stId,
-            label: e.target.data('displayName') || e.target.data('graph.displayName') || stId,
-            acc: e.target.data('acc') || undefined,
+            label:
+              textData(e.target, 'displayName') || textData(e.target, 'graph.displayName') || stId,
+            ...(acc && { acc }),
           });
           // Production also moves the details panel to the entity you
           // right-clicked, so the popup and the panel agree. Flagged as an
           // in-diagram selection, or the select effect animates a fit to the
           // node and a right-click would yank the whole diagram around.
-          this.popupViewport = { zoom: this.cy.zoom(), pan: { ...this.cy.pan() } };
-          this.selecting = true;
-          this.state.select.set(stId);
+          this.popupViewport = { zoom: cy.zoom(), pan: { ...cy.pan() } };
+          this.selectInDiagram(stId);
         });
 
         // Right-clicking the background dismisses it.
-        this.cy.on('cxttap', (e) => {
-          if (e.target === this.cy) this.popupTarget.set(null);
+        cy.on('cxttap', (e) => {
+          if (e.target === cy) this.popupTarget.set(null);
         });
 
         // Keeps what the reader selected, like the `.SUB.Pathway` handler above.
@@ -985,34 +1039,35 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         //
         // Where you came from is still one Back away; what you were looking at
         // was not recoverable at all.
-        this.cy.on('dblclick', '.Interacting.Pathway', (e) => {
-          void this.state.navigateTo(e.target.data('graph.stId'), {
+        cy.on('dblclick', '.Interacting.Pathway', (e: cytoscape.EventObjectNode) => {
+          void this.state.navigateTo(textData(e.target, 'graph.stId') ?? null, {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
         });
 
-        const shadowNodes = this.cy?.nodes('.Shadow');
+        const shadowNodes = cy.nodes('.Shadow');
         this.event.setSubpathwayColors(
-          shadowNodes && shadowNodes.length > 0
+          shadowNodes.length > 0
             ? new Map(shadowNodes.map((node) => [node.data('reactomeId'), node.data('color')]))
             : undefined
         );
 
+        // Of whichever diagram is drawn by then.
         setTimeout(() => {
-          this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+          if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
         }, 5);
-        this.cy.on('viewport', () => {
-          this.zoomLevel.set(this.cy.zoom());
-          this.viewportPosition.set({ ...this.cy.pan() });
+        cy.on('viewport', () => {
+          this.zoomLevel.set(cy.zoom());
+          this.viewportPosition.set({ ...cy.pan() });
         });
 
-        this.zoomLevel.set(this.cy.zoom());
-        this.minZoom.set(this.cy.minZoom());
-        this.maxZoom.set(this.cy.maxZoom());
-        this.viewportPosition.set({ ...this.cy.pan() });
+        this.zoomLevel.set(cy.zoom());
+        this.minZoom.set(cy.minZoom());
+        this.maxZoom.set(cy.maxZoom());
+        this.viewportPosition.set({ ...cy.pan() });
         this.boundingBox.set(
-          this.cy.elements().boundingBox({
+          cy.elements().boundingBox({
             includeEdges: true,
             includeNodes: true,
 
@@ -1025,7 +1080,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           })
         );
 
-        this.loadCompare(elements, container);
+        this.loadCompare(cy, elements, container);
 
         this.avoidSideEffect(() => this.stateToDiagram());
       })
@@ -1033,7 +1088,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   loadSubpathwayWithDiagram(event: EventModel) {
-    return this.event.fetchEventAncestors(this.pathwayId()!).pipe(
+    return this.event.fetchEventAncestors(this.pathwayId()).pipe(
       map((ancestors) => this.event.getFinalAncestor(ancestors)),
       switchMap((lineage) => {
         // In the ancestors just fetched, not the event's own copy, which the
@@ -1049,14 +1104,31 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           // The same diagram: another load of this pathway is drawing it, so
           // there is nothing to do -- which is not a failure.
           if (newDiagramId === diagramId) return EMPTY;
-          this.pathwayId.set(newDiagramId);
-          // this.router.navigate([diagramId], {
-          //   queryParamsHandling: "preserve"
-          // }).then(() => {
-          this.state.select.set(event.stId);
-          // });
-
-          return this.loadElvDiagram();
+          // Showing the parent's diagram is a correction, not a step the reader
+          // took, so it replaces the address rather than adding to history.
+          // Written as two steps of its own (the pathway, then the selection),
+          // Back returned to this pathway, which handed off again: Back did
+          // nothing (#168). The diagram loads from the new address, as for any
+          // other pathway.
+          //
+          // The sub-pathway is selected to show where it sits in the parent --
+          // unless the address already selects something: an entity a link
+          // pointed at is what the reader came for, and selecting the
+          // sub-pathway over it landed them on the wrong details.
+          const select = untracked(() => this.state.select()) ?? event.stId;
+          void this.state
+            .navigateTo(newDiagramId, {
+              queryParamsHandling: 'merge',
+              queryParams: { select },
+              replaceUrl: true,
+            })
+            // Only if this navigation happened: one the reader's next click
+            // superseded resolves false, and the selection belongs to it.
+            .then((navigated) => navigated && this.state.select.set(select))
+            // navigateTo reports a failure itself; this derived promise must
+            // not go unhandled.
+            .catch(() => undefined);
+          return EMPTY;
         }
         return of(null);
       })
@@ -1064,22 +1136,28 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   public initialiseReplaceElements() {
-    if (this.comparing())
-      this.cy.batch(() => {
-        this.cy.elements('[!isBackground]').style('visibility', 'hidden');
-        this.cy.edges('.shadow').style('underlay-padding', 0);
+    const cy = this.cy;
+    if (cy && this.comparing())
+      cy.batch(() => {
+        cy.elements('[!isBackground]').style('visibility', 'hidden');
+        cy.edges('.shadow').style('underlay-padding', 0);
         this.lastIndex = 0;
         this.updateReplacementVisibility();
-        this.cy.elements('.Compartment').style('visibility', 'visible');
+        cy.elements('.Compartment').style('visibility', 'visible');
       });
   }
 
-  private loadCompare(elements: cytoscape.ElementsDefinition, container: HTMLDivElement) {
+  private loadCompare(
+    cy: cytoscape.Core,
+    elements: cytoscape.ElementsDefinition,
+    container: HTMLDivElement
+  ) {
     const getPosition = (e: cytoscape.SingularElementArgument) =>
-      e.is('.Shadow') ? e.data('triggerPosition') : e.boundingBox().x1;
+      e.is('.Shadow') ? Number(e.data('triggerPosition')) : e.boundingBox().x1;
     if (this.comparing()) {
-      this.cy.elements('[!isBackground]').style('visibility', 'hidden');
-      this.replacedElements = this.cy!.elements('[?replacedBy]')
+      cy.elements('[!isBackground]').style('visibility', 'hidden');
+      this.replacedElements = cy
+        .elements('[?replacedBy]')
         .add('[?isCrossed]')
         .sort((a, b) => getPosition(a) - getPosition(b))
         .style('visibility', 'hidden')
@@ -1087,7 +1165,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
       this.replacedElementsPosition = this.replacedElements.map(getPosition);
 
-      this.cy.on('add', (e) => {
+      cy.on('add', (e: ElementEvent) => {
         const addedElement = e.target;
         if (addedElement.data('replacedBy') || addedElement.data('isCrossed')) {
           const x = getPosition(addedElement);
@@ -1100,7 +1178,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      this.cy.on('remove', (e) => {
+      cy.on('remove', (e: ElementEvent) => {
         const removedElement = e.target;
         const index = this.replacedElements.indexOf(removedElement);
         if (index > -1) {
@@ -1109,35 +1187,35 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      const compareContainer = this.compareContainer()!.nativeElement;
-      this.cyCompare = cytoscape({
+      const compareContainer = this.compareContainer().nativeElement;
+      const cyCompare = cytoscape({
         container: compareContainer,
         elements: elements,
-        style: this.reactomeStyle?.getStyleSheet(),
+        ...(this.reactomeStyle && { style: this.reactomeStyle.getStyleSheet() }),
         layout: { name: 'preset' },
       });
+      this.cyCompare = cyCompare;
 
-      this.cyCompare.elements('[?isFadeOut]').remove();
-      this.cyCompare.elements('.Compartment').remove();
-      this.cy!.nodes('.crossed').removeClass('crossed');
+      cyCompare.elements('[?isFadeOut]').remove();
+      cyCompare.elements('.Compartment').remove();
+      cy.nodes('.crossed').removeClass('crossed');
 
-      this.cyCompare!.on('viewport', () =>
-        this.syncViewports(this.cyCompare, compareContainer, this.cy, container)
+      cyCompare.on('viewport', () =>
+        this.syncViewports(cyCompare, compareContainer, cy, container)
       );
-      this.cy!.on('viewport', () =>
-        this.syncViewports(this.cy, container, this.cyCompare, compareContainer)
-      );
+      cy.on('viewport', () => this.syncViewports(cy, container, cyCompare, compareContainer));
 
-      this.reactomeStyleCompare = new Style(compareContainer);
-      this.reactomeStyleCompare?.bindToCytoscape(this.cyCompare);
-      this.cyCompare.minZoom(this.cy!.minZoom());
-      this.cyCompare.maxZoom(this.cy!.maxZoom());
+      const compareStyle = new Style(compareContainer);
+      this.reactomeStyleCompare = compareStyle;
+      compareStyle.bindToCytoscape(cyCompare);
+      cyCompare.minZoom(cy.minZoom());
+      cyCompare.maxZoom(cy.maxZoom());
 
-      this.cys[1] = this.cyCompare;
-      this.reactomeStyles[1] = this.reactomeStyleCompare;
+      this.cys[1] = cyCompare;
+      this.reactomeStyles[1] = compareStyle;
 
       setTimeout(() => {
-        this.syncViewports(this.cy!, container, this.cyCompare, compareContainer);
+        this.syncViewports(cy, container, cyCompare, compareContainer);
         this.initialiseReplaceElements();
         // The disease layer from the left edge: the disease pathway alone.
         this.setComparePosition(0);
@@ -1160,21 +1238,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         if (token.startsWith('R-')) {
           let tokenElements = cy.collection(`[graph.stId="${token}"]`);
           // Load children
-          if (
-            (includeContainers || tokenElements.length === 0) &&
-            this.leafIdToParentIds.has(token)
-          )
-            this.leafIdToParentIds
-              .get(token)!
-              .forEach((parent) => (tokenElements = tokenElements.or(`[graph.stId="${parent}"]`)));
+          const parents = this.leafIdToParentIds.get(token);
+          if ((includeContainers || tokenElements.length === 0) && parents)
+            parents.forEach(
+              (parent) => (tokenElements = tokenElements.or(`[graph.stId="${parent}"]`))
+            );
           elements = elements.or(tokenElements);
 
           // Consider it as a subpathway when there are no elements found and get all reactions
           if (elements.length === 0) {
             const allSubpathwaysElements = elements.or('[subpathways]');
             allSubpathwaysElements.forEach((ele) => {
-              const pathwayList = ele.data('subpathways');
-              if (pathwayList.includes(token)) {
+              const pathwayList: unknown = ele.data('subpathways');
+              if (Array.isArray(pathwayList) && pathwayList.includes(token)) {
                 elements.merge(ele);
               }
             });
@@ -1182,10 +1258,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         } else if (token.includes(':') && !token.startsWith('class')) {
           // ReferenceEntity stId
           elements = elements.or(`[graph.standardIdentifier="${token}"]`);
-          if ((includeContainers || elements.length === 0) && this.leafIdToParentIds.has(token))
-            this.leafIdToParentIds
-              .get(token)!
-              .forEach((parent) => (elements = elements.or(`[graph.stId="${parent}"]`)));
+          const parents = this.leafIdToParentIds.get(token);
+          if ((includeContainers || elements.length === 0) && parents)
+            parents.forEach((parent) => (elements = elements.or(`[graph.stId="${parent}"]`)));
         } else {
           // work with class ➡️ [class:Molecule!drug]
           const matchArray = token.match(this.classRegex);
@@ -1225,7 +1300,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (cy === this.cy) {
       let running = true;
 
-      this.cy.animate(
+      cy.animate(
         {
           fit: { eles: selected, padding: 100 },
           duration: 1000,
@@ -1238,14 +1313,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       );
 
-      if (this.cyCompare) {
+      const cyCompare = this.cyCompare;
+      if (cyCompare) {
         const syncFrame = () => {
           if (!running) return;
           this.syncViewports(
-            this.cy,
-            this.cytoscapeContainer()!.nativeElement,
-            this.cyCompare,
-            this.compareContainer()!.nativeElement,
+            cy,
+            this.cytoscapeContainer().nativeElement,
+            cyCompare,
+            this.compareContainer().nativeElement,
             true
           );
           requestAnimationFrame(syncFrame);
@@ -1255,34 +1331,6 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     }
 
     return selected;
-  }
-
-  getFittedViewport(cy: cytoscape.Core, eles: cytoscape.CollectionArgument, padding = 100) {
-    // Save original state
-    const origPan = cy.pan();
-    const origZoom = cy.zoom();
-
-    let targetPan, targetZoom;
-
-    cy.batch(() => {
-      // Jump to the fit position
-      cy.fit(eles, padding);
-
-      // Read target values
-      targetPan = { ...cy.pan() };
-      targetZoom = cy.zoom();
-
-      // Restore original state
-      cy.pan(origPan);
-      cy.zoom(origZoom);
-    });
-
-    console.log(targetPan, targetZoom, origPan, origZoom);
-
-    return {
-      pan: { ...(targetPan! as cytoscape.Position) },
-      zoom: targetZoom! as number,
-    };
   }
 
   flag(accs: (string | number)[], cy: cytoscape.Core): cytoscape.CollectionArgument {
@@ -1394,7 +1442,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private updateReplacementVisibility() {
     // // Calculate the position of the element that is to the right of the separation
 
-    const extent = this.cyCompare!.extent();
+    // Only a diagram being compared has elements to show or hide.
+    const cyCompare = this.cyCompare;
+    if (!cyCompare) return;
+    const extent = cyCompare.extent();
     let limitIndex = this.replacedElementsPosition.findIndex((x1) => x1 >= extent.x1);
     if (limitIndex === -1) limitIndex = this.replacedElements.length;
     // The layer across the whole width is the disease pathway alone, wherever
@@ -1426,7 +1477,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           .slice(limitIndex, this.lastIndex)
           .map((e) => e.style('visibility', 'hidden')) // Hide the range of elements
           .filter((e) => e.is('.Shadow')) // And if it is an shadow
-          .forEach((shadow) => shadow.data('edges').style('underlay-padding', 0)); // Hide as well the associated reaction underlay
+          .forEach((shadow) => shadowEdges(shadow)?.style('underlay-padding', 0)); // Hide as well the associated reaction underlay
       // If at least one element is switched from right to left
       if (limitIndex > this.lastIndex)
         this.replacedElements
@@ -1434,7 +1485,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           .map((e) => e.style('visibility', 'visible')) // Show the range of elements
           .filter((e) => e.is('.Shadow')) // And if it is an shadow
           .forEach((shadow) =>
-            shadow.data('edges').style('underlay-padding', this.underlayPadding)
+            shadowEdges(shadow)?.style('underlay-padding', this.underlayPadding)
           ); // Show as well the associated reaction underlay
     }
     this.lastIndex = limitIndex;
@@ -1463,41 +1514,73 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     if (!overrideIgnore) this.syncing = false;
   };
 
+  /**
+   * The analysis results for this diagram could not be loaded. Said on the
+   * diagram, which is left uncoloured: before, every element was greyed as
+   * though the analysis had hit nothing in it.
+   */
+  readonly analysisFailed = signal(false);
+  readonly analysisNotice = computed(() =>
+    this.analysisFailed()
+      ? "Couldn't load the analysis results for this diagram, so nothing is coloured. Try again in a moment."
+      : null
+  );
+  /** What the banner says: an analysis that failed, else interactors that did. */
+  readonly notice = computed(() => this.analysisNotice() ?? this.interactorsService.loadFailure());
+
+  private analysisLoad?: Subscription;
+
+  /**
+   * The analysis now coloured on the diagram: its token and the resource its
+   * entities were read for. Null while a load is in flight, or with none. The
+   * render page waits on it: the diagram is drawn before its colouring arrives,
+   * and a figure captured in between is a 200 nobody can tell from a coloured one.
+   */
+  readonly appliedAnalysis = signal<{ token: string; resource: Analysis.Resource } | null>(null);
+
   private loadAnalysis(token: string | null, force = false) {
     if (!force && this.deltaSignal.hasOverlay()) return;
+    this.appliedAnalysis.set(null);
+    // A load for an earlier token or diagram must neither colour this one nor
+    // report its failure here. The notice is left until this load settles, so
+    // loading the same failing token again does not announce it twice.
+    this.analysisLoad?.unsubscribe();
     const diagramId = this.pathwayId();
     if (!token || !diagramId) {
-      this._loadAnalysisFn = undefined;
-
-      this.cys.forEach((cy) => {
-        cy.batch(() => {
-          cy.nodes().removeData('exp');
-          cy.edges('[?color]').style({
-            'underlay-padding': extract(this.reactomeStyle.properties.shadow.padding),
-          });
-          cy.nodes('.Shadow').style({
-            'font-size': extract(this.reactomeStyle.properties.shadow.fontSize),
-            'text-outline-width': extract(this.reactomeStyle.properties.shadow.fontPadding),
-          });
-        });
-      });
-      this.reactomeStyles.forEach((style) =>
-        style.loadAnalysis(style.cy!, this.analysis.palette().scale)
-      );
+      this.analysisFailed.set(false);
+      this.clearAnalysis();
       return;
     }
 
-    forkJoin({
+    // Read once and given to both loads, so the colouring and appliedAnalysis
+    // name the same resource.
+    const resource = this.state.resourceFilter() ?? 'TOTAL';
+    const load$ = forkJoin({
       entities: this.analysis.foundEntities(
         this.data.currentPathway()?.normalPathway?.stId || diagramId,
-        token
+        token,
+        resource
       ),
       pathways: this.analysis.pathwaysResults(
-        this.cy?.nodes('.Pathway').map((p) => p.data('reactomeId')) || [],
-        token
+        this.cy
+          ?.nodes('.Pathway')
+          .map((p) => numberData(p, 'reactomeId'))
+          .filter(isDefined) || [],
+        token,
+        resource
       ),
       result: this.analysis.result$.pipe(filter(isDefined), take(1)),
-    }).subscribe(({ entities, pathways, result }) => {
+    }).pipe(
+      catchError((error: unknown) => {
+        console.warn('Analysis results for the diagram could not be loaded', error);
+        this.clearAnalysis();
+        this.analysisFailed.set(true);
+        return EMPTY;
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    );
+    this.analysisLoad = load$.subscribe(({ entities, pathways, result }) => {
+      this.analysisFailed.set(false);
       this._loadAnalysisFn = (analysisIndex) => {
         if (this.deltaSignal.hasOverlay()) return;
         const analysisEntityMap = new Map<string, number>(
@@ -1515,13 +1598,14 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
         this.cys.forEach((cy) => {
           cy.batch(() => {
-            const style: Style = cy.data('reactome');
+            const style = styleOf(cy);
 
             cy.nodes('.InteractorOccurrences').forEach((occurence) => {
               if (includeInteractors) {
-                const interactors: Interactor[] = occurence.data('interactors');
-                const exps = interactors.map((i) => analysisEntityMap.get(i.acc)).filter(isDefined);
-                if (interactors && exps.length > 0) {
+                const exps = interactorAccessions(occurence)
+                  .map((acc) => analysisEntityMap.get(acc))
+                  .filter(isDefined);
+                if (exps.length > 0) {
                   occurence.data('exp', [average(exps)]);
                 } else {
                   occurence.data('exp', [undefined]);
@@ -1534,16 +1618,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             cy.nodes('.PhysicalEntity').forEach((node) => {
               if (node.hasClass('Interactor') && !includeInteractors) return; // Avoid coloring interactors when analysis does not include them
 
-              const leaves: Graph.Node[] = node.data('graph.leaves') || [node.data('graph')];
-              const exp = leaves
-                ?.map((leaf) => analysisEntityMap.get(leaf.identifier))
-                ?.sort((a, b) => (a !== undefined ? (b !== undefined ? a - b : -1) : 1));
-              // if (hasExpression) exp = exp.map(e => e !== undefined ? 1 - e : undefined);
-              node.data('exp', exp);
+              node.data('exp', nodeExpression(node, analysisEntityMap));
             });
             cy.nodes('.Pathway').forEach((node) => {
-              const dbId: number = node.data('reactomeId');
-              const pathwayData = analysisPathwayMap.get(dbId);
+              const dbId = numberData(node, 'reactomeId');
+              const pathwayData = dbId === undefined ? undefined : analysisPathwayMap.get(dbId);
               if (!pathwayData) {
                 node.data('exp', [undefined]);
               } else {
@@ -1555,20 +1634,49 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             });
 
             cy.edges('[?color]').style({ 'underlay-padding': 8 });
-            cy.nodes('.Shadow').style({
-              'font-size': extract(style.properties.shadow.fontSize) / 2,
-              'text-outline-width': extract(style.properties.shadow.fontPadding) / 2,
-            });
+            if (style)
+              cy.nodes('.Shadow').style({
+                'font-size': extract(style.properties.shadow.fontSize) / 2,
+                'text-outline-width': extract(style.properties.shadow.fontPadding) / 2,
+              });
 
-            this.reactomeStyles.forEach((style) =>
-              style.loadAnalysis(style.cy!, this.analysis.palette().scale)
-            );
+            this.recolourStyles();
           });
         });
       };
 
       this._loadAnalysisFn(this.analysis.sampleIndex());
+      this.appliedAnalysis.set({ token, resource });
     });
+  }
+
+  /** Takes any analysis colouring off the diagram. */
+  private clearAnalysis() {
+    this._loadAnalysisFn = undefined;
+    // No style yet means nothing drawn yet, so nothing to clear.
+    const shadow = this.reactomeStyle?.properties.shadow;
+    if (!shadow) return;
+
+    this.cys.forEach((cy) => {
+      cy.batch(() => {
+        cy.nodes().removeData('exp');
+        cy.edges('[?color]').style({
+          'underlay-padding': extract(shadow.padding),
+        });
+        cy.nodes('.Shadow').style({
+          'font-size': extract(shadow.fontSize),
+          'text-outline-width': extract(shadow.fontPadding),
+        });
+      });
+    });
+    this.recolourStyles();
+  }
+
+  /** The analysis colours on every layer; each style is bound to its diagram as it is listed. */
+  private recolourStyles() {
+    for (const style of this.reactomeStyles) {
+      if (style.cy) style.loadAnalysis(style.cy, this.analysis.palette().scale);
+    }
   }
 
   private _loadAnalysisFn: ((analysisIndex: number) => void) | undefined;
@@ -1582,14 +1690,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       this.loadAnalysis(this.state.analysis(), true);
       return;
     }
+    // The overlay replaces the analysis colouring: an analysis load still in
+    // flight must not clear it when it fails, nor its notice stay up.
+    this.analysisLoad?.unsubscribe();
+    this.analysisFailed.set(false);
 
     this.cys.filter(Boolean).forEach((cy) => {
       cy.batch(() => {
         cy.nodes('.PhysicalEntity').forEach((node) => {
-          const graph = node.data('graph') as Graph.Node | undefined;
-          const leaves: Graph.Node[] = node.data('graph.leaves') || (graph ? [graph] : []);
+          const own: unknown = node.data('graph');
+          const graph = isGraphNode(own) ? own : undefined;
+          const leaves = graphLeaves(node) ?? (graph ? [graph] : []);
           const stableIds = new Set([
-            node.data('graph.stId') as string,
+            textData(node, 'graph.stId'),
             ...leaves.flatMap((leaf) => [leaf.stId, leaf.identifier, leaf.standardIdentifier]),
           ]);
           const values = [...stableIds]
@@ -1598,22 +1711,23 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           node.data('exp', values.length ? values : [undefined]);
         });
         cy.nodes('.Pathway, .InteractorOccurrences').data('exp', [undefined]);
-        const style: Style = cy.data('reactome');
-        style.loadAnalysis(cy, palette);
+        styleOf(cy)?.loadAnalysis(cy, palette);
       });
     });
-    setTimeout(() => this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 })), 5);
+    setTimeout(() => {
+      if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+    }, 5);
   }
 
   updateStyle() {
-    this.cy
-      ? setTimeout(() => {
-          this.reactomeStyle?.update(this.cy);
-          this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
-        }, 5)
-      : null;
-    this.cyCompare ? setTimeout(() => this.reactomeStyle?.update(this.cyCompare), 5) : null;
-    this.legend ? setTimeout(() => this.reactomeStyle?.update(this.legend), 5) : null;
+    // A moment later, and of whatever is drawn by then: the style and the
+    // graphs are made as the view and the diagram load.
+    setTimeout(() => {
+      const style = this.reactomeStyle;
+      if (!style) return;
+      for (const cy of [this.cy, this.cyCompare, this.legend]) if (cy) style.update(cy);
+      if (this.cy) this.thumbnailImg.set(this.cy.png({ full: true, maxHeight: 240 }));
+    }, 5);
   }
 
   readonly compareDragging = signal(false);
@@ -1702,14 +1816,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   /** Puts the line between the normal and disease pathways `x` pixels in. */
   private setComparePosition(x: number) {
     const layer = this.compareLayer()?.nativeElement;
-    const canvas = this.compareContainer()?.nativeElement;
+    const canvas = this.compareContainer().nativeElement;
     const area = this.compareArea();
-    if (!layer || !canvas || !area || !this.cyCompare) return;
+    const cy = this.cy;
+    if (!layer || !area || !cy || !this.cyCompare) return;
     const clamped = Math.max(0, Math.min(x, area.clientWidth));
     layer.style.left = `${clamped}px`;
     this.compareFraction = area.clientWidth ? clamped / area.clientWidth : 0;
     this.cyCompare.resize();
-    this.syncViewports(this.cy, this.cytoscapeContainer()!.nativeElement, this.cyCompare, canvas);
+    this.syncViewports(cy, this.cytoscapeContainer().nativeElement, this.cyCompare, canvas);
     // The sync works out what shows before it moves the layer; once more,
     // for where the layer is now.
     this.updateReplacementVisibility();
@@ -1718,19 +1833,20 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   readonly legendPosition = signal<Point>({ x: 0, y: 0 });
   readonly animateLegend = signal(false);
   updateLegend() {
-    this.legend.resize();
-    this.legend.panningEnabled(true);
-    this.legend.zoomingEnabled(true);
-    this.legend.fit(this.legend.elements(), 2);
-    this.legend.panningEnabled(false);
-    this.legend.zoomingEnabled(false);
+    const legend = this.legend;
+    if (!legend) return;
+    legend.resize();
+    legend.panningEnabled(true);
+    legend.zoomingEnabled(true);
+    legend.fit(legend.elements(), 2);
+    legend.panningEnabled(false);
+    legend.zoomingEnabled(false);
   }
 
   toggleLegend(legendWidth: number) {
     this.animateLegend.set(true);
-    this.legendPosition().x <= -legendWidth + 5
-      ? this.legendPosition.set({ x: 0, y: 0 })
-      : this.legendPosition.set({ x: -legendWidth, y: 0 });
+    if (this.legendPosition().x <= -legendWidth + 5) this.legendPosition.set({ x: 0, y: 0 });
+    else this.legendPosition.set({ x: -legendWidth, y: 0 });
     this.updateLegend();
     setTimeout(() => this.animateLegend.set(false), 500);
   }
@@ -1740,7 +1856,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   private _ignore = false;
 
-  avoidSideEffect(m: () => any) {
+  avoidSideEffect(m: () => unknown) {
     this._ignore = true;
     m();
     this._ignore = false;
@@ -1759,7 +1875,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   private stateToDiagram() {
     for (const cy of this.cys) {
       this.flag(this.data.flagIdentifiers(), cy);
-      this.select(this.state.select()!, cy);
+      // With nothing selected, nothing is: the old call looked for an
+      // element named "null", found none, and fitted to nothing.
+      const selected = this.state.select();
+      if (selected !== null) this.select(selected, cy);
+      else cy.elements(':selected').unselect();
     }
 
     const resource = this.state.overlay();
@@ -1767,7 +1887,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       // Not chosen by the reader: this is the address being honoured. Passing
       // that on matters, because the same call with a resource already current
       // means "put it away" when a reader makes it.
-      this.interactorsComponent()?.getInteractors(resource, false);
+      this.interactor()?.getInteractors(resource, false);
     }
 
     this.loadAnalysis(this.state.analysis());
@@ -1784,16 +1904,17 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .subscribe((event) => {
       const src = event.detail.cy;
       const tgt = src === this.cy ? this.cyCompare : this.cy;
+      if (!tgt) return;
 
-      let replacedBy = event.detail.element.data('replacedBy');
-      replacedBy = replacedBy || event.detail.element.data('replacement');
-      replacedBy =
-        replacedBy ||
-        (event.detail.element.data('isBackground') &&
-          !event.detail.element.data('isFadeOut') &&
-          event.detail.element.data('id'));
+      // Read as text, as cytoscape reads any id it is given.
+      const element = event.detail.element;
+      const found: unknown =
+        element.data('replacedBy') ||
+        element.data('replacement') ||
+        (element.data('isBackground') && !element.data('isFadeOut') && element.data('id'));
 
-      if (!replacedBy) return;
+      if (!found) return;
+      const replacedBy = String(found);
 
       let replacements = tgt.getElementById(replacedBy);
       if (event.detail.type === 'reaction') {
@@ -1813,9 +1934,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     )
     .subscribe((e) => {
       [this.reactomeStyle, this.reactomeStyleCompare]
-        .filter((s) => e.detail.cy === s?.cy)
+        .filter(isDefined)
+        .filter((s) => e.detail.cy === s.cy)
         .forEach((style) => {
           const occurrenceNode = e.detail.element.nodes()[0];
+          if (!occurrenceNode) return;
 
           const cy = style.cy;
           if (e.type === ReactomeEventTypes.open && cy) {
@@ -1844,11 +1967,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   diagram2legend = this.reactomeEvents$
     .pipe(filter((e) => e.detail.cy !== this.legend))
     .subscribe((event) => {
+      const legend = this.legend;
+      if (!legend) return;
       const classes = event.detail.element.classes();
       const firstClassToMatch = classes[0];
 
       // Only get the first matched item in the classes, this help to filter out the polymer when hovering on a molecule
-      let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection = this.legend
+      let matchingElement: cytoscape.NodeCollection | cytoscape.EdgeCollection = legend
         .elements(`.${firstClassToMatch}`)
         .filter((ele) => {
           const classes = ele.classes();
@@ -1860,7 +1985,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         else matchingElement = matchingElement.not('.drug');
       } else if (event.detail.type === 'reaction') {
         const reaction = event.detail.element.nodes('.reaction');
-        matchingElement = this.legend.nodes(`.${reaction.classes()[0]}`).first();
+        matchingElement = legend.nodes(`.${reaction.classes()[0]}`).first();
         matchingElement = matchingElement.add(matchingElement.connectedEdges());
       }
 
@@ -1876,10 +2001,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       delay(5) // allow for unselect to be processed before select when clicking on an already selected element
     )
     .subscribe((e) => {
-      const elements: cytoscape.NodeSingular = e.detail.element;
-      const reactomeIds = elements.map((el) => el.data('graph.stId'));
-      this.selecting = true;
-      this.state.select.set(reactomeIds[0]);
+      this.selectInDiagram(selectedStId(e.detail.element));
     });
 
   diagramUnselect2state = this.reactomeEvents$
@@ -1915,7 +2037,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           else matchingElement = matchingElement.not('.drug');
         } else if (event.detail.type === 'reaction') {
           const reaction = event.detail.element.nodes('.reaction');
-          matchingElement = this.cy.nodes(`.${reaction.classes()[0]}`);
+          // Of each graph in turn, as above: the comparison's reactions too.
+          matchingElement = cy.nodes(`.${reaction.classes()[0]}`);
           matchingElement = matchingElement.add(matchingElement.connectedEdges());
         }
 
@@ -1946,7 +2069,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   logProteins() {
     console.debug(
-      new Set(this.cy.nodes('.Protein').map((node) => node.data('acc') || node.data('iAcc')))
+      new Set(
+        this.cy?.nodes('.Protein').map((node): unknown => node.data('acc') || node.data('iAcc'))
+      )
     );
   }
 
@@ -1980,22 +2105,22 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     };
 
     cy.nodes('.PhysicalEntity, .Pathway').forEach((node) => {
-      const kind = node.hasClass('Pathway') ? 'Pathway' : node.classes()[0];
-      add(node.data('displayName') || node.data('graph.displayName'), kind, node);
+      const kind = node.hasClass('Pathway') ? 'Pathway' : (node.classes()[0] ?? 'Entity');
+      add(textData(node, 'displayName') || textData(node, 'graph.displayName'), kind, node);
     });
 
     cy.nodes('.reaction').forEach((reaction) => {
       add(
-        reaction.data('graph.displayName'),
+        textData(reaction, 'graph.displayName'),
         'Reaction',
-        reaction.union(cy.edges(`[reactionId = ${reaction.data('reactionId')}]`))
+        reaction.union(cy.edges(`[reactionId = ${numberData(reaction, 'reactionId')}]`))
       );
     });
 
     // The style hands each sub-pathway shadow the reaction edges it covers.
     cy.nodes('.Shadow').forEach((shadow) => {
-      const edges: cytoscape.EdgeCollection | undefined = shadow.data('edges');
-      add(shadow.data('displayName'), 'Subpathway', edges?.nonempty() ? edges : shadow);
+      const edges = shadowEdges(shadow);
+      add(textData(shadow, 'displayName'), 'Subpathway', edges?.nonempty() ? edges : shadow);
     });
 
     return [...targets.values()];
@@ -2012,21 +2137,23 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * directly.
    */
   onSearchPicked(target: DiagramSearchTarget): void {
-    const stIds = new Set(target.elements.map((ele) => ele.data('graph.stId')));
+    const cy = this.cy;
+    if (!cy) return;
+    const stIds = new Set(target.elements.map((ele) => selectedStId(ele)));
     const [stId] = stIds;
     if (stIds.size === 1 && stId) {
       // Already selected means the select effect will not fire again, but the
       // user still asked to be taken there.
-      if (this.state.select() === stId) this.select(stId, this.cy);
+      if (this.state.select() === stId) this.select(stId, cy);
       else this.state.select.set(stId);
       return;
     }
 
     this.avoidSideEffect(() => {
-      this.cy.elements(':selected').unselect();
+      cy.elements(':selected').unselect();
       target.elements.select();
     });
-    this.cy.animate({
+    cy.animate({
       fit: {
         eles: target.elements.union(target.elements.edges().connectedNodes()),
         padding: FIT_PADDING,
@@ -2044,6 +2171,22 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
   }
 
   /**
+   * Select from within the diagram: flagged, so the select effect leaves the
+   * view where the reader has it instead of fitting to the element.
+   *
+   * Flagged only when the selection is going to change. The effect is what
+   * lowers the flag, and a signal set to the value it already holds does not
+   * run it -- so right-clicking the entity already selected left the flag up,
+   * and the next selection from outside the diagram (a search hit, a link,
+   * the details panel) was then ignored.
+   */
+  private selectInDiagram(stId: string | null): void {
+    if (untracked(() => this.state.select()) === stId) return;
+    this.selecting = true;
+    this.state.select.set(stId);
+  }
+
+  /**
    * A row in the popup was clicked.
    *
    * A pathway is somewhere to go, so it navigates. A molecule is selected,
@@ -2053,11 +2196,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * What production leaves you without is a way back, which is the confusing
    * part rather than the movement itself; the popup title does that here.
    */
-  onPopupNavigate(event: { stId: string; kind: EntityPopupTab }): void {
+  onPopupNavigate(event: { stId: string; kind: EntityPopupTab; hasDiagram?: boolean }): void {
     if (event.kind === 'pathways') {
       this.popupTarget.set(null);
+      // The entity right-clicked stays selected, so it is found again in the
+      // pathway chosen -- as a double-click on a pathway keeps the selection
+      // (#168). Except for a pathway drawn in a parent's diagram: it hands off
+      // to that diagram keeping the selection, which for most of an entity's
+      // pathways is the diagram already on screen, so choosing one appeared to
+      // do nothing. Selecting the pathway itself shows where it is.
       void this.state.navigateTo(event.stId, {
-        queryParamsHandling: 'preserve',
+        ...(event.hasDiagram === false
+          ? { queryParams: { select: event.stId }, queryParamsHandling: 'merge' as const }
+          : { queryParamsHandling: 'preserve' as const }),
         preserveFragment: true,
       });
       return;
@@ -2078,12 +2229,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     // Re-select without letting the select effect fit, then put the viewport
     // back exactly where it was.
-    this.selecting = true;
-    this.state.select.set(target.stId);
+    this.selectInDiagram(target.stId);
 
     const viewport = this.popupViewport;
     if (viewport) {
-      this.cy.animate(
+      this.cy?.animate(
         { zoom: viewport.zoom, pan: viewport.pan },
         { duration: 500, easing: 'ease-in-out' }
       );

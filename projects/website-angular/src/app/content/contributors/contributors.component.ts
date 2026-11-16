@@ -1,19 +1,13 @@
+import { Contributor, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
+import { debounceTime, takeUntil } from 'rxjs/operators';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
-import {
-  ContentDataService,
-  Contributor,
-  SimplePerson,
-} from '../../../services/content-data.service';
+import { ContentDataService } from '../../../services/content-data.service';
 
-type SortKey =
-  | 'displayName'
-  | 'authoredPathways'
-  | 'reviewedPathways'
-  | 'authoredReactions'
-  | 'reviewedReactions';
+/** A contributor's counts, each a column to sort by: a count renamed in the contract fails here. */
+type CountKey = Exclude<keyof Contributor, 'person'>;
+type SortKey = 'displayName' | CountKey;
 type SortDir = 'asc' | 'desc';
 
 const PAGE_SIZE = 50;
@@ -51,10 +45,14 @@ export class ContributorsComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.searchSubject
-      .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
+      // Not distinctUntilChanged: clearing the box does not pass through here,
+      // so the same term typed again would look like no change and be dropped.
+      .pipe(debounceTime(300), takeUntil(this.destroy$))
       .subscribe(() => {
         this.activeLetter = '';
         this.applyFilter();
+        // Run after the keystroke's own redraw: nothing else would show it.
+        this.cdr.markForCheck();
       });
 
     this.loadData();
@@ -114,8 +112,8 @@ export class ContributorsComponent implements OnInit, OnDestroy {
       const q = this.searchQuery.toLowerCase().trim();
       results = results.filter(
         (c) =>
-          c.person.displayName?.toLowerCase().includes(q) ||
-          c.person.surname?.toLowerCase().includes(q) ||
+          c.person.displayName.toLowerCase().includes(q) ||
+          c.person.surname.toLowerCase().includes(q) ||
           c.person.firstname?.toLowerCase().includes(q) ||
           c.person.orcidId?.toLowerCase().includes(q)
       );
@@ -149,15 +147,14 @@ export class ContributorsComponent implements OnInit, OnDestroy {
 
   private sortList(list: Contributor[]): Contributor[] {
     const dir = this.sortDir === 'asc' ? 1 : -1;
+    const key = this.sortKey;
     return [...list].sort((a, b) => {
-      if (this.sortKey === 'displayName') {
+      if (key === 'displayName') {
         const va = (a.person.surname || a.person.displayName || '').toLowerCase();
         const vb = (b.person.surname || b.person.displayName || '').toLowerCase();
         return va < vb ? -dir : va > vb ? dir : 0;
       }
-      const va = (a as any)[this.sortKey] || 0;
-      const vb = (b as any)[this.sortKey] || 0;
-      return (va - vb) * dir;
+      return (a[key] - b[key]) * dir;
     });
   }
 

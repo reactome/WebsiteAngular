@@ -1,16 +1,6 @@
-import { DatabaseObject } from '../database-object.model';
-import { DatabaseIdentifier } from '../database-identifier.model';
-import { PhysicalEntity } from '../physical-entity/physical-entity.model';
-import { ReferenceDatabase } from '../reference-database.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface ReferenceEntity extends DatabaseObject {
-  identifier: string;
-  url: string;
-  crossReference: DatabaseIdentifier[];
-  databaseName: string;
-  moleculeType: string;
-  name: string[];
-  otherIdentifier: string[];
-  physicalEntity: PhysicalEntity[];
-  referenceDatabase: ReferenceDatabase;
-}
+/** Any reference entity, as the pathway browser reads it (the contract's, resolved). */
+export type ReferenceEntity = Resolved<Graph.ReferenceEntity<JsogReference>>;

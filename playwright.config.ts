@@ -131,15 +131,19 @@ export default defineConfig({
           // loads its code from localhost:4340 -- on every e2e run and every
           // pre-push preflight on this machine.
           {
+            // Its chunks load from the address it is served at (the development
+            // configuration's deployUrl names the default one).
             command:
-              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram && ' +
+              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram ' +
+              `--deploy-url http://localhost:${EMBED_PORT}/ && ` +
               `node e2e/support/static-server.mjs dist/e2e/reactome-diagram/browser ${EMBED_PORT}`,
             url: `http://localhost:${EMBED_PORT}/reactome-diagram.js`,
             reuseExistingServer: false,
             timeout: 300_000,
           },
           {
-            command: `node e2e/support/static-server.mjs specs/009-embeddable-diagram/host-page ${HOST_PAGE_PORT}`,
+            // The pages name the embed's default address; served pointing at this run's.
+            command: `node e2e/support/static-server.mjs specs/009-embeddable-diagram/host-page ${HOST_PAGE_PORT} http://localhost:${EMBED_PORT}/`,
             url: `http://localhost:${HOST_PAGE_PORT}/`,
             reuseExistingServer: false,
           },

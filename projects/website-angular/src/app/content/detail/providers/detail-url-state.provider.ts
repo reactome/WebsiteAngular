@@ -1,15 +1,48 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
   UrlStateService,
   urlParam,
 } from '../../../../../../pathway-browser/src/app/services/url-state.service';
+import type { PaletteName } from '../../../../../../pathway-browser/src/app/services/analysis.service';
+import type * as Analysis from '../../../../../../pathway-browser/src/app/model/analysis.model';
 import { DEFAULT_INTERACTOR_SCORE } from '../../../../../../pathway-browser/src/app/interactors/interactor-threshold';
 
+/**
+ * Members of UrlStateService the content pages leave out, each because nothing
+ * on them calls it -- their diagram is an image, not cr-diagram. Everything
+ * else UrlStateService has, this must have too: the type says so. It was
+ * `Partial`, which let navigateTo stay missing while the description panel's
+ * "Other Pathways" called it.
+ */
+type NotOnContentPages =
+  | 'settle'
+  | 'isFirstNavigation'
+  | 'queryParams'
+  | 'ensureStId'
+  | 'dbIdToStId'
+  // The Pathway Browser's viewport reads these to keep old tab names working.
+  | 'oldToNewTab';
+
+/** The state the content pages read, for the Pathway Browser components they reuse. */
 @Injectable()
-export class DetailUrlState implements Partial<UrlStateService> {
+export class DetailUrlState implements Omit<UrlStateService, NotOnContentPages> {
   private route = inject(ActivatedRoute);
+  private router = inject(Router);
+
+  /**
+   * A content page is not inside a pathway: going to one is opening it in the
+   * Pathway Browser, with this page's object selected there -- "Other
+   * Pathways" lists the pathways it takes part in. The Browser's own query
+   * parameters (the caller's extras) mean nothing here.
+   */
+  navigateTo(pathwayId: string | null): Promise<boolean> {
+    const select = this.route.snapshot.paramMap.get('id') ?? undefined;
+    return this.router.navigate(pathwayId ? ['/PathwayBrowser', pathwayId] : ['/PathwayBrowser'], {
+      queryParams: select ? { select } : {},
+    });
+  }
 
   readonly section = toSignal(this.route.fragment);
   summariseDisease = urlParam<boolean | undefined>(undefined, 'boolean');
@@ -28,14 +61,13 @@ export class DetailUrlState implements Partial<UrlStateService> {
   );
   significance = urlParam<number>(0.05, 'number');
   sample = urlParam<string | null>(null, 'string');
-  // Mirrors UrlStateService. The content pages do not draw interactors, but
-  // this class declares the same shape, so a param added there has to appear
-  // here or the build fails -- which is how this one was found.
+  // Mirrors UrlStateService, though the content pages do not draw interactors.
+  // Nothing checks the two stay in step (see the class comment), so keep them so.
   interactorScore = urlParam<number>(DEFAULT_INTERACTOR_SCORE, 'number');
-  palette = urlParam<any>(null, 'string');
-  filterViewMode = urlParam<any>(undefined, 'string');
+  palette = urlParam<PaletteName | null>(null, 'string');
+  filterViewMode = urlParam<'focus' | 'overview' | undefined>(undefined, 'string');
   speciesFilter = urlParam<string[]>([], 'string');
-  resourceFilter = urlParam<any>(null, 'string');
+  resourceFilter = urlParam<Analysis.Resource | null>(null, 'string');
   includeDisease = urlParam<boolean | undefined>(undefined, 'boolean');
   includeGrouping = urlParam<boolean | undefined>(undefined, 'boolean');
   pathwayMinSizeFilter = urlParam<number | undefined>(undefined, 'number');

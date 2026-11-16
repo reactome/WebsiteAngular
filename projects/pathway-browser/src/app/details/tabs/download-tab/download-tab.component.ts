@@ -1,4 +1,13 @@
-import { Component, computed, inject, signal, Signal, WritableSignal } from '@angular/core';
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+  Signal,
+  untracked,
+  WritableSignal,
+} from '@angular/core';
 import { UrlStateService } from '../../../services/url-state.service';
 import { DataStateService } from '../../../services/data-state.service';
 import { isPathway } from '../../../services/utils';
@@ -14,6 +23,7 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { EhldService } from '../../../services/ehld.service';
 import {
   DownloadFormat,
+  type DownloadOptions,
   DownloadService,
   DownloadTarget,
   includeSubpathways,
@@ -47,6 +57,8 @@ type PathwayItem = {
   url: Signal<string>;
   fileName?: Signal<string> | undefined;
   icon?: Icon;
+  /** Shown only once this is true; without it, always. */
+  ready?: Signal<boolean>;
 };
 
 type AnaLysisItem = {
@@ -55,10 +67,12 @@ type AnaLysisItem = {
   url: Signal<string>;
   icon: Icon;
   isShown: Signal<boolean>;
+  /** Opened in a new tab rather than downloaded (see DownloadButtonComponent). */
+  opens?: boolean;
 };
 
 type DiagramItem = {
-  format: string;
+  format: DownloadFormat;
   icon?: Icon;
   url?: Signal<string>;
   method?: () => void;
@@ -86,7 +100,23 @@ export class DownloadTabComponent {
    * button simply did nothing and said so only to the console.
    */
   readonly downloadFailure = this.download.failure;
+
+  constructor() {
+    // A reason given for one pathway's figure says nothing about the next one.
+    effect(() => {
+      this.finalEventId();
+      untracked(() => this.download.failure.set(null));
+    });
+  }
+
+  /** Whether this figure is the one being made in the page just now. */
+  isWorking(target: DownloadTarget, format: DownloadFormat, animated = false) {
+    const working = this.download.working();
+    return working?.target === target && working.format === format && working.animated === animated;
+  }
   protected readonly includeSubpathways = includeSubpathways;
+  protected readonly DownloadTarget = DownloadTarget;
+  protected readonly DownloadFormat = DownloadFormat;
   public ehld: EhldService = inject(EhldService);
   private dialog: MatDialog = inject(MatDialog);
 
@@ -108,7 +138,16 @@ export class DownloadTabComponent {
     return undefined;
   });
 
-  readonly biopaxId = computed(() => this.finalEventId()?.split('-')[2]);
+  // The event's own dbId. The stId's number is the human event's: for a mouse or
+  // a fly pathway, R-MMU-1640170's number named the human pathway, and that is
+  // what the download held.
+  readonly biopaxId = computed(() => {
+    const pathway = this.dataState.currentPathway();
+    const selected = this.selectedElement();
+    if (this.pathwayId()) return pathway?.dbId;
+    if (selected && isPathway(selected)) return selected.dbId;
+    return undefined;
+  });
 
   readonly finalPathwayName = computed(() => {
     const pathway = this.dataState.currentPathway();
@@ -198,6 +237,8 @@ export class DownloadTabComponent {
       name: 'BioPAX',
       url: computed(() => `${RESTFUL_API}/biopaxExporter/Level3/${this.biopaxId()}`),
       fileName: computed(() => `${this.biopaxId()}.owl`),
+      // The dbId arrives with the pathway; until then the link read Level3/undefined.
+      ready: computed(() => this.biopaxId() !== undefined),
     },
     {
       name: 'PDF',
@@ -238,7 +279,11 @@ export class DownloadTabComponent {
     {
       title: 'PDF Result',
       description:
-        'Download a detailed report with the most significant pathway analysis results in PDF format',
+        'Open a detailed report with the most significant pathway analysis results in PDF format, in a new tab: it is made in the background, then downloads',
+      // Made in the background by pdf-export (its spec 002): the address
+      // answers a page that asks again until the report is ready. Fetched and
+      // saved here, that page would be saved as the report.
+      opens: true,
       url: computed(() =>
         analysisReportUrl(
           ANALYSIS_SERVICE,
@@ -274,8 +319,6 @@ export class DownloadTabComponent {
       isShown: signal(true),
     },
   ];
-
-  constructor() {}
 
   getGsaIcon(name: string): Icon | undefined {
     switch (name) {
@@ -322,7 +365,11 @@ export class DownloadTabComponent {
   }
 
   onReacfoamAnimatedDownload() {
-    const matDialogRef = this.dialog.open(AnimatedDownloadFormComponent);
+    const matDialogRef = this.dialog.open<
+      AnimatedDownloadFormComponent,
+      undefined,
+      DownloadOptions
+    >(AnimatedDownloadFormComponent);
     matDialogRef.afterClosed().subscribe((options) => {
       if (options) {
         this.download.requestDownload(DownloadTarget.REACFOAM, DownloadFormat.SVG, options);
@@ -331,7 +378,11 @@ export class DownloadTabComponent {
   }
 
   onEHLDAnimatedDownload() {
-    const matDialogRef = this.dialog.open(AnimatedDownloadFormComponent);
+    const matDialogRef = this.dialog.open<
+      AnimatedDownloadFormComponent,
+      undefined,
+      DownloadOptions
+    >(AnimatedDownloadFormComponent);
     matDialogRef.afterClosed().subscribe((options) => {
       if (options) {
         this.download.requestDownload(DownloadTarget.DIAGRAM, DownloadFormat.SVG, options);

@@ -1,10 +1,6 @@
-import { Publication } from './publication.model';
+import type * as Graph from '../../../../../../contract/graph.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface LiteratureReference extends Publication {
-  journal: string;
-  pages: string;
-  pubMedIdentifier: number;
-  url: string;
-  volume: number;
-  year: number;
-}
+/** A journal article, as the pathway browser reads it (the contract's, resolved). */
+export type LiteratureReference = Resolved<Graph.LiteratureReference<JsogReference>>;

@@ -55,7 +55,7 @@ test.describe('Download feedback', () => {
       (window as unknown as { __states: string[] }).__states = seen;
       const record = () => {
         for (const el of document.querySelectorAll('.button--busy .button__state')) {
-          const state = el.textContent?.trim();
+          const state = el.textContent.trim();
           if (state && !seen.includes(state)) seen.push(state);
         }
       };

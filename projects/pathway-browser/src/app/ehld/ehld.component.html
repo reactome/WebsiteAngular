@@ -21,7 +21,9 @@
           [class.has-analysis]="analysis.result()"
           [style.--handle-height.px]="handle.clientHeight"
         >
-          <button id="legend-handle" cdkDragHandle #handle (click)="toggleLegend(legendWidth)">LEGEND</button>
+          <button type="button" id="legend-handle" cdkDragHandle #handle (click)="toggleLegend(legendWidth)">
+            LEGEND
+          </button>
           @if (analysis.result()) {
             <div class="analysis-legend">
               <cr-analysis-legend></cr-analysis-legend>
@@ -39,6 +41,7 @@
               @for (item of group.items; track item) {
                 <div class="legend-item">
                   <span>{{ item.name }}</span>
+                  <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- icons from the figure host, each its own shape; nothing here knows their size -->
                   <img [src]="item.src" [alt]="item.alt" />
                 </div>
               }

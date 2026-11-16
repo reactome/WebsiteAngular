@@ -1,4 +1,5 @@
 import { serves } from './fixtures/serves';
+import type { APIRequestContext } from '@playwright/test';
 import { test, expect } from './support/backend';
 
 // Coverage for the content pages and shared navigation chrome.
@@ -32,6 +33,14 @@ test.describe('Shared navigation chrome', () => {
       expect(await crumbs.count()).toBeGreaterThanOrEqual(minCrumbs);
     });
   }
+
+  test('the breadcrumb names the entity on a detail page', async ({ page }) => {
+    // The leaf starts as the id and is replaced once the entity's name arrives.
+    await page.goto('/content/detail/R-HSA-69620');
+    await expect(page.locator('app-breadcrumb')).toContainText('Cell Cycle Checkpoints', {
+      timeout: LOAD,
+    });
+  });
 });
 
 test.describe('Content pages render backend data', () => {
@@ -60,22 +69,25 @@ test.describe('Content pages render backend data', () => {
     await expect(page).toHaveURL(/\/dataSchema\/[^/]+\/\d+/);
   });
 
-  // ToC, DOI and Contributors read /data/content/* on the content service.
-  // Those endpoints exist only on the dev host, from an unmerged backend branch
-  // -- production still 404s them. Skip rather than fail where they are absent,
-  // so a red run always means a real regression. Checked once per worker.
-  let contentEndpoints: boolean | undefined;
-  test.beforeEach(async ({ request, baseURL }) => {
-    if (contentEndpoints === undefined) {
-      // Not wrapped in try/catch on purpose: a backend without the endpoint
-      // answers 404 and these tests stand down, but a timeout used to land here
-      // too and quietly disabled all four for the whole run.
-      contentEndpoints = await serves(request, `${baseURL}/ContentService/data/content/toc`);
-    }
-  });
+  // ToC, DOI and Contributors read /data/content/* on the content service,
+  // which node serves and Java's ContentService does not: production's still
+  // 404s them. Skip rather than fail where they are absent, so a red run always
+  // means a real regression.
+  //
+  // Asked by each test that needs them, not once per worker. A cached answer
+  // came from whichever test ran first, and a test that never probes has no
+  // recording of the probe -- so when sharding put the icon library first, it
+  // read as absent and the four tests below skipped (#321).
+  async function skipUnlessContentEndpoints(request: APIRequestContext, baseURL?: string) {
+    // Not wrapped in try/catch on purpose: a backend without the endpoint
+    // answers 404 and these tests stand down, but a timeout used to land here
+    // too and quietly disabled all four for the whole run.
+    const present = await serves(request, `${baseURL}/ContentService/data/content/toc`);
+    test.skip(!present, 'content-page endpoints absent on this backend');
+  }
 
-  test('table of contents lists pathways', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('table of contents lists pathways', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/content/toc');
     await expect(
       page.getByText(/Metabolism|Signal Transduction|Immune System/).first()
@@ -84,8 +96,12 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
-  test('a subpathway shows its DOI, which its parent does not carry', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('a subpathway shows its DOI, which its parent does not carry', async ({
+    page,
+    request,
+    baseURL,
+  }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     // This page asks for two lists, and under replay they are ~1 MB of recorded
     // JSON together (250 kB of contents, 796 kB of DOIs). Alone it takes about
     // 35 seconds, which used to exceed playwright's 30s default and report as a
@@ -117,15 +133,15 @@ test.describe('Content pages render backend data', () => {
     });
   });
 
-  test('DOI page lists pathways', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('DOI page lists pathways', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/content/doi');
     // Every row is a DOI-registered pathway; the prefix is stable.
     await expect(page.getByText(/10\.\d{4,}/).first()).toBeVisible({ timeout: LOAD });
   });
 
-  test('contributors page lists people', async ({ page }) => {
-    test.skip(!contentEndpoints, 'content-page endpoints absent on this backend');
+  test('contributors page lists people', async ({ page, request, baseURL }) => {
+    await skipUnlessContentEndpoints(request, baseURL);
     await page.goto('/community/contributors');
     const links = page.locator('a[href*="/content/detail/person/"]');
     await expect(links.first()).toBeVisible({ timeout: LOAD });
@@ -135,6 +151,16 @@ test.describe('Content pages render backend data', () => {
     await page.goto('/community/icon-lib');
     await expect(page.locator('img, svg').first()).toBeVisible({ timeout: LOAD });
     await expect(page.locator('body')).not.toContainText('Loading', { timeout: LOAD });
+  });
+
+  test("an icon's own page shows that icon, by its id", async ({ page }) => {
+    // /search/icon/{id}: the one icon, as a link to it opens it.
+    await page.goto('/community/icon-lib/R-ICO-012449');
+    await expect(page.locator('.detail-stid')).toHaveText('R-ICO-012449', { timeout: LOAD });
+    await expect(page.locator('.detail-summation')).not.toBeEmpty();
+    // The image's address, not its loading: it comes from the release's
+    // files, which the replay does not serve to an <img>.
+    await expect(page.locator('.detail-preview img')).toHaveAttribute('src', /R-ICO-012449/);
   });
 
   test('a CMS article page renders its body', async ({ page }) => {
@@ -231,6 +257,56 @@ test.describe('Research Spotlight', () => {
       'Ten common mistakes that could ruin your enrichment analysis',
       { timeout: LOAD }
     );
+  });
+});
+
+test.describe('When an article list fails to load', () => {
+  // A failed index was turned into an empty list, so the home page said there
+  // was no news, the news page said there were no articles, and the Spotlight
+  // tile read the date of an article that did not exist and broke (#321).
+  // Missing is still "none"; failing says so.
+  const failIndex = (page: import('@playwright/test').Page, list: string) =>
+    page.route(`**/content/${list}/index.json`, (route) =>
+      route.fulfill({ status: 500, contentType: 'text/plain', body: 'index failed' })
+    );
+
+  test('the home page says news and the spotlight could not be loaded', async ({ page }) => {
+    const crashes: string[] = [];
+    page.on('pageerror', (error) => crashes.push(error.message));
+    await failIndex(page, 'about/news');
+    await failIndex(page, 'content/reactome-research-spotlight');
+    await page.goto('/');
+
+    const news = page.locator('app-home-latest-news');
+    await expect(news.getByRole('alert')).toContainText("Couldn't load the latest news", {
+      timeout: LOAD,
+    });
+    await expect(news).not.toContainText('No news to show');
+    await expect(page.locator('app-home-spotlight').getByRole('alert')).toContainText(
+      "Couldn't load the research spotlight"
+    );
+    expect(crashes).toEqual([]);
+  });
+
+  test('the news page says the list could not be loaded', async ({ page }) => {
+    await failIndex(page, 'about/news');
+    await page.goto('/about/news');
+    await expect(page.getByRole('alert')).toContainText("Couldn't load the news", {
+      timeout: LOAD,
+    });
+    await expect(page.getByText('No news articles available')).toHaveCount(0);
+  });
+
+  // The other half: a list that is not there is empty, not an error. The site's
+  // fallback answers a missing file with index.html and a 200.
+  test('a missing list is still "no news", not an error', async ({ page }) => {
+    await page.route('**/content/about/news/index.json', (route) =>
+      route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><html></html>' })
+    );
+    await page.goto('/');
+    const news = page.locator('app-home-latest-news');
+    await expect(news).toContainText('No news to show right now', { timeout: LOAD });
+    await expect(news.getByRole('alert')).toHaveCount(0);
   });
 });
 
@@ -391,11 +467,58 @@ test.describe('Entity detail: pathway locations', () => {
     await expect(goTo).toHaveAttribute('href', /\/content\/detail\/R-RNO-/, { timeout: LOAD });
   });
 
+  test('a long tree on a content page gives each top-level pathway its count (FR-051)', async ({
+    page,
+  }) => {
+    // SC-008 names ATP, whose answer is 8.4 MB; TP53 in the nucleoplasm is the
+    // same case at 92 KB: 9 top-level pathways, 109 locations (release 98).
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-69488');
+    const tree = page.locator('app-locations-tree');
+    await expect(tree.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
+    const roots = await tree.locator('.root-entry').count();
+    expect(roots, 'top-level pathways').toBeGreaterThan(1);
+    await expect(tree.locator('.location-count')).toHaveCount(roots);
+    await expect(tree.locator('[aria-expanded="true"]'), 'too long to show open').toHaveCount(0);
+    // Opening one shows its locations.
+    await tree.locator('.root-entry').first().click();
+    await expect(tree.locator('a.leaf-link').first()).toBeVisible();
+  });
+
+  test("a top-level pathway's own page offers no Expand all", async ({ page }) => {
+    // Nothing is under a top-level pathway in its own Locations tree: the
+    // button was there and did nothing.
+    test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
+    await page.goto('/content/detail/R-HSA-109582');
+    await expect(page.locator('app-locations-tree .root-entry').first()).toBeVisible({
+      timeout: LOAD,
+    });
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveCount(0);
+  });
+
   test('still renders the tree when locations do exist', async ({ page }) => {
     test.skip(!locationsEndpoint, 'locationsInPWB absent on this backend');
     await page.goto('/content/detail/R-HSA-114269');
     await expect(page.locator('.root-entry').first()).toBeVisible({ timeout: LOAD });
     await expect(page.locator('.no-locations')).toHaveCount(0);
+
+    // Its links must be ones the Pathway Browser can read. The content service
+    // writes them HTML-escaped (`#/R-HSA-...&amp;PATH=...`), and bound as they
+    // were, every location reached through a parent opened the browser with no
+    // pathway at all (reported for PKA activation).
+    // A short tree is shown open on a content page (spec 023, FR-050): its
+    // locations are there with no click, and the button offers to collapse.
+    await expect(page.locator('app-locations-tree [aria-expanded="true"]').first()).toBeVisible();
+    await expect(page.locator('app-locations-tree .expand-all-btn')).toHaveText('Collapse all');
+    const hrefs = await page
+      .locator('a.leaf-link')
+      .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
+    expect(hrefs.length, 'locations to follow').toBeGreaterThan(0);
+    expect(hrefs.filter((href) => href.includes('&amp;'))).toEqual([]);
+    expect(
+      hrefs.some((href) => href.includes('&PATH=')),
+      'a location reached through a parent'
+    ).toBe(true);
   });
 });
 

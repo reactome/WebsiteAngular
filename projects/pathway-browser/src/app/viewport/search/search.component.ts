@@ -20,6 +20,7 @@ import { CONTENT_SERVICE } from '../../../environments/environment';
 import {
   BehaviorSubject,
   catchError,
+  throwError,
   Observable,
   of,
   Subscription,
@@ -42,7 +43,9 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { FlagButtonComponent } from '../../details/common/flag-button/flag-button.component';
 import { ShadowScrollComponent } from '../../shared/shadow-scroll/shadow-scroll.component';
 import { RevealDirective } from '../../utils/reveal.directive';
+import { fieldByName } from '../../services/utils';
 import Entry = Search.Entry;
+import * as Search from '../../model/search.model';
 
 const MIN_SUGGEST_LENGTH = 2;
 const AVAILABLE_IN_HEIGHT = 20;
@@ -91,19 +94,21 @@ export class SearchComponent {
         : of([]),
   });
 
-  readonly suggestionResults = linkedSignal<{ value?: string[]; loading: boolean }, string[]>({
+  readonly suggestionResults = linkedSignal<
+    { value: string[] | undefined; loading: boolean },
+    string[]
+  >({
     source: () => ({ value: this.suggestions.value(), loading: this.suggestions.isLoading() }),
     computation: (source, previous) => (source.loading ? previous?.value : source.value) || [],
   });
 
-  readonly suggestionIndex: WritableSignal<number> = linkedSignal(
-    () => this.suggestionResults() && -1
-  );
+  // Back to no suggestion whenever the suggestions change.
+  readonly suggestionIndex: WritableSignal<number> = linkedSignal({
+    source: this.suggestionResults,
+    computation: () => -1,
+  });
   readonly currentSuggest = computed(() =>
-    this.suggestionIndex() !== -1
-      ? this.searchText() +
-        this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
-      : undefined
+    suggestPreview(this.searchText(), this.suggestionResults(), this.suggestionIndex())
   );
 
   readonly resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll');
@@ -114,19 +119,33 @@ export class SearchComponent {
   readonly searchErrorMessage = signal<string>('');
   readonly searchedNoResult = computed(() => this.localHasNoResult() && this.globalHasNoResult());
 
+  /**
+   * What could not be searched at all, said as such, or empty when nothing failed.
+   *
+   * Only a failure that left a scope with nothing: a failed later page is told
+   * apart below the results. A failed search of the current pathway also hides
+   * its tab, so it is named even while the other scope's results show.
+   */
+  readonly searchFailed = computed(() => {
+    const local =
+      this.scopes.local.failed() && !this.scopes.local.found() && !!this.state.pathwayId();
+    const global = this.scopes.global.failed() && !this.scopes.global.found();
+    if (local && global) return "Couldn't search right now.";
+    // The other scope's answer is said too, when it was "nothing".
+    if (global && this.localHasNoResult())
+      return "Nothing was found in the current pathway, and couldn't search all pathways.";
+    if (global) return "Couldn't search all pathways.";
+    if (local && this.globalHasNoResult())
+      return "Nothing was found in any pathway, and couldn't search the current pathway.";
+    if (local) return "Couldn't search the current pathway.";
+    return '';
+  });
+
   constructor() {
-    effect(
-      () =>
-        this.diagram() &&
-        this.searchParams.update((params) =>
-          params
-            ? {
-                ...params,
-                diagram: this.diagram(),
-              }
-            : undefined
-        )
-    );
+    effect(() => {
+      const diagram = this.diagram();
+      if (diagram) this.searchParams.update((params) => params && { ...params, diagram });
+    });
     effect(() => {
       // Read to subscribe: the effect re-runs when the results panel is resized or replaced.
       this.resultHeight();
@@ -151,16 +170,16 @@ export class SearchComponent {
       inactive.active = false;
     });
     effect(() => {
-      if (this.selectedResultPathwaysStable().length === 1) {
-        this.selectAndSetPathway(this.selectedResultPathwaysStable().at(0)!.stId);
-      }
+      const pathways = this.selectedResultPathwaysStable();
+      const only = pathways.length === 1 ? pathways[0] : undefined;
+      if (only) this.selectAndSetPathway(only.stId);
     });
 
     effect(() => {
       // The selected pathway brings itself into view -- see RevealDirective in
       // the template. This only has to tell the scroller to redraw the shadows
       // that say there is more above or below.
-      this.selectedResultPathwaysStable().length > 1 &&
+      if (this.selectedResultPathwaysStable().length > 1)
         setTimeout(() => this.resultPathways()?.updateShadows(), 600);
     });
   }
@@ -231,8 +250,11 @@ export class SearchComponent {
       }
       return this.http
         .get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
+          // The diagram is the path; neither it nor the species is a parameter
+          // here, and either would keep the answer out of the edge cache
+          // (spec 011).
           params: {
-            ...params,
+            ...withoutKeys(params, 'diagram', 'species'),
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
@@ -254,9 +276,9 @@ export class SearchComponent {
         return of(Search.EMPTY_RESULTS);
       }
       return this.http
-        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks/`, {
+        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks`, {
           params: {
-            ...params,
+            ...withoutKeys(params, 'diagram'),
             start: page * pageSize,
             rows: pageSize,
             includeInteractors: false,
@@ -296,19 +318,19 @@ export class SearchComponent {
   selectedResultPathways = rxResource({
     params: this.selectedResultId,
     stream: ({ params }) =>
-      this.http.get<Search.Entry[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
+      this.http.get<Search.PathwayOf[]>(`${CONTENT_SERVICE}/search/pathways/of/${params}`, {
         params: {
           includeInteractors: false,
           directlyInDiagram: true,
           species: this.species.currentSpecies().displayName,
-          fields: [' DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD'],
+          fields: ['DB_ID', 'ST_ID', 'NAME', 'HAS_EHLD'],
         },
       }),
   });
 
   readonly selectedResultPathwaysStable = linkedSignal<
-    { results?: Search.Entry[]; loading: boolean },
-    Search.Entry[]
+    { results: Search.PathwayOf[] | undefined; loading: boolean },
+    Search.PathwayOf[]
   >({
     source: () => ({
       results: this.selectedResultPathways.value(),
@@ -347,14 +369,17 @@ export class SearchComponent {
 
   handleSearchError(scope: Scope, error: HttpErrorResponse) {
     if (error.status === 404) {
-      const message = error.error?.messages?.[0] || 'No entries found';
+      const message = noEntriesMessage(error.error);
       this.searchErrorMessage.set(message);
 
       if (scope === 'local') this.localHasNoResult.set(true);
       if (scope === 'global') this.globalHasNoResult.set(true);
       return of(Search.EMPTY_RESULTS);
     }
-    return of(Search.EMPTY_RESULTS);
+    // Anything else is a failure, not an empty answer: the data source says so.
+    if (scope === 'local') this.localHasNoResult.set(false);
+    if (scope === 'global') this.globalHasNoResult.set(false);
+    return throwError(() => error);
   }
 
   setNoSearchResult(scope: Scope, results: Search.Result) {
@@ -369,9 +394,21 @@ export class SearchComponent {
 // TODO find a way to avoid the break in scroll when loading a new page
 export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   private readonly _result = signal<Search.Result | undefined>(undefined);
-  readonly facets = computed(() => this._result()?.facets || []);
+  // A count Solr gives under no name is written without one: nothing to show
+  // or filter by, as on the site's search page.
+  readonly facets = computed(() =>
+    (this._result()?.facets || []).filter(
+      (facet): facet is Search.Facet & { name: string } => !!facet.name
+    )
+  );
   readonly found = computed(() => this._result()?.found || 0);
   readonly isLoading = signal<boolean>(false);
+  /** Pages that could not be loaded, until asked for again. */
+  private readonly failedPages = signal<ReadonlySet<number>>(new Set());
+  /** Some page could not be loaded: what is shown is short of what there is. */
+  readonly failed = computed(() => this.failedPages().size > 0);
+  /** Bumped by every new search: answers to an earlier one are dropped. */
+  private generation = 0;
   pageSize = 30;
   private fetchedPages = new Set<number>();
   private cachedEntries: (Search.Entry | undefined)[] = [];
@@ -393,6 +430,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   clear(): void {
+    this.generation++;
+    this.failedPages.set(new Set());
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
     this.fetchPage(0);
@@ -413,7 +452,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   override disconnect(collectionViewer: CollectionViewer): void {
-    this.subscription.remove(this.viewerToSubscription.get(collectionViewer)!);
+    const subscription = this.viewerToSubscription.get(collectionViewer);
+    if (subscription) this.subscription.remove(subscription);
     this.viewerToSubscription.delete(collectionViewer);
   }
 
@@ -427,100 +467,79 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
     }
     this.isLoading.set(true);
     this.fetchedPages.add(page);
+    const generation = this.generation;
+    const current = () => generation === this.generation;
+    const markFailed = (failed: boolean) =>
+      this.failedPages.update((pages) => {
+        const next = new Set(pages);
+        if (failed) next.add(page);
+        else next.delete(page);
+        return next;
+      });
     // Use `setTimeout` to simulate fetching data from server.
     this.param$
       .pipe(
         take(1),
         switchMap((param) =>
           param ? this.fetcher(page, this.pageSize, param) : of(Search.EMPTY_RESULTS)
-        ),
-        catchError((_err) => of(Search.EMPTY_RESULTS))
+        )
       )
-      .subscribe((result) => {
-        this._result.set(result);
-        if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
-        this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...result.entries);
-        this.dataStream.next(this.cachedEntries);
-        this.isLoading.set(false);
+      .subscribe({
+        next: (result) => {
+          if (!current()) return;
+          this._result.set(result);
+          if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
+          this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...(result.entries ?? []));
+          this.dataStream.next(this.cachedEntries);
+          markFailed(false);
+          this.isLoading.set(false);
+        },
+        // Not an empty page: that wiped the whole list, and the page was never
+        // asked for again. What was found stays, and the next scroll retries.
+        error: () => {
+          if (!current()) return;
+          this.fetchedPages.delete(page);
+          if (page === 0) {
+            this._result.set(undefined);
+            this.cachedEntries.length = 0;
+            this.dataStream.next(this.cachedEntries);
+          }
+          markFailed(true);
+          this.isLoading.set(false);
+        },
       });
   }
 }
 
-export namespace Search {
-  export const EMPTY_RESULTS = { found: 0, facets: [], entries: [] } as Search.Result;
+/**
+ * The text typed, completed by the suggestion at `index`, or nothing when no
+ * suggestion is chosen (-1) or there is none at `index`. Up from no suggestion
+ * chooses the first, whether or not there is one, so with no suggestions it
+ * named one that was not there: the preview threw, and so did Enter.
+ */
+export function suggestPreview(
+  text: string,
+  suggestions: readonly string[],
+  index: number
+): string | undefined {
+  if (index === -1) return undefined;
+  const suggestion = suggestions.at(index);
+  return suggestion === undefined ? undefined : text + suggestion.slice(text.length);
+}
 
-  export interface Params extends Record<string, any> {
-    query: string;
-    species?: string;
-    diagram?: string;
-    types?: string[];
-    includeInteractors?: boolean;
-  }
+/**
+ * What a search's 404 says: the first of its body's `messages`, where that is
+ * text, or "No entries found".
+ */
+export function noEntriesMessage(body: unknown): string {
+  const messages = typeof body === 'object' && body !== null ? fieldByName(body, 'messages') : null;
+  const first: unknown = Array.isArray(messages) ? messages[0] : null;
+  return (typeof first === 'string' && first) || 'No entries found';
+}
 
-  export type Paginated<T> = T & {
-    start: number;
-    rows: number;
-  };
-
-  export interface Entry {
-    dbId: string;
-    stId: string;
-    databaseName: string;
-    exactType: string;
-    isDisease: boolean;
-    hasEHLD?: boolean;
-    name: string;
-    referenceIdentifier: string;
-    referenceName: string;
-    referenceURL: string;
-    species: string[];
-    compartmentAccession: string[];
-    compartmentNames: string[];
-  }
-
-  export interface Facet {
-    name: string;
-    count: number;
-  }
-
-  // firework and diagram
-  export interface Result {
-    entries: Entry[];
-    facets: Facet[];
-    found: number;
-  }
-
-  // Add a sub-namespace for Icon-specific results
-  export namespace Icon {
-    export interface Entry {
-      stId: string;
-      dbId: string;
-      id: string;
-      name: string;
-      type: string;
-      exactType: string;
-      species: string[];
-      summation: string;
-      isDisease: boolean;
-      hasEHLD?: boolean;
-      hasReferenceEntity: boolean;
-      disease: boolean;
-      deleted: boolean;
-      date: number;
-    }
-
-    export interface EntryResult {
-      entries: Entry[];
-      typeName: string;
-      entriesCount: number;
-      rowCount: number;
-    }
-
-    export interface Result {
-      results: EntryResult[];
-      rowCount: number;
-      numberOfGroups: number;
-      numberOfMatches: number;
-    }
-  }
+/** `params` without the named keys. */
+function withoutKeys<T extends object>(params: T, ...keys: string[]): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(params).filter(([key]) => !keys.includes(key))
+  ) as Partial<T>;
 }

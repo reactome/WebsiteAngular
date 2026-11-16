@@ -44,7 +44,7 @@
       </div>
     </div>
     @for (element of elements; track element.key; let i = $index) {
-      @if (element.isPresent ? element.isPresent() : obj()[element.key]) {
+      @if (element.isPresent ? element.isPresent() : fieldOf(element.key)) {
         <div class="divider-container" [id]="element.key">
           <div class="divider-name-container">
             <ng-container *ngTemplateOutlet="dividerTemplate; context: { $implicit: element.label }"></ng-container>
@@ -56,13 +56,13 @@
         @if (!element.manual) {
           <cr-controller-tree
             [type]="element.key"
-            [data]="obj()[element.key]"
+            [data]="treeData(element.key) ?? []"
             [depthControl]="element.hasDepthControl ?? false"
             [scope]="element.scope || 'entity'"
             [disableNavigation]="element.disableNavigation?.() ?? false"
           />
         } @else if (element.template) {
-          <ng-container *ngTemplateOutlet="element.template!()"></ng-container>
+          <ng-container *ngTemplateOutlet="element.template() ?? null"></ng-container>
         }
       }
     }
@@ -87,12 +87,7 @@
 
 <ng-template #overviewTemplate>
   <!-- Overview -->
-  <div
-    class="overview"
-    #overview
-    [class.update-layout]="hasIllustration()"
-    [style.--icon-height.px]="overview?.clientHeight"
-  >
+  <div class="overview" #overview [class.update-layout]="hasIllustration()" [style.--icon-height.px]="overviewHeight()">
     <cr-description-overview [obj]="obj()" [showSpecies]="true"></cr-description-overview>
     @if (!icon.isLoading() && icon.value() && currentIcon()) {
       <div class="icon-container">
@@ -102,6 +97,7 @@
     @for (f of figures(); track f.url) {
       @let expanded = figure.expanded() === f;
       <div class="icon-container figure" (click)="figure.toggle(f)" [class.expanded]="expanded">
+        <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- its src is swapped to our origin on error, and a figure can be any size -->
         <img class="icon" [src]="figure.src(f)" [alt]="f.displayName" (error)="figure.fallback($event, f)" />
       </div>
     }
@@ -111,6 +107,7 @@
     <div class="row summation">
       <div class="label-container">Figure</div>
       <div class="composition-container flex-grow">
+        <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- its src is swapped to our origin on error, and a figure can be any size -->
         <img
           class="icon figure expanded"
           [src]="figure.src(f)"
@@ -118,6 +115,7 @@
           [alt]="f.displayName"
           (click)="figure.toggle(f)"
         />
+        <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
       </div>
     </div>
   }
@@ -157,20 +155,26 @@
 <!-- Cell markers -->
 <ng-template #markerTemplate>
   <div class="element-container">
-    <cr-cell-marker [proteinMarkers]="proteinMarkers()" [rnaMarkers]="rnaMarkers()" [markerRefs]="markerReference()" />
+    <cr-cell-marker
+      [proteinMarkers]="proteinMarkers()"
+      [rnaMarkers]="rnaMarkers()"
+      [markerRefs]="markerReference() ?? []"
+    />
   </div>
 </ng-template>
 
 <!-- External Reference -->
 <ng-template #referenceTemplate>
-  <cr-external-reference [referenceEntity]="referenceEntity()" [xRefs]="crossReference()"></cr-external-reference>
+  @if (referenceEntity(); as referenceEntity) {
+    <cr-external-reference [referenceEntity]="referenceEntity" [xRefs]="crossReference()"></cr-external-reference>
+  }
 </ng-template>
 
 <!-- Modifications-->
 <ng-template #modificationsTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="modifications()"
+      [entries]="modifications() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
     ></cr-molecular-process>
@@ -249,15 +253,14 @@
       @for (row of filteredOtherFormsList(); track row?.entity?.dbId ?? $index) {
         <div class="other-forms-row">
           <a class="other-forms-name" [routerLink]="[CONTENT_DETAIL_PATH, row.entity.stId]">
-            {{ row.entity.name[0] }}
+            {{ row.entity.name?.[0] }}
           </a>
           <div class="other-forms-meta">
             <span class="other-forms-compartment">{{ row.compartment }}</span>
-            <!-- Coordinates are EWAS-specific, so they reach the base
-                 PhysicalEntity type through its index signature. -->
-            @if (row.entity['startCoordinate'] || row.entity['endCoordinate']) {
+            <!-- Coordinates are a sequence entity's, read by the key that class has. -->
+            @if (coordinate(row.entity, 'startCoordinate') || coordinate(row.entity, 'endCoordinate')) {
               <span class="other-forms-coords">
-                {{ row.entity['startCoordinate'] }}&ndash;{{ row.entity['endCoordinate'] }}
+                {{ coordinate(row.entity, 'startCoordinate') }}&ndash;{{ coordinate(row.entity, 'endCoordinate') }}
               </span>
             }
             @if (row.entity.inDisease) {
@@ -280,7 +283,7 @@
         <div class="label-container">{{ item.key }}</div>
         <div class="composition-container">
           @for (pe of item.value; let i = $index; track pe?.dbId ?? $index) {
-            <a [href]="`${CONTENT_DETAIL_PATH}/${pe.stId}`">{{ pe.name[0] }}</a>
+            <a [href]="`${CONTENT_DETAIL_PATH}/${pe.stId}`">{{ pe.name?.[0] }}</a>
             <!-- Add separator except for last item -->
             @if (i < item.value.length - 1) {
               <span class="margin-right">,</span>
@@ -314,7 +317,7 @@
 <ng-template #catalystActivityTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="catalystActivity()"
+      [entries]="catalystActivity() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
     ></cr-molecular-process>
@@ -324,7 +327,7 @@
 <ng-template #catalystActivitiesTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="catalystActivities()"
+      [entries]="catalystActivities() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
       perspective="entity"
@@ -336,7 +339,7 @@
 <ng-template #regulationTemplate>
   <div class="element-container">
     <cr-molecular-process
-      [entries]="regulations()"
+      [entries]="regulations() ?? []"
       [catalystActivityReference]="catalystRef()"
       [regulationRefs]="regulationRefs()"
       perspective="event"
@@ -383,7 +386,7 @@
                 <a
                   [href]="`${CONTENT_SCHEMA}/Person/${author.dbId}`"
                   target="_blank"
-                  [ngClass]="{ 'margin-right': !author.orcidId }"
+                  [class.margin-right]="!author.orcidId"
                 >
                   {{ author.firstname }} {{ author.surname }}
                 </a>
@@ -394,7 +397,7 @@
                   </a>
                 }
                 <!-- Add separator except for last item -->
-                @if (i < ie.author.length - 1) {
+                @if (i < (ie.author?.length ?? 0) - 1) {
                   <span class="margin-right">,</span>
                 }
               }
@@ -417,6 +420,11 @@
      currently open, so this is the answer to "where else does this appear?" -->
 <ng-template #otherPathwaysTemplate>
   <div class="element-container">
+    @if (otherPathwaysFailed()) {
+      <p class="other-pathways-error" role="alert">
+        Couldn't load the other pathways this takes part in. Please try again later.
+      </p>
+    }
     <ul class="other-pathways">
       @for (pathway of otherPathways(); track pathway.stId) {
         <li>
@@ -432,7 +440,7 @@
 
 <ng-template #locationsTemplate>
   <div class="element-container">
-    <app-locations-tree [id]="obj().stId" />
+    <app-locations-tree [id]="obj().stId" [openByDefault]="openLocations()" />
   </div>
 </ng-template>
 

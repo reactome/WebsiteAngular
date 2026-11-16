@@ -52,9 +52,9 @@ export interface SiteProfile {
    * `specs/005-search-page-answers/research.md`, D1 and D3.
    *
    * Absent means off, like `deltaSignal`, so a deployment opts in rather than
-   * inherits. Only `development` has it today: the endpoint is not deployed on
-   * beta yet, and no keypair has been exchanged, so every other profile would
-   * offer a button whose calls fail.
+   * inherits. `development` and `beta` have it: beta's route is served by
+   * serve-prod.js, which holds the signing key (see the beta profile); any other
+   * profile would offer a button whose calls fail.
    */
   searchAnswerEndpoint?: string;
   /**
@@ -182,6 +182,10 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     searchAnswerEndpoint: '/search-answer',
     analysisSummaryEndpoint: '/analysis-summary',
     chatHandoffEndpoint: '/chat-handoff',
+    // Beta's nginx routes /api/ to the DeltaSignal service on this host
+    // (deploy/nginx/common/routes.conf), so the Perturb button's calls are
+    // answered here as they are under the dev server's proxy.
+    deltaSignal: true,
     host: 'origin',
     originFallback: 'https://beta.reactome.org',
     s3: S3,
@@ -196,10 +200,10 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
 
   development: {
     variant: 'main',
-    // The only deployment that can reach a DeltaSignal backend: proxy.conf.js
-    // routes /api to DELTASIGNAL_BACKEND, which is a dev-server proxy and does
-    // not exist in a built artifact. Turning this on elsewhere would offer a
-    // button whose every call fails, so the other profiles leave it absent.
+    // proxy.conf.js routes /api to DELTASIGNAL_BACKEND under the dev server;
+    // beta's nginx routes it the same way. Turning this on where neither
+    // proxies /api would offer a button whose every call fails, so the other
+    // profiles leave it absent.
     deltaSignal: true,
     // Same reasoning, and note the path: `/api` above already belongs to the
     // DeltaSignal backend, so the answer proxy cannot live under it.
@@ -320,7 +324,11 @@ export const SELECTED_PROFILE_NAME: string | undefined =
  */
 export function getProfile(name?: string): SiteProfile {
   if (!name) return SITE_PROFILES.production;
-  const profile = SITE_PROFILES[name as ProfileName];
+  // Any string can arrive from the environment, and only some name a profile:
+  // `toString` names an inherited property, not a deployment.
+  const profile = Object.hasOwn(SITE_PROFILES, name)
+    ? SITE_PROFILES[name as ProfileName]
+    : undefined;
   if (!profile) {
     throw new Error(
       `Unknown APP_ENV "${name}". Known deployments: ${Object.keys(SITE_PROFILES).join(', ')}.`

@@ -1,7 +1,9 @@
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { SearchService, SearchFilters, usableSpellCheckTerms } from './search.service';
+import { SearchService, usableSpellCheckTerms } from './search.service';
+import { SearchFilters } from '../model/search.model';
 import { CONTENT_SERVICE } from '../../../../projects/pathway-browser/src/environments/environment';
 
 describe('SearchService', () => {
@@ -73,6 +75,14 @@ describe('SearchService', () => {
       const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/facet_query`);
       expect(req.request.params.get('query')).toBe('TP53');
       expect(req.request.params.getAll('species')).toEqual(['Homo sapiens']);
+      req.flush({});
+    });
+
+    it('sends only what /facet_query takes: no cluster, which would keep it out of the edge cache', () => {
+      service.getFacets('TP53').subscribe();
+
+      const req = httpTesting.expectOne((r) => r.url === `${baseUrl}/facet_query`);
+      expect(req.request.params.keys()).toEqual(['query']);
       req.flush({});
     });
   });

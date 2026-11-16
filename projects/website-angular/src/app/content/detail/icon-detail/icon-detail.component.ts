@@ -1,9 +1,10 @@
+import { IconEntry } from '../../../../model/icon.model';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
 import { PageLayoutComponent } from '../../../page-layout/page-layout.component';
 import { TileComponent } from '../../../reactome-components/tile/tile.component';
-import { IconService, IconEntry } from '../../../../services/icon.service';
+import { IconService } from '../../../../services/icon.service';
 import { ICON_BASE } from '../../../../../../pathway-browser/src/environments/environment';
 
 @Component({

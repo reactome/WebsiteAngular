@@ -1,8 +1,18 @@
 import { ActionReducer, createReducer, on } from '@ngrx/store';
 import { AnalysisState, initialState } from './analysis.state';
 import { analysisActions } from './analysis.actions';
+import { HttpErrorResponse } from '@angular/common/http';
 import { extractErrorMessage } from '../../utilities/utils';
 import { PLoadingStatus } from '../../model/load-dataset.model';
+
+/**
+ * What a failed submission is shown as. It fails as an HTTP response, the
+ * service's or the form's own refusal; anything else is the form's error.
+ */
+function failureMessage(error: unknown): string {
+  if (error instanceof HttpErrorResponse) return extractErrorMessage(error);
+  return error instanceof Error ? error.message : String(error);
+}
 
 export const analysisReducer: ActionReducer<AnalysisState> = createReducer(
   initialState,
@@ -31,7 +41,7 @@ export const analysisReducer: ActionReducer<AnalysisState> = createReducer(
     analysisLoadingStatus: {
       status: 'failed',
       id: 'unknown',
-      description: extractErrorMessage(error),
+      description: failureMessage(error),
     } as PLoadingStatus,
   })),
   on(analysisActions.setLoadingStatus, (state, { status }) => ({

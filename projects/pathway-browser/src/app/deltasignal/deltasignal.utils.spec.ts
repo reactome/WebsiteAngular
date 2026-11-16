@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
-  aggregateRowsByReactomeId,
   buildLogicGraph,
   buildObservations,
   groupChangesByReactomeId,
+  fragilityAtFloor,
   resultRows,
 } from './deltasignal.utils';
 import type {
@@ -52,6 +52,7 @@ const perturbation: DeltaSignalPerturbation = {
   name: 'ATM',
   activity: 80,
   nodeUuids: ['a', 'b'],
+  basis: 'root',
 };
 
 const result: DeltaSignalSolveResult = {
@@ -85,20 +86,6 @@ describe('DeltaSignal result mapping', () => {
     expect(grouped.get('R-HSA-1')).toEqual([24, 79]);
   });
 
-  it('collapses internal duplicates to one Reactome entity in the result table', () => {
-    const aggregated = aggregateRowsByReactomeId(resultRows(network, result, [perturbation]));
-
-    expect(aggregated).toHaveLength(1);
-    expect(aggregated[0]).toMatchObject({
-      reactomeId: 'R-HSA-1',
-      baseline: 1,
-      activity: 52.5,
-      change: 51.5,
-      influence: 5,
-      perturbed: true,
-    });
-  });
-
   it('keeps logic UUIDs separate and retains edges between visible nodes', () => {
     const graph = buildLogicGraph(network, resultRows(network, result, [perturbation]), 1);
 
@@ -106,5 +93,15 @@ describe('DeltaSignal result mapping', () => {
     expect(graph.nodes.map((node) => node.uuid)).toEqual(['a', 'b']);
     expect(graph.nodes.every((node) => node.mappingMultiplicity === 2)).toBe(true);
     expect(graph.edges).toEqual([network.edges[0]]);
+  });
+});
+
+// deltasignal specs/157 (WA specs/029): the fragility display floor.
+describe('fragilityAtFloor', () => {
+  it('names the class at or above the floor and is silent below it', () => {
+    expect(fragilityAtFloor({ rate: 0.14, n: 1436 })).toEqual({ rate: 0.14, n: 1436 });
+    expect(fragilityAtFloor({ rate: 0.05, n: 100 })).toEqual({ rate: 0.05, n: 100 });
+    expect(fragilityAtFloor({ rate: 0.006, n: 17312 })).toBeNull();
+    expect(fragilityAtFloor(null)).toBeNull();
   });
 });

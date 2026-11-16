@@ -1,0 +1,92 @@
+# Tasks: Types in the server-side services
+
+**Input**: [plan.md](plan.md), [spec.md](spec.md), [research.md](research.md) (R1–R7), [data-model.md](data-model.md), [quickstart.md](quickstart.md).
+
+**Tests**: required. Every check is shown failing on a deliberate mistake before it is trusted (constitution III).
+
+**Each pull request**: adversarial review, CI, merge; deploy the services it changes to beta; show every answer unchanged (parity with Java on a small, spaced sample, and the e2e suite); tick its tasks here with the PR number in the same pull request. Lint and dead-code counts only go down.
+
+## Format: `[ID] [P?] [Story] Description`
+
+---
+
+## Phase 1: The instrument, renaming nothing (US1) 🎯
+
+**Goal**: everything a rename needs, and the checks that will hold it, in place first.
+
+- [x] T001 [US1] Make the entry guards extension-agnostic: `tools/content-node/service.mjs` and `tools/render/service.mjs` start when `process.argv[1]` is this file (`fileURLToPath(import.meta.url)`), not when it ends in `service.mjs` (research R3). Test: started under another file name, each service listens. — #544
+- [x] T002 [US1] Make the build fingerprints take `.ts` and `.mjs` alike (content service `/health`, render service `/health`), and extend the content service's fingerprint test to fail when a module file is left out. — #544
+- [x] T003 [US1] Add `tools/package.json` (`{"type": "module"}`) and `tools/tsconfig.json` (R4), the type packages as direct dev dependencies (`@types/node` 24, `@types/express`; a local declaration for the `jsdom` parts used), and have `scripts/check-types.mjs` check it beside `tsconfig.app.json`. While no file is `.ts`, it checks the `.mjs` files with `checkJs` off: zero errors, so the gate is live from the first pull request. — #544
+  - The local `jsdom` declaration moves to T010: its only user is a render spec, which converts there. `@types/node` is 24.19.2, the runtime's major (review of #544; the lockfile bump is that and its own `undici-types`).
+- [x] T004 [US1] Add a type-check step to `.github/workflows/tests.yml` beside the lint step. — #544
+- [x] T005 [US1] Add the per-module loose baseline (`tools/loose-baseline.json`, R5) to `scripts/check-lint.mjs`, and exclude `tools/**` from the global baseline's `no-unsafe-*`/`no-explicit-any` counts; lint `tools/**/*.ts` with `consistent-type-imports` and a ban on enums, namespaces and parameter properties. Show the baseline failing on an added `any`. — #544
+- [x] T006 [US1] Add `tools/load.spec.mjs`: imports every service and CLI entry point in a child Node process (not vitest), failing on any load error. Show it failing on a type import written without `type`. — #544
+  - Review of #544: the eight scripts that run when loaded are checked as Node would treat them, without running them: types stripped by Node's own `stripTypeScriptTypes`, the rest parsed, and each imported name looked for among its module's exports. `node --check` alone passed an enum and a type imported as a value. The start test now fails on any request leaving the machine (the content service fetched the PSICQUIC registry from EBI as it started).
+- [x] T007 [US1] Write the content service image's own `package.json` with `"type": "module"` (`deploy/content-node/Dockerfile`), ready for its `.ts` files. — #544
+
+**Checkpoint**: the gate runs in CI; nothing is renamed; every service deployed unchanged.
+
+---
+
+## Phase 2: Mechanical conversion, module by module (US1)
+
+Each task: rename to `.ts`, update imports, file names that name it (R3 list), fix the type errors with `noImplicitAny` off without changing behaviour, seed its loose count, deploy, show answers unchanged.
+
+- [x] T008 [US1] The analysis gateway (`tools/analysis-gateway/gateway.ts`; its Dockerfile `COPY`/`CMD`). — #549
+- [x] T009 [P] [US1] `tools/api-types/*` and `tools/analysis-types/*` (compile, answers, scan, calls, content, record). — #551
+- [x] T010 [US1] The render service: params, gif, then pptx, render-core, service, render (CLI); the image's `COPY tools/render/*.mjs` and `CMD`. — #552
+- [x] T011 [US1] Content service leaves: graph, java-hashmap, schema, citation, psicquic, jsoup-text, warm. — #553
+- [x] T012 [US1] Content service dependants: solr, report, parameters, cache-label, classify, domain, invalid-inputs. — #554
+- [x] T013 [P] [US1] The snapshot scripts (domain, schema, openapi, graph-names, case, rfd). (#555)
+- [x] T014 [US1] `service.ts` and `diff.ts`: the image's `CMD`, `package.json` scripts, `scripts/preflight.sh`, `deploy/nginx/routes.spec.ts`, the specs that import it, and the documented commands (36). (#556)
+
+**Checkpoint**: every module is `.ts` and checked; no `.mjs` left in the services.
+
+---
+
+## Phase 3: The data the services read (US2)
+
+- [x] T015 [US2] `graph.ts`: `read<Row>()` returning `Promise<Row[]>`, and the driver's value kinds; each of the 65 call sites names its row type. (#557)
+- [x] T016 [P] [US2] `solr.ts`: the handlers' answer types and the document fields read (`searchEntry` and the five other readers). (#558)
+- [x] T017 [P] [US2] Snapshot types (domain, OpenAPI, graph names, jsoup tables, schema, case, RFD), each checked against its file in a spec by a JSON import assigned to it; show one failing on a renamed field. (#559)
+- [x] T018 [P] [US2] Each service's settings named and typed in one place: the content service's in `settings.ts`, each read when it was before (the specs change the environment between cases, so not once); render's typed constants and the gateway's `GatewaySettings` already were. (#560)
+
+---
+
+## Phase 4: The answers the services write (US3)
+
+- [x] T019 [US3] Where the site reads the same answer (spec 012's call table), the content service writes it through the site's model type, one definition; show a field renamed in the shared type failing in both. Done for the contents lists (toc, doi, contributors), the schema attribute and referral tables and the schema model (#561). Schema min and instance referrers too (#562), with the site's `SimpleDatabaseObject` corrected to what is written (no `stId` on an InstanceEdit or Species). The diagram and species-overview flags and the PSICQUIC resources too (#563); spellcheck and suggest are `string[]` on both sides already. Then (#676, replacing #675) the pathway citation; the facets and icon facets; and locationsInPWB -- the last two decided 26 Oct 2026 to follow what is written, measured where it mattered. The facets: the site's `FacetCount` and `IconCategory` leave the name optional and `FacetResponse` its four facets, as the service (and Java) leave out an unnamed count and a facet Solr did not count; the site's readers show only named counts; node writes them as the site's `FacetResponse` and `IconFacetResponse`, its `FacetContainer` being the site's `FacetCount`. locationsInPWB: over 179 recorded answers (1,694 nodes) `diagram` is never written and `species` is absent on species-less objects (56), so the site's `PathwayBrowserNode` drops `diagram` and makes `species` optional; stId, name, type and url are in every one and stay required; node writes them through the site's type and, as Java does, leaves out one a node lacks rather than failing (never seen). The icon library's `iconCategoriesFacet` is optional too, as the search facets are. Then (#677) the interactors (the molecules' details, the enhanced details, withEntities): their writers keep writing JSON text, member by member, for Java's numbers, but `nonEmptyJson<T>` now checks each member's name and value against the site's type T -- a field renamed or retyped there fails here. It does not check that a required member is written (any value may be left out) or what JSON already written holds (the nested lists, checked only by their own writers). The site's `CustomInteraction` gains the `url` it is written with: the recorded answers' 89 known problems on that route are 0 now. Then (#678) the person event lists: over the recorded answers (8 distinct requests, 14 events) each carries the edit's dateTime and authorDbId and its labels, and one a DOI, which the site's `SimpleEvent` lacked; it has them now, node writes each event as that type, and the route's 31 known problems are 0. The icon entry, the last left, went in with the search family's whole contract in spec 016 (T002–T014): the facets (#684), the entry and its typed writer (#689), its readers (#691, #697), the search answers (#703) and the single icon's recording (#704). The search routes' known problems are 0. (Likewise, a PSICQUIC service whose registry name is empty is written without the `name` the site's `PsicquicResource` requires, as Java writes it; the real registry has none.)
+- [ ] T020 [US3] Answers only the services write: types beside the service.
+
+---
+
+## Phase 5: Strict, module by module (US4)
+
+- [x] T021 [US4] `noImplicitAny` on per module (3,373 errors in all, measured), smallest first, each module's loose count lowered in the same pull request. The option cannot be set per file, so `check:types` compiles tools/ with it and ratchets the count per module (`tools/implicit-any-baseline.json`); 1,123 in 38 modules when it began, 1,091 in 25 after the first pass (#564), 958 in 12 after the second (#565), 912 in 10 after the third (#567); java-hashmap's red-black tree is left for a careful pass of its own.
+- [x] T022 [US4] Each module's loose count to zero, starting with those that read graph rows or write answers (SC-004).
+
+  For the content service, T021 and T022 go on per family module (spec 014): one `<family>-endpoints.ts`, or one shared module, per pull request. `service.ts` is gone, and its counts are now spread across the families, the shared modules, `registry.ts` and `server.ts` (786 implicit `any`s in 31 modules on 22 Oct). Loose to zero so far: graph, solr, warm, report, jsoup-text and snapshot-rfd — #596. Loose and implicit any to zero in registry, reference-entities and content-endpoints, with pathId and rawSegment typed at the source (spring) — #597. java-text to zero, both counts — #598. body to zero, both counts — #599. spring to zero, both counts — #600. answers to zero, both counts — #601. objects to 10 loose, 4 implicit any (the rest domain's) — #602. java-hashmap to zero, both counts (its red-black tree included) — #603. domain, part 1: query builders, writers, map's Entity (person-endpoints to zero) — #604. domain, part 2: the computed getters — #605. domain, part 3: the mapping state — #606. domain, part 4: the summary entity and the attribute text (domain loose 358 -> 22, implicit any 131 -> 13 over the four) — #607. search-params, citation-endpoints, classify and snapshot-schema to zero (search-endpoints 104 -> 62 loose) — #608. entities-endpoints to zero — #609. schema-endpoints to zero — #610. mapping-species-endpoints to zero — #611. exporters-endpoints to zero — #612. search-core to zero — #614. parameters to zero — #615. data-query-endpoints to zero — #616. interactors-endpoints to zero — #617. search-endpoints to zero — #618. search-diagram-endpoints to zero — #619. server.ts to zero — #620. objects and domain to zero — #621. citation.ts to zero — #622. pathways-events-endpoints to zero, the last content-node module: every one now at zero, both counts — #623. render-core, render and service to zero, FORMATS keyed so a format without a floor or type fails to compile — #624. pptx.ts to zero, the last service module: every module of both services at zero, both counts — #630. The seven specs to zero, and noImplicitAny on in tools/tsconfig.json: no loose value and no implicit any left in tools/ — #633.
+
+---
+
+## Phase 6: Polish
+
+- [x] T023 The tools beside the services that they do not import (`tools/java-parity`, `tools/library-update`, `tools/svg-export-harness`, the check specs): converted the same way, or recorded as left and why.
+
+  Measured 23 Oct with `checkJs` on: 1,229 errors in 47 `.mjs` files, 70 of them in the five tools and 1,159 in 42 specs. The tools are converted, typed, held at zero both counts, and still run as before (parity and the library guard directly under Node, the harness through its new `playwright.config.ts`, which also mends the README's command: it had found no tests since the harness stopped being called a spec) — #643. The specs go next, in batches: the ten check specs outside the content service (load, started, workflows, check-move, check-baseline-totals, the HAR, flaky and lint checks, and content-node's hermetic), 60 errors — #644. The content service's ten smallest (exporter, cache-headers, molecule-details-bound, component-of, diseases, participating-entities, interactors, query-ids, map-results, mapping), 139 — #645. The next eight (pathways-low, complexes, overview-export, schema-objects, orthology, query-attribute-endpoint, interactors-static, referrers), 183 — #647. Seven more (contained-events, pathways-of, flag, query-attribute, discover, diagram-search, references-mapping), 235 — #649. icon, facet-query and the Java parity spec, 151 — #650. query-search and species-search, 151 — #651. search and service, the last two, with the library-update spec, 252 — #652. No `.mjs` is left in `tools/`, and `tools/load.spec.ts` fails if one is added, so a new module is TypeScript and checked. T023 is complete.
+
+- [x] T024 `CLAUDE.md`: the rule for new service code (typed, and a load test entry for a new entry point) if one emerges. Both emerged: new code under `tools/` is TypeScript, held by `tools/load.spec.ts`; and a new entry point is loaded under Node by the same spec, a new service directory joining `SERVICES` and a script that works when loaded joining `RUN_ON_LOAD`. Also from T023's review: the no-plain-JavaScript check matches any case and `.jsx`, and excludes only the one generated bundle; three comments name the `.ts` specs. — #653
+
+---
+
+## Dependencies
+
+- Phase 1 before any rename. T001–T002 before T010 and T014 (the guards and fingerprints).
+- Within Phase 2, leaves before dependants; `service.ts` last (a `.ts` module may import `.mjs`, not the reverse for type-only imports).
+- Phase 3 after the module it types is converted. Phase 4 after spec 012's types for that answer are fixed. Phase 5 last.
+
+## Implementation strategy
+
+1. **MVP**: Phase 1. The gate is in CI before the first file changes.
+2. Then the gateway, the type tools and the render service (small, separate services), then the content service from its leaves to `service.ts`.
+3. Then data and answer types, then strictness, each module to zero.

@@ -12,7 +12,7 @@ import { ExpressionTagComponent } from '../expression-tag/expression-tag.compone
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { TypeSafeMatCellDef } from '../../../../utils/type-safe-mat-cell-def.directive';
 import { TypeSafeMatRowDef } from '../../../../utils/type-safe-mat-row-def.directive';
-import type { Analysis } from '../../../../model/analysis.model';
+import type * as Analysis from '../../../../model/analysis.model';
 import { AnalysisService } from '../../../../services/analysis.service';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { of } from 'rxjs';
@@ -21,9 +21,10 @@ import { MatSort, MatSortModule } from '@angular/material/sort';
 import { TitleCasePipe } from '@angular/common';
 import { MatIcon } from '@angular/material/icon';
 import { FlagButtonComponent } from '../../../common/flag-button/flag-button.component';
+import { SortKey, sortKey, sortRows, valueAtPath } from '../sort-rows';
 
 type ResourceMap = { [resource: string]: string[] };
-type FoundIdentifier = {
+export type FoundIdentifier = {
   id: string;
   exp: number[];
   entities: ResourceMap;
@@ -59,16 +60,12 @@ export class FoundTableComponent {
   readonly sort = viewChild.required(MatSort);
 
   constructor() {
-    this.dataSource.sortingDataAccessor = (data, header) => {
-      const value = header.split('-').reduce((a: any, b) => a?.[b], data);
-      if (value instanceof Array) return arrayToSortableString(value); // Interactors
-      if (value) return value; // Expressions + identifier
-    };
+    this.dataSource.sortData = (rows, sort) => sortRows(rows, sort, foundSortKey);
 
     effect(() => (this.dataSource.data = this.foundEntities()));
     effect(() => (this.dataSource.sort = this.sort()));
     effect(() => {
-      this.pathwayFoundEntities.value(); // When found entity finished loading
+      this.found(); // When found entity finished loading
       const stId = untracked(this.pathway).stId;
       setTimeout(() => {
         document.getElementById(`pathway-${stId}-row`)?.scrollIntoView({
@@ -93,8 +90,13 @@ export class FoundTableComponent {
         : of(undefined),
   });
 
+  /** What was found; undefined while loading or failed, as value() throws then. */
+  private readonly found = computed(() =>
+    this.pathwayFoundEntities.hasValue() ? this.pathwayFoundEntities.value() : undefined
+  );
+
   readonly foundEntities: Signal<FoundIdentifier[]> = computed(() => {
-    const found = this.pathwayFoundEntities.value();
+    const found = this.found();
     if (!found) return [];
     return [
       ...found.entities.map((entity) => ({
@@ -114,17 +116,17 @@ export class FoundTableComponent {
     ];
   });
 
-  readonly resources = computed(() => this.pathwayFoundEntities.value()?.resources || []);
+  readonly resources = computed(() => this.found()?.resources || []);
   readonly resourceColumnIds = computed(() => this.resources().map((r) => `entities-${r}`));
   readonly expressionColumnNames = computed(
-    () => this.analysis.result()?.expression?.columnNames || []
+    () => this.analysis.result()?.expression.columnNames || []
   );
   readonly expressionColumnIds = computed(() =>
     this.expressionColumnNames().map((_, i) => `exp-${i}`)
   );
 
   readonly expandedColumns = computed(() =>
-    this.pathwayFoundEntities.value()
+    this.found()
       ? [
           'id',
           ...(this.analysis.hasInteractors() ? ['interactors'] : []),
@@ -144,7 +146,13 @@ export class FoundTableComponent {
   ]);
 }
 
-function arrayToSortableString(values: string[] | undefined): string {
-  if (!values) return '0';
-  return `${values.length}-${values.join('-')}`;
+/**
+ * A found identifier's key in a column: a list (interactors, a resource's
+ * entities) by its length and then its items; a falsy value (an expression of
+ * 0 among them) as a missing one.
+ */
+export function foundSortKey(row: FoundIdentifier, columnId: string): SortKey {
+  const value = valueAtPath(row, columnId);
+  if (Array.isArray(value)) return `${value.length}-${value.join('-')}`;
+  return sortKey(value || undefined);
 }

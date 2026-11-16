@@ -1,8 +1,7 @@
 import { computed, ElementRef, Injectable, InjectionToken, inject } from '@angular/core';
 import { Observable, switchMap } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
-import type { Analysis } from '../model/analysis.model';
-import { isArray } from 'lodash';
+import type * as Analysis from '../model/analysis.model';
 import { AnalysisService } from './analysis.service';
 import { DataStateService } from './data-state.service';
 import { UrlStateService } from './url-state.service';
@@ -140,7 +139,7 @@ export class EhldService {
   }
 
   isFlagged(element: SVGGElement, flaggedElement: (SVGGElement | undefined)[]): boolean {
-    return flaggedElement?.includes(element) ?? false;
+    return flaggedElement.includes(element);
   }
 
   /***
@@ -154,7 +153,7 @@ export class EhldService {
   getStableId(identifier: string) {
     const STID_PATTERN_LITE = /R-[A-Z]{3}-[0-9]{3,}/;
 
-    if (identifier?.trim()) {
+    if (identifier.trim()) {
       const result = STID_PATTERN_LITE.exec(identifier);
 
       if (result && result.length > 0) {
@@ -179,35 +178,6 @@ export class EhldService {
       }
     });
     return map;
-  }
-
-  setDbIdToSVGGElementMap(container: ElementRef<HTMLDivElement> | undefined) {
-    const map = new Map<number, SVGGElement>();
-    const svgElement = container!.nativeElement.querySelectorAll(
-      'g[id^="REGION"]'
-    ) as NodeListOf<SVGGElement>;
-    svgElement.forEach((svgElement) => {
-      const idAttr = svgElement.getAttribute('id');
-      if (idAttr) {
-        const dbId = this.getDbId(idAttr);
-        if (dbId) {
-          map.set(Number(dbId), svgElement);
-        }
-      }
-    });
-    return map;
-  }
-
-  getDbId(identifier: string) {
-    const DBID_PATTERN_LITE = /\d+$/;
-
-    if (identifier?.trim()) {
-      const result = DBID_PATTERN_LITE.exec(identifier);
-      if (result && result.length > 0) {
-        return result[0]; // First match
-      }
-    }
-    return null;
   }
 
   saturateRegion(
@@ -321,9 +291,10 @@ export class EhldService {
     type: 'fdr' | 'exp'
   ) {
     const svg = regionElement.closest('svg');
+    if (!svg) throw new Error(`The region of ${stId} is not in an illustration.`);
     const defs =
-      svg!.querySelector('defs') ||
-      svg!.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
+      svg.querySelector('defs') ||
+      svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
 
     const stops: {
       start: number;
@@ -332,22 +303,19 @@ export class EhldService {
       exp: number | undefined;
       width: number;
     }[] = [];
-    const size = values.reduce(
-      (l: number, e) => (e !== undefined && isArray(e) ? l + e[1] : l + 1),
-      0
-    );
+    const size = values.reduce((l: number, e) => l + e[1], 0);
     const delta = 1 / size;
     const palette = type === 'fdr' ? this.analysis.fdrPalette() : this.analysis.palette();
     values.forEach((exp, _i) => {
-      const p = stops.length - 1;
-      const realExp = isArray(exp) ? exp[0] : exp;
-      if (stops.length !== 0 && stops[p].exp === realExp) {
-        stops[p].stop += delta;
-        stops[p].width += delta;
+      const last = stops.at(-1);
+      const realExp = Array.isArray(exp) ? exp[0] : exp;
+      if (last && last.exp === realExp) {
+        last.stop += delta;
+        last.width += delta;
       } else {
         stops.push({
-          start: stops[p]?.stop || 0,
-          stop: (stops[p]?.stop || 0) + delta * exp[1],
+          start: last?.stop || 0,
+          stop: (last?.stop || 0) + delta * exp[1],
           width: delta * exp[1],
           color: palette.scale(realExp).hex(),
           exp: realExp,
@@ -370,9 +338,9 @@ export class EhldService {
 
   showAnalysisInfo(regionElement: SVGGElement, analysisPathway: Analysis.Pathway | undefined) {
     if (!analysisPathway) return;
-    const analysisInfoElement = regionElement.querySelector(
+    const analysisInfoElement = regionElement.querySelector<SVGGElement>(
       `g[id^="${this.analysisInfoId}"]`
-    ) as SVGGElement;
+    );
 
     if (analysisInfoElement) {
       // The label is the whole point of this box, so find it before revealing
@@ -427,8 +395,10 @@ export class EhldService {
       textInfoElement.removeAttribute('transform');
       textInfoElement.classList.add('analysis-text');
 
+      // The first rect or path, as before; there is one, as `container` is.
       const rectBox = (
-        analysisInfoElement.querySelector('rect, path')! as SVGGraphicsElement
+        analysisInfoElement.querySelector<SVGRectElement | SVGPathElement>('rect, path') ??
+        container
       ).getBBox();
       const centerX = rectBox.x + rectBox.width / 2;
       const centerY = rectBox.y + rectBox.height / 2;
@@ -478,7 +448,10 @@ export class EhldService {
 
   async downloadImage(format: DownloadFormat) {
     const svg = document.getElementById('ehld')?.querySelector('svg');
-    if (!svg) return;
+    if (!svg) throw new Error('There is no illustration on screen to export');
+    // Named now, for the illustration being drawn: by the time it is encoded
+    // the reader may be on another pathway.
+    const name = `${this.data.currentPathway()?.stId}`;
 
     const canvas = await this.rasterise(
       svg as SVGSVGElement,
@@ -488,11 +461,17 @@ export class EhldService {
       format === DownloadFormat.JPEG ? '#ffffff' : undefined
     );
     const mimeType = format === DownloadFormat.PNG ? 'image/png' : 'image/jpeg';
-    this.download.export(
-      canvas.toDataURL(mimeType, 1.0),
-      format,
-      `${this.data.currentPathway()?.stId}`
+    // A Blob, not `toDataURL`: the file as a data: URL is several megabytes of
+    // link, more than Chrome will follow (see DownloadService.export).
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (made) =>
+          made ? resolve(made) : reject(new Error(`the browser could not encode the ${format}`)),
+        mimeType,
+        1.0
+      )
     );
+    this.download.export(blob, format, name);
   }
 
   /**
@@ -540,11 +519,12 @@ export class EhldService {
     // then throws a SecurityError, several frames away from the cause, and the
     // render service answered a bare "Tainted canvases may not be exported".
     //
-    // One illustration does this: Circadian clock (R-HSA-9909396) carries six,
-    // each a div with a conic-gradient, which is how a drawing tool exports a
-    // gradient SVG has no primitive for. The other 217 have none. There is no
-    // way to rasterise it in a browser -- so this says which file and why,
-    // rather than leaving a stack trace to be traced back.
+    // Circadian clock (R-HSA-9909396) carried six until Release 97, each a div
+    // with a conic-gradient, which is how a drawing tool exports a gradient SVG
+    // has no primitive for; Release 98's copy was redrawn without them. Artwork
+    // exported that way again cannot be rasterised in a browser, so this says
+    // which file and why, rather than leaving a stack trace to be traced back.
+    // The e2e test plants one to keep this path tested.
     if (markup.includes('<foreignObject')) {
       throw new Error(
         'this illustration embeds HTML in a <foreignObject>, which a browser refuses to ' +
@@ -563,7 +543,8 @@ export class EhldService {
       canvas.width = Math.round(width * scale);
       canvas.height = Math.round(height * scale);
 
-      const context = canvas.getContext('2d')!;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('The browser gave no canvas to draw the illustration on.');
       if (background) {
         context.fillStyle = background;
         context.fillRect(0, 0, canvas.width, canvas.height);
@@ -603,8 +584,8 @@ export class EhldService {
     const analysisContainerClass = '.analysis-info-container';
     const analysisTextClass = '.analysis-text';
     // Get one representative element for each class
-    const container = svg.querySelector(`${analysisContainerClass}`) as HTMLElement;
-    const text = svg.querySelector(`${analysisTextClass}`) as HTMLElement;
+    const container = svg.querySelector<HTMLElement>(analysisContainerClass);
+    const text = svg.querySelector<HTMLElement>(analysisTextClass);
     if (!container || !text) return svg;
     // grab computed styles
     const containerStyle = getComputedStyle(container);

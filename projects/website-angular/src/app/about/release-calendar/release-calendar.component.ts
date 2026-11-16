@@ -108,35 +108,39 @@ export class ReleaseCalendarComponent implements OnInit {
     const releases: Release[] = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const cols = lines[i].split(',');
-      if (cols.length < 2) continue;
+      const [versionText, dateText] = (lines[i] ?? '').split(',');
+      if (versionText === undefined || dateText === undefined) continue;
 
-      const version = parseInt(cols[0].trim(), 10);
-      const dateParts = cols[1].trim().split('/');
-      if (dateParts.length < 2) continue;
+      const version = parseInt(versionText.trim(), 10);
+      const [monthText, yearText] = dateText.trim().split('/');
+      if (monthText === undefined || yearText === undefined) continue;
 
-      const month = parseInt(dateParts[0], 10);
-      const year = parseInt(dateParts[1], 10);
+      const month = parseInt(monthText, 10);
+      const year = parseInt(yearText, 10);
+      // A month outside 1-12 -- a typo in the sheet -- has no name, and the
+      // row used to be shown as "undefined 2026".
+      const monthName = MONTHS[month];
 
-      if (isNaN(version) || isNaN(month) || isNaN(year)) continue;
+      if (isNaN(version) || !monthName || isNaN(year)) continue;
 
+      const announcement = announcements.get(version);
       releases.push({
         version,
         month,
         year,
-        label: `${MONTHS[month]} ${year}`,
-        announcement: announcements.get(version),
+        label: `${monthName} ${year}`,
+        ...(announcement !== undefined && { announcement }),
       });
     }
 
-    if (releases.length > 0) {
-      this.latestVersion = releases[releases.length - 1].version;
-    }
+    const latest = releases.at(-1);
+    if (latest) this.latestVersion = latest.version;
 
     const grouped = new Map<number, Release[]>();
     for (const r of releases) {
-      if (!grouped.has(r.year)) grouped.set(r.year, []);
-      grouped.get(r.year)!.push(r);
+      const year = grouped.get(r.year);
+      if (year) year.push(r);
+      else grouped.set(r.year, [r]);
     }
 
     return Array.from(grouped.entries())

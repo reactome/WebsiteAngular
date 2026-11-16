@@ -3,7 +3,8 @@ import { DatabaseObject } from '../../../model/graph/database-object.model';
 import { PageEvent } from '@angular/material/paginator';
 import { isArray, max } from 'lodash';
 import { InDepth } from '../../../model/graph/in-depth.model';
-import type { Relationship } from '../../../model/graph/relationship.model';
+import type * as Relationship from '../../../model/graph/relationship.model';
+import { isEntry } from '../../../services/utils';
 import { MatPaginator } from '@angular/material/paginator';
 import { ObjectTreeComponent } from '../object-tree/object-tree.component';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -34,10 +35,10 @@ export class ControllerTreeComponent<
   readonly data = input.required<R[], (E | R)[] | E | R>({
     transform: (data) =>
       !isArray(data)
-        ? data.element
-          ? [data as R]
-          : [this.elementToRelationship(data as E)]
-        : data.map((e, i) => (e.element ? (e as R) : this.elementToRelationship(e as E, i))),
+        ? isEntry<E, R>(data)
+          ? [data]
+          : [this.elementToRelationship(data)]
+        : data.map((e, i) => (isEntry<E, R>(e) ? e : this.elementToRelationship(e, i))),
   });
 
   readonly scope = input<'entity' | 'event'>('entity');
@@ -47,7 +48,8 @@ export class ControllerTreeComponent<
 
   readonly depthIndex = signal(1);
   readonly depthChangeSource = signal<'controller' | 'tree' | undefined>(undefined);
-  readonly maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth))!);
+  /** None when no element came from an in-depth answer. */
+  readonly maxDepth = computed(() => max(this.data().map((d) => d.element.maxDepth)));
 
   readonly hasPagination = computed(() => this.data().length > this.pageSize());
   readonly currentPage = linkedSignal<PageEvent>(() => ({
@@ -77,15 +79,19 @@ export class ControllerTreeComponent<
   }
 
   nextPage() {
-    if (this.depthIndex() < this.maxDepth()) {
+    const maxDepth = this.maxDepth();
+    if (maxDepth !== undefined && this.depthIndex() < maxDepth) {
       this.depthChangeSource.set('controller');
       this.depthIndex.update((d) => d + 1);
     }
   }
 
   lastPage() {
+    // With no depth to go to, there is no last page: it used to set the depth to undefined.
+    const maxDepth = this.maxDepth();
+    if (maxDepth === undefined) return;
     this.depthChangeSource.set('controller');
-    this.depthIndex.set(this.maxDepth());
+    this.depthIndex.set(maxDepth);
   }
 
   elementToRelationship(element: E, i = 0): R {

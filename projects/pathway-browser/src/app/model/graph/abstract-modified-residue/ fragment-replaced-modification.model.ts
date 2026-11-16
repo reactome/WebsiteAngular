@@ -1,5 +1,8 @@
-import { FragmentModification } from './fragment-modification.model';
+import type * as Graph from '../../../../../../contract/graph-core.ts';
+import type { JsogReference } from '../../../../../../contract/graph.ts';
+import type { Resolved } from '../../../utils/JSOGDeserializer';
 
-export interface FragmentReplacedModification extends FragmentModification {
-  alteredAminoAcidFragment: string;
-}
+/** A replaced fragment, as the pathway browser reads it (the contract's, resolved). */
+export type FragmentReplacedModification = Resolved<
+  Graph.FragmentReplacedModification<JsogReference>
+>;
