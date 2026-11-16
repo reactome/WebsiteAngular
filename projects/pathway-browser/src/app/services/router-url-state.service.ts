@@ -10,7 +10,6 @@ import {
 import { filter, map, switchMap } from 'rxjs';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { textField } from './utils';
 import {
   FRAGMENT_PATTERN,
   fragmentParams,
@@ -66,7 +65,8 @@ export class RouterUrlStateService extends UrlStateService {
           while (route.firstChild) route = route.firstChild;
           return route.params;
         }),
-        map((params) => textField(params, 'pathwayId'))
+        // read here, not through utils' textField: this service is in the initial bundle, utils is not
+        map((params) => queryText(params['pathwayId']))
       )
       .subscribe((id) => {
         this.pathwayId.set(id);
