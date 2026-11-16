@@ -43,10 +43,18 @@ export function groupAndSortBy<E, K>(
   elements: E[];
 }[] {
   const grouped = new Map<K, E[]>();
-  elements.forEach((element) =>
-    grouped.set(getKey(element), [...(grouped.get(getKey(element)) || []), element])
-  );
-  return [...grouped.keys()].sort(orderBy).map((key) => ({ key, elements: grouped.get(key)! }));
+  for (const element of elements) {
+    const key = getKey(element);
+    let group = grouped.get(key);
+    if (!group) {
+      group = [];
+      grouped.set(key, group);
+    }
+    group.push(element);
+  }
+  return [...grouped]
+    .sort(([key1], [key2]) => orderBy(key1, key2))
+    .map(([key, elements]) => ({ key, elements }));
 }
 
 export function sortByYearDescending(refs: Publication[]) {

@@ -248,14 +248,55 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         it set `undefined` (both mean none: see below); the animated EHLD
         export, its picture gone, fails with an error saying so, where it
         threw a `TypeError`. 145 → 68 with T015 (#983).
-  - [ ] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
+  - [x] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
         `services` (32) and `viewport` (19): 68. Promote the rule to `error`.
+        What a signal holds is read once into a constant and narrowed (the
+        EHLD's selection, the citation's id, the current pathway, the hit
+        reactions' token and pathway, the analysis forms' canvases and
+        chosen species); the qualitative analysis's table is
+        `viewChild.required` (drawn unconditionally, in its first step); the
+        custom resource's name control is `nonNullable` (it is never reset),
+        its inputs always have a URL, and the body they may lack is typed as
+        such down to the request; a diagram's file naming a part of itself
+        that is not there (a node, an edge, a subpathway, a link class) stops
+        the drawing with an error naming it, through `lookUp`, as it stopped
+        it with a `TypeError` before; the edge types are a `Record` over the
+        connector's type; the primary palette is held in a field, the one its
+        map entry holds; `groupAndSortBy` gets or creates its groups; the
+        EHLD's `setDbIdToSVGGElementMap`, never called since the first
+        commit, is gone. What moves: up from no suggestion with none listed,
+        then Enter, searches for what was typed, where the preview threw and
+        Enter did nothing (`suggestPreview`, `suggest-preview.spec.ts`,
+        failing with the old `at(index)!`; see below); a tissue analysis with
+        no experiment, which its disabled button rules out, does not start;
+        an edge walk given no points, which its callers rule out, adds none.
+        Errors that were `TypeError`s now say what was missing: a tree event
+        with no pathway with a diagram above it (every top-level pathway in
+        the recordings, 271, has one), an EHLD region outside an
+        illustration, a canvas with no 2D context, an empty ChEBI
+        identifier. 68 → 0 (#985).
 
 ## Phase 4: Done
 
-- [ ] T018 Confirm `lint-baseline.json` has no warned rules left, and every
+- [x] T018 Confirm `lint-baseline.json` has no warned rules left, and every
       rule warned on 13 Nov is an error; list the silenced lines (SC-004) and the
-      bugs found (SC-005) here.
+      bugs found (SC-005) here. (#987)
+  - `lint-baseline.json` is `{"warnings": 0, "rules": {}}` (#985).
+  - The ten rules `eslint.config.js` warned when this spec began
+    (`no-explicit-any`, `no-namespace`, `no-non-null-assertion`, the five
+    `no-unsafe-*`, `no-useless-assignment`, and `no-unused-vars` for
+    `tools/**/*.mjs`) are all `'error'`. The last was promoted here: no `.mjs`
+    is left under `tools/`, so it matched nothing.
+  - Silenced lines: twelve, each with its reason where it stands (SC-004: at
+    most 20). Ten are `template/prefer-ngsrc` on images whose size nothing
+    here knows or whose `src` is swapped on error, as the config's comment
+    asks; `tools/render/gif.ts` keeps `no-useless-assignment` on the line that
+    drops a full-size frame for the garbage collector; and
+    `tools/content-node/rejection.spec.ts` keeps `only-throw-error`, because
+    a rejection that is no `Error` is the case it tests. None was added by
+    this spec.
+  - Bugs found: listed below, each with its pull request; two are left for a
+    decision (the 0-expression sort, the third connector's edge id).
 
 ## Bugs found on the way
 
@@ -326,18 +367,36 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   parameter reads as its first value, as `paramMap.get` reads it
   (`router-url-state.service.spec.ts`, failing on the old service).
 
-- **"Select summary of entity" on a reference with no stable id clears the
-  selection** (`…/details/common/external-reference`, `onSelect`). The
-  button sets the selection to the reference's stId, which the recordings show
-  missing on 84 references (genes from NCBI Gene, KEGG, OMIM and the like:
-  every other reference has one). With none it selects nothing, so the click
-  deselects what was selected. Found in T016; whether such a reference
-  reaches the button, and whether to hide the button when it does, is a
-  decision about what readers see, so it still clears (now through `null`,
-  as before through `undefined`).
+- **"Select summary of entity" on a reference with no stable id cleared the
+  selection** (`…/details/common/external-reference`). The button sets the
+  selection to the reference's stId, which the recordings show missing on 84
+  references: the gene and transcript records a protein's reference links to
+  (NCBI Gene, KEGG, OMIM, RefSeq and the like). They are reached in the
+  details tree, under a protein's reference; no diagram draws them, so there
+  is nothing to select, and the click only deselected what was selected.
+  Found in T016; the button is now offered only for a reference with a stable
+  id (`summary-selection.ts`, whose spec fails when it is always offered;
+  #984).
+
+- **Up, then Enter, in the Pathway Browser's search did nothing**
+  (`…/viewport/search/search.component.ts`, `currentSuggest`). Up from no
+  suggestion chooses the first, whether or not one is listed, and the preview
+  read that suggestion with a `!`: with none (a term nothing completes, or an
+  empty box), the preview threw, and Enter, which searches for the preview,
+  threw too, so nothing was searched. Fixed in T017: the preview is nothing
+  when there is no suggestion where it points, and Enter searches for what was
+  typed (`suggestPreview`, `suggest-preview.spec.ts`, failing on the old
+  code).
+- **A third connector with the same ends reuses the second's edge id**
+  (`…/services/diagram.service.ts`, `getEdgeId`). The count stored is the one
+  before the increment (`count++`), so it never rises: every conflict after
+  the first is named " (1)" again, and cytoscape refuses a second element with
+  an id, so such a diagram would fail to draw. Found in T017 and kept: none is
+  known, and drawing it is a change to what readers see.
 
 ## Silenced lines
 
-None. The one there was (`analysis.service.ts`, `noData`: `@ts-expect-error`,
+None added by this spec (T018 lists the twelve that stand). The one
+`@ts-expect-error` there was (`analysis.service.ts`, `noData`,
 because `@types/chroma-js` leaves out `Scale.nodata`, which chroma-js has) went
 in T013: the scale's `nodata` is reached through a guard (`hasNoData`).

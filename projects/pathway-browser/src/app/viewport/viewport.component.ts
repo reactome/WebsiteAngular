@@ -333,11 +333,10 @@ export class ViewportComponent {
         }, this.dropdownDuration);
       }
     });
-    effect(
-      () =>
-        this.dataState.currentPathway() &&
-        this.eventService.setDiagramPathway(this.dataState.currentPathway()!)
-    );
+    effect(() => {
+      const pathway = this.dataState.currentPathway();
+      if (pathway) this.eventService.setDiagramPathway(pathway);
+    });
     effect(() => this.sizeObserver.observe(this.content().nativeElement));
     effect(() => {
       if (this.exampleAnalysis.value()) this.state.example.set(null);

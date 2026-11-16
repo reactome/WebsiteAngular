@@ -108,10 +108,7 @@ export class SearchComponent {
     computation: () => -1,
   });
   readonly currentSuggest = computed(() =>
-    this.suggestionIndex() !== -1
-      ? this.searchText() +
-        this.suggestionResults().at(this.suggestionIndex())!.slice(this.searchText().length)
-      : undefined
+    suggestPreview(this.searchText(), this.suggestionResults(), this.suggestionIndex())
   );
 
   readonly resultsScroll = viewChild<CdkVirtualScrollViewport>('resultScroll');
@@ -173,9 +170,9 @@ export class SearchComponent {
       inactive.active = false;
     });
     effect(() => {
-      if (this.selectedResultPathwaysStable().length === 1) {
-        this.selectAndSetPathway(this.selectedResultPathwaysStable().at(0)!.stId);
-      }
+      const pathways = this.selectedResultPathwaysStable();
+      const only = pathways.length === 1 ? pathways[0] : undefined;
+      if (only) this.selectAndSetPathway(only.stId);
     });
 
     effect(() => {
@@ -455,7 +452,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   override disconnect(collectionViewer: CollectionViewer): void {
-    this.subscription.remove(this.viewerToSubscription.get(collectionViewer)!);
+    const subscription = this.viewerToSubscription.get(collectionViewer);
+    if (subscription) this.subscription.remove(subscription);
     this.viewerToSubscription.delete(collectionViewer);
   }
 
@@ -511,6 +509,22 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
         },
       });
   }
+}
+
+/**
+ * The text typed, completed by the suggestion at `index`, or nothing when no
+ * suggestion is chosen (-1) or there is none at `index`. Up from no suggestion
+ * chooses the first, whether or not there is one, so with no suggestions it
+ * named one that was not there: the preview threw, and so did Enter.
+ */
+export function suggestPreview(
+  text: string,
+  suggestions: readonly string[],
+  index: number
+): string | undefined {
+  if (index === -1) return undefined;
+  const suggestion = suggestions.at(index);
+  return suggestion === undefined ? undefined : text + suggestion.slice(text.length);
 }
 
 /**

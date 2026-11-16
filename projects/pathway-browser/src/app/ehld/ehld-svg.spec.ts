@@ -21,7 +21,8 @@ const FIGMA_GRADIENT = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100
 describe('parseEhldSvg', () => {
   it('keeps what follows a self-closing XHTML element in the drawing', () => {
     const svg = parseEhldSvg(FIGMA_GRADIENT);
-    const region = svg.querySelector('#region')!;
+    const region = svg.querySelector('#region');
+    if (!region) throw new Error('the drawing has no #region');
     expect(region.querySelector(':scope > #arrow')).not.toBeNull();
     expect(region.querySelector(':scope > #label')?.textContent).toBe('CLOCK:BMAL1');
     expect(svg.querySelector(':scope > #after')).not.toBeNull();

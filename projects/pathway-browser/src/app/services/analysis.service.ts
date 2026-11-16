@@ -277,6 +277,12 @@ export class AnalysisService {
   private speciesService: SpeciesService = inject(SpeciesService);
   style: Style = new Style(inject(STYLE_ROOT));
 
+  /** The palette drawn when no other can be: 'primary' in paletteOptions. */
+  private readonly primaryPalette = new PaletteSummary([
+    extract(this.style.properties.global.primaryContainer),
+    extract(this.style.properties.global.primary),
+  ]);
+
   paletteOptions: Map<PaletteName, PaletteSummary> = new Map(
     (
       [
@@ -293,13 +299,7 @@ export class AnalysisService {
           'ancient',
           new PaletteSummary(['#1532b3', extract(this.style.properties.global.surface), '#e5e61d']),
         ],
-        [
-          'primary',
-          new PaletteSummary([
-            extract(this.style.properties.global.primaryContainer),
-            extract(this.style.properties.global.primary),
-          ]),
-        ],
+        ['primary', this.primaryPalette],
       ] as [PaletteName, PaletteSummary][]
     ).map(([key, palette]) => [
       key,
@@ -327,12 +327,9 @@ export class AnalysisService {
       // the whole render with it. A type the backend adds before we know about
       // it should draw in the default colours instead.
       const chosen = palette ?? TYPE_DEFAULT_PALETTE.get(type ?? 'OVERREPRESENTATION');
-      // 'primary' is built unconditionally in paletteOptions above, so this last
-      // lookup is the one that genuinely cannot miss.
-      return (
-        this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ??
-        this.paletteOptions.get(FALLBACK_PALETTE)!
-      );
+      // 'primary' is built unconditionally in paletteOptions above: this last
+      // one is what its entry holds (`noData` answers the palette it is given).
+      return this.paletteOptions.get(chosen ?? FALLBACK_PALETTE) ?? this.primaryPalette;
     },
   });
 
@@ -525,8 +522,8 @@ export class AnalysisService {
       [
         expressions.min,
         expressions.max,
-        result!.pathways.at(0)?.entities.exp.at(0),
-        result!.pathways.at(-1)?.entities.exp.at(-1),
+        result.pathways.at(0)?.entities.exp.at(0),
+        result.pathways.at(-1)?.entities.exp.at(-1),
       ].filter(isDefined)
     );
   });
@@ -598,11 +595,10 @@ export class AnalysisService {
 
       this.state.significance.set(result.summary.type !== 'GSVA' ? 0.05 : 1);
 
-      if (this.state.palette()) {
+      const palette = this.state.palette();
+      if (palette) {
         const isValidPalette = [...validGroups.values()].some((validGroup) =>
-          this.paletteGroups
-            .find((group) => group.name === validGroup)
-            ?.palettes.includes(this.state.palette()!)
+          this.paletteGroups.find((group) => group.name === validGroup)?.palettes.includes(palette)
         );
         if (!isValidPalette) this.state.palette.set(null);
       }

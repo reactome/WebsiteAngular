@@ -132,7 +132,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
 
   breadcrumbs: Event[] = [];
   scrollTimeout: undefined | ReturnType<typeof setTimeout>;
-  selectedIdFromUrl?: string;
+  selectedIdFromUrl?: string | null;
   selectedTreeEvent?: Event;
   selectedObj?: DatabaseObject;
   lastSpecieId?: string;
@@ -155,7 +155,7 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     pathwayId: toObservable(this.pathwayId),
   })
     .pipe(
-      tap(({ select }) => (this.selectedIdFromUrl = select!)),
+      tap(({ select }) => (this.selectedIdFromUrl = select)),
       //todo: revisit here to check the logic
       filter(
         () => !this._ignore && !this._isInitialLoad
@@ -179,12 +179,15 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       }),
       switchMap(({ idToUse, enhancedEvent }) => {
         const token = this.analysis.result()?.summary.token;
-        if (!token) {
-          return of({ idToUse, enhancedEvent, hitReactions: [] }); // Return empty hitReactions if there is no token
+        const pathwayId = this.pathwayId();
+        // Without either there is nothing to fetch (getHitReactions answers
+        // an empty list for a missing one too).
+        if (!token || !pathwayId) {
+          return of({ idToUse, enhancedEvent, hitReactions: [] });
         }
         // Fetch hit reactions using token and pathway ID
         return this.analysis
-          .getHitReactions(this.pathwayId()!, token)
+          .getHitReactions(pathwayId, token)
           .pipe(map((hitReactions) => ({ idToUse, enhancedEvent, hitReactions })));
       }),
       switchMap(({ enhancedEvent, hitReactions }) => {
@@ -327,11 +330,13 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
     // Fetch analysis result
 
     // Fetch reactions based on token and pathway ID
+    const token = this.state.analysis();
+    const pathwayId = this.pathwayId();
     const hitReactions$ =
-      !this.state.analysis() || !this.pathwayId()
+      !token || !pathwayId
         ? of({ hitReactions: [] }) // Return empty if no token
         : this.analysis
-            .getHitReactions(this.pathwayId()!, this.state.analysis()!)
+            .getHitReactions(pathwayId, token)
             .pipe(map((hitReactions) => ({ hitReactions })));
 
     // Combine all data and merged into one object
@@ -466,8 +471,12 @@ export class EventHierarchyComponent implements AfterViewInit, OnDestroy {
       this.pathwayId.set(event.stId);
     } else {
       // Subpathway and reaction
+      // Every top-level pathway has a diagram, so every event in the tree has
+      // one above it.
       const parentWithDiagram = this.eventService.getPathwayWithDiagram(event);
-      this.pathwayId.set(parentWithDiagram!.stId);
+      if (!parentWithDiagram)
+        throw new Error(`${event.stId} has no pathway with a diagram above it`);
+      this.pathwayId.set(parentWithDiagram.stId);
     }
   }
 

@@ -153,7 +153,7 @@ export class DataStateService {
               // Combine tokens
               return diagram // When in diagram / ehld view // When in reacfoam view
                 ? this.getDiagramFlagging(diagram, query)
-                : this.getReacfoamFlagging(query, species!);
+                : this.getReacfoamFlagging(query, species);
             })
           ).pipe(
             map((results) =>

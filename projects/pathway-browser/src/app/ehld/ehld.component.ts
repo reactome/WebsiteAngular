@@ -109,9 +109,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
 
   readonly stIdToSVGGElement = signal(new Map<string, SVGGElement>());
   readonly subpathwayStIds = computed(() => [...this.stIdToSVGGElement().keys()]);
-  readonly selectedElement = linkedSignal(() =>
-    this.state.select() ? this.stIdToSVGGElement().get(this.state.select()!) : undefined
-  );
+  readonly selectedElement = linkedSignal(() => {
+    const select = this.state.select();
+    return select ? this.stIdToSVGGElement().get(select) : undefined;
+  });
   readonly flaggedElements = computed(() =>
     this.data
       .flagIdentifiers()
@@ -136,11 +137,10 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private handled = 0;
 
   constructor() {
-    effect(
-      () =>
-        this.selectedElement() &&
-        this.ehldService.applyOutline(this.selectedElement()!, this.flaggedElements())
-    );
+    effect(() => {
+      const selected = this.selectedElement();
+      if (selected) this.ehldService.applyOutline(selected, this.flaggedElements());
+    });
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
     // A sub-pathway hovered in the hierarchy lights up here as if hovered here.
     effect((onCleanup) => {
@@ -307,9 +307,8 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
       });
 
       element.addEventListener('click', () => {
-        if (this.selectedElement()) {
-          this.ehldService.removeOutline(this.selectedElement()!, this.flaggedElements());
-        }
+        const selected = this.selectedElement();
+        if (selected) this.ehldService.removeOutline(selected, this.flaggedElements());
         this.selectedElement.set(element);
 
         const idAttr = this.selectedElement()?.getAttribute('id');

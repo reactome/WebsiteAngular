@@ -49,9 +49,10 @@ export class CitationService {
   private readonly injector = inject(Injector);
 
   readonly currentCitationId = signal<string | undefined>(undefined);
-  readonly currentCitationExportURLS = computed(() =>
-    this.currentCitationId() ? this.getExportUrls(this.currentCitationId()!) : []
-  );
+  readonly currentCitationExportURLS = computed(() => {
+    const id = this.currentCitationId();
+    return id ? this.getExportUrls(id) : [];
+  });
   currentDate = new Date().toDateString();
 
   updatedCitationId() {
