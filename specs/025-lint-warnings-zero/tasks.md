@@ -280,7 +280,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 - [x] T018 Confirm `lint-baseline.json` has no warned rules left, and every
       rule warned on 13 Nov is an error; list the silenced lines (SC-004) and the
-      bugs found (SC-005) here. (#TBD)
+      bugs found (SC-005) here. (#987)
   - `lint-baseline.json` is `{"warnings": 0, "rules": {}}` (#985).
   - The ten rules `eslint.config.js` warned when this spec began
     (`no-explicit-any`, `no-namespace`, `no-non-null-assertion`, the five
