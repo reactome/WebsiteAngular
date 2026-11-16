@@ -45,6 +45,17 @@ export function buildSoftObservations(
   return soft;
 }
 
+/**
+ * The display floor for the served structural-fragility rate (deltasignal
+ * specs/157, WA specs/029): the record's typical class is under 1%, where
+ * the note would be noise; at or above 5% the class is named.
+ */
+export function fragilityAtFloor(
+  fragility: { rate: number; n: number } | null
+): { rate: number; n: number } | null {
+  return fragility && fragility.rate >= 0.05 ? fragility : null;
+}
+
 export function resultRows(
   network: DeltaSignalNetwork | null,
   result: DeltaSignalSolveResult | null,

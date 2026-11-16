@@ -127,6 +127,7 @@ export class DeltaSignalService {
         // specs/027: the served measured ranges, verbatim (deltasignal
         // specs/155) — never computed or pooled client-side.
         ranges: readout.measured_fold_ranges ?? [],
+        fragility: readout.fragility ?? null,
         lead: this.leadState().byId.get(reactomeId) ?? null,
         confidence: readout.confidence ?? null,
         untouched: readout.confidence_stratum === 'untouched',
