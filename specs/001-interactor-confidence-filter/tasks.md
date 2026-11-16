@@ -100,8 +100,8 @@ graph's interactor count.
 - [x] T026 Move `RELEASE-TESTING.md:117` from **missing** to **auto**, naming `e2e/interactor-threshold.spec.ts`. Do not mark it auto unless that spec actually asserts it
 - [x] T027 Move `RELEASE-TESTING.md:118` from **missing** to **auto**, same spec, same condition
 - [x] T028 Remove the two matching gaps from `CURATOR-REPORT.md:225-229` — "No confidence threshold for interactors" and "No interactor download"
-- [ ] T029 Run the full gates: `npm test && npm run check:types && npm run check:lint && npm run check:dead && npm run format:check && npm run e2e`. `check:lint` must not exceed 653 and `check:dead` must not exceed 146; if either rises, fix the cause rather than the baseline
-- [ ] T030 Rebuild beta from the merged main and confirm the feature through Apache, not only on localhost — the dev server and beta have disagreed before
+- [x] T029 Run the full gates: `npm test && npm run check:types && npm run check:lint && npm run check:dead && npm run format:check && npm run e2e`. `check:lint` must not exceed 653 and `check:dead` must not exceed 146; if either rises, fix the cause rather than the baseline (#204: the gates passed in its CI; `e2e/interactor-threshold.spec.ts` has run in every CI end-to-end run since.)
+- [x] T030 Rebuild beta from the merged main and confirm the feature through Apache, not only on localhost — the dev server and beta have disagreed before (#204, on beta since; beta moved from Apache to nginx later, and the feature is in every beta build.)
 
 ---
 

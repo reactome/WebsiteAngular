@@ -136,7 +136,7 @@ analysis token shows a message.
 - [x] T031 [P] [US2] Verify 1b on beta: click each of the 16 options, each saves a file; Medium and Large positive PNGs open as images
 - [x] T032 [P] [US3] Verify 2c and 2f on beta: R-HSA-9909396 coloured pills, arrows, labels, no blue square; R-HSA-109582 shows "blood coagulation (GO:0007596)"
 - [x] T033 [P] [US1] Verify 3c and 3b-part on beta: two analyses leave no trace of the first summary; close works; a GSA token from beta shows the new message
-- [ ] T034 Update `CURATOR-REPORT.md` and `RELEASE-TESTING.md` for the Wave 1 items; move each tracker entry to `FIXED` with evidence (or back to `INVESTIGATING` if beta disagrees)
+- [ ] T034 Update `CURATOR-REPORT.md` and `RELEASE-TESTING.md` for the Wave 1 items; move each tracker entry to `FIXED` with evidence (or back to `INVESTIGATING` if beta disagrees) _Half done: both reports were updated for Wave 1 in #303; the tracker is kept outside the repository, so its entries cannot be checked here._
 
 **Checkpoint**: Wave 1 verified on beta.
 
@@ -173,10 +173,10 @@ analysis token shows a message.
 
 ### Wave 2 close-out
 
-- [ ] T046 Full gate + `npm run check:links` reports 0 unexplained; ratchets hold
-- [ ] T047 Open Wave 2 PR; **adversarial review** (spot-check 10 fixed links by opening the target content file; confirm no link now depends on a redirect; confirm the copied PDFs are the real files); fix findings; merge; confirm on main
-- [ ] T048 Deploy (`npm run build:beta`), confirm `/health`, then verify on beta: 3a at 1366×768 all labels readable [US1]; a sample of 10 fixed links each opens a real page (no "We can't find that page") [US2]; the three news items show no broken image [US4]
-- [ ] T049 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md` and the tracker (related findings linked to 1d and 1e)
+- [x] T046 Full gate + `npm run check:links` reports 0 unexplained; ratchets hold (#304: lint 652, dead code 145, format clean, `check:links` 0 unexplained.)
+- [x] T047 Open Wave 2 PR; **adversarial review** (spot-check 10 fixed links by opening the target content file; confirm no link now depends on a redirect; confirm the copied PDFs are the real files); fix findings; merge; confirm on main (#304, with its adversarial review and re-review addressed in the PR's commits; merged as 3522adb9.)
+- [ ] T048 Deploy (`npm run build:beta`), confirm `/health`, then verify on beta: 3a at 1366×768 all labels readable [US1]; a sample of 10 fixed links each opens a real page (no "We can't find that page") [US2]; the three news items show no broken image [US4] _Left: #304 is merged and in every beta build since, but no beta check of these three is recorded._
+- [ ] T049 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md` and the tracker (related findings linked to 1d and 1e) _Half done: both reports were updated in #304; the tracker is kept outside the repository._
 
 **Checkpoint**: Wave 2 verified on beta.
 
@@ -217,10 +217,10 @@ analysis token shows a message.
 
 ### Wave 3 close-out
 
-- [ ] T065 Full gate + `check:links`; ratchets hold
-- [ ] T066 Open Wave 3 PR; **adversarial review** (diff every deleted spotlight against its twin; confirm imported spotlights match reactome.org word for word; chase every consumer of the event payload the orthologous section reads; confirm hover signal clears on route change); fix findings; merge; confirm on main
-- [ ] T067 Deploy, confirm `/health`, verify on beta: 1c list and home tile [US4]; each V97 other-news link and each legacy path [US2]; 2g on both pages [US3]; 2d hover glows and clears [US3]
-- [ ] T068 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md`, tracker; comment on and close #297 once verified on beta
+- [x] T065 Full gate + `check:links`; ratchets hold (#305: lint 652, dead code 145, format, `check:links` 0 broken.)
+- [x] T066 Open Wave 3 PR; **adversarial review** (diff every deleted spotlight against its twin; confirm imported spotlights match reactome.org word for word; chase every consumer of the event payload the orthologous section reads; confirm hover signal clears on route change); fix findings; merge; confirm on main (#305, with its adversarial review addressed in the PR's commits; merged as 352fa34b.)
+- [ ] T067 Deploy, confirm `/health`, verify on beta: 1c list and home tile [US4]; each V97 other-news link and each legacy path [US2]; 2g on both pages [US3]; 2d hover glows and clears [US3] _Left: 2d was checked on beta (the comment closing #297); no beta check of 1c, 1e or 2g is recorded._
+- [ ] T068 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md`, tracker; comment on and close #297 once verified on beta _Mostly done: both reports were updated in #305, and #297 was commented on and closed after a beta check; the tracker is kept outside the repository._
 
 **Checkpoint**: every rank 1–2 item verified. Implementation stops here if no decisions have arrived.
 
@@ -232,12 +232,12 @@ analysis token shows a message.
 waits on (plan.md "Decisions needed", numbered 1–6). Ask all open decisions together
 once, then build whichever are answered.
 
-- [ ] T069 Present decisions 1–4 to the user together (with a recommendation each) and record answers in the tracker; do not start T070–T077 until the relevant one is answered
+- [ ] T069 Present decisions 1–4 to the user together (with a recommendation each) and record answers in the tracker; do not start T070–T077 until the relevant one is answered _Since: decisions 2 and 3 were made 26 Sep (#314, #316), 4 on 27 Sep (#323); 2e was built in #310 without a new colour (T071)._
 
 ### 2e — Subevent hover in the ELV (US3) — blocked on decision 1 (yellow highlight vs global hover colour)
 
-- [ ] T070 [US3] Unit/e2e test (record failing first): hovering a subevent row in the hierarchy highlights its nodes in the diagram (R-HSA-549364 within R-HSA-1368108) in the decided colour
-- [ ] T071 [US3] Drive the diagram highlight from the shared hover signal (T063) in `PB/diagram/diagram.component.ts`; colour per decision 1 — a dedicated highlight token, or change `--hover-node` (`projects/pathway-browser/src/styles.scss:216-217`) in both themes; check contrast in light and dark
+- [x] T070 [US3] Unit/e2e test (record failing first): hovering a subevent row in the hierarchy highlights its nodes in the diagram (R-HSA-549364 within R-HSA-1368108) in the decided colour (#310: `e2e/diagram-behaviour.spec.ts`, red on main, reads the diagram's ink while a row is hovered.)
+- [x] T071 _(Built differently: no highlight colour, since the sub-pathway tints span the whole spectrum; the hovered reaction or sub-pathway stays full strength with thicker lines and the rest fades.)_ [US3] Drive the diagram highlight from the shared hover signal (T063) in `PB/diagram/diagram.component.ts`; colour per decision 1 — a dedicated highlight token, or change `--hover-node` (`projects/pathway-browser/src/styles.scss:216-217`) in both themes; check contrast in light and dark (#310)
 
 ### 2a — Tour and layout controls (US3) — decision 2 made 26 Sep: Tour plays reactome.org's video; Layout as reactome.org's
 
@@ -252,21 +252,21 @@ once, then build whichever are answered.
 
 ### `/gsa` destination (US2) — blocked on decision 4
 
-- [ ] T077 [US2] Point `/gsa` and `/gsa/home` at the decided target: redirect in `WA/src/app/app.routes.ts` and content links in `CT/about/news/295-v97-released.mdx`, `291-v96-released.mdx`; remove them from `check-links.ts` exceptions; confirm `check:links` = 0 exceptions for these
+- [x] T077 _(Built differently: the content links are rewritten through a moved-paths table that the renderer, the news importer and `check-links.ts` share, rather than edited in each file; `STILL_ON_PRODUCTION` is empty and `KNOWN_BROKEN` holds only the training PDFs.)_ [US2] Point `/gsa` and `/gsa/home` at the decided target: redirect in `WA/src/app/app.routes.ts` and content links in `CT/about/news/295-v97-released.mdx`, `291-v96-released.mdx`; remove them from `check-links.ts` exceptions; confirm `check:links` = 0 exceptions for these (#323)
 
 ### Wave 4 close-out
 
-- [ ] T078 Full gate; PR; **adversarial review** (nginx change reviewed for any path it newly captures or drops; colour contrast measured; tour a11y); merge; confirm on main
+- [ ] T078 Full gate; PR; **adversarial review** (nginx change reviewed for any path it newly captures or drops; colour contrast measured; tour a11y); merge; confirm on main _Left: Wave 4 landed as four PRs (#310, #314, #316, #323), each merged with its gates; a review is recorded on #310, #314 and #316, none on #323._
 - [ ] T079 Deploy (`npm run build:beta`; `docker compose build nginx && docker compose up -d nginx` if routes.conf changed), confirm `/health`, verify each decided item on beta by visible outcome
-- [ ] T080 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md`, tracker
+- [ ] T080 Update `CURATOR-REPORT.md`, `RELEASE-TESTING.md`, tracker _Half done: both reports were updated in #310, #314, #316 and #323; the tracker is kept outside the repository._
 
 ---
 
 ## Phase 7: Wave 5 — infrastructure, another team, or more information (rank 4–5)
 
 - [x] T081 [US1] **Decision 5 made 27 Sep: beta names `dev`** — ReactomeGSA delivers to dev.reactome.org, which is this box: profiles' `gsaServer` is now provided to the form (`provideGsaConfig`, it was never read), beta's is `dev`, and nginx answers ReactomeGSA's six calls on dev.reactome.org (everything else 503). e2e captures the submitted `reactome_server` (red on main: `production`)
-- [ ] T082 [US1] Classify 3b report email as `NOT-OURS` in the tracker, owner ReactomeGSA backend, with the evidence (this site has no mailer; #237/#242 hardened our side); draft a short note for that team for the user to send
-- [ ] T083 [US4] Classify 1d as `NEEDS-INFO` in the tracker: all 244 user-guide media are local; draft the question for the curator (which page, which image; were they on reactome.org/beta?)
+- [ ] T082 [US1] Classify 3b report email as `NOT-OURS` in the tracker, owner ReactomeGSA backend, with the evidence (this site has no mailer; #237/#242 hardened our side); draft a short note for that team for the user to send _Half done: `CURATOR-REPORT.md` lists the report email under "Not ours" (#303); the tracker entry and the note for that team cannot be checked here._
+- [ ] T083 [US4] Classify 1d as `NEEDS-INFO` in the tracker: all 244 user-guide media are local; draft the question for the curator (which page, which image; were they on reactome.org/beta?) _Half done: the question is in `CURATOR-REPORT.md`, "A question for you" (#303); the tracker entry cannot be checked here._
 - [x] T084 [US5] **Decision 6 made 27 Sep: Fireworks is retired with this release; Reacfoam replaces it.** Classified BY-DESIGN; the curator reported it as an observation, not a request. No code change
 
 ---
@@ -275,7 +275,7 @@ once, then build whichever are answered.
 
 - [ ] T085 Re-run every quickstart check on beta in one pass against the final bundle; any regression reopens its item
 - [ ] T086 Confirm every tracker entry is in a terminal state (`FIXED` with evidence, `NOT-OURS` with owner, `NEEDS-INFO`, or `NEEDS-DECISION` with the question) — FR-023
-- [ ] T087 Update `specs/008-curator-email-fixes/checklists/requirements.md` and mark completed tasks here
+- [ ] T087 Update `specs/008-curator-email-fixes/checklists/requirements.md` and mark completed tasks here _Tasks ticked on 16 Nov; `checklists/requirements.md` still has one open item._
 - [ ] T088 Draft the reply to the curator from the tracker (per item: what was wrong, what changed, how to see it on beta; items not fixed and why), for the user to review and send — not sent by Claude
 - [ ] T089 Clean up: delete the scratchpad screenshots no longer needed, delete merged branches, confirm the working tree is clean
 
