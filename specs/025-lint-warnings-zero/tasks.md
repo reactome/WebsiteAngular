@@ -326,15 +326,15 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   parameter reads as its first value, as `paramMap.get` reads it
   (`router-url-state.service.spec.ts`, failing on the old service).
 
-- **"Select summary of entity" on a reference with no stable id clears the
-  selection** (`…/details/common/external-reference`, `onSelect`). The
-  button sets the selection to the reference's stId, which the recordings show
-  missing on 84 references (genes from NCBI Gene, KEGG, OMIM and the like:
-  every other reference has one). With none it selects nothing, so the click
-  deselects what was selected. Found in T016; whether such a reference
-  reaches the button, and whether to hide the button when it does, is a
-  decision about what readers see, so it still clears (now through `null`,
-  as before through `undefined`).
+- **"Select summary of entity" on a reference with no stable id cleared the
+  selection** (`…/details/common/external-reference`). The button sets the
+  selection to the reference's stId, which the recordings show missing on 84
+  references: the gene and transcript records a protein's reference links to
+  (NCBI Gene, KEGG, OMIM, RefSeq and the like). They are reached in the
+  details tree, under a protein's reference; no diagram draws them, so there
+  is nothing to select, and the click only deselected what was selected.
+  Found in T016; the button is now offered only for a reference with a stable
+  id (`summary-selection.ts`, whose spec fails when it is always offered).
 
 ## Silenced lines
 
