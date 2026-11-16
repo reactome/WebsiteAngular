@@ -214,7 +214,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       `error` (their counts are zero). Seen failing: an `any` planted in a
       service gives three errors (`no-explicit-any`, `no-unsafe-return`,
       `no-unsafe-member-access`). 145 warnings left, all
-      `no-non-null-assertion` (#PR).
+      `no-non-null-assertion` (#981).
 
 ## Phase 3: Asserted values (User Story 3, P3)
 
