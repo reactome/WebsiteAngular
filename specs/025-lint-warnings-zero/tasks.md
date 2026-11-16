@@ -210,8 +210,11 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         `dark.service.spec.ts` (failing on the old service),
         `analysis-palette.spec.ts` (a missing value's colour) and
         `no-entries-message.spec.ts`. The six rules are at zero. 201 → 145 (#979).
-- [ ] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
-      `error` (their counts are zero).
+- [x] T014 [US2] Promote `no-explicit-any` and the five `no-unsafe-*` rules to
+      `error` (their counts are zero). Seen failing: an `any` planted in a
+      service gives three errors (`no-explicit-any`, `no-unsafe-return`,
+      `no-unsafe-member-access`). 145 warnings left, all
+      `no-non-null-assertion` (#981).
 
 ## Phase 3: Asserted values (User Story 3, P3)
 
