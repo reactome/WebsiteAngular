@@ -219,7 +219,9 @@ module.exports = tseslint.config(
     extends: [eslint.configs.recommended],
     rules: {
       'no-undef': 'error',
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      // An error like every other rule (spec 025 T018); no .mjs is left under
+      // tools/ (spec 013), so this holds any that comes back.
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
   {
