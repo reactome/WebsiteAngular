@@ -62,7 +62,9 @@ export class ExternalReferenceComponent {
   protected readonly isArray = isArray;
 
   onSelect() {
-    this.state.select.set(this.referenceEntity().stId!);
+    // A reference with no stable id (a gene's, in the recordings) selects none,
+    // as it did when it set undefined.
+    this.state.select.set(this.referenceEntity().stId ?? null);
   }
 
   protected readonly Labels = Labels;

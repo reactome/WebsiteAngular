@@ -133,7 +133,7 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
   }
 
   private setupIntersectionObserver(): void {
-    this.observer = new IntersectionObserver(
+    const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting) {
@@ -143,12 +143,13 @@ export class DownloadDataComponent implements OnInit, OnDestroy {
       },
       { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
     );
+    this.observer = observer;
 
     // Defer to allow template to render
     setTimeout(() => {
       for (const item of this.tocItems) {
         const el = document.getElementById(item.id);
-        if (el) this.observer!.observe(el);
+        if (el) observer.observe(el);
       }
     }, 100);
   }

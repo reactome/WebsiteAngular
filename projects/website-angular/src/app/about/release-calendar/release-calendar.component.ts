@@ -138,8 +138,9 @@ export class ReleaseCalendarComponent implements OnInit {
 
     const grouped = new Map<number, Release[]>();
     for (const r of releases) {
-      if (!grouped.has(r.year)) grouped.set(r.year, []);
-      grouped.get(r.year)!.push(r);
+      const year = grouped.get(r.year);
+      if (year) year.push(r);
+      else grouped.set(r.year, [r]);
     }
 
     return Array.from(grouped.entries())

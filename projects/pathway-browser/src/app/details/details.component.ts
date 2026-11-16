@@ -103,7 +103,7 @@ export class DetailsComponent {
     const tabCameFromUrl = !!untracked(this.state.tab);
 
     effect(() => {
-      const tab = this.tabs()[this.selectedTabIndex()!] ?? null;
+      const tab = this.tabs()[this.selectedTabIndex()] ?? null;
       // With no tab in the address the index falls back to Info, and writing that
       // back is filling in a default, not a choice: settled, so it replaces the
       // history entry. Written as a step of its own, it was the second entry for

@@ -192,23 +192,17 @@ export class ResultTabComponent {
   );
 
   fdrValues = [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1];
-  readonly filterFDR = linkedSignal(() =>
-    this.state.fdrFilter() !== undefined ? this.state.fdrFilter()! : 1
-  );
+  readonly filterFDR = linkedSignal(() => this.state.fdrFilter() ?? 1);
   readonly fdrIndex = linkedSignal(() => this.fdrValues.indexOf(this.filterFDR()));
   fdrLabel = (index: number) => '' + this.fdrValues[index];
 
   readonly fdrFilterActive = computed(() => this.fdrIndex() < this.fdrValues.length - 1);
 
-  readonly filterMinSize = linkedSignal(() =>
-    this.state.pathwayMinSizeFilter() !== undefined
-      ? this.state.pathwayMinSizeFilter()!
-      : this.pathwaySizeStats().min
+  readonly filterMinSize = linkedSignal(
+    () => this.state.pathwayMinSizeFilter() ?? this.pathwaySizeStats().min
   );
-  readonly filterMaxSize = linkedSignal(() =>
-    this.state.pathwayMaxSizeFilter() !== undefined
-      ? this.state.pathwayMaxSizeFilter()!
-      : this.pathwaySizeStats().max
+  readonly filterMaxSize = linkedSignal(
+    () => this.state.pathwayMaxSizeFilter() ?? this.pathwaySizeStats().max
   );
   readonly sizeFilterActive = computed(
     () =>
@@ -216,15 +210,11 @@ export class ResultTabComponent {
       this.filterMaxSize() !== this.pathwaySizeStats().max
   );
 
-  readonly filterMinExpression = linkedSignal(() =>
-    this.state.minExpressionFilter() !== undefined
-      ? this.state.minExpressionFilter()!
-      : this.minExpression()
+  readonly filterMinExpression = linkedSignal(
+    () => this.state.minExpressionFilter() ?? this.minExpression()
   );
-  readonly filterMaxExpression = linkedSignal(() =>
-    this.state.maxExpressionFilter() !== undefined
-      ? this.state.maxExpressionFilter()!
-      : this.maxExpression()
+  readonly filterMaxExpression = linkedSignal(
+    () => this.state.maxExpressionFilter() ?? this.maxExpression()
   );
   readonly expressionFilterActive = computed(
     () =>
@@ -244,18 +234,17 @@ export class ResultTabComponent {
     if (this.includeDisease() === false) {
       data = data.filter((p) => !p.inDisease);
     }
-    if (this.state.fdrFilter() !== undefined) {
-      data = data.filter((p) => p.entities.fdr <= this.state.fdrFilter()!);
+    const fdr = this.state.fdrFilter();
+    if (fdr !== undefined) {
+      data = data.filter((p) => p.entities.fdr <= fdr);
     }
-    if (this.state.minExpressionFilter() !== undefined) {
-      data = data.filter(
-        (p) => expressionAt(p, this.analysis.sampleIndex()) >= this.state.minExpressionFilter()!
-      );
+    const minExpression = this.state.minExpressionFilter();
+    if (minExpression !== undefined) {
+      data = data.filter((p) => expressionAt(p, this.analysis.sampleIndex()) >= minExpression);
     }
-    if (this.state.maxExpressionFilter() !== undefined) {
-      data = data.filter(
-        (p) => expressionAt(p, this.analysis.sampleIndex()) <= this.state.maxExpressionFilter()!
-      );
+    const maxExpression = this.state.maxExpressionFilter();
+    if (maxExpression !== undefined) {
+      data = data.filter((p) => expressionAt(p, this.analysis.sampleIndex()) <= maxExpression);
     }
     if (this.state.gsaFilter().length !== 0) {
       data = data.filter((p) =>
@@ -271,11 +260,13 @@ export class ResultTabComponent {
 
   readonly filteredData = computed(() => {
     let data = this.filteredDataNoSize();
-    if (this.state.pathwayMinSizeFilter()) {
-      data = data.filter((p) => p.entities.total >= this.state.pathwayMinSizeFilter()!);
+    const minSize = this.state.pathwayMinSizeFilter();
+    if (minSize) {
+      data = data.filter((p) => p.entities.total >= minSize);
     }
-    if (this.state.pathwayMaxSizeFilter()) {
-      data = data.filter((p) => p.entities.total <= this.state.pathwayMaxSizeFilter()!);
+    const maxSize = this.state.pathwayMaxSizeFilter();
+    if (maxSize) {
+      data = data.filter((p) => p.entities.total <= maxSize);
     }
     return data;
   });
@@ -295,10 +286,10 @@ export class ResultTabComponent {
 
   readonly gsaOptions = computed(() => {
     const activatedFilters = untracked(this.gsaFilterSet);
-    return [2, 1, 0, -1, -2].map((exp) => ({
+    return [...gsaValueToLabel].map(([exp, label]) => ({
       exp,
       value: activatedFilters.has(exp),
-      label: gsaValueToLabel.get(exp)!,
+      label,
     }));
   });
 

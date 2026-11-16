@@ -118,17 +118,14 @@ export class ReacfoamService {
   });
 
   readonly mergedData = computed(() => {
-    return this.layoutMap.value() && this.eventsHierarchyData.value()
-      ? {
-          layoutMap: this.layoutMap.value()!,
-          events: this.eventsHierarchyData.value()!,
-        }
-      : undefined;
+    const layoutMap = this.layoutMap.value();
+    const events = this.eventsHierarchyData.value();
+    return layoutMap && events ? { layoutMap, events } : undefined;
   });
 
   readonly familyColorMap = computed(() => {
-    if (!this.layoutMap.value()) return new Map<string, Signal<chroma.Color>>();
-    const layoutMap = this.layoutMap.value()!;
+    const layoutMap = this.layoutMap.value();
+    if (!layoutMap) return new Map<string, Signal<chroma.Color>>();
     const families = [...new Set([...layoutMap.values()].map((tlp) => tlp.family))];
     const dH = 360 / families.length;
     const offset = 0;
@@ -202,8 +199,9 @@ export class ReacfoamService {
   > = computed(() => {
     // this.dark.isDark();  // Compute on dark update
     this.filters(); // Compute on filters update
-    if (!this.mergedData()) return;
-    const { layoutMap, events } = this.mergedData()!;
+    const merged = this.mergedData();
+    if (!merged) return;
+    const { layoutMap, events } = merged;
     const stIdToFirstId = new Map<string, string>();
     return {
       data: events.map((e) => this.event2group(e, layoutMap, stIdToFirstId)).flatMap((g) => g),
@@ -228,7 +226,7 @@ export class ReacfoamService {
     const family = parentFamily || layoutNode?.family || 'Unknown family'; // Unknown family with M. tuberculosis
     const familyColor = this.familyColorMap().get(family) || this.surfaceColor; // Unknown family with M. tuberculosis
 
-    const id = this.buildId(event.stId, path)!; // If no path or wrong path given, will use first occurrence of stId
+    const id = this.idAt(event.stId, path); // If no path or wrong path given, will use first occurrence of stId
     if (!stIdToFirstId.has(event.stId)) stIdToFirstId.set(event.stId, id);
 
     const isDisease = [path[0], event.stId].includes('R-HSA-1643685');
@@ -245,32 +243,22 @@ export class ReacfoamService {
       if (this.filters().excludeDiseases && isDisease) return [];
       if (this.filters().excludeGrouping && !event.llp) return children;
       if (children.length === 0) {
-        // if no children because of filters or simple leaf, then apply filters
+        // if no children because of filters or simple leaf, then apply filters.
+        // A filter that is set is the merged filters' own (see filters).
+        const { fdr, minSize, maxSize, minExpression, maxExpression } = this.filters();
+        if (fdr !== undefined && (event.entities?.fdr || 1) > fdr) return [];
+        if (minSize !== undefined && (event.entities?.total || Number.MIN_VALUE) < minSize)
+          return [];
+        if (maxSize !== undefined && (event.entities?.total || Number.MAX_VALUE) > maxSize)
+          return [];
         if (
-          this.filters().fdr !== undefined &&
-          (event.entities?.fdr || 1) > this.mergedFilters().fdr!
+          minExpression !== undefined &&
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MIN_VALUE) < minExpression
         )
           return [];
         if (
-          this.filters().minSize !== undefined &&
-          (event.entities?.total || Number.MIN_VALUE) < this.mergedFilters().minSize!
-        )
-          return [];
-        if (
-          this.filters().maxSize !== undefined &&
-          (event.entities?.total || Number.MAX_VALUE) > this.mergedFilters().maxSize!
-        )
-          return [];
-        if (
-          this.filters().minExpression !== undefined &&
-          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MIN_VALUE) <
-            this.mergedFilters().minExpression!
-        )
-          return [];
-        if (
-          this.filters().maxExpression !== undefined &&
-          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MAX_VALUE) >
-            this.mergedFilters().maxExpression!
+          maxExpression !== undefined &&
+          (event.entities?.exp?.[this.analysis.sampleIndex()] || Number.MAX_VALUE) > maxExpression
         )
           return [];
         if (
@@ -306,6 +294,11 @@ export class ReacfoamService {
   }
 
   buildId(stId: string | null, path: string[]): string | null {
-    return stId ? path.join('/') + '/' + stId : null;
+    return stId ? this.idAt(stId, path) : null;
+  }
+
+  /** A group's id: its event's stId at the end of the path to it. */
+  private idAt(stId: string, path: string[]): string {
+    return path.join('/') + '/' + stId;
   }
 }

@@ -265,11 +265,11 @@ export class MoleculeTabComponent implements OnDestroy {
     for (const entity of allRefEntities) {
       const type = entity.type;
 
-      if (!groupedMap.has(type)) {
-        groupedMap.set(type, new Map());
+      let dataMap = groupedMap.get(type);
+      if (!dataMap) {
+        dataMap = new Map();
+        groupedMap.set(type, dataMap);
       }
-
-      const dataMap = groupedMap.get(type)!;
       const existingEntity = dataMap.get(entity.dbId);
 
       if (existingEntity) {

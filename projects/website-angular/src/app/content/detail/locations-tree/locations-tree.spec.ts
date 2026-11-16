@@ -3,18 +3,19 @@ import { countLocations, linksOut, opensWhole, withBrowserLinks } from './locati
 
 // As /data/detail/R-HSA-163615/locationsInPWB answers (PKA activation, release
 // 98), trimmed to one branch.
+const pkaActivation = {
+  stId: 'R-HSA-163615',
+  name: 'PKA activation',
+  type: 'Pathway',
+  url: '/PathwayBrowser/#/R-HSA-163615&amp;PATH=R-HSA-111997,R-HSA-111933,R-HSA-111931',
+};
 const answer = {
   stId: 'R-HSA-162582',
   name: 'Signal Transduction',
   type: 'TopLevelPathway',
   url: '/PathwayBrowser/#/R-HSA-162582',
   children: [
-    {
-      stId: 'R-HSA-163615',
-      name: 'PKA activation',
-      type: 'Pathway',
-      url: '/PathwayBrowser/#/R-HSA-163615&amp;PATH=R-HSA-111997,R-HSA-111933,R-HSA-111931',
-    },
+    pkaActivation,
     {
       // Most locations carry two escaped ampersands: a selection and a path
       // (R-HSA-114269's, release 98).
@@ -39,7 +40,7 @@ describe("the locations tree's links", () => {
   });
 
   it('leaves a node without children without them', () => {
-    expect('children' in withBrowserLinks({ ...answer.children[0]! })).toBe(false);
+    expect('children' in withBrowserLinks({ ...pkaActivation })).toBe(false);
   });
 });
 

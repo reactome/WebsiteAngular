@@ -111,7 +111,8 @@ export class TableComponent implements OnInit, OnChanges, AfterViewInit, OnDestr
     let height =
       (this.data().length + (this.settings()?.addRow ? 1 : 0)) * this.rowHeight() +
       this.scrollDimensions().bottom;
-    if (this.maxHeight()) height = height < this.maxHeight()! ? height : this.maxHeight()!;
+    const maxHeight = this.maxHeight();
+    if (maxHeight) height = height < maxHeight ? height : maxHeight;
     return height;
   });
   readonly scrollOffset = signal(0);
