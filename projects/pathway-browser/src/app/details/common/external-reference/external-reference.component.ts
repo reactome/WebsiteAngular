@@ -12,6 +12,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import { DataStateService } from '../../../services/data-state.service';
 import { Labels } from '../../../constants/constants';
 import { MoleculeType } from '../../../model/molecule-type.model';
+import { summarySelection } from './summary-selection';
 
 @Component({
   selector: 'cr-external-reference',
@@ -61,10 +62,11 @@ export class ExternalReferenceComponent {
   protected readonly isString = isString;
   protected readonly isArray = isArray;
 
-  onSelect() {
-    // A reference with no stable id (a gene's, in the recordings) selects none,
-    // as it did when it set undefined.
-    this.state.select.set(this.referenceEntity().stId ?? null);
+  /** The id "Select summary of entity" selects; null hides the button. */
+  readonly summaryId = computed(() => summarySelection(this.referenceEntity()));
+
+  onSelect(id: string) {
+    this.state.select.set(id);
   }
 
   protected readonly Labels = Labels;
