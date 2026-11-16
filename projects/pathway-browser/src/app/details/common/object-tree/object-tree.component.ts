@@ -238,7 +238,9 @@ export class ObjectTreeComponent<
       const depthInQuery = depth - 1; // Ignore the default depth 1
       const results = [...this.treeData()].map((node) =>
         this.fetchTreeAtDepth(node, depthInQuery).pipe(
-          map((result) => this.updateTree(this.dataSource.data, result.element)!)
+          // The node fetched is one of the tree's own, so it is found; were it
+          // not, it is kept as fetched rather than left out as undefined.
+          map((result) => this.updateTree(this.dataSource.data, result.element) ?? result)
         )
       );
 
@@ -558,17 +560,17 @@ export class ObjectTreeComponent<
     // Start from index 1 to exclude the root
     for (let i = 1; i < parents.length; i++) {
       const parent = parents[i];
-      if (!parent) continue;
-      const grandParent = i > 0 ? parents[i - 1] : null;
+      const grandParent = parents[i - 1];
+      if (!parent || !grandParent) continue;
 
-      const grandParentChildCount = grandParent?.element.composedOf?.length
+      const grandParentChildCount = grandParent.element.composedOf?.length
         ? grandParent.element.composedOf.length
         : null;
       // Compare the order of current parent with the size of previous parent composedOf to determine if the parent is the last kid, adding empty string as connector
       if (grandParentChildCount && parent.index === grandParentChildCount - 1) {
         connectorClasses.push(null);
       } else {
-        connectorClasses.push(this.getParentConnector(grandParent!, node));
+        connectorClasses.push(this.getParentConnector(grandParent, node));
       }
     }
 

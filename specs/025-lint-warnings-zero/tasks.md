@@ -218,9 +218,38 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 ## Phase 3: Asserted values (User Story 3, P3)
 
-- [ ] T015 [US3] `no-non-null-assertion` outside the Pathway Browser (8).
-- [ ] T016–T017 [US3] `no-non-null-assertion` in the Pathway Browser (138), in
-      two halves; the second promotes the rule to `error`.
+- [ ] T015 [US3] `no-non-null-assertion` outside the Pathway Browser (8), with
+      T016 in one pull request. A map filled as it is read takes the list it
+      made (the release calendar, the icon library, the search page's protein
+      forms); the table's maximum height and the download page's observer are
+      read once into a constant; the schema page's class filter, drawn only
+      once the model has loaded, checks the model is there; the locations
+      tree's spec names the node it copies. No behaviour moved.
+- T016–T017 [US3] `no-non-null-assertion` in the Pathway Browser: 137 on
+  16 Nov, split by folder under `src/app` into two halves.
+  - [ ] T016 `details` (17), `diagram` (23) and `reacfoam` (29): 69. What a
+        signal holds is read once into a constant and narrowed; the diagram's
+        canvas, compare canvas and legend are `viewChild.required` (all three
+        are drawn unconditionally); a style's diagram, a merged image's 2D
+        context and its blob, and the animated EHLD export's picture are
+        checked where they are used; the Reacfoam's filters are read from
+        `filters()`, which is `mergedFilters()` whenever one is set; the
+        diagram's `getFittedViewport`, never called since the first commit,
+        is gone. What moves: a merged diagram image the browser cannot make
+        (no width, say, or too large) fails with an error naming its size,
+        where `null` was passed on as the image and failed downloading
+        (`canvas-blob.ts`, `canvas-blob.spec.ts`, failing with the old
+        `resolve(blob!)`); with nothing selected, a diagram's load unselects
+        and stops, where it searched for an element called "null" and fitted
+        to nothing; the Reacfoam is given an empty list of groups while its
+        tree loads, where it was given none (FoamTree reads both alike, and
+        `showsCurrentData` answers as before); the "select summary" button
+        of a reference with no stable id sets the selection to `null` where
+        it set `undefined` (both mean none: see below); the animated EHLD
+        export, its picture gone, fails with an error saying so, where it
+        threw a `TypeError`. 145 → 68 with T015.
+  - [ ] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
+        `services` (32) and `viewport` (19): 68. Promote the rule to `error`.
 
 ## Phase 4: Done
 
@@ -296,6 +325,16 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   repeated `select` was set to the list itself. Fixed in T013: a repeated
   parameter reads as its first value, as `paramMap.get` reads it
   (`router-url-state.service.spec.ts`, failing on the old service).
+
+- **"Select summary of entity" on a reference with no stable id clears the
+  selection** (`…/details/common/external-reference`, `onSelect`). The
+  button sets the selection to the reference's stId, which the recordings show
+  missing on 84 references (genes from NCBI Gene, KEGG, OMIM and the like:
+  every other reference has one). With none it selects nothing, so the click
+  deselects what was selected. Found in T016; whether such a reference
+  reaches the button, and whether to hide the button when it does, is a
+  decision about what readers see, so it still clears (now through `null`,
+  as before through `undefined`).
 
 ## Silenced lines
 

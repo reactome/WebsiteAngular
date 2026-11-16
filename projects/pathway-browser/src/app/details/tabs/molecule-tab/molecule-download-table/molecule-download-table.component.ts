@@ -99,7 +99,7 @@ export class MoleculeDownloadTableComponent {
     this.filteredData().forEach((row) => {
       columns.forEach((column) => {
         const value = row[column] ?? '';
-        if (maxData.get(column)!.length < value.length) maxData.set(column, value);
+        if ((maxData.get(column) ?? '').length < value.length) maxData.set(column, value);
       });
     });
     return maxData;

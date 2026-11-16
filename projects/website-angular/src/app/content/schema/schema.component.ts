@@ -193,9 +193,10 @@ export class SchemaComponent implements OnInit, OnDestroy {
   onTreeSearch(event: Event) {
     const value = (event.target as HTMLInputElement).value;
     this.treeSearchQuery = value.toLowerCase().trim();
-    if (this.treeSearchQuery) {
+    // The filter is drawn only once the model has loaded, so the root is there.
+    if (this.treeSearchQuery && this.treeRoot) {
       this.treeSearchResults.clear();
-      this.collectMatchingNodes(this.treeRoot!, this.treeSearchQuery);
+      this.collectMatchingNodes(this.treeRoot, this.treeSearchQuery);
     }
     this.rebuildFlatTree();
   }

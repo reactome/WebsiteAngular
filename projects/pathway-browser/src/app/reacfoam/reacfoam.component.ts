@@ -33,6 +33,9 @@ import { BlockingLoaderComponent } from './blocking-loader/blocking-loader.compo
 import { SvgExporterService } from './svg-exporter.service';
 import { FlagBannerComponent } from '../diagram/flag-banner/flag-banner.component';
 
+/** How long a group takes to expose, in milliseconds. */
+const EXPOSE_DURATION = 500;
+
 @Component({
   selector: 'cr-reacfoam',
   imports: [AnalysisLegendComponent, FlagBannerComponent],
@@ -63,7 +66,7 @@ export class ReacfoamComponent implements OnDestroy {
         relaxationVisible: false,
         pixelRatio: window.devicePixelRatio || 1,
         wireframePixelRatio: window.devicePixelRatio || 1,
-        exposeDuration: 500,
+        exposeDuration: EXPOSE_DURATION,
         // Lower groupMinDiameter to fit as many groups as possible
         groupMinDiameter: 0.5,
         // Set a simple fading animation. Animated rollouts are very expensive for large hierarchies
@@ -157,13 +160,12 @@ export class ReacfoamComponent implements OnDestroy {
   readonly foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
   readonly select = linkedSignal(() => this.state.select());
   readonly selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
-  readonly correctedSelectedId = computed(() =>
-    this.state.select()
-      ? this.foamTree().get('hierarchy', this.selectedId())
-        ? this.selectedId()
-        : this.reacfoam.idToStId()?.get(this.select()!)
-      : null
-  );
+  readonly correctedSelectedId = computed(() => {
+    if (!this.state.select()) return null;
+    if (this.foamTree().get('hierarchy', this.selectedId())) return this.selectedId();
+    const selected = this.select();
+    return selected === null ? undefined : this.reacfoam.idToStId()?.get(selected);
+  });
 
   readonly relaxing = signal(false);
 
@@ -185,7 +187,7 @@ export class ReacfoamComponent implements OnDestroy {
                 keepPrevious: false,
               });
             }
-            this.foamTree().set('exposeDuration', this.options().exposeDuration!); // Put back initial exposure time
+            this.foamTree().set('exposeDuration', EXPOSE_DURATION); // Put back initial exposure time
           });
       });
     })
@@ -224,7 +226,8 @@ export class ReacfoamComponent implements OnDestroy {
       // Initialise
       this.reacfoam.data(); // Set data whenever it is updated
       // if (!untracked(this.relaxing)) // Avoid errors happening when setting data while relaxing
-      this.foamTree().set('dataObject', { groups: this.reacfoam.data()! });
+      // None while the tree loads: FoamTree reads an empty list as it read none.
+      this.foamTree().set('dataObject', { groups: this.reacfoam.data() ?? [] });
       untracked(() =>
         this.download.figureState(
           this,
@@ -243,8 +246,9 @@ export class ReacfoamComponent implements OnDestroy {
     });
     effect(() => {
       this.cleanFlagIdentifiers();
-      if (this.reacfoam.data()) {
-        this.setFlag(this.reacfoam.data()!);
+      const data = this.reacfoam.data();
+      if (data) {
+        this.setFlag(data);
         this.foamTree().redraw();
       }
     });

@@ -503,11 +503,12 @@ export class SearchComponent implements OnInit, OnDestroy {
 
       for (const entry of allProteins) {
         const key = entry.referenceIdentifier || entry.id;
-        if (!formsMap.has(key)) {
-          formsMap.set(key, []);
+        const forms = formsMap.get(key);
+        if (forms) forms.push(entry);
+        else {
+          formsMap.set(key, [entry]);
           representativeMap.set(key, entry);
         }
-        formsMap.get(key)!.push(entry);
       }
 
       this.proteinForms = formsMap;
