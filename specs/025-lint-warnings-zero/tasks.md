@@ -151,8 +151,20 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         `sort-rows.spec.ts` (new) passes, and fails on each planted fault (a
         missing key sorted last, numbers compared as text, no direction
         sorting, 0 dropped, the path walk broken, the found table's 0 kept or
-        its lists' length dropped). 407 → 366 (#PR).
-  - [ ] T010 `diagram`, with `diagram/entity-popup` (63).
+        its lists' length dropped). 407 → 366 (#975).
+  - [x] T010 `diagram`, with `diagram/entity-popup` (63). What the diagram
+        keeps on its elements is read through `element-data.ts`: text as
+        text, a number as a number, an entity's leaves where they are a list,
+        an interactor occurrence's accessions, a sub-pathway's edges where
+        they are a collection, and the bound `Style` by `instanceof`; each
+        reads anything else as absent, where the old reads threw or passed it
+        on. Node event handlers take cytoscape's `EventObjectNode`, `add` and
+        `remove` an event on one element; the popup checks a click's target
+        is a `Node`. One thing moves: selecting an entity with no stable id
+        (one with no counterpart in an inferred species' diagram) sets the
+        selection to `null` where it set `undefined`; both mean none.
+        `element-data.spec.ts` (new) passes, and fails on each planted
+        fault. 366 → 303 (#976).
   - [ ] T011 `interactors` (52).
   - [ ] T012 `pipes` (50).
   - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).

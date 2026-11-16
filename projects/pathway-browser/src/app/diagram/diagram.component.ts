@@ -46,7 +46,6 @@ import { UrlStateService } from '../services/url-state.service';
 import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
-import type * as Graph from '../model/graph.model';
 import { average, isDefined, isPathwayWithDiagram, isReferenceEntityStId } from '../services/utils';
 import type * as Analysis from '../model/analysis.model';
 import { InteractorsComponent } from '../interactors/interactors.component';
@@ -62,7 +61,6 @@ import {
 } from '../services/download.service';
 import { DataStateService } from '../services/data-state.service';
 import { SchemaClasses } from '../constants/constants';
-import { DrawnInteractor } from '../interactors/model/interactor.model';
 import { Point, CdkDrag, CdkDragHandle } from '@angular/cdk/drag-drop';
 import { MatSlider, MatSliderThumb } from '@angular/material/slider';
 import { MatTooltip } from '@angular/material/tooltip';
@@ -73,8 +71,23 @@ import type { EntityPopupTab, EntityPopupTarget } from './entity-popup/entity-po
 import { IS_CURATOR } from '../../environments/environment';
 import { FlagBannerComponent } from './flag-banner/flag-banner.component';
 import { nodeExpression } from './node-expression';
+import {
+  graphLeaves,
+  interactorAccessions,
+  isGraphNode,
+  numberData,
+  selectedStId,
+  shadowEdges,
+  styleOf,
+  textData,
+} from './element-data';
 import { DeltaSignalService } from '../deltasignal/deltasignal.service';
 import { HierarchyHoverService } from '../services/hierarchy-hover.service';
+
+/** An event on one element: what the graph's `add` and `remove` carry. */
+type ElementEvent = Omit<cytoscape.EventObject, 'target'> & {
+  target: cytoscape.SingularElementArgument;
+};
 
 const INIT_RX = 2;
 
@@ -205,7 +218,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (lit.empty()) return [];
           // The reader's own selection and flags stay: sweeping down the tree
           // must not hide them. The hovered sub-pathway's name stays too.
-          const litPathways = new Set(lit.edges().map((edge) => edge.data('pathway')));
+          const litPathways = new Set(lit.edges().map((edge): unknown => edge.data('pathway')));
           const dimmed = cy
             .elements()
             .not(lit)
@@ -949,7 +962,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
         this.leafIdToParentIds.clear();
         cy.nodes().forEach((node) => {
-          node.data('graph.leaves')?.forEach((leaf: Graph.Node) => {
+          const stId = textData(node, 'graph.stId');
+          graphLeaves(node)?.forEach((leaf) => {
             if (!this.leafIdToParentIds.has(leaf.stId)) this.leafIdToParentIds.set(leaf.stId, []);
             if (leaf.standardIdentifier && !this.leafIdToParentIds.has(leaf.standardIdentifier))
               this.leafIdToParentIds.set(
@@ -957,15 +971,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
                 this.leafIdToParentIds.get(leaf.stId)!
               );
             const parents = this.leafIdToParentIds.get(leaf.stId)!;
-            parents.push(node.data('graph.stId'));
+            if (stId !== undefined) parents.push(stId);
           });
         });
 
         cy.on('zoom', () => this.controlZoom.set(this.zoomToControlTransform(cy.zoom())));
 
         style.clearCache();
-        cy.on('dblclick', '.SUB.Pathway', (e) => {
-          void this.state.navigateTo(e.target.data('graph.stId'), {
+        cy.on('dblclick', '.SUB.Pathway', (e: cytoscape.EventObjectNode) => {
+          void this.state.navigateTo(textData(e.target, 'graph.stId') ?? null, {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
@@ -974,17 +988,19 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // Right-click menu on entities. The old site offered Molecule /
         // Pathways / Interactors here and curators still reach for it; each
         // item is a shortcut to somewhere the details panel already goes.
-        cy.on('cxttap', '.PhysicalEntity', (e) => {
-          const stId = e.target.data('graph.stId');
+        cy.on('cxttap', '.PhysicalEntity', (e: cytoscape.EventObjectNode) => {
+          const stId = textData(e.target, 'graph.stId');
           if (!stId) return;
           const pointer = e.originalEvent as MouseEvent | undefined;
           if (!pointer) return;
+          const acc = textData(e.target, 'acc');
           this.popupTarget.set({
             x: pointer.clientX,
             y: pointer.clientY,
             stId,
-            label: e.target.data('displayName') || e.target.data('graph.displayName') || stId,
-            acc: e.target.data('acc') || undefined,
+            label:
+              textData(e.target, 'displayName') || textData(e.target, 'graph.displayName') || stId,
+            ...(acc && { acc }),
           });
           // Production also moves the details panel to the entity you
           // right-clicked, so the popup and the panel agree. Flagged as an
@@ -1009,8 +1025,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         //
         // Where you came from is still one Back away; what you were looking at
         // was not recoverable at all.
-        cy.on('dblclick', '.Interacting.Pathway', (e) => {
-          void this.state.navigateTo(e.target.data('graph.stId'), {
+        cy.on('dblclick', '.Interacting.Pathway', (e: cytoscape.EventObjectNode) => {
+          void this.state.navigateTo(textData(e.target, 'graph.stId') ?? null, {
             queryParamsHandling: 'preserve',
             preserveFragment: true,
           });
@@ -1123,7 +1139,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     container: HTMLDivElement
   ) {
     const getPosition = (e: cytoscape.SingularElementArgument) =>
-      e.is('.Shadow') ? e.data('triggerPosition') : e.boundingBox().x1;
+      e.is('.Shadow') ? Number(e.data('triggerPosition')) : e.boundingBox().x1;
     if (this.comparing()) {
       cy.elements('[!isBackground]').style('visibility', 'hidden');
       this.replacedElements = cy
@@ -1135,7 +1151,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
       this.replacedElementsPosition = this.replacedElements.map(getPosition);
 
-      cy.on('add', (e) => {
+      cy.on('add', (e: ElementEvent) => {
         const addedElement = e.target;
         if (addedElement.data('replacedBy') || addedElement.data('isCrossed')) {
           const x = getPosition(addedElement);
@@ -1148,7 +1164,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         }
       });
 
-      cy.on('remove', (e) => {
+      cy.on('remove', (e: ElementEvent) => {
         const removedElement = e.target;
         const index = this.replacedElements.indexOf(removedElement);
         if (index > -1) {
@@ -1221,8 +1237,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           if (elements.length === 0) {
             const allSubpathwaysElements = elements.or('[subpathways]');
             allSubpathwaysElements.forEach((ele) => {
-              const pathwayList = ele.data('subpathways');
-              if (pathwayList.includes(token)) {
+              const pathwayList: unknown = ele.data('subpathways');
+              if (Array.isArray(pathwayList) && pathwayList.includes(token)) {
                 elements.merge(ele);
               }
             });
@@ -1475,7 +1491,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           .slice(limitIndex, this.lastIndex)
           .map((e) => e.style('visibility', 'hidden')) // Hide the range of elements
           .filter((e) => e.is('.Shadow')) // And if it is an shadow
-          .forEach((shadow) => shadow.data('edges').style('underlay-padding', 0)); // Hide as well the associated reaction underlay
+          .forEach((shadow) => shadowEdges(shadow)?.style('underlay-padding', 0)); // Hide as well the associated reaction underlay
       // If at least one element is switched from right to left
       if (limitIndex > this.lastIndex)
         this.replacedElements
@@ -1483,7 +1499,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           .map((e) => e.style('visibility', 'visible')) // Show the range of elements
           .filter((e) => e.is('.Shadow')) // And if it is an shadow
           .forEach((shadow) =>
-            shadow.data('edges').style('underlay-padding', this.underlayPadding)
+            shadowEdges(shadow)?.style('underlay-padding', this.underlayPadding)
           ); // Show as well the associated reaction underlay
     }
     this.lastIndex = limitIndex;
@@ -1560,7 +1576,10 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         resource
       ),
       pathways: this.analysis.pathwaysResults(
-        this.cy?.nodes('.Pathway').map((p) => p.data('reactomeId')) || [],
+        this.cy
+          ?.nodes('.Pathway')
+          .map((p) => numberData(p, 'reactomeId'))
+          .filter(isDefined) || [],
         token,
         resource
       ),
@@ -1593,12 +1612,13 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
         this.cys.forEach((cy) => {
           cy.batch(() => {
-            const style: Style = cy.data('reactome');
+            const style = styleOf(cy);
 
             cy.nodes('.InteractorOccurrences').forEach((occurence) => {
               if (includeInteractors) {
-                const interactors: DrawnInteractor[] = occurence.data('interactors');
-                const exps = interactors.map((i) => analysisEntityMap.get(i.acc)).filter(isDefined);
+                const exps = interactorAccessions(occurence)
+                  .map((acc) => analysisEntityMap.get(acc))
+                  .filter(isDefined);
                 if (exps.length > 0) {
                   occurence.data('exp', [average(exps)]);
                 } else {
@@ -1615,8 +1635,8 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
               node.data('exp', nodeExpression(node, analysisEntityMap));
             });
             cy.nodes('.Pathway').forEach((node) => {
-              const dbId: number = node.data('reactomeId');
-              const pathwayData = analysisPathwayMap.get(dbId);
+              const dbId = numberData(node, 'reactomeId');
+              const pathwayData = dbId === undefined ? undefined : analysisPathwayMap.get(dbId);
               if (!pathwayData) {
                 node.data('exp', [undefined]);
               } else {
@@ -1628,10 +1648,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
             });
 
             cy.edges('[?color]').style({ 'underlay-padding': 8 });
-            cy.nodes('.Shadow').style({
-              'font-size': extract(style.properties.shadow.fontSize) / 2,
-              'text-outline-width': extract(style.properties.shadow.fontPadding) / 2,
-            });
+            if (style)
+              cy.nodes('.Shadow').style({
+                'font-size': extract(style.properties.shadow.fontSize) / 2,
+                'text-outline-width': extract(style.properties.shadow.fontPadding) / 2,
+              });
 
             this.reactomeStyles.forEach((style) =>
               style.loadAnalysis(style.cy!, this.analysis.palette().scale)
@@ -1688,10 +1709,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     this.cys.filter(Boolean).forEach((cy) => {
       cy.batch(() => {
         cy.nodes('.PhysicalEntity').forEach((node) => {
-          const graph = node.data('graph') as Graph.Node | undefined;
-          const leaves: Graph.Node[] = node.data('graph.leaves') || (graph ? [graph] : []);
+          const own: unknown = node.data('graph');
+          const graph = isGraphNode(own) ? own : undefined;
+          const leaves = graphLeaves(node) ?? (graph ? [graph] : []);
           const stableIds = new Set([
-            node.data('graph.stId') as string,
+            textData(node, 'graph.stId'),
             ...leaves.flatMap((leaf) => [leaf.stId, leaf.identifier, leaf.standardIdentifier]),
           ]);
           const values = [...stableIds]
@@ -1700,8 +1722,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
           node.data('exp', values.length ? values : [undefined]);
         });
         cy.nodes('.Pathway, .InteractorOccurrences').data('exp', [undefined]);
-        const style: Style = cy.data('reactome');
-        style.loadAnalysis(cy, palette);
+        styleOf(cy)?.loadAnalysis(cy, palette);
       });
     });
     setTimeout(() => {
@@ -1846,7 +1867,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   private _ignore = false;
 
-  avoidSideEffect(m: () => any) {
+  avoidSideEffect(m: () => unknown) {
     this._ignore = true;
     m();
     this._ignore = false;
@@ -1892,15 +1913,15 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       const tgt = src === this.cy ? this.cyCompare : this.cy;
       if (!tgt) return;
 
-      let replacedBy = event.detail.element.data('replacedBy');
-      replacedBy = replacedBy || event.detail.element.data('replacement');
-      replacedBy =
-        replacedBy ||
-        (event.detail.element.data('isBackground') &&
-          !event.detail.element.data('isFadeOut') &&
-          event.detail.element.data('id'));
+      // Read as text, as cytoscape reads any id it is given.
+      const element = event.detail.element;
+      const found: unknown =
+        element.data('replacedBy') ||
+        element.data('replacement') ||
+        (element.data('isBackground') && !element.data('isFadeOut') && element.data('id'));
 
-      if (!replacedBy) return;
+      if (!found) return;
+      const replacedBy = String(found);
 
       let replacements = tgt.getElementById(replacedBy);
       if (event.detail.type === 'reaction') {
@@ -1987,9 +2008,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
       delay(5) // allow for unselect to be processed before select when clicking on an already selected element
     )
     .subscribe((e) => {
-      const elements: cytoscape.NodeSingular = e.detail.element;
-      const reactomeIds = elements.map((el) => el.data('graph.stId'));
-      this.selectInDiagram(reactomeIds[0]);
+      this.selectInDiagram(selectedStId(e.detail.element));
     });
 
   diagramUnselect2state = this.reactomeEvents$
@@ -2057,7 +2076,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
   logProteins() {
     console.debug(
-      new Set(this.cy?.nodes('.Protein').map((node) => node.data('acc') || node.data('iAcc')))
+      new Set(
+        this.cy?.nodes('.Protein').map((node): unknown => node.data('acc') || node.data('iAcc'))
+      )
     );
   }
 
@@ -2071,7 +2092,7 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
    * and the next selection from outside the diagram (a search hit, a link,
    * the details panel) was then ignored.
    */
-  private selectInDiagram(stId: string): void {
+  private selectInDiagram(stId: string | null): void {
     if (untracked(() => this.state.select()) === stId) return;
     this.selecting = true;
     this.state.select.set(stId);
