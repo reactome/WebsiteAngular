@@ -1354,8 +1354,11 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
         // writes their opacity too; it leaves flagged lines alone.
         cy.elements().removeClass('flag');
         cy.edges().not('[?color]').style({ 'underlay-opacity': 0 });
-        this.setSubPathwayVisibility(true, cy);
       });
+      // After the batch, not in it: inside one the bands' restored `shadow`
+      // class is not yet in their computed style, so the zoom handler read
+      // their colour as black, took that for "no bands" and hid them all.
+      this.setSubPathwayVisibility(true, cy);
 
       return cy.collection();
     }
