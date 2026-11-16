@@ -218,7 +218,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 
 ## Phase 3: Asserted values (User Story 3, P3)
 
-- [ ] T015 [US3] `no-non-null-assertion` outside the Pathway Browser (8), with
+- [x] T015 [US3] `no-non-null-assertion` outside the Pathway Browser (8), with
       T016 in one pull request. A map filled as it is read takes the list it
       made (the release calendar, the icon library, the search page's protein
       forms); the table's maximum height and the download page's observer are
@@ -227,7 +227,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
       tree's spec names the node it copies. No behaviour moved.
 - T016–T017 [US3] `no-non-null-assertion` in the Pathway Browser: 137 on
   16 Nov, split by folder under `src/app` into two halves.
-  - [ ] T016 `details` (17), `diagram` (23) and `reacfoam` (29): 69. What a
+  - [x] T016 `details` (17), `diagram` (23) and `reacfoam` (29): 69. What a
         signal holds is read once into a constant and narrowed; the diagram's
         canvas, compare canvas and legend are `viewChild.required` (all three
         are drawn unconditionally); a style's diagram, a merged image's 2D
@@ -247,7 +247,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         of a reference with no stable id sets the selection to `null` where
         it set `undefined` (both mean none: see below); the animated EHLD
         export, its picture gone, fails with an error saying so, where it
-        threw a `TypeError`. 145 → 68 with T015.
+        threw a `TypeError`. 145 → 68 with T015 (#983).
   - [ ] T017 `ehld` (4), `event-hierarchy` (5), `interactors` (8),
         `services` (32) and `viewport` (19): 68. Promote the rule to `error`.
 
