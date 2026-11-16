@@ -165,7 +165,19 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         selection to `null` where it set `undefined`; both mean none.
         `element-data.spec.ts` (new) passes, and fails on each planted
         fault. 366 → 303 (#976).
-  - [ ] T011 `interactors` (52).
+  - [x] T011 `interactors` (52). What an interactor badge keeps on its
+        element is read through `element-data.ts`: its interactors as the
+        entries with an accession (`drawnInteractors`), its entity where it is
+        a node, a list where it is one, and its data copied as an object; the
+        badge counts, the export and the threshold read the same way, so their
+        casts went too. The custom-resource dialog's form is typed. Four things
+        move: sharing a file by link sends the file (a bug, below); an entity
+        with no accession no longer adds an empty identifier to the request;
+        a badge with no list or no entity draws and removes nothing, where it
+        threw; entries with no accession are left out, where they threw or
+        were passed on (none are sent so). `interactor-drawing.spec.ts` and
+        `upload-form.spec.ts` (new) and `element-data.spec.ts` pass, and fail
+        on the old service and on each planted fault. 303 → 251 (#977).
   - [ ] T012 `pipes` (50).
   - [ ] T013 `services`, `event-hierarchy`, `viewport` and `deltasignal` (56).
         `deltasignal` (5) is another session's work at present: its warnings
