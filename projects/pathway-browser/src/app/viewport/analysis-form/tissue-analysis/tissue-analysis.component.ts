@@ -111,7 +111,8 @@ export class TissueAnalysisComponent {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (!this.lottieCanvas()) return;
+        const canvas = this.lottieCanvas();
+        if (!canvas) return;
         this.lottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
@@ -119,14 +120,15 @@ export class TissueAnalysisComponent {
           },
           autoplay: true,
           loop: true,
-          canvas: this.lottieCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: `assets/animations/${this.theme()}/loader-animation.json`,
         });
       })().catch((error) => console.error('Could not build animation', error));
     });
 
     effect(() => {
-      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie!.play(), 800);
+      // Read when it fires, as before: once set it is never unset.
+      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie?.play(), 800);
     });
   }
 
@@ -243,12 +245,16 @@ export class TissueAnalysisComponent {
   readonly analysisError = signal<string | null>(null);
 
   analyse() {
+    // The button is disabled until tissues are chosen, and they are chosen
+    // from an experiment's: there is one.
+    const experiment = this.experiment();
+    if (!experiment) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
     this.analysisError.set(null);
     this.analysis
       .analyseFromUrl(
-        this.tissue.getSampleURL(this.experiment()!.id, {
+        this.tissue.getSampleURL(experiment.id, {
           omitNulls: true,
           columns: this.selectedTissues().flatMap((tissue) => this.tissuesMap()[tissue] ?? []),
         })

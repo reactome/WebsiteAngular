@@ -65,7 +65,8 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   readonly closed = output<{ status: 'finished' | 'premature' }>();
   readonly status = input.required<'open' | 'closed'>();
 
-  readonly table = viewChild<TableComponent>('table');
+  // Drawn unconditionally, in the first step.
+  readonly table = viewChild.required<TableComponent>('table');
   readonly data = signal<string[][]>([['']]);
   readonly theme = computed(() => (this.darkService.isDark() ? 'dark' : 'light'));
 
@@ -87,7 +88,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     this.http
       .get(`assets/data/analysis-examples/${exampleId}.tsv`, { responseType: 'text' })
       .subscribe((res) => {
-        this.table()!.importFileContent({ content: res, type: 'tsv' }, true);
+        this.table().importFileContent({ content: res, type: 'tsv' }, true);
       });
   }
 
@@ -102,11 +103,8 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (
-          !this.interactorsIllustrationCanvas() ||
-          this.interactorsIllustrationLottie !== undefined
-        )
-          return;
+        const canvas = this.interactorsIllustrationCanvas();
+        if (!canvas || this.interactorsIllustrationLottie !== undefined) return;
         this.interactorsIllustrationLottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
@@ -114,7 +112,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
           },
           autoplay: false,
           loop: true,
-          canvas: this.interactorsIllustrationCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: 'assets/animations/light/interactors-animation.json',
         });
       })().catch((error) => console.error('Could not build animation', error));
@@ -124,7 +122,8 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (!this.lottieCanvas() || this.lottieEnd !== undefined) return;
+        const canvas = this.lottieCanvas();
+        if (!canvas || this.lottieEnd !== undefined) return;
         // console.log('Building lottie')
         this.lottieEnd = await this.lottieService.buildLottie({
           renderConfig: {
@@ -133,7 +132,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
           },
           autoplay: true,
           loop: true,
-          canvas: this.lottieCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: `assets/animations/${this.theme()}/loader-animation.json`,
         });
       })().catch((error) => console.error('Could not build animation', error));
@@ -154,7 +153,8 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     });
 
     effect(() => {
-      if (this.status() === 'open' && this.lottieEnd) setTimeout(() => this.lottieEnd!.play(), 800);
+      // Read when it fires, as before: once set it is never unset.
+      if (this.status() === 'open' && this.lottieEnd) setTimeout(() => this.lottieEnd?.play(), 800);
     });
 
     effect(() => {
@@ -170,7 +170,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
 
   ngAfterViewInit(): void {
     this.dataStepForm.setAsyncValidators((_control) =>
-      this.table()!.hasData$.pipe(
+      this.table().hasData$.pipe(
         map((hasData) => (hasData ? null : { invalid: true })),
         untilDestroyed(this)
       )
@@ -180,11 +180,11 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
 
   uploadFile(input: HTMLInputElement) {
     const file = input.files?.[0];
-    if (file) this.table()!.importFile(file, true);
+    if (file) this.table().importFile(file, true);
   }
 
   downloadFile() {
-    this.table()!.exportFile();
+    this.table().exportFile();
   }
 
   // STEP 2 Options
@@ -219,7 +219,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
     this.analysisError.set(null);
-    this.table()!
+    this.table()
       .cleanData$.pipe(
         take(1),
         switchMap((data) =>
@@ -257,7 +257,7 @@ export class QualitativeAnalysisComponent implements AfterViewInit {
   }
 
   displayAnalysis() {
-    this.state.analysis.set(this.token!);
+    this.state.analysis.set(this.token);
     this.closed.emit({ status: 'finished' });
   }
 

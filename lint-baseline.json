@@ -1,6 +1,4 @@
 {
-  "warnings": 68,
-  "rules": {
-    "@typescript-eslint/no-non-null-assertion": 68
-  }
+  "warnings": 0,
+  "rules": {}
 }

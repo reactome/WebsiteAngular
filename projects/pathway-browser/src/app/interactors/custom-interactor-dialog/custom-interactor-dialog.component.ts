@@ -79,10 +79,11 @@ export class CustomInteractorDialogComponent implements OnInit {
   }>(MAT_DIALOG_DATA);
 
   cy!: cytoscape.Core;
-  name = new FormControl('', [
-    Validators.required,
-    Validators.pattern(/^[a-zA-Z_]+[a-zA-Z0-9_]*$/),
-  ]);
+  // Never reset, so never null: nonNullable only says so.
+  name = new FormControl('', {
+    nonNullable: true,
+    validators: [Validators.required, Validators.pattern(/^[a-zA-Z_]+[a-zA-Z0-9_]*$/)],
+  });
   readonly resourceForm = this.fb.group(
     {
       selectedValue: [''],
@@ -94,7 +95,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     { validators: anySourceGiven }
   );
   errorMessage = '';
-  tabId = 'data'; // Default value
+  tabId: 'data' | 'psicquic' = 'data'; // Default value
   selectedValue = 'form'; // Default value
   /**
    * Signals, not fields.
@@ -197,7 +198,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     const userInput = this.getInputs();
 
     this.interactorService
-      .getInteractorsFromToken(this.name.value!, userInput.url!, userInput.content!, this.cy)
+      .getInteractorsFromToken(this.name.value, userInput.url, userInput.content, this.cy)
       .subscribe({
         next: (result) => {
           this.interactorService.addInteractorOccurrenceNode(
@@ -232,7 +233,7 @@ export class CustomInteractorDialogComponent implements OnInit {
     this.isDataLoading.set(true);
     try {
       const text = await this.readInput();
-      const name = this.name.value!;
+      const name = this.name.value;
       const parsed = parseCustomInteractions(text, name);
 
       if (parsed.error) {
@@ -287,23 +288,18 @@ export class CustomInteractorDialogComponent implements OnInit {
   }
 
   private getInputs(): InputCategory {
-    const input = new InputCategory();
-
-    if (this.tabId === 'data') {
-      input.url = this.interactorService.UPLOAD_URL + this.selectedValue;
-      if (this.selectedValue === 'form') {
-        input.content = uploadForm(this.resourceForm.value.form);
-      } else {
-        const source = this.chosenSource();
-        input.content = typeof source === 'string' ? source : undefined;
-      }
-    }
-
     if (this.tabId === 'psicquic') {
-      input.url = this.interactorService.UPLOAD_PSICQUIC_URL;
-      input.content = this.resourceForm.value.psicquicUrl ?? undefined;
+      return {
+        url: this.interactorService.UPLOAD_PSICQUIC_URL,
+        content: this.resourceForm.value.psicquicUrl ?? undefined,
+      };
     }
-    return input;
+    const url = this.interactorService.UPLOAD_URL + this.selectedValue;
+    if (this.selectedValue === 'form') {
+      return { url, content: uploadForm(this.resourceForm.value.form) };
+    }
+    const source = this.chosenSource();
+    return { url, content: typeof source === 'string' ? source : undefined };
   }
 }
 

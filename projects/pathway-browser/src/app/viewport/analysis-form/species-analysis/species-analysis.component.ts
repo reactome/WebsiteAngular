@@ -77,7 +77,8 @@ export class SpeciesAnalysisComponent {
       // the first await are still tracked, because an async function runs
       // synchronously up to that point.
       void (async () => {
-        if (!this.lottieCanvas() || this.lottie) return;
+        const canvas = this.lottieCanvas();
+        if (!canvas || this.lottie) return;
         this.lottie = await this.lottieService.buildLottie({
           renderConfig: {
             autoResize: true,
@@ -85,7 +86,7 @@ export class SpeciesAnalysisComponent {
           },
           autoplay: true,
           loop: !this.analysisAvailable(),
-          canvas: this.lottieCanvas()!.nativeElement,
+          canvas: canvas.nativeElement,
           src: `assets/animations/${this.theme()}/${this.analysisAvailable() ? 'success' : 'loader'}-animation.json`,
         });
       })().catch((error) => console.error('Could not build animation', error));
@@ -107,7 +108,8 @@ export class SpeciesAnalysisComponent {
     });
 
     effect(() => {
-      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie!.play(), 800);
+      // Read when it fires, as before: once set it is never unset.
+      if (this.status() === 'open' && this.lottie) setTimeout(() => this.lottie?.play(), 800);
     });
   }
 
@@ -122,11 +124,12 @@ export class SpeciesAnalysisComponent {
   readonly analysisError = signal<string | null>(null);
 
   analyse() {
-    if (this.selectedSpecies() === null) return;
+    const species = this.selectedSpecies();
+    if (species === null) return;
     this.analysisLaunched.set(true);
     this.analysisAvailable.set(false);
     this.analysisError.set(null);
-    this.analysis.analyseSpecies(this.selectedSpecies()!).subscribe({
+    this.analysis.analyseSpecies(species).subscribe({
       next: (result) => {
         this.analysisAvailable.set(true);
         this.token = result.summary.token;
