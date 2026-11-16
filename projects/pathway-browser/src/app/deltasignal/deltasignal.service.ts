@@ -17,6 +17,8 @@ import {
   DeltaSignalLeadsResponse,
   DeltaSignalLeadState,
   ContentServiceEntity,
+  DeltaSignalInverseResponse,
+  DeltaSignalInverseState,
   DeltaSignalMeasurement,
   DeltaSignalSolveResult,
   DeltaSignalStatus,
@@ -62,6 +64,13 @@ export class DeltaSignalService {
   readonly perturbations = signal<DeltaSignalPerturbation[]>([]);
   /** Measured levels conditioning the next solve (deltasignal specs/156). */
   readonly measurements = signal<DeltaSignalMeasurement[]>([]);
+  /** The inverse question's state (deltasignal specs/158, WA specs/030). */
+  readonly inverseState = signal<DeltaSignalInverseState>({
+    status: 'idle',
+    reactomeId: null,
+    result: null,
+    message: null,
+  });
   readonly result = signal<DeltaSignalSolveResult | null>(null);
   readonly pinState = signal<DeltaSignalPinState>({
     status: 'idle',
@@ -169,6 +178,7 @@ export class DeltaSignalService {
     this.network.set(null);
     this.perturbations.set([]);
     this.measurements.set([]);
+    this.inverseState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.readoutState.set(IDLE_READOUTS);
@@ -284,6 +294,37 @@ export class DeltaSignalService {
     return true;
   }
 
+  /**
+   * Ask the engine which perturbations move the selected entity (deltasignal
+   * specs/158). Server defaults rule (direction any, registered cap/doses);
+   * rows and counts are rendered verbatim — a capped answer stays visibly
+   * capped, and nothing is ranked or computed client-side.
+   */
+  async runInverse(reactomeId: string): Promise<void> {
+    const network = this.network();
+    if (!network) return;
+    this.inverseState.set({ status: 'loading', reactomeId, result: null, message: null });
+    try {
+      const result = await firstValueFrom(
+        this.http.post<DeltaSignalInverseResponse>('/api/inverse', {
+          network_id: network.network_id,
+          target: { stable_ids: [reactomeId] },
+          direction: 'any',
+        })
+      );
+      if (this.inverseState().reactomeId !== reactomeId) return; // a newer ask took over
+      this.inverseState.set({ status: 'ready', reactomeId, result, message: null });
+    } catch (error) {
+      if (this.inverseState().reactomeId !== reactomeId) return;
+      this.inverseState.set({
+        status: 'error',
+        reactomeId,
+        result: null,
+        message: this.errorMessage(error, 'DeltaSignal could not answer the inverse question.'),
+      });
+    }
+  }
+
   removeMeasurement(reactomeId: string) {
     this.measurements.update((items) => items.filter((item) => item.reactomeId !== reactomeId));
   }
@@ -318,6 +359,8 @@ export class DeltaSignalService {
     this.pathway.set(null);
     this.network.set(null);
     this.perturbations.set([]);
+    this.measurements.set([]);
+    this.inverseState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.result.set(null);
     this.pinState.set({ status: 'idle', reactomeId: null, result: null, message: null });
     this.readoutState.set(IDLE_READOUTS);

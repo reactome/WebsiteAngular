@@ -173,6 +173,52 @@
         </button>
       </div>
 
+      @if (selectedStId() && service.network()) {
+        <div class="inverse-control">
+          <button
+            type="button"
+            mat-stroked-button
+            (click)="askInverse()"
+            [disabled]="service.inverseState().status === 'loading'"
+          >
+            <mat-icon>swap_vert</mat-icon>
+            What moves this entity?
+          </button>
+          @if (inverseForSelection(); as inv) {
+            @if (inv.status === 'loading') {
+              <div class="selection-help">
+                <mat-spinner [diameter]="18" /><span>Solving every candidate perturbation…</span>
+              </div>
+            } @else if (inv.status === 'error') {
+              <div class="inline-error" role="alert"><mat-icon>error_outline</mat-icon>{{ inv.message }}</div>
+            } @else if (inv.result; as result) {
+              <small class="inverse-counts">
+                {{ result.counts.candidates_total }} candidate perturbations · {{ result.counts.reachable }} with a
+                route here · {{ result.counts.solved }} solved · {{ result.counts.moved }} move it
+                @if (result.counts.capped > 0) {
+                  · <strong>{{ result.counts.capped }} not solved (capped — this answer is not exhaustive)</strong>
+                }
+              </small>
+              @if (result.results.length) {
+                <div class="inverse-rows">
+                  @for (row of result.results.slice(0, 12); track row.candidates[0] + row.dose) {
+                    <div class="inverse-row">
+                      <strong>{{ row.names.join(' / ') }}</strong>
+                      <span
+                        >{{ row.dose === 'knockout' ? 'knock out' : 'over-express' }} →
+                        {{ row.fold | number: '1.2-2' }}× ({{ row.call === 'normal' ? 'no change' : row.call }})</span
+                      >
+                    </div>
+                  }
+                </div>
+              } @else {
+                <small class="inverse-counts">No solved perturbation moves this entity here.</small>
+              }
+            }
+          }
+        </div>
+      }
+
       @if (canMeasure()) {
         <div class="measure-control">
           <div class="measure-heading">
