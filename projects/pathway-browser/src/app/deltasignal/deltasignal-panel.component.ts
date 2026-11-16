@@ -117,6 +117,10 @@ export class DeltaSignalPanelComponent {
   readonly softSent = computed(
     () => Object.keys(buildSoftObservations(this.service.measurements())).length
   );
+  readonly inverseForSelection = computed(() => {
+    const state = this.service.inverseState();
+    return state.reactomeId === this.selectedStId() && state.status !== 'idle' ? state : null;
+  });
   readonly softLine = computed(() => {
     const result = this.service.result();
     if (!result) return null;
@@ -197,5 +201,10 @@ export class DeltaSignalPanelComponent {
   addMeasurement() {
     const stableId = this.selectedStId();
     if (stableId) this.service.addMeasurement(stableId, this.measuredFold(), this.measuredWeight());
+  }
+
+  askInverse() {
+    const stableId = this.selectedStId();
+    if (stableId) void this.service.runInverse(stableId);
   }
 }

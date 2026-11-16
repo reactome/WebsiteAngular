@@ -1025,3 +1025,92 @@ describe('DeltaSignalService soft observations (specs/028)', () => {
     expect(service.measurements()).toEqual([]);
   });
 });
+
+// deltasignal specs/158 consumption (WA specs/030): the inverse question.
+describe('DeltaSignalService inverse (specs/030)', () => {
+  let service: DeltaSignalService;
+  let http: HttpTestingController;
+
+  const network: DeltaSignalNetwork = {
+    status: 'success',
+    message: 'ok',
+    network_id: 'pw:test',
+    edges: [],
+    pathways: [],
+    nodes: [],
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [provideHttpClient(), provideHttpClientTesting()],
+    });
+    service = TestBed.inject(DeltaSignalService);
+    http = TestBed.inject(HttpTestingController);
+    service.pathway.set({ id: 'Test_R-HSA-9', stable_id: 'R-HSA-9', name: 'Test' });
+    service.network.set(network);
+  });
+
+  afterEach(() => http.verify());
+
+  const answer = {
+    status: 'success' as const,
+    direction: 'any',
+    cap: 50,
+    ordering: 'entity_id',
+    counts: {
+      candidates_total: 86,
+      self_excluded: 1,
+      reachable: 12,
+      solved: 12,
+      capped: 0,
+      moved: 4,
+      returned: 4,
+    },
+    results: [
+      {
+        candidates: ['R-HSA-1'],
+        names: ['ATM'],
+        dose: 'knockout' as const,
+        activity: 0,
+        fold: 0.2,
+        call: 'down' as const,
+        converged: true,
+      },
+    ],
+  };
+
+  it('asks with exactly the target and direction — server defaults rule', async () => {
+    const asking = service.runInverse('R-HSA-2');
+    const request = http.expectOne('/api/inverse');
+    expect(request.request.body).toEqual({
+      network_id: 'pw:test',
+      target: { stable_ids: ['R-HSA-2'] },
+      direction: 'any',
+    });
+    request.flush(answer);
+    await asking;
+    const state = service.inverseState();
+    expect(state.status).toBe('ready');
+    expect(state.result?.counts.candidates_total).toBe(86);
+    expect(state.result?.results[0]).toMatchObject({ names: ['ATM'], fold: 0.2, call: 'down' });
+  });
+
+  it('surfaces the server error verbatim and never invents rows', async () => {
+    const message =
+      'the target does not resolve to any node in this network (basis: none) - there is nothing to move.';
+    const asking = service.runInverse('R-HSA-2');
+    http.expectOne('/api/inverse').flush({ message }, { status: 400, statusText: 'Bad Request' });
+    await asking;
+    expect(service.inverseState().status).toBe('error');
+    expect(service.inverseState().message).toBe(message);
+    expect(service.inverseState().result).toBeNull();
+  });
+
+  it('clears with reset()', async () => {
+    const asking = service.runInverse('R-HSA-2');
+    http.expectOne('/api/inverse').flush(answer);
+    await asking;
+    service.reset();
+    expect(service.inverseState().status).toBe('idle');
+  });
+});
