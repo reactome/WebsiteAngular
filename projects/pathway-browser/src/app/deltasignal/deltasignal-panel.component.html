@@ -377,6 +377,13 @@
                 }
                 — the same rule the benchmark figures used. Between the thresholds the model calls no change.
               </dd>
+              <dt>Structurally fragile</dt>
+              <dd>
+                Twenty near-equivalent modelling choices were measured on DeltaSignal's record (deltasignal specs/157).
+                A row carries this note when answers in its class flipped under at least one of them unusually often —
+                the call rests on a contested choice. It is stability across recorded model structure, never
+                correctness; on the record, fragile drug-record calls were right one time in five.
+              </dd>
               <dt>Confidence</dt>
               <dd>
                 How often predictions in the same measured class (same direction, size band, resolution and convergence)
@@ -494,6 +501,12 @@
                           on {{ axisLabel(range.axis) }}, answers like this measured {{ range.lo | number: '1.2-2' }}–{{
                             range.hi | number: '1.2-2'
                           }}× half the time ({{ range.n }} cases)
+                        </small>
+                      }
+                      @if (fragileNote(row); as fragility) {
+                        <small class="fragility-note">
+                          structurally fragile class: calls like this flipped under contested model rules in
+                          {{ fragility.rate | percent: '1.0-1' }} of the record ({{ fragility.n }} cases)
                         </small>
                       }
                     </span>
