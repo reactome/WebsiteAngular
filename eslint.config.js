@@ -77,18 +77,18 @@ module.exports = tseslint.config(
         'error',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
       ],
-      '@typescript-eslint/no-explicit-any': 'warn',
+      // `any` declared, or flowing through the code: an API answer read as
+      // any, then passed, returned or dereferenced as if its shape were known.
+      // All were typed (spec 025 T002-T013), so a new one is a new mistake.
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unsafe-assignment': 'error',
+      '@typescript-eslint/no-unsafe-member-access': 'error',
+      '@typescript-eslint/no-unsafe-call': 'error',
+      '@typescript-eslint/no-unsafe-return': 'error',
+      '@typescript-eslint/no-unsafe-argument': 'error',
+      // Warned, and held at today's count by scripts/check-lint.mjs, until
+      // spec 025 T015-T017 clear it.
       '@typescript-eslint/no-non-null-assertion': 'warn',
-      // `any` flowing through the code: an API answer read as any, then passed,
-      // returned or dereferenced as if its shape were known. Warned, and held
-      // at today's count rule by rule (scripts/check-lint.mjs), so new code
-      // types what it reads while the existing ones (990, tests and e2e
-      // included) are worked down.
-      '@typescript-eslint/no-unsafe-assignment': 'warn',
-      '@typescript-eslint/no-unsafe-member-access': 'warn',
-      '@typescript-eslint/no-unsafe-call': 'warn',
-      '@typescript-eslint/no-unsafe-return': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
       // A check the types say can never matter: a `?.` on a value typed as
       // never null, an `if` that is always true. Where the value is API data,
       // the answer is not to delete the check but to make the type say the
