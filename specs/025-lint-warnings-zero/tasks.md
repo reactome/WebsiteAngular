@@ -274,7 +274,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
         with no pathway with a diagram above it (every top-level pathway in
         the recordings, 271, has one), an EHLD region outside an
         illustration, a canvas with no 2D context, an empty ChEBI
-        identifier. 68 → 0 (#TBD).
+        identifier. 68 → 0 (#985).
 
 ## Phase 4: Done
 
