@@ -1,4 +1,4 @@
-<a [href]="term().url" target="_blank" [matTooltip]="term().definition">
+<ng-template #label>
   @if (titleCase()) {
     {{ name() | titlecase }}
   } @else {
@@ -6,6 +6,16 @@
   }
 
   @if (displayId()) {
-    ({{ term().databaseName }}:{{ id() }})
+    ({{ databaseName() ? databaseName() + ':' : '' }}{{ id() }})
   }
-</a>
+</ng-template>
+
+@if (url(); as href) {
+  <a [href]="href" target="_blank" [matTooltip]="term().definition">
+    <ng-container [ngTemplateOutlet]="label" />
+  </a>
+} @else {
+  <span [matTooltip]="term().definition">
+    <ng-container [ngTemplateOutlet]="label" />
+  </span>
+}

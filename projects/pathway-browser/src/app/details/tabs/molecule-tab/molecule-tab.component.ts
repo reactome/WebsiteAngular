@@ -40,12 +40,8 @@ export type MoleculeData = {
 };
 
 // molecule type from backend when sending enhanced query
-export enum MoleculeType {
-  PROTEIN = 'Protein', //Protein
-  CHEMICAL_DRUG = 'ChemicalDrug', // Drugs
-  ENTITY = 'Entity', // DRA/RNA
-  CHEMICAL = 'Chemical', //Chemical
-}
+import { MoleculeType } from './molecule-type';
+export { MoleculeType };
 
 @Component({
   selector: 'cr-molecule-tab',
