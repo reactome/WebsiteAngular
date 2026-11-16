@@ -1,5 +1,5 @@
 import type { NodeSingular } from 'cytoscape';
-import type * as Graph from '../model/graph.model';
+import { isGraphNode } from './element-data';
 
 /**
  * What the analysis found for one drawn entity: a value per leaf it stands for,
@@ -24,8 +24,4 @@ export function nodeExpression(
   return leaves
     .map((leaf) => (leaf.identifier ? found.get(leaf.identifier) : undefined))
     .sort((a, b) => (a !== undefined ? (b !== undefined ? a - b : -1) : 1));
-}
-
-function isGraphNode(value: unknown): value is Graph.Node {
-  return typeof value === 'object' && value !== null;
 }

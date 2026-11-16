@@ -154,7 +154,7 @@ export class EntityPopupComponent {
   private readonly http = inject(HttpClient);
   private readonly analysis = inject(AnalysisService);
   private readonly state = inject(UrlStateService);
-  private readonly host = inject(ElementRef<HTMLElement>);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly target = input<EntityPopupTarget | null>(null);
 
@@ -564,7 +564,7 @@ export class EntityPopupComponent {
   // are needed to dismiss reliably.
   onDocumentPointer(event: Event): void {
     if (!this.target() || this.pinned()) return;
-    if (this.host.nativeElement.contains(event.target as Node)) return;
+    if (event.target instanceof Node && this.host.nativeElement.contains(event.target)) return;
     this.dismissed.emit();
   }
 }
