@@ -379,7 +379,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       names (only the proxy does that) is replaced again at the next figure, which is a
       fresh page per figure: safe, and slower.
 - [x] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
-      settings in the service's header comment and its README (`tools/render/README.md`) (#TBD).
+      settings in the service's header comment and its README (`tools/render/README.md`) (#1002).
   - **Tests:** health with reuse on and off; every existing field unchanged.
   - **Built:** with reuse on, `/health` adds `pages`, `replaced` (all five reasons) and
     `site` after `reuse` and `reused` (T006's); with it off the four are absent, not
