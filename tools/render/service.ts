@@ -74,7 +74,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
-import { Pages } from './pages.ts';
+import { Pages, verdict } from './pages.ts';
 import type { Format } from './render-core.ts';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
@@ -184,7 +184,12 @@ function clamp(value: unknown, low: number, high: number, fallback: number) {
 // before reuse is turned on. RENDER_REUSE off is a fresh page per render.
 let browser: Browser | undefined;
 async function getBrowser() {
-  if (!browser?.isConnected()) browser = await chromium.launch();
+  if (!browser?.isConnected()) {
+    browser = await chromium.launch();
+    // Every held page was the old browser's: given one, a figure would fail
+    // where a fresh page draws it (spec 018, data-model Replacement).
+    if (REUSE) browser.on('disconnected', () => void pages.replaceAll('browser'));
+  }
   return browser;
 }
 
@@ -194,6 +199,7 @@ const VIEWPORT = { width: 1600, height: 1000 };
 interface RenderPage {
   page: Page;
   close(): Promise<void>;
+  alive?(): boolean;
 }
 
 const pages = new Pages<RenderPage>({
@@ -209,7 +215,13 @@ const pages = new Pages<RenderPage>({
     // A context of its own, so a held page's storage and cookies go with it.
     const context = await running.newContext({ viewport: VIEWPORT });
     const page = await context.newPage();
-    return { page, close: () => context.close() };
+    // A renderer can die between figures (research R4 saw "Target crashed"):
+    // such a page is replaced before a figure is given to it.
+    let crashed = false;
+    page.on('crash', () => {
+      crashed = true;
+    });
+    return { page, close: () => context.close(), alive: () => !crashed && !page.isClosed() };
   },
 });
 
@@ -512,9 +524,11 @@ async function renderCached(params: RenderParams) {
             (problems.length ? ` (${problems.length} browser problem(s))` : '') +
             (nav === undefined ? '' : ' (held page)')
         );
-        return { bytes, cached: false, movable };
+        return { bytes, cached: false, movable, problems };
       },
-      ({ movable }) => movable
+      // A figure with a browser problem is answered as before, and its page
+      // replaced: the problem may be in what the next figure would start from.
+      verdict
     )
   );
 

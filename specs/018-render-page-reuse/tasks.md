@@ -291,10 +291,34 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     - A fresh overview now fetches Roboto's nine subsets before drawing (once per held
       page).
     - R-MMU-69620 drew normally here: #957's 500s were not the release files.
-- [ ] T006 [US3] Replacement on failure, timeout or browser problem, and on a browser
-      restart (data-model Replacement).
+- [x] T006 [US3] Replacement on failure, timeout or browser problem, and on a browser
+      restart (data-model Replacement) (#1000).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
     failed request's answer is today's.
+  - **Built:** `Pages` in `pages.ts` judges each figure (`verdict`: `hold`, `spent` for a
+    page that no longer holds the render page, or a reason) and counts replacements by
+    reason in `replaced`. T007 adds its reasons to `Reason` and its rules beside these.
+    - `failure`: the figure threw (an error, a timeout, a crash while drawing), or its
+      result reported a browser problem (`problems`, what the log line counts: the figure
+      is answered, the page replaced), or a held page's renderer died while it was idle
+      (`alive()`: the page's `crash` event, or closed under the pool).
+    - `browser`: `replaceAll('browser')` on the browser's `disconnected` event closes every
+      held page; a page being drawn on when it happens is closed after its figure.
+    - The figure's own result or error is what `use()` returns, with reuse on as off.
+  - **Seen failing** (`pages.spec.ts`), each mutant against its tests: a failed figure
+    kept; browser problems ignored; a crashed page given out; held pages left on a
+    restart; a page drawn on during a restart held after; replacements not counted; the
+    failed figure's error rewritten; a close that throws.
+  - **Live, a loopback service against this host's site, reuse on, one page** (the counts
+    read from `replaced` through a local edit of `/health`, which T008 publishes):
+    - the browser killed between figures: the next figure a full load and drawn (200),
+      `browser: 1`. Without the `disconnected` listener, `alive()` still catches it but
+      counts `failure`; without both, the next figure answered 500 ("Target page, context
+      or browser has been closed").
+    - the held page's renderer killed: the next figure a full load and drawn, counted a
+      failure; without `alive()`, 500 ("Target crashed").
+    - a figure timed out on a held page (`RENDER_FILES` empty, `RENDER_TIMEOUT` 8 s):
+      500 with the same body as with reuse off, and the next figure a full load.
 - [ ] T007 [US4] Replacement by count, by the container's memory and by build, with the
       defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5).
   - The site's build is read from the render page's HTML at `RENDER_BASE`, at most once
