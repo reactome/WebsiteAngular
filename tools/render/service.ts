@@ -115,7 +115,12 @@ const CACHE = process.env['RENDER_CACHE'] || path.resolve('.render-cache');
 // research D24), a fix in the app: every reaction .jpeg cached under v12 is a
 // PNG with a transparent background, which ContentService's reaction image
 // would now serve as image/jpeg.
-const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v13';
+// v14: the genome-wide view waits for its pathways and for its label font,
+// and a highlight is marked before the page is ready (spec 018 T012), fixes in
+// the app: an overview cached under v13 can be an empty background, or have
+// labels with Greek letters wrapped as measured in a fallback font, and a
+// highlight's lines end where unselected lines end.
+const CACHE_KEY = process.env['RENDER_CACHE_KEY'] || 'v14';
 // The release's diagram and illustration files, laid out as the download site,
 // for the page to read instead of the site (local-files.ts). Unset, it fetches
 // them from the site, as a reader's browser does.

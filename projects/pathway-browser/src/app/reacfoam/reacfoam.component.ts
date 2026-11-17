@@ -36,6 +36,12 @@ import { FlagBannerComponent } from '../diagram/flag-banner/flag-banner.componen
 /** How long a group takes to expose, in milliseconds. */
 const EXPOSE_DURATION = 500;
 
+/**
+ * The labels' font. The render page loads all of it before the overview is
+ * made, so FoamTree measures every word in it (render/label-font.ts).
+ */
+export const LABEL_FONT = { family: 'Roboto', weight: '400' } as const;
+
 @Component({
   selector: 'cr-reacfoam',
   imports: [AnalysisLegendComponent, FlagBannerComponent],
@@ -113,7 +119,7 @@ export class ReacfoamComponent implements OnDestroy {
         relaxationQualityThreshold: 10,
 
         // Labels
-        groupLabelFontFamily: 'Roboto',
+        groupLabelFontFamily: LABEL_FONT.family,
         groupLabelHorizontalPadding: 0.8,
         groupLabelVerticalPadding: 0.8,
         groupLabelMaxFontSize: 20,
