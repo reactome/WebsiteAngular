@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { ChangeDetectorRef } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
-import { provideRouter, ActivatedRoute } from '@angular/router';
+import { provideRouter, ActivatedRoute, convertToParamMap } from '@angular/router';
 import { of } from 'rxjs';
 import { SchemaComponent } from './schema.component';
 
@@ -59,6 +59,7 @@ describe('SchemaComponent instance counts', () => {
           provide: ActivatedRoute,
           useValue: {
             params: of({}),
+            paramMap: of(convertToParamMap({})),
             snapshot: { queryParamMap: { get: () => null } },
           },
         },
