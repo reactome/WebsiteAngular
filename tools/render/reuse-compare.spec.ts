@@ -17,6 +17,8 @@ import {
   orders,
   pairRuns,
   parseSample,
+  plantedIn,
+  replacedProblem,
 } from './reuse-compare.ts';
 import type { Drawn } from './reuse-compare.ts';
 
@@ -41,6 +43,12 @@ describe('the sample', () => {
         '# reactions\n/render/R-HSA-1.svg\n\n/render/R-HSA-2.png # light\n/render/R-HSA-1.svg\n'
       )
     ).toEqual(['/render/R-HSA-1.svg', '/render/R-HSA-2.png']);
+  });
+
+  it('marks a planted failure with `!`, drawn as the request without it', () => {
+    const text = '/render/R-HSA-1.svg\n! /render/R-HSA-1.svg?token=dead # SC-005\n';
+    expect(parseSample(text)).toEqual(['/render/R-HSA-1.svg', '/render/R-HSA-1.svg?token=dead']);
+    expect([...plantedIn(text)]).toEqual([canonical('/render/R-HSA-1.svg?token=dead')]);
   });
 });
 
@@ -224,6 +232,16 @@ describe('the runs', () => {
     ).toBe(true);
   });
 
+  it('put a planted failure in the listed and reversed runs only, never in a pair', () => {
+    const sample = ['/render/A.svg', '/render/A.svg?token=dead', '/render/B.svg?token=T'];
+    const runs = orders(sample, new Set([canonical('/render/A.svg?token=dead')]));
+    expect(runs['listed']).toEqual(sample);
+    expect(runs['reversed']).toEqual([...sample].reverse());
+    const pairs = Object.entries(runs).filter(([label]) => label.startsWith('pairs'));
+    expect(pairs.length).toBeGreaterThan(0);
+    for (const [, requests] of pairs) expect(requests).not.toContain('/render/A.svg?token=dead');
+  });
+
   it('put each request straight after each of its opposites, once', () => {
     const pairs = pairRuns(sample).flatMap((run) =>
       run.flatMap((request, at) => (at % 2 ? [`${run[at - 1]} -> ${request}`] : []))
@@ -354,6 +372,41 @@ describe('the comparison', () => {
   });
 });
 
+describe('a planted failure', () => {
+  const planted = new Set([canonical('/render/A.svg?token=dead')]);
+
+  it('passes when it fails, and is not compared', () => {
+    expect(
+      compare(
+        'listed',
+        new Map(),
+        [drawn('/render/A.svg?token=dead', 'x', undefined, 500)],
+        planted
+      )
+    ).toEqual([]);
+  });
+
+  it('fails the comparison when it is drawn', () => {
+    expect(compare('fresh', new Map(), [drawn('/render/A.svg?token=dead', 'x')], planted)).toEqual([
+      {
+        run: 'fresh',
+        path: '/render/A.svg?token=dead',
+        previous: undefined,
+        why: 'a planted failure was drawn',
+      },
+    ]);
+  });
+
+  it('must have its page replaced for a failure', () => {
+    expect(replacedProblem({ failure: 2 }, 2)).toBeUndefined();
+    expect(replacedProblem({ failure: 1 }, 2)).toBe(
+      '2 planted failures drawn, 1 pages replaced for a failure'
+    );
+    expect(replacedProblem(undefined, 1)).toMatch(/0 pages replaced/);
+    expect(replacedProblem(undefined, 0)).toBeUndefined();
+  });
+});
+
 describe('the service a run needs', () => {
   it('reads local files, never the download site', () => {
     expect(healthProblem({ files: 'download site' }, false)).toBe('does not read local files');
@@ -421,12 +474,31 @@ describe('one figure, however it is written', () => {
 });
 
 describe('a reused run', () => {
+  const svgs = (count: number) =>
+    Array.from({ length: count }, (_, index) => drawn(`/render/R-HSA-${index}.svg`, ''));
+
   it('drew every figure after the first on a held page', () => {
-    expect(heldProblem(9, 10)).toBeUndefined();
+    expect(heldProblem(9, svgs(10))).toBeUndefined();
   });
 
   it('is no test when a page was replaced part-way, or reuse was never counted', () => {
-    expect(heldProblem(7, 10)).toBe('2 of 10 draws were not on a held page (/health reused 7)');
-    expect(heldProblem(undefined, 10)).toMatch(/9 of 10 draws/);
+    expect(heldProblem(7, svgs(10))).toBe(
+      '2 of 10 draws were not on a held page (/health reused 7, expected 9)'
+    );
+    expect(heldProblem(undefined, svgs(10))).toMatch(/9 of 10 draws/);
+  });
+
+  it('draws the figure after a PDF or a failure on a new page, which closed the one before', () => {
+    const run = [
+      drawn('/render/A.svg', ''),
+      drawn('/render/B.pdf', ''),
+      drawn('/render/C.svg', ''),
+      drawn('/render/D.svg?token=dead', '', undefined, 500),
+      drawn('/render/E.png', ''),
+      drawn('/render/F.svg', ''),
+    ];
+    // B on A's page, C on a new one, D failed on C's, E on a new one, F on E's.
+    expect(heldProblem(2, run)).toBeUndefined();
+    expect(heldProblem(4, run)).toMatch(/expected 2/);
   });
 });

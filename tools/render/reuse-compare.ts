@@ -5,7 +5,7 @@
  *
  *   node tools/render/reuse-compare.ts --sample sample.txt --files <release files>
  *        [--base http://172.17.0.1:4200] [--image websiteangular-render:latest]
- *        [--code tools/render] [--mode reuse|fresh] [--out report.json]
+ *        [--code tools/render] [--mode reuse|fresh] [--out report.json] [--port 4390]
  *
  * Each run is its own service, started here as a container from `--image`
  * with an empty cache, `RENDER_FILES` mounted from `--files` and concurrency
@@ -25,7 +25,11 @@
  * that takes), and a cache hit is a difference.
  *
  * The sample is one service path per line (`/render/R-HSA-109581.svg?dark=true`);
- * `#` starts a comment, and a repeated request is drawn once. SVG must match
+ * `#` starts a comment, and a repeated request is drawn once. A line starting
+ * `!` is a planted failure (SC-005): it must fail in every run, and each
+ * reused run that draws one must have replaced a page for a failure. It goes
+ * in the listed and reversed runs only, so the requests either side of it are
+ * compared as usual. SVG must match
  * byte for byte; the other formats after what varies by itself is set aside
  * (`normalise`). A difference names the request and the request drawn just
  * before it. Exits 1 on any difference or failed request.
@@ -103,17 +107,31 @@ export function canonical(request: string): string {
   return `${figure}?${params.map(([name, value]) => `${name}=${value}`).join('&')}`;
 }
 
-/** The sample's request paths, from its text: one per line, `#` comments, each figure once. */
+const sampleLines = (text: string) =>
+  text.split('\n').map((line) => line.replace(/#.*/, '').trim());
+
+/**
+ * The sample's request paths, from its text: one per line, `#` comments, each
+ * figure once, a planted failure's `!` taken off.
+ */
 export function parseSample(text: string): string[] {
   const seen = new Set<string>();
-  return text
-    .split('\n')
-    .map((line) => line.replace(/#.*/, '').trim())
+  return sampleLines(text)
+    .map((line) => line.replace(/^!\s*/, ''))
     .filter((request) => {
       if (!request || seen.has(canonical(request))) return false;
       seen.add(canonical(request));
       return true;
     });
+}
+
+/** The sample's planted failures (lines starting `!`), each in its canonical form. */
+export function plantedIn(text: string): Set<string> {
+  return new Set(
+    sampleLines(text)
+      .filter((line) => line.startsWith('!'))
+      .map((line) => canonical(line.replace(/^!\s*/, '')))
+  );
 }
 
 /** A request path's format, from its extension. */
@@ -238,15 +256,21 @@ export function pairRuns(sample: string[]): string[][] {
   return runs.map(({ requests }) => requests);
 }
 
-/** The runs of research R5 for a reused service: as listed, reversed, and the pairs. */
-export function orders(sample: string[]): Record<string, string[]> {
+/**
+ * The runs of research R5 for a reused service: as listed, reversed, and the
+ * pairs. A planted failure is in the first two only: as an opposite it would
+ * put a failure before every figure it pairs with.
+ */
+export function orders(sample: string[], planted = new Set<string>()): Record<string, string[]> {
   const runs: Record<string, string[]> = {
     listed: [...sample],
     reversed: [...sample].reverse(),
   };
-  pairRuns(sample).forEach((requests, index) => {
-    runs[`pairs ${index + 1}`] = requests;
-  });
+  pairRuns(sample.filter((request) => !planted.has(canonical(request)))).forEach(
+    (requests, index) => {
+      runs[`pairs ${index + 1}`] = requests;
+    }
+  );
   return runs;
 }
 
@@ -291,15 +315,25 @@ export function normalise(format: string, bytes: Buffer): Buffer {
  * Each drawn request against the reference run's answer to it, after
  * normalising. A cache hit or a failure is a difference wherever it is; a
  * request the reference does not hold (an opposite, there only to come
- * first) is otherwise not compared.
+ * first) is otherwise not compared. A planted failure is the other way
+ * round: drawn, it is a difference, and failed, it is not compared.
  */
-export function compare(run: string, reference: Map<string, Drawn>, drawn: Drawn[]): Difference[] {
+export function compare(
+  run: string,
+  reference: Map<string, Drawn>,
+  drawn: Drawn[],
+  planted = new Set<string>()
+): Difference[] {
   const found: Difference[] = [];
   const differs = (item: Drawn, why: string) =>
     found.push({ run, path: item.path, previous: item.previous, why });
   for (const item of drawn) {
     if (item.cache === 'hit') {
       differs(item, 'served from the cache, not drawn');
+      continue;
+    }
+    if (planted.has(canonical(item.path))) {
+      if (item.status === 200) differs(item, 'a planted failure was drawn');
       continue;
     }
     const expected = reference.get(item.path);
@@ -352,15 +386,41 @@ async function fetchBytes(url: string) {
 }
 
 /**
- * Whether a reused run drew on held pages throughout: at concurrency 1 the
- * first draw makes the page and every later one reuses it. A page closed and
- * replaced part-way (past its memory bound, say) puts the pair across the
- * change on two pages, testing nothing, so the run is not a test. Undefined
- * when it was one.
+ * Whether a draw leaves its page to be held for the next: it was drawn, and
+ * not as a PDF, which is printed from the figure put in the page's place, so
+ * the page no longer holds the render page (pages.ts, `spent`). A failure
+ * closes its page (FR-005).
  */
-export function heldProblem(reused: unknown, drawn: number): string | undefined {
-  if (reused === drawn - 1) return undefined;
-  return `${drawn - 1 - Number(reused ?? 0)} of ${drawn} draws were not on a held page (/health reused ${String(reused)})`;
+const leavesPageHeld = (item: Drawn) => item.status === 200 && formatOf(item.path) !== 'pdf';
+
+/**
+ * Whether a reused run drew on held pages throughout: at concurrency 1 the
+ * first draw makes the page and every later one reuses it, except a draw
+ * after one that closes its page (a PDF, a failure). The service counts a
+ * figure drawn on a held page. A page closed and replaced part-way (past its
+ * memory bound, say) puts the pair across the change on two pages, testing
+ * nothing, so the run is not a test. Undefined when it was one.
+ */
+export function heldProblem(reused: unknown, drawn: Drawn[]): string | undefined {
+  const expected = drawn.filter(
+    (item, index) => index > 0 && item.status === 200 && leavesPageHeld(drawn[index - 1] ?? item)
+  ).length;
+  if (reused === expected) return undefined;
+  return `${expected - Number(reused ?? 0)} of ${drawn.length} draws were not on a held page (/health reused ${String(reused)}, expected ${expected})`;
+}
+
+/**
+ * Whether a reused run replaced a page for each planted failure it drew
+ * (SC-005): `/health`'s `replaced.failure`. Undefined when it did.
+ */
+export function replacedProblem(replaced: unknown, failures: number): string | undefined {
+  if (!failures) return undefined;
+  const counted =
+    typeof replaced === 'object' && replaced !== null && 'failure' in replaced
+      ? Number(replaced.failure)
+      : 0;
+  if (counted >= failures) return undefined;
+  return `${failures} planted failures drawn, ${counted} pages replaced for a failure`;
 }
 
 /** What a run's service must say of itself: local files, and reuse as asked. Undefined when it does. */
@@ -389,7 +449,8 @@ function codeMounts(code: string | undefined): string[] {
     .flatMap((file) => ['-v', `${path.resolve(code, file)}:/render/${file}:ro`]);
 }
 
-const PORT = 4390;
+// `--port`: where its service listens, so two comparisons can run side by side.
+const PORT = Number(flag('port', '4390'));
 const NAME = `reuse-compare-${process.pid}`;
 const removeService = () => spawnSync('docker', ['rm', '-f', NAME], { stdio: 'ignore' });
 
@@ -486,15 +547,19 @@ async function main() {
     files,
     code: flag('code'),
   };
-  const sample = parseSample(readFileSync(samplePath, 'utf8'));
+  const sampleText = readFileSync(samplePath, 'utf8');
+  const sample = parseSample(sampleText);
+  const planted = plantedIn(sampleText);
   // A sample of nothing would draw nothing and find no difference: not a test.
   if (!sample.length) {
     console.error(`${samplePath} holds no requests`);
     process.exit(2);
   }
-  console.log(`${sample.length} requests, mode ${mode}`);
+  console.log(`${sample.length} requests (${planted.size} planted failures), mode ${mode}`);
 
   const builds: Record<string, unknown> = {};
+  // Each run's size and, reused, its held pages and replacements, as /health gave them.
+  const runs: Record<string, { drawn: number; differ: number; health?: unknown }> = {};
   const differences: Difference[] = [];
   // What was found so far is printed and written however the run ends.
   const finish = (code: number, stopped?: string) => {
@@ -506,7 +571,7 @@ async function main() {
       writeFileSync(
         out,
         JSON.stringify(
-          { mode, ...options, builds, requests: sample.length, stopped, differences },
+          { mode, ...options, builds, requests: sample.length, stopped, runs, differences },
           null,
           2
         )
@@ -526,16 +591,29 @@ async function main() {
       finish(code, signal);
     });
 
+  let drawn: Drawn[] = [];
   const run = (label: string, reuse: boolean, requests: string[]) =>
     withService(
       { ...options, reuse },
-      (service, health) => {
+      async (service, health) => {
         builds[label] = health['build'];
-        return draw(service, requests);
+        drawn = await draw(service, requests);
+        return drawn;
       },
       (health) => {
-        const problem = reuse ? heldProblem(health['reused'], requests.length) : undefined;
-        if (problem) differences.push({ run: label, path: '', previous: undefined, why: problem });
+        if (!reuse) return;
+        runs[label] = {
+          drawn: requests.length,
+          differ: 0,
+          health: { reused: health['reused'], replaced: health['replaced'] },
+        };
+        const failures = drawn.filter((item) => planted.has(canonical(item.path))).length;
+        for (const problem of [
+          heldProblem(health['reused'], drawn),
+          replacedProblem(health['replaced'], failures),
+        ])
+          if (problem)
+            differences.push({ run: label, path: '', previous: undefined, why: problem });
       }
     );
 
@@ -543,12 +621,17 @@ async function main() {
     const fresh = await run('fresh', false, sample);
     const reference = new Map(fresh.map((item) => [item.path, item]));
     // The reference itself: a failure or a cache hit there is a difference too.
-    differences.push(...compare('fresh', new Map(), fresh));
-    const runs = mode === 'fresh' ? { 'fresh again': sample } : orders(sample);
-    for (const [label, requests] of Object.entries(runs)) {
-      const drawn = await run(label, mode !== 'fresh', requests);
-      const found = compare(label, reference, drawn);
+    differences.push(...compare('fresh', new Map(), fresh, planted));
+    const ordered = mode === 'fresh' ? { 'fresh again': sample } : orders(sample, planted);
+    for (const [label, requests] of Object.entries(ordered)) {
+      const found = compare(
+        label,
+        reference,
+        await run(label, mode !== 'fresh', requests),
+        planted
+      );
       console.log(`${label}: ${requests.length} drawn, ${found.length} differ`);
+      runs[label] = { ...runs[label], drawn: requests.length, differ: found.length };
       differences.push(...found);
     }
   } catch (error) {
