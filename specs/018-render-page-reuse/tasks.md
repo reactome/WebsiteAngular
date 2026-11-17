@@ -222,7 +222,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     while drawn, a failed page kept, `reusable` ignored and a close that throws; the move's
     tests with every page loaded, the handle kept, any host waited for and a refused move
     ignored.
-- [x] T012 [US2] What T002's first `reuse` run found (#957 records it) (#TBD).
+- [x] T012 [US2] What T002's first `reuse` run found (#957 records it) (#997).
   - **The overview's label leak:** found and fixed in the render page, or the page replaced
     when the species changes, with the pair (mouse overview, then the default) passing.
   - **Fresh renders that vary:** an illustration with a token, and highlights, made
