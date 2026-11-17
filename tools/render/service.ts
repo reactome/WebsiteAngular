@@ -39,6 +39,10 @@
  *                       (local-files.ts); unset, the page fetches from the site
  *   RENDER_REUSE        `on` holds loaded pages between figures (pages.ts, spec
  *                       018); anything else, default, a fresh page per figure
+ *   RENDER_REUSE_MAX    figures a held page draws before it is replaced, default 200
+ *   RENDER_REUSE_MEMORY share of the memory limit (the container's, or the
+ *                       nearest cgroup's) past which a page is closed after its
+ *                       figure rather than held, default 0.5; no limit, no rule
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
  * highlight=<stId>,<stId>...,
@@ -74,7 +78,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
-import { Pages, verdict } from './pages.ts';
+import { Pages, atMostEvery, buildIn, memoryShare, verdict } from './pages.ts';
 import type { Format } from './render-core.ts';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
@@ -129,6 +133,11 @@ const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Off until spec 018's comparison (T009) has shown held pages draw what fresh
 // ones draw; then on by default.
 const REUSE = process.env['RENDER_REUSE'] === 'on';
+// Figures a held page draws before it is replaced, and the share of the
+// container's memory limit past which a page is closed after its figure
+// rather than held (spec 018 T007, research R4).
+const REUSE_MAX = Number(process.env['RENDER_REUSE_MAX'] || 200);
+const REUSE_MEMORY = Number(process.env['RENDER_REUSE_MEMORY'] || 0.5);
 // Generous next to a real render, which is 3-8s, but far short of the two
 // minutes a page that never becomes ready would otherwise hold a browser for.
 const RENDER_TIMEOUT = Number(process.env['RENDER_TIMEOUT'] || 45_000);
@@ -200,11 +209,47 @@ interface RenderPage {
   page: Page;
   close(): Promise<void>;
   alive?(): boolean;
+  loaded?: string | null;
 }
+
+/** A file beneath the cgroup root, or undefined where there is none. */
+const cgroupFile = (file: string): string | undefined => {
+  try {
+    return readFileSync(path.join('/sys/fs/cgroup', file), 'utf8');
+  } catch {
+    return undefined;
+  }
+};
+
+/** This process's cgroup (v2), from which its memory limit is found: `/` in a container. */
+const cgroup = (() => {
+  try {
+    return /^0::(.*)$/m.exec(readFileSync('/proc/self/cgroup', 'utf8'))?.[1] ?? '/';
+  } catch {
+    return '/';
+  }
+})();
+
+/**
+ * The site's build: its render page's main script, read at most once a
+ * minute, and so again before a page held a minute idle is moved (research
+ * R3). One small request, never a figure.
+ */
+const siteBuild = atMostEvery(60_000, async () => {
+  const response = await fetch(`${BASE.replace(/\/$/, '')}/PathwayBrowser/render`, {
+    signal: AbortSignal.timeout(10_000),
+  });
+  return response.ok ? buildIn(await response.text()) : null;
+});
 
 const pages = new Pages<RenderPage>({
   reuse: REUSE,
   max: CONCURRENCY,
+  maxFigures: REUSE_MAX,
+  // Outside a container, or with no limit set, there is none to read, and
+  // only the count applies.
+  overMemory: () => (memoryShare(cgroupFile, cgroup) ?? 0) > REUSE_MEMORY,
+  siteBuild,
   async open(held) {
     const running = await getBrowser();
     if (!held) {
@@ -499,7 +544,8 @@ async function renderCached(params: RenderParams) {
 
   const work = schedule(() =>
     pages.use(
-      async ({ page }, nav) => {
+      async (held, nav) => {
+        const { page } = held;
         const started = Date.now();
         const { bytes, state, problems, movable } = await render(page, {
           base: BASE,
@@ -508,6 +554,8 @@ async function renderCached(params: RenderParams) {
           ...params,
           ...(nav === undefined ? {} : { nav }),
         });
+        // The build a page loaded is the one its first figure reports.
+        if (nav === undefined) held.loaded = state.build ?? null;
         await toCache(key, params.format, bytes);
         stats.rendered++;
         const drew = [

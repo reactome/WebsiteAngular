@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { Pages, verdict, type Verdict } from './pages.ts';
+import {
+  Pages,
+  atMostEvery,
+  buildIn,
+  memoryShare,
+  verdict,
+  type PagesOptions,
+  type Verdict,
+} from './pages.ts';
 
 /** A stand-in page: which it is, whether it is closed, and whether it was opened to be held. */
 interface Stand {
@@ -7,16 +15,22 @@ interface Stand {
   held: boolean;
   closed: boolean;
   crashed: boolean;
+  loaded?: string | null;
   close(): Promise<void>;
   alive(): boolean;
 }
 
 /** A pool over stand-in pages, recording every page it opens. */
-function pool(reuse: boolean, max = 2) {
+function pool(
+  reuse: boolean,
+  max = 2,
+  rules: Pick<PagesOptions<Stand>, 'maxFigures' | 'overMemory' | 'siteBuild'> = {}
+) {
   const opened: Stand[] = [];
   const pages = new Pages<Stand>({
     reuse,
     max,
+    ...rules,
     async open(held) {
       const page: Stand = {
         id: opened.length + 1,
@@ -138,7 +152,13 @@ describe('pages with reuse on (spec 018, RENDER_REUSE on)', () => {
     const first = await pages.use(figure, () => 'spent');
     expect(first.page.closed).toBe(true);
     expect(pages.held).toBe(0);
-    expect(pages.replaced, 'nothing went wrong').toEqual({ failure: 0, browser: 0 });
+    expect(pages.replaced, 'nothing went wrong').toEqual({
+      failure: 0,
+      browser: 0,
+      count: 0,
+      memory: 0,
+      build: 0,
+    });
   });
 
   it('answer a figure even when its page cannot be closed, as with its browser gone', async () => {
@@ -261,7 +281,7 @@ describe('replacing a held page (spec 018 T006, data-model Replacement)', () => 
     expect(one.page.closed && two.page.closed).toBe(true);
     expect(open()).toBe(0);
     expect(pages.held).toBe(0);
-    expect(pages.replaced).toEqual({ failure: 0, browser: 2 });
+    expect(pages.replaced).toEqual({ failure: 0, browser: 2, count: 0, memory: 0, build: 0 });
     const next = await pages.use(figure, always);
     expect(next.nav, 'a new page is a full load').toBeUndefined();
     expect(opened).toHaveLength(3);
@@ -317,5 +337,174 @@ describe("a failed figure's answer with held pages is today's (spec 018 US3, 2)"
       page: undefined,
       nav: undefined,
     });
+  });
+});
+
+describe('replacing a held page by count, memory and build (spec 018 T007)', () => {
+  it('by count: no page draws more than its figures, and the next is a full load', async () => {
+    const { pages, opened } = pool(true, 1, { maxFigures: 3 });
+    const drawn: { page: Stand; nav: string | undefined }[] = [];
+    for (let at = 0; at < 7; at++) drawn.push(await pages.use(figure, always));
+    const perPage = opened.map((page) => drawn.filter((one) => one.page === page).length);
+    expect(perPage).toEqual([3, 3, 1]);
+    expect(drawn.map((one) => one.nav === undefined)).toEqual([
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+    ]);
+    expect(opened[0]?.closed && opened[1]?.closed).toBe(true);
+    expect(pages.replaced.count).toBe(2);
+  });
+
+  it('by memory: a page that drew cleanly is closed while the service is past its bound', async () => {
+    let over = false;
+    const { pages, opened } = pool(true, 1, { overMemory: () => over });
+    const first = await pages.use(figure, always);
+    expect(pages.held).toBe(1);
+    over = true;
+    const second = await pages.use(figure, always);
+    expect(second.page).toBe(first.page);
+    expect(first.page.closed).toBe(true);
+    expect(pages.held).toBe(0);
+    expect(pages.replaced.memory).toBe(1);
+    over = false;
+    const third = await pages.use(figure, always);
+    expect(third.nav, 'a new page is a full load').toBeUndefined();
+    expect(opened).toHaveLength(2);
+    expect(pages.held).toBe(1);
+  });
+
+  /** A figure as the service draws one: a full load records the build the page loaded. */
+  const loading =
+    (build: string | null) =>
+    async (page: Stand, nav: string | undefined): Promise<{ page: Stand; nav?: string }> => {
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      if (nav === undefined) page.loaded = build;
+      return { page, ...(nav === undefined ? {} : { nav }) };
+    };
+
+  it('by build: a held page of an older build is replaced before it draws', async () => {
+    let site: string | null = 'main-OLD.js';
+    const { pages, opened } = pool(true, 1, { siteBuild: async () => site });
+    const first = await pages.use(loading('main-OLD.js'), always);
+    const second = await pages.use(loading('main-OLD.js'), always);
+    expect(second.page, 'the same build: moved').toBe(first.page);
+    site = 'main-NEW.js';
+    const third = await pages.use(loading('main-NEW.js'), always);
+    expect(third.page).not.toBe(first.page);
+    expect(third.nav, 'a new page is a full load').toBeUndefined();
+    expect(first.page.closed).toBe(true);
+    expect(pages.replaced.build).toBe(1);
+    const fourth = await pages.use(loading('main-NEW.js'), always);
+    expect(fourth.page, 'the new build: moved').toBe(third.page);
+    expect(opened).toHaveLength(2);
+  });
+
+  it('by build: never on a guess, when either build cannot be read', async () => {
+    const cases: [() => Promise<string | null>, string | null][] = [
+      [async () => null, 'main-OLD.js'],
+      [() => Promise.reject(new Error('the site is down')), 'main-OLD.js'],
+      [async () => 'main-NEW.js', null],
+    ];
+    for (const [siteBuild, loaded] of cases) {
+      const { pages, opened } = pool(true, 1, { siteBuild });
+      await pages.use(loading(loaded), always);
+      const next = await pages.use(loading(loaded), always);
+      expect(next.nav, 'moved, not replaced').toBeDefined();
+      expect(opened).toHaveLength(1);
+      expect(pages.replaced.build).toBe(0);
+    }
+  });
+
+  it('count, memory and build apply only to pages held, never with reuse off', async () => {
+    const { pages, opened } = pool(false, 1, {
+      maxFigures: 1,
+      overMemory: () => true,
+      siteBuild: async () => 'main-NEW.js',
+    });
+    for (let at = 0; at < 3; at++) await pages.use(loading('main-OLD.js'), always);
+    expect(opened).toHaveLength(3);
+    expect(pages.replaced).toEqual({ failure: 0, browser: 0, count: 0, memory: 0, build: 0 });
+  });
+});
+
+describe("the service's memory (spec 018 T007, research R4)", () => {
+  const files = (entries: Record<string, string>) => (file: string) => entries[file];
+
+  it("is the share of its container's limit in use", () => {
+    const container = files({ '/memory.max': '3221225472\n', '/memory.current': '1610612736\n' });
+    expect(memoryShare(container)).toBe(0.5);
+    expect(memoryShare(container, '/')).toBe(0.5);
+  });
+
+  it('is measured against the nearest limit, from its own group up', () => {
+    const unit = files({
+      '/user.slice/render.service/memory.max': 'max\n',
+      '/user.slice/render.service/memory.current': '100\n',
+      '/user.slice/memory.max': '1000\n',
+      '/user.slice/memory.current': '250\n',
+      '/memory.max': '4000\n',
+      '/memory.current': '4000\n',
+    });
+    expect(memoryShare(unit, '/user.slice/render.service')).toBe(0.25);
+  });
+
+  it('has no share without a limit to read: none set, or no cgroup files', () => {
+    expect(
+      memoryShare(files({ '/memory.max': 'max\n', '/memory.current': '1000\n' }))
+    ).toBeUndefined();
+    expect(memoryShare(files({}), '/a/b')).toBeUndefined();
+    expect(memoryShare(files({ '/memory.max': '1000\n' }))).toBeUndefined();
+  });
+});
+
+describe("the site's build (spec 018 T007, research R3)", () => {
+  it("is the render page's main script, named as the page names it", () => {
+    const html =
+      '<script type="text/javascript" src="https://cdn.example/npm/plugin@3/build/plugin.js"></script>' +
+      '<script src="polyfills-ABC123.js" type="module"></script>' +
+      '<script src="main-SE33KTT3.js" type="module"></script>';
+    expect(buildIn(html)).toBe('main-SE33KTT3.js');
+    expect(buildIn("<script src='/PathwayBrowser/main-X1.js?v=2'></script>")).toBe('main-X1.js');
+    expect(buildIn('<script src="domain-main-X1.js"></script><p>main-X2.js</p>')).toBeNull();
+  });
+
+  it('is read at most once a minute, and again after a minute', async () => {
+    let clock = 0;
+    let reads = 0;
+    const build = atMostEvery(
+      60_000,
+      async () => `main-${++reads}.js`,
+      () => clock
+    );
+    expect(await build()).toBe('main-1.js');
+    clock = 59_999;
+    expect(await build()).toBe('main-1.js');
+    expect(reads).toBe(1);
+    clock = 60_000;
+    expect(await build()).toBe('main-2.js');
+    expect(reads).toBe(2);
+  });
+
+  it('is null when it cannot be read, and read again a minute later', async () => {
+    let clock = 0;
+    let fail = true;
+    const build = atMostEvery(
+      60_000,
+      async () => {
+        if (fail) throw new Error('the site is down');
+        return 'main-A.js';
+      },
+      () => clock
+    );
+    expect(await build()).toBeNull();
+    fail = false;
+    expect(await build(), 'not asked again within the minute').toBeNull();
+    clock = 60_000;
+    expect(await build()).toBe('main-A.js');
   });
 });
