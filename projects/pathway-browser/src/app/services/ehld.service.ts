@@ -7,6 +7,7 @@ import { DataStateService } from './data-state.service';
 import { UrlStateService } from './url-state.service';
 import { GeneralService } from './general.service';
 import { DownloadFormat, DownloadService } from './download.service';
+import { innerStrokeRect } from '../ehld/inner-stroke';
 
 export interface LegendItem {
   name: string;
@@ -239,19 +240,14 @@ export class EhldService {
     if (!element) return;
     if (element.tagName === 'rect') {
       const original = element as SVGRectElement;
-      const hs = strokeWidth / 2;
-      const strokeRect = element.cloneNode() as SVGRectElement;
-      strokeRect.classList.add('inner-stroke');
-      strokeRect.style.fill = 'none';
-      strokeRect.style.filter = 'none';
-      strokeRect.style.stroke = color;
-      strokeRect.style.strokeWidth = strokeWidth + '';
-      strokeRect.style.x = original.x.baseVal.value + hs + '';
-      strokeRect.style.y = original.y.baseVal.value + hs + '';
-      strokeRect.style.width = original.width.baseVal.value - strokeWidth + '';
-      strokeRect.style.height = original.height.baseVal.value - strokeWidth + '';
-      strokeRect.style.rx = original.rx.baseVal.value - hs + '';
-      element.after(strokeRect);
+      const at = {
+        x: original.x.baseVal.value,
+        y: original.y.baseVal.value,
+        width: original.width.baseVal.value,
+        height: original.height.baseVal.value,
+        rx: original.rx.baseVal.value,
+      };
+      element.after(innerStrokeRect(original, at, color, strokeWidth));
     } else if (element.tagName === 'path') {
       const path = element as SVGPathElement;
 

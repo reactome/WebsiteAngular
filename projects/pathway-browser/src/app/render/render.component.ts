@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { DiagramComponent } from '../diagram/diagram.component';
 import { EhldComponent } from '../ehld/ehld.component';
-import { ReacfoamComponent } from '../reacfoam/reacfoam.component';
+import { LABEL_FONT, ReacfoamComponent } from '../reacfoam/reacfoam.component';
 import { ReactionDiagramComponent } from '../details/common/reaction-diagram/reaction-diagram.component';
 import { UrlStateService } from '../services/url-state.service';
 import { DataStateService } from '../services/data-state.service';
@@ -42,6 +42,7 @@ import { gatherGroups } from './gather-groups';
 import { installRenderNavigate, pageBuild } from './render-navigation';
 import { currentRenderNav } from './render-reuse-strategy';
 import { startAsFresh } from './start-as-fresh';
+import { loadFamily } from './label-font';
 import type * as Analysis from '../model/analysis.model';
 
 /**
@@ -168,6 +169,15 @@ export class RenderComponent {
   );
 
   /**
+   * Whether the overview's label font is loaded, every subset of it. Not
+   * before: FoamTree measures each word once a page, so a word measured
+   * while its letters' subset was still on its way kept a fallback font's
+   * width, and a held page that had brought the subset in for an earlier
+   * figure wrapped the label otherwise (spec 018 T012; render/label-font.ts).
+   */
+  readonly labelFontReady = signal(false);
+
+  /**
    * ?select=<stId> frames the figure on one event rather than the whole diagram.
    *
    * This is what a reaction page needs. Reactome's own reaction exporter draws a
@@ -226,6 +236,12 @@ export class RenderComponent {
     installRenderNavigate(this.router);
     startAsFresh(this.analysis, this.speciesService, this.route.snapshot.paramMap.get('pathwayId'));
     this.dark.isDark.set(this.wantsDark);
+    // Only the overview draws with FoamTree; a pathway's figure has no use
+    // for the wait.
+    if (!this.route.snapshot.paramMap.get('pathwayId'))
+      void loadFamily(document.fonts, LABEL_FONT.family, LABEL_FONT.weight).then(() =>
+        this.labelFontReady.set(true)
+      );
 
     // The diagram waits on EventService.diagramPathway$ before it will load,
     // and the only thing that ever fed that stream was the viewport. Without
@@ -332,6 +348,13 @@ export class RenderComponent {
         return;
       }
       if (drawn) {
+        // The highlight, marked now so the wait below lets it settle. Marked
+        // only at export, its lines were taken before the diagram had redrawn
+        // them selected: every highlighted line ended where an unselected one
+        // ends, and on a held page, where drawing is quicker, sometimes 4 px
+        // further on (spec 018 T012). The export marks it again, which
+        // changes nothing once it is there.
+        if (drawn.view === 'diagram' && this.highlighted.length) this.exportableInstances();
         // Fonts change text metrics, so a diagram drawn before they load is
         // not the diagram the site shows.
         await document.fonts.ready;
@@ -492,6 +515,14 @@ export class RenderComponent {
       // the tree holds its groups before it has laid them out -- exporting in
       // that window produces a valid SVG with zero width and nothing in it.
       // Geometry only appears once FoamTree's relaxation has run.
+      //
+      // And not before the tree it lays out is the species' own. FoamTree
+      // lays out an empty list as readily as a full one, so while the
+      // pathways were still on their way the empty tree had geometry and was
+      // taken as drawn: the genome-wide view came out as a background with
+      // nothing on it, or with the pathways, by which arrived first (spec 018
+      // T012).
+      if (!reacfoam.showsCurrentData()) return null;
       const tree = untracked(reacfoam.foamTree);
       const dataObject = tree.get('dataObject');
       const geometry = dataObject ? tree.get('geometry', dataObject) : undefined;

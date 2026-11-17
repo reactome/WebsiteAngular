@@ -222,11 +222,75 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     while drawn, a failed page kept, `reusable` ignored and a close that throws; the move's
     tests with every page loaded, the handle kept, any host waited for and a refused move
     ignored.
-- [ ] T012 [US2] What T002's first `reuse` run found (#957 records it).
+- [x] T012 [US2] What T002's first `reuse` run found (#957 records it) (#TBD).
   - **The overview's label leak:** found and fixed in the render page, or the page replaced
     when the species changes, with the pair (mouse overview, then the default) passing.
   - **Fresh renders that vary:** an illustration with a token, and highlights, made
     repeatable as T011 made reactions, and the fresh twice-over test extended to them.
+  - **Found first, 17 Nov 2026: the genome-wide view drawn empty.** On main the render
+    page took an empty tree as drawn: FoamTree lays out an empty list as readily as the
+    species' pathways, and readiness waited for the tree's data only with a token. The
+    human overview, whose pathways arrived about 75 ms after that, came out as a
+    background with nothing on it (215 bytes of drawing; `groups: 0`), fresh and held
+    alike, so the pair passed by being empty. **Fixed:** the overview is drawn only once
+    its tree is the one fetched (`showsCurrentData`), token or not. **Test:**
+    `e2e/downloads.spec.ts`, the tree held back four seconds: the page must not be ready
+    before it arrives and must report its groups; seen failing without the fix.
+  - **The label leak: fixed in the render page, not by replacing the page.** FoamTree
+    keeps each word's width, measured once, in a cache for the page's life (its label
+    module's `c`). Roboto comes in unicode subsets; a word with a Greek letter ("IKKε",
+    "β-amyloid", "ω-3") was measured before the Greek subset had loaded, in a fallback
+    font. A fresh page measured those four words so; a held page, after an overview that
+    had brought the subset in, measured them in Roboto, and "Regulation of TBK1,
+    IKKε-mediated activation of IRF3, IRF7 upon TLR3 ligation" wrapped on three lines
+    instead of five. The held page's was the right one. Replacing the page on a species
+    change would have kept the wrong one, and the same could happen after any figure
+    that loads the subset. **Fixed:** the render page loads every subset of the labels'
+    font (Roboto 400, `render/label-font.ts`) before it makes the overview. **Tests:**
+    `label-font.spec.ts` (each of four mutants fails it); in `e2e/downloads.spec.ts`,
+    every word measured by the overview is measured in a loaded font, with the font
+    files slowed: 9,937 words were not without the wait. **The pair:** mouse overview,
+    then the default, on a held page, byte-identical to a fresh page's default overview
+    (it differed before the font fix, and two fresh pages agreed).
+  - **The illustration with a token:** the analysis outline (`rect.inner-stroke`) is a
+    copy of the region's label box. The box arrives with an empty `style` that the
+    colouring removes, but a copy taken while it was there kept it, and wrote `style`
+    before `class`. Seen in 6 of 20 fresh draws of R-HSA-1643685 with one token, through
+    one page each. **Fixed:** the copy is made without the box's style
+    (`ehld/inner-stroke.ts`); the drawing is unchanged. **Test:** `inner-stroke.spec.ts`,
+    failing without the fix.
+  - **The highlights: a race, not a fresh render's own variation.** Fresh pages agreed
+    (28 draws of `highlight=R-HSA-69615`, and 24 highlights of R-HSA-69620's events drawn
+    fresh twice, one SVG each). With the fixes above, the reuse run still differed on
+    every highlight, after various figures and not repeatably for any one pair: the
+    highlighted lines' ends, about 4 px apart. The page marked the highlight only when
+    the figure was taken, before the diagram had redrawn the lines selected, so their
+    ends were where unselected lines end; on a held page, quicker to draw, the redraw was
+    sometimes part done. The same page taken a second time, a second later, gave a third
+    SVG, and a third time the same as the second: the settled figure. **Fixed:** the
+    highlight is marked once the diagram is drawn, before the page's two-frame wait, so
+    the figure taken is the settled one. **Test:** `e2e/downloads.spec.ts`, a highlighted
+    diagram taken twice a second apart must be the same; seen failing without the fix.
+  - **The fresh twice-over test, extended:** `reuse-compare.ts --mode fresh` on 32
+    requests (T002's sample with R-HSA-1791144 and R-HSA-9844549 drawn as pathways and as
+    reactions, five illustrations with a token, six highlights, a Greek-labelled diagram,
+    and the overviews of both species). On main's site: 3 differ, all illustrations with a
+    token (the overviews agreed by being empty). With these fixes: 0 differ.
+  - **The reuse run with these fixes:** `--mode reuse` on the same 32, against a scratch
+    `production,beta` build of this change: listed, reversed and ten runs of pairs, 260
+    draws on held pages, 0 differ (before the highlight fix: 17 differ, every one a
+    highlight).
+  - **The render cache key** goes to v14: an overview cached under v13 can be empty, or
+    have its Greek-lettered labels wrapped as measured in a fallback font, and a highlight
+    has its lines' ends taken before they were redrawn.
+  - **For T006–T010:**
+    - An overview whose tree cannot be read now ends in the page's 60 s "nothing drawn"
+      error instead of an empty figure, so T006's failure rule closes its page.
+    - `ReacfoamComponent` never disposes its FoamTree, so each overview on a held page
+      leaves one behind; T007's long run should include overviews.
+    - A fresh overview now fetches Roboto's nine subsets before drawing (once per held
+      page).
+    - R-MMU-69620 drew normally here: #957's 500s were not the release files.
 - [ ] T006 [US3] Replacement on failure, timeout or browser problem, and on a browser
       restart (data-model Replacement).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the

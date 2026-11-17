@@ -864,6 +864,92 @@ test.describe('The render page, without the render service', () => {
     });
   }
 
+  // FoamTree lays out an empty list as readily as the species' pathways, so
+  // the genome-wide view said it was ready on an empty tree whenever the
+  // pathways arrived after the page's first look: the render service then
+  // drew a background with nothing on it (spec 018 T012). Held back here, so
+  // the empty tree is all there is for seconds.
+  test('is not ready until the genome-wide view has its pathways', async ({ page }) => {
+    let readyBefore: boolean | undefined;
+    await page.route('**/ContentService/data/eventsHierarchy/**', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 4_000));
+      readyBefore =
+        (await page
+          .locator('cr-render[data-render-ready="true"]')
+          .count()
+          .catch(() => 0)) > 0;
+      return route.fallback();
+    });
+    await page.goto('/PathwayBrowser/render?species=9606');
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    expect(readyBefore, 'the pathways were asked for, and not after the page was ready').toBe(
+      false
+    );
+    const state = await page.evaluate(
+      () => (window as unknown as { __renderState: { groups: number } }).__renderState
+    );
+    expect(state.groups, 'the tree drawn is the pathways, not an empty one').toBeGreaterThan(0);
+  });
+
+  // A highlight was marked only when the figure was taken, before the diagram
+  // had redrawn its lines selected: each highlighted line ended where an
+  // unselected one ends, and on a held page, quicker to draw, sometimes
+  // further on (spec 018 T012). The figure the page says is ready is the one
+  // it settles on.
+  test('takes a highlighted diagram as it settles', async ({ page }) => {
+    // Activation of BH3-only proteins: a sub-pathway, so several lines.
+    await page.goto(`/PathwayBrowser/render/${DIAGRAM}?highlight=R-HSA-114452`);
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const svg = () =>
+      page.evaluate(async () => {
+        const api = (window as unknown as { __renderExport: { svg: () => Promise<string> } })
+          .__renderExport;
+        return await api.svg();
+      });
+    const first = await svg();
+    await page.waitForTimeout(1_000);
+    expect(first === (await svg()), 'the first figure taken is the settled one').toBe(true);
+  });
+
+  // FoamTree measures each word of a label once a page and keeps its width.
+  // A word whose letters' subset of the font had not arrived yet ("IKKε",
+  // "β-amyloid") was measured in a fallback font, so its label wrapped one way
+  // on a fresh page and another on a held page that had loaded the subset for
+  // an earlier figure (spec 018 T012). Every word is measured in its font.
+  test('measures every word of the genome-wide view in the font it draws it in', async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      const unloaded: string[] = [];
+      (window as unknown as { __unloaded: string[] }).__unloaded = unloaded;
+      const measure = CanvasRenderingContext2D.prototype.measureText;
+      CanvasRenderingContext2D.prototype.measureText = function (text: string) {
+        if (this.font.includes('Roboto') && !document.fonts.check(this.font, text))
+          unloaded.push(text);
+        return measure.call(this, text);
+      };
+    });
+    // Slow, as a render service's first figure finds them: here they can
+    // otherwise arrive before the tree does, and the test would pass without
+    // the wait it is for.
+    await page.route('https://fonts.gstatic.com/**', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 3_000));
+      return route.fallback();
+    });
+    await page.goto('/PathwayBrowser/render?species=9606');
+    await expect(page.locator('cr-render[data-render-ready="true"]')).toHaveCount(1, {
+      timeout: 120_000,
+    });
+    const unloaded = await page.evaluate(
+      () => (window as unknown as { __unloaded: string[] }).__unloaded
+    );
+    expect(unloaded, 'words measured before their font had loaded').toEqual([]);
+  });
+
   // A token whose result cannot be read -- one a release has removed -- is
   // dropped by the analysis service, and the page then drew the figure with no
   // colouring at all and said it was ready.
