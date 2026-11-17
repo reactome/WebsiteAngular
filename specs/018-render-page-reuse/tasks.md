@@ -320,7 +320,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     - a figure timed out on a held page (`RENDER_FILES` empty, `RENDER_TIMEOUT` 8 s):
       500 with the same body as with reuse off, and the next figure a full load.
 - [x] T007 [US4] Replacement by count, by the container's memory and by build, with the
-      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5) (#TBD).
+      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5) (#1001).
   - The site's build is read from the render page's HTML at `RENDER_BASE`, at most once
     a minute (research R3).
   - **Measure first:** heap and document nodes over 2,000 figures on one page, to set
