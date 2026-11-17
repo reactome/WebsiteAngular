@@ -364,7 +364,11 @@ export class DiagramElementComponent {
       const subscription = diagram.reactomeEvents$.subscribe((event) => {
         if (event.detail.cy === diagram.legend) return;
         if (event.type === ReactomeEventTypes.hover) {
-          const detail = this.detailOf(event.detail.element);
+          // The event's element is a collection (a line sends its reaction's
+          // node); its first node is what `data()` on it read.
+          const node = event.detail.element[0];
+          if (!node) return;
+          const detail = this.detailOf(node);
           // A compartment has no stable id, and id: null is what leaving says.
           if (detail.id) this.emit('entityhovered', detail);
         } else if (event.type === ReactomeEventTypes.leave) {
