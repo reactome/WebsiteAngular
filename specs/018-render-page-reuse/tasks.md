@@ -403,6 +403,29 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     figures gave `reused: 1`, `pages: 1`, `replaced.count: 1` and `site` the main
     script the site's render page names.
 
+- [ ] T014 [US2] A PDF leaves its page unmovable (found by T009).
+  - **The defect:** with reuse on, the figure drawn after a PDF on the same page timed out
+    (a 500 after `RENDER_TIMEOUT`), where a fresh page draws it. Live, on one held page:
+    a reaction's SVG, its PDF, another reaction's SVG answered 200, 200, 500, and
+    `replaced.failure` went to 1. In T009's first run of the other formats, every figure
+    drawn after a PDF on a held page failed so.
+  - **The cause:** a PDF is printed from the SVG put in the page's place
+    (`page.setContent`). That replaces the document, not the window: Chromium keeps the
+    window's globals, `__renderNavigate` among them. `render()` asked the window whether
+    the page could still move, was told yes, and the page was held (`hold`, not
+    `spent`). The next figure was moved by a router whose document was gone, and its host
+    never came.
+  - **The fix,** in `render-core.ts`: a PDF never leaves its page movable, so it is closed
+    as `spent` after its figure (T005's rule, as intended).
+  - **Test** (`render-core.spec.ts`): a stand-in page whose window keeps
+    `__renderNavigate` after `setContent`, as Chromium's does: an SVG leaves the page
+    movable, a PDF does not. Seen failing on the code before the fix (a PDF reported
+    `movable: true`).
+  - **The other formats** leave the render page in place: PNG, JPEG, GIF and PowerPoint
+    are taken with `page.evaluate` from the page as drawn, and nothing else in
+    `tools/render` calls `setContent` or loads another document into a page. T009's
+    runs of them held pages throughout (below).
+
 ## Phase 5: Proof and the release run
 
 - [ ] T009 [US2] SC-003 and SC-005.
@@ -428,4 +451,5 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
+- T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.

@@ -230,6 +230,51 @@ describe('a held page (spec 018)', () => {
     expect(loaded.seen.disposed).toBe(1);
   });
 
+  it('is not moved again after a PDF, though the window still holds __renderNavigate (T014)', async () => {
+    // A PDF is printed from the SVG put in the page's place (setContent). That
+    // replaces the document, not the window: Chromium keeps the window's
+    // globals, `__renderNavigate` among them, so asking the window whether the
+    // page can move said yes. The next figure was moved into a router with no
+    // document to draw in and timed out (spec 018 T009: svg, pdf, svg on one
+    // held page answered 200, 200, 500).
+    const drawn = async (format: 'svg' | 'pdf') => {
+      const seen = { setContent: 0 };
+      const page = {
+        on() {},
+        off() {},
+        async evaluate(script: () => unknown, arg?: unknown) {
+          const text = String(script);
+          if (arg !== undefined) return true; // the move
+          if (text.includes('__renderState')) return { ready: true, view: 'reaction' };
+          if (text.includes('__renderExport'))
+            return `<svg width="10" height="10">${'x'.repeat(6000)}</svg>`;
+          // The window's globals outlive setContent, as in Chromium.
+          if (text.includes('__renderNavigate')) return true;
+          return undefined;
+        },
+        async waitForSelector() {
+          return { async dispose() {} };
+        },
+        async setContent() {
+          seen.setContent++;
+        },
+        async pdf() {
+          return Buffer.alloc(6000);
+        },
+      };
+      const result = await render(stand(page), {
+        base: 'http://site',
+        pathway: 'R-HSA-1',
+        layout: 'reaction',
+        format,
+        nav: 'figure-1',
+      });
+      return { movable: result.movable, setContent: seen.setContent };
+    };
+    expect(await drawn('svg')).toEqual({ movable: true, setContent: 0 });
+    expect(await drawn('pdf')).toEqual({ movable: false, setContent: 1 });
+  });
+
   it('fails, rather than wait, when the page will not move', async () => {
     const { page, seen } = held(false);
     await expect(
