@@ -33,11 +33,24 @@ RUN set -eu; \
     fetch BioPAX3Exporter "$BIOPAX3_EXPORTER_COMMIT"
 
 # -nsu: a snapshot installed here is never replaced by a repository's.
+#
+# graph-core's tests are not built (nor run: they need a graph): their one
+# dependency of their own, reactome-base, is a private repository, published only
+# as a snapshot on EBI's Nexus, whose old address no longer serves it reliably
+# (until Reactome's jars are on Maven Central). graph-core's pom
+# names it at test scope only, so it was never on the classpath graph-core's own
+# classes compile against, nor in the service's jar. The build drops it from that
+# pom, and checks it did, and removes the tests' sources: the AspectJ plugin
+# compiles them even under maven.test.skip.
 RUN set -eu; \
     cd /build/reactome-parent/boms && mvn -B -q -nsu install -N; \
     cd /build/reactome-parent/boms/reactome-bom && mvn -B -q -nsu install; \
     cd /build/reactome-parent/parents/reactome-parent && mvn -B -q -nsu install; \
-    cd /build/graph-core && mvn -B -q -nsu install -DskipTests; \
+    cd /build/graph-core; \
+    rm -r src/test; \
+    perl -0pi -e 's|\s*<dependency>\s*<groupId>org\.reactome\.base</groupId>.*?</dependency>||s' pom.xml; \
+    if grep -q reactome-base pom.xml; then echo 'graph-core: reactome-base not dropped' >&2; exit 1; fi; \
+    mvn -B -q -nsu install -Dmaven.test.skip=true; \
     cd /build/sbml-exporter && mvn -B -q -nsu install -pl lib -am -DskipTests; \
     cd /build/BioPAX3Exporter && mvn -B -q -nsu install -pl lib -am -DskipTests
 
