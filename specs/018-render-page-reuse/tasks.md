@@ -292,7 +292,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       page).
     - R-MMU-69620 drew normally here: #957's 500s were not the release files.
 - [x] T006 [US3] Replacement on failure, timeout or browser problem, and on a browser
-      restart (data-model Replacement) (#TBD).
+      restart (data-model Replacement) (#1000).
   - **Tests:** each reason closes the page, and the next figure is drawn on another; the
     failed request's answer is today's.
   - **Built:** `Pages` in `pages.ts` judges each figure (`verdict`: `hold`, `spent` for a
