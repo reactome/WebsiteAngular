@@ -273,9 +273,13 @@ keeps a page that has drawn a figure, one per concurrent render, each in a
 browser context of its own, and moves it to the next figure inside the app
 (`window.__renderNavigate`) instead of loading it again. The render page
 recreates its component on each move and resets what outlives it, so a figure
-is drawn as a fresh page draws it. A page whose figure failed, or that cannot be
-moved (a PDF is printed in its place; a site built before the entry point has
-none), is closed and the next figure loads a new one. `/health` says `reuse`,
+is drawn as a fresh page draws it. A page is replaced, never drawn on again,
+when its figure failed, timed out or reported a browser problem (an error in the
+page or one it logged, which the log line counts), or when its renderer crashed
+while it was held; the request is answered as it is with reuse off. When the
+browser goes, every held page goes with it. A page that cannot be moved (a PDF
+is printed in its place; a site built before the entry point has none) is
+closed too. In each case the next figure loads a new page. `/health` says `reuse`,
 and with it on, `reused`: figures drawn on a held page. Off, every figure has a
 fresh page; `tools/render/reuse-compare.ts` compares the two.
 
