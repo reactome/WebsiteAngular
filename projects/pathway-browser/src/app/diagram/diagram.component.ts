@@ -2010,9 +2010,12 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
     .pipe(
       filter((e) => e.detail.cy === this.legend),
       filter(() => !this._ignore),
+      // The event's element is a collection (a line sends its reaction's
+      // node), so its first node's id; `id()` on a collection read the same.
       distinctUntilChanged(
         (previous, next) =>
-          next.detail.element.id() === previous.detail.element.id() && next.type === previous.type
+          next.detail.element[0]?.id() === previous.detail.element[0]?.id() &&
+          next.type === previous.type
       )
     )
     .subscribe((e) => {
