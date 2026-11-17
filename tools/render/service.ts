@@ -230,16 +230,24 @@ const cgroup = (() => {
   }
 })();
 
+/** What `siteBuild` last read, for `/health`: null before it has, or when it could not. */
+let site: string | null = null;
+
 /**
  * The site's build: its render page's main script, read at most once a
  * minute, and so again before a page held a minute idle is moved (research
- * R3). One small request, never a figure.
+ * R3), or when /health is asked. One small request, never a figure.
  */
 const siteBuild = atMostEvery(60_000, async () => {
-  const response = await fetch(`${BASE.replace(/\/$/, '')}/PathwayBrowser/render`, {
-    signal: AbortSignal.timeout(10_000),
-  });
-  return response.ok ? buildIn(await response.text()) : null;
+  try {
+    const response = await fetch(`${BASE.replace(/\/$/, '')}/PathwayBrowser/render`, {
+      signal: AbortSignal.timeout(10_000),
+    });
+    site = response.ok ? buildIn(await response.text()) : null;
+  } catch {
+    site = null;
+  }
+  return site;
 });
 
 const pages = new Pages<RenderPage>({
@@ -639,6 +647,10 @@ const refuse = (res: Response, status: number, body: RenderRefusal) =>
   res.status(status).json(body);
 
 app.get('/health', (_req, res) => {
+  // So `site` says the site's build within a minute of it changing, figures
+  // or none; the read itself is never waited on, so health answers at once
+  // whatever the site is doing. Reuse off, nothing reads the site.
+  if (REUSE) void siteBuild();
   res.json({
     ok: true,
     ...buildId(),
@@ -650,7 +662,8 @@ app.get('/health', (_req, res) => {
     waiting: waiting.length,
     ...stats,
     reuse: REUSE,
-    ...(REUSE ? { reused: pages.reused } : {}),
+    // contracts/health.md (spec 018): reuse off, these are absent, not zero.
+    ...(REUSE ? { ...pages.health(), site } : {}),
   } satisfies RenderHealth);
 });
 

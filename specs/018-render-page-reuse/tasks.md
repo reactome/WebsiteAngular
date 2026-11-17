@@ -378,9 +378,30 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       replaced (`build`). A new page that loads a build other than the one the HTML
       names (only the proxy does that) is replaced again at the next figure, which is a
       fresh page per figure: safe, and slower.
-- [ ] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
-      settings in the service's header comment and its README (`tools/render/README.md`).
+- [x] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
+      settings in the service's header comment and its README (`tools/render/README.md`) (#TBD).
   - **Tests:** health with reuse on and off; every existing field unchanged.
+  - **Built:** with reuse on, `/health` adds `pages`, `replaced` (all five reasons) and
+    `site` after `reuse` and `reused` (T006's); with it off the four are absent, not
+    zero, as T006 left `reused`. `Pages.health()` gives the counts; `site` is what the
+    once-a-minute `siteBuild` last read, null before a read or after a failed one, and
+    `/health` starts a read without waiting for it. The type is `RenderHealth` in the
+    contract, with the reasons as `RenderReplacement`, which `pages.ts`'s `Reason` now
+    is. The settings were in the header comment and README already (T007).
+  - **Tests** (`service.spec.ts`, `pages.spec.ts`): reuse off, the answer's keys are
+    exactly the fields before spec 018 and `reuse`; reuse on (a second copy of the
+    service loaded with `RENDER_REUSE=on` against a stand-in site), those keys and then
+    `reused`, `pages`, `replaced`, `site`, each count zero, and `site` the stand-in's
+    build, read once however often health is asked; `Pages.health()` after held,
+    counted, failed and restarted pages.
+  - **Seen failing**, each mutant: `pages` given `reused`; `reused` given `held`;
+    `replaced` all zeros; the counts left out of `/health`; `site` left out; health not
+    starting a read; a read not recorded; the read every time; the fields given with
+    reuse off; an existing field dropped.
+  - **Live, a loopback service against this host's site:** reuse off, the answer is
+    main's, key for key; reuse on with `RENDER_REUSE_MAX=2` and one page, three
+    figures gave `reused: 1`, `pages: 1`, `replaced.count: 1` and `site` the main
+    script the site's render page names.
 
 ## Phase 5: Proof and the release run
 

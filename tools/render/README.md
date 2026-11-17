@@ -286,9 +286,17 @@ figure leaves the service past `RENDER_REUSE_MEMORY` of its memory limit (read
 from its cgroup: the container's, or the nearest limit above the process; with
 none, only the count applies); and one whose site build, the render page's main
 script, is no longer the one the site serves (read from `RENDER_BASE` at most
-once a minute). In each case the next figure loads a new page. `/health` says `reuse`,
-and with it on, `reused`: figures drawn on a held page. Off, every figure has a
-fresh page; `tools/render/reuse-compare.ts` compares the two.
+once a minute). In each case the next figure loads a new page. Off, every figure
+has a fresh page; `tools/render/reuse-compare.ts` compares the two.
+
+`/health` says `reuse`, and with it on, four more (`specs/018-render-page-reuse/contracts/health.md`):
+`reused`, the figures drawn on a held page; `pages`, the pages held now;
+`replaced`, the pages closed since the start by why (`failure`, `browser`,
+`count`, `memory`, `build`); and `site`, the site's build as last read from
+`RENDER_BASE` (null before the first read, or when it could not be read),
+which a page's own build is compared with. Asking `/health` reads it, at most
+once a minute and without waiting for it. With reuse off the four are absent,
+not zero: there are no pages to count.
 
 **The release's files.** The render page fetches a diagram's layout
 (`{release}/diagram/{id}.json`, `.graph.json`) and an illustration

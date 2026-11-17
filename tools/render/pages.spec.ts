@@ -508,3 +508,30 @@ describe("the site's build (spec 018 T007, research R3)", () => {
     expect(await build()).toBe('main-A.js');
   });
 });
+
+describe('what /health says of the pages (spec 018 T008, contracts/health.md)', () => {
+  it('counts the pages held now, the figures drawn on held pages, and replacements by why', async () => {
+    const { pages } = pool(true, 2, { maxFigures: 2 });
+    // Two at once: two pages opened, both held.
+    await Promise.all([pages.use(figure, always), pages.use(figure, always)]);
+    // A held page's second figure, its last: reused, then replaced by count.
+    await pages.use(figure, always);
+    // The other held page fails its figure: replaced, and not counted as reused.
+    await expect(pages.use(failing(new Error('nothing drawn')), always)).rejects.toThrow();
+    // Two at once again: two new pages held.
+    await Promise.all([pages.use(figure, always), pages.use(figure, always)]);
+
+    expect(pages.health()).toEqual({
+      reused: 1,
+      pages: 2,
+      replaced: { failure: 1, browser: 0, count: 1, memory: 0, build: 0 },
+    });
+
+    await pages.replaceAll('browser');
+    expect(pages.health(), 'read when asked, not when made').toEqual({
+      reused: 1,
+      pages: 0,
+      replaced: { failure: 1, browser: 2, count: 1, memory: 0, build: 0 },
+    });
+  });
+});
