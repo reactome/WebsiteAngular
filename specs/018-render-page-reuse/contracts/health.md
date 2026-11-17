@@ -7,10 +7,19 @@ Every field `/health` answers today stays as it is. With `RENDER_REUSE` on, it a
 | `reuse`    | `boolean`                                            | whether held pages are used                               |
 | `pages`    | `number`                                             | pages held now                                            |
 | `reused`   | `number`                                             | figures drawn on a held page since start                  |
-| `site`     | `string`                                             | the site build last read from `RENDER_BASE` (research R3) |
+| `site`     | `string \| null`                                     | the site build last read from `RENDER_BASE` (research R3) |
 | `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model)          |
 
-With `RENDER_REUSE=off`, `reuse` is `false` and the other four are absent.
+With `RENDER_REUSE=off`, `reuse` is `false` and the other four are absent, not zero: there
+are no pages to count, and an absent field cannot be mistaken for a reuse run that drew
+nothing.
+
+`site` is null before the site has been read, and while the last read failed (then no
+page is replaced for its build). Asking `/health` starts a read, at most once a minute
+like any other, and never waits for it: the first answer after a start may be null.
+
+The type is `RenderHealth` in `projects/contract/render.ts`; the reasons are
+`RenderReplacement` there, which `pages.ts` counts by.
 
 **Settings** (environment, read at start):
 

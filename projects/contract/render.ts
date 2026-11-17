@@ -220,7 +220,23 @@ export interface RenderHealth {
   reuse: boolean;
   /** Figures drawn on a held page since the start; only with `reuse`. */
   reused?: number;
+  /** Pages held now, between figures; only with `reuse`. */
+  pages?: number;
+  /**
+   * The site's build (its render page's main script, `main-{hash}.js`) as last
+   * read from `base`, at most once a minute; only with `reuse`. Null before the
+   * first read, and when the last could not be read.
+   */
+  site?: string | null;
+  /** Held pages closed since the start, by why; only with `reuse`. */
+  replaced?: Record<RenderReplacement, number>;
 }
+
+/**
+ * Why the render service closed a held page rather than drawing on it again
+ * (spec 018, data-model Replacement).
+ */
+export type RenderReplacement = 'failure' | 'browser' | 'count' | 'memory' | 'build';
 
 /**
  * A figure refused (400), or one that failed (another status): why, and, for a request it

@@ -11,14 +11,40 @@
 //
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
-import { describe, expect, it, beforeAll, afterAll } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
+import { createServer } from 'node:http';
 import type { Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 import { app, cacheKey, httpError, isModule, publicMessage, statusOf } from './service.ts';
 
 let base: string;
 let server: Server;
+
+/** /health's fields before spec 018, in the order it answers them. */
+const EVERY_FIELD = [
+  'ok',
+  'build',
+  'modules',
+  'base',
+  'cache',
+  'cacheKey',
+  'files',
+  'active',
+  'waiting',
+  'served',
+  'hits',
+  'rendered',
+  'failed',
+  'rejected',
+  'evicted',
+];
+
+/** The port a server listening on loopback was given. */
+const portOf = (listening: Server): number => {
+  const address = listening.address();
+  if (address === null || typeof address === 'string') throw new Error('not listening on a port');
+  return address.port;
+};
 
 /** The service's JSON answers: /health's, or a refusal's. */
 type Answer = Partial<RenderHealth & RenderRefusal>;
@@ -28,7 +54,7 @@ beforeAll(async () => {
   await new Promise<void>((resolve) => {
     server = app.listen(0, '127.0.0.1', () => resolve());
   });
-  base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  base = `http://127.0.0.1:${portOf(server)}`;
 });
 
 afterAll(() => new Promise((resolve) => server.close(resolve)));
@@ -58,6 +84,98 @@ describe('/health with RENDER_REUSE unset (spec 018)', () => {
     const body = await json(await fetch(`${base}/health`));
     expect(body.reuse).toBe(false);
     expect('reused' in body).toBe(false);
+  });
+
+  it("answers the fields it always has, and none of the held pages' (contracts/health.md)", async () => {
+    // pdf-export and the deploy checks read this answer: reuse off, it is
+    // what it was before spec 018 with `reuse` added, and nothing else.
+    const body = await json(await fetch(`${base}/health`));
+    expect(Object.keys(body)).toEqual([...EVERY_FIELD, 'reuse']);
+  });
+});
+
+describe('/health with RENDER_REUSE=on (spec 018 T008, contracts/health.md)', () => {
+  // A second service, loaded with reuse on (the setting is read when the
+  // module is), against a stand-in site whose render page names its build.
+  // No figure is drawn, so no browser is started.
+  let reuseBase: string;
+  let reuseServer: Server;
+  let site: Server;
+  let siteReads = 0;
+
+  beforeAll(async () => {
+    site = createServer((req, res) => {
+      if (req.url === '/PathwayBrowser/render') siteReads++;
+      res.setHeader('content-type', 'text/html');
+      res.end(
+        '<html><body><cr-render></cr-render><script src="main-T008ABCD.js" type="module"></script></body></html>'
+      );
+    });
+    await new Promise<void>((resolve) => site.listen(0, '127.0.0.1', resolve));
+    const before = { reuse: process.env['RENDER_REUSE'], base: process.env['RENDER_BASE'] };
+    process.env['RENDER_REUSE'] = 'on';
+    process.env['RENDER_BASE'] = `http://127.0.0.1:${portOf(site)}`;
+    vi.resetModules();
+    try {
+      const reusing = await import('./service.ts');
+      await new Promise<void>((resolve) => {
+        reuseServer = reusing.app.listen(0, '127.0.0.1', () => resolve());
+      });
+    } finally {
+      for (const [name, value] of [
+        ['RENDER_REUSE', before.reuse],
+        ['RENDER_BASE', before.base],
+      ] as const) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+    reuseBase = `http://127.0.0.1:${portOf(reuseServer)}`;
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => reuseServer.close(resolve));
+    await new Promise((resolve) => site.close(resolve));
+  });
+
+  const health = async () => json(await fetch(`${reuseBase}/health`));
+
+  it("keeps every field it always had, and adds the held pages' after them", async () => {
+    const body = await health();
+    expect(Object.keys(body)).toEqual([
+      ...EVERY_FIELD,
+      'reuse',
+      'reused',
+      'pages',
+      'replaced',
+      'site',
+    ]);
+    expect(body.reuse).toBe(true);
+  });
+
+  it('counts nothing before a figure is drawn', async () => {
+    const body = await health();
+    expect(body.reused, 'figures drawn on a held page').toBe(0);
+    expect(body.pages, 'pages held now').toBe(0);
+    expect(body.replaced, 'pages closed, by why').toEqual({
+      failure: 0,
+      browser: 0,
+      count: 0,
+      memory: 0,
+      build: 0,
+    });
+  });
+
+  it("names the site's build, read from the site at most once a minute", async () => {
+    // The first answer may come before the read it starts has; it is never
+    // waited on, so health answers whatever the site is doing.
+    let body = await health();
+    for (let at = 0; body.site !== 'main-T008ABCD.js' && at < 100; at++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      body = await health();
+    }
+    expect(body.site).toBe('main-T008ABCD.js');
+    expect(siteReads, 'one read, however often health is asked').toBe(1);
   });
 });
 

@@ -13,6 +13,7 @@
  * that a page is held only after a figure that went cleanly on it: any other
  * is replaced (data-model.md, Replacement), never drawn on again.
  */
+import type { RenderHealth, RenderReplacement } from '../../projects/contract/render.ts';
 
 /**
  * Why a page was closed rather than held (data-model.md, Replacement):
@@ -33,7 +34,7 @@
  *   page keeps the code it started with, and would draw the old build's
  *   figures under the new one's (FR-008).
  */
-export type Reason = 'failure' | 'browser' | 'count' | 'memory' | 'build';
+export type Reason = RenderReplacement;
 
 /**
  * What a figure's result says of its page: `hold` it for the next figure,
@@ -126,6 +127,11 @@ export class Pages<P extends Closable> {
   /** Pages held now, between figures. */
   get held(): number {
     return this.idle.length;
+  }
+
+  /** What `/health` says of the pages with reuse on (contracts/health.md). */
+  health(): Required<Pick<RenderHealth, 'pages' | 'reused' | 'replaced'>> {
+    return { reused: this.reused, pages: this.held, replaced: { ...this.replaced } };
   }
 
   /**
