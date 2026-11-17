@@ -319,13 +319,65 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       failure; without `alive()`, 500 ("Target crashed").
     - a figure timed out on a held page (`RENDER_FILES` empty, `RENDER_TIMEOUT` 8 s):
       500 with the same body as with reuse off, and the next figure a full load.
-- [ ] T007 [US4] Replacement by count, by the container's memory and by build, with the
-      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5).
+- [x] T007 [US4] Replacement by count, by the container's memory and by build, with the
+      defaults from T001 (`RENDER_REUSE_MAX` 200, `RENDER_REUSE_MEMORY` 0.5) (#TBD).
   - The site's build is read from the render page's HTML at `RENDER_BASE`, at most once
     a minute (research R3).
   - **Measure first:** heap and document nodes over 2,000 figures on one page, to set
     `RENDER_REUSE_MAX` (R4 result).
   - **Tests:** each rule, seen failing with it removed.
+  - **Measured, 17 Nov 2026:** one held page, 2,000 figures of release 98 drawn in
+    turn with the release's files (1,600 reactions' own layouts, 200 diagrams, 80
+    highlights, 60 illustrations, 60 overviews of two species, light and dark, shuffled),
+    garbage collected before each reading, on a scratch `production,beta` build of main.
+    - **The overview's FoamTree was never disposed** (T012's note), and it held its whole
+      layout: on beta's build, the heap after each overview rose by about 17 MB, and the
+      browser's memory by about 90 MB (28 overviews on one page: heap 52 to 482 MB,
+      browser 2.7 GB). In the full sample the heap was 190 MB after 400 figures and
+      climbing. **Fixed** in the page (`ReacfoamComponent.ngOnDestroy` disposes it), in
+      a commit of its own with `reacfoam-dispose.spec.ts`, seen failing without it.
+      With it, the same 28 overviews keep the heap between 67 and 76 MB.
+    - **With the fix:** 2,000 drawn, none failed, all on the one page. The heap stayed
+      between 73 and 119 MB with no trend (median over each 100 reactions, 75 to 113
+      MB); document nodes about 13,500 after the first illustration, a plateau, not a
+      growth (the illustration kept until the next); a reaction's median time 313 ms
+      over its first 200 and 319 ms over its last. The browser's memory (PSS of its
+      processes) rose from about 900 MB at figure 300 to about 1,150 MB at 2,000:
+      about 0.15 MB a figure, outside the heap.
+    - **So `RENDER_REUSE_MAX` stays 200.** Nothing in a page grows enough over 2,000
+      figures to need a lower count, and a higher one would save at most one load in
+      200 (under 1% of a run's time); 200 bounds the slow growth outside the heap to
+      about 30 MB a page. Without the dispose fix, 200 figures would have carried about
+      seven overviews' trees per page, some 600 MB of browser memory each at four pages,
+      and the memory rule, not the count, would have bounded it.
+  - **Built,** in `pages.ts`, on T006's `Reason`:
+    - `count`: a page that has drawn `maxFigures` (`RENDER_REUSE_MAX`) is closed after
+      that figure, so no page draws more.
+    - `memory`: after a figure that would leave its page held, `overMemory()`; the
+      service compares `memoryShare()` with `RENDER_REUSE_MEMORY`. The share is read
+      from the cgroup's `memory.current` against `memory.max`, at the nearest limit from
+      the process's own group up (the container's root, or a unit's limit); with none,
+      only the count applies.
+    - `build`: before a held page is given a figure, its `loaded` build (the
+      `__renderState.build` of its first figure) against `siteBuild()`, the main script
+      named in `RENDER_BASE`'s `/PathwayBrowser/render`, read at most once a minute
+      (`atMostEvery`). Either unreadable, nothing is replaced.
+  - **Seen failing**, each mutant against `pages.spec.ts`: no count; the count off by
+    one; no memory rule; the rules never asked; no build rule; a build replaced when
+    either is unknown; a failing build read not caught; the build read every time, and
+    only once; a failed read not null; no walk up the cgroup; "max" read as a limit; a
+    missing `memory.current` read; a loose main-script match.
+  - **Live, a loopback service against this host's site, reuse on, one page** (the
+    counts read through a local edit of `/health`, which T008 publishes):
+    - `RENDER_REUSE_MAX=2`, five reactions: loads at the first, third and fifth,
+      `count: 2`.
+    - Under a user unit with `MemoryMax=3G`: `RENDER_REUSE_MEMORY=0.01` closed the page
+      after each of three figures (`memory: 3`); 0.99 held it for all three.
+    - Through a proxy that names another main script in the render page's HTML once
+      told to: the next figure within the minute still moved; after 61 s the page was
+      replaced (`build`). A new page that loads a build other than the one the HTML
+      names (only the proxy does that) is replaced again at the next figure, which is a
+      fresh page per figure: safe, and slower.
 - [ ] T008 [US1] The health additions (contracts/health.md) in `service.ts`, and the
       settings in the service's header comment and its README (`tools/render/README.md`).
   - **Tests:** health with reuse on and off; every existing field unchanged.

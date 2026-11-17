@@ -23,10 +23,17 @@
  *   would be the next figure's starting point, and drawn into it unseen.
  * - `browser`: the browser it belonged to went. A page of the old browser
  *   cannot draw, so a figure given one would fail where a fresh page draws.
- *
- * Spec 018 T007 adds `count`, `memory` and `build`.
+ * - `count`: it has drawn `maxFigures`. What a page keeps that no figure
+ *   gives back grows with every figure it draws (research R4; T007's run).
+ * - `memory`: the service's container was past its bound after a figure.
+ *   A browser page's memory is mostly outside its JavaScript heap, freed when
+ *   it closes; four held pages and a large diagram took a container past its
+ *   limit, and every figure drawn then failed (research R4 result, 3).
+ * - `build`: the site's build is no longer the one the page loaded. A held
+ *   page keeps the code it started with, and would draw the old build's
+ *   figures under the new one's (FR-008).
  */
-export type Reason = 'failure' | 'browser';
+export type Reason = 'failure' | 'browser' | 'count' | 'memory' | 'build';
 
 /**
  * What a figure's result says of its page: `hold` it for the next figure,
@@ -44,6 +51,11 @@ export interface Closable {
    * pool. A page with no say is taken to be alive.
    */
   alive?(): boolean;
+  /**
+   * The site build the page loaded (the render page's `__renderState.build`),
+   * once its first figure has said; null or absent when it cannot tell.
+   */
+  loaded?: string | null;
 }
 
 export interface PagesOptions<P extends Closable> {
@@ -53,6 +65,19 @@ export interface PagesOptions<P extends Closable> {
   max: number;
   /** A new page; `held` when it may be held, which wants a context of its own. */
   open(held: boolean): Promise<P>;
+  /** Figures a page draws before it is replaced (`RENDER_REUSE_MAX`); unset, no limit. */
+  maxFigures?: number;
+  /**
+   * Whether the service is past its memory bound (`RENDER_REUSE_MEMORY`),
+   * asked after each figure whose page would be held.
+   */
+  overMemory?(): boolean;
+  /**
+   * The site's build now, as the render page names it; null when it cannot be
+   * read, and then no page is replaced for its build. Asked before a held page
+   * is given a figure.
+   */
+  siteBuild?(): Promise<string | null>;
 }
 
 /**
@@ -75,6 +100,8 @@ export function verdict({
 export class Pages<P extends Closable> {
   private readonly options: PagesOptions<P>;
   private readonly idle: P[] = [];
+  /** Figures drawn on each page. */
+  private readonly figures = new WeakMap<P, number>();
   private moves = 0;
   /**
    * Moves on each time every held page is let go of. A page taken before is
@@ -84,7 +111,13 @@ export class Pages<P extends Closable> {
   /** Figures drawn on a held page since the start. */
   reused = 0;
   /** Pages replaced since the start, by why. */
-  readonly replaced: Record<Reason, number> = { failure: 0, browser: 0 };
+  readonly replaced: Record<Reason, number> = {
+    failure: 0,
+    browser: 0,
+    count: 0,
+    memory: 0,
+    build: 0,
+  };
 
   constructor(options: PagesOptions<P>) {
     this.options = options;
@@ -129,10 +162,12 @@ export class Pages<P extends Closable> {
     try {
       const result = await draw(page, nav);
       if (held) this.reused++;
+      this.figures.set(page, (this.figures.get(page) ?? 0) + 1);
       outcome = judge(result);
       return result;
     } finally {
       if (generation !== this.generation) outcome = 'browser';
+      else if (outcome === 'hold') outcome = this.lastFigure(page);
       if (outcome === 'hold' && this.idle.length < this.options.max) this.idle.push(page);
       else if (outcome === 'hold' || outcome === 'spent') await discard(page);
       else await this.replace(page, outcome);
@@ -149,15 +184,35 @@ export class Pages<P extends Closable> {
     await Promise.all(this.idle.splice(0).map((page) => this.replace(page, reason)));
   }
 
-  /** A held page that can still draw, replacing any that cannot. */
+  /** Whether a page that drew cleanly has drawn its last: its count, or the memory bound. */
+  private lastFigure(page: P): Verdict {
+    if ((this.figures.get(page) ?? 0) >= (this.options.maxFigures ?? Infinity)) return 'count';
+    if (this.options.overMemory?.()) return 'memory';
+    return 'hold';
+  }
+
+  /** A held page that can still draw the site's current figures, replacing any that cannot. */
   private async take(): Promise<P | undefined> {
+    if (!this.idle.length) return undefined;
+    const site = await this.currentBuild();
     for (let page = this.idle.pop(); page; page = this.idle.pop()) {
       // A renderer that died while the page was held: the figure would fail
       // where a fresh page draws it.
-      if (page.alive?.() ?? true) return page;
-      await this.replace(page, 'failure');
+      if (!(page.alive?.() ?? true)) await this.replace(page, 'failure');
+      // The old build's code: its figure would not be the current site's.
+      else if (site && page.loaded && page.loaded !== site) await this.replace(page, 'build');
+      else return page;
     }
     return undefined;
+  }
+
+  /** The site's build, or null when it cannot be read: a page is not replaced on a guess. */
+  private async currentBuild(): Promise<string | null> {
+    try {
+      return (await this.options.siteBuild?.()) ?? null;
+    } catch {
+      return null;
+    }
   }
 
   /** Closes a page for a reason, and counts it. */
@@ -178,4 +233,57 @@ async function discard(page: Closable): Promise<void> {
   } catch {
     // Already closed with its browser.
   }
+}
+
+/**
+ * The share of its memory limit the service uses, from its cgroup (v2:
+ * `memory.current` against `memory.max`): the nearest limit, from the
+ * process's own group up, as one set on its container or its unit. Undefined
+ * with no limit to read, and then only the count applies. `read` reads a file
+ * beneath the cgroup root; `group` is the process's own (`/` in a container).
+ */
+export function memoryShare(
+  read: (file: string) => string | undefined,
+  group = '/'
+): number | undefined {
+  for (let dir = group.replace(/\/+$/, ''); ; dir = dir.slice(0, dir.lastIndexOf('/'))) {
+    // `max` reads "max" where no limit is set: not a number.
+    const max = Number(read(`${dir}/memory.max`)?.trim());
+    if (Number.isFinite(max) && max > 0) {
+      const current = Number(read(`${dir}/memory.current`)?.trim());
+      return Number.isFinite(current) ? current / max : undefined;
+    }
+    if (!dir) return undefined;
+  }
+}
+
+/**
+ * The site's build in the render page's HTML: the name of its main script
+ * (`main-{hash}.js`), as the page itself reports it (`pageBuild` in the site's
+ * render-navigation.ts). Null when there is none.
+ */
+export function buildIn(html: string): string | null {
+  for (const [, src = ''] of html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
+    const name = src.split(/[?#]/)[0]?.split('/').pop() ?? '';
+    if (/^main(-[A-Za-z0-9]+)?\.js$/.test(name)) return name;
+  }
+  return null;
+}
+
+/**
+ * `load`, asked at most once per `ms`: within it, the last answer (or the one
+ * on its way). A failed load is null, and asked again after `ms` like any other.
+ */
+export function atMostEvery(
+  ms: number,
+  load: () => Promise<string | null>,
+  now: () => number = Date.now
+): () => Promise<string | null> {
+  let last: { at: number; answer: Promise<string | null> } | undefined;
+  return () => {
+    if (!last || now() - last.at >= ms) {
+      last = { at: now(), answer: load().catch(() => null) };
+    }
+    return last.answer;
+  };
 }

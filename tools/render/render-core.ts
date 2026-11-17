@@ -150,6 +150,8 @@ export type RenderReport = Detail & {
   view?: string | undefined;
   elements?: number | undefined;
   groups?: number | undefined;
+  /** The site build the page loaded (spec 018): its main script's name. */
+  build?: string | null | undefined;
   [field: string]: unknown;
 };
 

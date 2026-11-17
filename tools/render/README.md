@@ -253,19 +253,21 @@ curl -o out.pptx 'http://127.0.0.1:4310/render/R-HSA-109606.pptx'
 curl -s http://127.0.0.1:4310/health
 ```
 
-| variable             | default               |                                                                                                                            |
-| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `RENDER_PORT`        | 4310                  |                                                                                                                            |
-| `RENDER_HOST`        | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work                                                        |
-| `RENDER_BASE`        | http://localhost:4200 | site to render against                                                                                                     |
-| `RENDER_CACHE`       | `.render-cache`       |                                                                                                                            |
-| `RENDER_CACHE_KEY`   | the code's (`v14`)    | override only to invalidate by hand; the code bumps it when output changes                                                 |
-| `RENDER_CACHE_MAX`   | 2 GB                  | bytes of figures kept; 0 keeps everything. The cache cannot be turned off: for a cold run, give a fresh `RENDER_CACHE_KEY` |
-| `RENDER_CONCURRENCY` | 2                     | simultaneous renders                                                                                                       |
-| `RENDER_QUEUE`       | 8                     | pending renders before 503                                                                                                 |
-| `RENDER_TIMEOUT`     | 45000                 | ms before a render is abandoned                                                                                            |
-| `RENDER_FILES`       | unset                 | a folder laid out as the download site; see below                                                                          |
-| `RENDER_REUSE`       | off                   | `on` holds loaded pages between figures; see below                                                                         |
+| variable              | default               |                                                                                                                            |
+| --------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `RENDER_PORT`         | 4310                  |                                                                                                                            |
+| `RENDER_HOST`         | 127.0.0.1             | set `0.0.0.0` only behind something that decides who may cause work                                                        |
+| `RENDER_BASE`         | http://localhost:4200 | site to render against                                                                                                     |
+| `RENDER_CACHE`        | `.render-cache`       |                                                                                                                            |
+| `RENDER_CACHE_KEY`    | the code's (`v14`)    | override only to invalidate by hand; the code bumps it when output changes                                                 |
+| `RENDER_CACHE_MAX`    | 2 GB                  | bytes of figures kept; 0 keeps everything. The cache cannot be turned off: for a cold run, give a fresh `RENDER_CACHE_KEY` |
+| `RENDER_CONCURRENCY`  | 2                     | simultaneous renders                                                                                                       |
+| `RENDER_QUEUE`        | 8                     | pending renders before 503                                                                                                 |
+| `RENDER_TIMEOUT`      | 45000                 | ms before a render is abandoned                                                                                            |
+| `RENDER_FILES`        | unset                 | a folder laid out as the download site; see below                                                                          |
+| `RENDER_REUSE`        | off                   | `on` holds loaded pages between figures; see below                                                                         |
+| `RENDER_REUSE_MAX`    | 200                   | figures a held page draws before it is replaced                                                                            |
+| `RENDER_REUSE_MEMORY` | 0.5                   | share of the memory limit past which a page is closed after its figure, not held                                           |
 
 **Held pages** (spec 018). Loading the render page is most of a figure's time:
 starting the site's code, not fetching it. With `RENDER_REUSE=on` the service
@@ -279,7 +281,12 @@ page or one it logged, which the log line counts), or when its renderer crashed
 while it was held; the request is answered as it is with reuse off. When the
 browser goes, every held page goes with it. A page that cannot be moved (a PDF
 is printed in its place; a site built before the entry point has none) is
-closed too. In each case the next figure loads a new page. `/health` says `reuse`,
+closed too. So is a page that has drawn `RENDER_REUSE_MAX` figures; one whose
+figure leaves the service past `RENDER_REUSE_MEMORY` of its memory limit (read
+from its cgroup: the container's, or the nearest limit above the process; with
+none, only the count applies); and one whose site build, the render page's main
+script, is no longer the one the site serves (read from `RENDER_BASE` at most
+once a minute). In each case the next figure loads a new page. `/health` says `reuse`,
 and with it on, `reused`: figures drawn on a held page. Off, every figure has a
 fresh page; `tools/render/reuse-compare.ts` compares the two.
 
