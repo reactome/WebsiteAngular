@@ -125,7 +125,7 @@ Found 19 Oct 2026 by comparing every mapping in the Java source with the publish
 
 ## Phase 10: Last
 
-- [ ] T110 The ORCID endpoints, `/ContentService/orcid/**` ("Claim your work", #114): about eleven (OAuth login, callback, token, sign-out, authenticated; five claims; `{orcid}/works`; `let-us-know-your-orcid`). Not in the deployed service at all: their source is `org.reactome.server.orcid` in reactome/data-content. They need ORCID OAuth credentials and the report application. Ported last (awright, 15 and 19 Oct 2026), after reviewing ORCID's requirements with awright.
+- [ ] T110 The ORCID endpoints, `/ContentService/orcid/**` ("Claim your work", #114): about eleven (OAuth login, callback, token, sign-out, authenticated; five claims; `{orcid}/works`; `let-us-know-your-orcid`). Not in the deployed service at all: their source is `org.reactome.server.orcid` in reactome/data-content. They need ORCID OAuth credentials and the report application. Ported last (awright, 15 and 19 Oct 2026), after reviewing ORCID's requirements with awright. **Specified in [spec 031](../031-orcid-claim/spec.md)** (decided 16 Nov 2026: ported to node, never Java; built against a stub ORCID, then ORCID's sandbox; production later). Its tasks replace this one, which is ticked when spec 031's T028 lands.
 
 ## Notes
 
