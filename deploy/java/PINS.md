@@ -30,7 +30,7 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
 
 ## The library service (spec 015 T063, T069)
 
-`deploy/java-library/Dockerfile` builds the last four rows from these commits, and checks that its jar carries the libraries it built, byte for byte. `deploy/java-library/pins.spec.ts` checks that the Dockerfile's commits are this table's. Changing `sbml-exporter-lib`'s pin means rerunning spec 015 T067's comparison, not `tools/java-parity`: its body is not Java's. Changing `biopax3-exporter-lib`'s likewise means rerunning spec 015 T049's comparison and T072's check.
+`deploy/java-library/Dockerfile` builds the last four rows from these commits, and checks that its jar carries the libraries it built, byte for byte. `deploy/java-library/pins.spec.ts` checks that the Dockerfile's commits are this table's. graph-core's tests are not built there: their own dependency, `reactome-base` (a private repository, published only as a snapshot on EBI's Nexus, whose old address no longer serves it reliably), is at test scope, so the image drops it from graph-core's pom and skips the tests' sources. Rebuilt so, graph-core's jar differs from the one built with it only in that pom, in reactome-base's absence from AspectJ's `builddef.lst`, and in the two classes whose order varies from build to build (above). Changing `sbml-exporter-lib`'s pin means rerunning spec 015 T067's comparison, not `tools/java-parity`: its body is not Java's. Changing `biopax3-exporter-lib`'s likewise means rerunning spec 015 T049's comparison and T072's check.
 
 ## The PDF service (spec 006 T100)
 
