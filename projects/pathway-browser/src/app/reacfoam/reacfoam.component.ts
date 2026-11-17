@@ -163,7 +163,9 @@ export class ReacfoamComponent implements OnDestroy {
       }) as FoamTree.InitialOptions<PathwayGroup>
   );
 
-  readonly foamTree = computed(() => new FoamTree<PathwayGroup>(this.options()));
+  /** The FoamTree made for this component, once it is made: disposed with it. */
+  private made: FoamTree<PathwayGroup> | undefined;
+  readonly foamTree = computed(() => (this.made = new FoamTree<PathwayGroup>(this.options())));
   readonly select = linkedSignal(() => this.state.select());
   readonly selectedId = computed(() => this.reacfoam.buildId(this.select(), this.state.path()));
   readonly correctedSelectedId = computed(() => {
@@ -460,6 +462,10 @@ export class ReacfoamComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.sizeObserver.disconnect();
     this.download.figureGone(this);
+    // Undisposed, a FoamTree outlives its component: on a held render page
+    // every overview drawn stayed in memory, about 17 MB of heap each, until
+    // the page closed (spec 018 T007).
+    this.made?.dispose();
   }
 
   exportRaster(format: DownloadFormat, params: FoamTree.ImageFormat) {
