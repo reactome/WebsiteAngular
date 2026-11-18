@@ -527,7 +527,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - **Record here:** the time, the health counters, the container's peak memory and the
     comparison with a reuse-off run of the same build (research R6).
   - **Record in pdf-export:** the result, in its spec 001 (T042 and research R7).
-  - **Not done: the run did not finish, and SC-001 is not shown.** Re-run as T015.
+  - **Not done: the run did not finish, and SC-001 is not shown.** Re-run after T015.
   - **Run, 18 Nov 2026, 01:05:22–05:16:37 UTC:** a render container of the
     `websiteangular-render` image with main's `tools/render` mounted (T014's fix in),
     `RENDER_REUSE=on` with T007's defaults (`RENDER_REUSE_MAX` 200,
@@ -579,14 +579,77 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     constantly (7,715 replacements); the failure rule replaces a page on any console
     error, which fresh pages log too (404s for pictures, "Missing graph data for node"),
     as T009 found (1,278). T015.
-- [ ] T015 [US4] Tune the replacement rules, then run T010 again.
+- [x] T015 [US4] Tune the replacement rules (#TBD).
   - **Memory:** the share judged per page (the container's share divided by the pages
     held), or a higher share, measured against the 3 GB limit so that SC-004 still holds.
   - **Failure:** replace a page on a page error or a crash, not on a console error that a
     fresh page logs too.
   - **Tests:** each rule seen failing with its change undone.
   - **Then:** T010 again, after #1006 is deployed, and the reuse-off run of the same build
-    for the comparison.
+    for the comparison. That run is T010's, still open; this task is the rules.
+  - **Failure, built:** `verdict` in `pages.ts` replaces a page for a problem in the page
+    (an error thrown and not caught, `pageerror`; or a release file left unanswered,
+    `files:`), not for console errors alone (`console:`, the prefix `render-core.ts`
+    writes them with, `LOGGED`). A failed or timed-out figure, a crash and a browser
+    restart replace the page as before; the figure's answer is today's, and the log line
+    still counts console errors.
+  - **Console errors are the figure's, not the page's:** every run below logged them for
+    the same 53 of the 571 figures, drawn fresh or held (in the first, 32 on fresh
+    pages), and nothing else: "Missing graph data for node" (the site's
+    `diagram.service.ts`, for a disease reaction drawn in its normal pathway), and
+    "Failed to load resource" for a 404. No run had a `pageerror`. So no console error
+    is kept as a reason.
+  - **Memory, built:** `memoryVerdict`. Past `RENDER_REUSE_MEMORY` a page goes only if it
+    has drawn more than one figure and no page went for memory in the last
+    `RENDER_CONCURRENCY` figures: one a round, not every page. Past a quarter of the way
+    from there to the limit (0.625 of it at 0.5), every page goes, as T007's rule did at
+    the bound.
+    - Why not per page: nothing measures one page's memory. Its heap is not it (research
+      R4), and a renderer process is not tied to its page.
+    - A first version replaced the open page that had drawn the most, with the ceiling
+      halfway. At 0.5 it peaked at 2,602 MiB (2,162 with the ceiling a quarter of the
+      way). At 0.35 it replaced 243 pages: the page that had drawn the most had most
+      often drawn two, the others being new, so it churned much as T007's rule did.
+  - **Measured, 18 Nov 2026:** 571 figures of release 98 in the book's order (figures
+    2,901 to 3,500 of T010's run, repeats dropped: 464 reactions' own layouts, 107
+    diagrams and illustrations), each run in a new render container (the
+    `websiteangular-render` image with this branch's or main's `tools/render`
+    mounted), concurrency 4, queue 16, timeout 180 s, 3 GB and no swap, 1 GB of shared
+    memory, the release's files, against beta's site; asked four at a time as the
+    figures step asks, one run at a time. Peak is the container's `memory.peak`.
+
+    | Rules                     | Bound | Held       | Memory | Failure | Time   | Peak      |
+    | ------------------------- | ----- | ---------- | ------ | ------- | ------ | --------- |
+    | T007's (main)             | 0.5   | 416 (73%)  | 100    | 52      | 338 s  | 2,140 MiB |
+    | T015's                    | 0.5   | 459 (80%)  | 109    | 0       | 295 s  | 2,312 MiB |
+    | T007's (main)             | 0.35  | 248 (43%)  | 270    | 52      | 464 s  | 2,008 MiB |
+    | T015's                    | 0.35  | 402 (70%)  | 167    | 0       | 319 s  | 2,108 MiB |
+    | T015's failure rule alone | none  | 547 of 562 | 0      | 11      | 245 s  | 3 GiB     |
+    | reuse off                 |       | 0          |        |         | (stop) | 1,718 MiB |
+    - **At 0.5** the memory count is unchanged on this sample: past the bound, a round's
+      page went (85) or the ceiling was passed (24). The gain is the failure rule's: 52
+      fewer replacements, 80% held, 13% less time. The peak is 172 MiB higher.
+    - **At 0.35,** a bound below what four pages use (T010's case: the container past its
+      bound with every page new): T007's rule held 43% and took 464 s; T015's held 70%
+      and took 319 s, with 103 fewer replacements for memory (82 for the round, 85 past
+      the ceiling) and a peak 100 MiB higher.
+    - **No memory rule** (`RENDER_REUSE_MEMORY` 1): the container reached its 3 GiB
+      limit, and 9 figures failed ("Target crashed"). A memory rule is needed.
+    - **Reuse off** was stopped at 590 s with 510 drawn; it peaked at 1,718 MiB.
+    - Beta's site was redeployed between the first runs and the others: T007's rules at
+      0.5 were run on both builds (100 and 135 for memory; 73% and 67% held; 2,140 and
+      2,089 MiB); the rows above are all the later build but the no-memory-rule run.
+
+  - **Identity of figures drawn after a console error on a held page** (before, they were
+    drawn on a new page): `reuse-compare.ts --code tools/render` on 48 requests, 24 of
+    the figures above that log console errors (17 reactions, 7 diagrams) each followed
+    by one that does not. Listed, reversed and one run of pairs: 192 draws, 0 differ.
+    The script exits 1 because one draw in each of two runs was on a new page: a page
+    replaced for memory at concurrency 1, not a difference. Only comments in
+    `pages.ts` changed between the fresh run and the others.
+  - **For T010's run:** the peak is the one to watch. T010 peaked at 2,654 MiB with
+    T007's rules; T015's rules ran 100 to 170 MiB higher here, so a full run may come
+    near 2.8 GiB of the 3 GiB.
 - [ ] T016 R-HSA-381753 (a reaction's layout) fails on a fresh page as on a held one: a
       timeout waiting for the figure, or "nothing drawn within 60s". Find whether it is
       the release's data or the render page, and fix it or record it as missing.
@@ -603,6 +666,6 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
-- T015 needs #1006 deployed, and T010 is ticked on T015's run.
+- T010 is run again after T015, with #1006 deployed, and ticked on that run.
 - T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.
