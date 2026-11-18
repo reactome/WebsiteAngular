@@ -502,15 +502,22 @@ const inFlight = new Map<string, Promise<{ bytes: Buffer; cached: boolean }>>();
  * for an id that does not resolve simply never becomes ready, so without this
  * a typo occupies a render slot until it times out -- and ids arrive from URLs,
  * so typos are the normal case rather than the exceptional one.
+ *
+ * Only the content service's answer that the id is not there (a 404, a 410)
+ * makes it unknown. Any other refusal was taken for one, so a pathway asked
+ * for while the content service was failing was answered "no such pathway"
+ * (spec 018 T017): that is a check that could not run.
  */
-async function describe(pathway: string) {
+export async function describePathway(pathway: string) {
   if (!pathway) return { known: true, schemaClass: '' }; // the genome-wide view takes no id
   try {
     const response = await fetch(`${BASE}/ContentService/data/query/${pathway}`, {
       method: 'GET',
       signal: AbortSignal.timeout(10_000),
     });
-    if (!response.ok) return { known: false, schemaClass: '' };
+    if (response.status === 404 || response.status === 410)
+      return { known: false, schemaClass: '' };
+    if (!response.ok) return { known: true, schemaClass: '' };
     // The class comes free: this request was already being made to find out
     // whether the id resolves, and it is what says whether `layout=reaction` can
     // mean anything for it.
@@ -538,7 +545,7 @@ async function renderCached(params: RenderParams) {
     return { ...(await inFlight.get(key)), coalesced: true };
   }
 
-  const { known, schemaClass } = await describe(params.pathway);
+  const { known, schemaClass } = await describePathway(params.pathway);
   if (!known) {
     throw httpError(404, `no such pathway: ${params.pathway}`);
   }

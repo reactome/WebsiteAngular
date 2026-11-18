@@ -346,3 +346,46 @@ describe("what a figure's page reported (spec 018 T015)", () => {
     expect(verdict(result)).toBe('failure');
   });
 });
+
+describe("a page's failure, answered by its kind (spec 018 T017)", () => {
+  // A stand-in page that loads and reports the state it is given.
+  async function failureOf(state: object) {
+    const page = {
+      on() {},
+      off() {},
+      async goto() {},
+      async evaluate() {
+        return state;
+      },
+      async waitForSelector() {
+        return { async dispose() {} };
+      },
+    };
+    return render(stand(page), { base: 'http://site', pathway: 'R-HSA-5357769' }).then(
+      () => undefined,
+      (thrown: unknown) => thrown
+    );
+  }
+
+  it('answers a pathway the content service could not read as a 502, not as missing', async () => {
+    const error = 'could not read pathway R-HSA-5357769: 504 Gateway Timeout';
+    expect(await failureOf({ ready: false, error, failure: 'unreadable' })).toMatchObject({
+      message: error,
+      status: 502,
+    });
+  });
+
+  it('answers a pathway the content service says is not there as a 404', async () => {
+    const error = 'no pathway found for R-HSA-5357769';
+    expect(await failureOf({ ready: false, error, failure: 'not-found' })).toMatchObject({
+      message: error,
+      status: 404,
+    });
+  });
+
+  it("leaves any other failure the page's own, a 500", async () => {
+    const thrown = await failureOf({ ready: false, error: 'nothing drawn within 60s' });
+    expect(thrown).toBeInstanceOf(Error);
+    expect(thrown).not.toHaveProperty('status');
+  });
+});
