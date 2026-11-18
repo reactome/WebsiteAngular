@@ -20,6 +20,7 @@ import { CONTENT_SERVICE } from '../../../environments/environment';
 import {
   BehaviorSubject,
   catchError,
+  map,
   throwError,
   Observable,
   of,
@@ -46,6 +47,7 @@ import { RevealDirective } from '../../utils/reveal.directive';
 import { fieldByName } from '../../services/utils';
 import Entry = Search.Entry;
 import * as Search from '../../model/search.model';
+import { asksForCloseMatches, CLOSE_MATCH_ROWS, closeNameMatches } from './close-matches';
 
 const MIN_SUGGEST_LENGTH = 2;
 const AVAILABLE_IN_HEIGHT = 20;
@@ -243,60 +245,98 @@ export class SearchComponent {
   readonly currentScopeName = signal<Scope>('local');
 
   scopes: Record<Scope, SearchDataSource> = {
-    local: new SearchDataSource(this.searchParams$, (page, pageSize, params) => {
-      if (params.diagram && params.query.length === 0) {
-        this.localHasNoResult.set(false);
-        return of(Search.EMPTY_RESULTS);
-      }
-      return this.http
-        .get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
-          // The diagram is the path; neither it nor the species is a parameter
-          // here, and either would keep the answer out of the edge cache
-          // (spec 011).
-          params: {
-            ...withoutKeys(params, 'diagram', 'species'),
-            start: page * pageSize,
-            rows: pageSize,
-            includeInteractors: false,
-            scope: 'REFERENCE_ENTITY',
-          } as Search.Paginated<Search.Params>,
-        })
-        .pipe(
-          catchError((error: HttpErrorResponse) => {
-            return this.handleSearchError('local', error);
-          }),
-          tap((result) => {
-            this.setNoSearchResult('local', result);
+    local: new SearchDataSource(
+      this.searchParams$,
+      (page, pageSize, params) => {
+        if (params.diagram && params.query.length === 0) {
+          this.localHasNoResult.set(false);
+          return of(Search.EMPTY_RESULTS);
+        }
+        return this.http
+          .get<Search.Result>(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, {
+            // The diagram is the path; neither it nor the species is a parameter
+            // here, and either would keep the answer out of the edge cache
+            // (spec 011).
+            params: {
+              ...withoutKeys(params, 'diagram', 'species'),
+              start: page * pageSize,
+              rows: pageSize,
+              includeInteractors: false,
+              scope: 'REFERENCE_ENTITY',
+            } as Search.Paginated<Search.Params>,
           })
-        );
-    }),
-    global: new SearchDataSource(this.searchParams$, (page, pageSize, params) => {
-      if (params.query.length === 0) {
-        this.globalHasNoResult.set(false);
-        return of(Search.EMPTY_RESULTS);
-      }
-      return this.http
-        .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks`, {
-          params: {
-            ...withoutKeys(params, 'diagram'),
-            start: page * pageSize,
-            rows: pageSize,
-            includeInteractors: false,
-            scope: 'REFERENCE_ENTITY',
-          } as Search.Paginated<Search.Params>,
-        })
-        .pipe(
-          catchError((error: HttpErrorResponse) => {
-            return this.handleSearchError('global', error);
-          }),
-          tap((result) => {
-            this.setNoSearchResult('global', result);
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              return this.handleSearchError('local', error);
+            }),
+            tap((result) => {
+              this.setNoSearchResult('local', result);
+            })
+          );
+      },
+      (params) =>
+        params.diagram
+          ? this.closeMatches(`${CONTENT_SERVICE}/search/diagram/${params.diagram}`, params, false)
+          : of([])
+    ),
+    global: new SearchDataSource(
+      this.searchParams$,
+      (page, pageSize, params) => {
+        if (params.query.length === 0) {
+          this.globalHasNoResult.set(false);
+          return of(Search.EMPTY_RESULTS);
+        }
+        return this.http
+          .get<Search.Result>(`${CONTENT_SERVICE}/search/fireworks`, {
+            params: {
+              ...withoutKeys(params, 'diagram'),
+              start: page * pageSize,
+              rows: pageSize,
+              includeInteractors: false,
+              scope: 'REFERENCE_ENTITY',
+            } as Search.Paginated<Search.Params>,
           })
-        );
-    }),
+          .pipe(
+            catchError((error: HttpErrorResponse) => {
+              return this.handleSearchError('global', error);
+            }),
+            tap((result) => {
+              this.setNoSearchResult('global', result);
+            })
+          );
+      },
+      (params) => this.closeMatches(`${CONTENT_SERVICE}/search/fireworks`, params, true)
+    ),
   };
 
   readonly currentScope = computed(() => this.scopes[this.currentScopeName()]);
+
+  /**
+   * The entities named as the query is, which the grouped list leaves out (see
+   * closeNameMatches): a second, narrow request, made only for a query long
+   * enough to name one. The diagram's search takes no species (spec 011).
+   */
+  private closeMatches(
+    url: string,
+    params: Search.Params,
+    bySpecies: boolean
+  ): Observable<Search.Entry[]> {
+    if (!asksForCloseMatches(params.query)) return of([]);
+    const request: Record<string, string | number | boolean | readonly string[]> = {
+      query: params.query,
+      ...(bySpecies && params.species ? { species: params.species } : {}),
+      ...(params.types?.length ? { types: params.types } : {}),
+      start: 0,
+      rows: CLOSE_MATCH_ROWS,
+      includeInteractors: false,
+      scope: 'PHYSICAL_ENTITY',
+    };
+    return this.http.get<Search.Result>(url, { params: request }).pipe(
+      map((result) => closeNameMatches(params.query, result.entries ?? [])),
+      // A 404 is "none"; and any failure only leaves the list as it was.
+      catchError(() => of([]))
+    );
+  }
 
   readonly resultHeight = computed(() => {
     const [scope] = [
@@ -401,7 +441,14 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
       (facet): facet is Search.Facet & { name: string } => !!facet.name
     )
   );
-  readonly found = computed(() => this._result()?.found || 0);
+  /**
+   * Entries shown before the search's own pages, all at once: the close name
+   * matches its scope leaves out.
+   */
+  private leading: Search.Entry[] = [];
+  private readonly leadingCount = signal(0);
+  private leadingRequest = new Subscription();
+  readonly found = computed(() => (this._result()?.found || 0) + this.leadingCount());
   readonly isLoading = signal<boolean>(false);
   /** Pages that could not be loaded, until asked for again. */
   private readonly failedPages = signal<ReadonlySet<number>>(new Set());
@@ -423,7 +470,8 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
       page: number,
       pageSize: number,
       params: Search.Params
-    ) => Observable<Search.Result>
+    ) => Observable<Search.Result>,
+    private leadingFetcher?: (params: Search.Params) => Observable<Search.Entry[]>
   ) {
     super();
     param$.subscribe(() => this.clear());
@@ -434,14 +482,44 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
     this.failedPages.set(new Set());
     this.cachedEntries.splice(0, this.cachedEntries.length);
     this.fetchedPages.clear();
+    this.fetchLeading();
     this.fetchPage(0);
+  }
+
+  /** Abandons the last search's leading entries, asked for or arrived, and asks for this one's. */
+  private fetchLeading() {
+    this.leadingRequest.unsubscribe();
+    if (this.leading.length) {
+      this.leading = [];
+      this.leadingCount.set(0);
+      this.emit();
+    }
+    const fetcher = this.leadingFetcher;
+    if (!fetcher) return;
+    this.leadingRequest = this.param$
+      .pipe(
+        take(1),
+        switchMap((param) => (param ? fetcher(param) : of([])))
+      )
+      .subscribe((entries) => {
+        this.leading = entries;
+        this.leadingCount.set(entries.length);
+        this.emit();
+      });
+  }
+
+  private emit() {
+    this.dataStream.next(
+      this.leading.length ? [...this.leading, ...this.cachedEntries] : this.cachedEntries
+    );
   }
 
   override connect(collectionViewer: CollectionViewer): Observable<(Search.Entry | undefined)[]> {
     const subscribe = collectionViewer.viewChange.subscribe((range) => {
       if (!this.active) return;
-      const startPage = this.getPageForIndex(range.start);
-      const endPage = this.getPageForIndex(range.end - 1);
+      // The search's own pages start after the leading entries.
+      const startPage = this.getPageForIndex(range.start - this.leading.length);
+      const endPage = this.getPageForIndex(range.end - 1 - this.leading.length);
       for (let i = startPage; i <= endPage; i++) {
         this.fetchPage(i);
       }
@@ -458,7 +536,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
   }
 
   private getPageForIndex(index: number): number {
-    return Math.floor(index / this.pageSize);
+    return Math.floor(Math.max(index, 0) / this.pageSize);
   }
 
   private fetchPage(page: number) {
@@ -490,7 +568,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
           this._result.set(result);
           if (this.cachedEntries.length !== result.found) this.cachedEntries.length = result.found;
           this.cachedEntries.splice(page * this.pageSize, this.pageSize, ...(result.entries ?? []));
-          this.dataStream.next(this.cachedEntries);
+          this.emit();
           markFailed(false);
           this.isLoading.set(false);
         },
@@ -502,7 +580,7 @@ export class SearchDataSource extends DataSource<Search.Entry | undefined> {
           if (page === 0) {
             this._result.set(undefined);
             this.cachedEntries.length = 0;
-            this.dataStream.next(this.cachedEntries);
+            this.emit();
           }
           markFailed(true);
           this.isLoading.set(false);
