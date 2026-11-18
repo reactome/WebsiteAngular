@@ -666,7 +666,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       pathway found" for pathways that exist (six in T010's slowdown; the give-up in
       `render.component.ts` treats a failed read as an absent pathway). A failed read
       is reported as such ("could not be read"), and only an answer that the pathway is
-      not there as "no pathway found". Test: each answer seen with its own message. (#TBD)
+      not there as "no pathway found". Test: each answer seen with its own message. (#1011)
   - **Cause, confirmed:** the give-up read `currentPathway()`, which is empty for a read
     that failed in any way, so after 3 s every settled read with no pathway was "no
     pathway found". On beta's build, the pathway's read answered 504, 500 or 404 (by a
