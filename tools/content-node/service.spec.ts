@@ -56,14 +56,31 @@ import {
 let base: string;
 let server: Server;
 
+/**
+ * Services outside this host, which some endpoints call: here each points at a
+ * port that refuses at once. Left at their defaults, a request through every
+ * endpoint (cross-origin reads, below) reached Europe PMC and the PSICQUIC
+ * registry on the internet, and when they were slow the test outran its time
+ * while nothing here was wrong.
+ */
+const OUTSIDE = ['EUROPE_PMC_URL', 'PSICQUIC_REGISTRY_URL', 'TURNSTILE_VERIFY_URL'] as const;
+const before = new Map(OUTSIDE.map((key) => [key, process.env[key]]));
+
 beforeAll(async () => {
+  for (const key of OUTSIDE) process.env[key] = 'http://127.0.0.1:9/';
   await new Promise<void>((resolve) => {
     server = app().listen(0, '127.0.0.1', () => resolve());
   });
   base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 });
 
-afterAll(() => new Promise<void>((resolve) => server.close(() => resolve())));
+afterAll(async () => {
+  await new Promise<void>((resolve) => server.close(() => resolve()));
+  for (const [key, value] of before) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 
 /** Java's error envelope, from an answer that must be there. */
 const envelopeOf = (answer: { body: string } | undefined) => {
