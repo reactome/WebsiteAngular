@@ -652,7 +652,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     near 2.8 GiB of the 3 GiB.
 - [x] T016 R-HSA-381753 (a reaction's layout) fails on a fresh page as on a held one: a
       timeout waiting for the figure, or "nothing drawn within 60s". Find whether it is
-      the release's data or the render page, and fix it or record it as missing. (#TBD)
+      the release's data or the render page, and fix it or record it as missing. (#1010)
   - Not reproduced. R-HSA-381753 is a pathway ("Olfactory Signaling Pathway"), drawn as
     its diagram, not a reaction layout; asked for as a reaction layout it is refused at
     once with a 400, by design. On a fresh page it is ready in about 1.3 s (70
