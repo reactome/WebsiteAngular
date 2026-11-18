@@ -5,7 +5,7 @@ import type * as Search from '../../model/search.model';
  * "TP53"), whose entities the list groups under their reference entity on
  * purpose, so no second request is made for it.
  */
-export const CLOSE_MATCH_MIN_LENGTH = 5;
+const CLOSE_MATCH_MIN_LENGTH = 5;
 
 /**
  * How many entities the second request asks for. An entity named as typed
@@ -15,7 +15,7 @@ export const CLOSE_MATCH_MIN_LENGTH = 5;
 export const CLOSE_MATCH_ROWS = 10;
 
 /** A name as compared: Solr's highlighting removed, whitespace collapsed, case ignored. */
-export function comparableName(text: string): string {
+function comparableName(text: string): string {
   return text
     .replace(/<span class="highlighting" >|<\/span>/g, '')
     .replace(/\s+/g, ' ')
