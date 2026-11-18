@@ -544,8 +544,8 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     server (`serve-prod.js`, through which the render page fetches `/ContentService`) had
     piled up about 11,858 connections to the content service, each an abandoned
     request's answer never read, so the content service answered in 5 to 30 s and
-    figures timed out. Fixed in #1006. One figure, R-HSA-381753 (a reaction's layout),
-    fails on a fresh-page service too: T016.
+    figures timed out. Fixed in #1006. Every figure that failed fell in that slowdown
+    (T016).
   - **Health at the end** (`/health` after the step stopped): rendered 15,432, failed 57
     (26 timeouts, 18 "nothing drawn within 60s", 13 "no pathway found"), reused 6,460,
     replaced for failure 1,278, memory 7,715, count 0, build 0, browser 0. **Fewer than
@@ -650,9 +650,29 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - **For T010's run:** the peak is the one to watch. T010 peaked at 2,654 MiB with
     T007's rules; T015's rules ran 100 to 170 MiB higher here, so a full run may come
     near 2.8 GiB of the 3 GiB.
-- [ ] T016 R-HSA-381753 (a reaction's layout) fails on a fresh page as on a held one: a
+- [x] T016 R-HSA-381753 (a reaction's layout) fails on a fresh page as on a held one: a
       timeout waiting for the figure, or "nothing drawn within 60s". Find whether it is
-      the release's data or the render page, and fix it or record it as missing.
+      the release's data or the render page, and fix it or record it as missing. (#TBD)
+  - Not reproduced. R-HSA-381753 is a pathway ("Olfactory Signaling Pathway"), drawn as
+    its diagram, not a reaction layout; asked for as a reaction layout it is refused at
+    once with a 400, by design. On a fresh page it is ready in about 1.3 s (70
+    elements, no page errors, every content service answer within 0.5 s).
+  - Its failures in T010, and those of the other 16 figures that failed ("nothing drawn
+    within 60s", "no pathway found"), all fall in the content service's slowdown that
+    #1006 fixed: none failed before it. One of each kind checked again draws (the
+    pathway R-HSA-109606, the reaction R-HSA-1299478); T010's re-run covers the rest.
+    Nothing is to be recorded as missing from the book.
+- [ ] T017 When the content service fails or answers slowly, the render page says "no
+      pathway found" for pathways that exist (six in T010's slowdown; the give-up in
+      `render.component.ts` treats a failed read as an absent pathway). A failed read
+      is reported as such ("could not be read"), and only an answer that the pathway is
+      not there as "no pathway found". Test: each answer seen with its own message.
+- [ ] T018 The render page fetches from hosts other than the site's while it draws: a
+      diagram's ChEBI structure images (about 60 for R-HSA-381753) and a structure
+      viewer's library from a CDN. Drawing does not wait for them (seen: with them held
+      back, the diagram was ready as soon). Decide whether the render service blocks or
+      answers them locally, so a release's figures step sends no load outside; if
+      blocked, prove the figures are unchanged.
 
 ## Dependencies
 
