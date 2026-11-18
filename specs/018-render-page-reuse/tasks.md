@@ -403,7 +403,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     figures gave `reused: 1`, `pages: 1`, `replaced.count: 1` and `site` the main
     script the site's render page names.
 
-- [x] T014 [US2] A PDF leaves its page unmovable (found by T009) (#TBD).
+- [x] T014 [US2] A PDF leaves its page unmovable (found by T009) (#1003).
   - **The defect:** with reuse on, the figure drawn after a PDF on the same page timed out
     (a 500 after `RENDER_TIMEOUT`), where a fresh page draws it. Live, on one held page:
     a reaction's SVG, its PDF, another reaction's SVG answered 200, 200, 500, and
