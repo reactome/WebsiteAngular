@@ -527,6 +527,69 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
   - **Record here:** the time, the health counters, the container's peak memory and the
     comparison with a reuse-off run of the same build (research R6).
   - **Record in pdf-export:** the result, in its spec 001 (T042 and research R7).
+  - **Not done: the run did not finish, and SC-001 is not shown.** Re-run as T015.
+  - **Run, 18 Nov 2026, 01:05:22–05:16:37 UTC:** a render container of the
+    `websiteangular-render` image with main's `tools/render` mounted (T014's fix in),
+    `RENDER_REUSE=on` with T007's defaults (`RENDER_REUSE_MAX` 200,
+    `RENDER_REUSE_MEMORY` 0.5), concurrency 4, queue 16, timeout 180 s, 3 GB of memory
+    and no swap, 1 GB of shared memory, the release's files; pdf-export's figures step
+    with `--parallel 4` against beta's release 98 graph. Concurrency 4 is research R6's
+    setting (pdf-export's research R7 notes that T031's was not recorded; T031's summed
+    figure times were about four times its elapsed time).
+  - **Result: 15,427 of 19,076 figures in 4 h 11 min, then stopped** by the figures
+    step's breaker (8 figures in a row unanswered). The report's missing: 35 unanswered,
+    10 failed.
+  - **The stop was not page reuse.** The figure rate fell from about 04:35 (36 figures in
+    the three minutes to 04:40, against about 230 before). Found afterwards: the site
+    server (`serve-prod.js`, through which the render page fetches `/ContentService`) had
+    piled up about 11,858 connections to the content service, each an abandoned
+    request's answer never read, so the content service answered in 5 to 30 s and
+    figures timed out. Fixed in #1006. One figure, R-HSA-381753 (a reaction's layout),
+    fails on a fresh-page service too: T016.
+  - **Health at the end** (`/health` after the step stopped): rendered 15,432, failed 57
+    (26 timeouts, 18 "nothing drawn within 60s", 13 "no pathway found"), reused 6,460,
+    replaced for failure 1,278, memory 7,715, count 0, build 0, browser 0. **Fewer than
+    half the figures (42%) were drawn on a held page.** From 02:00 to 03:16 none were:
+    `reused` stayed at 2,617 while `replaced.memory` rose by about 150 every three
+    minutes.
+  - **Per figure, the median of the render log's times, fresh and held** (different
+    figures, not pairs): reaction 3.9 s fresh (7,493) and 1.2 s held (5,598), 3.25 times
+    as fast; diagram 6.0 and 3.0 s; illustration 3.8 and 1.2 s.
+  - **Peak memory** (the container's `memory.peak`): 2,654 MiB of the 3 GiB limit.
+  - **The reuse-off run** started at 05:25 and drew nothing (8 unanswered at once: the
+    same content-service slowdown); the time set aside for the runs ended before it
+    could be run again. So no byte comparison of the same build either; T009 covered
+    identity (#1003). The
+    comparison is with pdf-export's reuse-off result: 19,076 figures in 5 h 47 min at
+    about four at once (its spec 001: SC-010, T031's run).
+  - **Projected:** 14,989 figures in the 3 h 29 min to 04:34:14, before the rate fell,
+    is 4,306 an hour; at that rate the 19,076 take **about 4 h 26 min**, about 23% less
+    than 5 h 47 min. The best stretch (03:16 to 04:34, 4,577 an hour) gives 4 h 10 min.
+    The basis is this run's own rate; the order of the figures is not random, so the
+    rest of the book need not draw at that rate.
+  - **SC-001 (no more than 2 h 54 min): not met.** Not met as measured, since the run did
+    not finish, and the projection (about 4 h 26 min) does not support it either.
+  - **SC-002: met for reactions,** 1.2 s held against 3.9 s fresh, by medians over the
+    run rather than per reaction.
+  - **SC-004: met as far as the run went.** No page passed 200 figures (`count` 0: none
+    reached it), the peak stayed under the limit, and no failure was for memory or the
+    browser (`browser` 0). Not shown for the full run.
+  - **Why the gain is small:** the two replacement rules close most pages early. The
+    memory rule (half of a 3 GB container, shared by four pages) was crossed almost
+    constantly (7,715 replacements); the failure rule replaces a page on any console
+    error, which fresh pages log too (404s for pictures, "Missing graph data for node"),
+    as T009 found (1,278). T015.
+- [ ] T015 [US4] Tune the replacement rules, then run T010 again.
+  - **Memory:** the share judged per page (the container's share divided by the pages
+    held), or a higher share, measured against the 3 GB limit so that SC-004 still holds.
+  - **Failure:** replace a page on a page error or a crash, not on a console error that a
+    fresh page logs too.
+  - **Tests:** each rule seen failing with its change undone.
+  - **Then:** T010 again, after #1006 is deployed, and the reuse-off run of the same build
+    for the comparison.
+- [ ] T016 R-HSA-381753 (a reaction's layout) fails on a fresh page as on a held one: a
+      timeout waiting for the figure, or "nothing drawn within 60s". Find whether it is
+      the release's data or the render page, and fix it or record it as missing.
 
 ## Dependencies
 
@@ -540,5 +603,6 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
+- T015 needs #1006 deployed, and T010 is ticked on T015's run.
 - T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.
