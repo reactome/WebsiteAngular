@@ -11,11 +11,19 @@
 //
 // No browser and no network: every assertion below is answered before the
 // service would reach for either.
-import { describe, expect, it, beforeAll, afterAll, vi } from 'vitest';
+import { describe, expect, it, beforeAll, afterAll, afterEach, vi } from 'vitest';
 import { createServer } from 'node:http';
 import type { Server } from 'node:http';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
-import { app, cacheKey, httpError, isModule, publicMessage, statusOf } from './service.ts';
+import {
+  app,
+  cacheKey,
+  describePathway,
+  httpError,
+  isModule,
+  publicMessage,
+  statusOf,
+} from './service.ts';
 
 let base: string;
 let server: Server;
@@ -341,5 +349,37 @@ describe('statusOf, what a failed render answers with', () => {
         'a string thrown',
       ].map(statusOf)
     ).toEqual([404, 400, 503, 500, 500, 500, 500]);
+  });
+});
+
+describe('describePathway, whether an id is one to draw (spec 018 T017)', () => {
+  // The other tests here ask the service itself, by the real fetch.
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+  /** The content service, answering every lookup with `status`. */
+  const answering = (status: number) =>
+    vi.stubGlobal('fetch', async () => new Response('{"schemaClass":"Pathway"}', { status }));
+
+  it('is unknown only where the content service says the id is not there', async () => {
+    answering(404);
+    expect(await describePathway('R-HSA-0')).toEqual({ known: false, schemaClass: '' });
+    answering(410);
+    expect(await describePathway('R-HSA-0')).toEqual({ known: false, schemaClass: '' });
+    answering(200);
+    expect(await describePathway('R-HSA-5357769')).toEqual({
+      known: true,
+      schemaClass: 'Pathway',
+    });
+  });
+
+  it('is left to the render while the content service fails, never "no such pathway"', async () => {
+    for (const status of [500, 502, 503, 504]) {
+      answering(status);
+      expect(await describePathway('R-HSA-5357769'), String(status)).toEqual({
+        known: true,
+        schemaClass: '',
+      });
+    }
   });
 });

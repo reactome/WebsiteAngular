@@ -43,10 +43,20 @@ export type Published = {
  * full load. `build` is the page's main script's name (`main-{hash}.js`), by
  * which a caller holding the page tells it from a newer build of the site;
  * null where the page cannot find it.
+ *
+ * `failure` says what kind of failure `error` is, where the page can tell
+ * (spec 018 T017): `not-found`, the content service answered that the pathway
+ * is not there; `unreadable`, it could not be read just now (a 5xx, no
+ * answer). A caller answers the first as a 404 and the second as a 502: a
+ * pathway reported missing while the content service was slow was retried by
+ * nobody, and left out of a book as if it did not exist.
  */
+export type RenderFailure = 'not-found' | 'unreadable';
+
 export type RenderState = {
   ready: boolean;
   error: string | null;
+  failure?: RenderFailure;
   nav?: string;
   build: string | null;
 } & (Published | { view?: undefined; pathway?: undefined; name?: undefined; analysis?: undefined });

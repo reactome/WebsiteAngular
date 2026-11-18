@@ -662,11 +662,32 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     #1006 fixed: none failed before it. One of each kind checked again draws (the
     pathway R-HSA-109606, the reaction R-HSA-1299478); T010's re-run covers the rest.
     Nothing is to be recorded as missing from the book.
-- [ ] T017 When the content service fails or answers slowly, the render page says "no
+- [x] T017 When the content service fails or answers slowly, the render page says "no
       pathway found" for pathways that exist (six in T010's slowdown; the give-up in
       `render.component.ts` treats a failed read as an absent pathway). A failed read
       is reported as such ("could not be read"), and only an answer that the pathway is
-      not there as "no pathway found". Test: each answer seen with its own message.
+      not there as "no pathway found". Test: each answer seen with its own message. (#1011)
+  - **Cause, confirmed:** the give-up read `currentPathway()`, which is empty for a read
+    that failed in any way, so after 3 s every settled read with no pathway was "no
+    pathway found". On beta's build, the pathway's read answered 504, 500 or 404 (by a
+    route in the browser) each gave "no pathway found for R-HSA-5357769". A slow read
+    alone never tripped it (still loading); a read the proxy gave up on did. The render
+    service's own check (`describe`) did the same: any refusal of `/data/query/{id}` was
+    a 404 "no such pathway".
+  - **Now:** the page says "no pathway found" only for a 404 or 410, or an empty answer
+    (`render/pathway-failure.ts`), and "could not read pathway {id}: {the request's
+    failure}" for any other, with `__renderState.failure` `not-found` or `unreadable`.
+    The render service answers the first 404 and the second 502 (any other failure of
+    the page stays 500); its check treats only a 404 or 410 as unknown. The same build,
+    the same routes: 504 and 500 say "could not read", 404 "no pathway found", none
+    draws.
+  - **What callers see** for a pathway the content service fails on: before, a 500
+    "no pathway found for …" (or a 404 "no such pathway" when the check failed too);
+    now a 502 "could not read pathway …". pdf-export's figures client counted the 500
+    as `failed` (the page's own failure, not retried, not counted by the breaker) and
+    the 404 as `refused`; it counts a 502 as `unanswered`, which the breaker counts.
+    content-node's exporters answer any status but 503 as a 500 naming the failure, so
+    only the message changes there.
 - [ ] T018 The render page fetches from hosts other than the site's while it draws: a
       diagram's ChEBI structure images (about 60 for R-HSA-381753) and a structure
       viewer's library from a CDN. Drawing does not wait for them (seen: with them held

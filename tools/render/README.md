@@ -395,3 +395,12 @@ polls, and reading a failed resource throws, which surfaces the real error.
 The service also refuses unknown ids before a browser is involved, so the two
 guards are independent: the page is correct on its own, and the service is cheap
 on its own.
+
+A failure to read is not an unknown id. Only the content service's answer that
+an id is not there (a 404 or 410) is "no such pathway" (the service's check) or
+"no pathway found" (the page's), answered `404`. Any other failure of the read
+(a 5xx, no answer) lets the check pass and makes the page say "could not read
+pathway …", answered `502`: while the content service was slow, pathways that
+exist were reported as not found (spec 018 T017). The page says which it is in
+`__renderState.failure` (`not-found`, `unreadable`); any other failure of the
+page is a `500`.

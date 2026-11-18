@@ -10,6 +10,7 @@ import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
 import { isDownload, localAnswer } from './local-files.ts';
 import { LOGGED } from './pages.ts';
 import { pptx } from './pptx.ts';
+import type { RenderFailure } from '../../projects/contract/render.ts';
 
 /** Formats the render page can produce. */
 export const FORMATS = ['svg', 'png', 'jpeg', 'pdf', 'gif', 'pptx'] as const;
@@ -157,6 +158,23 @@ export type RenderReport = Detail & {
 };
 
 /**
+ * The status the service answers a page's failure with (spec 018 T017): a
+ * pathway the content service says is not there is a 404; one it could not
+ * read just now a 502, a failure of what the service depends on, which a
+ * caller may try again. Any other is the page's own, a 500. All were 500s,
+ * and the pathway that could not be read was reported as not found.
+ */
+const FAILURE_STATUS: Record<RenderFailure, number> = { 'not-found': 404, unreadable: 502 };
+
+/** A page's failure, with the status it is answered with where the page says what kind it is. */
+function pageFailure(error: string, failure: RenderFailure | undefined): Error {
+  const thrown = new Error(error);
+  return failure === undefined
+    ? thrown
+    : Object.assign(thrown, { status: FAILURE_STATUS[failure] });
+}
+
+/**
  * Render one pathway on an existing Playwright page.
  *
  * The caller owns the page so a service can pool them. Returns the bytes plus
@@ -253,7 +271,7 @@ export async function render(
     await ready.dispose();
 
     const state = await page.evaluate(() => window.__renderState);
-    if (state?.error) throw new Error(state.error);
+    if (state?.error) throw pageFailure(state.error, state.failure);
     // A page that does not know `species` draws the site's default species
     // and reports none: a figure of the wrong species, with every sign of
     // success. Refused unless the page says it drew the one asked for.

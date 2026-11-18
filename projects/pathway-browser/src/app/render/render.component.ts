@@ -21,6 +21,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { SvgExporterService } from '../reacfoam/svg-exporter.service';
 import { AnalysisService, isNotFound } from '../services/analysis.service';
 import { failureMessage } from './failure-message';
+import { pathwayFailure } from './pathway-failure';
 import { EhldService } from '../services/ehld.service';
 import { DarkService } from '../services/dark.service';
 import { SpeciesService } from '../services/species.service';
@@ -31,6 +32,7 @@ import type {
   Published,
   RenderEdgeShape,
   RenderExport,
+  RenderFailure,
   RenderGrouping,
   RenderNodeShape,
   RenderShapes,
@@ -228,6 +230,8 @@ export class RenderComponent {
 
   readonly ready = signal(false);
   readonly error = signal<string | null>(null);
+  /** What kind of failure `error` is, where the page can tell. */
+  private readonly failure = signal<RenderFailure | null>(null);
 
   /** What was drawn and how much of it, for the caller to sanity-check. */
   private readonly stateForCaller = signal<Published | Record<string, never>>({});
@@ -310,6 +314,7 @@ export class RenderComponent {
   private async watchUntilDrawn(pathway: string | undefined) {
     this.ready.set(false);
     this.error.set(null);
+    this.failure.set(null);
 
     const started = Date.now();
     const deadline = started + 60_000;
@@ -343,7 +348,10 @@ export class RenderComponent {
         // seconds while its own fetch was still in flight.
         !this.reactionView
       ) {
-        this.error.set(`no pathway found for ${pathway}`);
+        // A read that failed is not a pathway that is not there.
+        const failed = pathwayFailure(pathway, this.dataState._currentPathway.error());
+        this.error.set(failed.error);
+        this.failure.set(failed.failure);
         this.publish();
         return;
       }
@@ -544,9 +552,11 @@ export class RenderComponent {
   private publish() {
     // A destroyed figure's state would be read as the next one's.
     if (this.destroyed()) return;
+    const failure = this.failure();
     const state: RenderState = {
       ready: this.ready(),
       error: this.error(),
+      ...(failure === null ? {} : { failure }),
       ...(this.nav === null ? {} : { nav: this.nav }),
       build: pageBuild(),
       ...this.stateForCaller(),
