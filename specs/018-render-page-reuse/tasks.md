@@ -579,7 +579,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     constantly (7,715 replacements); the failure rule replaces a page on any console
     error, which fresh pages log too (404s for pictures, "Missing graph data for node"),
     as T009 found (1,278). T015.
-- [x] T015 [US4] Tune the replacement rules (#TBD).
+- [x] T015 [US4] Tune the replacement rules (#1008).
   - **Memory:** the share judged per page (the container's share divided by the pages
     held), or a higher share, measured against the 3 GB limit so that SC-004 still holds.
   - **Failure:** replace a page on a page error or a crash, not on a console error that a
