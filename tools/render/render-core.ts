@@ -8,6 +8,7 @@
 import type { ConsoleMessage, Page, Route } from '@playwright/test';
 import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
 import { isDownload, localAnswer } from './local-files.ts';
+import { LOGGED } from './pages.ts';
 import { pptx } from './pptx.ts';
 
 /** Formats the render page can produce. */
@@ -190,7 +191,7 @@ export async function render(
   const problems: string[] = [];
   const onPageError = (e: Error) => problems.push(String(e).slice(0, 200));
   const onConsole = (m: ConsoleMessage) => {
-    if (m.type() === 'error') problems.push(`console: ${m.text().slice(0, 200)}`);
+    if (m.type() === 'error') problems.push(`${LOGGED}${m.text().slice(0, 200)}`);
   };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
