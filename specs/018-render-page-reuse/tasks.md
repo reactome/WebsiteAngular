@@ -403,6 +403,29 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     figures gave `reused: 1`, `pages: 1`, `replaced.count: 1` and `site` the main
     script the site's render page names.
 
+- [x] T014 [US2] A PDF leaves its page unmovable (found by T009) (#1003).
+  - **The defect:** with reuse on, the figure drawn after a PDF on the same page timed out
+    (a 500 after `RENDER_TIMEOUT`), where a fresh page draws it. Live, on one held page:
+    a reaction's SVG, its PDF, another reaction's SVG answered 200, 200, 500, and
+    `replaced.failure` went to 1. In T009's first run of the other formats, every figure
+    drawn after a PDF on a held page failed so.
+  - **The cause:** a PDF is printed from the SVG put in the page's place
+    (`page.setContent`). That replaces the document, not the window: Chromium keeps the
+    window's globals, `__renderNavigate` among them. `render()` asked the window whether
+    the page could still move, was told yes, and the page was held (`hold`, not
+    `spent`). The next figure was moved by a router whose document was gone, and its host
+    never came.
+  - **The fix,** in `render-core.ts`: a PDF never leaves its page movable, so it is closed
+    as `spent` after its figure (T005's rule, as intended).
+  - **Test** (`render-core.spec.ts`): a stand-in page whose window keeps
+    `__renderNavigate` after `setContent`, as Chromium's does: an SVG leaves the page
+    movable, a PDF does not. Seen failing on the code before the fix (a PDF reported
+    `movable: true`).
+  - **The other formats** leave the render page in place: PNG, JPEG, GIF and PowerPoint
+    are taken with `page.evaluate` from the page as drawn, and nothing else in
+    `tools/render` calls `setContent` or loads another document into a page. T009's
+    runs of them held pages throughout (below).
+
 ## Phase 5: Proof and the release run
 
 - [ ] T009 [US2] SC-003 and SC-005.
@@ -410,6 +433,95 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     a reuse-on and a reuse-off service built from main.
   - **Mutants:** run each mutant of research R5 and record that it fails.
   - **Then:** turn `RENDER_REUSE` on by default.
+  - **Not done: the default stays off.** The SVG run below has three differences the
+    comparison cannot explain away (two figures, one failure), all intermittent, all on
+    held pages only. T009 is ticked once they are found and fixed and a run is clean.
+  - **Run, 17 Nov 2026:** `reuse-compare.ts --mode reuse` (each run a fresh container,
+    concurrency 1, `--code tools/render`, the release 98 files) against a scratch
+    `production,beta` build of main. The script gained, for this: planted failures
+    (`!` lines), a held-page count that expects a new page after a PDF or a failure,
+    `--port`, and each run's `/health` counts in its report. The SVG run's later
+    containers mounted T014's fix, which changes nothing for an SVG.
+  - **The SVG sample (SC-003, SC-005): 566 requests,** drawn fresh, then on held pages as
+    listed, reversed and in pairs (11 runs, 3,716 draws on reused services):
+    - 249 reaction layouts and 5 of mouse; 108 diagrams and 12 of other species (mouse,
+      zebrafish, chicken, cow, fly); 71 illustrations; 50 figures in an ancestor's
+      diagram (a subpathway with no diagram of its own, or a reaction drawn in its
+      pathway, selected); 35 highlights; 25 selections; the genome-wide view 4 times and
+      species overviews 4 (mouse, rat, zebrafish).
+    - Settings: 55 dark, 25 subpathways off, 33 with a token. The tokens were made on this
+      host's own Analysis Service, never a real analysis: three over-representation
+      results (one with UniProt as its resource, one with nothing found, one without
+      projection) and an expression result of three samples.
+    - 3 planted failures, each a token that does not exist, straight before the same
+      figure without it.
+    - **Result: 3 differences in 3,716 draws, so the default stays off.** Listed and
+      reversed: 566 each, 0 differ. Pairs: 2,584 draws, 3 differ:
+      - `R-HSA-975957.svg` after its token version (pairs 2). Drawn again (6 requests:
+        fresh twice, 0 differ; held, it differed in 3 of 6 runs, after its dark version,
+        after a reaction's layout and as the token version after a highlight). The two
+        SVGs are the same length; one wide red stroke (`rgb(204,0,0)`, 40 px) has
+        `stroke-opacity` 0.018 fresh and 0.012 held. The likely cause, not traced: a
+        stroke whose opacity changes over time (an animation or a fade), taken at a
+        different moment on a held page, which draws faster. T012's highlight race was
+        of this kind.
+      - `R-HSA-9674403.svg?highlight=R-HSA-9674408` after its dark version (pairs 1).
+        Drawn again it differed once (after the plain diagram) in 6 runs and matched in
+        5 direct draws on a held page: intermittent.
+      - `R-HSA-69895.svg` with a token (an opposite, drawn only to come first) answered
+        500 on a held page after a reaction's layout. Drawn again, fresh twice and held
+        in that order, it drew each time: intermittent, cause not found.
+  - **The other formats (SC-003), 24 requests each,** of every kind but the GIF overview
+    (a GIF of the genome-wide view fails, fresh as held):
+    - **What varies by itself,** each drawn twice on fresh pages (`--mode fresh`, 120 drawn
+      twice, 0 differ after normalising): a PDF's dates and id, and a PowerPoint's zip
+      times (a reaction's PDF and PowerPoint differed raw between two fresh draws and
+      matched once normalised). PNG, JPEG and GIF were byte-identical raw.
+    - **Sample errors, refused fresh as held and swapped out:** a GIF whose token reaches
+      none of its figure ("all 3 frames are identical", three pathways), and a PNG or JPEG
+      of R-HSA-5579030 at scale 2 (19,652 px wide: 39,304 px exceeds what a canvas can
+      export; it draws at scale 1). Both are the service's own refusals, outside reuse.
+    - **PNG, JPEG, GIF, PowerPoint (96):** 8 runs, 670 draws, every request in the sample
+      byte-identical (normalised for the PowerPoint) to its fresh draw in every order. 18
+      opposites failed, each a GIF given the expression token where its samples reach
+      nothing: the same refusal fresh.
+    - **PDF: the first run found T014.** Every figure drawn after a PDF on a held page
+      timed out. After T014's fix: 24 PDFs, each straight after an SVG of its opposite (so
+      drawn on a held page in the listed and reversed runs), 8 runs, 320 draws, 0 differ,
+      none failed. Live, a reaction's SVG, its PDF and another reaction's SVG answered 200,
+      200, 200, the third on a new page.
+  - **Held pages replaced during the runs,** each counted in `/health` and none a
+    difference: a figure whose page logs a console error (a 404 for a picture, "Missing
+    graph data for node" in a disease reaction) has its page replaced by T006's rule,
+    on fresh pages too (drawn by the CLI). In the formats' runs 212 replacements for that
+    and 11 for memory (PNG and PowerPoint of large figures near half the 3 GB limit). The
+    script reports those runs as not held throughout; the requests after each were drawn
+    on a new page and matched.
+  - **SC-005: met.** The 3 planted failures failed fresh and held, in the listed and
+    reversed runs; each run counted at least 3 pages replaced for a failure; the figure
+    after each (the same pathway without the dead token, listed; the one before it,
+    reversed) matched its fresh draw. In the SVG runs, 1,168 more replacements were for
+    console errors (T006's rule, above) and 10 for memory; 2,525 of 3,716 draws were on a
+    held page.
+  - **Mutants** (research R5), each a scratch build of main with one change, through the
+    same comparison on an 11-request sample (a diagram plain, dark, with a token, a
+    selection, a highlight and subpathways off; a reaction with a dead token; an
+    illustration; a mouse diagram; the human and mouse overviews). Main's build on the
+    same sample: no figure differs.
+    - dark left (`isDark` set only when asked): 37 differ;
+    - token left (the address's `analysis` not cleared when absent): 16;
+    - species left (`startAsFresh`'s species reset removed): 5;
+    - selection left (`select` not cleared): 19;
+    - highlight left (the last highlight kept): 13;
+    - subpathways left off (off once, off after): 14;
+    - the component reused (the reuse strategy never recreates it): the second figure
+      timed out, a 500 where fresh drew it (run stopped once caught);
+    - **an analysis failure left (`dismissLoadFailure` removed): not caught,** and it
+      cannot be through the service. A figure with an unreadable token either fails (a
+      pathway, the overview) or draws and logs console errors (a reaction's layout, which
+      takes no overlay); either way its page is replaced (FR-005, T006), so no figure
+      after it is drawn on that page. Its run matched main's figure for figure. The
+      render page's unit test covers the reset (`start-as-fresh.spec.ts`, T004).
 - [ ] T010 [US1] SC-001, SC-002 and SC-004: pdf-export's figures step for release 98 with
       T031's settings (research R6).
   - **Record here:** the time, the health counters, the container's peak memory and the
@@ -428,4 +540,5 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
+- T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.

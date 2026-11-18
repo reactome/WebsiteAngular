@@ -305,9 +305,13 @@ export async function render(
     }
 
     // Whether the page can be moved to another figure: it still holds the render
-    // page. A PDF is printed from the SVG put in the page's place, and a site
-    // built before the entry point has none.
-    const movable = await page.evaluate(() => typeof window.__renderNavigate === 'function');
+    // page. A PDF never leaves it so: it is printed from the SVG put in the
+    // page's place, and setContent replaces the document but keeps the
+    // window's globals, `__renderNavigate` among them, so the window cannot
+    // say (spec 018 T014). A site built before the entry point has none.
+    const movable =
+      format !== 'pdf' &&
+      (await page.evaluate(() => typeof window.__renderNavigate === 'function'));
     return { bytes, state: { ...(state ?? {}), ...detail }, problems, movable };
   } finally {
     page.off('pageerror', onPageError);
