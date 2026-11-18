@@ -134,12 +134,12 @@
 
 <!-- xRefs -->
 <ng-template #crossReferencesTemplate>
-  <cr-cross-references [crossRefs]="crossReference()"></cr-cross-references>
+  <cr-cross-references [crossRefs]="crossReferences().listed"></cr-cross-references>
 </ng-template>
 
 <!-- rhea structure -->
 <ng-template #rheaTemplate>
-  <cr-rhea [crossRefs]="crossReference()"></cr-rhea>
+  <cr-rhea [crossRefs]="crossReferences().rhea"></cr-rhea>
 </ng-template>
 
 <!-- Cell markers -->
@@ -156,7 +156,13 @@
 <!-- External Reference -->
 <ng-template #referenceTemplate>
   @if (referenceEntity(); as referenceEntity) {
-    <cr-external-reference [referenceEntity]="referenceEntity" [xRefs]="crossReference()"></cr-external-reference>
+    <cr-external-reference
+      [referenceEntity]="referenceEntity"
+      [xRefs]="crossReferences().ofReference"
+    ></cr-external-reference>
+    <!-- Its own list, which stood in the Cross references section before the
+         object's own cross-references took that place. -->
+    <cr-cross-references [crossRefs]="crossReferences().ofReference"></cr-cross-references>
   }
 </ng-template>
 
