@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
-import { createServer as createHttpServer, type Server } from 'node:http';
+import { createServer as createHttpServer, get as httpGet, type Server } from 'node:http';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -411,5 +411,115 @@ describe('serve-prod and the API roots', () => {
   it('leaves ExperimentDigester alone, which has no page here', async () => {
     const body = await (await fetch(base + '/ExperimentDigester/')).text();
     expect(body).toBe('backend /ExperimentDigester/');
+  });
+});
+
+// Pages that gave up on a request (a render abandoned after its time) left
+// their requests to the content service running, and the answers unread: the
+// site server held thousands of sockets to it, in CLOSE-WAIT and ESTABLISHED,
+// and the content service slowed to seconds per answer until the site server
+// was restarted. A backend request must end with the request it answers.
+describe('serve-prod and requests given up', () => {
+  const CLIENTS = 20;
+  // Larger than a socket's buffers, so an answer nobody reads cannot drain.
+  const ANSWER = Buffer.alloc(8 * 1024 * 1024, 'x');
+  let dist = '';
+  let port = 0;
+  let server: ChildProcess | undefined;
+  let contentNode: Server | undefined;
+  let open = 0;
+  let requests = 0;
+  let delayMs = 0;
+
+  beforeAll(async () => {
+    dist = await mkdtemp(path.join(tmpdir(), 'serve-prod-abort-'));
+    await writeFile(path.join(dist, 'index.html'), `<!doctype html>${INDEX_MARKER}`, 'utf8');
+
+    // A slow content service, counting the connections it has open.
+    const node = createHttpServer((_req, res) => {
+      requests++;
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(ANSWER);
+      }, delayMs);
+    });
+    node.on('connection', (socket) => {
+      open++;
+      socket.on('close', () => open--);
+    });
+    contentNode = node;
+    const contentNodePort = await freePort();
+    await new Promise<void>((resolve) => node.listen(contentNodePort, '127.0.0.1', resolve));
+
+    port = await freePort();
+    server = spawn('node', [SCRIPT], {
+      env: {
+        ...process.env,
+        DIST_DIR: dist,
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        REACTOME_BACKEND: 'http://127.0.0.1:9',
+        CONTENT_NODE_TARGET: `http://127.0.0.1:${contentNodePort}`,
+        HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
+        HEALTH_RENDER: 'http://127.0.0.1:9/health',
+        HEALTH_MCP: 'http://127.0.0.1:9/health',
+      },
+      stdio: 'ignore',
+    });
+    expect(await waitForServer(`http://127.0.0.1:${port}`), 'the server came up').toBe(true);
+  }, 40_000);
+
+  afterAll(async () => {
+    server?.kill('SIGTERM');
+    contentNode?.closeAllConnections();
+    contentNode?.close();
+    if (dist) await rm(dist, { recursive: true, force: true });
+  });
+
+  /** A request to a content-node route, its connection closed after `abortMs`. */
+  function abandoned(id: number, abortMs: number) {
+    const request = httpGet({
+      host: '127.0.0.1',
+      port,
+      path: `/ContentService/data/query/enhanced/R-HSA-${id}`,
+      agent: false,
+    });
+    request.on('error', () => undefined);
+    request.on('response', (response) => response.resume());
+    setTimeout(() => request.destroy(), abortMs);
+  }
+
+  async function settled(timeoutMs: number) {
+    const deadline = Date.now() + timeoutMs;
+    while (open > 0 && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return open;
+  }
+
+  for (const [when, delay, abortAfter] of [
+    // The page gave up before the content service answered.
+    ['before the answer', 1_000, 200],
+    // The page gave up partway through reading the answer.
+    ['while reading the answer', 0, 300],
+  ] as const) {
+    it(`closes the content service's connection when the page gives up ${when}`, async () => {
+      delayMs = delay;
+      const before = requests;
+      for (let id = 0; id < CLIENTS; id++) abandoned(id, abortAfter);
+      await new Promise((resolve) => setTimeout(resolve, abortAfter + 50));
+      expect(requests - before, 'the requests reached the content service').toBe(CLIENTS);
+      // Well after the answers were written: an abandoned request's connection
+      // is closed, not held with its answer unread.
+      expect(await settled(delay + 3_000), 'connections still open').toBe(0);
+    }, 15_000);
+  }
+
+  it('still delivers a whole answer to a page that waits for it', async () => {
+    delayMs = 0;
+    const body = await (
+      await fetch(`http://127.0.0.1:${port}/ContentService/data/query/enhanced/R-HSA-1`)
+    ).arrayBuffer();
+    expect(body.byteLength).toBe(ANSWER.length);
   });
 });

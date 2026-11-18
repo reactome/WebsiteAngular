@@ -86,6 +86,7 @@ import { MolecularProcessComponent } from '../../common/molecular-process/molecu
 import { CellMarkerComponent } from '../../common/cell-marker/cell-marker.component';
 import { IconComponent } from './icon/icon.component';
 import { RheaComponent } from '../../common/rhea/rhea.component';
+import { crossReferenceSections } from './cross-references';
 import { InteractorsTableComponent } from '../../common/interactors-table/interactors-table.component';
 import { LocationsTreeComponent } from '../../../../../../website-angular/src/app/content/detail/locations-tree/locations-tree.component';
 import { ReactionDiagramComponent } from '../../common/reaction-diagram/reaction-diagram.component';
@@ -474,15 +475,9 @@ export class DescriptionTabComponent implements OnDestroy {
     getProperty(this.obj(), DataKeys.MODIFIED_RESIDUES)
   );
 
-  readonly crossReference = computed(() => {
-    const fromReference = this.referenceEntity()?.crossReference;
-    if (fromReference) return fromReference;
-
-    const crossReference: DatabaseIdentifier[] | undefined = getProperty(
-      this.obj(),
-      DataKeys.CROSS_REFERENCE
-    );
-    return crossReference ? [...crossReference] : [];
+  readonly crossReferences = computed(() => {
+    const own: DatabaseIdentifier[] | undefined = getProperty(this.obj(), DataKeys.CROSS_REFERENCE);
+    return crossReferenceSections(own, this.referenceEntity()?.crossReference);
   });
 
   readonly proteinMarkers: Signal<EntityWithAccessionedSequence[]> = computed(
@@ -497,9 +492,7 @@ export class DescriptionTabComponent implements OnDestroy {
 
   readonly repeatedUnits = computed(() => getProperty(this.obj(), DataKeys.REPEATED_UNIT));
 
-  readonly hasRhea = computed(() =>
-    ['RHEA', 'Rhea'].includes(this.crossReference()[0]?.databaseName ?? '')
-  );
+  readonly hasRhea = computed(() => this.crossReferences().rhea.length > 0);
 
   // Disable the navigation control for inferred event when there is no associated pathway
   // https://reactome.org/beta/PathwayBrowser/R-HSA-9931510?select=R-HSA-9909400&path=R-HSA-9909396#inferredFrom
@@ -670,7 +663,7 @@ export class DescriptionTabComponent implements OnDestroy {
       label: Labels.CROSS_REFERENCES,
       manual: true,
       template: this.crossReferencesTemplate$,
-      isPresent: computed(() => this.crossReference().length > 0 && !this.hasRhea()),
+      isPresent: computed(() => this.crossReferences().listed.length > 0),
     },
     // Rhea structure
     {
@@ -849,7 +842,7 @@ export class DescriptionTabComponent implements OnDestroy {
       case DataKeys.CATALYST_ACTIVITY:
         return (this.catalystActivity()?.length ?? 0) > 0;
       case DataKeys.CROSS_REFERENCE:
-        return this.crossReference().length > 0 && !this.hasRhea();
+        return this.crossReferences().listed.length > 0;
       case camelCase(Labels.BIOCHEMICAL_REACTION):
         return this.hasRhea();
       case DataKeys.OTHER_FORMS:

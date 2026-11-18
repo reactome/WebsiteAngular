@@ -69,6 +69,36 @@ mountChatHandoffProxy(app);
 // ContentService's only takes an hCaptcha token.
 mountContactRoute(app);
 
+/**
+ * How long a backend may stay silent before its request is given up: nginx's
+ * longest read timeout for these routes (a diagram export, an analysis).
+ */
+const PROXY_TIMEOUT_MS = 300_000;
+
+/**
+ * A backend request lives no longer than the request it answers.
+ *
+ * http-proxy ends the backend request only on the client request's `aborted`
+ * event, which Node no longer emits for a request whose body has been read --
+ * every GET. So a page closed mid-request (a render given up after its time)
+ * left its backend request running, and once the answer came there was nobody
+ * to pipe it to: the answer was never read, so its socket was never closed.
+ * Under load that held thousands of sockets to the content service, in
+ * CLOSE-WAIT where the answer fitted the socket's buffer and ESTABLISHED where
+ * it did not, until the content service slowed to seconds per answer.
+ *
+ * Bound to the response, not the request: the response closes when its client
+ * goes away, before or after the backend has answered, and having finished it
+ * is how a complete answer is told from an abandoned one.
+ */
+function releaseWithClient(proxyReq, _req, res) {
+  const release = () => {
+    if (!res.writableFinished) proxyReq.destroy();
+  };
+  if (res.destroyed) release();
+  else res.once('close', release);
+}
+
 // Same backends the dev server proxies, so relative /ContentService calls work
 // exactly as they do in development.
 const proxyConfig = require(path.join(ROOT, 'proxy.conf.js'));
@@ -92,7 +122,9 @@ for (const [context, options] of Object.entries(proxyConfig)) {
       changeOrigin: options.changeOrigin ?? true,
       secure: options.secure ?? true,
       pathRewrite: options.pathRewrite,
+      proxyTimeout: PROXY_TIMEOUT_MS,
       on: {
+        proxyReq: releaseWithClient,
         error: (err, _req, res) => {
           console.error(`[proxy] ${context}: ${err.message}`);
           if (res && 'writeHead' in res && !res.headersSent) {

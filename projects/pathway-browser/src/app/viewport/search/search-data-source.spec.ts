@@ -13,9 +13,12 @@ const page = (from: number, found: number) => ({
 const down = () => throwError(() => new Error('500'));
 
 /** A data source over `fetch`, with a viewer that scrolls where it is told. */
-function source(fetch: (page: number) => Observable<Search.Result>) {
+function source(
+  fetch: (page: number) => Observable<Search.Result>,
+  leading?: (params: Search.Params) => Observable<Search.Entry[]>
+) {
   const params = new BehaviorSubject<Search.Params | undefined>({ query: 'TP53' });
-  const data = new SearchDataSource(params, (n) => fetch(n));
+  const data = new SearchDataSource(params, (n) => fetch(n), leading);
   data.active = true;
   const view = new Subject<ListRange>();
   let rows: (Search.Entry | undefined)[] = [];
@@ -109,5 +112,59 @@ describe('SearchDataSource', () => {
     params.next({ query: 'BRCA1' });
     expect(data.failed()).toBe(false);
     expect(data.found()).toBe(45);
+  });
+});
+
+// The close name matches the grouped search leaves out (close-matches.ts) are
+// listed first, above the search's own pages.
+describe('SearchDataSource, with entries ahead of its pages', () => {
+  const close = [entry(9001), entry(9002)];
+
+  it('lists them first, and counts them', () => {
+    const { data, rows } = source(
+      () => of(page(0, 45)),
+      () => of(close)
+    );
+    expect(data.found()).toBe(47);
+    expect(rows().slice(0, 3)).toEqual([entry(9001), entry(9002), entry(0)]);
+  });
+
+  it("still asks for the search's pages by their own position", () => {
+    const asked: number[] = [];
+    const { scroll, rows } = source(
+      (n) => {
+        asked.push(n);
+        return of(page(n * 30, 45));
+      },
+      () => of(close)
+    );
+    // Rows 25 to 34 are the search's 23 to 32: pages 0 and 1.
+    scroll(25);
+    expect(asked).toEqual([0, 1]);
+    expect(rows()[32]).toEqual(entry(30));
+    expect(rows()).toHaveLength(47);
+  });
+
+  it("drops an earlier search's, asked for or arrived", () => {
+    const pending = new Subject<Search.Entry[]>();
+    let calls = 0;
+    const { data, params, rows } = source(
+      () => of(page(0, 45)),
+      () => (calls++ === 0 ? pending : of([]))
+    );
+    params.next({ query: 'BRCA1' });
+    expect(pending.observed, 'the first request is cancelled').toBe(false);
+    pending.next(close);
+    expect(data.found()).toBe(45);
+    expect(rows()[0]).toEqual(entry(0));
+
+    const shown = source(
+      () => of(page(0, 45)),
+      (p) => of(p.query === 'TP53' ? close : [])
+    );
+    expect(shown.data.found()).toBe(47);
+    shown.params.next({ query: 'BRCA1' });
+    expect(shown.data.found()).toBe(45);
+    expect(shown.rows()[0]).toEqual(entry(0));
   });
 });
