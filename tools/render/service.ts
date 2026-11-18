@@ -42,7 +42,9 @@
  *   RENDER_REUSE_MAX    figures a held page draws before it is replaced, default 200
  *   RENDER_REUSE_MEMORY share of the memory limit (the container's, or the
  *                       nearest cgroup's) past which a page is closed after its
- *                       figure rather than held, default 0.5; no limit, no rule
+ *                       figure rather than held: one a round of figures, and a
+ *                       quarter of the way on to the limit, every one; default
+ *                       0.5; no limit, no rule (pages.ts, memoryVerdict)
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
  * highlight=<stId>,<stId>...,
@@ -134,8 +136,8 @@ const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // ones draw; then on by default.
 const REUSE = process.env['RENDER_REUSE'] === 'on';
 // Figures a held page draws before it is replaced, and the share of the
-// container's memory limit past which a page is closed after its figure
-// rather than held (spec 018 T007, research R4).
+// container's memory limit past which pages are closed after their figures
+// rather than held (spec 018 T007 and T015, research R4).
 const REUSE_MAX = Number(process.env['RENDER_REUSE_MAX'] || 200);
 const REUSE_MEMORY = Number(process.env['RENDER_REUSE_MEMORY'] || 0.5);
 // Generous next to a real render, which is 3-8s, but far short of the two
@@ -256,7 +258,8 @@ const pages = new Pages<RenderPage>({
   maxFigures: REUSE_MAX,
   // Outside a container, or with no limit set, there is none to read, and
   // only the count applies.
-  overMemory: () => (memoryShare(cgroupFile, cgroup) ?? 0) > REUSE_MEMORY,
+  memory: () => memoryShare(cgroupFile, cgroup),
+  memoryBound: REUSE_MEMORY,
   siteBuild,
   async open(held) {
     const running = await getBrowser();
@@ -582,8 +585,9 @@ async function renderCached(params: RenderParams) {
         );
         return { bytes, cached: false, movable, problems };
       },
-      // A figure with a browser problem is answered as before, and its page
-      // replaced: the problem may be in what the next figure would start from.
+      // A figure with a problem in its page (not a console error alone) is
+      // answered as before, and its page replaced: the problem may be in what
+      // the next figure would start from.
       verdict
     )
   );

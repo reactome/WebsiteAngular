@@ -267,7 +267,7 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_FILES`        | unset                 | a folder laid out as the download site; see below                                                                          |
 | `RENDER_REUSE`        | off                   | `on` holds loaded pages between figures; see below                                                                         |
 | `RENDER_REUSE_MAX`    | 200                   | figures a held page draws before it is replaced                                                                            |
-| `RENDER_REUSE_MEMORY` | 0.5                   | share of the memory limit past which a page is closed after its figure, not held                                           |
+| `RENDER_REUSE_MEMORY` | 0.5                   | share of the memory limit past which a page is closed after its figure, not held; see below                                |
 
 **Held pages** (spec 018). Loading the render page is most of a figure's time:
 starting the site's code, not fetching it. With `RENDER_REUSE=on` the service
@@ -276,15 +276,23 @@ browser context of its own, and moves it to the next figure inside the app
 (`window.__renderNavigate`) instead of loading it again. The render page
 recreates its component on each move and resets what outlives it, so a figure
 is drawn as a fresh page draws it. A page is replaced, never drawn on again,
-when its figure failed, timed out or reported a browser problem (an error in the
-page or one it logged, which the log line counts), or when its renderer crashed
-while it was held; the request is answered as it is with reuse off. When the
-browser goes, every held page goes with it. A page that cannot be moved (a PDF
+when its figure failed, timed out or reported a problem in the page (an error
+thrown and not caught, or a release file left unanswered), or when its renderer
+crashed while it was held. Console errors alone do not replace it: the figures
+that log them (a 404 for a picture, "Missing graph data for node" in a disease
+reaction) log them on a fresh page too, and the log line still counts them.
+Either way the request is answered as it is with reuse off. When the browser
+goes, every held page goes with it. A page that cannot be moved (a PDF
 is printed in its place; a site built before the entry point has none) is
-closed too. So is a page that has drawn `RENDER_REUSE_MAX` figures; one whose
+closed too. So is a page that has drawn `RENDER_REUSE_MAX` figures. When a
 figure leaves the service past `RENDER_REUSE_MEMORY` of its memory limit (read
 from its cgroup: the container's, or the nearest limit above the process; with
-none, only the count applies); and one whose site build, the render page's main
+none, only the count applies), the page is closed if it has drawn more than one
+figure and no page was closed for memory in the last `RENDER_CONCURRENCY`
+figures: one page a round, since a page closed gives its memory back only once
+it has gone, and one new to its first figure would hold as much again. Past a
+quarter of the way from `RENDER_REUSE_MEMORY` to the limit, every page is closed
+after its figure. So is a page whose site build, the render page's main
 script, is no longer the one the site serves (read from `RENDER_BASE` at most
 once a minute). In each case the next figure loads a new page. Off, every figure
 has a fresh page; `tools/render/reuse-compare.ts` compares the two.

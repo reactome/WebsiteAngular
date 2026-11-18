@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { verdict } from './pages.ts';
 import { render } from './render-core.ts';
 
 // A stand-in page: only what render reaches before the test stops it.
@@ -281,5 +282,67 @@ describe('a held page (spec 018)', () => {
       render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', nav: 'figure-1' })
     ).rejects.toThrow('the render page would not move to /PathwayBrowser/render/R-HSA-1');
     expect(seen.selector, 'no wait for a figure that is not coming').toBe('');
+  });
+});
+
+describe("what a figure's page reported (spec 018 T015)", () => {
+  // A stand-in page that draws an SVG and, while it draws, says what it is given to.
+  function saying(said: { console?: { type: string; text: string }[]; thrown?: string[] }) {
+    const listeners = new Map<string, (event: unknown) => void>();
+    const message = ({ type, text }: { type: string; text: string }) => ({
+      type: () => type,
+      text: () => text,
+    });
+    const page = {
+      on(event: string, listener: (event: unknown) => void) {
+        listeners.set(event, listener);
+      },
+      off(event: string) {
+        listeners.delete(event);
+      },
+      async goto() {
+        for (const one of said.console ?? []) listeners.get('console')?.(message(one));
+        for (const one of said.thrown ?? []) listeners.get('pageerror')?.(new TypeError(one));
+      },
+      async evaluate(script: () => unknown) {
+        const text = String(script);
+        if (text.includes('__renderState')) return { ready: true, view: 'reaction' };
+        if (text.includes('__renderExport'))
+          return `<svg width="10" height="10">${'x'.repeat(6000)}</svg>`;
+        if (text.includes('__renderNavigate')) return true;
+        return undefined;
+      },
+      async waitForSelector() {
+        return { async dispose() {} };
+      },
+    };
+    return render(stand(page), { base: 'http://site', pathway: 'R-HSA-1', layout: 'reaction' });
+  }
+
+  it('holds the page after console errors, which a fresh page logs too', async () => {
+    const result = await saying({
+      console: [
+        {
+          type: 'error',
+          text: 'Failed to load resource: the server responded with a status of 404 ()',
+        },
+        { type: 'error', text: 'Missing graph data for node:  4 .' },
+        { type: 'warning', text: 'not a problem' },
+      ],
+    });
+    expect(result.problems, 'still said, for the log line').toHaveLength(2);
+    expect(verdict(result)).toBe('hold');
+  });
+
+  it('replaces the page after an error thrown in it', async () => {
+    const result = await saying({
+      console: [{ type: 'error', text: 'Missing graph data for node:  4 .' }],
+      thrown: ['x is undefined'],
+    });
+    expect(result.problems).toEqual([
+      'console: Missing graph data for node:  4 .',
+      'TypeError: x is undefined',
+    ]);
+    expect(verdict(result)).toBe('failure');
   });
 });

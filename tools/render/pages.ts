@@ -18,18 +18,20 @@ import type { RenderHealth, RenderReplacement } from '../../projects/contract/re
 /**
  * Why a page was closed rather than held (data-model.md, Replacement):
  *
- * - `failure`: its figure threw, timed out or reported a browser problem, or
- *   the page crashed while it was held. Whatever the figure left behind (a
- *   half-drawn diagram, a wait still polling, an error the site swallowed)
- *   would be the next figure's starting point, and drawn into it unseen.
+ * - `failure`: its figure threw, timed out or reported a problem in the page
+ *   (an uncaught error, not a console error alone: `verdict`), or the page
+ *   crashed while it was held. Whatever the figure left behind (a half-drawn
+ *   diagram, a wait still polling, a request still pending) would be the next
+ *   figure's starting point, and drawn into it unseen.
  * - `browser`: the browser it belonged to went. A page of the old browser
  *   cannot draw, so a figure given one would fail where a fresh page draws.
  * - `count`: it has drawn `maxFigures`. What a page keeps that no figure
  *   gives back grows with every figure it draws (research R4; T007's run).
- * - `memory`: the service's container was past its bound after a figure.
- *   A browser page's memory is mostly outside its JavaScript heap, freed when
- *   it closes; four held pages and a large diagram took a container past its
- *   limit, and every figure drawn then failed (research R4 result, 3).
+ * - `memory`: the service's container was past its bound after a figure
+ *   (`memoryVerdict`). A browser page's memory is mostly outside its
+ *   JavaScript heap, freed when it closes; four held pages and a large diagram
+ *   took a container past its limit, and every figure drawn then failed
+ *   (research R4 result, 3).
  * - `build`: the site's build is no longer the one the page loaded. A held
  *   page keeps the code it started with, and would draw the old build's
  *   figures under the new one's (FR-008).
@@ -69,10 +71,13 @@ export interface PagesOptions<P extends Closable> {
   /** Figures a page draws before it is replaced (`RENDER_REUSE_MAX`); unset, no limit. */
   maxFigures?: number;
   /**
-   * Whether the service is past its memory bound (`RENDER_REUSE_MEMORY`),
-   * asked after each figure whose page would be held.
+   * The service's share of its memory limit now, asked after each figure
+   * whose page would be held; undefined with no limit to read, and then no
+   * page is replaced for memory.
    */
-  overMemory?(): boolean;
+  memory?(): number | undefined;
+  /** The share past which pages are replaced for memory (`RENDER_REUSE_MEMORY`, `memoryVerdict`). */
+  memoryBound?: number;
   /**
    * The site's build now, as the render page names it; null when it cannot be
    * read, and then no page is replaced for its build. Asked before a held page
@@ -82,10 +87,25 @@ export interface PagesOptions<P extends Closable> {
 }
 
 /**
- * The verdict on a figure the render service drew: a browser problem (an
- * error thrown in the page, or one it logged; what the service's log line
- * counts) replaces the page, even though the figure is answered as before.
- * The error may have come from state the next figure would start from.
+ * How a console error the page logged is told apart among a figure's
+ * problems (render-core.ts writes them so): `console: ` and the message.
+ */
+export const LOGGED = 'console: ';
+
+/**
+ * The verdict on a figure the render service drew: a problem that may have
+ * broken the page replaces it, even though the figure is answered as before.
+ * Such a problem may be in the state the next figure would start from: an
+ * error thrown in the page and not caught (`pageerror`), or a request for a
+ * release file left unanswered (`files: `), still pending when the next
+ * figure starts.
+ *
+ * A console error the page logged is not one (spec 018 T015). The figures
+ * that log them log them on a fresh page too (a 404 for a picture, "Missing
+ * graph data for node" in a disease reaction's layout): they are said of the
+ * figure's data, not of the page, and replacing the page bought nothing
+ * (T009: 1,168 replacements; T010: 1,278). They are still counted in the
+ * service's log line.
  */
 export function verdict({
   movable,
@@ -94,13 +114,15 @@ export function verdict({
   movable: boolean;
   problems: readonly string[];
 }): Verdict {
-  if (problems.length) return 'failure';
+  if (problems.some((problem) => !problem.startsWith(LOGGED))) return 'failure';
   return movable ? 'hold' : 'spent';
 }
 
 export class Pages<P extends Closable> {
   private readonly options: PagesOptions<P>;
   private readonly idle: P[] = [];
+  /** Figures ended since a page was last replaced for memory (`memoryVerdict`). */
+  private sinceMemory = Infinity;
   /** Figures drawn on each page. */
   private readonly figures = new WeakMap<P, number>();
   private moves = 0;
@@ -172,8 +194,10 @@ export class Pages<P extends Closable> {
       outcome = judge(result);
       return result;
     } finally {
+      this.sinceMemory++;
       if (generation !== this.generation) outcome = 'browser';
       else if (outcome === 'hold') outcome = this.lastFigure(page);
+      if (outcome === 'memory') this.sinceMemory = 0;
       if (outcome === 'hold' && this.idle.length < this.options.max) this.idle.push(page);
       else if (outcome === 'hold' || outcome === 'spent') await discard(page);
       else await this.replace(page, outcome);
@@ -193,8 +217,16 @@ export class Pages<P extends Closable> {
   /** Whether a page that drew cleanly has drawn its last: its count, or the memory bound. */
   private lastFigure(page: P): Verdict {
     if ((this.figures.get(page) ?? 0) >= (this.options.maxFigures ?? Infinity)) return 'count';
-    if (this.options.overMemory?.()) return 'memory';
-    return 'hold';
+    const { memoryBound } = this.options;
+    const share = this.options.memory?.();
+    if (share === undefined || memoryBound === undefined) return 'hold';
+    return memoryVerdict({
+      share,
+      bound: memoryBound,
+      figures: this.figures.get(page) ?? 0,
+      since: this.sinceMemory,
+      pages: this.options.max,
+    });
   }
 
   /** A held page that can still draw the site's current figures, replacing any that cannot. */
@@ -226,6 +258,49 @@ export class Pages<P extends Closable> {
     this.replaced[reason]++;
     await discard(page);
   }
+}
+
+/**
+ * Whether a page that drew cleanly goes for memory after its figure (spec 018
+ * T015): `memory`, or `hold`.
+ *
+ * - **At or under `bound`:** held.
+ * - **Past the ceiling, a quarter of the way from `bound` to the limit:**
+ *   replaced, as every page whose figure ends there (T007's rule, at the
+ *   bound then). The container is near its limit, and a large figure drawn now
+ *   would take it over (research R4 result, 3). With it halfway, a first
+ *   version of this rule peaked 460 MiB above T007's on T015's sample; a
+ *   quarter of the way, within 200 MiB of it (tasks.md, T015).
+ * - **Between them: one page in each round of figures (`pages` figures ended
+ *   since the last went), and only one that has drawn more than one.** Every
+ *   page past the bound went before T015. In T010's run the container stayed
+ *   past half its 3 GB for over an hour while every page was replaced after
+ *   its first figure and none was held: replacing them gave nothing back. A
+ *   page that has drawn one figure holds what a new page would hold after it,
+ *   so replacing it gives nothing back; and a page replaced gives its memory
+ *   back only once it has closed, so the share read as the next few figures
+ *   end does not yet show it.
+ *
+ * `figures` is what this page has drawn; `since`, the figures ended since a
+ * page was last replaced for memory, this one among them; `pages`, the pages
+ * drawn on at once.
+ */
+export function memoryVerdict({
+  share,
+  bound,
+  figures,
+  since,
+  pages,
+}: {
+  share: number;
+  bound: number;
+  figures: number;
+  since: number;
+  pages: number;
+}): 'hold' | 'memory' {
+  if (share <= bound) return 'hold';
+  if (share > bound + (1 - bound) / 4) return 'memory';
+  return figures > 1 && since >= pages ? 'memory' : 'hold';
 }
 
 /**

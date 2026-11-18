@@ -4,7 +4,9 @@ import {
   atMostEvery,
   buildIn,
   memoryShare,
+  memoryVerdict,
   verdict,
+  LOGGED,
   type PagesOptions,
   type Verdict,
 } from './pages.ts';
@@ -24,7 +26,7 @@ interface Stand {
 function pool(
   reuse: boolean,
   max = 2,
-  rules: Pick<PagesOptions<Stand>, 'maxFigures' | 'overMemory' | 'siteBuild'> = {}
+  rules: Pick<PagesOptions<Stand>, 'maxFigures' | 'memory' | 'memoryBound' | 'siteBuild'> = {}
 ) {
   const opened: Stand[] = [];
   const pages = new Pages<Stand>({
@@ -200,18 +202,33 @@ const drawn =
   };
 
 describe('the verdict on a figure the service drew (spec 018 FR-005)', () => {
-  it('holds a page that drew cleanly, and replaces one that reported a browser problem', () => {
+  it('holds a page that drew cleanly, and replaces one with a problem in the page', () => {
     expect(verdict({ movable: true, problems: [] })).toBe('hold');
+    // An uncaught error (`pageerror`), as render-core.ts records it.
     expect(verdict({ movable: true, problems: ['TypeError: x is undefined'] })).toBe('failure');
-    expect(verdict({ movable: true, problems: ['console: Failed to load resource'] })).toBe(
+    // A release file the page asked for and was never answered.
+    expect(verdict({ movable: true, problems: ['files: Error: EIO: i/o error, read'] })).toBe(
       'failure'
     );
   });
 
+  it('holds a page whose figure logged console errors that a fresh page logs too (T015)', () => {
+    // What T009 and T010 replaced pages for, and what a fresh page logs for
+    // the same figures: a 404 for a picture, and a disease reaction's layout.
+    const logged = [
+      `${LOGGED}Failed to load resource: the server responded with a status of 404 ()`,
+      `${LOGGED}Missing graph data for node:  4 . Potential reason could be a wrong normal pathway for a disease`,
+    ];
+    expect(verdict({ movable: true, problems: logged })).toBe('hold');
+    expect(verdict({ movable: false, problems: logged })).toBe('spent');
+    // Logged errors beside one in the page: the page goes.
+    expect(verdict({ movable: true, problems: [...logged, 'Error: boom'] })).toBe('failure');
+  });
+
   it('closes, without counting, a page that no longer holds the render page', () => {
     expect(verdict({ movable: false, problems: [] })).toBe('spent');
-    // A PDF whose figure also reported a problem is a failure all the same.
-    expect(verdict({ movable: false, problems: ['console: boom'] })).toBe('failure');
+    // A PDF whose figure also reported a problem in the page is a failure all the same.
+    expect(verdict({ movable: false, problems: ['Error: boom'] })).toBe('failure');
   });
 });
 
@@ -251,14 +268,28 @@ describe('replacing a held page (spec 018 T006, data-model Replacement)', () => 
     await afterwards(pages, opened, first.page, 'failure');
   });
 
-  it('on a failure: the figure was drawn, with a browser problem', async () => {
+  it('on a failure: the figure was drawn, with an error thrown in the page', async () => {
     const { pages, opened } = pool(true);
     const first = await pages.use(drawn([]), verdict);
     expect(pages.held, 'a clean figure leaves its page held').toBe(1);
-    const second = await pages.use(drawn(['console: something went wrong']), verdict);
+    const second = await pages.use(drawn(['TypeError: something went wrong']), verdict);
     expect(second.page).toBe(first.page);
     expect(second.bytes, 'the figure is still answered').toBe('figure');
     await afterwards(pages, opened, first.page, 'failure');
+  });
+
+  it('not on console errors alone: the page is held, and the next figure moved (T015)', async () => {
+    const { pages, opened } = pool(true);
+    const first = await pages.use(drawn([]), verdict);
+    const second = await pages.use(drawn([`${LOGGED}Missing graph data for node:  4 .`]), verdict);
+    expect(second.page).toBe(first.page);
+    expect(first.page.closed).toBe(false);
+    expect(pages.held).toBe(1);
+    const third = await pages.use(drawn([]), verdict);
+    expect(third.page).toBe(first.page);
+    expect(third.nav).toBeDefined();
+    expect(opened).toHaveLength(1);
+    expect(pages.replaced.failure).toBe(0);
   });
 
   it('on a failure: the page crashed while it was held', async () => {
@@ -328,7 +359,7 @@ describe("a failed figure's answer with held pages is today's (spec 018 US3, 2)"
     const fresh = pool(false);
     const reused = pool(true);
     await reused.pages.use(drawn([]), verdict);
-    const problems = ['console: something went wrong'];
+    const problems = ['TypeError: something went wrong', `${LOGGED}something went wrong`];
     const today = await fresh.pages.use(drawn(problems), verdict);
     const held = await reused.pages.use(drawn(problems), verdict);
     expect(held.nav, 'drawn on a held page').toBeDefined();
@@ -360,22 +391,57 @@ describe('replacing a held page by count, memory and build (spec 018 T007)', () 
     expect(pages.replaced.count).toBe(2);
   });
 
-  it('by memory: a page that drew cleanly is closed while the service is past its bound', async () => {
-    let over = false;
-    const { pages, opened } = pool(true, 1, { overMemory: () => over });
+  it('by memory, past the ceiling: every page that drew cleanly is closed', async () => {
+    let share = 0.4;
+    const { pages, opened } = pool(true, 1, { memory: () => share, memoryBound: 0.5 });
     const first = await pages.use(figure, always);
     expect(pages.held).toBe(1);
-    over = true;
+    // A quarter of the way from the bound to the limit: 0.625.
+    share = 0.63;
     const second = await pages.use(figure, always);
     expect(second.page).toBe(first.page);
     expect(first.page.closed).toBe(true);
     expect(pages.held).toBe(0);
     expect(pages.replaced.memory).toBe(1);
-    over = false;
+    // A page new to its first figure goes too, this close to the limit.
     const third = await pages.use(figure, always);
     expect(third.nav, 'a new page is a full load').toBeUndefined();
-    expect(opened).toHaveLength(2);
+    expect(third.page.closed).toBe(true);
+    expect(pages.replaced.memory).toBe(2);
+    share = 0.4;
+    const fourth = await pages.use(figure, always);
+    expect(opened).toHaveLength(3);
+    expect(fourth.page.closed).toBe(false);
     expect(pages.held).toBe(1);
+  });
+
+  it('by memory, past the bound: not a page new to its first figure (T015)', async () => {
+    const { pages, opened } = pool(true, 1, { memory: () => 0.6, memoryBound: 0.5 });
+    const first = await pages.use(figure, always);
+    // T010's hour: every page replaced after its first figure, none held.
+    expect(first.page.closed).toBe(false);
+    expect(pages.held).toBe(1);
+    // Its second: replaced.
+    const second = await pages.use(figure, always);
+    expect(second.page).toBe(first.page);
+    expect(first.page.closed).toBe(true);
+    expect(pages.replaced.memory).toBe(1);
+    expect(opened).toHaveLength(1);
+  });
+
+  it('by memory, past the bound: one page in each round of figures (T015)', async () => {
+    // Two pages drawn on at once, past the bound throughout.
+    const { pages, opened } = pool(true, 2, { memory: () => 0.6, memoryBound: 0.5 });
+    const closedAfter: number[] = [];
+    for (let round = 0; round < 6; round++) {
+      await Promise.all([pages.use(figure, always), pages.use(figure, always)]);
+      closedAfter.push(pages.replaced.memory);
+    }
+    // Round 1: both new, both held. Then one goes in each round, never both:
+    // T007's rule replaced both in every round, and held none.
+    expect(closedAfter).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(pages.reused).toBe(6);
+    expect(opened).toHaveLength(6);
   });
 
   /** A figure as the service draws one: a full load records the build the page loaded. */
@@ -423,12 +489,34 @@ describe('replacing a held page by count, memory and build (spec 018 T007)', () 
   it('count, memory and build apply only to pages held, never with reuse off', async () => {
     const { pages, opened } = pool(false, 1, {
       maxFigures: 1,
-      overMemory: () => true,
+      memory: () => 0.99,
+      memoryBound: 0.5,
       siteBuild: async () => 'main-NEW.js',
     });
     for (let at = 0; at < 3; at++) await pages.use(loading('main-OLD.js'), always);
     expect(opened).toHaveLength(3);
     expect(pages.replaced).toEqual({ failure: 0, browser: 0, count: 0, memory: 0, build: 0 });
+  });
+});
+
+describe('whether a page goes for memory (spec 018 T015)', () => {
+  const at = (share: number, figures: number, since: number) =>
+    memoryVerdict({ share, bound: 0.5, figures, since, pages: 4 });
+
+  it('not at or under the bound', () => {
+    expect(at(0.5, 50, Infinity)).toBe('hold');
+  });
+
+  it('past the ceiling, a quarter of the way from the bound to the limit: whatever it has drawn', () => {
+    expect(at(0.63, 1, 0)).toBe('memory');
+    expect(at(0.625, 1, 0), 'the ceiling itself is not past it').toBe('hold');
+  });
+
+  it('between them: once it has drawn more than one, and one page in each round of figures', () => {
+    expect(at(0.6, 1, Infinity), 'new to its first figure').toBe('hold');
+    expect(at(0.6, 2, Infinity)).toBe('memory');
+    expect(at(0.6, 2, 3), 'three figures since the last went, of four drawn at once').toBe('hold');
+    expect(at(0.6, 2, 4)).toBe('memory');
   });
 });
 
