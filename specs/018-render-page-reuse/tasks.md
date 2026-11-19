@@ -729,7 +729,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       figures drawn on held pages, then none; 9,644 pages replaced for memory by
       13,110 figures). The share is now the working set, `memory.current` less
       `inactive_file` from `memory.stat`, as the kubelet and `docker stats` count it.
-      Test: T010's reading gives 44%, not 82%; seen failing without the change. (#TBD)
+      Test: T010's reading gives 44%, not 82%; seen failing without the change. (#1014)
 
 ## Dependencies
 
