@@ -476,8 +476,8 @@ describe('serve-prod and requests given up', () => {
     if (dist) await rm(dist, { recursive: true, force: true });
   });
 
-  /** A request to a content-node route, its connection closed after `abortMs`. */
-  function abandoned(id: number, abortMs: number) {
+  /** A request to a content-node route, for the caller to give up on. */
+  function abandoned(id: number) {
     const request = httpGet({
       host: '127.0.0.1',
       port,
@@ -486,15 +486,15 @@ describe('serve-prod and requests given up', () => {
     });
     request.on('error', () => undefined);
     request.on('response', (response) => response.resume());
-    setTimeout(() => request.destroy(), abortMs);
+    return request;
   }
 
-  async function settled(timeoutMs: number) {
+  /** Waits until `done()` holds or `timeoutMs` passes. */
+  async function until(done: () => boolean, timeoutMs: number) {
     const deadline = Date.now() + timeoutMs;
-    while (open > 0 && Date.now() < deadline) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+    while (!done() && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
     }
-    return open;
   }
 
   for (const [when, delay, abortAfter] of [
@@ -506,12 +506,18 @@ describe('serve-prod and requests given up', () => {
     it(`closes the content service's connection when the page gives up ${when}`, async () => {
       delayMs = delay;
       const before = requests;
-      for (let id = 0; id < CLIENTS; id++) abandoned(id, abortAfter);
-      await new Promise((resolve) => setTimeout(resolve, abortAfter + 50));
+      const pages = Array.from({ length: CLIENTS }, (_, id) => abandoned(id));
+      // Give up only once every request has reached the content service: one
+      // given up sooner never reaches it, and proves nothing. On a busy host
+      // that can take longer than the delays below.
+      await until(() => requests - before === CLIENTS, 5_000);
       expect(requests - before, 'the requests reached the content service').toBe(CLIENTS);
+      await new Promise((resolve) => setTimeout(resolve, abortAfter));
+      for (const page of pages) page.destroy();
       // Well after the answers were written: an abandoned request's connection
       // is closed, not held with its answer unread.
-      expect(await settled(delay + 3_000), 'connections still open').toBe(0);
+      await until(() => open === 0, delay + 3_000);
+      expect(open, 'connections still open').toBe(0);
     }, 15_000);
   }
 
