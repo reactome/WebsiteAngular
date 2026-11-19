@@ -529,6 +529,35 @@ describe("the service's memory (spec 018 T007, research R4)", () => {
     expect(memoryShare(container, '/')).toBe(0.5);
   });
 
+  it('leaves out the inactive file cache, which the kernel reclaims first (T019)', () => {
+    // T010's re-run, as the container read it: 82% in use, 44% without the cache.
+    const container = files({
+      '/memory.max': '3221225472\n',
+      '/memory.current': '2652569600\n',
+      '/memory.stat':
+        'anon 1175916544\nfile 1384828928\ninactive_file 1238282240\nactive_file 3784704\n',
+    });
+    expect(memoryShare(container)).toBeCloseTo(0.439, 3);
+    // Only the nearest limit's own group is read for its cache.
+    const unit = files({
+      '/user.slice/render.service/memory.stat': 'inactive_file 900\n',
+      '/user.slice/memory.max': '1000\n',
+      '/user.slice/memory.current': '500\n',
+      '/user.slice/memory.stat': 'active_file 400\ninactive_file 250\n',
+    });
+    expect(memoryShare(unit, '/user.slice/render.service')).toBe(0.25);
+    // Never below nothing, should the two be read a moment apart.
+    expect(
+      memoryShare(
+        files({
+          '/memory.max': '1000\n',
+          '/memory.current': '100\n',
+          '/memory.stat': 'inactive_file 200\n',
+        })
+      )
+    ).toBe(0);
+  });
+
   it('is measured against the nearest limit, from its own group up', () => {
     const unit = files({
       '/user.slice/render.service/memory.max': 'max\n',
