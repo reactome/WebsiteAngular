@@ -694,6 +694,16 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       back, the diagram was ready as soon). Decide whether the render service blocks or
       answers them locally, so a release's figures step sends no load outside; if
       blocked, prove the figures are unchanged.
+- [x] T019 The memory rule read the container's file cache as pages' memory. The
+      share it compares with the bound is `memory.current` against `memory.max`, and
+      `memory.current` counts the file cache: the figures written to the service's cache
+      and the files it reads. In T010's re-run the container read 82% full (2.65 of
+      3 GiB), 1.24 GiB of it inactive file cache, a working set of 44%: past T015's
+      ceiling, so from its first hour every page was replaced after its figure (3,466
+      figures drawn on held pages, then none; 9,644 pages replaced for memory by
+      13,110 figures). The share is now the working set, `memory.current` less
+      `inactive_file` from `memory.stat`, as the kubelet and `docker stats` count it.
+      Test: T010's reading gives 44%, not 82%; seen failing without the change. (#TBD)
 
 ## Dependencies
 
@@ -707,6 +717,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
-- T010 is run again after T015, with #1006 deployed, and ticked on that run.
+- T010 is run again after T015, with #1006 deployed, and ticked on that run; its
+  first re-run measured T019's fault, so it runs once more after T019.
 - T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.
