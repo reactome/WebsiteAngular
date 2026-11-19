@@ -83,7 +83,7 @@
     "@swissprot/rhea-reaction-viz-test": "^0.0.25",
     "angular-split": "^20.0.0",
     "canvas-to-svg": "^1.0.3",
-    "chroma-js": "^3.1.2",
+    "chroma-js": "^3.3.0",
     "cytoscape": "git+https://github.com/reactome/cytoscape.js.git#svg-export-dist",
     "cytoscape-fcose": "^2.2.0",
     "cytoscape-layers": "^3.0.0",
