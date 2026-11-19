@@ -579,6 +579,32 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     constantly (7,715 replacements); the failure rule replaces a page on any console
     error, which fresh pages log too (404s for pictures, "Missing graph data for node"),
     as T009 found (1,278). T015.
+  - **Re-run, 18–19 Nov 2026,** after T015 with #1006 deployed: main at `c076ccd`
+    (T015's rules: `RENDER_REUSE_MEMORY` 0.5, its ceiling), the same container settings,
+    the step with `--parallel 4`, then the same build with `RENDER_REUSE=off`.
+    - **Both complete, nothing missing or failed:** 19,076 of 19,076 figures each, health
+      `failed` 0. Reuse on: **4 h 15 min 22 s**; off: **5 h 52 min 59 s** (the off run
+      matches T031's 5 h 47 min). On took 27% less.
+    - **Identical:** every one of the 19,076 figures is byte-identical between the two runs
+      (sha256 of each file; SC-003 at full scale).
+    - **But reuse mostly stopped (T019):** `reused` 3,893, `replaced.memory` 15,170, the
+      other reasons 0. From about an hour into the run every page was replaced for memory
+      after its figure: the memory share counted the container's file cache (1.24 GiB of
+      inactive file cache, an 82% reading for a 44% working set). So this run measures
+      T019's fault, not the rules.
+    - **Per figure, medians from the render log** (fresh against held; different figures):
+      reaction 3.4 s and 0.5 s (12,963 and 3,224), diagram 5.0 and 2.6 s, illustration
+      3.3 and 0.7 s. In the off run: reaction 3.9 s, diagram 5.7 s, illustration 3.3 s.
+    - **Peak memory** (`memory.peak`) reached the 3 GiB limit in both runs, the file cache
+      included, as `memory.current` does; no figure failed.
+    - **Projected with reuse working:** with every figure on a held page at this run's
+      held means (reaction 0.64 s, diagram 2.89 s, illustration 0.94 s), the book's
+      figures sum to about 18,200 s, about 1 h 16 min at four at once, against the same
+      sum from the off run's means (82,700 s, 5 h 45 min; measured 5 h 53 min). Not a
+      result: SC-001 is shown by T010's next run, after T019.
+    - **SC-001: not met as measured** (4 h 15 min against 2 h 54 min). **SC-002: met for
+      reactions** (0.5 s held, 3.4 s fresh). **SC-004: met** (no failure, no page past
+      its count).
 - [x] T015 [US4] Tune the replacement rules (#1008).
   - **Memory:** the share judged per page (the container's share divided by the pages
     held), or a higher share, measured against the 3 GB limit so that SC-004 still holds.
@@ -694,6 +720,16 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       back, the diagram was ready as soon). Decide whether the render service blocks or
       answers them locally, so a release's figures step sends no load outside; if
       blocked, prove the figures are unchanged.
+- [x] T019 The memory rule read the container's file cache as pages' memory. The
+      share it compares with the bound is `memory.current` against `memory.max`, and
+      `memory.current` counts the file cache: the figures written to the service's cache
+      and the files it reads. In T010's re-run the container read 82% full (2.65 of
+      3 GiB), 1.24 GiB of it inactive file cache, a working set of 44%: past T015's
+      ceiling, so from its first hour every page was replaced after its figure (3,466
+      figures drawn on held pages, then none; 9,644 pages replaced for memory by
+      13,110 figures). The share is now the working set, `memory.current` less
+      `inactive_file` from `memory.stat`, as the kubelet and `docker stats` count it.
+      Test: T010's reading gives 44%, not 82%; seen failing without the change. (#1014)
 
 ## Dependencies
 
@@ -707,6 +743,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T012 before T009.
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
-- T010 is run again after T015, with #1006 deployed, and ticked on that run.
+- T010 is run again after T015, with #1006 deployed, and ticked on that run; its
+  first re-run measured T019's fault, so it runs once more after T019.
 - T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.

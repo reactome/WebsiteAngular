@@ -317,11 +317,20 @@ async function discard(page: Closable): Promise<void> {
 }
 
 /**
- * The share of its memory limit the service uses, from its cgroup (v2:
- * `memory.current` against `memory.max`): the nearest limit, from the
- * process's own group up, as one set on its container or its unit. Undefined
- * with no limit to read, and then only the count applies. `read` reads a file
- * beneath the cgroup root; `group` is the process's own (`/` in a container).
+ * The share of its memory limit the service uses, from its cgroup (v2): its
+ * working set, `memory.current` less the inactive file cache in `memory.stat`,
+ * against `memory.max`. The nearest limit is used, from the process's own
+ * group up, as one set on its container or its unit. Undefined with no limit
+ * to read, and then only the count applies. `read` reads a file beneath the
+ * cgroup root; `group` is the process's own (`/` in a container).
+ *
+ * `memory.current` counts the file cache too: the figures the service writes
+ * to its cache, and the files it reads, stay there until the kernel needs the
+ * memory. In T010's re-run the cache held 1.2 of the container's 3 GiB, so the
+ * container read 82% full with a working set of 44%, and from its first hour
+ * every page was replaced after its figure (T019). Inactive file cache is the
+ * first memory the kernel reclaims; the working set is what the kubelet and
+ * `docker stats` count, for the same reason.
  */
 export function memoryShare(
   read: (file: string) => string | undefined,
@@ -332,7 +341,11 @@ export function memoryShare(
     const max = Number(read(`${dir}/memory.max`)?.trim());
     if (Number.isFinite(max) && max > 0) {
       const current = Number(read(`${dir}/memory.current`)?.trim());
-      return Number.isFinite(current) ? current / max : undefined;
+      if (!Number.isFinite(current)) return undefined;
+      const cache = Number(
+        /^inactive_file (\d+)$/m.exec(read(`${dir}/memory.stat`) ?? '')?.[1] ?? 0
+      );
+      return Math.max(0, current - cache) / max;
     }
     if (!dir) return undefined;
   }
