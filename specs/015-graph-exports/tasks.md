@@ -228,6 +228,15 @@ Both exporters' adoption pull requests found that their own checks do not run ye
   - the bodies compared with today's files (T004) by `compare.py`, every difference one recorded in `sbml-exporter`'s `differences.md`;
   - Signal Transduction's time, cold and cached, and the service's memory with two such conversions at once (its heap is 1 GiB);
   - the download button on a pathway page.
+  - **Again on 20 Nov 2026, with the pin moved to `172869d`** (sbml-exporter's `graph-only` with
+    #109: a reaction's curated cross-references only, sbml-exporter#36), through beta's own nginx,
+    the sample's 30 ids one at a time: 30 files, all valid. Against today's files (T004), 22 are
+    identical and 8 differ by 160 entries, every one a recorded kind: the same files and counts as
+    sbml-exporter's own run of the sample (its SC-002, #110). No cross-reference differs.
+    Signal Transduction's cold conversion passed the 290 s limit (a 503 at 290 s) while the host
+    was running a pre-push check; the conversion finished behind it and the next request was
+    answered from the cache in 0.2 s, identical to the command line's file. Disease took 286 s.
+    Cold times this close to the limit are a known risk on a loaded host (T067's first run: 166 s).
 - [ ] T068 [US1] SBML for the release and production: move the location from `dev.conf` into `routes.conf` (as #667 had it), so `release.conf` and `production.conf` route it too, once FR-009's open differences are settled and those deployments run the SBML service. `routes.spec.ts` then drops both endpoints from `NOT_YET_ROUTED`, and its "SBML, on beta alone" block becomes every deployment's.
 
 **FR-009 on beta (decided 25 Oct 2026):** beta switches once the comparison over the whole sample is complete, every difference recorded and every file valid. The differences still open there (the cross-references asked in sbml-exporter#36, and the EC numbers in graph-importer#9) are settled before the release's files or a production site switch, not before beta, which is where the team looks at them.
