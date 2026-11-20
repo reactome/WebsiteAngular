@@ -492,7 +492,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
         it is ready, and an expression sample's images before its frame is taken
         (`render/background-images.ts`; still loading after 20 s is the figure's
         error). Test: a wait for three images ends only with the last; seen failing
-        with a wait for the first only.
+        with a wait for the first only (#1022).
   - **The other formats (SC-003), 24 requests each,** of every kind but the GIF overview
     (a GIF of the genome-wide view fails, fresh as held):
     - **What varies by itself,** each drawn twice on fresh pages (`--mode fresh`, 120 drawn
