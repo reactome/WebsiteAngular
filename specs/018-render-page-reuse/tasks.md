@@ -744,7 +744,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       figures already in the cache: 213.6 s before (6.99 s a figure, as logged), 33.0 s
       after (0.98 s). Test: the folder is read once for three writes, a replaced file's
       size comes off, every so many writes it is read again, an eviction's total is
-      kept; each fails when the folder is read on every write. (#TBD)
+      kept; each fails when the folder is read on every write. (#1018)
   - **T010's third run (19–20 Nov, T019 in, reuse on):** complete, 19,076 figures, no
     failures, 4 h 18 min; every figure byte-identical to the second run's. Reuse held:
     14,529 figures on held pages (76%), 4,531 replaced for memory. Not faster, because
