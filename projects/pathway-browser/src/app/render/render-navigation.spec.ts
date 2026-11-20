@@ -165,6 +165,18 @@ describe('pageBuild', () => {
     expect(pageBuild(page('<script src="/main.js" type="module"></script>'))).toBe('main.js');
   });
 
+  it('names the stylesheet after the script, as the service reads the site (buildIn)', () => {
+    expect(
+      pageBuild(
+        page(
+          '<link rel="stylesheet" href="styles-Y6RZ6DMA.css" media="print">' +
+            '<link rel="stylesheet" href="https://fonts.example/css2.css">' +
+            '<script src="main-V3Q3PHGE.js" type="module"></script>'
+        )
+      )
+    ).toBe('main-V3Q3PHGE.js styles-Y6RZ6DMA.css');
+  });
+
   it('is null with no main script', () => {
     expect(pageBuild(page('<script src="mainly-ABC.js"></script>'))).toBeNull();
   });

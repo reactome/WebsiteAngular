@@ -45,6 +45,7 @@ import { installRenderNavigate, pageBuild } from './render-navigation';
 import { currentRenderNav } from './render-reuse-strategy';
 import { startAsFresh } from './start-as-fresh';
 import { settleViewport } from './settle-viewport';
+import { backgroundImages, whenLoaded } from './background-images';
 import { loadFamily } from './label-font';
 import type * as Analysis from '../model/analysis.model';
 
@@ -376,6 +377,16 @@ export class RenderComponent {
             return;
           }
         }
+        // The nodes' background images (an analysis's colouring among them)
+        // load after the nodes are drawn, and the export leaves out any still
+        // loading (spec 018 T009).
+        if (!(await this.imagesLoaded())) {
+          if (this.destroyed()) return;
+          this.error.set(`the images of ${pathway ?? 'the figure'} did not load`);
+          this.publish();
+          return;
+        }
+        if (this.destroyed()) return;
         // Fonts change text metrics, so a diagram drawn before they load is
         // not the diagram the site shows.
         await document.fonts.ready;
@@ -707,7 +718,18 @@ export class RenderComponent {
    */
   private async showSample(name: string) {
     this.state.sample.set(name);
+    // One frame for the effect to set the sample's colouring, then its images,
+    // which load as any background image does, then the paint.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    if (!(await this.imagesLoaded())) throw new Error(`the images of sample ${name} did not load`);
     await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  }
+
+  /** Whether every background image of the figure's graphs has loaded (or failed). */
+  private imagesLoaded(): Promise<boolean> {
+    const reaction = this.reaction()?.core();
+    const graphs = reaction ? [reaction] : (this.diagram()?.cys.filter(Boolean) ?? []);
+    return whenLoaded(graphs.flatMap((cy) => backgroundImages(cy)));
   }
 
   /**

@@ -352,16 +352,28 @@ export function memoryShare(
 }
 
 /**
- * The site's build in the render page's HTML: the name of its main script
- * (`main-{hash}.js`), as the page itself reports it (`pageBuild` in the site's
- * render-navigation.ts). Null when there is none.
+ * The site's build in the render page's HTML: the names of its main script
+ * (`main-{hash}.js`) and, after a space, its stylesheet (`styles-{hash}.css`),
+ * as the page itself reports them (`pageBuild` in the site's
+ * render-navigation.ts). The stylesheet is part of it: the diagram's colours
+ * are its custom properties, and a change to them alone leaves the script's
+ * name as it was (review of 20 Nov). Null with no main script.
  */
 export function buildIn(html: string): string | null {
-  for (const [, src = ''] of html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)) {
-    const name = src.split(/[?#]/)[0]?.split('/').pop() ?? '';
-    if (/^main(-[A-Za-z0-9]+)?\.js$/.test(name)) return name;
-  }
-  return null;
+  const named = (pattern: RegExp, tag: RegExp): string | null => {
+    for (const [, src = ''] of html.matchAll(tag)) {
+      const name = src.split(/[?#]/)[0]?.split('/').pop() ?? '';
+      if (pattern.test(name)) return name;
+    }
+    return null;
+  };
+  const main = named(/^main(-[A-Za-z0-9]+)?\.js$/, /<script\b[^>]*\bsrc=["']([^"']+)["']/gi);
+  if (!main) return null;
+  const styles = named(
+    /^styles(-[A-Za-z0-9]+)?\.css$/,
+    /<link\b[^>]*\brel=["']?stylesheet["']?[^>]*\bhref=["']([^"']+)["']/gi
+  );
+  return styles ? `${main} ${styles}` : main;
 }
 
 /**

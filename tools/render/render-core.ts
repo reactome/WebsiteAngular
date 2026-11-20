@@ -60,6 +60,19 @@ const MIN_SHAPE_BYTES = 4000;
  * The URL of the render page for a pathway. Omit the pathway for the
  * genome-wide view.
  */
+/**
+ * A render address as the app routes it: its path from the site's root, and
+ * its query. Read from the address as a URL rather than cut by the length the
+ * base was given at: a URL normalises its base (a default port dropped,
+ * escapes), and such a cut moved a held page nowhere (review of 20 Nov). A base
+ * with a path of its own (the site under a prefix) has it taken off.
+ */
+export function inAppAddress(address: string, base: string): string {
+  const { pathname, search } = new URL(address);
+  const root = new URL(base).pathname.replace(/\/$/, '');
+  return (pathname.startsWith(root) ? pathname.slice(root.length) : pathname) + search;
+}
+
 function renderUrl({
   base,
   pathway,
@@ -244,7 +257,7 @@ export async function render(
       await page.goto(address, { waitUntil: 'load', timeout });
     } else {
       // The same address, as the app routes it: from the site's root.
-      const inApp = address.slice(base.replace(/\/$/, '').length);
+      const inApp = inAppAddress(address, base);
       const moved = await page.evaluate(
         async ([to, id]) => (await window.__renderNavigate?.(to, id)) ?? false,
         [inApp, nav] as const
