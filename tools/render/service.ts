@@ -698,9 +698,19 @@ app.get('/health', (_req, res) => {
   } satisfies RenderHealth);
 });
 
+/** A name the route takes: letters, digits, `.`, `_` and `-`, and not dots alone. */
+export const NAME = /^(?!\.+$)[\w.-]+$/;
+
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
 const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Response) => {
   const { name, ext } = req.params;
+  // An identifier, or the genome-wide view: Express has decoded the name, and
+  // a `/` or `?` in it would reach the content service's path and the render
+  // page's query past every check below (review of 20 Nov). Answered as an id
+  // that is not there.
+  if (!NAME.test(name)) {
+    return refuse(res, 404, { error: `no such pathway: ${name}` });
+  }
   // `jpg` is the same picture under the name Java's enum also accepts, so a
   // caller moved from that endpoint keeps whichever spelling they already use.
   const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
