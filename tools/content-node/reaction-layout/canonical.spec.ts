@@ -89,3 +89,45 @@ describe("the comparison's canonical form", () => {
     }
   });
 });
+
+describe('the canonical order of compartments with and without an id (review of 20 Nov)', () => {
+  const compartment = (id: number, reactomeId: number | undefined, x: number) => ({
+    id,
+    ...(reactomeId === undefined ? {} : { reactomeId }),
+    renderableClass: 'Compartment',
+    position: { x, y: 0 },
+    componentIds: [],
+  });
+  // A < B by place, B < C by place, C < A by id: a cycle while a missing id tied
+  const a = compartment(1, 5, 0);
+  const b = compartment(2, undefined, 50);
+  const c = compartment(3, 3, 100);
+
+  it('is one order whatever order the compartments come in', () => {
+    const orders = [
+      [a, b, c],
+      [b, c, a],
+      [c, a, b],
+      [c, b, a],
+      [a, c, b],
+      [b, a, c],
+    ];
+    const graph: CanonicalGraph = { nodes: [], edges: [] };
+    const ids = (compartments: CanonicalDiagram['compartments']) =>
+      JSON.stringify(compartments.map((one) => one.reactomeId ?? null));
+    const results = new Set(
+      orders.flatMap((compartments) => {
+        const diagram: CanonicalDiagram = { compartments, nodes: [], edges: [], links: [] };
+        const theirs = site(
+          diagram as unknown as Parameters<typeof site>[0],
+          graph as unknown as Parameters<typeof site>[1]
+        );
+        return [
+          ids(copy(diagram, graph).diagram.compartments),
+          ids(theirs.diagram.compartments as unknown as CanonicalDiagram['compartments']),
+        ];
+      })
+    );
+    expect([...results]).toEqual(['[null,3,5]']);
+  });
+});

@@ -41,6 +41,19 @@ describe("the download guard, as Spring's", () => {
     ).toBe('attachment; filename="R-HSA-69620.sbgn"');
   });
 
+  it("keeps an answer's own Content-Disposition on a path no pattern trusts", async () => {
+    // The test above's path is one a mapping's pattern trusts anyway, so it
+    // passed without the check for the answer's own header (review of 20 Nov).
+    expect(
+      await disposition('/ContentService/data/query/R-HSA-69620.biopax', {
+        status: 200,
+        type: 'application/xml',
+        body: '<rdf/>',
+        headers: { 'Content-Disposition': 'attachment; filename="R-HSA-69620.biopax"' },
+      })
+    ).toBe('attachment; filename="R-HSA-69620.biopax"');
+  });
+
   it('marks a body without one inline f.txt on an untrusted extension', async () => {
     expect(
       await disposition('/ContentService/data/query/R-HSA-69620.sbgn', {

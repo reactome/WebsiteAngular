@@ -613,7 +613,15 @@ export async function sbgnAnswer(
       console.error(`SBGN for ${event.stId}: no diagram file for ${diagramStId ?? 'it'}`);
       return failed();
     }
-    layout = JSON.parse(text);
+    try {
+      layout = JSON.parse(text);
+    } catch (error) {
+      // As a missing file is: the download's name and the reason logged.
+      console.error(
+        `SBGN for ${event.stId}: ${diagramStId ?? 'its'} diagram file is not JSON: ${String(error)}`
+      );
+      return failed();
+    }
   } else {
     // The reaction layout's answer is written as Java's NON_EMPTY mapper
     // writes it, an empty list left out; Java's converter read the object,

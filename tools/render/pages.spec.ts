@@ -590,6 +590,18 @@ describe("the site's build (spec 018 T007, research R3)", () => {
     expect(buildIn('<script src="domain-main-X1.js"></script><p>main-X2.js</p>')).toBeNull();
   });
 
+  it('names the stylesheet beside it, whose colours a script name does not show', () => {
+    const page = (styles: string) =>
+      `<link rel="stylesheet" href="${styles}" media="print" onload="this.media='all'">` +
+      `<noscript><link rel="stylesheet" href="${styles}"></noscript>` +
+      '<script src="main-V3Q3PHGE.js" type="module"></script>';
+    expect(buildIn(page('styles-Y6RZ6DMA.css'))).toBe('main-V3Q3PHGE.js styles-Y6RZ6DMA.css');
+    // a deploy that changed only the colours is a different build
+    expect(buildIn(page('styles-NEW00000.css'))).not.toBe(buildIn(page('styles-Y6RZ6DMA.css')));
+    // another stylesheet is not the site's
+    expect(buildIn(page('https://fonts.example/css2.css'))).toBe('main-V3Q3PHGE.js');
+  });
+
   it('is read at most once a minute, and again after a minute', async () => {
     let clock = 0;
     let reads = 0;

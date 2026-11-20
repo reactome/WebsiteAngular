@@ -56,9 +56,20 @@ export interface CanonicalGraph {
 
 const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
 
-/** Two reactomeIds compared; a tie where either is missing. */
+/**
+ * Two reactomeIds compared, a missing one first. A tie where either was missing
+ * made the order depend on the order the compartments came in (a GO-tree
+ * compartment between two real ones: A < B, B < C, C < A), which is what this
+ * form is for undoing (review of 20 Nov).
+ */
 const byReactomeId = (a: Placed, b: Placed) =>
-  a.reactomeId === undefined || b.reactomeId === undefined ? 0 : a.reactomeId - b.reactomeId;
+  a.reactomeId === undefined
+    ? b.reactomeId === undefined
+      ? 0
+      : -1
+    : b.reactomeId === undefined
+      ? 1
+      : a.reactomeId - b.reactomeId;
 
 export function canonicalReaction<D extends CanonicalDiagram, G extends CanonicalGraph>(
   answered: D,

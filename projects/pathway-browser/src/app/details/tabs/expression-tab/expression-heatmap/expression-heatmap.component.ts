@@ -97,12 +97,14 @@ export class ExpressionHeatmapComponent implements OnDestroy {
       .map((row, i) => ({ row, index: this.first() + i }))
   );
 
-  readonly hovered = linkedSignal<ExpressionHeatmapAnswer, GridCell | null>({
-    source: this.answer,
+  // A cell is a row's index in `rows`, so a new order drops it as a new answer
+  // does: kept, it named whichever gene the re-sort put there (review of 20 Nov).
+  readonly hovered = linkedSignal<readonly ExpressionRow[], GridCell | null>({
+    source: this.rows,
     computation: () => null,
   });
-  readonly focused = linkedSignal<ExpressionHeatmapAnswer, GridCell | null>({
-    source: this.answer,
+  readonly focused = linkedSignal<readonly ExpressionRow[], GridCell | null>({
+    source: this.rows,
     computation: () => null,
   });
   /** The cell the details describe: the pointer's, else the keyboard's. */
@@ -162,7 +164,8 @@ export class ExpressionHeatmapComponent implements OnDestroy {
     link.href = URL.createObjectURL(new Blob([text], { type: 'text/tab-separated-values' }));
     link.download = expressionFileName(answer, selection);
     link.click();
-    URL.revokeObjectURL(link.href);
+    // Not at once: a browser may still be starting the download from it.
+    setTimeout(() => URL.revokeObjectURL(link.href), 60_000);
   }
 
   onScroll(event: Event) {

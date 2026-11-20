@@ -218,6 +218,23 @@ describe('the cache key', () => {
 });
 
 describe('the request handler runs at all', () => {
+  it('refuses a name that is not an identifier before anything is asked of the content service', async () => {
+    // Express decodes the name: %2F and %3F would reach the content service's
+    // path and the render page's query (review of 20 Nov)
+    const fetched = vi.spyOn(globalThis, 'fetch');
+    try {
+      for (const name of ['..%2F..%2Fsecret', 'R-HSA-1%3Fselect%3DR-HSA-2', '..', 'a%20b']) {
+        const response = await fetch(`${base}/render/${name}.svg`);
+        expect(response.status, name).toBe(404);
+        expect((await json(response)).error, name).toMatch(/^no such pathway: /);
+      }
+      // only the test's own requests: the handler fetched nothing
+      expect(fetched.mock.calls.every(([url]) => String(url).startsWith(base))).toBe(true);
+    } finally {
+      fetched.mockRestore();
+    }
+  });
+
   it('refuses an unknown parameter instead of throwing', async () => {
     const response = await fetch(`${base}/render/R-HSA-109606.png?bogus=1`);
     expect(response.status).toBe(400);

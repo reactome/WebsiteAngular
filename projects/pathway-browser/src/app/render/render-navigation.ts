@@ -66,14 +66,21 @@ export function installRenderNavigate(router: Router): void {
 
 /**
  * The page's build: its main script's name, which the production build
- * content-hashes (`main-{hash}.js`). The service compares it with the name the
- * site serves now; a held page whose build is not the site's would draw the
- * old code's figures (research R3). Null when no such script is found.
+ * content-hashes (`main-{hash}.js`), and after a space its stylesheet's
+ * (`styles-{hash}.css`), whose custom properties are the diagram's colours.
+ * The service compares it with what the site serves now (`buildIn`); a held
+ * page whose build is not the site's would draw the old code's or the old
+ * colours' figures (research R3). Null when no main script is found.
  */
 export function pageBuild(doc: Document = document): string | null {
-  for (const script of Array.from(doc.querySelectorAll<HTMLScriptElement>('script[src]'))) {
-    const name = new URL(script.src, doc.baseURI).pathname.split('/').pop() ?? '';
-    if (/^main(-[A-Za-z0-9]+)?\.js$/.test(name)) return name;
-  }
-  return null;
+  const nameOf = (address: string): string =>
+    new URL(address, doc.baseURI).pathname.split('/').pop() ?? '';
+  const main = Array.from(doc.querySelectorAll<HTMLScriptElement>('script[src]'))
+    .map((script) => nameOf(script.getAttribute('src') ?? ''))
+    .find((name) => /^main(-[A-Za-z0-9]+)?\.js$/.test(name));
+  if (!main) return null;
+  const styles = Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]'))
+    .map((link) => nameOf(link.getAttribute('href') ?? ''))
+    .find((name) => /^styles(-[A-Za-z0-9]+)?\.css$/.test(name));
+  return styles ? `${main} ${styles}` : main;
 }
