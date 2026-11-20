@@ -474,7 +474,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
         0.018 each time. Now the render page ends any viewport animation at its end
         before it is ready (`render/settle-viewport.ts`; a view that will not settle is
         the figure's error). Test: a fit of 60 frames ends in one; seen failing without
-        the stop.
+        the stop (#1020).
       - `R-HSA-9674403.svg?highlight=R-HSA-9674408` after its dark version (pairs 1).
         Drawn again it differed once (after the plain diagram) in 6 runs and matched in
         5 direct draws on a held page: intermittent.
