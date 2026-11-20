@@ -89,3 +89,39 @@ describe("the comparison's canonical form", () => {
     }
   });
 });
+
+describe('the canonical order of compartments with and without an id (review of 20 Nov)', () => {
+  const compartment = (id: number, reactomeId: number | undefined, x: number) => ({
+    id,
+    ...(reactomeId === undefined ? {} : { reactomeId }),
+    renderableClass: 'Compartment',
+    position: { x, y: 0 },
+    componentIds: [],
+  });
+  // A < B by place, B < C by place, C < A by id: a cycle while a missing id tied
+  const a = compartment(1, 5, 0);
+  const b = compartment(2, undefined, 50);
+  const c = compartment(3, 3, 100);
+
+  it('is one order whatever order the compartments come in', () => {
+    for (const canonical of [site, copy]) {
+      const results = new Set(
+        [
+          [a, b, c],
+          [b, c, a],
+          [c, a, b],
+          [c, b, a],
+          [a, c, b],
+          [b, a, c],
+        ].map((compartments) => {
+          const { diagram } = canonical(
+            { compartments, nodes: [], edges: [], links: [] },
+            { nodes: [], edges: [] }
+          );
+          return JSON.stringify(diagram.compartments.map((one) => one.reactomeId ?? null));
+        })
+      );
+      expect([...results]).toEqual(['[null,3,5]']);
+    }
+  });
+});

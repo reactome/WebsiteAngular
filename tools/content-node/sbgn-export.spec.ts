@@ -10,7 +10,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterAll, afterEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, describe, expect, it, vi } from 'vitest';
 import { toSbgn } from 'sbgn-exporter';
 import {
   eventExportAnswer,
@@ -154,6 +154,23 @@ describe('an event’s SBGN', () => {
       ['Something unexpected happened and the error has been reported.'],
     ]);
     expect(a.headers).toEqual({ 'Content-Disposition': 'attachment; filename="R-HSA-4.sbgn"' });
+  });
+
+  it('answers a diagram file that is not JSON as a missing one: its 500, the download named', async () => {
+    // A truncated file threw out of the handler: the bare 500, without the
+    // download's name or the reason logged (review of 20 Nov).
+    const broken: SbgnLayouts = { ...layouts(files), diagramFile: async () => '{"nodes": [' };
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const a = await sbgnAnswer(request('R-HSA-1.sbgn'), find, broken);
+      expect(envelope(a)[0]).toBe(500);
+      expect(a.headers).toEqual({ 'Content-Disposition': 'attachment; filename="R-HSA-1.sbgn"' });
+      expect(String(logged.mock.calls[0]?.[0])).toMatch(
+        /^SBGN for R-HSA-1: R-HSA-1 diagram file is not JSON/
+      );
+    } finally {
+      logged.mockRestore();
+    }
   });
 
   it('is a 503 for a pathway when no diagram folder is set, never another implementation', async () => {

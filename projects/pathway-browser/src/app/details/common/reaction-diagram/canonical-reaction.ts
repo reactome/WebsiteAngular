@@ -4,12 +4,19 @@ import { Diagram, EdgeConnector, Entity } from '../../../model/diagram.model';
 type Placed = Pick<Entity, 'position' | 'renderableClass'> & Partial<Pick<Entity, 'reactomeId'>>;
 
 /**
- * Two reactomeIds compared; a tie where either is missing. (Subtracting a
- * missing one gave NaN, which sort takes as a tie, before the type said it
- * could be missing: kept, so the canonical form does not change.)
+ * Two reactomeIds compared, a missing one first. A tie where either was missing
+ * made the order depend on the order the compartments came in (a GO-tree
+ * compartment between two real ones: A < B, B < C, C < A), which is what this
+ * form is for undoing (review of 20 Nov).
  */
 const byReactomeId = (a: Placed, b: Placed) =>
-  a.reactomeId === undefined || b.reactomeId === undefined ? 0 : a.reactomeId - b.reactomeId;
+  a.reactomeId === undefined
+    ? b.reactomeId === undefined
+      ? 0
+      : -1
+    : b.reactomeId === undefined
+      ? 1
+      : a.reactomeId - b.reactomeId;
 import type * as Graph from '../../../model/graph.model';
 
 const CONNECTOR_LISTS = ['inputs', 'outputs', 'catalysts', 'inhibitors', 'activators'] as const;
