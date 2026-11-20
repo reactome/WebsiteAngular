@@ -731,6 +731,26 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       `inactive_file` from `memory.stat`, as the kubelet and `docker stats` count it.
       Test: T010's reading gives 44%, not 82%; seen failing without the change. (#1014)
 
+- [x] T020 The render service slowed through every run of the book, held pages or fresh:
+      a reaction of 8 to 14 elements took 2.75 s at the start of T010's reuse-off run and
+      about 5.8 s near its end, and held reactions slowed from 0.66 s to 4.6 s in its
+      third run. **Cause:** after every write the cache was measured by listing its
+      folder and reading each file's size (`evict`), a stat per cached figure, on the
+      event loop that also answers the page's requests and while the page was still
+      held. Timed on this host: one such scan 96 ms at 1,000 files, 741 ms at 5,000,
+      2.7 s at 19,000. **Now** the cache keeps a running total (`cache-total.ts`): the
+      folder is read once, again every 1,000 writes, and by an eviction, which sets the
+      total it leaves. **Measured:** the same 120 reactions, 4 at once, with 19,000
+      figures already in the cache: 213.6 s before (6.99 s a figure, as logged), 33.0 s
+      after (0.98 s). Test: the folder is read once for three writes, a replaced file's
+      size comes off, every so many writes it is read again, an eviction's total is
+      kept; each fails when the folder is read on every write. (#1018)
+  - **T010's third run (19–20 Nov, T019 in, reuse on):** complete, 19,076 figures, no
+    failures, 4 h 18 min; every figure byte-identical to the second run's. Reuse held:
+    14,529 figures on held pages (76%), 4,531 replaced for memory. Not faster, because
+    of this task's fault: every kind slowed through the run (reaction held 0.67 s in its
+    first 2,000 figures, 4.1 s by its 16,000th). T010 runs again after this task.
+
 ## Dependencies
 
 - T001 gates everything.
@@ -744,6 +764,6 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 - T013 at any time; it gates pdf-export's spec 002 T019 and T020.
 - T009 needs T004, T008 and T012, and T010 needs T009.
 - T010 is run again after T015, with #1006 deployed, and ticked on that run; its
-  first re-run measured T019's fault, so it runs once more after T019.
+  first re-run measured T019's fault and its second T020's, so it runs once more after T020.
 - T014 (found by T009) before T009's switch of the default.
 - T003 and T005 can run in parallel.
