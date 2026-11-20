@@ -22,7 +22,7 @@ existing contract: `data-render-ready`, `data-render-error`, `window.__renderSta
 
 ## `__renderState` additions
 
-| Field   | Meaning                                                                                                                                                                  |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `nav`   | the `nav` this figure was navigated with; absent on a full load                                                                                                          |
-| `build` | the name of the page's main script (`main-{hash}.js`, content-hashed by the production build), which the service compares with the one the site serves now (research R3) |
+| Field   | Meaning                                                                                                                                                                                                                                                                                                                         |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nav`   | the `nav` this figure was navigated with; absent on a full load                                                                                                                                                                                                                                                                 |
+| `build` | the name of the page's main script (`main-{hash}.js`, content-hashed by the production build) and, after a space, of its stylesheet (`styles-{hash}.css`, whose custom properties are the diagram's colours), which the service compares with what the site serves now (research R3; the stylesheet since the review of 20 Nov) |

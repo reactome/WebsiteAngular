@@ -40,9 +40,10 @@ export type Published = {
  * `window.__renderState`: whether the page is ready, and what it drew if it has.
  *
  * `nav` is the id the figure was moved to with `__renderNavigate`, absent on a
- * full load. `build` is the page's main script's name (`main-{hash}.js`), by
- * which a caller holding the page tells it from a newer build of the site;
- * null where the page cannot find it.
+ * full load. `build` is the page's main script's name (`main-{hash}.js`) and,
+ * after a space, its stylesheet's (`styles-{hash}.css`), by which a caller
+ * holding the page tells it from a newer build of the site; null where the
+ * page cannot find its main script.
  *
  * `failure` says what kind of failure `error` is, where the page can tell
  * (spec 018 T017): `not-found`, the content service answered that the pathway
@@ -233,7 +234,7 @@ export interface RenderHealth {
   /** Pages held now, between figures; only with `reuse`. */
   pages?: number;
   /**
-   * The site's build (its render page's main script, `main-{hash}.js`) as last
+   * The site's build (its render page's main script and stylesheet, as `build`) as last
    * read from `base`, at most once a minute; only with `reuse`. Null before the
    * first read, and when the last could not be read.
    */
