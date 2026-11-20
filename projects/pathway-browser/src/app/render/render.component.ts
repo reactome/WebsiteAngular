@@ -44,6 +44,7 @@ import { gatherGroups } from './gather-groups';
 import { installRenderNavigate, pageBuild } from './render-navigation';
 import { currentRenderNav } from './render-reuse-strategy';
 import { startAsFresh } from './start-as-fresh';
+import { settleViewport } from './settle-viewport';
 import { loadFamily } from './label-font';
 import type * as Analysis from '../model/analysis.model';
 
@@ -363,6 +364,18 @@ export class RenderComponent {
         // further on (spec 018 T012). The export marks it again, which
         // changes nothing once it is there.
         if (drawn.view === 'diagram' && this.highlighted.length) this.exportableInstances();
+        // The diagram's fit, ended now rather than mid-way: the bands' opacity
+        // follows the zoom, and a figure taken during the fit had them fainter
+        // than a fresh page's (spec 018 T009). The two frames below paint it.
+        if (drawn.view === 'diagram') {
+          const settled = await settleViewport(this.diagram()?.cys.filter(Boolean) ?? []);
+          if (this.destroyed()) return;
+          if (!settled) {
+            this.error.set(`the diagram's view of ${pathway ?? 'the pathway'} did not settle`);
+            this.publish();
+            return;
+          }
+        }
         // Fonts change text metrics, so a diagram drawn before they load is
         // not the diagram the site shows.
         await document.fonts.ready;

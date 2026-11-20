@@ -465,6 +465,16 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
         stroke whose opacity changes over time (an animation or a fade), taken at a
         different moment on a held page, which draws faster. T012's highlight race was
         of this kind.
+        **Found and fixed (20 Nov):** the diagram fits its view with an animation of a
+        second (`select()`), the bands take their opacity from the zoom, and the page
+        said it was ready while the fit still ran. On one held page moved 40 times
+        between R-HSA-975957 and four other figures, the bands came out at opacity 0.007
+        to 0.018, the zoom at ready 0.3829 to 0.3931 and still moving (`cy.animated()`
+        true), settling at 0.3822 within 0.2 s; fresh pages, slower to be ready, gave
+        0.018 each time. Now the render page ends any viewport animation at its end
+        before it is ready (`render/settle-viewport.ts`; a view that will not settle is
+        the figure's error). Test: a fit of 60 frames ends in one; seen failing without
+        the stop.
       - `R-HSA-9674403.svg?highlight=R-HSA-9674408` after its dark version (pairs 1).
         Drawn again it differed once (after the plain diagram) in 6 runs and matched in
         5 direct draws on a held page: intermittent.
