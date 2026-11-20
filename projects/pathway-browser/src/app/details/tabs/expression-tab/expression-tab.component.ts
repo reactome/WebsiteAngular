@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Component, computed, inject, input, signal } from '@angular/core';
+import { Component, computed, inject, input, linkedSignal } from '@angular/core';
 import { rxResource } from '@angular/core/rxjs-interop';
 import { CONTENT_SERVICE } from '../../../../environments/environment';
 import type {
@@ -44,9 +44,17 @@ export class ExpressionTabComponent {
   }));
 
   /** What is pointed at on the heatmap, for the anatomogram (FR-015). */
-  readonly pointed = signal<ExpressionPointed>({ row: null, tissue: null });
+  // Both are indexes into one experiment's rows and tissues: a new selection
+  // drops them, as the heatmap drops its own (review of 20 Nov).
+  readonly pointed = linkedSignal<string, ExpressionPointed>({
+    source: () => this.obj().stId,
+    computation: () => ({ row: null, tissue: null }),
+  });
   /** The tissue whose organ is pointed at on the anatomogram, for the heatmap (FR-016). */
-  readonly pickedTissue = signal<number | null>(null);
+  readonly pickedTissue = linkedSignal<string, number | null>({
+    source: () => this.obj().stId,
+    computation: () => null,
+  });
 
   readonly expression = rxResource({
     params: () => this.obj().stId,

@@ -692,6 +692,11 @@ export class ObjectTreeComponent<
     }
     const name = this.shownName(node);
     const pathwayId = this.state.pathwayId();
+    // The pathway whose molecules the tab lists: the open one, or in the
+    // overview, where none is open, the one selected there (the tab's own
+    // choice). Asked by the molecule's id instead, the participants were none,
+    // and the row said the molecule was drawn in no diagram (review of 20 Nov).
+    const listed = pathwayId ?? this.state.select() ?? undefined;
     const species = this.dataStateService.currentPathway()?.speciesName ?? 'Homo sapiens';
     const asked = (diagrams: DiagramChoices['diagrams']): DiagramChoices => ({
       dbId: node.dbId,
@@ -702,7 +707,7 @@ export class ObjectTreeComponent<
     this.diagramChoices.set(asked('loading'));
     forkJoin({
       diagrams: this.http
-        .get<Participant[]>(`${CONTENT_SERVICE}/data/participants/${pathwayId ?? stId}`)
+        .get<Participant[]>(`${CONTENT_SERVICE}/data/participants/${listed ?? stId}`)
         .pipe(
           map((participants) =>
             participants.filter((participant) =>
@@ -738,9 +743,9 @@ export class ObjectTreeComponent<
           ),
           catchError(() => of('error' as const))
         ),
-      inside: pathwayId
+      inside: listed
         ? this.http
-            .get(`${CONTENT_SERVICE}/data/pathway/${pathwayId}/containedEvents/stId`, {
+            .get(`${CONTENT_SERVICE}/data/pathway/${listed}/containedEvents/stId`, {
               responseType: 'text',
             })
             .pipe(
