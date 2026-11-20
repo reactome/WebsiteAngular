@@ -481,6 +481,18 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       - `R-HSA-69895.svg` with a token (an opposite, drawn only to come first) answered
         500 on a held page after a reaction's layout. Drawn again, fresh twice and held
         in that order, it drew each time: intermittent, cause not found.
+        **20 Nov, a different defect found drawing it again:** with a token (made on this
+        host's own Analysis Service) the figure, drawn in its ancestor R-HSA-69620,
+        differed held from fresh in 22 of 32 draws, and fresh from fresh too. The page
+        said it was ready while the nodes' background images (each node's analysis
+        colouring is one) were still loading, and the export leaves out an image still
+        loading: on fresh pages 132 images at ready, 252 three seconds later, every
+        time. So token figures were missing part of their colouring, fresh or held. Now
+        the page waits until every node's background image has loaded or failed before
+        it is ready, and an expression sample's images before its frame is taken
+        (`render/background-images.ts`; still loading after 20 s is the figure's
+        error). Test: a wait for three images ends only with the last; seen failing
+        with a wait for the first only.
   - **The other formats (SC-003), 24 requests each,** of every kind but the GIF overview
     (a GIF of the genome-wide view fails, fresh as held):
     - **What varies by itself,** each drawn twice on fresh pages (`--mode fresh`, 120 drawn
