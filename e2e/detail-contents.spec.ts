@@ -119,6 +119,30 @@ test.describe('Molecules tab', () => {
     await page.waitForSelector('#cytoscape canvas', { timeout: BOOT });
   });
 
+  test("in the overview, a molecule's button finds the diagrams of the pathway selected there", async ({
+    page,
+  }) => {
+    // With no pathway open, the participants were asked of the molecule's own
+    // id: none, and the row said zinc was drawn in no diagram (review of 20 Nov).
+    await page.goto('/PathwayBrowser/?select=R-HSA-8953897&tab=molecule');
+    const zinc = page
+      .locator('cr-molecule-tab cr-object-tree > mat-tree > mat-nested-tree-node')
+      .filter({ hasText: 'zinc' })
+      .first();
+    const button = zinc.locator('button.select').first();
+    await expect(button).toHaveAttribute('aria-label', 'Find zinc(2+) in a diagram', {
+      timeout: BOOT,
+    });
+    await button.click();
+    const choices = zinc.locator('.diagram-choice');
+    await expect(choices.filter({ hasText: 'Metallothioneins bind metals' })).toBeVisible({
+      timeout: 30_000,
+    });
+    // Kept to the selected pathway's diagrams, as with it open.
+    expect(await choices.count()).toBeLessThan(20);
+    await expect(zinc.locator('.diagram-choices')).not.toContainText('is not drawn');
+  });
+
   test("says so when the diagrams cannot be looked for, rather than 'not drawn'", async ({
     page,
   }) => {
