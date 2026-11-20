@@ -81,6 +81,7 @@ import {
 import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
 import { Pages, atMostEvery, buildIn, memoryShare, verdict } from './pages.ts';
+import { CacheTotal } from './cache-total.ts';
 import type { Format } from './render-core.ts';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
@@ -427,36 +428,54 @@ async function toCache(key: string, format: string, bytes: Buffer) {
   const file = path.join(CACHE, `${key}.${format}`);
   const temp = `${file}.${process.pid}.tmp`;
   await writeFile(temp, bytes);
+  const replaced = MAX_CACHE
+    ? await stat(file).then(
+        (info) => info.size,
+        () => 0
+      )
+    : 0;
   await rename(temp, file);
-  await evict();
+  if (!MAX_CACHE) return;
+  const total = await cacheTotal.afterWrite(bytes.length, replaced);
+  if (total > MAX_CACHE) await evict();
 }
+
+/** Every cached figure, with its size and when it was last used, and their total. */
+async function readCache() {
+  const names = await readdir(CACHE).catch(() => []);
+  const entries: { file: string; size: number; used: number }[] = [];
+  let total = 0;
+  for (const name of names) {
+    if (name.endsWith('.tmp')) continue;
+    const file = path.join(CACHE, name);
+    const info = await stat(file).catch(() => null);
+    if (!info?.isFile()) continue;
+    entries.push({ file, size: info.size, used: info.mtimeMs });
+    total += info.size;
+  }
+  return { entries, total };
+}
+
+/** The cache's size, read from the folder only now and then (`CacheTotal`). */
+const cacheTotal = new CacheTotal(async () => (await readCache()).total);
 
 /**
  * Drop least-recently-used figures until the cache is back under its limit.
  *
- * Runs after a write, which is the only thing that grows it, and reads the
- * directory rather than tracking a running total -- the total has to survive
- * restarts and a cache directory shared with a previous run, and a readdir of a
- * few thousand entries costs less than one render.
+ * Runs after a write that takes the running total past the limit, and reads the
+ * directory to choose what goes and to set the total exactly.
  *
  * Evictions are logged. A cache that silently discards half of what it is asked
  * to keep looks exactly like a cache that is working.
  */
 async function evict() {
-  if (!MAX_CACHE) return;
   try {
-    const names = await readdir(CACHE);
-    const entries: { file: string; size: number; used: number }[] = [];
-    let total = 0;
-    for (const name of names) {
-      if (name.endsWith('.tmp')) continue;
-      const file = path.join(CACHE, name);
-      const info = await stat(file).catch(() => null);
-      if (!info?.isFile()) continue;
-      entries.push({ file, size: info.size, used: info.mtimeMs });
-      total += info.size;
+    const { entries, total: found } = await readCache();
+    let total = found;
+    if (total <= MAX_CACHE) {
+      cacheTotal.set(total);
+      return;
     }
-    if (total <= MAX_CACHE) return;
 
     // Down to 90%, not to exactly the limit, so the next write does not evict
     // again immediately.
@@ -477,6 +496,7 @@ async function evict() {
         removed++;
       }
     }
+    cacheTotal.set(total);
     stats.evicted += removed;
     console.log(
       `evicted ${removed} cached figure(s), ${(freed / 1024 ** 2).toFixed(1)} MB, ` +
