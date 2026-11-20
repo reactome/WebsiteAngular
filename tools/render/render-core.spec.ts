@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { verdict } from './pages.ts';
-import { render } from './render-core.ts';
+import { inAppAddress, render } from './render-core.ts';
 
 // A stand-in page: only what render reaches before the test stops it.
 const stand = (page: object) => page as Page;
@@ -387,5 +387,21 @@ describe("a page's failure, answered by its kind (spec 018 T017)", () => {
     const thrown = await failureOf({ ready: false, error: 'nothing drawn within 60s' });
     expect(thrown).toBeInstanceOf(Error);
     expect(thrown).not.toHaveProperty('status');
+  });
+});
+
+describe('a held page is moved to the address as the app routes it (review of 20 Nov)', () => {
+  it('reads the path and query from the address, whatever the base was spelt as', () => {
+    const to = '/PathwayBrowser/render/R-HSA-1?select=R-HSA-2';
+    expect(inAppAddress(`http://host:4200${to}`, 'http://host:4200')).toBe(to);
+    // a default port the URL drops: cut by the base's length, this lost three characters
+    expect(inAppAddress(`http://host${to}`, 'http://host:80')).toBe(to);
+    expect(inAppAddress(`http://host:4200${to}`, 'http://host:4200/')).toBe(to);
+  });
+
+  it('takes off a base path of its own', () => {
+    expect(
+      inAppAddress('http://host/site/PathwayBrowser/render/R-HSA-1', 'http://host/site/')
+    ).toBe('/PathwayBrowser/render/R-HSA-1');
   });
 });
