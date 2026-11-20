@@ -104,24 +104,30 @@ describe('the canonical order of compartments with and without an id (review of 
   const c = compartment(3, 3, 100);
 
   it('is one order whatever order the compartments come in', () => {
-    for (const canonical of [site, copy]) {
-      const results = new Set(
-        [
-          [a, b, c],
-          [b, c, a],
-          [c, a, b],
-          [c, b, a],
-          [a, c, b],
-          [b, a, c],
-        ].map((compartments) => {
-          const { diagram } = canonical(
-            { compartments, nodes: [], edges: [], links: [] },
-            { nodes: [], edges: [] }
-          );
-          return JSON.stringify(diagram.compartments.map((one) => one.reactomeId ?? null));
-        })
-      );
-      expect([...results]).toEqual(['[null,3,5]']);
-    }
+    const orders = [
+      [a, b, c],
+      [b, c, a],
+      [c, a, b],
+      [c, b, a],
+      [a, c, b],
+      [b, a, c],
+    ];
+    const graph: CanonicalGraph = { nodes: [], edges: [] };
+    const ids = (compartments: CanonicalDiagram['compartments']) =>
+      JSON.stringify(compartments.map((one) => one.reactomeId ?? null));
+    const results = new Set(
+      orders.flatMap((compartments) => {
+        const diagram: CanonicalDiagram = { compartments, nodes: [], edges: [], links: [] };
+        const theirs = site(
+          diagram as unknown as Parameters<typeof site>[0],
+          graph as unknown as Parameters<typeof site>[1]
+        );
+        return [
+          ids(copy(diagram, graph).diagram.compartments),
+          ids(theirs.diagram.compartments as unknown as CanonicalDiagram['compartments']),
+        ];
+      })
+    );
+    expect([...results]).toEqual(['[null,3,5]']);
   });
 });
