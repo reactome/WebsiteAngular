@@ -145,6 +145,9 @@ const memo = new Map<string, string>();
 let memoBytes = 0;
 
 function remember(key: string, serialised: string) {
+  // Two requests that both missed it remember it twice: the first's size goes.
+  memoBytes -= memo.get(key)?.length ?? 0;
+  memo.delete(key);
   memo.set(key, serialised);
   memoBytes += serialised.length;
   for (const [oldest, text] of memo) {
@@ -174,6 +177,9 @@ async function handler(request: Request) {
 export const expressionEndpoints: Endpoint[] = [
   {
     path: '/ContentService/expression/{id}',
+    // Walks every event and entity under the id, a top-level pathway's too
+    // (3.5 s, 1.6 MB): a share of the deep queries (review of 20 Nov).
+    deep: true,
     // No sample: Java has no such URL, so the parity harness has nothing to
     // compare it with. expression-endpoints.spec.ts holds it.
     samplesOnly: true,
