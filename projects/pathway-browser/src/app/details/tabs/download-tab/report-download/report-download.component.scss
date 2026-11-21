@@ -1,0 +1,18 @@
+.report {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.report__line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.85em;
+  min-height: 1.5em;
+}
+
+.report__action {
+  min-width: 0;
+}
