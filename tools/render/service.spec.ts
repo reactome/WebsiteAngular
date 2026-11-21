@@ -85,11 +85,42 @@ describe('/health', () => {
   });
 });
 
-describe('/health with RENDER_REUSE unset (spec 018)', () => {
+describe('/health with RENDER_REUSE unset (spec 018 T009)', () => {
+  it('says pages are held: reuse is the default since T009', async () => {
+    const body = await json(await fetch(`${base}/health`));
+    expect(body.reuse).toBe(true);
+  });
+});
+
+describe('/health with RENDER_REUSE=off (spec 018)', () => {
+  // A service loaded with reuse off (the setting is read when the module is).
+  let offBase: string;
+  let offServer: Server;
+
+  beforeAll(async () => {
+    const before = process.env['RENDER_REUSE'];
+    process.env['RENDER_REUSE'] = 'off';
+    vi.resetModules();
+    try {
+      const fresh = await import('./service.ts');
+      await new Promise<void>((resolve) => {
+        offServer = fresh.app.listen(0, '127.0.0.1', () => resolve());
+      });
+    } finally {
+      if (before === undefined) delete process.env['RENDER_REUSE'];
+      else process.env['RENDER_REUSE'] = before;
+    }
+    offBase = `http://127.0.0.1:${portOf(offServer)}`;
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => offServer.close(resolve));
+  });
+
   it('says pages are not held, and counts no reuse', async () => {
     // reuse-compare reads this before trusting a run as fresh or reused: a
     // "reused" run on fresh pages would pass without testing anything.
-    const body = await json(await fetch(`${base}/health`));
+    const body = await json(await fetch(`${offBase}/health`));
     expect(body.reuse).toBe(false);
     expect('reused' in body).toBe(false);
   });
@@ -97,7 +128,7 @@ describe('/health with RENDER_REUSE unset (spec 018)', () => {
   it("answers the fields it always has, and none of the held pages' (contracts/health.md)", async () => {
     // pdf-export and the deploy checks read this answer: reuse off, it is
     // what it was before spec 018 with `reuse` added, and nothing else.
-    const body = await json(await fetch(`${base}/health`));
+    const body = await json(await fetch(`${offBase}/health`));
     expect(Object.keys(body)).toEqual([...EVERY_FIELD, 'reuse']);
   });
 });

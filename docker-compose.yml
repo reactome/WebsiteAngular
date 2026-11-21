@@ -73,6 +73,11 @@ services:
     # Chromium's default 64 MB /dev/shm is not enough for a 6000px canvas; a
     # renderer that fails only on large diagrams is the usual symptom.
     shm_size: '1gb'
+    # Held pages (spec 018, on by default) are closed past half of this limit,
+    # read from the container's cgroup; with no limit that rule has nothing to
+    # read. 3 GB is what spec 018's T010 measured the release's figures under,
+    # at twice this concurrency.
+    mem_limit: 3g
 
   # The MCP server (reactome-mcp), which lets an AI assistant read Reactome
   # through its own tools rather than through a browser.
