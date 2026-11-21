@@ -1,0 +1,33 @@
+<div class="report">
+  <a
+    mat-flat-button
+    class="button"
+    [class.button--busy]="busy()"
+    [class.button--failed]="failure() !== null"
+    [attr.href]="address()"
+    [matTooltip]="tooltip()"
+    (click)="onClick($event)"
+  >
+    @if (busy()) {
+      <mat-progress-spinner mode="indeterminate" [diameter]="16" [strokeWidth]="2" />
+    } @else {
+      <mat-icon fontSet="symbols">docs</mat-icon>
+    }
+    <span>{{ label() }}</span>
+  </a>
+
+  <!-- Always here, empty when there is nothing to say: a live region added with its text is
+       not reliably read out. -->
+  <div class="report__line" role="status" aria-live="polite">
+    @if (words(); as words) {
+      <span class="report__words">{{ words }}</span>
+    }
+    @if (busy()) {
+      <button mat-button type="button" class="report__action" (click)="cancel()">Cancel</button>
+    } @else if (phase().status === 'saved') {
+      <button mat-button type="button" class="report__action" (click)="report().again()">Download again</button>
+    } @else if (failure() !== null && failure() !== 'gone') {
+      <button mat-button type="button" class="report__action" (click)="retry()">Try again</button>
+    }
+  </div>
+</div>

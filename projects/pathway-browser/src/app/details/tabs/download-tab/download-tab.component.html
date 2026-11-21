@@ -116,15 +116,18 @@
 
       @for (item of analysisItems; track item) {
         @if (item.isShown()) {
-          <cr-download-button
-            [url]="item.url()"
-            [matTooltip]="item.description"
-            [download]="true"
-            [opens]="item.opens ?? false"
-            [icon]="item.icon"
-            [label]="item.title"
-          >
-          </cr-download-button>
+          @if (item.report) {
+            <cr-report-download [address]="item.url()" [label]="item.title" [tooltip]="item.description" />
+          } @else {
+            <cr-download-button
+              [url]="item.url()"
+              [matTooltip]="item.description"
+              [download]="true"
+              [icon]="item.icon"
+              [label]="item.title"
+            >
+            </cr-download-button>
+          }
         }
       }
     </div>

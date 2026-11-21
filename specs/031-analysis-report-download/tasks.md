@@ -30,7 +30,7 @@ quickstart.md.
 - [x] T003 In pdf-export: a job's stage and counts (`src/report/jobs.ts`, set by the
       report's making in `src/report/report.ts`: reading, then figures with done/total,
       then printing), and its place while queued. (reactome/pdf-export#244)
-- [x] T004 In pdf-export: past reports' times and the estimate (`src/report/times.ts`,
+- [x] T004 In pdf-export: past reports' times and the estimate (`src/report/progress.ts`,
       research R2): seconds per figure and other seconds over the last 20 reports; none
       before the first. (reactome/pdf-export#244)
 - [x] T005 In pdf-export: the `status` object in the JSON 202 and `Prefer: wait`
@@ -52,22 +52,22 @@ quickstart.md.
 
 **Independent Test**: quickstart scenarios 1–3 and 5.
 
-- [ ] T008 [US1] `ReportDownloads` (`projects/pathway-browser/src/app/services/report-downloads.service.ts`):
+- [x] T008 [US1] `ReportDownloads` (`projects/pathway-browser/src/app/services/report-downloads.service.ts`):
       one entry per report address; ask = fetch with `Accept: application/json,
 application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a 200
       reads the Blob and saves it as `FileDownloadService` does, under the report's name;
       data-model's states. Unit tests against a stub fetch: the states in order, a new
-      request after each 202, the 200 saved once.
-- [ ] T009 [US1] The status line (`details/tabs/download-tab/report-download/`): the words of
+      request after each 202, the 200 saved once. (#PR)
+- [x] T009 [US1] The status line (`details/tabs/download-tab/report-download/`): the words of
       contracts/report-states.md for idle, starting, queued, making (each stage), past the
-      estimate, saved; a polite live region; the managed-download look.
-- [ ] T010 [US1] The Download tab's report button uses them, no longer `opens` a new tab
+      estimate, saved; a polite live region; the managed-download look. (#PR)
+- [x] T010 [US1] The Download tab's report button uses them, no longer `opens` a new tab
       (`download-tab.component.ts`, `download-button`); re-entry to the tab shows the
-      entry's state (FR-012).
-- [ ] T011 [US1] e2e `e2e/report-download.spec.ts`: the report's address answered in the
+      entry's state (FR-012). (#PR)
+- [x] T011 [US1] e2e (in `e2e/analysis-results.spec.ts`, beside the other result files): the report's address answered in the
       test (202 queued, 202 making with counts and estimate, 200 PDF): no new page opens
       (SC-001), the line follows the states, the download event has the report's name;
-      the first status within 1 s (SC-002).
+      the first status within 1 s (SC-002). (#PR)
 
 **Checkpoint**: on beta, a real report followed and downloaded on the page.
 
@@ -79,9 +79,9 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 
 **Independent Test**: quickstart scenario 6, and each failure answered in the e2e.
 
-- [ ] T012 [US2] `ReportDownloads`: 404/410 → gone (no retry), 503 → busy (retry after its
+- [x] T012 [US2] `ReportDownloads`: 404/410 → gone (no retry), 503 → busy (retry after its
       `Retry-After`), 500 → failed (retry, how to report), two minutes without an answer →
-      unreachable (retry). Unit tests for each, and for a retry starting afresh.
+      unreachable (retry). Unit tests for each, and for a retry starting afresh. (#PR)
 - [ ] T013 [US2] The line's failure words and actions (contracts/report-states.md); e2e for
       each kind (SC-005).
 
@@ -93,9 +93,9 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 
 **Independent Test**: quickstart scenarios 3 and 4.
 
-- [ ] T014 [US3] Cancel aborts the request in flight and stops asking, the entry back to
+- [x] T014 [US3] Cancel aborts the request in flight and stops asking, the entry back to
       idle; download again from the entry's Blob within the hour, and afresh past it. Unit
-      tests (no request after cancel; none for download again within the hour).
+      tests (no request after cancel; none for download again within the hour). (#PR)
 - [ ] T015 [US3] The line's Cancel and Download again; e2e for both.
 
 ---

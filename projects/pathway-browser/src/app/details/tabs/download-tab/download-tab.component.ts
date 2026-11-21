@@ -29,6 +29,7 @@ import {
   includeSubpathways,
 } from '../../../services/download.service';
 import { DownloadButtonComponent, Icon } from './download-button/download-button.component';
+import { ReportDownloadComponent } from './report-download/report-download.component';
 import { MatDialog } from '@angular/material/dialog';
 import { AnimatedDownloadFormComponent } from './animated-download-form/animated-download-form.component';
 import { MatCheckbox } from '@angular/material/checkbox';
@@ -67,8 +68,8 @@ type AnaLysisItem = {
   url: Signal<string>;
   icon: Icon;
   isShown: Signal<boolean>;
-  /** Opened in a new tab rather than downloaded (see DownloadButtonComponent). */
-  opens?: boolean;
+  /** The analysis report: made and followed on the page (spec 031), not a link to a file. */
+  report?: boolean;
 };
 
 type DiagramItem = {
@@ -82,7 +83,14 @@ type DiagramItem = {
 
 @Component({
   selector: 'cr-download-tab',
-  imports: [MatTooltip, MatProgressSpinner, DownloadButtonComponent, MatCheckbox, FormsModule],
+  imports: [
+    MatTooltip,
+    MatProgressSpinner,
+    DownloadButtonComponent,
+    ReportDownloadComponent,
+    MatCheckbox,
+    FormsModule,
+  ],
   templateUrl: './download-tab.component.html',
   styleUrl: './download-tab.component.scss',
 })
@@ -279,11 +287,10 @@ export class DownloadTabComponent {
     {
       title: 'PDF Result',
       description:
-        'Open a detailed report with the most significant pathway analysis results in PDF format, in a new tab: it is made in the background, then downloads',
-      // Made in the background by pdf-export (its spec 002): the address
-      // answers a page that asks again until the report is ready. Fetched and
-      // saved here, that page would be saved as the report.
-      opens: true,
+        'Download a detailed report of the most significant pathways in PDF format: it is made on the server, and this page says how far it has got',
+      // Made in the background by pdf-export (its spec 002), followed here
+      // (spec 031): it used to open in a tab of its own that said nothing.
+      report: true,
       url: computed(() =>
         analysisReportUrl(
           ANALYSIS_SERVICE,
