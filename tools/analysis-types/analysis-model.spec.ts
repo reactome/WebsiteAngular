@@ -21,6 +21,7 @@ import {
 const HARS = path.join(ROOT, 'e2e', 'har');
 const RECORDED = path.join(import.meta.dirname, 'recorded');
 const CONTRACT = path.join(ROOT, 'projects/contract/analysis.ts');
+const REPORT_CONTRACT = path.join(ROOT, 'projects/contract/analysis-report.ts');
 
 /**
  * What each answer is, by method and path: the contract's type for it, which
@@ -34,6 +35,8 @@ const READ_AS: [method: string, pattern: RegExp, type: string][] = [
   ['POST', /^\/AnalysisService\/token\/[^/]+\/filter\/pathways$/, 'AnalysisPathway[]'],
   ['GET', /^\/AnalysisService\/token\/[^/]+\/reactions\/[^/]+$/, 'number[]'],
   ['GET', /^\/AnalysisService\/token\/[^/]+\/notFound$/, 'NotFoundIdentifier[]'],
+  // pdf-export's 202 while the report is made (spec 031), which report-download.ts reads
+  ['GET', /^\/AnalysisService\/report\/[^/]+\/[^/]+\/[^/]+\.pdf$/, 'AnalysisReportAccepted'],
 ];
 
 /** Each distinct recorded answer with the type it is read as. */
@@ -86,7 +89,8 @@ function recordedAnswers(dir = HARS): Answer[] {
 const typeProblems = (answers: Answer[]) =>
   compileAnswers(
     answers,
-    `import type { AnalysisPathway, AnalysisResult, FoundEntities, NotFoundIdentifier } from ${JSON.stringify(CONTRACT)};`
+    `import type { AnalysisPathway, AnalysisResult, FoundEntities, NotFoundIdentifier } from ${JSON.stringify(CONTRACT)};\n` +
+      `import type { AnalysisReportAccepted } from ${JSON.stringify(REPORT_CONTRACT)};`
   ).map(describeProblem);
 
 /** The analysis type an answer read as a result says it is. */

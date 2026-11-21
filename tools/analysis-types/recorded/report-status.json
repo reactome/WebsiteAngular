@@ -1,0 +1,56 @@
+[
+  {
+    "route": "GET /AnalysisService/report/TOKEN/Homo%20sapiens/report.pdf",
+    "answer": {
+      "code": 202,
+      "reason": "Accepted",
+      "messages": ["The report is being made; ask again in 10 seconds"],
+      "status": {
+        "state": "queued",
+        "place": 1,
+        "estimate": 36
+      }
+    }
+  },
+  {
+    "route": "GET /AnalysisService/report/TOKEN/Homo%20sapiens/report.pdf",
+    "answer": {
+      "code": 202,
+      "reason": "Accepted",
+      "messages": ["The report is being made; ask again in 10 seconds"],
+      "status": {
+        "state": "making",
+        "stage": "reading",
+        "estimate": 20
+      }
+    }
+  },
+  {
+    "route": "GET /AnalysisService/report/TOKEN/Homo%20sapiens/report.pdf",
+    "answer": {
+      "code": 202,
+      "reason": "Accepted",
+      "messages": ["The report is being made; ask again in 10 seconds"],
+      "status": {
+        "state": "making",
+        "stage": "figures",
+        "done": 0,
+        "total": 1,
+        "estimate": 15
+      }
+    }
+  },
+  {
+    "route": "GET /AnalysisService/report/TOKEN/Homo%20sapiens/report.pdf",
+    "answer": {
+      "code": 202,
+      "reason": "Accepted",
+      "messages": ["The report is being made; ask again in 10 seconds"],
+      "status": {
+        "state": "making",
+        "stage": "printing",
+        "estimate": 13
+      }
+    }
+  }
+]
