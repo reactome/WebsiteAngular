@@ -97,22 +97,7 @@ test.describe('Analysis results', () => {
     await expect.poll(pathways, { message: 'but not none of them' }).toBeGreaterThan(0);
   });
 
-  test('the result files download', async ({ page, context }) => {
-    // The PDF report is made in the background by pdf-export (its spec 002):
-    // its address answers "being made" until the report is ready. Fetched and
-    // saved by the page, that answer was saved as report.pdf; opened in a tab,
-    // its page asks again and the PDF downloads once ready. Stubbed here, so
-    // no report is made.
-    const reportsAsked: string[] = [];
-    await context.route('**/AnalysisService/report/**', (route) => {
-      reportsAsked.push(route.request().url());
-      return route.fulfill({
-        status: 202,
-        headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
-        contentType: 'text/html;charset=UTF-8',
-        body: '<!doctype html><title>Making your report</title><h1>Making your report</h1>',
-      });
-    });
+  test('the result files download', async ({ page }) => {
     await runGeneList(page);
     await openTab(page, 'Download');
 
@@ -129,22 +114,208 @@ test.describe('Analysis results', () => {
       expect(bytes.length, `${label} size`).toBeGreaterThan(100);
       expect(looksRight(bytes), `${label} content`).toBe(true);
     }
+  });
 
-    // The PDF report opens in a new tab, and is not downloaded by the page.
-    let downloads = 0;
-    page.on('download', () => downloads++);
-    const [tab] = await Promise.all([
-      context.waitForEvent('page', { timeout: 30_000 }),
-      page.getByText('PDF Result', { exact: true }).click(),
+  test('the PDF report is made and followed on the page, then downloads (spec 031)', async ({
+    page,
+    context,
+  }) => {
+    // Made in the background by pdf-export (its spec 002): it used to open in a tab of its
+    // own that asked again every 10 s and said nothing. Stubbed here, in pdf-export's
+    // answers: queued, then being made, then the PDF.
+    const answers = [
+      { state: 'queued', place: 2 },
+      { state: 'making', stage: 'figures', done: 12, total: 40, estimate: 150 },
+    ];
+    const asked: { accept: string | undefined; prefer: string | undefined }[] = [];
+    await context.route('**/AnalysisService/report/**', (route) => {
+      const headers = route.request().headers();
+      asked.push({ accept: headers['accept'], prefer: headers['prefer'] });
+      const status = answers.shift();
+      if (status) {
+        return route.fulfill({
+          status: 202,
+          headers: { 'Retry-After': '10', 'Cache-Control': 'no-store' },
+          contentType: 'application/json;charset=UTF-8',
+          body: JSON.stringify({ code: 202, reason: 'Accepted', messages: [], status }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'Content-Disposition': 'attachment; filename="report.pdf"' },
+        body: Buffer.from('%PDF-1.7\n%%EOF\n'),
+      });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    // every request the page makes from here, for where the token goes (SC-006)
+    const token = new URL(page.url()).searchParams.get('analysis') ?? '';
+    const requests: string[] = [];
+    page.on('request', (request) => requests.push(request.url()));
+    let tabs = 0;
+    context.on('page', () => tabs++);
+
+    const line = page.locator('cr-report-download [role="status"]');
+    const clicked = Date.now();
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 60_000 }),
+      (async () => {
+        await page.getByText('PDF Result', { exact: true }).click();
+        // the first status within a second (SC-002)
+        await expect(line).not.toBeEmpty({ timeout: 1_000 });
+        expect(Date.now() - clicked).toBeLessThan(1_500);
+      })(),
     ]);
-    await tab.waitForLoadState();
-    expect(new URL(tab.url()).pathname).toMatch(
-      /^\/AnalysisService\/report\/[^/]+\/[^/]+\/report\.pdf$/
-    );
-    await expect(tab.getByRole('heading', { name: 'Making your report' })).toBeVisible();
-    // Asked once, by the new tab: the page itself fetched nothing.
-    expect(reportsAsked).toHaveLength(1);
-    expect(downloads).toBe(0);
+    expect((download as Download).suggestedFilename()).toBe('report.pdf');
+    await expect(line).toContainText('Report downloaded');
+    // no new tab (SC-001); each request asked for JSON as well as the PDF, held 5 s at most
+    expect(tabs).toBe(0);
+    expect(asked).toHaveLength(3);
+    for (const a of asked) {
+      expect(a.accept).toBe('application/pdf, application/json');
+      expect(a.prefer).toBe('wait=5');
+    }
+    // the token went to the site's own origin only (SC-006)
+    const origin = new URL(page.url()).origin;
+    expect(token).not.toBe('');
+    for (const url of requests.filter((u) => u.includes(token))) {
+      expect(new URL(url).origin, url).toBe(origin);
+    }
+  });
+
+  test("the report's statuses are said as they come, and an expired result plainly (spec 031)", async ({
+    page,
+    context,
+  }) => {
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    await context.route('**/AnalysisService/report/**', async (route) => {
+      calls++;
+      if (calls === 1) {
+        return route.fulfill({
+          status: 202,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            code: 202,
+            reason: 'Accepted',
+            messages: [],
+            status: { state: 'making', stage: 'figures', done: 3, total: 10, estimate: 40 },
+          }),
+        });
+      }
+      await held;
+      return route.fulfill({ status: 410, contentType: 'application/json', body: '{}' });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+    await page.getByText('PDF Result', { exact: true }).click();
+    await expect(line).toContainText('drawing figures 3 of 10 · about 40 seconds left');
+    release();
+    await expect(line).toContainText('no longer available');
+    await expect(line.getByRole('button', { name: 'Try again' })).toHaveCount(0);
+  });
+
+  test("the report's failures are said plainly, with Try again where it helps (spec 031)", async ({
+    page,
+    context,
+  }) => {
+    // pdf-export's refusals (its contracts/service.md), one per click: busy, then failed,
+    // then the result gone. None is asked again by itself: the reader decides.
+    const refusals = [
+      { status: 503, headers: { 'Retry-After': '30' } },
+      { status: 500, headers: {} },
+      { status: 404, headers: {} },
+    ];
+    let calls = 0;
+    await context.route('**/AnalysisService/report/**', (route) => {
+      const refusal = refusals[calls++] ?? { status: 410, headers: {} };
+      return route.fulfill({
+        status: refusal.status,
+        headers: refusal.headers,
+        contentType: 'application/json;charset=UTF-8',
+        body: JSON.stringify({ code: refusal.status, reason: '', messages: [] }),
+      });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+    const tryAgain = line.getByRole('button', { name: 'Try again' });
+
+    await page.getByText('PDF Result', { exact: true }).click();
+    await expect(line).toContainText('The report service is busy. Try again in 30 seconds.');
+    await page.waitForTimeout(1_000);
+    expect(calls).toBe(1);
+
+    await tryAgain.click();
+    await expect(line).toContainText('The report could not be made. Try again, or tell us');
+    await page.waitForTimeout(1_000);
+    expect(calls).toBe(2);
+
+    await tryAgain.click();
+    await expect(line).toContainText("This analysis's results are no longer available.");
+    await expect(tryAgain).toHaveCount(0);
+    expect(calls).toBe(3);
+  });
+
+  test('a report being followed can be cancelled, and one downloaded saved again (spec 031)', async ({
+    page,
+    context,
+  }) => {
+    let ready = false;
+    let calls = 0;
+    await context.route('**/AnalysisService/report/**', async (route) => {
+      calls++;
+      if (!ready) {
+        // pdf-export holds a poll up to its wait; a short hold here keeps the asking slow
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return route.fulfill({
+          status: 202,
+          contentType: 'application/json;charset=UTF-8',
+          body: JSON.stringify({
+            code: 202,
+            reason: 'Accepted',
+            messages: [],
+            status: { state: 'queued', place: 3 },
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'Content-Disposition': 'attachment; filename="report.pdf"' },
+        body: Buffer.from('%PDF-1.7\n%%EOF\n'),
+      });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+
+    // Cancel: the line empties and the page stops asking (pdf-export keeps making it)
+    await page.getByText('PDF Result', { exact: true }).click();
+    await expect(line).toContainText('Queued: number 3 in line');
+    await line.getByRole('button', { name: 'Cancel' }).click();
+    await expect(line).toBeEmpty();
+    await page.waitForTimeout(500);
+    const atCancel = calls;
+    await page.waitForTimeout(1_500);
+    expect(calls).toBe(atCancel);
+
+    // Asked again, it is ready; then Download again saves the file kept, without asking
+    ready = true;
+    const first = page.waitForEvent('download');
+    await page.getByText('PDF Result', { exact: true }).click();
+    expect((await first).suggestedFilename()).toBe('report.pdf');
+    await expect(line).toContainText('Report downloaded');
+    const asked = calls;
+    const second = page.waitForEvent('download');
+    await line.getByRole('button', { name: 'Download again' }).click();
+    expect((await second).suggestedFilename()).toBe('report.pdf');
+    expect(calls).toBe(asked);
   });
 
   test('species comparison overlays the pathways', async ({ page }) => {

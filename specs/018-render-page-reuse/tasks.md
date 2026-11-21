@@ -428,14 +428,23 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 
 ## Phase 5: Proof and the release run
 
-- [ ] T009 [US2] SC-003 and SC-005.
+- [x] T009 [US2] SC-003 and SC-005.
   - **Run:** the comparison on 500 or more requests, three orders, every format, through
     a reuse-on and a reuse-off service built from main.
   - **Mutants:** run each mutant of research R5 and record that it fails.
   - **Then:** turn `RENDER_REUSE` on by default.
-  - **Not done: the default stays off.** The SVG run below has three differences the
-    comparison cannot explain away (two figures, one failure), all intermittent, all on
-    held pages only. T009 is ticked once they are found and fixed and a run is clean.
+  - **Done, 21 Nov 2026 (#1033): `RENDER_REUSE` is on by default** (`off` turns it off; the
+    tests of `/health` cover both, the default's seen failing with the old setting).
+    The first SVG run (17 Nov, below) had three differences; two were found and fixed
+    (#1020, #1022), and the third, a failure, did not come back.
+  - **Run, 21 Nov 2026, clean:** the same comparison (`--mode reuse`, a fresh container
+    each run, `--code tools/render` of main with #1020 and #1022 in, the release 98
+    files) on a new SVG sample of 751 requests. Listed and reversed: 751 drawn each, 0
+    differ. Pairs (8 runs, 3,628 draws): the only differences are 15 requests answered
+    500 in every run, the fresh one included: a highlight or selection on an
+    illustration, which the service refuses ("highlight is not drawn on an
+    illustration yet"), fresh as held. Draws not on a held page (2 to 27 a run) are each
+    after a page replaced for a console error or memory, counted in `/health`.
   - **Run, 17 Nov 2026:** `reuse-compare.ts --mode reuse` (each run a fresh container,
     concurrency 1, `--code tools/render`, the release 98 files) against a scratch
     `production,beta` build of main. The script gained, for this: planted failures
@@ -481,6 +490,18 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       - `R-HSA-69895.svg` with a token (an opposite, drawn only to come first) answered
         500 on a held page after a reaction's layout. Drawn again, fresh twice and held
         in that order, it drew each time: intermittent, cause not found.
+        **20 Nov, a different defect found drawing it again:** with a token (made on this
+        host's own Analysis Service) the figure, drawn in its ancestor R-HSA-69620,
+        differed held from fresh in 22 of 32 draws, and fresh from fresh too. The page
+        said it was ready while the nodes' background images (each node's analysis
+        colouring is one) were still loading, and the export leaves out an image still
+        loading: on fresh pages 132 images at ready, 252 three seconds later, every
+        time. So token figures were missing part of their colouring, fresh or held. Now
+        the page waits until every node's background image has loaded or failed before
+        it is ready, and an expression sample's images before its frame is taken
+        (`render/background-images.ts`; still loading after 20 s is the figure's
+        error). Test: a wait for three images ends only with the last; seen failing
+        with a wait for the first only (#1022).
   - **The other formats (SC-003), 24 requests each,** of every kind but the GIF overview
     (a GIF of the genome-wide view fails, fresh as held):
     - **What varies by itself,** each drawn twice on fresh pages (`--mode fresh`, 120 drawn
@@ -532,12 +553,13 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
       takes no overlay); either way its page is replaced (FR-005, T006), so no figure
       after it is drawn on that page. Its run matched main's figure for figure. The
       render page's unit test covers the reset (`start-as-fresh.spec.ts`, T004).
-- [ ] T010 [US1] SC-001, SC-002 and SC-004: pdf-export's figures step for release 98 with
+- [x] T010 [US1] SC-001, SC-002 and SC-004: pdf-export's figures step for release 98 with
       T031's settings (research R6).
   - **Record here:** the time, the health counters, the container's peak memory and the
     comparison with a reuse-off run of the same build (research R6).
   - **Record in pdf-export:** the result, in its spec 001 (T042 and research R7).
-  - **Not done: the run did not finish, and SC-001 is not shown.** Re-run after T015.
+  - **Done, 20 Nov 2026: SC-001, SC-002 and SC-004 met** (the last re-run below). The first
+    run did not finish; the second was T019's fault.
   - **Run, 18 Nov 2026, 01:05:22–05:16:37 UTC:** a render container of the
     `websiteangular-render` image with main's `tools/render` mounted (T014's fix in),
     `RENDER_REUSE=on` with T007's defaults (`RENDER_REUSE_MAX` 200,
@@ -615,6 +637,32 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     - **SC-001: not met as measured** (4 h 15 min against 2 h 54 min). **SC-002: met for
       reactions** (0.5 s held, 3.4 s fresh). **SC-004: met** (no failure, no page past
       its count).
+  - **Re-run, 20 Nov 2026, 14:28–16:23 UTC: SC-001 met.** The render container as
+    before (`RENDER_REUSE=on`, concurrency 4, queue 16, timeout 180 s, 3 GB of memory
+    and no swap, 1 GB of shared memory, the release's files) with main's `tools/render`
+    after T019 (#1014) and T020 (#1018) mounted, drawing beta's site built from main after
+    #1020; pdf-export's figures step with `--parallel 4` against beta's release 98 graph.
+    - **Complete in 1 h 55 min 10 s** (6,910 s; the step's report: complete, nothing
+      missing, no stop), against 5 h 47 min (T031) and 5 h 53 min (the reuse-off run of
+      18–19 Nov): a third of the time. Health at the end: rendered 19,064, failed 0,
+      reused 15,252 (80%), replaced for memory 3,809 and for nothing else.
+    - **Identical:** every one of the 19,076 files is byte-identical (sha256) to the
+      reuse-off run of 18–19 Nov. That run's build predates #1020, whose fix brings a
+      held page's figure to what a fresh page has once its fit ends, so the two agree.
+    - **Per figure, medians from the render log** (fresh against held; different
+      figures): reaction 3.1 s and 0.4 s (3,230 and 12,957), diagram 5.5 and 2.6 s,
+      illustration 3.1 and 0.5 s. The step's own totals, summed over the four at once:
+      reactions 16,699 s (1.03 s each), diagrams 3,897 s, figures in an ancestor's diagram
+      5,861 s, illustrations 289 s.
+    - **Peak memory** (`memory.peak`): 3,072 MiB, the limit, the file cache included (as
+      T019 found, the working set is what the rules read); no figure failed, and no page
+      was replaced for the browser or for its count.
+    - **SC-001: met** (1 h 55 min against no more than 2 h 54 min). **SC-002: met**
+      (reactions 0.4 s held, 3.1 s fresh). **SC-004: met** (no page past its count, no
+      failure; the memory rule replaced pages 3,809 times, which is it working).
+    - **Not in this run:** T009's background-image wait (#1022), found after it. Token
+      figures are not in the book, and the book's figures were identical to fresh pages'
+      here.
 - [x] T015 [US4] Tune the replacement rules (#1008).
   - **Memory:** the share judged per page (the container's share divided by the pages
     held), or a higher share, measured against the 3 GB limit so that SC-004 still holds.

@@ -278,7 +278,8 @@ export class FileDownloadService {
    * page produced. Revoked immediately afterwards: these hold the whole file in
    * memory until the document goes away, and a diagram's GIF is a megabyte.
    */
-  private save(blob: Blob, filename: string): void {
+  /** Writes a file the page holds to disk, under its name (the report, spec 031, too). */
+  save(blob: Blob, filename: string): void {
     const href = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = href;

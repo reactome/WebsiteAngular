@@ -565,6 +565,9 @@ export const entitiesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/referenceSequences',
+    // The page is the caller's `offset`, uncapped as Java's: 200,000 a page took
+    // 25 s and 57 MB (review of 20 Nov), so it takes a share of the deep queries.
+    deep: true,
     differs: [/^\/ContentService\/data\/referenceSequences(\?\S*)?: \.url: /],
     /**
      * One page of the ReferenceSequences, whole, by name: getByClass(
@@ -575,6 +578,9 @@ export const entitiesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/referenceSequences/identifiers',
+    // The page is the caller's `offset`, uncapped as Java's: 200,000 a page took
+    // 25 s and 57 MB (review of 20 Nov), so it takes a share of the deep queries.
+    deep: true,
     differs: [/^\/ContentService\/data\/referenceSequences\/identifiers(\?\S*)?: \.url: /],
     /** The same page a line each; a sequence's stable id is the text "null". */
     handler: referenceObjects('ReferenceSequence', true, referenceIdentifiers),

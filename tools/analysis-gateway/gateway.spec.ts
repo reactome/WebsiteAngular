@@ -16,6 +16,11 @@ const headersSeen: string[][] = [];
 const held: (() => void)[] = [];
 let upstream: Server;
 let upstreamUrl: string;
+/** pdf-export's 202 to a poll (spec 031, contracts/status.md), byte for byte. */
+const REPORT_STATUS =
+  '{"code":202,"reason":"Accepted","messages":["The report is being made"],' +
+  '"status":{"state":"making","stage":"figures","done":3,"total":12,"estimate":41}}';
+
 /** What the stand-in pdf-export was sent, and its reports not yet answered. */
 const reportsArrived: { url: string; headers: string[] }[] = [];
 const reportsHeld: (() => void)[] = [];
@@ -73,6 +78,23 @@ beforeAll(async () => {
   reports = createServer((req, res) => {
     reportsArrived.push({ url: req.url ?? '', headers: req.rawHeaders });
     req.resume();
+    // A poll that asks for JSON with a wait (spec 031) gets pdf-export's 202
+    // and its status at once, as a report still being made does.
+    const prefer = req.headers['prefer'];
+    if (prefer) {
+      res.writeHead(202, [
+        'Content-Type',
+        'application/json',
+        'Retry-After',
+        '10',
+        'Preference-Applied',
+        prefer,
+        'Vary',
+        'Accept, Prefer',
+      ]);
+      res.end(REPORT_STATUS);
+      return;
+    }
     reportsHeld.push(() => {
       res.writeHead(200, { 'Content-Type': 'application/pdf' });
       res.end('%PDF-');
@@ -848,6 +870,29 @@ describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', 
       await until(() => reportsHeld.length === 1);
       letReportGo();
       expect((await head).status).toBe(200);
+      expect(arrived).toEqual([]);
+    } finally {
+      await close();
+    }
+  });
+
+  it("passes a poll's Accept and Prefer to pdf-export, and its 202 back unchanged (spec 031 T007)", async () => {
+    // The site follows a report by asking with these (spec 031 R3); the
+    // gateway in between must change neither the question nor the answer.
+    const { base, close } = await start();
+    try {
+      const accept = 'application/pdf, application/json';
+      const answer = await report(base, { Accept: accept, Prefer: 'wait=5' });
+      expect(sent(reportsArrived[0]?.headers ?? [], 'accept')).toEqual([accept]);
+      expect(sent(reportsArrived[0]?.headers ?? [], 'prefer')).toEqual(['wait=5']);
+      expect([
+        answer.status,
+        answer.headers.get('content-type'),
+        answer.headers.get('retry-after'),
+        answer.headers.get('preference-applied'),
+        answer.headers.get('vary'),
+        await answer.text(),
+      ]).toEqual([202, 'application/json', '10', 'wait=5', 'Accept, Prefer', REPORT_STATUS]);
       expect(arrived).toEqual([]);
     } finally {
       await close();

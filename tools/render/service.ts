@@ -37,8 +37,9 @@
  *   RENDER_TIMEOUT      ms before a render is abandoned, default 45000
  *   RENDER_FILES        a folder laid out as the download site, read instead of it
  *                       (local-files.ts); unset, the page fetches from the site
- *   RENDER_REUSE        `on` holds loaded pages between figures (pages.ts, spec
- *                       018); anything else, default, a fresh page per figure
+ *   RENDER_REUSE        holds loaded pages between figures (pages.ts, spec 018),
+ *                       by default since its T009 showed them drawing as fresh
+ *                       pages do; `off`, a fresh page per figure
  *   RENDER_REUSE_MAX    figures a held page draws before it is replaced, default 200
  *   RENDER_REUSE_MEMORY share of the memory limit (the container's, or the
  *                       nearest cgroup's) past which a page is closed after its
@@ -135,7 +136,7 @@ const FILES = process.env['RENDER_FILES'] || undefined;
 const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Off until spec 018's comparison (T009) has shown held pages draw what fresh
 // ones draw; then on by default.
-const REUSE = process.env['RENDER_REUSE'] === 'on';
+const REUSE = process.env['RENDER_REUSE'] !== 'off';
 // Figures a held page draws before it is replaced, and the share of the
 // container's memory limit past which pages are closed after their figures
 // rather than held (spec 018 T007 and T015, research R4).
@@ -698,9 +699,19 @@ app.get('/health', (_req, res) => {
   } satisfies RenderHealth);
 });
 
+/** A name the route takes: letters, digits, `.`, `_` and `-`, and not dots alone. */
+export const NAME = /^(?!\.+$)[\w.-]+$/;
+
 // "genome-wide" rather than an empty path segment, so the URL says what it is.
 const renderRoute = async (req: Request<{ name: string; ext: string }>, res: Response) => {
   const { name, ext } = req.params;
+  // An identifier, or the genome-wide view: Express has decoded the name, and
+  // a `/` or `?` in it would reach the content service's path and the render
+  // page's query past every check below (review of 20 Nov). Answered as an id
+  // that is not there.
+  if (!NAME.test(name)) {
+    return refuse(res, 404, { error: `no such pathway: ${name}` });
+  }
   // `jpg` is the same picture under the name Java's enum also accepts, so a
   // caller moved from that endpoint keeps whichever spelling they already use.
   const format = ext.toLowerCase() === 'jpg' ? 'jpeg' : ext.toLowerCase();
