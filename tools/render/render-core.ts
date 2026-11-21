@@ -8,6 +8,7 @@
 import type { ConsoleMessage, Page, Route } from '@playwright/test';
 import { gifFromPage, DEFAULT_DELAY, MAX_SIZE } from './gif.ts';
 import { isDownload, localAnswer } from './local-files.ts';
+import type { Outside } from './outside.ts';
 import { LOGGED } from './pages.ts';
 import { pptx } from './pptx.ts';
 import type { RenderFailure } from '../../projects/contract/render.ts';
@@ -140,6 +141,11 @@ export interface RenderOptions {
    */
   files?: string;
   /**
+   * The page's requests to other hosts, answered by the service (outside.ts,
+   * spec 018 T018). Unset, they go to their hosts as a browser's do.
+   */
+  outside?: Outside;
+  /**
    * On a page that already holds the render page (pages.ts): the id it is
    * moved to the figure with, inside the app, instead of loading it again.
    */
@@ -212,6 +218,7 @@ export async function render(
     maxSize = MAX_SIZE,
     timeout = 120_000,
     files,
+    outside,
     nav,
   }: RenderOptions
 ): Promise<{ bytes: Buffer; state: RenderReport; problems: string[]; movable: boolean }> {
@@ -240,6 +247,7 @@ export async function render(
   };
   const handler = files ? (route: Route) => fromFiles(route, files) : undefined;
   if (handler) await page.route(isDownload, handler);
+  if (outside) await page.route(outside.matches, outside.answer);
 
   try {
     const address = renderUrl({
@@ -349,6 +357,7 @@ export async function render(
     page.off('pageerror', onPageError);
     page.off('console', onConsole);
     if (handler) await page.unroute(isDownload, handler);
+    if (outside) await page.unroute(outside.matches, outside.answer);
   }
 }
 

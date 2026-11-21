@@ -5,7 +5,7 @@
  *
  *   node tools/render/reuse-compare.ts --sample sample.txt --files <release files>
  *        [--base http://172.17.0.1:4200] [--image websiteangular-render:latest]
- *        [--code tools/render] [--mode reuse|fresh] [--out report.json] [--port 4390]
+ *        [--code tools/render] [--mode reuse|fresh|outside] [--out report.json] [--port 4390]
  *
  * Each run is its own service, started here as a container from `--image`
  * with an empty cache, `RENDER_FILES` mounted from `--files` and concurrency
@@ -19,6 +19,10 @@
  *    fresh run. The service's `/health` must say it holds pages, or a "reused"
  *    run would be fresh and pass without testing anything.
  *  - `--mode fresh`: the sample drawn fresh twice, compared (T011).
+ *  - `--mode outside`: the sample drawn fresh with the page's requests to
+ *    other hosts let through (`RENDER_OUTSIDE=allow`), then fresh with them
+ *    answered by the service (T018), compared. The second run's `/health`
+ *    must say it answered some, or it would test nothing.
  *
  * Every figure must be drawn, never served from the service's cache: no run
  * asks for the same request twice (the pairs are spread over as many runs as
@@ -410,6 +414,24 @@ export function heldProblem(reused: unknown, drawn: Drawn[]): string | undefined
 }
 
 /**
+ * Whether an outside run (T018) was the run it should be, by `/health`'s
+ * `outside`: requests let through when `allowed`, and otherwise answered by the
+ * service, at least one, or the two runs were the same run and tested nothing.
+ * Undefined when it was.
+ */
+export function outsideProblem(outside: unknown, allowed: boolean): string | undefined {
+  const local =
+    typeof outside === 'object' && outside !== null && 'local' in outside && outside.local === true;
+  if (allowed)
+    return local
+      ? 'its requests to other hosts were answered by the service, not let through'
+      : undefined;
+  if (!local) return 'its requests to other hosts were let through, not answered by the service';
+  const answered = 'answered' in outside ? Number(outside.answered) : 0;
+  return answered > 0 ? undefined : 'the service answered none of its requests to other hosts';
+}
+
+/**
  * Whether a reused run replaced a page for each planted failure it drew
  * (SC-005): `/health`'s `replaced.failure`. Undefined when it did.
  */
@@ -462,6 +484,8 @@ async function withService<T>(
     files: string;
     code: string | undefined;
     reuse: boolean;
+    /** The page's requests to other hosts let through, not answered by the service. */
+    allowOutside?: boolean;
   },
   use: (service: string, health: Record<string, unknown>) => Promise<T>,
   after: (health: Record<string, unknown>) => void = () => {}
@@ -490,6 +514,7 @@ async function withService<T>(
     'RENDER_REUSE_MAX=1000000',
     '-e',
     `RENDER_REUSE=${options.reuse ? 'on' : 'off'}`,
+    ...(options.allowOutside ? ['-e', 'RENDER_OUTSIDE=allow'] : []),
     '--shm-size',
     '1g',
     '--memory',
@@ -536,11 +561,15 @@ async function main() {
   const files = flag('files');
   if (!samplePath || !files) {
     console.error(
-      'usage: reuse-compare.ts --sample <file> --files <release files> [--mode reuse|fresh]'
+      'usage: reuse-compare.ts --sample <file> --files <release files> [--mode reuse|fresh|outside]'
     );
     process.exit(2);
   }
   const mode = flag('mode', 'reuse');
+  if (mode !== 'reuse' && mode !== 'fresh' && mode !== 'outside') {
+    console.error(`--mode ${String(mode)}: reuse, fresh or outside`);
+    process.exit(2);
+  }
   const options = {
     image: flag('image', 'websiteangular-render:latest') as string,
     base: flag('base', 'http://172.17.0.1:4200') as string,
@@ -592,15 +621,25 @@ async function main() {
     });
 
   let drawn: Drawn[] = [];
-  const run = (label: string, reuse: boolean, requests: string[]) =>
+  const run = (label: string, reuse: boolean, requests: string[], allowOutside = false) =>
     withService(
-      { ...options, reuse },
+      { ...options, reuse, allowOutside },
       async (service, health) => {
         builds[label] = health['build'];
         drawn = await draw(service, requests);
         return drawn;
       },
       (health) => {
+        if (mode === 'outside') {
+          runs[label] = {
+            drawn: requests.length,
+            differ: 0,
+            health: { outside: health['outside'] },
+          };
+          const problem = outsideProblem(health['outside'], allowOutside);
+          if (problem)
+            differences.push({ run: label, path: '', previous: undefined, why: problem });
+        }
         if (!reuse) return;
         runs[label] = {
           drawn: requests.length,
@@ -618,16 +657,21 @@ async function main() {
     );
 
   try {
-    const fresh = await run('fresh', false, sample);
+    const fresh = await run('fresh', false, sample, mode === 'outside');
     const reference = new Map(fresh.map((item) => [item.path, item]));
     // The reference itself: a failure or a cache hit there is a difference too.
     differences.push(...compare('fresh', new Map(), fresh, planted));
-    const ordered = mode === 'fresh' ? { 'fresh again': sample } : orders(sample, planted);
+    const ordered =
+      mode === 'fresh'
+        ? { 'fresh again': sample }
+        : mode === 'outside'
+          ? { 'outside answered': sample }
+          : orders(sample, planted);
     for (const [label, requests] of Object.entries(ordered)) {
       const found = compare(
         label,
         reference,
-        await run(label, mode !== 'fresh', requests),
+        await run(label, mode === 'reuse', requests),
         planted
       );
       console.log(`${label}: ${requests.length} drawn, ${found.length} differ`);

@@ -772,12 +772,29 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     the 404 as `refused`; it counts a 502 as `unanswered`, which the breaker counts.
     content-node's exporters answer any status but 503 as a 500 naming the failure, so
     only the message changes there.
-- [ ] T018 The render page fetches from hosts other than the site's while it draws: a
+- [x] T018 The render page fetches from hosts other than the site's while it draws: a
       diagram's ChEBI structure images (about 60 for R-HSA-381753) and a structure
       viewer's library from a CDN. Drawing does not wait for them (seen: with them held
       back, the diagram was ready as soon). Decide whether the render service blocks or
       answers them locally, so a release's figures step sends no load outside; if
-      blocked, prove the figures are unchanged.
+      blocked, prove the figures are unchanged. (#1036)
+  - **Measured, 21 Nov 2026,** on R-HSA-381753's render page: 59 ChEBI structures, the
+    font (Roboto, from Google's font host) and the structure viewer's script and
+    stylesheet (a CDN). Blocked outright, the page logged 62 console errors ("Failed to
+    load resource"), and a page that logs one is replaced (T006): reuse would end. Answered
+    with an empty 200, none.
+  - **Decided: answered locally** (`tools/render/outside.ts`). A ChEBI structure gets an
+    empty answer, which the diagram treats as a structure ChEBI has not got; the
+    structures are HTML over the canvas and never in a figure. Anything else is fetched
+    once a service and answered from memory. `RENDER_OUTSIDE=allow` lets them through;
+    `/health`'s `outside` counts both. Tests seen failing on five mutants (structures
+    fetched, nothing kept, a failed fetch kept, the encoding kept, the download site
+    taken).
+  - **Proof:** `reuse-compare.ts --mode outside` (new: fresh with them let through, then
+    fresh with them answered, each run's `/health` checked) on T009's 751 SVG requests
+    and 30 PNG, PDF and PowerPoint, plus R-HSA-381753 in three formats: 781 drawn, 0
+    differ. The only failures are the 15 highlights on illustrations the service refuses,
+    in both runs. The answered run answered 4,707 requests and fetched 13.
 - [x] T019 The memory rule read the container's file cache as pages' memory. The
       share it compares with the bound is `memory.current` against `memory.max`, and
       `memory.current` counts the file cache: the figures written to the service's cache

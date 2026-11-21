@@ -12,6 +12,7 @@ import {
   draw,
   healthProblem,
   heldProblem,
+  outsideProblem,
   normalise,
   opposites,
   orders,
@@ -500,5 +501,21 @@ describe('a reused run', () => {
     // B on A's page, C on a new one, D failed on C's, E on a new one, F on E's.
     expect(heldProblem(2, run)).toBeUndefined();
     expect(heldProblem(4, run)).toMatch(/expected 2/);
+  });
+});
+
+describe('outsideProblem (T018)', () => {
+  it('takes a run that let requests through, and one the service answered some of', () => {
+    expect(outsideProblem({ local: false }, true)).toBeUndefined();
+    expect(outsideProblem({ local: true, answered: 59, fetched: 3 }, false)).toBeUndefined();
+  });
+
+  it('refuses either run when it was not what it should be, or answered nothing', () => {
+    expect(outsideProblem({ local: true, answered: 0, fetched: 0 }, true)).toMatch(
+      /not let through/
+    );
+    expect(outsideProblem({ local: false }, false)).toMatch(/let through, not answered/);
+    expect(outsideProblem(undefined, false)).toMatch(/let through, not answered/);
+    expect(outsideProblem({ local: true, answered: 0, fetched: 2 }, false)).toMatch(/none/);
   });
 });

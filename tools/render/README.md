@@ -268,6 +268,7 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_REUSE`        | on                    | holds loaded pages between figures (see below); `off` draws each on a fresh page                                           |
 | `RENDER_REUSE_MAX`    | 200                   | figures a held page draws before it is replaced                                                                            |
 | `RENDER_REUSE_MEMORY` | 0.5                   | share of the memory limit past which a page is closed after its figure, not held; see below                                |
+| `RENDER_OUTSIDE`      | unset                 | `allow` lets the page's requests to other hosts through; unset, the service answers them (see below)                       |
 
 **Held pages** (spec 018). Loading the render page is most of a figure's time:
 starting the site's code, not fetching it. By default (`RENDER_REUSE=off` turns
@@ -334,6 +335,18 @@ icons and structure films, which the render page does not draw; from a folder
 without them they are 404s. Figures cached from the download site and from a
 folder have different cache keys, so switching `RENDER_FILES` on or off never
 serves one for the other.
+
+**Other hosts** (spec 018 T018). The render page is the whole site, and as it
+draws it asks other hosts what a reader's browser would: a diagram's ChEBI
+structures (one request a small molecule, about 60 for R-HSA-381753), the font,
+and the structure viewer's script and stylesheet from a CDN. The service answers
+them itself (`tools/render/outside.ts`), so a release's figures step sends no
+load outside: a ChEBI structure with an empty answer, which the diagram treats
+as a structure ChEBI does not have (the structures are laid over the canvas and
+are never in a figure); anything else is fetched once and kept in memory. A
+refusal would do as well for the figure, but the page logs it as an error and a
+page that logs one is replaced. `/health`'s `outside` counts what was answered
+and what was fetched. `RENDER_OUTSIDE=allow` lets them through, as a browser's.
 
 Query parameters: `token`, `scale`, `subpathways=false`, and for GIF `delay`
 (ms per frame) and `maxSize` (longest side). All of them are part of the cache

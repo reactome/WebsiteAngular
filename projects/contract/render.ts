@@ -217,6 +217,12 @@ export interface RenderHealth {
   cacheKey: string;
   /** Where the page reads the release's diagram files from. */
   files: 'local' | 'download site';
+  /**
+   * The page's requests to hosts other than the site's and the download site's
+   * (spec 018 T018): `local`, answered by the service (RENDER_OUTSIDE unset), with
+   * how many were answered there and how many fetched from their hosts, once each.
+   */
+  outside: { local: true; answered: number; fetched: number } | { local: false };
   /** Renders running, and waiting. */
   active: number;
   waiting: number;
