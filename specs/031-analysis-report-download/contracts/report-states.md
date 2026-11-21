@@ -18,8 +18,10 @@ the states and actions are the contract.
 | failed, failed      | The report could not be made. Try again, or tell us (the contact form).                   | Try again       |
 | failed, unreachable | No word from the report service for two minutes.                                          | Try again       |
 
-- **_t_** is shown as "under a minute", "about _n_ minutes", from the status's `estimate`;
-  absent with no estimate.
+- **_t_** is shown as "a few seconds", "about _n_ seconds" (in tens) under two minutes, then
+  "about _n_ minutes", from the status's `estimate`; absent with no estimate. Tens of
+  seconds rather than "under a minute": on beta the line otherwise stood still for 15 s
+  while a slow figure was drawn (21 Nov 2026).
 - **Accessibility:** the line is a polite live region; Cancel and Try again are buttons;
   the line's words are the buttons' description.
 - **Look:** as the tab's other downloads' progress (the managed-download styles), so the
