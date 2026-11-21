@@ -36,10 +36,14 @@ quickstart.md.
 - [x] T005 In pdf-export: the `status` object in the JSON 202 and `Prefer: wait`
       (`src/serve.ts`, contracts/report-status.md), with its tests; the browser's page and
       every other answer unchanged (a byte comparison of the page). (reactome/pdf-export#244)
-- [ ] T006 Deploy pdf-export's new commit on beta (`deploy/pdf-export`'s pin and
+- [x] T006 Deploy pdf-export's new commit on beta (`deploy/pdf-export`'s pin and
       `deploy/java/PINS.md`-style note), and check a real 202 there carries `status`.
-- [ ] T007 [P] The gateway passes a 202's JSON and a request's `Prefer` through unchanged:
-      a test in `tools/analysis-gateway/gateway.spec.ts` (R4).
+      Pinned in #1029 and #1031. 21 Nov, through beta's gateway, `Prefer: wait=2` and
+      `Accept: application/pdf, application/json`: a 202 with `Preference-Applied: wait=2`,
+      `Retry-After: 10` and `"status":{"state":"making","stage":"printing","estimate":20}`.
+- [x] T007 [P] The gateway passes a 202's JSON and a request's `Prefer` through unchanged:
+      a test in `tools/analysis-gateway/gateway.spec.ts` (R4). Seen failing with `prefer`,
+      and then `preference-applied`, added to the headers the gateway drops. (#1034)
 
 **Checkpoint**: a poll of beta's report address with `Prefer: wait=5` answers within about
 5 s with the status.
@@ -107,8 +111,15 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
       is reworked in pdf-export (T004) before this is ticked. Met, eight of ten (research R2); the small reports' estimate refined in reactome/pdf-export#246, pinned here (#1031).
 - [x] T017 [P] SC-006: the e2e records every request while getting a report and fails if the
       token reaches any host but the site's own. Done in #1030's e2e: every request with the token, while a report is followed, goes to the site's own origin.
-- [ ] T018 [P] SC-007: a browser opening the report's address directly gets today's answers
-      (202 page, 200 PDF, 410), checked against recorded answers.
+- [x] T018 [P] SC-007: a browser opening the report's address directly gets today's answers
+      (202 page, 200 PDF, 410), checked against recorded answers. Checked 21 Nov on beta
+      against pdf-export's contracts/service.md, with a browser's `Accept`: a report not yet
+      made (asked with `Prefer: wait=1` too, since small reports are made within the 30 s
+      a request is held), the page that asks again (202, `text/html`, `Retry-After: 10`, `Cache-Control:
+no-store`, a refresh after 10 s, no `status`); a made one, the PDF (200,
+      `Content-Disposition: attachment`); an unknown token, 404 in JSON. A 410 (a dated
+      token with no result) cannot be made on purpose here; pdf-export's own tests cover
+      it. (#1034)
 - [x] T019 The User Guide's analysis page, where it describes downloading the report, says
       what the reader now sees (if it describes it). Nothing to change: the site's text says only that the report can be downloaded, never how it opened.
 - [x] T020 pdf-export's spec 002 task (T001) ticked there with its PR; this spec's tasks
