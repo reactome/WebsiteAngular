@@ -7,12 +7,18 @@ import type { AnalysisReportStatus } from '../../../../../../../contract/analysi
 import type { ReportPhase } from '../../../../services/report-download';
 import { ReportDownloadsService } from '../../../../services/report-downloads.service';
 
-/** Seconds left as the line says them: "under a minute", "about 3 minutes". */
+/**
+ * Seconds left as the line says them: in tens of seconds under two minutes, so the line
+ * moves while a slow figure is drawn (on beta, "about 1 minute" stood for 15 s at a time),
+ * then in minutes.
+ */
 export function timeLeft(seconds: number | undefined): string | null {
   if (seconds === undefined) return null;
   if (seconds === 0) return 'taking longer than expected';
-  if (seconds < 60) return 'under a minute left';
-  return `about ${String(Math.round(seconds / 60))} minute${Math.round(seconds / 60) === 1 ? '' : 's'} left`;
+  if (seconds < 10) return 'a few seconds left';
+  if (seconds < 120) return `about ${String(Math.round(seconds / 10) * 10)} seconds left`;
+  const minutes = Math.round(seconds / 60);
+  return `about ${String(minutes)} minute${minutes === 1 ? '' : 's'} left`;
 }
 
 /** Where a report is, as the line says it (contracts/report-states.md). */

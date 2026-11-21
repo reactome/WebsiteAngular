@@ -13,7 +13,7 @@ describe("the report's line", () => {
     );
     expect(
       waitingWords({ state: 'making', stage: 'figures', done: 12, total: 40, estimate: 48 })
-    ).toBe('Making your report: drawing figures 12 of 40 · under a minute left');
+    ).toBe('Making your report: drawing figures 12 of 40 · about 50 seconds left');
     expect(waitingWords({ state: 'making', stage: 'printing', estimate: 0 })).toBe(
       'Making your report: printing · taking longer than expected'
     );
@@ -23,8 +23,11 @@ describe("the report's line", () => {
 
   it('gives no estimate where there is none, never a guess', () => {
     expect(timeLeft(undefined)).toBeNull();
-    expect(timeLeft(90)).toBe('about 2 minutes left');
-    expect(timeLeft(60)).toBe('about 1 minute left');
+    // in tens of seconds under two minutes, so the line moves; then in minutes
+    expect(timeLeft(4)).toBe('a few seconds left');
+    expect(timeLeft(64)).toBe('about 60 seconds left');
+    expect(timeLeft(115)).toBe('about 120 seconds left');
+    expect(timeLeft(150)).toBe('about 3 minutes left');
   });
 
   it('says each failure in its own words', () => {

@@ -65,6 +65,29 @@ left`; queued, the reports ahead `÷ reports made at once ×` a report's mean ti
   time taken. Expected to hold for over-representation (figures dominate); expression's
   extra per-figure overlay time is in its own per-figure mean.
 
+- **SC-004, measured 21 Nov 2026: met, eight of ten.** Ten over-representation reports of
+  release 98 through beta's analysis gateway, one at a time, tokens made on this host's own
+  Analysis Service; the first estimate each report's status gave (5 s after asking, in the
+  reading stage) against the time from then to its PDF:
+
+  | Pathways | First estimate | Took  | Ratio |
+  | -------- | -------------- | ----- | ----- |
+  | 25       | 95 s           | 129 s | 0.74  |
+  | 50       | 109 s          | 176 s | 0.62  |
+  | 25       | 110 s          | 112 s | 0.98  |
+  | 50       | 106 s          | 107 s | 0.99  |
+  | 25       | 100 s          | 95 s  | 1.05  |
+  | 50       | 99 s           | 130 s | 0.76  |
+  | 10       | 38 s           | 22 s  | 1.74  |
+  | 40       | 68 s           | 98 s  | 0.69  |
+  | 50       | 57 s           | 79 s  | 0.72  |
+  | 10       | 37 s           | 20 s  | 1.89  |
+
+  The two outside 50% are the smallest reports (10 pathways), over-estimated: in the
+  reading stage the estimate is a past report's mean time, before this report's figures
+  are counted. Since reactome/pdf-export#246 the reading stage's estimate takes the figures
+  the report is likely to draw (a pathway's each and the overview) at the past pace.
+
 ## R3. The site: polling and saving
 
 - **Decision:** a root-provided `ReportDownloads` service holds one entry per report

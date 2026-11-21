@@ -214,7 +214,7 @@ test.describe('Analysis results', () => {
     await openTab(page, 'Download');
     const line = page.locator('cr-report-download [role="status"]');
     await page.getByText('PDF Result', { exact: true }).click();
-    await expect(line).toContainText('drawing figures 3 of 10 · under a minute left');
+    await expect(line).toContainText('drawing figures 3 of 10 · about 40 seconds left');
     release();
     await expect(line).toContainText('no longer available');
     await expect(line.getByRole('button', { name: 'Try again' })).toHaveCount(0);
