@@ -40,8 +40,8 @@ downloads when it is ready.
    report, **Then** no new tab or window opens, and within a second the line beside the
    button says the report is being started.
 2. **Given** a report waiting behind others, **When** the reader looks at the line, **Then**
-   it says the report is queued and how many reports are ahead of it, and the number falls as
-   they finish.
+   it says the report is queued and its place in line, and the number falls as
+   reports ahead of it finish.
 3. **Given** a report being made, **When** it moves from one stage to the next, **Then** the
    line names the stage, with a count where the stage has one (figures drawn of figures to
    draw), and an estimate of the time left.

@@ -7,7 +7,7 @@ the states and actions are the contract.
 | ------------------- | ----------------------------------------------------------------------------------------- | --------------- |
 | idle                | (nothing)                                                                                 | Download report |
 | starting            | Starting your report…                                                                     | Cancel          |
-| queued              | Queued: _n_ report(s) ahead of yours · about _t_ left                                     | Cancel          |
+| queued              | Queued: number _place_ in line · about _t_ left ("next in line" at 1)                     | Cancel          |
 | making, reading     | Making your report: reading the results · about _t_ left                                  | Cancel          |
 | making, figures     | Making your report: drawing figures _done_ of _total_ · about _t_ left                    | Cancel          |
 | making, printing    | Making your report: printing · about _t_ left                                             | Cancel          |

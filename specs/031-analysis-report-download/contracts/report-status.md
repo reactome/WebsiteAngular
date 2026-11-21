@@ -25,7 +25,7 @@ For a request that does not ask for HTML, the 202's body gains `status`:
 | Field           | When       | Meaning                                                                                |
 | --------------- | ---------- | -------------------------------------------------------------------------------------- |
 | `state`         | always     | `queued` (waiting its turn) or `making`                                                |
-| `place`         | `queued`   | reports ahead of it in the queue, from 1                                               |
+| `place`         | `queued`   | its place in the queue, 1 being the next to start                                      |
 | `stage`         | `making`   | `reading` (the analysis's results and the graph), `figures` (drawing them), `printing` |
 | `done`, `total` | `figures`  | figures drawn so far, and to draw                                                      |
 | `estimate`      | when known | whole seconds left until the report is ready; absent with no past report to go by      |

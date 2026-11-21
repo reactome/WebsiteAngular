@@ -15,7 +15,7 @@ Two requests with one address are one report (pdf-export joins them).
 
 ## Report status (from pdf-export's 202)
 
-As contracts/report-status.md: `state` (`queued` or `making`), `place` (when queued),
+As contracts/report-status.md: `state` (`queued` or `making`), `place` (when queued: its place in line, 1 next),
 `stage` (`reading`, `figures`, `printing`, when making), `done` and `total` (for
 `figures`), `estimate` (seconds left, when known). Absent fields are unknown, never zero.
 

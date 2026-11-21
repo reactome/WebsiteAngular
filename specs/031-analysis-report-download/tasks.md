@@ -16,9 +16,9 @@ quickstart.md.
 
 ## Phase 1: Setup
 
-- [ ] T001 In pdf-export, add a task to its `specs/002-analysis-report/tasks.md` for the
+- [x] T001 In pdf-export, add a task to its `specs/002-analysis-report/tasks.md` for the
       report's status (this spec's contracts/report-status.md, FR-015), linking here; its
-      contracts/service.md gains the status and `Prefer: wait` when that task is done.
+      contracts/service.md gains the status and `Prefer: wait` when that task is done. (reactome/pdf-export#244: its spec 002 T029)
 - [ ] T002 [P] The status's type, as pdf-export writes it, in
       `projects/contract/analysis-report.ts` (types only, spec 016), with a check that a
       recorded 202 matches it (`tools/api-types`).
@@ -27,15 +27,15 @@ quickstart.md.
 
 ## Phase 2: Foundational (pdf-export's part, blocks the stages and estimate)
 
-- [ ] T003 In pdf-export: a job's stage and counts (`src/report/jobs.ts`, set by the
+- [x] T003 In pdf-export: a job's stage and counts (`src/report/jobs.ts`, set by the
       report's making in `src/report/report.ts`: reading, then figures with done/total,
-      then printing), and its place while queued.
-- [ ] T004 In pdf-export: past reports' times and the estimate (`src/report/times.ts`,
+      then printing), and its place while queued. (reactome/pdf-export#244)
+- [x] T004 In pdf-export: past reports' times and the estimate (`src/report/times.ts`,
       research R2): seconds per figure and other seconds over the last 20 reports; none
-      before the first.
-- [ ] T005 In pdf-export: the `status` object in the JSON 202 and `Prefer: wait`
+      before the first. (reactome/pdf-export#244)
+- [x] T005 In pdf-export: the `status` object in the JSON 202 and `Prefer: wait`
       (`src/serve.ts`, contracts/report-status.md), with its tests; the browser's page and
-      every other answer unchanged (a byte comparison of the page).
+      every other answer unchanged (a byte comparison of the page). (reactome/pdf-export#244)
 - [ ] T006 Deploy pdf-export's new commit on beta (`deploy/pdf-export`'s pin and
       `deploy/java/PINS.md`-style note), and check a real 202 there carries `status`.
 - [ ] T007 [P] The gateway passes a 202's JSON and a request's `Prefer` through unchanged:
