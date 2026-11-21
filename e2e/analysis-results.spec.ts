@@ -220,6 +220,104 @@ test.describe('Analysis results', () => {
     await expect(line.getByRole('button', { name: 'Try again' })).toHaveCount(0);
   });
 
+  test("the report's failures are said plainly, with Try again where it helps (spec 031)", async ({
+    page,
+    context,
+  }) => {
+    // pdf-export's refusals (its contracts/service.md), one per click: busy, then failed,
+    // then the result gone. None is asked again by itself: the reader decides.
+    const refusals = [
+      { status: 503, headers: { 'Retry-After': '30' } },
+      { status: 500, headers: {} },
+      { status: 404, headers: {} },
+    ];
+    let calls = 0;
+    await context.route('**/AnalysisService/report/**', (route) => {
+      const refusal = refusals[calls++] ?? { status: 410, headers: {} };
+      return route.fulfill({
+        status: refusal.status,
+        headers: refusal.headers,
+        contentType: 'application/json;charset=UTF-8',
+        body: JSON.stringify({ code: refusal.status, reason: '', messages: [] }),
+      });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+    const tryAgain = line.getByRole('button', { name: 'Try again' });
+
+    await page.getByText('PDF Result', { exact: true }).click();
+    await expect(line).toContainText('The report service is busy. Try again in 30 seconds.');
+    await page.waitForTimeout(1_000);
+    expect(calls).toBe(1);
+
+    await tryAgain.click();
+    await expect(line).toContainText('The report could not be made. Try again, or tell us');
+    await page.waitForTimeout(1_000);
+    expect(calls).toBe(2);
+
+    await tryAgain.click();
+    await expect(line).toContainText("This analysis's results are no longer available.");
+    await expect(tryAgain).toHaveCount(0);
+    expect(calls).toBe(3);
+  });
+
+  test('a report being followed can be cancelled, and one downloaded saved again (spec 031)', async ({
+    page,
+    context,
+  }) => {
+    let ready = false;
+    let calls = 0;
+    await context.route('**/AnalysisService/report/**', async (route) => {
+      calls++;
+      if (!ready) {
+        // pdf-export holds a poll up to its wait; a short hold here keeps the asking slow
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        return route.fulfill({
+          status: 202,
+          contentType: 'application/json;charset=UTF-8',
+          body: JSON.stringify({
+            code: 202,
+            reason: 'Accepted',
+            messages: [],
+            status: { state: 'queued', place: 3 },
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'Content-Disposition': 'attachment; filename="report.pdf"' },
+        body: Buffer.from('%PDF-1.7\n%%EOF\n'),
+      });
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+
+    // Cancel: the line empties and the page stops asking (pdf-export keeps making it)
+    await page.getByText('PDF Result', { exact: true }).click();
+    await expect(line).toContainText('Queued: number 3 in line');
+    await line.getByRole('button', { name: 'Cancel' }).click();
+    await expect(line).toBeEmpty();
+    await page.waitForTimeout(500);
+    const atCancel = calls;
+    await page.waitForTimeout(1_500);
+    expect(calls).toBe(atCancel);
+
+    // Asked again, it is ready; then Download again saves the file kept, without asking
+    ready = true;
+    const first = page.waitForEvent('download');
+    await page.getByText('PDF Result', { exact: true }).click();
+    expect((await first).suggestedFilename()).toBe('report.pdf');
+    await expect(line).toContainText('Report downloaded');
+    const asked = calls;
+    const second = page.waitForEvent('download');
+    await line.getByRole('button', { name: 'Download again' }).click();
+    expect((await second).suggestedFilename()).toBe('report.pdf');
+    expect(calls).toBe(asked);
+  });
+
   test('species comparison overlays the pathways', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=species');
     await page.getByText('M. musculus').first().click({ timeout: READY });

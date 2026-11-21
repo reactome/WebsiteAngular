@@ -19,9 +19,14 @@ quickstart.md.
 - [x] T001 In pdf-export, add a task to its `specs/002-analysis-report/tasks.md` for the
       report's status (this spec's contracts/report-status.md, FR-015), linking here; its
       contracts/service.md gains the status and `Prefer: wait` when that task is done. (reactome/pdf-export#244: its spec 002 T029)
-- [ ] T002 [P] The status's type, as pdf-export writes it, in
+- [x] T002 [P] The status's type, as pdf-export writes it, in
       `projects/contract/analysis-report.ts` (types only, spec 016), with a check that a
-      recorded 202 matches it (`tools/api-types`).
+      recorded 202 matches it (`tools/api-types`). The type came with #1030. The check is
+      in `tools/analysis-types/analysis-model.spec.ts`, beside the AnalysisService's
+      answers it compiles the same way: four 202s recorded on beta on 21 Nov, one per
+      state and stage (queued, reading, figures, printing), in
+      `tools/analysis-types/recorded/report-status.json`. Seen failing with `printing` left
+      out of the stages, and with `place` renamed. (#1035)
 
 ---
 
@@ -86,8 +91,14 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 - [x] T012 [US2] `ReportDownloads`: 404/410 → gone (no retry), 503 → busy (retry after its
       `Retry-After`), 500 → failed (retry, how to report), two minutes without an answer →
       unreachable (retry). Unit tests for each, and for a retry starting afresh. (#1030)
-- [ ] T013 [US2] The line's failure words and actions (contracts/report-states.md); e2e for
-      each kind (SC-005).
+- [x] T013 [US2] The line's failure words and actions (contracts/report-states.md); e2e for
+      each kind (SC-005). The words came with #1030. e2e: 503 (busy, with its seconds),
+      500 (failed) and 404 (gone), one per click, each said; Try again for the first two
+      and none for gone; nothing asked again without a click. The expired result (410)
+      was #1030's. Unreachable (two minutes without an answer) is the unit test's
+      (`report-download.spec.ts`, on a fake clock); in the e2e it would be two minutes of
+      waiting. Seen failing with a 503 asked again by itself, with Try again only for
+      busy, and with Try again for gone. (#1035)
 
 ---
 
@@ -100,7 +111,10 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 - [x] T014 [US3] Cancel aborts the request in flight and stops asking, the entry back to
       idle; download again from the entry's Blob within the hour, and afresh past it. Unit
       tests (no request after cancel; none for download again within the hour). (#1030)
-- [ ] T015 [US3] The line's Cancel and Download again; e2e for both.
+- [x] T015 [US3] The line's Cancel and Download again; e2e for both. Cancel empties the
+      line and the page stops asking; asked again, the report downloads; Download again
+      saves the kept file without asking pdf-export. Seen failing with Cancel not
+      aborting, and with the kept file never used. (#1035)
 
 ---
 
