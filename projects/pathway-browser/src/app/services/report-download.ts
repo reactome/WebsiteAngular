@@ -14,7 +14,7 @@ import { filenameFrom } from './file-download.service';
  */
 
 /** How long one request may be held while the report is made, in seconds (FR-006: 10). */
-export const HOLD_S = 5;
+const HOLD_S = 5;
 /** No answer at all for this long and the status is said to be unknown (spec, edge cases). */
 export const SILENCE_MS = 120_000;
 /** How long the file is kept to save again: as long as pdf-export keeps the report. */
@@ -22,7 +22,7 @@ export const KEEP_MS = 3_600_000;
 /** The pause before asking again after a request that got no answer. */
 const AGAIN_MS = 5_000;
 
-export type ReportFailure = 'gone' | 'busy' | 'failed' | 'unreachable';
+type ReportFailure = 'gone' | 'busy' | 'failed' | 'unreachable';
 
 export type ReportPhase =
   | { status: 'idle' }

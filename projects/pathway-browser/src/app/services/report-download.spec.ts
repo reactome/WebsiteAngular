@@ -2,15 +2,27 @@
 // each failure, the silence, cancel and download again, against a stub of the report's
 // address.
 import { describe, expect, it } from 'vitest';
+import type {
+  AnalysisReportAccepted,
+  AnalysisReportStatus,
+} from '../../../../contract/analysis-report.ts';
 import { KEEP_MS, ReportDownload, SILENCE_MS, statusOf, type ReportPort } from './report-download';
 
 const ADDRESS = '/AnalysisService/report/TOKEN/9606/report.pdf';
 
-const accepted = (status?: object): Response =>
-  new Response(JSON.stringify({ code: 202, reason: 'Accepted', messages: [], status }), {
+const accepted = (status?: AnalysisReportStatus): Response => {
+  // the 202 as the contract has pdf-export write it
+  const body: AnalysisReportAccepted = {
+    code: 202,
+    reason: 'Accepted',
+    messages: [],
+    ...(status ? { status } : {}),
+  };
+  return new Response(JSON.stringify(body), {
     status: 202,
     headers: { 'Content-Type': 'application/json' },
   });
+};
 const pdf = (): Response =>
   new Response(new Blob(['%PDF-1.7'], { type: 'application/pdf' }), {
     status: 200,
