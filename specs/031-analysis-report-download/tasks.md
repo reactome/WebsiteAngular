@@ -57,17 +57,17 @@ quickstart.md.
 application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a 200
       reads the Blob and saves it as `FileDownloadService` does, under the report's name;
       data-model's states. Unit tests against a stub fetch: the states in order, a new
-      request after each 202, the 200 saved once. (#PR)
+      request after each 202, the 200 saved once. (#1030)
 - [x] T009 [US1] The status line (`details/tabs/download-tab/report-download/`): the words of
       contracts/report-states.md for idle, starting, queued, making (each stage), past the
-      estimate, saved; a polite live region; the managed-download look. (#PR)
+      estimate, saved; a polite live region; the managed-download look. (#1030)
 - [x] T010 [US1] The Download tab's report button uses them, no longer `opens` a new tab
       (`download-tab.component.ts`, `download-button`); re-entry to the tab shows the
-      entry's state (FR-012). (#PR)
+      entry's state (FR-012). (#1030)
 - [x] T011 [US1] e2e (in `e2e/analysis-results.spec.ts`, beside the other result files): the report's address answered in the
       test (202 queued, 202 making with counts and estimate, 200 PDF): no new page opens
       (SC-001), the line follows the states, the download event has the report's name;
-      the first status within 1 s (SC-002). (#PR)
+      the first status within 1 s (SC-002). (#1030)
 
 **Checkpoint**: on beta, a real report followed and downloaded on the page.
 
@@ -81,7 +81,7 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 
 - [x] T012 [US2] `ReportDownloads`: 404/410 → gone (no retry), 503 → busy (retry after its
       `Retry-After`), 500 → failed (retry, how to report), two minutes without an answer →
-      unreachable (retry). Unit tests for each, and for a retry starting afresh. (#PR)
+      unreachable (retry). Unit tests for each, and for a retry starting afresh. (#1030)
 - [ ] T013 [US2] The line's failure words and actions (contracts/report-states.md); e2e for
       each kind (SC-005).
 
@@ -95,7 +95,7 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 
 - [x] T014 [US3] Cancel aborts the request in flight and stops asking, the entry back to
       idle; download again from the entry's Blob within the hour, and afresh past it. Unit
-      tests (no request after cancel; none for download again within the hour). (#PR)
+      tests (no request after cancel; none for download again within the hour). (#1030)
 - [ ] T015 [US3] The line's Cancel and Download again; e2e for both.
 
 ---
