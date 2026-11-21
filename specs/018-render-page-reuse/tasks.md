@@ -428,14 +428,23 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
 
 ## Phase 5: Proof and the release run
 
-- [ ] T009 [US2] SC-003 and SC-005.
+- [x] T009 [US2] SC-003 and SC-005.
   - **Run:** the comparison on 500 or more requests, three orders, every format, through
     a reuse-on and a reuse-off service built from main.
   - **Mutants:** run each mutant of research R5 and record that it fails.
   - **Then:** turn `RENDER_REUSE` on by default.
-  - **Not done: the default stays off.** The SVG run below has three differences the
-    comparison cannot explain away (two figures, one failure), all intermittent, all on
-    held pages only. T009 is ticked once they are found and fixed and a run is clean.
+  - **Done, 21 Nov 2026: `RENDER_REUSE` is on by default** (`off` turns it off; the
+    tests of `/health` cover both, the default's seen failing with the old setting).
+    The first SVG run (17 Nov, below) had three differences; two were found and fixed
+    (#1020, #1022), and the third, a failure, did not come back.
+  - **Run, 21 Nov 2026, clean:** the same comparison (`--mode reuse`, a fresh container
+    each run, `--code tools/render` of main with #1020 and #1022 in, the release 98
+    files) on a new SVG sample of 751 requests. Listed and reversed: 751 drawn each, 0
+    differ. Pairs (8 runs, 3,628 draws): the only differences are 15 requests answered
+    500 in every run, the fresh one included: a highlight or selection on an
+    illustration, which the service refuses ("highlight is not drawn on an
+    illustration yet"), fresh as held. Draws not on a held page (2 to 27 a run) are each
+    after a page replaced for a console error or memory, counted in `/health`.
   - **Run, 17 Nov 2026:** `reuse-compare.ts --mode reuse` (each run a fresh container,
     concurrency 1, `--code tools/render`, the release 98 files) against a scratch
     `production,beta` build of main. The script gained, for this: planted failures

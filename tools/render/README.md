@@ -265,13 +265,13 @@ curl -s http://127.0.0.1:4310/health
 | `RENDER_QUEUE`        | 8                     | pending renders before 503                                                                                                 |
 | `RENDER_TIMEOUT`      | 45000                 | ms before a render is abandoned                                                                                            |
 | `RENDER_FILES`        | unset                 | a folder laid out as the download site; see below                                                                          |
-| `RENDER_REUSE`        | off                   | `on` holds loaded pages between figures; see below                                                                         |
+| `RENDER_REUSE`        | on                    | holds loaded pages between figures (see below); `off` draws each on a fresh page                                           |
 | `RENDER_REUSE_MAX`    | 200                   | figures a held page draws before it is replaced                                                                            |
 | `RENDER_REUSE_MEMORY` | 0.5                   | share of the memory limit past which a page is closed after its figure, not held; see below                                |
 
 **Held pages** (spec 018). Loading the render page is most of a figure's time:
-starting the site's code, not fetching it. With `RENDER_REUSE=on` the service
-keeps a page that has drawn a figure, one per concurrent render, each in a
+starting the site's code, not fetching it. By default (`RENDER_REUSE=off` turns
+it off) the service keeps a page that has drawn a figure, one per concurrent render, each in a
 browser context of its own, and moves it to the next figure inside the app
 (`window.__renderNavigate`) instead of loading it again. The render page
 recreates its component on each move and resets what outlives it, so a figure
