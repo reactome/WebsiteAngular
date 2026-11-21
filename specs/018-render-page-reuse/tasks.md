@@ -433,7 +433,7 @@ fresh`: 100 drawn, 0 differ. With Java's layouts the same test had found 2 diffe
     a reuse-on and a reuse-off service built from main.
   - **Mutants:** run each mutant of research R5 and record that it fails.
   - **Then:** turn `RENDER_REUSE` on by default.
-  - **Done, 21 Nov 2026: `RENDER_REUSE` is on by default** (`off` turns it off; the
+  - **Done, 21 Nov 2026 (#1033): `RENDER_REUSE` is on by default** (`off` turns it off; the
     tests of `/health` cover both, the default's seen failing with the old setting).
     The first SVG run (17 Nov, below) had three differences; two were found and fixed
     (#1020, #1022), and the third, a failure, did not come back.
