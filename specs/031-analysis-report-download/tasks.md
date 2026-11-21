@@ -104,15 +104,15 @@ application/pdf` and `Prefer: wait=5`; a 202 stores its status and asks again; a
 
 - [x] T016 SC-004: ten reports on beta (quickstart's measurement), each first estimate
       against the time taken; recorded in research R2. If under eight in ten, the estimate
-      is reworked in pdf-export (T004) before this is ticked. Met, eight of ten (research R2); the small reports' estimate refined in reactome/pdf-export#246, pinned here (#PR).
-- [ ] T017 [P] SC-006: the e2e records every request while getting a report and fails if the
-      token reaches any host but the site's own.
+      is reworked in pdf-export (T004) before this is ticked. Met, eight of ten (research R2); the small reports' estimate refined in reactome/pdf-export#246, pinned here (#1031).
+- [x] T017 [P] SC-006: the e2e records every request while getting a report and fails if the
+      token reaches any host but the site's own. Done in #1030's e2e: every request with the token, while a report is followed, goes to the site's own origin.
 - [ ] T018 [P] SC-007: a browser opening the report's address directly gets today's answers
       (202 page, 200 PDF, 410), checked against recorded answers.
-- [ ] T019 The User Guide's analysis page, where it describes downloading the report, says
-      what the reader now sees (if it describes it).
-- [ ] T020 pdf-export's spec 002 task (T001) ticked there with its PR; this spec's tasks
-      ticked with theirs.
+- [x] T019 The User Guide's analysis page, where it describes downloading the report, says
+      what the reader now sees (if it describes it). Nothing to change: the site's text says only that the report can be downloaded, never how it opened.
+- [x] T020 pdf-export's spec 002 task (T001) ticked there with its PR; this spec's tasks
+      ticked with theirs. pdf-export's spec 002 T029 ticked there in reactome/pdf-export#244.
 
 ---
 
