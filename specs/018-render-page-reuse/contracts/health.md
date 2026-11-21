@@ -10,6 +10,10 @@ Every field `/health` answers today stays as it is. With `RENDER_REUSE` on, it a
 | `site`     | `string \| null`                                     | the site build last read from `RENDER_BASE` (research R3) |
 | `replaced` | `{ failure, count, memory, build, browser: number }` | pages closed since start, by reason (data-model)          |
 
+And always, since T018: `outside`, the page's requests to other hosts: `{ local: true,
+answered, fetched }` when the service answers them (`answered` here, `fetched` once each
+from their hosts), `{ local: false }` with `RENDER_OUTSIDE=allow`.
+
 With `RENDER_REUSE=off`, `reuse` is `false` and the other four are absent, not zero: there
 are no pages to count, and an absent field cannot be mistaken for a reuse run that drew
 nothing.

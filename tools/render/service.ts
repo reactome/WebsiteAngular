@@ -46,6 +46,8 @@
  *                       figure rather than held: one a round of figures, and a
  *                       quarter of the way on to the limit, every one; default
  *                       0.5; no limit, no rule (pages.ts, memoryVerdict)
+ *   RENDER_OUTSIDE      `allow`: the page's requests to other hosts go to them;
+ *                       unset, answered here (outside.ts, spec 018 T018)
  *
  * Query parameters: token, scale, subpathways=false, dark=true, select=<stId>,
  * highlight=<stId>,<stId>...,
@@ -83,6 +85,7 @@ import path from 'node:path';
 import { FORMATS, isFormat, render } from './render-core.ts';
 import { Pages, atMostEvery, buildIn, memoryShare, verdict } from './pages.ts';
 import { CacheTotal } from './cache-total.ts';
+import { Outside } from './outside.ts';
 import type { Format } from './render-core.ts';
 import type { RenderHealth, RenderRefusal } from '../../projects/contract/render.ts';
 
@@ -137,6 +140,9 @@ const CONCURRENCY = Number(process.env['RENDER_CONCURRENCY'] || 2);
 // Off until spec 018's comparison (T009) has shown held pages draw what fresh
 // ones draw; then on by default.
 const REUSE = process.env['RENDER_REUSE'] !== 'off';
+// The page's requests to other hosts answered here (outside.ts, spec 018 T018),
+// unless `allow`: then they go to their hosts, as a browser's do.
+const OUTSIDE = process.env['RENDER_OUTSIDE'] === 'allow' ? undefined : new Outside(BASE);
 // Figures a held page draws before it is replaced, and the share of the
 // container's memory limit past which pages are closed after their figures
 // rather than held (spec 018 T007 and T015, research R4).
@@ -590,6 +596,7 @@ async function renderCached(params: RenderParams) {
           base: BASE,
           timeout: RENDER_TIMEOUT,
           ...(FILES ? { files: FILES } : {}),
+          ...(OUTSIDE ? { outside: OUTSIDE } : {}),
           ...params,
           ...(nav === undefined ? {} : { nav }),
         });
@@ -690,6 +697,7 @@ app.get('/health', (_req, res) => {
     cache: CACHE,
     cacheKey: CACHE_KEY,
     files: FILES ? 'local' : 'download site',
+    outside: OUTSIDE ? { local: true, ...OUTSIDE.health() } : { local: false },
     active,
     waiting: waiting.length,
     ...stats,

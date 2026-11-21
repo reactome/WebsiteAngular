@@ -37,6 +37,7 @@ const EVERY_FIELD = [
   'cache',
   'cacheKey',
   'files',
+  'outside',
   'active',
   'waiting',
   'served',
@@ -89,6 +90,11 @@ describe('/health with RENDER_REUSE unset (spec 018 T009)', () => {
   it('says pages are held: reuse is the default since T009', async () => {
     const body = await json(await fetch(`${base}/health`));
     expect(body.reuse).toBe(true);
+  });
+
+  it("answers the page's requests to other hosts itself, by default (T018)", async () => {
+    const body = await json(await fetch(`${base}/health`));
+    expect(body.outside).toEqual({ local: true, answered: 0, fetched: 0 });
   });
 });
 
