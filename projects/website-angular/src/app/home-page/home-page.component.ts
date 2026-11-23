@@ -97,7 +97,7 @@ function releaseOf(title: string): string | null {
 }
 
 /** The first pathway an announcement links to, `[name](</PathwayBrowser/#R-HSA-n>)` or `#n`. */
-export function featuredIn(markdown: string, release: string): FeaturedPathway | null {
+function featuredIn(markdown: string, release: string): FeaturedPathway | null {
   const link = /\[([^\]]+)\]\(<?\/PathwayBrowser\/#(?:R-HSA-)?(\d+)>?\)/.exec(markdown);
   if (!link?.[1] || !link[2]) return null;
   const stId = `R-HSA-${link[2]}`;
