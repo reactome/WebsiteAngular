@@ -121,15 +121,23 @@ export class ViewportComponent {
   public citation: CitationService = inject(CitationService);
   private readonly dialog = inject(MatDialog);
 
+  /**
+   * A phone's width (proposal, UI review of 23 Nov 2026): the diagram first, the
+   * event tree opened from the Layout menu and then most of the width, as a
+   * drawer. Side by side, the tree took half a phone and cut every name short.
+   */
+  private readonly narrow =
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 700px)').matches;
+
   /** Which panels the reader has chosen to show from the Layout menu. */
-  readonly panels = signal(ALL_PANELS);
+  readonly panels = signal(this.narrow ? { ...ALL_PANELS, hierarchy: false } : ALL_PANELS);
 
   /**
    * The hierarchy's share of the width, as last dragged. Bound rather than left
    * to the library, which re-derives both areas' sizes whenever one is hidden
    * and would put a dragged width back to the default.
    */
-  readonly hierarchyShare = signal(20);
+  readonly hierarchyShare = signal(this.narrow ? 85 : 20);
   /**
    * Whether the way home is drawn in the hierarchy panel, over its search row.
    * Not when the panel is closed, and not when it has been dragged narrow: the

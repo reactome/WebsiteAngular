@@ -18,7 +18,10 @@
 
 .diagram-img {
   max-width: 100%;
+  // A picture to lead the page, not to fill it: the summary stays close below
+  max-height: 420px;
   height: auto;
+  object-fit: contain;
 }
 
 // Until the diagram arrives, the frame says so, at a modest height rather than

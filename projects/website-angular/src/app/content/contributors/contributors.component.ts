@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { Contributor, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
@@ -15,7 +16,7 @@ const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 @Component({
   selector: 'app-contributors',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './contributors.component.html',
   styleUrl: './contributors.component.scss',
 })

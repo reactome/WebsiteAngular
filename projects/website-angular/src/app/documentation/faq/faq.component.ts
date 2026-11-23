@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -23,7 +24,7 @@ import type {
  */
 @Component({
   selector: 'app-faq',
-  imports: [PageLayoutComponent, RouterLink, LoadErrorComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink, LoadErrorComponent],
   templateUrl: './faq.component.html',
   styleUrl: './faq.component.scss',
 })

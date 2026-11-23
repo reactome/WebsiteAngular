@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -17,7 +18,7 @@ const PIPELINE_CSV = `${SPREADSHEET_BASE}?gid=6&single=true&output=csv`;
 
 @Component({
   selector: 'app-editorial-calendar',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './editorial-calendar.component.html',
   styleUrl: './editorial-calendar.component.scss',
 })

@@ -1,8 +1,6 @@
 <app-page-layout>
   <article class="collaboration-page">
-    <header class="page-header">
-      <span class="category-badge">Community</span>
-      <h1>Partners</h1>
+    <app-page-header section="Community" title="Partners">
       <p class="description">
         The following table contains the known resources that have integrated Reactome by using the
         <a routerLink="/documentation/dev/analysis">Analysis Service</a>, the
@@ -17,7 +15,7 @@
           >please let us know and we will add it.</a
         >
       </p>
-    </header>
+    </app-page-header>
     <div class="partners-grid">
       @for (partner of partners; track partner.name) {
         <a [href]="partner.url" target="_blank" class="partner-card">

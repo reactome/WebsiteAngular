@@ -209,6 +209,9 @@
   align-items: center;
 
   width: var(--column-width);
+  // At least its word: on a phone the column is narrower than "Overview", and
+  // the word, centred in it, lost its first letter off the left edge.
+  min-width: max-content;
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 0.5px;
@@ -620,5 +623,17 @@
     font-size: 16px;
     width: 16px;
     height: 16px;
+  }
+}
+
+// A figure the caller puts with the overview (the detail page's diagram): under
+// it, full width, before the summary. Beside it, the short overview left an
+// empty gap under itself and pushed the summary down.
+:host ::ng-deep .overview:has(> .overview-figure) {
+  flex-direction: column;
+
+  > .overview-figure {
+    width: 100%;
+    margin-top: 12px;
   }
 }

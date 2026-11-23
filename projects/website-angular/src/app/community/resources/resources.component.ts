@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { HttpClient } from '@angular/common/http';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -13,7 +14,7 @@ const HTML_URL =
 
 @Component({
   selector: 'app-resources',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './resources.component.html',
   styleUrl: './resources.component.scss',
 })

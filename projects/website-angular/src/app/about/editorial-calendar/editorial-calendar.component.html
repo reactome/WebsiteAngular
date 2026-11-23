@@ -1,13 +1,11 @@
 <app-page-layout>
   <article class="editorial-calendar">
-    <header class="page-header">
-      <span class="category-badge">About</span>
-      <h1>Editorial Calendar</h1>
+    <app-page-header section="About" title="Editorial Calendar">
       <p class="description">
         Pathways currently being curated and reviewed by the Reactome editorial team, along with upcoming projects in
         the pipeline.
       </p>
-    </header>
+    </app-page-header>
 
     @if (loading) {
       <div class="loading-state">

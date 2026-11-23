@@ -1,14 +1,12 @@
 <app-page-layout>
   <article class="faq-page">
-    <header class="page-header">
-      <span class="category-badge">Documentation</span>
-      <h1>Frequently Asked Questions</h1>
+    <app-page-header section="Documentation" title="Frequently Asked Questions">
       <p class="description">
         Here you can find answers to some of the most common questions about Reactome. If you have a question that is
         not answered here, please
         <a href="mailto:help@reactome.org">contact us</a>.
       </p>
-    </header>
+    </app-page-header>
     <section class="faq-section">
       @if (failed()) {
         <app-load-error what="the questions" />

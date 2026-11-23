@@ -1,8 +1,7 @@
 <app-page-layout [showSidebar]="false">
   <article class="download-page">
     <!-- Header -->
-    <header class="page-header">
-      <h1>Download Data</h1>
+    <app-page-header section="Download" title="Download Data">
       <p class="description">
         Reactome provides open-source and open-data. We continuously support major open-data standards, including
         BioPAX, PSI-MITAB, SBML and SBGN export formats. All data is freely available under a
@@ -18,7 +17,7 @@
           <span class="version-badge">Current Release: {{ versionLabel() }}</span>
         }
       }
-    </header>
+    </app-page-header>
 
     <div class="content-with-toc">
       <!-- Table of Contents (sidebar) -->
