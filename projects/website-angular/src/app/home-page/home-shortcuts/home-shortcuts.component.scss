@@ -20,8 +20,8 @@
   gap: 6px;
   padding: 18px 12px;
   border-radius: 12px;
-  background: #fff;
-  border: 1px solid #d5e1e4;
+  background: var(--shortcut-card, #fff);
+  border: 1px solid var(--shortcut-edge, #d5e1e4);
   color: var(--primary);
   text-align: center;
   text-decoration: none;
@@ -50,5 +50,12 @@
 .shortcut-what {
   font-size: 13px;
   line-height: 1.35;
-  color: #40484c;
+  color: var(--shortcut-what-ink, #40484c);
+}
+
+// Dark mode: dark cards, their words light, the name in the theme's own primary.
+:host-context(.dark) {
+  --shortcut-card: #13252b;
+  --shortcut-edge: #24404a;
+  --shortcut-what-ink: #b5c7cd;
 }

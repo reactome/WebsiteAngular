@@ -285,13 +285,22 @@ $transition: all 0.3s ease;
 
 // The public homepage on a light page; the teal is the hero's alone. The
 // curator site keeps its gradient.
-:host(:not(.curator)) {
-  background-image: none;
-  background-color: #eef4f6;
+// Its colours as tokens, which dark mode redefines: a selector joining
+// :host-context(.dark) with :host(:not(.curator)) matched nothing, and the light
+// page showed between the dark cards.
+:host {
+  --home-page-bg: #eef4f6;
+  --home-card-edge: #d5e1e4;
 }
 
-:host-context(.dark):host(:not(.curator)) {
-  background-color: #0b1c22;
+:host-context(.dark) {
+  --home-page-bg: #0b1c22;
+  --home-card-edge: #24404a;
+}
+
+:host(:not(.curator)) {
+  background-image: none;
+  background-color: var(--home-page-bg);
 }
 
 .home-hero-band {
@@ -356,11 +365,7 @@ $transition: all 0.3s ease;
 
 // White cards on the light page: an edge to stand off it.
 :host(:not(.curator)) ::ng-deep .light-tile {
-  border: 1px solid #d5e1e4;
+  border: 1px solid var(--home-card-edge);
   border-radius: 12px;
   box-shadow: 0 1px 3px rgb(0 40 50 / 8%);
-}
-
-:host-context(.dark):host(:not(.curator)) ::ng-deep .light-tile {
-  border-color: #24404a;
 }
