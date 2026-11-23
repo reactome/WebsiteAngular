@@ -47,6 +47,8 @@ export class SearchBarComponent implements OnChanges, AfterViewInit, OnInit {
   /** What the bar holds: the page's query until the reader types or picks one. */
   readonly text = linkedSignal(() => this.query() || '');
   readonly filters = input(false);
+  /** The query syntax help: on the search page, not wherever the bar is put (the home page). */
+  readonly syntaxHelp = input(false);
 
   /**
    * The filters currently applied, read from the URL by the page.
