@@ -15,7 +15,7 @@
 # browser, and node:24's layers are already on the host.
 FROM node:24
 
-ARG PDF_EXPORT_COMMIT=5346594140d6bc2561c7a35cab13c77d005629f2
+ARG PDF_EXPORT_COMMIT=678433b1863acab1e45e37e60883b8da02064c23
 
 # Where the browser goes: outside any user's home, as the service runs as the
 # owner of the graph's credentials file, not as the user that installed it
