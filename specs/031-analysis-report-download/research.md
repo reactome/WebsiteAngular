@@ -132,11 +132,15 @@ application/json, application/pdf` and `Prefer: wait=5`, and asks again as soon 
   every report request (`/AnalysisService/report/…`) before forwarding it, so pdf-export is
   unchanged. The cookie travels with the page's own requests (same origin, `Path=/`).
   Without a valid pass: a browser (`Accept: text/html`) gets a redirect to the analysis's
-  Download tab; any other caller gets a 403 in the service's JSON envelope (`code`,
+  Download tab; any other caller gets a 401 in the service's JSON envelope (`code`,
   `reason`, `messages`), the messages naming the results' JSON
-  (`/AnalysisService/download/{token}/result.json.gz`) and CSV files instead. With no
-  `ANSWER_IDENTITY_SECRET` the gateway refuses every report request (503), never a pass by
-  default, as human-gate.js's "refuses to run half-configured".
+  (`/AnalysisService/download/{token}/result.json.gz`) and CSV files instead, with
+  `verify` (`/search-answer/verify`) and `sitekey`, as the site's other gated routes
+  answer: 401 because a reader can become allowed by passing the check, and the site key
+  with it so the page shows the check only when asked to (T021, revised while building it
+  from 403: the Download tab then handles it as the analysis summary does). With no
+  `ANSWER_IDENTITY_SECRET`, or no site key, the gateway refuses every report request
+  (503), never a pass by default, as human-gate.js's "refuses to run half-configured".
 - **Every request, not only the first:** the gateway does not know whether a request would
   start a report or join one already made, and asking pdf-export would change pdf-export.
   The pass lasts twelve hours, longer than a report is kept (an hour), so a reader who

@@ -136,6 +136,7 @@ async function start(settings: GatewaySettings = {}) {
     maxWaitMs: 2000,
     retryAfter: 7,
     identitySecret: SECRET,
+    siteKey: 'a-test-site-key',
     ...settings,
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -1094,7 +1095,7 @@ describe('the report only for a person (spec 031, User Story 4)', () => {
     }
   });
 
-  it('refuses a script without a pass, naming the results, and sends pdf-export nothing', async () => {
+  it('refuses a caller without a pass, naming the results and the check, and sends pdf-export nothing', async () => {
     const { base, close } = await start();
     try {
       const answer = await ask(base, { Accept: 'application/json' });
@@ -1102,9 +1103,18 @@ describe('the report only for a person (spec 031, User Story 4)', () => {
         status: answer.status,
         type: answer.headers.get('content-type'),
         cache: answer.headers.get('cache-control'),
-      }).toEqual({ status: 403, type: 'application/json;charset=UTF-8', cache: 'no-store' });
-      const body = (await answer.json()) as { code: number; messages: string[] };
-      expect(body.code).toBe(403);
+      }).toEqual({ status: 401, type: 'application/json;charset=UTF-8', cache: 'no-store' });
+      const body = (await answer.json()) as {
+        code: number;
+        messages: string[];
+        verify: string;
+        sitekey: string;
+      };
+      expect([body.code, body.verify, body.sitekey]).toEqual([
+        401,
+        '/search-answer/verify',
+        'a-test-site-key',
+      ]);
       expect(body.messages.join(' ')).toContain('/AnalysisService/download/MjAy/result.json.gz');
       expect(reportsArrived).toEqual([]);
       expect((await health(base)).clients).toBe(0);
@@ -1138,7 +1148,7 @@ describe('the report only for a person (spec 031, User Story 4)', () => {
         `${pass()}.extra`,
       ]) {
         const answer = await ask(base, { Cookie: cookie });
-        expect([cookie, answer.status]).toEqual([cookie, 403]);
+        expect([cookie, answer.status]).toEqual([cookie, 401]);
       }
       expect(reportsArrived).toEqual([]);
     } finally {
@@ -1146,7 +1156,16 @@ describe('the report only for a person (spec 031, User Story 4)', () => {
     }
   });
 
-  it('refuses every report where the deployment has no identity secret', async () => {
+  it('refuses every report where the deployment has no identity secret or site key', async () => {
+    for (const settings of [{ identitySecret: '' }, { siteKey: '' }]) {
+      const started = await start(settings);
+      try {
+        const refused = await ask(started.base, { Cookie: pass() });
+        expect([settings, refused.status]).toEqual([settings, 503]);
+      } finally {
+        await started.close();
+      }
+    }
     const { base, close } = await start({ identitySecret: '' });
     try {
       const answer = await ask(base, { Cookie: pass() });

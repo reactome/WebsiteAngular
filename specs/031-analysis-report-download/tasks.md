@@ -155,8 +155,9 @@ browser opening the address is taken to the Download tab.
       node service has it); a twin of human-gate.js's `readIdentity`, as content-node's
       turnstile.ts is of its `verifyCaptcha`. No pass: a browser (`Accept: text/html`) is
       redirected to the analysis's Download tab (its address measured from the site's own
-      links), any other caller gets 403 in the service's JSON envelope naming the results'
-      JSON and CSV addresses; no secret: 503 for every report request. Tests: a valid pass
+      links), any other caller gets 401 in the service's JSON envelope naming the results'
+      JSON and CSV addresses, with `verify` and `sitekey` for the page; no secret or site
+      key: 503 for every report request. Tests: a valid pass
       forwarded; none, a forged signature, an expired one and a missing secret each refused,
       with nothing reaching pdf-export (its stub counts requests); each seen failing.
       Done: `tools/analysis-gateway/human-pass.ts` (the twin, checked against a pass
@@ -170,7 +171,7 @@ browser opening the address is taken to the Download tab.
       its owner; nginx's `/AnalysisService/` route strips no cookie, so nothing changes
       there. The image carries `human-pass.ts` (built and loaded once). Beta's gateway is
       rebuilt only with T023, or readers without a pass would be refused with no check.
-- [ ] T023 [US4] `ReportDownloads`: a 403 that asks for the check moves the entry to
+- [ ] T023 [US4] `ReportDownloads`: a 401 that asks for the check moves the entry to
       "checking"; the line shows the challenge with the analysis summary's component
       (shared, not copied), posts its token to `/search-answer/verify`, then asks again;
       "failed, not checked" and "failed, no check" as contracts/report-states.md says. Unit
@@ -178,7 +179,7 @@ browser opening the address is taken to the Download tab.
 - [ ] T024 [US4] e2e: with no pass, the check appears and the report follows; with a pass,
       no check; a refused check, Try again. The challenge stubbed as `e2e/search-errors.spec.ts`
       stubs it.
-- [ ] T025 [US4] SC-008 on beta: a script without a pass (403, nothing queued: pdf-export's
+- [ ] T025 [US4] SC-008 on beta: a script without a pass (401, nothing queued: pdf-export's
       health shows no new job), a browser opening the address (redirected), a forged and an
       expired pass (refused), each recorded here.
 - [ ] T026 [US4] The API page and the User Guide, where they mention the report's address,
@@ -202,7 +203,7 @@ browser opening the address is taken to the Download tab.
 - T002, T007 beside pdf-export's T003–T005.
 - T009 (the line) beside T008 (the service) once the states are agreed (data-model).
 - T017 and T018 together.
-- T021 and T023 together once the 403's shape is agreed (research R6); T022 with T021; T024
+- T021 and T023 together once the 401's shape is agreed (research R6); T022 with T021; T024
   after T023; T025 after T021 to T024 are deployed.
 
 ## Implementation strategy

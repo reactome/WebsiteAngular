@@ -54,6 +54,31 @@ export function humanPass(
 /** Where the deployment mounts the site's answer settings, read for one line only. */
 export const IDENTITY_FILE = '/run/secrets/answer.env';
 
+/** One setting from the environment, or from that one line of the site's settings file. */
+function settingOf(
+  names: readonly string[],
+  env: Record<string, string | undefined>,
+  file: string
+): string {
+  for (const name of names) {
+    const given = env[name];
+    if (given) return given;
+  }
+  let text: string;
+  try {
+    text = readFileSync(file, 'utf8');
+  } catch {
+    return '';
+  }
+  for (const name of names) {
+    for (const line of text.split('\n')) {
+      const match = new RegExp(`^\\s*(?:export\\s+)?${name}\\s*=\\s*(.*?)\\s*$`).exec(line);
+      if (match) return (match[1] ?? '').replace(/^(['"])(.*)\1$/, '$2');
+    }
+  }
+  return '';
+}
+
 /**
  * The site's identity secret: `ANSWER_IDENTITY_SECRET` from the environment, or
  * that one line of the settings file the site's own service reads, mounted at
@@ -64,17 +89,17 @@ export function identitySecretOf(
   env: Record<string, string | undefined>,
   file: string = IDENTITY_FILE
 ): string {
-  const given = env['ANSWER_IDENTITY_SECRET'];
-  if (given) return given;
-  let text: string;
-  try {
-    text = readFileSync(file, 'utf8');
-  } catch {
-    return '';
-  }
-  for (const line of text.split('\n')) {
-    const match = /^\s*(?:export\s+)?ANSWER_IDENTITY_SECRET\s*=\s*(.*?)\s*$/.exec(line);
-    if (match) return (match[1] ?? '').replace(/^(['"])(.*)\1$/, '$2');
-  }
-  return '';
+  return settingOf(['ANSWER_IDENTITY_SECRET'], env, file);
+}
+
+/**
+ * The site's Turnstile site key, public, which the page needs to show the
+ * check: named as human-gate.js names it (`CLOUDFLARE_SITE_KEY`, or
+ * `TURNSTILE_SITEKEY`), from the environment or the same file.
+ */
+export function siteKeyOf(
+  env: Record<string, string | undefined>,
+  file: string = IDENTITY_FILE
+): string {
+  return settingOf(['CLOUDFLARE_SITE_KEY', 'TURNSTILE_SITEKEY'], env, file);
 }

@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { humanPass, identitySecretOf } from './human-pass.ts';
+import { humanPass, identitySecretOf, siteKeyOf } from './human-pass.ts';
 
 const SECRET = "a test secret, not the site's";
 
@@ -60,8 +60,10 @@ describe("the site's human pass, read by the gateway", () => {
         'from the env'
       );
       expect(identitySecretOf({}, join(dir, 'none.env'))).toBe('');
-      writeFileSync(file, 'OTHER=1\n');
+      writeFileSync(file, 'OTHER=1\nTURNSTILE_SITEKEY=0x4AAA\n');
       expect(identitySecretOf({}, file)).toBe('');
+      expect(siteKeyOf({}, file)).toBe('0x4AAA');
+      expect(siteKeyOf({ CLOUDFLARE_SITE_KEY: 'from the env' }, file)).toBe('from the env');
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
