@@ -13,12 +13,16 @@ import { HomeShortcutsComponent } from './home-shortcuts/home-shortcuts.componen
 import { CuratorHomeShortcutsComponent } from './curator-home-shortcuts/curator-home-shortcuts.component';
 import { NavOptionsService } from '../../services/nav-options.service';
 import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environment';
+import { RouterLink } from '@angular/router';
+import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-home-page',
   standalone: true,
   imports: [
     NgOptimizedImage,
+    RouterLink,
+    MatIcon,
     SearchBarComponent,
     HomeSpotlightComponent,
     HomeWhyReactomeComponent,
@@ -44,4 +48,6 @@ export class HomePageComponent {
   readonly pathwayBrowserLink = computed(
     () => this.navOptions()['tools']?.dropdownLinks?.['pathway-browser']?.link || '/PathwayBrowser'
   );
+  /** Searches to try, each opening the results the search box would: a gene, a topic, a pathway's id. */
+  readonly examples = ['TP53', 'Apoptosis', 'R-HSA-109581'];
 }

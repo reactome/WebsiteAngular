@@ -1,5 +1,6 @@
 <h2 class="home-help-header">Guides and Support</h2>
-<app-carousel class="home-help-container" [dark]="false">
+<!-- Proposal: a grid, every item visible; no carousel -->
+<div class="home-help-container home-grid">
   <a
     class="home-help-link"
     [routerLink]="navOptions()['documentation']?.dropdownLinks?.['userguide']?.link || '/documentation/userguide'"
@@ -45,4 +46,4 @@
       Feedback
     </app-button></a
   >
-</app-carousel>
+</div>

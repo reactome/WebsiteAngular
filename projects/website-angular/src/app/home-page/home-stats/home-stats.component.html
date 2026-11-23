@@ -16,7 +16,8 @@
 @if (failed()) {
   <app-load-error what="the release statistics" />
 } @else {
-  <app-carousel class="stats-container">
+  <!-- Proposal: a grid, every number visible; no carousel -->
+  <div class="stats-container stats-grid">
     <div class="stat-item">
       <mat-icon class="stat-item-icon">accessibility</mat-icon>
       <span>{{ formatNumber(stats()?.human_pathways) }}</span>
@@ -47,5 +48,5 @@
       <span>{{ formatNumber(stats()?.references) }}</span>
       <span>Literature References</span>
     </div>
-  </app-carousel>
+  </div>
 }

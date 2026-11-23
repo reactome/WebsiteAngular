@@ -1,13 +1,11 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
-import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
 
 @Component({
   selector: 'app-home-shortcuts',
-  imports: [CarouselComponent, ButtonComponent, MatIcon, RouterLink],
+  imports: [MatIcon, RouterLink],
   templateUrl: './home-shortcuts.component.html',
   styleUrl: './home-shortcuts.component.scss',
 })

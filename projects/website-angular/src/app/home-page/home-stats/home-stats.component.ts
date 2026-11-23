@@ -1,6 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
-import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { StatsService } from '../../../services/stats.service';
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
@@ -17,7 +16,7 @@ interface Stats {
 @Component({
   selector: 'app-home-stats',
   standalone: true,
-  imports: [MatIcon, CarouselComponent, LoadErrorComponent],
+  imports: [MatIcon, LoadErrorComponent],
   templateUrl: './home-stats.component.html',
   styleUrl: './home-stats.component.scss',
 })

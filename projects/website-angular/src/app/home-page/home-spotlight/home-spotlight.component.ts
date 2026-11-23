@@ -1,7 +1,6 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { ArticleIndexItem } from '../../../types/article';
 import { ContentService } from '../../../services/content.service';
 import formatDate from '../../../utils/formatDate';
@@ -15,7 +14,7 @@ import { articleIndexItem } from '../../../utils/articleIndexItem';
 @Component({
   selector: 'app-home-spotlight',
   standalone: true,
-  imports: [RouterModule, ButtonComponent, LoadErrorComponent],
+  imports: [RouterModule, LoadErrorComponent],
   templateUrl: './home-spotlight.component.html',
   styleUrl: './home-spotlight.component.scss',
 })
@@ -53,7 +52,7 @@ export class HomeSpotlightComponent implements OnInit {
           // that ignores it, so any rejection in here would vanish.
           void (async () => {
             const html = rewriteContentUrls(await marked(markdown));
-            this.renderedContent.set(truncateHtml(stripFirstH(html), 150));
+            this.renderedContent.set(truncateHtml(stripFirstH(html), 35));
           })().catch((error) => console.error('Could not render spotlight', error));
         this.contentService.getArticle('content/reactome-research-spotlight', item.slug).subscribe({
           next: (article) => show(article?.body || item.excerpt || ''),

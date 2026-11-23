@@ -1,9 +1,53 @@
-.shortcut-link {
-  text-decoration: none !important;
+.shortcut-header {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
 }
 
-.large-button-icon {
-  font-size: 48px;
-  height: 48px;
-  width: 48px;
+// As many columns as fit at 150px each: six across a desktop, two on a phone.
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.shortcut-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 18px 12px;
+  border-radius: 12px;
+  background: #fff;
+  color: var(--primary);
+  text-align: center;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover,
+  &:focus-visible {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 25%);
+  }
+}
+
+.shortcut-icon {
+  font-size: 40px;
+  width: 40px;
+  height: 40px;
+}
+
+.shortcut-name {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.shortcut-what {
+  font-size: 13px;
+  line-height: 1.35;
+  color: #40484c;
 }

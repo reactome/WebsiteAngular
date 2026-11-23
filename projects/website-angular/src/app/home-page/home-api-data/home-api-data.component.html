@@ -1,5 +1,6 @@
 <h2 class="api-data-header">API and Data Access</h2>
-<app-carousel class="api-data-container" [dark]="false">
+<!-- Proposal: a grid, every item visible; no carousel -->
+<div class="api-data-container home-grid">
   <a class="api-data-link" [href]="navOptions()['tools']?.dropdownLinks?.['content-service']?.link || ''"
     ><app-button variant="light" size="large" shape="circle" class="api-data-button">
       <mat-icon class="api-data-icon">computer</mat-icon>
@@ -31,4 +32,4 @@
       Graph Database
     </app-button></a
   >
-</app-carousel>
+</div>
