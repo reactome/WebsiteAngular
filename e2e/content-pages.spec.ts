@@ -221,8 +221,9 @@ test.describe('Research Spotlight', () => {
   test('explains itself, starts with the newest, and lists each once', async ({ page }) => {
     await page.goto('/content/reactome-research-spotlight');
     const titles = page.locator('.news-card h2');
+    // The newest, 3 November 2026 (imported with V98's news)
     await expect(titles.first()).toHaveText(
-      'Ten common mistakes that could ruin your enrichment analysis',
+      'Single-cell multiomics connects 3D genome and transcriptome alterations in Alzheimer’s disease',
       {
         timeout: LOAD,
       }
@@ -231,15 +232,16 @@ test.describe('Research Spotlight', () => {
     await expect(page.locator('.page-header a')).toHaveAttribute('href', '/');
 
     const all = (await titles.allInnerTexts()).map((t) => t.trim().toLowerCase());
-    expect(all.length).toBeGreaterThanOrEqual(44);
+    expect(all.length).toBeGreaterThanOrEqual(47);
     expect(all.filter((t, i) => all.indexOf(t) !== i)).toEqual([]);
     expect(all.some((t) => t.startsWith('central role of glycosylation'))).toBe(true);
+    expect(all.some((t) => t.startsWith('ten common mistakes'))).toBe(true);
   });
 
   test('the home page shows the newest one', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.home-spotlight-text').first()).toContainText(
-      'Ten common mistakes that could ruin your enrichment analysis',
+      'Single-cell multiomics connects 3D genome and transcriptome alterations in Alzheimer’s disease',
       { timeout: LOAD }
     );
   });
