@@ -3,7 +3,7 @@ import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 /** The site's name, last in every title, and the home page's title. */
-export const SITE = 'Reactome';
+const SITE = 'Reactome';
 export const HOME_TITLE = 'Reactome Pathway Knowledgebase';
 
 /**

@@ -1,8 +1,13 @@
 :host {
   display: block;
+  // Its own width, not its content's: its parent lays sections out shrink-to-fit,
+  // and the frame waiting for its diagram has no image yet to be wide with.
+  width: 100%;
 }
 
 .detail-diagram {
+  box-sizing: border-box;
+  width: 100%;
   margin: 0 0 16px;
   padding: 12px;
   border: 1px solid var(--outline-variant);
