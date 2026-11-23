@@ -21,7 +21,7 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 [EXT] Ask the Reactome organisation's owners to create the library-service repository, licensed AGPL-3.0 (research R2), and record its name in this file and in `plan.md`
+- [ ] ~~T001~~ (superseded 23 Nov 2026: no new repository; FR-026, T050) [EXT] Ask the Reactome organisation's owners to create the library-service repository, licensed AGPL-3.0 (research R2), and record its name in this file and in `plan.md`
 - [ ] T002 [EXT] Ask the owners of `reactome/content-service` and `reactome/analysis-service` to merge the deployed branches (`7b9eceb` on `add-content-page-endpoints`; `9b147e1`, PR #25). The pins stay on these commits either way (research R1).
 - [x] T003 [P] Record the pinned commits of research R1 in one place, `deploy/java/PINS.md`, each with the reason it is pinned and how it was verified (byte comparison of classes) — #505
 
@@ -75,10 +75,20 @@
 
 ### The service (in `<library repo>`)
 
+> **Amended 23 Nov 2026** (spec.md's amendment of that date): Story 2 is the nine interactor operations, in this repository's `deploy/java-library`. Read `<library repo>` below as `deploy/java-library`.
+>
+> - **Done by spec 015:** T011 (#660), T016 (#660), T017 (#660, #755) and T018 (#664) cover the service, its settings, its Dockerfile and its compose service. Each task adds only what the interactor families need, such as a setting for the token store's folder.
+> - **Superseded:** T001 (no new repository: FR-026 instead) and T014 (the exports have homes of their own).
+> - **Before T012 and T013:** T050. Then T012, T013, T015, T024–T027, T032 and T033 as written, with node fronting the routes (T051) in place of T020–T023's pass-through.
+
+- [ ] T050 [US2] FR-026: record the licence of content-service's interactor code (no `LICENSE` in the repository on 23 Nov 2026) and of every library the two families ship with, from their POMs and the libraries' own repositories, in `research.md` (a new R-entry). If any is not compatible with Apache-2.0, stop and raise it: the code stays out of this repository until it is settled.
+- [ ] T051 [US2] Node fronts the nine operations as it fronts the library service's exports (`tools/content-node/exporters-endpoints.ts`, its settings in `settings.ts`): status, headers and body as the old server's, an unavailable service a clear error (FR-006). Routes in nginx and `proxy.conf.js` together (`deploy/nginx/routes.spec.ts`).
+- [ ] T052 [US2] FR-027: after one release with the nine cut over, archive `reactome/content-service`, with a README naming each operation's home (node, the library service, or retired), and record it in `contracts/operation-homes.md`.
+
 - [ ] T011 [US2] Scaffold the Spring Boot application in `<library repo>`, with Java 11 bytecode, an executable jar, and a health endpoint reporting the pinned library commits. It runs on JDK 17 (spec 015 R10).
 - [ ] T012 [US2] Copy, unchanged, content-service's PSICQUIC controller and manager, and the `Interactors` JSON models, into `<library repo>`. Each file names its source commit (`7b9eceb`).
 - [ ] T013 [US2] Copy the upload and token controllers, `CustomInteractorManager`, `TupleManager` with its Kryo set-up, and the store's LRU checker into `<library repo>`. Pin interactor-core 1.1.5 and Kryo 5.3.0 and freeze them, with a comment saying why: old tokens stop reading if either changes.
-- [ ] T014 [US2] Copy the SBML, SBGN and event-PDF exporter controllers, `ExportManager` and its cache into `<library repo>`. Exclude Aspose.Slides from diagram-exporter (research R8). **SBML (spec 015, 24 Oct 2026):** the operation uses `sbml-exporter`'s fixed graph-only converter with its layout from the diagram files, not the relational converter, so the service needs no relational database for it. The service also gains a BioPAX Level 3 operation through `BioPAX3Exporter` (spec 015 R10). **SBGN and the event PDF:** on hold (5 Nov 2026), as T028–T031.
+- [ ] ~~T014~~ (superseded 23 Nov 2026: SBML and BioPAX by spec 015, SBGN by sbgn-exporter, the PDF by pdf-export) [US2] Copy the SBML, SBGN and event-PDF exporter controllers, `ExportManager` and its cache into `<library repo>`. Exclude Aspose.Slides from diagram-exporter (research R8). **SBML (spec 015, 24 Oct 2026):** the operation uses `sbml-exporter`'s fixed graph-only converter with its layout from the diagram files, not the relational converter, so the service needs no relational database for it. The service also gains a BioPAX Level 3 operation through `BioPAX3Exporter` (spec 015 R10). **SBGN and the event PDF:** on hold (5 Nov 2026), as T028–T031.
 - [ ] T015 [US2] Copy content-service's exception-to-status mapping (its error envelope) into `<library repo>`, so error bodies are Java's
 - [ ] T016 [US2] Read every setting at run time, from system properties or environment, in `<library repo>`. None is baked in; startup fails clearly when one is missing.
 
