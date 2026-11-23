@@ -15,7 +15,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 
 /** The cookie the site sets once its reader passes the human check. */
-export const HUMAN_COOKIE = 'ra_human';
+const HUMAN_COOKIE = 'ra_human';
 
 /** A request's pass: none given, one that is not good, or a good one. */
 export type HumanPass = 'missing' | 'invalid' | 'valid';
@@ -52,7 +52,7 @@ export function humanPass(
 }
 
 /** Where the deployment mounts the site's answer settings, read for one line only. */
-export const IDENTITY_FILE = '/run/secrets/answer.env';
+const IDENTITY_FILE = '/run/secrets/answer.env';
 
 /** One setting from the environment, or from that one line of the site's settings file. */
 function settingOf(

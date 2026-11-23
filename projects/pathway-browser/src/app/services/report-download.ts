@@ -29,7 +29,7 @@ const AGAIN_MS = 5_000;
 type ReportFailure = 'gone' | 'busy' | 'failed' | 'unreachable' | 'not_checked' | 'no_check';
 
 /** The human check the address asks for before a report is made. */
-export interface ReportChallenge {
+interface ReportChallenge {
   sitekey: string;
   verify: string;
 }
