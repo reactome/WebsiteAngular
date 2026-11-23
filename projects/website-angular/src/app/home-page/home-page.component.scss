@@ -280,3 +280,87 @@ $transition: all 0.3s ease;
     box-sizing: border-box;
   }
 }
+
+// ---- Version 2: one teal band, light content ----------------------------
+
+// The public homepage on a light page; the teal is the hero's alone. The
+// curator site keeps its gradient.
+:host(:not(.curator)) {
+  background-image: none;
+  background-color: #eef4f6;
+}
+
+:host-context(.dark):host(:not(.curator)) {
+  background-color: #0b1c22;
+}
+
+.home-hero-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: (-$spacing-unit) (-$spacing-unit) $spacing-unit;
+  padding: 32px max(16px, 3vw);
+  background-image: linear-gradient(160deg, #00798f 0%, #006781 55%, #00485c 100%);
+
+  .home-hero {
+    display: block;
+  }
+
+  ::ng-deep .home-hero .tile {
+    margin-bottom: 0;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+:host-context(.dark) .home-hero-band {
+  background-image: linear-gradient(160deg, #003643 0%, #002b36 55%, #001a22 100%);
+}
+
+.home-hero-figure {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+
+  // A box of one shape, the illustration fitted inside it: pathways' illustrations
+  // differ in shape, and ngSrc's fill wants a box to fill.
+  .home-hero-picture {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 16 / 10;
+  }
+
+  img {
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgb(0 0 0 / 25%));
+  }
+
+  figcaption {
+    color: #e6f4f7;
+    font-size: 14px;
+    text-align: center;
+
+    a {
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
+// White cards on the light page: an edge to stand off it.
+:host(:not(.curator)) ::ng-deep .light-tile {
+  border: 1px solid #d5e1e4;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(0 40 50 / 8%);
+}
+
+:host-context(.dark):host(:not(.curator)) ::ng-deep .light-tile {
+  border-color: #24404a;
+}

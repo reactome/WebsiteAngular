@@ -3,7 +3,7 @@
   font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
-  color: #fff;
+  color: var(--panel-ink, #fff);
 }
 
 // As many columns as fit at 150px each: six across a desktop, two on a phone.
@@ -21,6 +21,7 @@
   padding: 18px 12px;
   border-radius: 12px;
   background: #fff;
+  border: 1px solid #d5e1e4;
   color: var(--primary);
   text-align: center;
   text-decoration: none;

@@ -22,6 +22,12 @@ $transition: all 0.3s ease;
   background: var(--on-primary);
   color: var(--primary);
   box-shadow: $shadow;
+
+  // The ink its components read, as the dark panel publishes white and mint: a
+  // component made for the dark panel (the news list) is then legible on this one.
+  --panel-ink: var(--primary);
+  --panel-link: var(--primary);
+  --panel-release: var(--primary);
 }
 
 .dark-transparent-tile {
