@@ -109,7 +109,7 @@
     "svg-pan-zoom": "^3.6.1",
     "svgcanvas": "^2.6.0",
     "swagger-ui-dist": "^5.35.0",
-    "tinacms": "^3.14.4",
+    "tinacms": "^3.15.2",
     "tslib": "^2.3.0"
   },
   "overrides": {
