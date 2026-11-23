@@ -3,6 +3,7 @@
 FROM node:24
 WORKDIR /analysis-gateway
 COPY tools/analysis-gateway/gateway.ts ./gateway.ts
+COPY tools/analysis-gateway/human-pass.ts ./human-pass.ts
 # Node runs the TypeScript as it is, stripping the types (spec 013); the
 # package's type is what tells it the file is a module.
 COPY tools/package.json ./package.json

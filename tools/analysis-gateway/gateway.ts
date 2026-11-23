@@ -19,6 +19,13 @@
  * R6), a second upstream, and is not queued. pdf-export makes a report in the
  * background and holds each request up to 30 s, so a lane of one would make
  * every browser asking again wait for the others; its own limits protect it.
+ * A report is made only for a reader with the site's human pass (spec 031,
+ * User Story 4): the signed `ra_human` cookie, checked here before anything
+ * reaches pdf-export (human-pass.ts). Without one, a browser is sent to the
+ * analysis's Download tab, where the site makes the check, and any other
+ * caller is refused, told to take the results instead; with no identity
+ * secret, every report is refused.
+ *
  * A client's reports in flight still count towards its share (PER_CLIENT),
  * refused past it, and pdf-export is told who the client is in
  * X-Reactome-Client, always this gateway's own reading of it.
@@ -46,6 +53,8 @@ import {
   type ServerResponse,
 } from 'node:http';
 import { fileURLToPath } from 'node:url';
+
+import { humanPass, identitySecretOf } from './human-pass.ts';
 
 /**
  * What a request is: a computation, which waits its turn here, or a PDF report,
@@ -110,6 +119,13 @@ export interface GatewaySettings {
   retryAfter?: number;
   waitingBytes?: number;
   upstreamTimeoutMs?: number;
+  /**
+   * The site's identity secret, which signs its human pass (spec 031, FR-016).
+   * Empty: no report is made for anyone (FR-020).
+   */
+  identitySecret?: string;
+  /** The clock a pass's expiry is read against (tests set it). */
+  now?: () => number;
 }
 
 /**
@@ -223,6 +239,67 @@ function reportUnreachable(res: ServerResponse, retryAfter: number): void {
   res.end(body);
 }
 
+/** The analysis's token in a report's path, `/AnalysisService/report/{token}/…`. */
+function reportToken(path: string): string {
+  return /^\/AnalysisService\/report\/([^/]+)/.exec(path)?.[1] ?? '';
+}
+
+/** Whether a request is a browser's: it asks for HTML first. */
+function fromBrowser(req: IncomingMessage): boolean {
+  return /^\s*text\/html\b/i.test(req.headers.accept ?? '');
+}
+
+/**
+ * A report asked for without the human pass (spec 031, FR-017, FR-018): a
+ * browser is sent to the analysis's Download tab, where the site makes the
+ * check; any other caller is refused in the service's envelope and told where
+ * the results are. Nothing reaches pdf-export.
+ */
+function noHumanPass(req: IncomingMessage, res: ServerResponse): void {
+  if (res.headersSent || res.destroyed) return;
+  const token = encodeURIComponent(reportToken(routedPath(req.url)));
+  if (fromBrowser(req)) {
+    res.writeHead(303, {
+      Location: `/PathwayBrowser?analysis=${token}&tab=download`,
+      'Cache-Control': 'no-store',
+    });
+    res.end();
+    return;
+  }
+  const body = `${JSON.stringify({
+    code: 403,
+    reason: 'Forbidden',
+    messages: [
+      "A report is made only for a person who has passed the site's human check, on the analysis's Download tab.",
+      `For automated use, take the results: /AnalysisService/token/${token}, /AnalysisService/download/${token}/result.json.gz, and the CSV files under /AnalysisService/download/${token}/`,
+    ],
+  })}\n`;
+  res.writeHead(403, {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json;charset=UTF-8',
+    'Content-Length': String(Buffer.byteLength(body)),
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
+}
+
+/** No identity secret on this deployment: no report for anyone (FR-020). */
+function noHumanCheck(res: ServerResponse): void {
+  if (res.headersSent || res.destroyed) return;
+  const body = `${JSON.stringify({
+    code: 503,
+    reason: 'Service Unavailable',
+    messages: ['Reports cannot be made on this deployment just now; try again later'],
+  })}\n`;
+  res.writeHead(503, {
+    'Access-Control-Allow-Origin': '*',
+    'Content-Type': 'application/json;charset=UTF-8',
+    'Content-Length': String(Buffer.byteLength(body)),
+    'Cache-Control': 'no-store',
+  });
+  res.end(body);
+}
+
 /** The service's own error envelope, as it writes a 404 or a 410. */
 function busy(res: ServerResponse, retryAfter: number): void {
   if (res.headersSent || res.destroyed) return;
@@ -249,6 +326,8 @@ export function gateway({
   retryAfter = 10,
   waitingBytes = 256 * 1024 * 1024,
   upstreamTimeoutMs = 300_000,
+  identitySecret = '',
+  now = Date.now,
 }: GatewaySettings = {}) {
   const target = new URL(upstream);
   const reportTarget = new URL(reportUpstream);
@@ -492,6 +571,18 @@ export function gateway({
     }
     const name = classify(req.method, req.url);
     if (name === 'report') {
+      // Only for a person (spec 031, User Story 4), checked before anything
+      // else: a refused request costs nothing and counts towards no share.
+      if (identitySecret === '') {
+        counts.refused++;
+        noHumanCheck(res);
+        return;
+      }
+      if (humanPass(req.headers.cookie, identitySecret, now()) !== 'valid') {
+        counts.refused++;
+        noHumanPass(req, res);
+        return;
+      }
       // Never queued: pdf-export holds the request while it makes the
       // report, and has its own limits. The share still counts it, and a
       // client past its share is refused rather than made to wait.
@@ -568,6 +659,7 @@ if (startedDirectly()) {
     retryAfter: number('RETRY_AFTER', 10),
     waitingBytes: number('WAITING_BYTES', 256 * 1024 * 1024),
     upstreamTimeoutMs: number('UPSTREAM_TIMEOUT_MS', 300_000),
+    identitySecret: identitySecretOf(env),
   });
   // Analyses and their uploads are not quick: no idle timeout of our own.
   server.requestTimeout = 0;

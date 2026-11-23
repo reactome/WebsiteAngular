@@ -149,7 +149,7 @@ no-store`, a refresh after 10 s, no `status`); a made one, the PDF (200,
 report follows; a script is refused with the results' addresses and nothing is queued; a
 browser opening the address is taken to the Download tab.
 
-- [ ] T021 [US4] The gateway checks the human pass on every report request
+- [x] T021 [US4] The gateway checks the human pass on every report request
       (`tools/analysis-gateway/`): the `ra_human` cookie's signature and expiry, with the
       site's identity secret (`ANSWER_IDENTITY_SECRET`, given to the gateway as the site's
       node service has it); a twin of human-gate.js's `readIdentity`, as content-node's
@@ -159,9 +159,17 @@ browser opening the address is taken to the Download tab.
       JSON and CSV addresses; no secret: 503 for every report request. Tests: a valid pass
       forwarded; none, a forged signature, an expired one and a missing secret each refused,
       with nothing reaching pdf-export (its stub counts requests); each seen failing.
-- [ ] T022 [US4] The deployment gives the gateway the secret (docker-compose, from the file
+      Done: `tools/analysis-gateway/human-pass.ts` (the twin, checked against a pass
+      human-gate.js mints) and the gateway's report branch; five mutants each caught.
+      The redirect goes to `/PathwayBrowser?analysis=<token>&tab=download`, the site's own
+      link with the tab added, to be confirmed on beta in T025.
+- [x] T022 [US4] The deployment gives the gateway the secret (docker-compose, from the file
       the site's node service reads, never in the repository) and nginx passes the cookie
       through on the report route; `deploy/nginx/test-config.sh` run.
+      Done: the file mounted read-only at `/run/secrets/answer.env`, the gateway run as
+      its owner; nginx's `/AnalysisService/` route strips no cookie, so nothing changes
+      there. The image carries `human-pass.ts` (built and loaded once). Beta's gateway is
+      rebuilt only with T023, or readers without a pass would be refused with no check.
 - [ ] T023 [US4] `ReportDownloads`: a 403 that asks for the check moves the entry to
       "checking"; the line shows the challenge with the analysis summary's component
       (shared, not copied), posts its token to `/search-answer/verify`, then asks again;

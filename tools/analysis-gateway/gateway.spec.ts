@@ -4,10 +4,19 @@
 // front of the AnalysisService, and everything passes through unchanged.
 // A stand-in AnalysisService holds each computation open until the test lets
 // it finish, so what waits, what runs and what is refused can be watched.
+import { createHmac } from 'node:crypto';
 import { createServer, request as httpRequest, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { classify, clientOf, gateway, type GatewaySettings, type Health } from './gateway.ts';
+
+/** The identity secret the test gateways sign and check human passes with. */
+const SECRET = "a test secret, not the site's";
+/** A human pass as the site mints it (human-gate.js, mintIdentity), good until `expiry`. */
+const pass = (expiry = Date.now() + 3_600_000, secret = SECRET) => {
+  const payload = `0123456789abcdef.${String(expiry)}`;
+  return `ra_human=${payload}.${createHmac('sha256', secret).update(payload).digest('base64url')}`;
+};
 
 const seen: string[] = [];
 /** Every request the service was sent, recorded as it arrives, body or not. */
@@ -126,6 +135,7 @@ async function start(settings: GatewaySettings = {}) {
     queueLength: 2,
     maxWaitMs: 2000,
     retryAfter: 7,
+    identitySecret: SECRET,
     ...settings,
   });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -840,7 +850,10 @@ describe('the review of 20 Oct', () => {
 describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', () => {
   const REPORT = '/AnalysisService/report/T/Homo%20sapiens/report.pdf';
   const report = (base: string, headers: Record<string, string> = {}, signal?: AbortSignal) =>
-    fetch(`${base}${REPORT}`, { headers, ...(signal && { signal }) });
+    fetch(`${base}${REPORT}`, {
+      headers: { Cookie: pass(), ...headers },
+      ...(signal && { signal }),
+    });
   /** The values of a header pdf-export was sent, however its name was spelled. */
   const sent = (raw: string[], name: string) =>
     raw.filter((_, i) => i % 2 === 1 && raw[i - 1]?.toLowerCase() === name);
@@ -866,7 +879,7 @@ describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', 
       expect(arrived).toEqual([]);
       // A HEAD runs a GET's handler in Spring: never the AnalysisService's
       // report, unqueued.
-      const head = fetch(`${base}${REPORT}`, { method: 'HEAD' });
+      const head = fetch(`${base}${REPORT}`, { method: 'HEAD', headers: { Cookie: pass() } });
       await until(() => reportsHeld.length === 1);
       letReportGo();
       expect((await head).status).toBe(200);
@@ -1057,6 +1070,108 @@ describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', 
       expect((await health(base)).clients).toBe(0);
       // The analysis service is still reached as before.
       expect((await fetch(`${base}/AnalysisService/token/T`)).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+});
+
+describe('the report only for a person (spec 031, User Story 4)', () => {
+  const REPORT = '/AnalysisService/report/MjAy/Homo%20sapiens/report.pdf';
+  const ask = (base: string, headers: Record<string, string> = {}) =>
+    fetch(`${base}${REPORT}`, { headers, redirect: 'manual' });
+
+  it('passes a report with a good pass to pdf-export', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = ask(base, { Cookie: `theme=dark; ${pass()}` });
+      await until(() => reportsHeld.length === 1);
+      reportsHeld.shift()?.();
+      expect((await answer).status).toBe(200);
+      expect(reportsArrived.map((r) => r.url)).toEqual([REPORT]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('refuses a script without a pass, naming the results, and sends pdf-export nothing', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = await ask(base, { Accept: 'application/json' });
+      expect({
+        status: answer.status,
+        type: answer.headers.get('content-type'),
+        cache: answer.headers.get('cache-control'),
+      }).toEqual({ status: 403, type: 'application/json;charset=UTF-8', cache: 'no-store' });
+      const body = (await answer.json()) as { code: number; messages: string[] };
+      expect(body.code).toBe(403);
+      expect(body.messages.join(' ')).toContain('/AnalysisService/download/MjAy/result.json.gz');
+      expect(reportsArrived).toEqual([]);
+      expect((await health(base)).clients).toBe(0);
+    } finally {
+      await close();
+    }
+  });
+
+  it("sends a browser without a pass to the analysis's Download tab", async () => {
+    const { base, close } = await start();
+    try {
+      const answer = await ask(base, { Accept: 'text/html,application/xhtml+xml' });
+      expect([answer.status, answer.headers.get('location')]).toEqual([
+        303,
+        '/PathwayBrowser?analysis=MjAy&tab=download',
+      ]);
+      expect(reportsArrived).toEqual([]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('refuses a forged, an expired and a malformed pass', async () => {
+    const { base, close } = await start();
+    try {
+      for (const cookie of [
+        pass(Date.now() + 3_600_000, 'another secret'),
+        pass(Date.now() - 1),
+        'ra_human=0123456789abcdef.9999999999999',
+        'ra_human=',
+        `${pass()}.extra`,
+      ]) {
+        const answer = await ask(base, { Cookie: cookie });
+        expect([cookie, answer.status]).toEqual([cookie, 403]);
+      }
+      expect(reportsArrived).toEqual([]);
+    } finally {
+      await close();
+    }
+  });
+
+  it('refuses every report where the deployment has no identity secret', async () => {
+    const { base, close } = await start({ identitySecret: '' });
+    try {
+      const answer = await ask(base, { Cookie: pass() });
+      expect(answer.status).toBe(503);
+      expect(reportsArrived).toEqual([]);
+      // Analyses are not touched.
+      expect((await fetch(`${base}/AnalysisService/token/T`)).status).toBe(200);
+    } finally {
+      await close();
+    }
+  });
+
+  it('keeps a token in the redirect from becoming another address', async () => {
+    const { base, close } = await start();
+    try {
+      const answer = await fetch(
+        `${base}/AnalysisService/report/a%26tab%3Dx%0D%0AX/Homo%20sapiens/r.pdf`,
+        {
+          headers: { Accept: 'text/html' },
+          redirect: 'manual',
+        }
+      );
+      expect(answer.headers.get('location')).toBe(
+        '/PathwayBrowser?analysis=a%26tab%3Dx%0D%0AX&tab=download'
+      );
     } finally {
       await close();
     }
