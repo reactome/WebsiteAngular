@@ -17,6 +17,9 @@ the states and actions are the contract.
 | failed, busy        | The report service is busy. Try again in _s_ seconds.                                     | Try again       |
 | failed, failed      | The report could not be made. Try again, or tell us (the contact form).                   | Try again       |
 | failed, unreachable | No word from the report service for two minutes.                                          | Try again       |
+| checking            | (the human check, as the analysis summary shows it)                                       | Cancel          |
+| failed, not checked | We could not check that you are a person. Try again.                                      | Try again       |
+| failed, no check    | Reports cannot be made just now. Try again later.                                         | (none)          |
 
 - **_t_** is shown as "a few seconds", "about _n_ seconds" (in tens) under two minutes, then
   "about _n_ minutes", from the status's `estimate`; absent with no estimate. Tens of
@@ -26,3 +29,7 @@ the states and actions are the contract.
   the line's words are the buttons' description.
 - **Look:** as the tab's other downloads' progress (the managed-download styles), so the
   report reads like the other files.
+- **The human check (User Story 4):** "checking" comes before "starting" when the reader has
+  no human pass, and is skipped when they have one. "failed, not checked" is a check that did
+  not pass; "failed, no check" is the gateway's 503 when the pass cannot be checked on this
+  deployment.

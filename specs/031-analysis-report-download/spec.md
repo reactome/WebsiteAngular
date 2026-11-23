@@ -16,6 +16,10 @@ made and followed on the same page, with what it is doing (queued and its place,
 it is at, an estimate of the time left), then the file, a way to download it again, failures
 said plainly with a retry, and a way to cancel.
 
+**Amended 2026-11-23** (User Story 4): a report is made only for a reader who has passed the
+site's human check. The user (23 Nov 2026): a report is computationally heavy, bots must
+not make a ton of them, and an automated pipeline can take the analysis's results instead.
+
 ## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Ask for the report and follow it on the same page (Priority: P1)
@@ -101,6 +105,43 @@ Download a report, then download it again: it arrives at once.
 
 ---
 
+### User Story 4 - A report only for a person (Priority: P1)
+
+Before a report is made, the site makes sure a person is asking: the same human check as
+the search answer and the analysis summary (Cloudflare Turnstile), usually passed without
+the reader doing anything, and passed once for twelve hours across all of them. A script
+asking for a report is refused and told where the results are; a browser opening the
+report's address directly is taken to the analysis's Download tab, where the check is made.
+
+**Why this priority**: a report draws every figure and prints the whole PDF, minutes of
+work for a large analysis; requests that cost a person nothing to make would fill the
+queue the readers wait in. An automated pipeline wants the results, which are already
+offered as files, not a PDF.
+
+**Independent Test**: ask for a report from the Download tab with no human pass: the check
+appears (or passes unseen) and the report is made. Ask for the report's address with no
+pass from a script: refused, with the results' addresses, and nothing is queued. Open the
+address in a browser with no pass: the Download tab of that analysis opens.
+
+**Acceptance Scenarios**:
+
+1. **Given** a reader without a human pass, **When** they ask for the report, **Then** the
+   human check is made first, and the report starts once it passes.
+2. **Given** a reader who passed the check within twelve hours (for the report, the search
+   answer or the analysis summary), **When** they ask for the report, **Then** it starts
+   with no check shown.
+3. **Given** a request without a human pass that is not a browser's, **When** it asks for a
+   report, **Then** it is refused, the answer names the analysis's results to fetch
+   instead, and nothing is queued or made.
+4. **Given** a browser opening the report's address without a human pass, **When** the
+   address is asked, **Then** it is taken to that analysis's Download tab, where the check
+   and the report follow as in scenario 1.
+5. **Given** the human check cannot be made (the check's service unreachable, or not set up
+   on this deployment), **When** a report is asked for, **Then** it is not made, and the
+   reader is told to try again later.
+
+---
+
 ### Edge Cases
 
 - **The reader leaves the tab or the page** while the report is made: the page stops asking;
@@ -114,8 +155,11 @@ Download a report, then download it again: it arrives at once.
 - **The status cannot be read for a while** (a dropped connection): the line says it is
   still waiting and keeps asking; after two minutes without an answer it says the status is
   unknown and offers to try again.
-- **A browser opens the report's address directly** (a bookmark, a link someone shared): it
-  gets what it gets today, the page that asks again and then the file.
+- **A browser opens the report's address directly** (a bookmark, a link someone shared):
+  with a human pass, it gets what it got before User Story 4, the page that asks again and
+  then the file; without one, it is taken to the analysis's Download tab (User Story 4).
+- **The human pass runs out while a report is made** (after twelve hours): the report goes
+  on; asking for its status or the file needs a pass again, which the check gives.
 - **An estimate that cannot be made** (no past reports of that size yet): the line shows
   the stage and count without an estimate, rather than a guess.
 - **The estimate is passed**: the line says it is taking longer than expected, and does not
@@ -151,8 +195,9 @@ Download a report, then download it again: it arrives at once.
   without its being made again while the service keeps it (an hour).
 - **FR-012**: Coming back to the Download tab of the same analysis while its report is made
   or kept MUST show that report's state, not start another.
-- **FR-013**: The report's address, and what it answers a browser that opens it directly,
-  MUST stay as they are for every other caller.
+- **FR-013**: The report's address, and what it answers a browser that opens it directly
+  with a human pass, MUST stay as they are; a caller without one is answered as FR-017 and
+  FR-018 say (amended 2026-11-23).
 - **FR-014**: The analysis's token MUST be sent to Reactome's own services only, never to
   another host, and MUST NOT be written to the page's logs.
 - **FR-015**: The service that makes the report MUST answer a request for its status with:
@@ -161,6 +206,22 @@ Download a report, then download it again: it arrives at once.
   failed, the failure's kind. Recorded as a dependency on pdf-export (its spec 002, a task
   of its own there), and the analysis gateway MUST pass that answer through unchanged
   (spec 010, T066's route).
+
+- **FR-016**: No report MUST be made, or a request for one joined, without a human pass:
+  the site's signed proof that its reader passed the human check (Cloudflare Turnstile),
+  checked by our own services before anything is queued. A pass lasts twelve hours and is
+  the one the search answer and the analysis summary give and take.
+- **FR-017**: A request for a report without a valid pass that is not a browser's MUST be
+  refused, its answer naming the analysis's results to fetch instead (the results' JSON and
+  the CSV files), with nothing queued.
+- **FR-018**: A browser asking for the report's address without a valid pass MUST be taken
+  to that analysis's Download tab on the site.
+- **FR-019**: The Download tab MUST make the human check when the reader has no pass, before
+  asking for the report, and show it the way the analysis summary does; with a pass, no
+  check is shown.
+- **FR-020**: Where the pass cannot be checked (no secret on the deployment, or the check's
+  service unreachable when a pass is given), no report MUST be made: a refusal, never a
+  report made unchecked.
 
 ### Key Entities
 
@@ -171,6 +232,9 @@ Download a report, then download it again: it arrives at once.
   failure's kind).
 - **Kept report**: a report the service has made and keeps for an hour, downloadable again
   at once.
+- **Human pass**: the site's signed proof, given after the human check, that its reader is
+  a person; it lasts twelve hours and is shared by the search answer, the analysis summary
+  and the report.
 
 ## Success Criteria _(mandatory)_
 
@@ -188,8 +252,12 @@ Download a report, then download it again: it arrives at once.
   checked for each kind.
 - **SC-006**: No request made by the page carries the token to a host other than the site's
   own, checked across every story.
-- **SC-007**: A browser opening the report's address directly gets the same answers as before
-  this feature, checked against today's for a report waiting, ready and failed.
+- **SC-007**: A browser opening the report's address directly with a human pass gets the
+  same answers as before this feature, checked against today's for a report waiting, ready
+  and failed.
+- **SC-008**: Without a human pass, no request makes or joins a report: checked for a
+  script (refused, nothing queued), a browser opening the address (taken to the Download
+  tab), a forged or expired pass, and a deployment with no secret.
 
 ## Assumptions
 
@@ -206,3 +274,8 @@ Download a report, then download it again: it arrives at once.
 - **Other downloads are not changed**: they already show their progress beside their links
   (the site's download feedback); the report joins that look.
 - **The report's content and look** are pdf-export's (its spec 002), not this feature's.
+- **The human pass is the site's existing one** (the search answer's gate): the same signed
+  cookie and twelve hours, so a reader who passed the check for the analysis summary on the
+  same results page is not asked again. The analysis gateway checks it, so pdf-export is
+  not changed for User Story 4.
+- **Automated pipelines use the results**, not the report (the user, 23 Nov 2026).

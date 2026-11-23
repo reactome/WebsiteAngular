@@ -118,6 +118,38 @@ application/json, application/pdf` and `Prefer: wait=5`, and asks again as soon 
 - **Decision:** no change to the gateway beyond a test that a 202's JSON body and a
   request's `Prefer` pass through unchanged (spec 010's report route).
 
+## R6. The human check (User Story 4, amended 2026-11-23)
+
+- **Read:** the site already has a human pass. `projects/website-angular/src/scripts/human-gate.js`
+  verifies a Turnstile token (`/search-answer/verify`) and sets a signed cookie, `ra_human`
+  (an HMAC of a subject we choose and its expiry, `ANSWER_IDENTITY_SECRET`; `Path=/`,
+  twelve hours, `HttpOnly`, `SameSite=Lax`, `Secure`). The search answer and the analysis
+  summary take it; the analysis summary sits on the same results page as the Download tab
+  and already shows the challenge (`renderChallenge`, `analysis-summary.component.ts`),
+  with `no_human` and `stale_human` answers. The content service has a twin of the
+  verification (`tools/content-node/turnstile.ts`) for the contact form.
+- **Decision:** the analysis gateway checks the `ra_human` cookie's signature and expiry on
+  every report request (`/AnalysisService/report/…`) before forwarding it, so pdf-export is
+  unchanged. The cookie travels with the page's own requests (same origin, `Path=/`).
+  Without a valid pass: a browser (`Accept: text/html`) gets a redirect to the analysis's
+  Download tab; any other caller gets a 403 in the service's JSON envelope (`code`,
+  `reason`, `messages`), the messages naming the results' JSON
+  (`/AnalysisService/download/{token}/result.json.gz`) and CSV files instead. With no
+  `ANSWER_IDENTITY_SECRET` the gateway refuses every report request (503), never a pass by
+  default, as human-gate.js's "refuses to run half-configured".
+- **Every request, not only the first:** the gateway does not know whether a request would
+  start a report or join one already made, and asking pdf-export would change pdf-export.
+  The pass lasts twelve hours, longer than a report is kept (an hour), so a reader who
+  started a report holds a pass for its status and its file throughout.
+- **The page:** the Download tab's report button checks for a pass the way the analysis
+  summary does (its `no_human` handling), shows the challenge where one is needed, posts
+  the token to `/search-answer/verify`, then asks for the report. One challenge component,
+  shared with the analysis summary, not a second copy.
+- **Alternatives considered:** a token-less share of the queue for scripts (refused by the
+  user, 23 Nov 2026: pipelines take the results); the check in pdf-export (a second copy of
+  the gate's secret and code in another repository); a check only when a report would start
+  (needs pdf-export to tell the gateway, a change to its contract for little gain).
+
 ## R5. Tests
 
 - **Unit:** the polling state machine (`ReportDownloads`) against a stub fetch: each status
