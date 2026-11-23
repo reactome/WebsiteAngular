@@ -1,11 +1,14 @@
 import { computed, Injectable, inject, PLATFORM_ID } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { isPlatformBrowser } from '@angular/common';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { HttpClient } from '@angular/common/http';
 import { EMPTY, Observable, map, timeout, filter, firstValueFrom, take } from 'rxjs';
 import { APP_CONFIG } from '../config/config'; // NEW import
 import { GeneralService } from 'projects/pathway-browser/src/app/services/general.service';
-import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
+import { CONTENT_SERVICE, IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
+import type { DBInfo } from '../../../contract/graph-core.ts';
+import type { Ref } from '../../../contract/graph.ts';
 
 export interface ReactomeStats {
   pathways: number;
@@ -72,6 +75,26 @@ export class StatsService {
     if (IS_CURATOR) return 'curator';
     const version = this.versionNow();
     return version ? `V${version}` : '';
+  });
+
+  /**
+   * The release's date, as the database records it (its DBInfo), or undefined
+   * until it answers -- and on the curation graph, which is not a release. From
+   * the same database as the version, so the two cannot disagree; a date in the
+   * bundle said V98 was released on the day V96 was.
+   */
+  private readonly info = rxResource({
+    params: () => (IS_CURATOR ? undefined : true),
+    stream: () => this.http.get<DBInfo<Ref>>(`${CONTENT_SERVICE}/data/database/info`),
+  });
+
+  readonly releaseDate = computed((): Date | undefined => {
+    if (!this.info.hasValue()) return undefined;
+    const date = this.info.value().releaseDate;
+    // A date alone ("2026-09-18") is read as midnight UTC, which is the day before
+    // west of Greenwich: read it as that day, wherever the reader is.
+    const match = date ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(date) : null;
+    return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : undefined;
   });
 
   /**

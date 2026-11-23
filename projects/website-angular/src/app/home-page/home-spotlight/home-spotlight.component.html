@@ -1,4 +1,4 @@
-<h1 class="home-spotlight-title">Reactome Research Spotlight</h1>
+<h2 class="home-spotlight-title">Reactome Research Spotlight</h2>
 @if (spotlight(); as article) {
   <span class="home-spotlight-text">{{ '[' + formatD(article.date) + '] ' + article.title }}</span>
   <p class="home-spotlight-text" [innerHTML]="renderedContent()"></p>

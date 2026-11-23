@@ -92,6 +92,9 @@ $transition: all 0.3s ease;
 
 .home-search-title {
   margin-top: 8px;
+  // its own line height: the body's 20px under 28px text overlapped the title's
+  // two lines on a phone
+  line-height: 1.2;
 }
 
 .home-search-tile app-search-bar {
@@ -150,15 +153,22 @@ $transition: all 0.3s ease;
     ::ng-deep .tile {
       flex: 1;
       margin-bottom: 0;
+      // From the top: stretched to the taller panel's height, a tile's centred
+      // content left "Why Reactome?" halfway down under an empty slab.
+      align-items: flex-start;
     }
   }
 
+  // 2:3 of the width left after the gap. 40% and 60% plus the 16px gap came to
+  // more than the row, and the news panel ran past the page's right margin.
   app-tile:nth-child(1) {
-    flex: 0 0 40%;
+    flex: 2 1 0;
+    min-width: 0;
   }
 
   app-tile:nth-child(2) {
-    flex: 0 0 60%;
+    flex: 3 1 0;
+    min-width: 0;
   }
 
   @media (max-width: 768px) {
