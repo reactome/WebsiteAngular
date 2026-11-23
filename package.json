@@ -71,7 +71,7 @@
     "@aws-sdk/client-sesv2": "3.1164.0",
     "@carrotsearch/foamtree": "^3.6.2",
     "@hakimio/ngx-google-analytics": "^15.0.0",
-    "@lottiefiles/dotlottie-web": "^0.81.0",
+    "@lottiefiles/dotlottie-web": "^0.83.2",
     "@ngneat/until-destroy": "^10.0.0",
     "@ngrx/component": "^21.1.1",
     "@ngrx/component-store": "^21.1.1",
