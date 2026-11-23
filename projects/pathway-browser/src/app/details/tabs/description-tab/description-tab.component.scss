@@ -629,11 +629,18 @@
 // A figure the caller puts with the overview (the detail page's diagram): under
 // it, full width, before the summary. Beside it, the short overview left an
 // empty gap under itself and pushed the summary down.
-:host ::ng-deep .overview:has(> .overview-figure) {
+// Only when it holds one: an object with no diagram (a protein) still has the
+// empty component in the slot, and the rule forced its overview into a column,
+// its icon pushed down over the locations tree.
+:host ::ng-deep .overview:has(> .overview-figure:not(:empty)) {
   flex-direction: column;
 
   > .overview-figure {
     width: 100%;
     margin-top: 12px;
   }
+}
+
+:host ::ng-deep .overview > .overview-figure:empty {
+  display: none;
 }
