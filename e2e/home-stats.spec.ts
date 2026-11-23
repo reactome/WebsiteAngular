@@ -107,22 +107,7 @@ test('the pathway browser header draws without the release', async ({ page }) =>
 // the day V96 was (1 April 2026). It is the database's own release date now,
 // read with the version from the same database.
 test("the release's date is the database's own", async ({ page }) => {
-  await page.route(/\/data\/database\/version$/, (route) =>
-    route.fulfill({ contentType: 'application/json', body: '98' })
-  );
-  await page.route(/\/data\/database\/info$/, (route) =>
-    route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        dbId: 1,
-        displayName: '98 on 2026-09-18',
-        releaseDate: '2026-09-18',
-        releaseNumber: 98,
-        className: 'DBInfo',
-        schemaClass: 'DBInfo',
-      }),
-    })
-  );
+  // The database's real answers, recorded: release 98, dated 18 September 2026.
   await page.goto('/');
   await expect(page.locator('app-home-stats .stat-header')).toHaveText(
     /^\s*Version V98\s+Released on\s+September 18, 2026\s*$/,

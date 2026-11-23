@@ -95,6 +95,8 @@ export const TYPES: Record<string, string> = {
   SimpleEvent: 'projects/contract/person',
   PathwayBrowserNode: 'projects/contract/locations',
   InteractionWithEntities: 'projects/contract/interactors',
+  DBInfo: 'projects/contract/graph-core',
+  Ref: 'projects/contract/graph',
 };
 
 /** The names in TYPES that are whole modules, read as namespaces (`Search.Result`). */
@@ -135,6 +137,7 @@ export const CALLS: Call[] = [
   { file: `${PB}/services/event.service.ts`, method: 'fetchEventAncestors', http: 'GET', route: '/data/event/{id}/ancestors', query: { includeRef: null }, type: 'Event[][]' },
   { file: `${PB}/services/general.service.ts`, method: 'version', http: 'GET', route: '/data/database/version', type: 'number' },
   { file: `${PB}/services/general.service.ts`, method: 'version', n: 2, http: 'GET', route: '/data/database/version', type: 'number', indirect: 'another deployment, named by the profile' },
+  { file: `${WEB}/services/stats.service.ts`, method: 'info', http: 'GET', route: '/data/database/info', type: 'DBInfo<Ref>' },
   { file: `${PB}/services/icon.service.ts`, method: 'fetchIcon', http: 'GET', route: '/search/query', query: { types: 'Icon' }, type: 'Search.IconResult' },
   { file: `${PB}/services/participant.service.ts`, method: 'getParticipants', http: 'GET', route: '/data/participants/{id}', type: 'Participant[]' },
   { file: `${PB}/details/common/object-tree/object-tree.component.ts`, method: 'findDiagrams', http: 'GET', route: '/data/participants/{id}', type: 'Participant[]' },
