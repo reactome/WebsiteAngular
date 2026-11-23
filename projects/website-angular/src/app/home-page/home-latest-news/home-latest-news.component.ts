@@ -40,7 +40,9 @@ export class HomeLatestNewsComponent implements OnInit {
    * a plain marker rather than a wrong one.
    */
   releaseOf(title: string): string | null {
-    return /^\s*(V\d+)\b/i.exec(title)?.[1]?.toUpperCase() ?? null;
+    // "V97 Released", and "Version 98 Released" as the V98 announcement is titled
+    const number = /^\s*(?:V|Version\s+)(\d+)\b/i.exec(title)?.[1];
+    return number ? `V${number}` : null;
   }
 
   /**

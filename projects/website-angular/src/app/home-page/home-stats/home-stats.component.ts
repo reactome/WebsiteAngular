@@ -2,7 +2,6 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
 import { CarouselComponent } from '../../reactome-components/carousel/carousel.component';
 import { StatsService } from '../../../services/stats.service';
-import { APP_CONFIG } from '../../../config/config'; // NEW import
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 
@@ -36,7 +35,8 @@ export class HomeStatsComponent implements OnInit {
    * fallback, is nothing at all.
    */
   readonly versionLabel = this.statsService.versionLabel;
-  releaseDate: Date = new Date();
+  /** The release's date, from the database; undefined until it says (and on the curator site). */
+  readonly releaseDate = this.statsService.releaseDate;
   /**
    * A signal, for the same reason: the numbers arrive after the first render,
    * and in this zoneless app a plain field written then is not drawn -- the
@@ -54,7 +54,6 @@ export class HomeStatsComponent implements OnInit {
   }
 
   getVersionAndDate() {
-    this.releaseDate = new Date(APP_CONFIG.version.releaseDate);
     this.fetchStats();
   }
 

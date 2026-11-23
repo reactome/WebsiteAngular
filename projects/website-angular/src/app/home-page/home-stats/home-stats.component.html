@@ -1,19 +1,18 @@
-<h1 class="stat-header">
+<h2 class="stat-header">
   @if (isCurator) {
     Version {{ versionLabel() }}
   } @else {
-    <!-- No version, no claim about one: the number comes from the database and
-         says nothing until it arrives. -->
+    <!-- Nothing claimed until the database says: the version and its date both
+         come from it, so neither is stated alone from a guess. -->
     @if (versionLabel()) {
-      Version {{ versionLabel() }} Released on
-    } @else {
-      Released on
+      Version {{ versionLabel() }}
     }
-    {{
-      releaseDate.toLocaleDateString('en-us', { weekday: undefined, year: 'numeric', month: 'long', day: 'numeric' })
-    }}
+    @if (releaseDate(); as date) {
+      Released on
+      {{ date.toLocaleDateString('en-us', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+    }
   }
-</h1>
+</h2>
 @if (failed()) {
   <app-load-error what="the release statistics" />
 } @else {

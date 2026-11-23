@@ -102,3 +102,44 @@ test('the pathway browser header draws without the release', async ({ page }) =>
   // No version is shown rather than a "v" with nothing after it.
   await expect(page.locator('.version-container .version')).toHaveCount(0);
 });
+
+// The heading's date was a constant in the bundle, so it said V98 was released on
+// the day V96 was (1 April 2026). It is the database's own release date now,
+// read with the version from the same database.
+test("the release's date is the database's own", async ({ page }) => {
+  await page.route(/\/data\/database\/version$/, (route) =>
+    route.fulfill({ contentType: 'application/json', body: '98' })
+  );
+  await page.route(/\/data\/database\/info$/, (route) =>
+    route.fulfill({
+      contentType: 'application/json',
+      body: JSON.stringify({
+        dbId: 1,
+        displayName: '98 on 2026-09-18',
+        releaseDate: '2026-09-18',
+        releaseNumber: 98,
+        className: 'DBInfo',
+        schemaClass: 'DBInfo',
+      }),
+    })
+  );
+  await page.goto('/');
+  await expect(page.locator('app-home-stats .stat-header')).toHaveText(
+    /^\s*Version V98\s+Released on\s+September 18, 2026\s*$/,
+    { timeout: 60_000 }
+  );
+});
+
+// Without the database's date, no date: never one from anywhere else.
+test("without the database's date, the heading states no date", async ({ page }) => {
+  await page.route(/\/data\/database\/version$/, (route) =>
+    route.fulfill({ contentType: 'application/json', body: '98' })
+  );
+  await page.route(/\/data\/database\/info$/, (route) =>
+    route.fulfill({ status: 500, contentType: 'text/plain', body: 'info failed' })
+  );
+  await page.goto('/');
+  const heading = page.locator('app-home-stats .stat-header');
+  await expect(heading).toContainText('Version V98', { timeout: 60_000 });
+  await expect(heading).not.toContainText('Released on');
+});

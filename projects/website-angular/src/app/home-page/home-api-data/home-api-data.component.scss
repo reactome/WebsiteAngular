@@ -7,3 +7,13 @@
 .api-data-link {
   text-decoration: none !important;
 }
+
+// A section's title: an h2 under the page's one h1 (the search title), at the
+// size it had as an h1, and a line height of its own -- the body's 20px under
+// 28px text made a title that wraps, on a phone, overlap itself.
+.api-data-header {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.67em 0;
+}

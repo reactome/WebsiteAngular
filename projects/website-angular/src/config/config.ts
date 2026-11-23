@@ -1,13 +1,4 @@
 export const APP_CONFIG = {
-  // app-level version info
-  version: {
-    // No releaseNumber here on purpose: the release comes from the database via
-    // /ContentService/data/database/version. A constant in the bundle is stale
-    // from the first release after a deploy, and it looks exactly as
-    // authoritative as the real answer.
-    releaseDate: '2026-04-01',
-  },
-
   // canonical download base (separate from environment.host because static
   // assets like .tar.gz dumps live on a CDN, not the application host).
   downloadUrl: 'https://download.reactome.org',
