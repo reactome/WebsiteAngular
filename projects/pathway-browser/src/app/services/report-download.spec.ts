@@ -34,6 +34,7 @@ const refused = (status: number, headers: Record<string, string> = {}): Response
 /** A stub page: answers from a list, a clock moved by hand, every request and save kept. */
 function stub(answers: (Response | Error)[]) {
   const asked: RequestInit[] = [];
+  const addresses: string[] = [];
   const saved: string[] = [];
   const clock = { now: 0 };
   let left = [...answers];
@@ -42,7 +43,8 @@ function stub(answers: (Response | Error)[]) {
   const settleWith = (next: Response | Error): Promise<Response> =>
     next instanceof Error ? Promise.reject(next) : Promise.resolve(next);
   const port: ReportPort = {
-    fetch: (_address, init) => {
+    fetch: (address, init) => {
+      addresses.push(address);
       asked.push(init);
       const next = left.shift();
       if (next !== undefined) return settleWith(next);
@@ -64,6 +66,7 @@ function stub(answers: (Response | Error)[]) {
   return {
     port,
     asked,
+    addresses,
     saved,
     clock,
     answer: (more: (Response | Error)[]) => {
@@ -240,5 +243,88 @@ describe("a 202's status, read field by field", () => {
     expect(statusOf({ status: { state: 'ready' } })).toBeUndefined();
     expect(statusOf({ code: 202 })).toBeUndefined();
     expect(statusOf(null)).toBeUndefined();
+  });
+});
+
+describe('a report only for a person (User Story 4, T023)', () => {
+  const CHECK = { sitekey: '0x4AAA', verify: '/search-answer/verify' };
+  /** The gateway's refusal without the site's human pass. */
+  const needsCheck = (body: unknown = { code: 401, messages: [], ...CHECK }): Response =>
+    new Response(JSON.stringify(body), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  const passed = (): Response => new Response(null, { status: 204 });
+
+  it('shows the check on a 401, and once it passes asks again and saves the report', async () => {
+    const page = stub([needsCheck(), passed(), pdf()]);
+    const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+    report.ask();
+    await settle();
+    expect(report.phase()).toEqual({ status: 'checking', challenge: CHECK });
+    expect(report.busy()).toBe(true);
+    expect(await report.solve('solved')).toBe(true);
+    await settle();
+    expect(report.phase()).toEqual({ status: 'saved' });
+    // the token exchanged at the site's route, then the report asked for again
+    expect(page.addresses).toEqual([ADDRESS, '/search-answer/verify', ADDRESS]);
+    expect(page.asked[1]).toEqual({
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ captchaToken: 'solved' }),
+    });
+  });
+
+  it('keeps the check when it is refused, so it is shown afresh', async () => {
+    const page = stub([needsCheck(), new Response(null, { status: 400 })]);
+    const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+    report.ask();
+    await settle();
+    expect(await report.solve('wrong')).toBe(false);
+    expect(report.phase()).toEqual({ status: 'checking', challenge: CHECK });
+    expect(page.addresses).toEqual([ADDRESS, '/search-answer/verify']);
+  });
+
+  it('fails as not checked when the check cannot be sent', async () => {
+    const page = stub([needsCheck(), new Error('offline')]);
+    const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+    report.ask();
+    await settle();
+    expect(await report.solve('solved')).toBe(false);
+    expect(report.phase()).toEqual({ status: 'failed', failure: 'not_checked' });
+  });
+
+  it('asks nothing when cancelled while checking, and nothing after the check passes', async () => {
+    const page = stub([needsCheck(), passed()]);
+    const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+    report.ask();
+    await settle();
+    report.cancel();
+    expect(await report.solve('solved')).toBe(false);
+    expect(report.phase()).toEqual({ status: 'idle' });
+    expect(page.addresses).toEqual([ADDRESS]);
+  });
+
+  it('takes a check only at the site itself, and a 401 naming none is a failure', async () => {
+    for (const body of [
+      { ...CHECK, verify: 'https://elsewhere.example/verify' },
+      { ...CHECK, verify: '//elsewhere.example/verify' },
+      { ...CHECK, sitekey: '' },
+      { code: 401 },
+    ]) {
+      const page = stub([needsCheck(body)]);
+      const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+      report.ask();
+      await settle();
+      expect([body, report.phase()]).toEqual([body, { status: 'failed', failure: 'failed' }]);
+    }
+  });
+
+  it("reads the gateway's 503 with no Retry-After as no check on this deployment", async () => {
+    const page = stub([refused(503)]);
+    const report = new ReportDownload(ADDRESS, 'report.pdf', page.port);
+    report.ask();
+    await settle();
+    expect(report.phase()).toEqual({ status: 'failed', failure: 'no_check' });
   });
 });

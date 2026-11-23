@@ -318,6 +318,68 @@ test.describe('Analysis results', () => {
     expect(calls).toBe(asked);
   });
 
+  test('a report asks for the human check first, then is made (spec 031, User Story 4)', async ({
+    page,
+    context,
+  }) => {
+    // Without the site's human pass the gateway answers 401 with the check to make; the
+    // line shows it (Cloudflare's widget stubbed, solving at once), the token goes to the
+    // site's route for a pass, and the report is asked for again.
+    const passes: string[] = [];
+    let reports = 0;
+    await context.route('**/AnalysisService/report/**', (route) => {
+      reports += 1;
+      if (reports === 1) {
+        return route.fulfill({
+          status: 401,
+          contentType: 'application/json;charset=UTF-8',
+          body: JSON.stringify({
+            code: 401,
+            reason: 'Unauthorized',
+            messages: [],
+            verify: '/search-answer/verify',
+            sitekey: '1x00000000000000000000AA',
+          }),
+        });
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/pdf',
+        headers: { 'Content-Disposition': 'attachment; filename="report.pdf"' },
+        body: Buffer.from('%PDF-1.7\n%%EOF\n'),
+      });
+    });
+    await context.route('**/search-answer/verify', (route) => {
+      passes.push(route.request().postData() ?? '');
+      return route.fulfill({ status: 204 });
+    });
+    await page.addInitScript(() => {
+      (window as unknown as { turnstile: unknown }).turnstile = {
+        render: (el: HTMLElement, options: { callback: (token: string) => void }) => {
+          el.textContent = 'stub widget';
+          setTimeout(() => options.callback('stub-token'), 300);
+          return 'stub';
+        },
+        reset: () => undefined,
+      };
+    });
+    await runGeneList(page);
+    await openTab(page, 'Download');
+    const line = page.locator('cr-report-download [role="status"]');
+    const [download] = await Promise.all([
+      page.waitForEvent('download', { timeout: 60_000 }),
+      (async () => {
+        await page.getByText('PDF Result', { exact: true }).click();
+        await expect(line).toContainText('check that you are a person', { timeout: 5_000 });
+        await expect(page.locator('cr-report-download .report__check')).toBeVisible();
+      })(),
+    ]);
+    expect((download as Download).suggestedFilename()).toBe('report.pdf');
+    await expect(line).toContainText('Report downloaded');
+    expect(passes).toEqual([JSON.stringify({ captchaToken: 'stub-token' })]);
+    expect(reports).toBe(2);
+  });
+
   test('species comparison overlays the pathways', async ({ page }) => {
     await page.goto('/PathwayBrowser?analysisTab=species');
     await page.getByText('M. musculus').first().click({ timeout: READY });

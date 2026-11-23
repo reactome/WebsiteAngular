@@ -149,28 +149,42 @@ no-store`, a refresh after 10 s, no `status`); a made one, the PDF (200,
 report follows; a script is refused with the results' addresses and nothing is queued; a
 browser opening the address is taken to the Download tab.
 
-- [ ] T021 [US4] The gateway checks the human pass on every report request
+- [x] T021 [US4] The gateway checks the human pass on every report request
       (`tools/analysis-gateway/`): the `ra_human` cookie's signature and expiry, with the
       site's identity secret (`ANSWER_IDENTITY_SECRET`, given to the gateway as the site's
       node service has it); a twin of human-gate.js's `readIdentity`, as content-node's
       turnstile.ts is of its `verifyCaptcha`. No pass: a browser (`Accept: text/html`) is
       redirected to the analysis's Download tab (its address measured from the site's own
-      links), any other caller gets 403 in the service's JSON envelope naming the results'
-      JSON and CSV addresses; no secret: 503 for every report request. Tests: a valid pass
+      links), any other caller gets 401 in the service's JSON envelope naming the results'
+      JSON and CSV addresses, with `verify` and `sitekey` for the page; no secret or site
+      key: 503 for every report request. Tests: a valid pass
       forwarded; none, a forged signature, an expired one and a missing secret each refused,
       with nothing reaching pdf-export (its stub counts requests); each seen failing.
-- [ ] T022 [US4] The deployment gives the gateway the secret (docker-compose, from the file
+      Done: `tools/analysis-gateway/human-pass.ts` (the twin, checked against a pass
+      human-gate.js mints) and the gateway's report branch; five mutants each caught.
+      The redirect goes to `/PathwayBrowser?analysis=<token>&tab=download`, the site's own
+      link with the tab added, to be confirmed on beta in T025.
+- [x] T022 [US4] The deployment gives the gateway the secret (docker-compose, from the file
       the site's node service reads, never in the repository) and nginx passes the cookie
       through on the report route; `deploy/nginx/test-config.sh` run.
-- [ ] T023 [US4] `ReportDownloads`: a 403 that asks for the check moves the entry to
+      Done: the file mounted read-only at `/run/secrets/answer.env`, the gateway run as
+      its owner; nginx's `/AnalysisService/` route strips no cookie, so nothing changes
+      there. The image carries `human-pass.ts` (built and loaded once). Beta's gateway is
+      rebuilt only with T023, or readers without a pass would be refused with no check.
+- [x] T023 [US4] `ReportDownloads`: a 401 that asks for the check moves the entry to
       "checking"; the line shows the challenge with the analysis summary's component
       (shared, not copied), posts its token to `/search-answer/verify`, then asks again;
       "failed, not checked" and "failed, no check" as contracts/report-states.md says. Unit
       tests with the gate stubbed, each state seen failing.
-- [ ] T024 [US4] e2e: with no pass, the check appears and the report follows; with a pass,
+      Done: `ReportDownload`'s `checking` phase and `solve`, the line showing the check with
+      the site's `renderChallenge`; six unit tests, four mutants each caught.
+- [x] T024 [US4] e2e: with no pass, the check appears and the report follows; with a pass,
       no check; a refused check, Try again. The challenge stubbed as `e2e/search-errors.spec.ts`
       stubs it.
-- [ ] T025 [US4] SC-008 on beta: a script without a pass (403, nothing queued: pdf-export's
+      Done: one e2e, the 401 then the check (stubbed, solved at once), the token to
+      `/search-answer/verify`, the report asked again and downloaded; recorded, and seen
+      failing with the 401 not read.
+- [ ] T025 [US4] SC-008 on beta: a script without a pass (401, nothing queued: pdf-export's
       health shows no new job), a browser opening the address (redirected), a forged and an
       expired pass (refused), each recorded here.
 - [ ] T026 [US4] The API page and the User Guide, where they mention the report's address,
@@ -194,7 +208,7 @@ browser opening the address is taken to the Download tab.
 - T002, T007 beside pdf-export's T003–T005.
 - T009 (the line) beside T008 (the service) once the states are agreed (data-model).
 - T017 and T018 together.
-- T021 and T023 together once the 403's shape is agreed (research R6); T022 with T021; T024
+- T021 and T023 together once the 401's shape is agreed (research R6); T022 with T021; T024
   after T023; T025 after T021 to T024 are deployed.
 
 ## Implementation strategy
