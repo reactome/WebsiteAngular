@@ -30,6 +30,7 @@ the states and actions are the contract.
 - **Look:** as the tab's other downloads' progress (the managed-download styles), so the
   report reads like the other files.
 - **The human check (User Story 4):** "checking" comes before "starting" when the reader has
-  no human pass, and is skipped when they have one. "failed, not checked" is a check that did
-  not pass; "failed, no check" is the gateway's 503 when the pass cannot be checked on this
-  deployment.
+  no human pass, and is skipped when they have one. A check the site refuses is shown afresh,
+  as the analysis summary's is (the widget reset); "failed, not checked" is a check that
+  could not be sent at all. "failed, no check" is the gateway's 503 with no `Retry-After`
+  (every other 503 here carries one), when the pass cannot be checked on this deployment.

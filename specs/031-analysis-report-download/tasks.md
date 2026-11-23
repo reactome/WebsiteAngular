@@ -171,14 +171,19 @@ browser opening the address is taken to the Download tab.
       its owner; nginx's `/AnalysisService/` route strips no cookie, so nothing changes
       there. The image carries `human-pass.ts` (built and loaded once). Beta's gateway is
       rebuilt only with T023, or readers without a pass would be refused with no check.
-- [ ] T023 [US4] `ReportDownloads`: a 401 that asks for the check moves the entry to
+- [x] T023 [US4] `ReportDownloads`: a 401 that asks for the check moves the entry to
       "checking"; the line shows the challenge with the analysis summary's component
       (shared, not copied), posts its token to `/search-answer/verify`, then asks again;
       "failed, not checked" and "failed, no check" as contracts/report-states.md says. Unit
       tests with the gate stubbed, each state seen failing.
-- [ ] T024 [US4] e2e: with no pass, the check appears and the report follows; with a pass,
+      Done: `ReportDownload`'s `checking` phase and `solve`, the line showing the check with
+      the site's `renderChallenge`; six unit tests, four mutants each caught.
+- [x] T024 [US4] e2e: with no pass, the check appears and the report follows; with a pass,
       no check; a refused check, Try again. The challenge stubbed as `e2e/search-errors.spec.ts`
       stubs it.
+      Done: one e2e, the 401 then the check (stubbed, solved at once), the token to
+      `/search-answer/verify`, the report asked again and downloaded; recorded, and seen
+      failing with the 401 not read.
 - [ ] T025 [US4] SC-008 on beta: a script without a pass (401, nothing queued: pdf-export's
       health shows no new job), a browser opening the address (redirected), a forged and an
       expired pass (refused), each recorded here.

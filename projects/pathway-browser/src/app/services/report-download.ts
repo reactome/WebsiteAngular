@@ -11,6 +11,10 @@ import { filenameFrom } from './file-download.service';
  * answers 202 with where it is (pdf-export spec 002, T029), held at most `HOLD_S` by
  * `Prefer: wait`, and is asked again at once; when it is ready, 200 with the PDF, which is
  * saved and kept to save again.
+ *
+ * A report is made only for a person (spec 031, User Story 4): without the site's human
+ * pass the address answers 401 with the check to make (`sitekey`, `verify`), as the analysis
+ * summary's route does; the line shows it, and once it passes the report is asked for again.
  */
 
 /** How long one request may be held while the report is made, in seconds (FR-006: 10). */
@@ -22,11 +26,18 @@ export const KEEP_MS = 3_600_000;
 /** The pause before asking again after a request that got no answer. */
 const AGAIN_MS = 5_000;
 
-type ReportFailure = 'gone' | 'busy' | 'failed' | 'unreachable';
+type ReportFailure = 'gone' | 'busy' | 'failed' | 'unreachable' | 'not_checked' | 'no_check';
+
+/** The human check the address asks for before a report is made. */
+export interface ReportChallenge {
+  sitekey: string;
+  verify: string;
+}
 
 export type ReportPhase =
   | { status: 'idle' }
   | { status: 'starting' }
+  | { status: 'checking'; challenge: ReportChallenge }
   | { status: 'waiting'; report: AnalysisReportStatus }
   | { status: 'saved' }
   | { status: 'failed'; failure: ReportFailure; retryAfter?: number };
@@ -46,7 +57,7 @@ export class ReportDownload {
   readonly askedAt = signal<number | null>(null);
   readonly busy = computed(() => {
     const status = this.current().status;
-    return status === 'starting' || status === 'waiting';
+    return status === 'starting' || status === 'waiting' || status === 'checking';
   });
 
   private stop: AbortController | null = null;
@@ -72,6 +83,33 @@ export class ReportDownload {
     this.stop?.abort();
     this.stop = null;
     this.current.set({ status: 'idle' });
+  }
+
+  /**
+   * The check passed: its token exchanged for the site's human pass, then the report asked
+   * for again. False when the exchange is refused, so the check is shown afresh; a check
+   * that cannot be sent at all fails as "not checked".
+   */
+  async solve(captchaToken: string): Promise<boolean> {
+    const phase = this.current();
+    if (phase.status !== 'checking' || captchaToken === '') return false;
+    let response: Response;
+    try {
+      response = await this.port.fetch(phase.challenge.verify, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ captchaToken }),
+      });
+    } catch {
+      if (this.current() === phase) this.current.set({ status: 'failed', failure: 'not_checked' });
+      return false;
+    }
+    // cancelled while the check was sent
+    if (this.current() !== phase) return true;
+    if (!response.ok) return false;
+    this.current.set({ status: 'idle' });
+    this.ask();
+    return true;
   }
 
   /** Saves the file again while it is kept, or asks for the report anew past that. */
@@ -127,6 +165,14 @@ export class ReportDownload {
         this.current.set({ status: 'saved' });
         return;
       }
+      if (response.status === 401) {
+        const challenge = challengeOf(await response.json().catch(() => null));
+        if (stopped()) return;
+        this.current.set(
+          challenge ? { status: 'checking', challenge } : { status: 'failed', failure: 'failed' }
+        );
+        return;
+      }
       await response.body?.cancel().catch(() => undefined);
       this.current.set(failureOf(response));
       return;
@@ -140,6 +186,10 @@ function failureOf(response: Response): ReportPhase {
     return { status: 'failed', failure: 'gone' };
   }
   if (response.status === 503) {
+    // the gateway's, where this deployment cannot check a person: the only 503 with no
+    // Retry-After (spec 031, FR-020)
+    if (response.headers.get('retry-after') === null)
+      return { status: 'failed', failure: 'no_check' };
     const after = Number(response.headers.get('retry-after'));
     return {
       status: 'failed',
@@ -148,6 +198,18 @@ function failureOf(response: Response): ReportPhase {
     };
   }
   return { status: 'failed', failure: 'failed' };
+}
+
+/** A 401's check to make, read field by field; undefined when it names none. */
+function challengeOf(body: unknown): ReportChallenge | undefined {
+  if (typeof body !== 'object' || body === null) return undefined;
+  const sitekey: unknown = (body as Record<string, unknown>)['sitekey'];
+  const verify: unknown = (body as Record<string, unknown>)['verify'];
+  if (typeof sitekey !== 'string' || sitekey === '') return undefined;
+  // the site's own route, never an address elsewhere
+  if (typeof verify !== 'string' || !verify.startsWith('/') || verify.startsWith('//'))
+    return undefined;
+  return { sitekey, verify };
 }
 
 const STAGES: readonly string[] = ['reading', 'figures', 'printing'];

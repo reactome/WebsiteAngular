@@ -37,6 +37,16 @@ describe("the report's line", () => {
     );
     expect(phaseWords({ status: 'failed', failure: 'failed' })).toContain('could not be made');
     expect(phaseWords({ status: 'failed', failure: 'unreachable' })).toContain('two minutes');
+    expect(phaseWords({ status: 'failed', failure: 'not_checked' })).toContain(
+      'could not check that you are a person'
+    );
+    expect(phaseWords({ status: 'failed', failure: 'no_check' })).toContain('Try again later');
+    expect(
+      phaseWords({
+        status: 'checking',
+        challenge: { sitekey: 'k', verify: '/search-answer/verify' },
+      })
+    ).toContain('check that you are a person');
     expect(phaseWords({ status: 'idle' })).toBeNull();
     expect(phaseWords({ status: 'saved' })).toBe('Report downloaded');
   });

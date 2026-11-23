@@ -1,4 +1,4 @@
-import { Component, computed, inject, input } from '@angular/core';
+import { Component, ElementRef, computed, effect, inject, input, viewChild } from '@angular/core';
 import { MatAnchor, MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -6,6 +6,7 @@ import { MatTooltip } from '@angular/material/tooltip';
 import type { AnalysisReportStatus } from '../../../../../../../contract/analysis-report.ts';
 import type { ReportPhase } from '../../../../services/report-download';
 import { ReportDownloadsService } from '../../../../services/report-downloads.service';
+import { renderChallenge } from '../../../../../../../website-angular/src/app/search/answer/turnstile';
 
 /**
  * Seconds left as the line says them: in tens of seconds under two minutes, so the line
@@ -55,6 +56,8 @@ export function phaseWords(phase: ReportPhase): string | null {
       return null;
     case 'starting':
       return 'Starting your report…';
+    case 'checking':
+      return 'One quick check that you are a person, then the report.';
     case 'waiting':
       return waitingWords(phase.report);
     case 'saved':
@@ -71,6 +74,10 @@ export function phaseWords(phase: ReportPhase): string | null {
           return 'The report could not be made. Try again, or tell us through the contact form.';
         case 'unreachable':
           return 'No word from the report service for two minutes.';
+        case 'not_checked':
+          return 'We could not check that you are a person. Try again.';
+        case 'no_check':
+          return 'Reports cannot be made just now. Try again later.';
       }
   }
 }
@@ -104,6 +111,18 @@ export class ReportDownloadComponent {
   readonly failure = computed(() => {
     const phase = this.phase();
     return phase.status === 'failed' ? phase.failure : null;
+  });
+
+  /** The check's container, present only while the check is shown. */
+  private readonly widget = viewChild<ElementRef<HTMLElement>>('turnstile');
+
+  /** The human check rendered here, where the reader asked, as the analysis summary does. */
+  readonly showChallenge = effect(() => {
+    const phase = this.phase();
+    const host = this.widget()?.nativeElement;
+    if (phase.status !== 'checking' || !host || host.childElementCount > 0) return;
+    const report = this.report();
+    void renderChallenge(host, phase.challenge.sitekey, (token) => report.solve(token));
   });
 
   onClick(event: MouseEvent): void {

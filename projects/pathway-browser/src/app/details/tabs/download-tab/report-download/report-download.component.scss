@@ -16,3 +16,8 @@
 .report__action {
   min-width: 0;
 }
+
+/* Cloudflare's check, while it is shown (spec 031, User Story 4): its own box, under the line */
+.report__check {
+  min-height: 65px;
+}
