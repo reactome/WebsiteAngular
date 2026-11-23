@@ -37,7 +37,7 @@ jobs:
     # tests.yml's e2e job, and tools/workflows.spec.ts keeps the tag on the
     # version in package.json.
     container:
-      image: mcr.microsoft.com/playwright:v1.64.1-resolute
+      image: mcr.microsoft.com/playwright:v1.65.1-resolute
       options: --ipc=host
     # 30 was not enough, and the way it was not enough hid the answer: the job was
     # killed mid-run, so nobody saw which check failed or why. One test alone
