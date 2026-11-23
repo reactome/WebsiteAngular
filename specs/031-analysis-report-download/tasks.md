@@ -184,13 +184,30 @@ browser opening the address is taken to the Download tab.
       Done: one e2e, the 401 then the check (stubbed, solved at once), the token to
       `/search-answer/verify`, the report asked again and downloaded; recorded, and seen
       failing with the 401 not read.
-- [ ] T025 [US4] SC-008 on beta: a script without a pass (401, nothing queued: pdf-export's
+- [x] T025 [US4] SC-008 on beta: a script without a pass (401, nothing queued: pdf-export's
       health shows no new job), a browser opening the address (redirected), a forged and an
       expired pass (refused), each recorded here.
-- [ ] T026 [US4] The API page and the User Guide, where they mention the report's address,
+      Done on beta, 23 Nov 2026, after #1040 was deployed (site, then gateway), with a token
+      from a four-gene analysis: no pass, `Accept: application/pdf` → 401 in the envelope with
+      the results' addresses, each of them then answering 200 (token JSON, result.json.gz, a
+      CSV); `Accept: text/html` → 303 to `/PathwayBrowser?analysis={token}&tab=download`; a
+      forged signature, a malformed pass and a HEAD → 401; pdf-export's health after, no
+      report making, waiting or kept. The 401 rather than a 503 shows the gateway read the
+      secret and site key from the mounted file. In a browser, the report's address opened
+      the Download tab, PDF Result was refused (401) and the line asked for the check, with
+      Cloudflare's widget rendered in it. An expired pass needs the site's secret to sign, so
+      it is checked by `human-pass.spec.ts` against a pass `human-gate.js` mints; a pass that
+      succeeds needs a person to solve the check, so that last step is a person's, on beta.
+- [x] T026 [US4] The API page and the User Guide, where they mention the report's address,
       say a person's check is needed and point pipelines to the results' files.
-- [ ] T027 Declared differences register: the report's address no longer makes a report for
+      Done: the API page gives Swagger UI the analysis service's description with the
+      report's operation amended (`swagger-page/analysis-description.ts`: the check, the
+      results to take instead, a 401 among its answers; three unit tests); the User Guide's
+      Analysis Report section says the same in a reader's words.
+- [x] T027 Declared differences register: the report's address no longer makes a report for
       a caller without the human check, where the Java service made one for anyone.
+      Done: a row under the AnalysisService gateway; the report's rows there, and the
+      analysis report's section, marked live on beta.
 
 ---
 

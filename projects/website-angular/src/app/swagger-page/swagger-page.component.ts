@@ -9,11 +9,13 @@ import {
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
+import { withReportCheck } from './analysis-description';
 
 /** The Swagger UI bundle's global, loaded as a script: the options this page gives it. */
 declare const SwaggerUIBundle: (options: {
   domNode: HTMLElement;
-  url: string;
+  url?: string;
+  spec?: unknown;
   deepLinking: boolean;
 }) => unknown;
 
@@ -74,13 +76,29 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     // ngAfterViewInit returns early off-browser, so window is always defined by
     // the time this runs.
     const url = `${window.location.origin}/${DESCRIPTIONS[this.serviceName] ?? `${this.serviceName}/v3/api-docs`}`;
+    // The analysis service's description is Java's, written before a report
+    // needed a person's check: read here and given with the report amended
+    // (spec 031, T026). Where it cannot be read, Swagger UI is given the
+    // address, and shows its own failure.
+    const spec = this.serviceName === 'AnalysisService' ? await this.amended(url) : undefined;
     SwaggerUIBundle({
       domNode: this.swaggerContainer().nativeElement,
-      url,
+      ...(spec === undefined ? { url } : { spec }),
       // Follows `#/{tag}/{operationId}` in the address, so a link to one
       // operation opens it rather than the top of a 98-operation page.
       deepLinking: true,
     });
+  }
+
+  /** The analysis service's description with the report's check, or undefined. */
+  private async amended(url: string): Promise<unknown> {
+    try {
+      const response = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!response.ok) return undefined;
+      return withReportCheck(await response.json());
+    } catch {
+      return undefined;
+    }
   }
 
   private loadScript(src: string): Promise<void> {
