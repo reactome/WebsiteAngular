@@ -42,7 +42,7 @@ test.describe('Homepage', () => {
     }
   });
 
-  test('Analysis Tools carousel spans the full content width', async ({ page }) => {
+  test('the tools section spans the full content width', async ({ page }) => {
     // Regression guard: curator's homepage and main's homepage both use the
     // class .home-shortcut-tile -- for a compact logo/warning box and for this
     // full-width carousel respectively. A curator-only `max-width: 1040px`
@@ -67,7 +67,8 @@ test.describe('Homepage', () => {
 
     const shortcuts = page.locator('app-home-shortcuts');
     await expect(shortcuts).toBeVisible();
-    await expect(shortcuts.locator('a.shortcut-link')).toHaveCount(SHORTCUTS.length);
+    // Cards since the redesign: a grid, each tool named and described
+    await expect(shortcuts.locator('a.shortcut-card')).toHaveCount(SHORTCUTS.length);
 
     for (const { name, href } of SHORTCUTS) {
       // mat-icon is aria-hidden, so the link's accessible name is just the label.
