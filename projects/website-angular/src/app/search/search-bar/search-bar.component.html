@@ -12,16 +12,20 @@
     autocomplete="off"
     aria-label="Search query"
   ></textarea>
-  <button
-    type="button"
-    class="syntax-help-button"
-    [class.active]="syntaxHelpOpen"
-    (click)="syntaxHelpOpen = !syntaxHelpOpen"
-    title="Query syntax help"
-    aria-label="Toggle query syntax help"
-  >
-    <span class="material-symbols-rounded">help_outline</span>
-  </button>
+  <!-- Only where a reader is writing searches: on the home page it was a third
+       control in the hero for a question few ask there. -->
+  @if (syntaxHelp()) {
+    <button
+      type="button"
+      class="syntax-help-button"
+      [class.active]="syntaxHelpOpen"
+      (click)="syntaxHelpOpen = !syntaxHelpOpen"
+      title="Query syntax help"
+      aria-label="Toggle query syntax help"
+    >
+      <span class="material-symbols-rounded">help_outline</span>
+    </button>
+  }
   <button type="submit" class="search-button">Go!</button>
 </form>
 @if (text() && suggestions.length > 0 && showSuggestions()) {
@@ -37,7 +41,7 @@
     </ul>
   </div>
 }
-@if (syntaxHelpOpen) {
+@if (syntaxHelp() && syntaxHelpOpen) {
   <div class="syntax-help">
     <table class="syntax-table">
       <thead>
