@@ -34,3 +34,11 @@
   line-height: 1.2;
   margin: 0.67em 0;
 }
+
+// Proposal: six across a desktop, three by two on a phone.
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 16px;
+  justify-items: center;
+}

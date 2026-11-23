@@ -144,8 +144,8 @@ $transition: all 0.3s ease;
   // straight into the section under it.
   margin-bottom: 16px;
 
-  app-tile:nth-child(1),
-  app-tile:nth-child(2) {
+  > app-tile:nth-child(1),
+  > app-tile:nth-child(2) {
     display: flex;
 
     // The tile's own inner div is what carries the background, so it has to
@@ -161,12 +161,8 @@ $transition: all 0.3s ease;
 
   // 2:3 of the width left after the gap. 40% and 60% plus the 16px gap came to
   // more than the row, and the news panel ran past the page's right margin.
-  app-tile:nth-child(1) {
-    flex: 2 1 0;
-    min-width: 0;
-  }
-
-  app-tile:nth-child(2) {
+  // Proposal: the news first, at 3, beside the side column at 2.
+  > app-tile:nth-child(1) {
     flex: 3 1 0;
     min-width: 0;
   }
@@ -174,14 +170,202 @@ $transition: all 0.3s ease;
   @media (max-width: 768px) {
     flex-direction: column;
 
-    app-tile:nth-child(1),
-    app-tile:nth-child(2) {
+    .home-side-column {
+      flex: unset;
+    }
+
+    > app-tile:nth-child(1),
+    > app-tile:nth-child(2) {
       max-width: 100%;
       flex: unset;
     }
 
-    app-tile:nth-child(2) {
+    > app-tile:nth-child(2) {
       min-width: 100%;
     }
   }
+}
+
+// ---- Proposal: the hero ----------------------------------------------------
+
+.home-hero {
+  text-align: center;
+}
+
+.home-hero-lead {
+  margin: 0 0 16px;
+  font-size: 18px;
+  line-height: 1.4;
+  color: var(--on-surface-variant, #40484c);
+}
+
+.home-hero app-search-bar {
+  max-width: 720px;
+  width: 100%;
+}
+
+.home-hero-examples {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--on-surface-variant, #40484c);
+
+  .home-hero-example {
+    display: inline-block;
+    margin: 4px;
+    padding: 2px 10px;
+    border: 1px solid var(--primary);
+    border-radius: 999px;
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+  }
+}
+
+.home-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.home-hero-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid var(--primary);
+  border-radius: 8px;
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration: none;
+
+  &--primary {
+    background: var(--primary);
+    color: var(--on-primary);
+  }
+
+  &:hover,
+  &:focus-visible {
+    filter: brightness(1.1);
+  }
+}
+
+// The news beside a column holding the spotlight card and "Why Reactome?".
+.home-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 2 1 0;
+  min-width: 0;
+
+  > app-tile {
+    display: block;
+  }
+
+  // The last one fills what is left, so the column ends with the news beside it.
+  > app-tile:last-child {
+    flex: 1;
+  }
+
+  app-tile ::ng-deep .tile {
+    margin-bottom: 0;
+    align-items: flex-start;
+    height: 100%;
+    box-sizing: border-box;
+  }
+}
+
+// ---- Version 2: one teal band, light content ----------------------------
+
+// The public homepage on a light page; the teal is the hero's alone. The
+// curator site keeps its gradient.
+// Its colours as tokens, which dark mode redefines: a selector joining
+// :host-context(.dark) with :host(:not(.curator)) matched nothing, and the light
+// page showed between the dark cards.
+:host {
+  --home-page-bg: #eef4f6;
+  --home-card-edge: #d5e1e4;
+}
+
+:host-context(.dark) {
+  --home-page-bg: #0b1c22;
+  --home-card-edge: #24404a;
+}
+
+:host(:not(.curator)) {
+  background-image: none;
+  background-color: var(--home-page-bg);
+}
+
+.home-hero-band {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: (-$spacing-unit) (-$spacing-unit) $spacing-unit;
+  padding: 32px max(16px, 3vw);
+  background-image: linear-gradient(160deg, #00798f 0%, #006781 55%, #00485c 100%);
+
+  .home-hero {
+    display: block;
+  }
+
+  ::ng-deep .home-hero .tile {
+    margin-bottom: 0;
+    border-radius: 12px;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+:host-context(.dark) .home-hero-band {
+  background-image: linear-gradient(160deg, #003643 0%, #002b36 55%, #001a22 100%);
+}
+
+.home-hero-figure {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+
+  // A box of one shape, the illustration fitted inside it: pathways' illustrations
+  // differ in shape, and ngSrc's fill wants a box to fill.
+  .home-hero-picture {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 640px;
+    aspect-ratio: 16 / 10;
+  }
+
+  img {
+    object-fit: contain;
+    filter: drop-shadow(0 6px 18px rgb(0 0 0 / 25%));
+  }
+
+  figcaption {
+    color: #e6f4f7;
+    font-size: 14px;
+    text-align: center;
+
+    a {
+      color: #fff;
+      font-weight: 600;
+    }
+  }
+}
+
+// White cards on the light page: an edge to stand off it.
+:host(:not(.curator)) ::ng-deep .light-tile {
+  border: 1px solid var(--home-card-edge);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgb(0 40 50 / 8%);
 }

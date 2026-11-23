@@ -20,53 +20,67 @@
     <app-home-why-reactome />
   </app-tile>
 } @else {
-  <app-tile variant="light" class="home-search-tile" style="flex-direction: column !important; gap: 0px">
-    <h1 class="home-search-title">Find Reactions, Proteins, and Pathways</h1>
-    <app-search-bar />
-  </app-tile>
-  <!-- <app-tile variant="dark" class="new-pathway-tile">
-    <div class="new-pathway-text">
-      <span>
-        Introducing Reactome’s new Pathway Browser! Click the button to explore
-        the new Pathway Browser Beta!
-      </span>
-    </div>
-    <app-button
-      variant="light"
-      size="medium"
-      shape="square"
-      class="pathway-tile-button"
-    >
-      <a href="{{ pathwayBrowserLink() }}" class="home-link-button">
-        <mat-icon alt="Explore the Pathway Browser" class="med-button-icon">
-          account_tree
-        </mat-icon>
-      </a>
-    </app-button>
-  </app-tile> -->
-  <app-tile variant="dark" class="home-shortcut-tile" id="tools" style="display: block">
-    <app-home-shortcuts [dark]="false" />
-  </app-tile>
-
-  <app-tile variant="dark-transparent">
-    <app-home-spotlight />
-  </app-tile>
-  <div class="home-news-why-wrapper">
-    <app-tile variant="dark-transparent">
-      <app-home-why-reactome />
+  <!-- Proposal (homepage review): one hero saying what Reactome is, search first,
+       the two main ways in; the release's numbers straight under it; every tool
+       visible at once, no carousels; the spotlight a card beside the news. -->
+  <!-- Version 2: the hero is the page's one teal band, the newest release's
+       featured illustration beside the search. -->
+  <section class="home-hero-band">
+    <app-tile variant="light" class="home-hero" style="flex-direction: column !important; gap: 0px">
+      <h1 class="home-search-title">Find Reactions, Proteins, and Pathways</h1>
+      <p class="home-hero-lead">Reactome is a free, open-source, curated and peer-reviewed pathway database.</p>
+      <app-search-bar />
+      <p class="home-hero-examples">
+        Try:
+        @for (example of examples; track example) {
+          <a class="home-hero-example" routerLink="/content/query" [queryParams]="{ q: example }">{{ example }}</a>
+        }
+      </p>
+      <div class="home-hero-actions">
+        <a class="home-hero-action home-hero-action--primary" [href]="pathwayBrowserLink()">
+          <mat-icon aria-hidden="true">account_tree</mat-icon>Browse pathways
+        </a>
+        <a class="home-hero-action" href="/PathwayBrowser?analysisTab=qualitative">
+          <mat-icon aria-hidden="true">analytics</mat-icon>Analyse your data
+        </a>
+      </div>
     </app-tile>
-    <app-tile variant="dark-transparent" style="display: block">
-      <app-home-latest-news />
-    </app-tile>
-  </div>
+    @if (featured(); as pathway) {
+      <figure class="home-hero-figure">
+        <a class="home-hero-picture" [href]="'/PathwayBrowser/' + pathway.stId">
+          <img [ngSrc]="pathway.image" [alt]="'Illustration of ' + pathway.name" fill priority />
+        </a>
+        <figcaption>
+          New in {{ pathway.release }}:
+          <a [href]="'/PathwayBrowser/' + pathway.stId">{{ pathway.name }}</a>
+        </figcaption>
+      </figure>
+    }
+  </section>
   <app-tile variant="light" class="home-stats-tile" style="display: block">
     <app-home-stats />
   </app-tile>
-  <app-tile variant="dark" class="home-api-data-tile" style="display: block">
-    <app-home-api-data />
+  <app-tile variant="light" class="home-shortcut-tile" id="tools" style="display: block">
+    <app-home-shortcuts [dark]="false" />
   </app-tile>
-  <app-tile variant="dark" class="home-help-tile" style="display: block">
+  <div class="home-news-why-wrapper">
+    <app-tile variant="light" style="display: block">
+      <app-home-latest-news />
+    </app-tile>
+    <div class="home-side-column">
+      <app-tile variant="light" style="display: block">
+        <app-home-spotlight />
+      </app-tile>
+      <app-tile variant="light">
+        <app-home-why-reactome />
+      </app-tile>
+    </div>
+  </div>
+  <app-tile variant="light" class="home-help-tile" style="display: block">
     <app-home-help />
+  </app-tile>
+  <app-tile variant="light" class="home-api-data-tile" style="display: block">
+    <app-home-api-data />
   </app-tile>
   <app-tile variant="light" class="home-related-tile">
     <app-home-related />

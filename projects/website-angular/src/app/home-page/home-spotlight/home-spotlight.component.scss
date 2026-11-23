@@ -29,3 +29,9 @@
   line-height: 1.2;
   margin: 0.67em 0;
 }
+
+// Proposal: a card beside the news, its link a plain "Read more".
+.home-spotlight-link {
+  color: var(--panel-link, #7fe3c4);
+  font-weight: 600;
+}

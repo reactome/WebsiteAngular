@@ -2,12 +2,17 @@
 // light-on-dark throughout. The one bright colour is reserved for the release
 // markers -- the single thing worth noticing in the list.
 :host {
-  --news-ink: #ffffff;
-  --news-ink-soft: rgb(255 255 255 / 72%);
-  --news-ink-faint: rgb(255 255 255 / 55%);
-  --news-spine: rgb(255 255 255 / 22%);
-  --news-release: #7fe3c4; // mint: bright against teal without fighting it
-  --news-chip: rgb(255 255 255 / 12%);
+  // The panel's ink (tile.component.scss): white on the dark panel, teal on a
+  // light one; the shades are that ink faded, so they follow it.
+  --news-ink: var(--panel-ink, #ffffff);
+  --news-ink-soft: color-mix(in srgb, var(--news-ink) 72%, transparent);
+  --news-ink-faint: color-mix(in srgb, var(--news-ink) 55%, transparent);
+  --news-spine: color-mix(in srgb, var(--news-ink) 22%, transparent);
+  --news-release: var(
+    --panel-release,
+    #7fe3c4
+  ); // mint on the dark panel: bright against teal without fighting it
+  --news-chip: color-mix(in srgb, var(--news-ink) 12%, transparent);
 
   display: block;
   color: var(--news-ink);
@@ -95,8 +100,8 @@
   min-width: 2.9rem;
   padding: 0.1rem 0.35rem;
   border-radius: 3px;
-  background: rgb(127 227 196 / 14%);
-  border: 1px solid rgb(127 227 196 / 70%);
+  background: color-mix(in srgb, var(--news-release) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--news-release) 70%, transparent);
   color: var(--news-release);
   font-family: 'Roboto Mono', ui-monospace, monospace;
   font-size: 0.72rem;
