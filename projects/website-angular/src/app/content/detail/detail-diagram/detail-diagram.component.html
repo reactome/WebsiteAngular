@@ -1,6 +1,21 @@
 @if (diagramUrl(); as src) {
-  <figure class="detail-diagram">
-    <!-- eslint-disable-next-line @angular-eslint/template/prefer-ngsrc -- its src is swapped on error, and a diagram can be any size -->
-    <img class="diagram-img" [src]="src" [alt]="alt()" loading="lazy" (error)="fallback($event)" />
+  <figure class="detail-diagram" [class.waiting]="state() === 'loading'">
+    <!-- Said while it is drawn, which takes seconds: the frame stood empty, as if broken -->
+    @if (state() === 'loading') {
+      <p class="diagram-state" role="status">Drawing the diagram…</p>
+    } @else if (state() === 'failed') {
+      <p class="diagram-state" role="status">The diagram could not be drawn. It is in the Pathway Browser.</p>
+    }
+    <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- its src is swapped on error, and a diagram can be any size -->
+    <img
+      class="diagram-img"
+      [class.hidden]="state() !== 'shown'"
+      [src]="src"
+      [alt]="alt()"
+      loading="lazy"
+      (load)="state.set('shown')"
+      (error)="fallback($event)"
+    />
+    <!-- eslint-enable @angular-eslint/template/prefer-ngsrc -->
   </figure>
 }

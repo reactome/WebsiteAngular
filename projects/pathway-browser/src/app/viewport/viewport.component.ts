@@ -1,3 +1,5 @@
+import { Title } from '@angular/platform-browser';
+import { pageTitle } from '../../../../website-angular/src/utils/page-title';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -175,6 +177,13 @@ export class ViewportComponent {
   readonly title = computed(() => this.dataState.currentPathway()?.displayName);
 
   /**
+   * The tab's title follows the pathway on show, "Apoptosis · Pathway Browser ·
+   * Reactome"; the route's own "Pathway Browser · Reactome" until one is open.
+   * Only the site's Pathway Browser route uses this component, never the embed.
+   */
+  private readonly documentTitle = inject(Title);
+
+  /**
    * Switch the diagram to another pathway for comparison.
    *
    * Goes through navigateTo so the PathwayBrowser base is resolved: a plain
@@ -296,6 +305,11 @@ export class ViewportComponent {
     'M12.5 19.5001C10.4167 19.5001 8.646 18.7708 7.188 17.3121C5.72933 15.8541 5 14.0834 5 12.0001C5 10.1254 5.57633 8.51775 6.729 7.17708C7.88167 5.83708 9.361 5.00042 11.167 4.66708C11.6943 4.56975 12.0797 4.66342 12.323 4.94808C12.5663 5.23275 12.549 5.63908 12.271 6.16708C12.1043 6.48642 11.9757 6.81975 11.885 7.16708C11.795 7.51442 11.75 7.87542 11.75 8.25008C11.75 9.50008 12.1873 10.5627 13.062 11.4381C13.9373 12.3127 15 12.7501 16.25 12.7501C16.6247 12.7501 16.9857 12.7051 17.333 12.6151C17.6803 12.5244 18.0137 12.3958 18.333 12.2291C18.875 11.9511 19.2883 11.9234 19.573 12.1461C19.8577 12.3681 19.9513 12.7431 19.854 13.2711C19.5487 15.0491 18.7327 16.5318 17.406 17.7191C16.08 18.9064 14.4447 19.5001 12.5 19.5001Z';
 
   constructor() {
+    // The tab's title follows the pathway on show (documentTitle, above)
+    effect(() => {
+      const name = this.title();
+      if (name) this.documentTitle.setTitle(pageTitle(name, 'Pathway Browser'));
+    });
     // Stays until dismissed: a reader who has just run an analysis and sees no
     // results needs to be able to read why, not catch it in a few seconds. But
     // it belongs to this page and this moment: however it goes -- dismissed,

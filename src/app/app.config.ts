@@ -4,7 +4,8 @@ import {
   importProvidersFrom,
 } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { provideRouter, RouteReuseStrategy } from '@angular/router';
+import { provideRouter, RouteReuseStrategy, TitleStrategy } from '@angular/router';
+import { ReactomeTitleStrategy } from '../../projects/website-angular/src/utils/page-title';
 import { StoreModule } from '@ngrx/store';
 import { StoreRouterConnectingModule, routerReducer } from '@ngrx/router-store';
 import { EffectsModule } from '@ngrx/effects';
@@ -43,6 +44,8 @@ export const appConfig: ApplicationConfig = {
     // template event bindings and explicit markForCheck instead.
     provideZonelessChangeDetection(),
     provideRouter(routes),
+    // Each page's own title, "… · Reactome" (projects/website-angular/src/utils/page-title.ts)
+    { provide: TitleStrategy, useClass: ReactomeTitleStrategy },
     // Angular's own behaviour everywhere but the render page, whose component
     // is recreated when the render service moves it to its next figure.
     { provide: RouteReuseStrategy, useClass: RenderReuseStrategy },

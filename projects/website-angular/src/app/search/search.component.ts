@@ -1,3 +1,5 @@
+import { Title } from '@angular/platform-browser';
+import { pageTitle } from '../../utils/page-title';
 import {
   SearchResult,
   SearchEntry,
@@ -61,6 +63,7 @@ import { SearchAnswerComponent } from './answer/search-answer.component';
 export class SearchComponent implements OnInit, OnDestroy {
   private icons = inject(IconService);
   private route = inject(ActivatedRoute);
+  private title = inject(Title);
   private router = inject(Router);
   private searchService = inject(SearchService);
   private siteSearch = inject(SiteSearchService);
@@ -184,6 +187,8 @@ export class SearchComponent implements OnInit, OnDestroy {
           q = decodeURIComponent(querySegment.path.substring('query='.length));
         }
       }
+      // "TP53 · Search · Reactome"; the route's own "Search · Reactome" without a query
+      this.title.setTitle(pageTitle(q, 'Search'));
 
       this.query = q;
       const pages = paramValues(params, 'page');

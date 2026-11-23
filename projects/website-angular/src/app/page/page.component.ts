@@ -8,7 +8,8 @@ import addImageSizes from '../../utils/addImageSizes';
 import renderContentBody from '../../utils/renderContentBody';
 import sanitize from '../../utils/sanitize';
 import { StatsService } from '../../services/stats.service';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DomSanitizer, SafeHtml, Title } from '@angular/platform-browser';
+import { pageTitle } from '../../utils/page-title';
 import { ViewportScroller } from '@angular/common';
 import loadHubspotMeetingsIfPresent from '../../utils/loadHubspotMeetingsIfPresent';
 import { applyRelease, needsRelease, releaseWithin } from './release-placeholder';
@@ -77,6 +78,8 @@ export class PageComponent implements OnInit {
     });
   }
 
+  private title = inject(Title);
+
   private async loadPage(pageType: string, slug: string) {
     this.loading = true;
     this.error = null;
@@ -88,6 +91,7 @@ export class PageComponent implements OnInit {
         void (async () => {
           if (page) {
             this.page = page;
+            this.title.setTitle(pageTitle(page.title));
             let html = await marked(page.body);
             if (needsRelease(html)) {
               const release = await releaseWithin(this.stats.getVersion(), { skip: IS_CURATOR });

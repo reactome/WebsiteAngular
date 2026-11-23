@@ -1,4 +1,6 @@
 import { Component, DestroyRef, effect, inject, OnInit, signal, viewChild } from '@angular/core';
+import { Title } from '@angular/platform-browser';
+import { pageTitle } from '../../../utils/page-title';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -66,6 +68,7 @@ export class DetailComponent implements OnInit {
   private domSanitizer = inject(DomSanitizer);
   private iconService = inject(IconService);
 
+  private title = inject(Title);
   readonly obj = signal<SelectableObject | undefined>(undefined);
   readonly loading = signal(true);
   readonly error = signal(false);
@@ -186,10 +189,15 @@ export class DetailComponent implements OnInit {
       .subscribe(({ id, data }) => {
         if (data) {
           this.obj.set(data);
+          // "Apoptosis (R-HSA-109581) · Reactome": what is on show, and its id
+          this.title.setTitle(
+            pageTitle(data.stId ? `${data.displayName} (${data.stId})` : data.displayName)
+          );
           this.dataState.selectedElement.set(data);
           this.keepStableAddress(id, data);
         } else {
           this.error.set(true);
+          this.title.setTitle(pageTitle('Not found'));
         }
         this.loading.set(false);
       });

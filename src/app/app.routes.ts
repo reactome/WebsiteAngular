@@ -13,6 +13,7 @@ export const routes: Routes = [
   { path: 'reacfoam', redirectTo: 'PathwayBrowser', pathMatch: 'full' },
   {
     path: 'PathwayBrowser',
+    title: 'Pathway Browser',
     // src/app/app.config.ts. Registering it again here created a second,
     // independent animation engine that queued animations on this route's
     // elements but never flushed them (stuck "ng-animate-queued" forever) —

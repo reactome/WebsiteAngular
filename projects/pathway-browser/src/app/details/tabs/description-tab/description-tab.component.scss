@@ -530,9 +530,16 @@
     font: var(--mat-sys-body-medium);
     color: var(--on-surface);
     white-space: normal;
-    text-align: justify;
+    // Left-aligned: justified text stretched the gaps between words ("Apoptosis
+    // is  a  distinct"), worst in a narrow column.
+    text-align: start;
     justify-content: flex-start;
     flex-wrap: wrap;
+
+    .summation-text {
+      max-width: 75ch;
+      line-height: 1.55;
+    }
 
     .italic {
       font-style: italic;
