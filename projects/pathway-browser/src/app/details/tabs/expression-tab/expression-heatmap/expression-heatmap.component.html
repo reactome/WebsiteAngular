@@ -83,8 +83,7 @@
 <!-- Announced for the keyboard's focus, not for every cell the pointer crosses. -->
 <div class="details" [attr.aria-live]="hovered() ? 'off' : 'polite'">
   @if (details(); as d) {
-    <b>{{ d.row.name || d.row.gene }}</b> in <b>{{ d.tissue.label }}</b
-    >:
+    <b>{{ d.row.name || d.row.gene }}</b> in <b>{{ d.tissue.label }}</b>:
     @if (d.values; as v) {
       median {{ format(v[2]) }} TPM
       @if (d.tissue.samples > 1) {

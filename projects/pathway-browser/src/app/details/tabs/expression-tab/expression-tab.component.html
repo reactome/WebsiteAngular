@@ -6,8 +6,7 @@
   @switch (answer.kind) {
     @case ('species-not-available') {
       <p class="padding status">
-        Expression data is not available for <i>{{ answer.species }}</i
-        >: no tissue experiment is listed for it.
+        Expression data is not available for <i>{{ answer.species }}</i>: no tissue experiment is listed for it.
       </p>
     }
     @case ('no-genes') {
@@ -53,8 +52,8 @@
   <!-- Where the values come from (FR-012), as the licence asks. -->
   @if (experiment(); as experiment) {
     <footer class="padding source">
-      Expression from <a [href]="experiment.source" target="_blank" rel="noopener">{{ experiment.accession }}</a
-      >: {{ experiment.title }} ({{ experiment.design }}; updated {{ experiment.updated }}). Values as published by
+      Expression from <a [href]="experiment.source" target="_blank" rel="noopener">{{ experiment.accession }}</a>:
+      {{ experiment.title }} ({{ experiment.design }}; updated {{ experiment.updated }}). Values as published by
       Expression Atlas; genes chosen and reordered here. Licence: {{ experiment.licence }}.
       @for (citation of experiment.citation; track citation) {
         <span class="citation">{{ citation }}</span>
