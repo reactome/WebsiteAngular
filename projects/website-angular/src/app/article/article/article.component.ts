@@ -2,6 +2,8 @@ import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
 import { ContentService } from '../../../services/content.service';
+import { Title } from '@angular/platform-browser';
+import { pageTitle } from '../../../utils/page-title';
 import { Article } from '../../../types/article';
 import formatDate from '../../../utils/formatDate';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
@@ -41,6 +43,13 @@ export class ArticleComponent implements OnInit {
   // in hand.
   private cdr = inject(ChangeDetectorRef);
 
+  private title = inject(Title);
+
+  /** The section an article belongs to, second in its title. */
+  private section(path: string): string {
+    return path === 'about/news' ? 'News' : 'Research Spotlight';
+  }
+
   ngOnInit() {
     const slug = this.route.snapshot.paramMap.get('slug');
     if (slug) {
@@ -68,9 +77,11 @@ export class ArticleComponent implements OnInit {
 
     this.contentService.getArticle(path, slug).subscribe({
       next: (article) => {
+        if (article) this.title.setTitle(pageTitle(article.title, this.section(path)));
         if (!article) {
           this.notFound = true;
           this.loading = false;
+          this.title.setTitle(pageTitle('Not found', this.section(path)));
           this.cdr.markForCheck();
           return;
         }

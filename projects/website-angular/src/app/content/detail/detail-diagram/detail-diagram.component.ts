@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, input, signal } from '@angular/core';
 import {
   CONTENT_SERVICE,
   RENDER_SERVICE,
@@ -53,11 +53,25 @@ export class DetailDiagramComponent {
    * works -- 11 of 9,559 diagram files and no illustrations at all, on the box
    * this was written on.
    */
+  /** Whether the diagram is still being drawn, on show, or could not be had from either source. */
+  readonly state = signal<'loading' | 'shown' | 'failed'>('loading');
+
+  constructor() {
+    // Another object on the same page component: its diagram starts again.
+    effect(() => {
+      this.diagramUrl();
+      this.state.set('loading');
+    });
+  }
+
   fallback(event: Event) {
     const image = event.target as HTMLImageElement;
     const stId = this.obj().stId;
     const exporter = `${CONTENT_SERVICE}/exporter/diagram/${stId}.svg`;
-    if (image.src === exporter) return;
+    if (image.src === exporter) {
+      this.state.set('failed');
+      return;
+    }
     image.src = exporter;
   }
 

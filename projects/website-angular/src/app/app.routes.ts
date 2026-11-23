@@ -1,3 +1,4 @@
+import { HOME_TITLE } from '../utils/page-title';
 import { inject } from '@angular/core';
 import { Router, Routes } from '@angular/router';
 
@@ -5,6 +6,7 @@ export const routes: Routes = [
   //Home Page
   {
     path: '',
+    title: HOME_TITLE,
     loadComponent: () => import('./home-page/home-page.component').then((m) => m.HomePageComponent),
     pathMatch: 'full',
   },
@@ -14,6 +16,7 @@ export const routes: Routes = [
   // associated with, from the IDG portal's interaction data.
   {
     path: 'idg',
+    title: 'IDG',
     loadComponent: () => import('./idg/idg-page.component').then((m) => m.IdgPageComponent),
     pathMatch: 'full',
   },
@@ -21,6 +24,7 @@ export const routes: Routes = [
   //News Pages
   {
     path: 'about/news',
+    title: 'News',
     loadComponent: () =>
       import('./article/article-page/article-page.component').then((m) => m.ArticlePageComponent),
     pathMatch: 'full',
@@ -33,12 +37,14 @@ export const routes: Routes = [
   },
   {
     path: 'about/logo',
+    title: 'Our Logo',
     loadComponent: () =>
       import('./about/logo-page/logo-page.component').then((m) => m.LogoPageComponent),
     pathMatch: 'full',
   },
   {
     path: 'about/release-calendar',
+    title: 'Release Calendar',
     loadComponent: () =>
       import('./about/release-calendar/release-calendar.component').then(
         (m) => m.ReleaseCalendarComponent
@@ -47,6 +53,7 @@ export const routes: Routes = [
   },
   {
     path: 'about/editorial-calendar',
+    title: 'Editorial Calendar',
     loadComponent: () =>
       import('./about/editorial-calendar/editorial-calendar.component').then(
         (m) => m.EditorialCalendarComponent
@@ -57,18 +64,21 @@ export const routes: Routes = [
   //Community Pages
   {
     path: 'community/partners',
+    title: 'Partners',
     loadComponent: () =>
       import('./community/partners/partners.component').then((m) => m.PartnersComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/resources',
+    title: 'Resources',
     loadComponent: () =>
       import('./community/resources/resources.component').then((m) => m.ResourcesComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/collaboration',
+    title: 'Collaboration',
     loadComponent: () =>
       import('./community/collaboration/collaboration.component').then(
         (m) => m.CollaborationComponent
@@ -77,18 +87,21 @@ export const routes: Routes = [
   },
   {
     path: 'community/icon-lib',
+    title: 'Icon Library',
     loadComponent: () =>
       import('./community/icon-lib/icon-lib.component').then((m) => m.IconLibComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/icon-lib/:id',
+    title: 'Icon Library',
     loadComponent: () =>
       import('./community/icon-lib/icon-lib.component').then((m) => m.IconLibComponent),
     pathMatch: 'full',
   },
   {
     path: 'community/contributors',
+    title: 'Contributors',
     loadComponent: () =>
       import('./content/contributors/contributors.component').then((m) => m.ContributorsComponent),
     pathMatch: 'full',
@@ -97,6 +110,7 @@ export const routes: Routes = [
   //Documentation Pages
   {
     path: 'documentation/faq',
+    title: 'FAQ',
     loadComponent: () => import('./documentation/faq/faq.component').then((m) => m.FaqComponent),
     pathMatch: 'full',
   },
@@ -104,6 +118,7 @@ export const routes: Routes = [
   //Download Page
   {
     path: 'download-data',
+    title: 'Download Data',
     loadComponent: () =>
       import('./download-data/download-data.component').then((m) => m.DownloadDataComponent),
     pathMatch: 'full',
@@ -112,6 +127,7 @@ export const routes: Routes = [
   //Reactome Research Spotlights
   {
     path: 'content/reactome-research-spotlight',
+    title: 'Research Spotlight',
     loadComponent: () =>
       import('./article/article-page/article-page.component').then((m) => m.ArticlePageComponent),
     pathMatch: 'full',
@@ -126,11 +142,13 @@ export const routes: Routes = [
   //Content Pages (TOC, DOI, Schema)
   {
     path: 'content/toc',
+    title: 'Table of Contents',
     loadComponent: () => import('./content/toc/toc.component').then((m) => m.TocComponent),
     pathMatch: 'full',
   },
   {
     path: 'content/doi',
+    title: 'DOIs',
     loadComponent: () => import('./content/doi/doi.component').then((m) => m.DoiComponent),
     pathMatch: 'full',
   },
@@ -138,6 +156,7 @@ export const routes: Routes = [
   // SchemaComponent so parameter resolution works identically.
   {
     path: 'content/schema',
+    title: 'Data Schema',
     loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
@@ -164,6 +183,7 @@ export const routes: Routes = [
   // New routes for dataSchema (replaces the previous content/schema)
   {
     path: 'dataSchema',
+    title: 'Data Schema',
     loadComponent: () => import('./content/schema/schema.component').then((m) => m.SchemaComponent),
     pathMatch: 'full',
   },
@@ -222,18 +242,21 @@ export const routes: Routes = [
   //Search Pages
   {
     path: 'content/query',
+    title: 'Search',
     loadComponent: () => import('./search/search.component').then((m) => m.SearchComponent),
   },
 
   //API Documentation (Swagger UI)
   {
     path: 'ContentService',
+    title: 'Content Service API',
     loadComponent: () =>
       import('./swagger-page/swagger-page.component').then((m) => m.SwaggerPageComponent),
     data: { serviceName: 'ContentService' },
   },
   {
     path: 'AnalysisService',
+    title: 'Analysis Service API',
     loadComponent: () =>
       import('./swagger-page/swagger-page.component').then((m) => m.SwaggerPageComponent),
     data: { serviceName: 'AnalysisService' },
@@ -281,6 +304,7 @@ export const routes: Routes = [
   //404 Page
   {
     path: '404',
+    title: 'Page Not Found',
     loadComponent: () =>
       import('./page-not-found/page-not-found.component').then((m) => m.PageNotFoundComponent),
   }, //TODO: Remove?

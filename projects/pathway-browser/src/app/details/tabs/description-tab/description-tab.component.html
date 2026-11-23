@@ -114,7 +114,10 @@
       <div class="label-container">Summation</div>
       <div class="composition-container flex-grow">
         @for (summation of summations(); track $index) {
-          <div [innerHTML]="summation.text | includeRef: allRefs()" [class.columns]="summation.text.length > 500"></div>
+          <!-- One column at a reading width: past 500 characters a summary went into two
+               columns, its lines read in two places at once, and on a phone three or four
+               words wide -->
+          <div class="summation-text" [innerHTML]="summation.text | includeRef: allRefs()"></div>
           <!--Display summation refs if is available-->
           @if (summation.literatureReference && summation.literatureReference.length > 0) {
             <div class="summation-refs-container">
