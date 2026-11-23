@@ -16,7 +16,9 @@ const noFiles = () => false;
 
 describe('which links are internal', () => {
   it('treats reactome.org as this site, as the page renderer does', () => {
-    expect(internalPath('https://reactome.org/what-is-reactome')).toBe('/what-is-reactome');
+    // and where the page is now, not the old address app.routes.ts redirects
+    expect(internalPath('https://reactome.org/what-is-reactome')).toBe('/about/what-is-reactome');
+    expect(internalPath('https://reactome.org/about/license')).toBe('/about/license');
     expect(internalPath('https://www.reactome.org/')).toBe('/');
   });
 

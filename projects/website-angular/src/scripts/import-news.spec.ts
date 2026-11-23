@@ -74,7 +74,7 @@ describe('importing an announcement', () => {
 
 describe('where an imported link points', () => {
   it('brings reactome.org links home', () => {
-    expect(forTests.localise('https://reactome.org/userguide')).toBe('/userguide');
+    expect(forTests.localise('https://reactome.org/userguide')).toBe('/documentation/userguide');
   });
 
   it("brings ReactomeGSA's landing page home, to the quantitative analysis", () => {

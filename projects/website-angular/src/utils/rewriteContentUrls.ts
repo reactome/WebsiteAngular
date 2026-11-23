@@ -25,11 +25,26 @@ const MOVED: readonly [RegExp, string][] = [
   // ReactomeGSA's landing page on reactome.org was a separate app; its wizard
   // is built into the Pathway Browser here. The server redirects /gsa too.
   [/^gsa([/?#]|$)/, 'PathwayBrowser?analysisTab=quantitative'],
+  // The old site's addresses that app.routes.ts redirects, linked to where the
+  // page is: the link check refuses content that leans on a redirect.
+  [/^userguide$/, 'documentation/userguide'],
+  [/^what-is-reactome$/, 'about/what-is-reactome'],
+  [/^dev$/, 'documentation/dev'],
+  [/^beta\/PathwayBrowser\/?$/, 'PathwayBrowser'],
+];
+
+/** Old path prefixes kept under a new parent: `userguide/x` is `documentation/userguide/x`. */
+const MOVED_UNDER: readonly [RegExp, string][] = [
+  [/^userguide\//, 'documentation/'],
+  [/^dev\//, 'documentation/'],
 ];
 
 /** Where an old site-relative path (no leading slash) lives now, or itself. */
 export function relocate(path: string): string {
-  return MOVED.find(([from]) => from.test(path))?.[1] ?? path;
+  const moved = MOVED.find(([from]) => from.test(path))?.[1];
+  if (moved !== undefined) return moved;
+  const under = MOVED_UNDER.find(([from]) => from.test(path))?.[1];
+  return under === undefined ? path : under + path;
 }
 
 export default function rewriteContentUrls(html: string): string {

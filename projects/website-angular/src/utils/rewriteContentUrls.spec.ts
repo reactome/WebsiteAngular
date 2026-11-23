@@ -4,7 +4,8 @@ import rewriteContentUrls from './rewriteContentUrls';
 describe('rewriteContentUrls', () => {
   it('brings reactome.org links home', () => {
     expect(rewriteContentUrls('<a href="https://reactome.org/userguide/analysis">x</a>')).toBe(
-      '<a href="userguide/analysis">x</a>'
+      // where the page is, not the old address app.routes.ts redirects
+      '<a href="documentation/userguide/analysis">x</a>'
     );
     // Not an empty href, which would mean the page the reader is already on.
     expect(rewriteContentUrls('<a href="https://www.reactome.org/">x</a>')).toBe(
