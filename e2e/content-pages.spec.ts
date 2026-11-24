@@ -240,7 +240,7 @@ test.describe('Research Spotlight', () => {
 
   test('the home page shows the newest one', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.home-spotlight-text').first()).toContainText(
+    await expect(page.locator('.home-spotlight-headline').first()).toContainText(
       'Single-cell multiomics connects 3D genome and transcriptome alterations in Alzheimer’s disease',
       { timeout: LOAD }
     );
