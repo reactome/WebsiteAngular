@@ -74,6 +74,7 @@ export const HIGHLIGHT_EVENT = 'reactome-diagram-highlight';
               (pathwayIdChange)="pathwayId.set($event)"
               (illustrationLoaded)="loaded($event)"
               (illustrationFailed)="failed($event)"
+              (regionHovered)="regionHovered($event)"
             />
           }
         } @else if (kind() === 'diagram' && diagramId(); as shown) {
@@ -354,6 +355,14 @@ export class DiagramElementComponent {
       });
     });
     inject(DestroyRef).onDestroy(() => clearTimeout(pending));
+  }
+
+  /**
+   * `entityhovered` for an illustration: its regions are not on the diagram's
+   * event stream, so the illustration says which one the pointer entered.
+   */
+  regionHovered(stId: string | null) {
+    this.emit('entityhovered', stId ? this.describe(stId) : NOTHING);
   }
 
   /** `entityhovered`: the pointer entering an entity, and leaving it. */

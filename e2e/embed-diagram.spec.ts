@@ -919,6 +919,55 @@ test.describe('the embeddable diagram, told what to show', () => {
     ).toBeVisible();
   });
 
+  /** Programmed Cell Death's illustration, drawn, and its first region with that region's id. */
+  async function illustrationRegion(page: Page) {
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-5357801`);
+    const region = page
+      .locator('#diagram reactome-diagram-view cr-ehld #ehld svg g[id^="REGION"]')
+      .first();
+    await expect(region).toBeVisible({ timeout: LOAD });
+    const id = /R-[A-Z]{3}-\d{3,}/.exec((await region.getAttribute('id')) ?? '')?.[0];
+    if (!id) throw new Error('the first region names no stable id');
+    return { region, id };
+  }
+
+  test("reports an illustration's region the pointer is over, and when it leaves", async ({
+    page,
+  }) => {
+    const { region, id } = await illustrationRegion(page);
+    await region.hover();
+    await expect
+      .poll(async () => (await events(page, 'entityhovered')).map(([, , d]) => d).at(-1))
+      .toMatchObject({ id, schemaClass: 'Pathway' });
+    const box = await boxOf(page);
+    await page.mouse.move(box.x + 2, box.y + box.height - 2);
+    await expect
+      .poll(async () => (await events(page, 'entityhovered')).at(-1)?.[2])
+      .toEqual({ id: null, name: null, schemaClass: null });
+  });
+
+  test("clearing the selection takes the outline off an illustration's region", async ({
+    page,
+  }) => {
+    const { region, id } = await illustrationRegion(page);
+    await region.click();
+    await expect
+      .poll(async () => (await events(page, 'entityselected')).map(([, , d]) => d).at(-1))
+      .toMatchObject({ id });
+    const filter = () => region.evaluate((g) => (g as SVGGElement).style.filter);
+    await expect.poll(filter).toContain('drop-shadow');
+    const box = await boxOf(page);
+    await page.mouse.move(box.x + 2, box.y + box.height - 2);
+    await page.evaluate(() =>
+      (
+        (window as unknown as EmbedGlobals).__el('diagram') as HTMLElement & {
+          resetSelection(): void;
+        }
+      ).resetSelection()
+    );
+    await expect.poll(filter).toBe('none');
+  });
+
   test('switches to its dark theme', async ({ page }) => {
     const shot = async (url: string) => {
       await page.goto(url);

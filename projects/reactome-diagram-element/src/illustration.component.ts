@@ -28,6 +28,7 @@ import { SvgExporterService } from '../../pathway-browser/src/app/reacfoam/svg-e
       [(pathwayId)]="pathwayId"
       (illustrationLoaded)="illustrationLoaded.emit($event)"
       (illustrationFailed)="illustrationFailed.emit($event)"
+      (regionHovered)="regionHovered.emit($event)"
     />
   `,
   styles: ':host { display: block; width: 100%; height: 100%; }',
@@ -36,6 +37,8 @@ export class IllustrationComponent {
   readonly pathwayId = model.required<string>();
   readonly illustrationLoaded = output<string>();
   readonly illustrationFailed = output<string>();
+  /** A region's stable id as the pointer enters it, null as it leaves. */
+  readonly regionHovered = output<string | null>();
   private readonly ehld = viewChild(EhldComponent);
 
   fit() {

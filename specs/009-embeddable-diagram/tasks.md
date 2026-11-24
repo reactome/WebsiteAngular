@@ -255,7 +255,15 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 - [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
 - [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
 - [ ] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
-- [ ] T046 On an illustrated pathway: report `entityhovered` (the illustration's regions do not go through the diagram's event stream), and make clearing the selection remove the region's outline (`EhldComponent.selectedElement` only ever applies one). Found in the Story 2 review.
+- [x] T046 On an illustrated pathway: report `entityhovered` (the illustration's regions do not go through the diagram's event stream), and make clearing the selection remove the region's outline (`EhldComponent.selectedElement` only ever applies one). Found in the Story 2 review.
+  - **Done (this PR):** `EhldComponent` emits `regionHovered` (a region's stable id on
+    `mouseenter`, null on `mouseleave`), which the embed's illustration passes up and the
+    element reports as `entityhovered`, described as a selection is. The outline is applied by
+    an effect whose cleanup takes it off, so it goes when the selection moves or is cleared
+    from outside (`resetSelection()`, or the state's select set to null): this applies to the
+    site's Pathway Browser too. Two e2e tests on Programmed Cell Death's illustration
+    (`embed-diagram.spec.ts`), each seen failing on main: no `entityhovered` for a region; the
+    outline left on after `resetSelection()`.
 
 ## Dependencies & Execution Order
 
