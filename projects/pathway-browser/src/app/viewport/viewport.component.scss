@@ -466,7 +466,10 @@
 }
 
 .content {
-  --as-transition-duration: 1500s;
+  // The library's own 0.3s. It was 1500s, 25 minutes, from the first commit:
+  // a size set in code (not dragged) never arrived, so the details panel kept
+  // the share it was first laid out at (found 24 Nov 2026).
+  --as-transition-duration: 0.3s;
 }
 
 .dropdown {
