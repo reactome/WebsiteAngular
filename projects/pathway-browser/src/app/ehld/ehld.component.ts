@@ -71,6 +71,12 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   readonly illustrationLoaded = output<string>();
   /** It could not be shown: its file failed to arrive, or failed to draw. */
   readonly illustrationFailed = output<string>();
+  /**
+   * The stable id of the region the pointer has entered, and null when it
+   * leaves: what the embedded diagram reports as `entityhovered`, since the
+   * regions are not on the diagram's event stream.
+   */
+  readonly regionHovered = output<string | null>();
 
   /**
    * Whether the pathway on screen is known to have an illustration.
@@ -137,9 +143,14 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
   private handled = 0;
 
   constructor() {
-    effect(() => {
+    // The selected region is outlined, and loses it when the selection moves
+    // or is cleared: cleared from outside too (the embed's resetSelection(),
+    // the state's select set to null), where no click took it off.
+    effect((onCleanup) => {
       const selected = this.selectedElement();
-      if (selected) this.ehldService.applyOutline(selected, this.flaggedElements());
+      if (!selected) return;
+      this.ehldService.applyOutline(selected, this.flaggedElements());
+      onCleanup(() => this.ehldService.removeOutline(selected, untracked(this.flaggedElements)));
     });
     effect(() => this.flaggedElements().forEach((g) => this.ehldService.applyFlagOutline(g)));
     // A sub-pathway hovered in the hierarchy lights up here as if hovered here.
@@ -292,6 +303,13 @@ export class EhldComponent implements AfterViewInit, OnDestroy {
     ) as NodeListOf<SVGGElement>;
 
     svgElement.forEach((element: SVGGElement) => {
+      // Entering and leaving the region itself, whatever is selected; mouseover
+      // and mouseout below also fire between the region's own parts.
+      const stId = this.ehldService.getStableId(element.getAttribute('id') ?? '');
+      if (stId) {
+        element.addEventListener('mouseenter', () => this.regionHovered.emit(stId));
+        element.addEventListener('mouseleave', () => this.regionHovered.emit(null));
+      }
       element.addEventListener('mouseover', () => {
         if (element !== this.selectedElement()) {
           this.ehldService.applyShadow(element, this.flaggedElements());
