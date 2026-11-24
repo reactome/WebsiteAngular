@@ -633,10 +633,20 @@
 // empty component in the slot, and the rule forced its overview into a column,
 // its icon pushed down over the locations tree.
 :host ::ng-deep .overview:has(> .overview-figure:not(:empty)) {
-  flex-direction: column;
+  // A wrapping row, not a column: the text and its icon or illustration stay
+  // side by side, as in the Pathway Browser, and the figure takes a row of its
+  // own under them. (A wrapping column put the figure in a second column.)
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  > cr-description-overview {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 
   > .overview-figure {
-    width: 100%;
+    order: 1;
+    flex: 0 0 100%;
     margin-top: 12px;
   }
 }

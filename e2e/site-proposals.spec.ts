@@ -16,6 +16,34 @@ test("a pathway's picture comes first, under its overview", async ({ page }) => 
   expect(f && s && f.y + f.height <= s.y).toBe(true);
 });
 
+test("a pathway with an illustration keeps it beside the overview, at the overview's height", async ({
+  page,
+}) => {
+  // The icon was sized from the whole overview, which holds the icon: once the
+  // diagram moved into the overview, each grew the other and the page without end.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/content/detail/R-HSA-109606');
+  const illustration = page.locator('.overview > .icon-container.figure').first();
+  await expect(illustration).toBeVisible({ timeout: LOAD });
+  await expect(page.locator('.overview .overview-figure img')).toBeVisible({ timeout: LOAD });
+  // Measured on the illustration, not the page, which grows as later sections arrive.
+  const text = page.locator('.overview > cr-description-overview');
+  const heights = async () => {
+    const [i, t] = await Promise.all([illustration.boundingBox(), text.boundingBox()]);
+    return {
+      illustration: Math.round(i?.height ?? 0),
+      text: Math.round(t?.height ?? 0),
+      level: i?.y === t?.y,
+    };
+  };
+  const first = await heights();
+  await page.waitForTimeout(1500);
+  const later = await heights();
+  expect(later.illustration, 'the illustration keeps growing').toBe(first.illustration);
+  expect(Math.abs(later.illustration - later.text)).toBeLessThanOrEqual(2);
+  expect(later.level, 'beside the text, not under it').toBe(true);
+});
+
 test.describe('The Pathway Browser on a phone', () => {
   // The event tree took half the screen and cut every name short.
   test('opens on the diagram, the tree closed', async ({ page }) => {
