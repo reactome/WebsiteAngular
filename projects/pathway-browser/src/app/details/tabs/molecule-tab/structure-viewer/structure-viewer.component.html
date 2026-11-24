@@ -4,7 +4,7 @@
     <div class="composition-container">
       @if (isAlphafoldSummaryLoading()) {
         <div class="loading-container">
-          <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          <mat-progress-spinner mode="indeterminate" aria-label="Loading"></mat-progress-spinner>
         </div>
       } @else {
         @if (isProtein()) {

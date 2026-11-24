@@ -154,6 +154,13 @@ $max-content-width: 1200px;
       max-width: 100%;
       height: auto;
     }
+
+    // Underlined: by colour alone a link in the text was 1.45:1 against the
+    // words around it, where 3:1 is the least (axe, 24 Nov 2026).
+    ::ng-deep a {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
   }
 
   .read-more {

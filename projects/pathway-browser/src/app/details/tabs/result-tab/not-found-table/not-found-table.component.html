@@ -42,7 +42,7 @@
 
     <div class="controls">
       @if (analysis.notFoundIdentifiersResource.isLoading()) {
-        <mat-progress-spinner [diameter]="35" mode="indeterminate"></mat-progress-spinner>
+        <mat-progress-spinner [diameter]="35" mode="indeterminate" aria-label="Loading"></mat-progress-spinner>
       }
       <mat-paginator
         [pageSizeOptions]="[50, analysis.result()?.identifiersNotFound || 1000]"

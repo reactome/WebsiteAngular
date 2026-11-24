@@ -17,7 +17,12 @@
   </div>
   <div class="socials">
     @if (externalLinks['twitter']) {
-      <a [href]="externalLinks['twitter'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        [href]="externalLinks['twitter'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on X (Twitter)"
+      >
         <svg
           class="twitter"
           xmlns="http://www.w3.org/2000/svg"
@@ -63,12 +68,22 @@
       </a>
     }
     @if (externalLinks['facebook']) {
-      <a [href]="externalLinks['facebook'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        [href]="externalLinks['facebook'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on Facebook"
+      >
         <mat-icon class="facebook">facebook</mat-icon>
       </a>
     }
     @if (externalLinks['youtube']) {
-      <a [href]="externalLinks['youtube'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        [href]="externalLinks['youtube'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on YouTube"
+      >
         <svg
           class="youtube"
           xmlns="http://www.w3.org/2000/svg"
@@ -114,7 +129,12 @@
       </a>
     }
     @if (externalLinks['bluesky']) {
-      <a [href]="externalLinks['bluesky'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        [href]="externalLinks['bluesky'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on Bluesky"
+      >
         <svg
           class="bluesky"
           viewBox="0 0 600 530"
@@ -131,7 +151,12 @@
       </a>
     }
     @if (externalLinks['github']) {
-      <a [href]="externalLinks['github'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        [href]="externalLinks['github'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on GitHub"
+      >
         <svg
           class="github"
           width="24"
@@ -151,7 +176,13 @@
       </a>
     }
     @if (externalLinks['linkedin']) {
-      <a class="linkedin" [href]="externalLinks['linkedin'].link" target="_blank" rel="noopener noreferrer">
+      <a
+        class="linkedin"
+        [href]="externalLinks['linkedin'].link"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Reactome on LinkedIn"
+      >
         <svg height="24" width="24" viewBox="0 0 72 72" xmlns="http://www.w3.org/2000/svg">
           <g fill="none" fill-rule="evenodd">
             <path

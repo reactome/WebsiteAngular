@@ -9,6 +9,7 @@
           [disabled]="depthIndex() === 1"
           (click)="firstPage()"
           matTooltip="Collapse all"
+          aria-label="Collapse all"
           gaEvent
           gaAction="collapse-all"
         >
@@ -21,6 +22,7 @@
           [disabled]="depthIndex() === 1"
           (click)="previousPage()"
           matTooltip="Collapse one"
+          aria-label="Collapse one"
           gaEvent
           gaAction="collapse-one"
           [gaValue]="depthIndex()"
@@ -36,6 +38,7 @@
           [disabled]="depthIndex() === maxDepth()"
           (click)="nextPage()"
           matTooltip="Expand one"
+          aria-label="Expand one"
           gaEvent
           gaAction="expand-one"
           [gaValue]="depthIndex()"
@@ -49,6 +52,7 @@
           [disabled]="depthIndex() === maxDepth()"
           (click)="lastPage()"
           matTooltip="Expand all"
+          aria-label="Expand all"
           gaEvent
           gaAction="expand-all"
         >

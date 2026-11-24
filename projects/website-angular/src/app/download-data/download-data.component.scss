@@ -40,7 +40,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: var(--primary);
-    opacity: 0.5;
+    opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
     margin: 0 0 12px;
   }
 
@@ -59,7 +59,7 @@
     padding: 5px 12px;
     font-size: 13px;
     color: var(--primary);
-    opacity: 0.6;
+    opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
     text-decoration: none;
     border-radius: 6px;
     border-left: 2px solid transparent;
@@ -128,7 +128,7 @@
   font-size: 14px;
   line-height: 1.6;
   color: var(--primary);
-  opacity: 0.65;
+  opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
   margin: 0 0 12px;
 }
 
@@ -201,7 +201,7 @@
   p {
     font-size: 13px;
     line-height: 1.5;
-    opacity: 0.6;
+    opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
     margin: 0;
   }
 
@@ -279,7 +279,7 @@
 
   .dl-desc {
     font-size: 12px;
-    opacity: 0.55;
+    opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -298,7 +298,7 @@
   padding: 4px 8px;
   border-radius: 6px;
   color: var(--primary);
-  opacity: 0.5;
+  opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
   font-size: 13px;
   transition:
     opacity 0.15s ease,
@@ -347,7 +347,7 @@
     font-size: 13px;
     line-height: 1.6;
     color: var(--primary);
-    opacity: 0.75;
+    opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
     margin: 0;
   }
 }
@@ -379,7 +379,7 @@ thead th {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--primary);
-  opacity: 0.6;
+  opacity: 0.88; // text: 0.5-0.75 fell under 4.5:1 on white (axe, 24 Nov 2026)
   background: rgba(0, 0, 0, 0.02);
   border-bottom: 2px solid rgba(0, 0, 0, 0.08);
   white-space: nowrap;
@@ -436,7 +436,7 @@ tbody {
   font-weight: 600;
   letter-spacing: 0.03em;
   text-decoration: none;
-  color: #1a73e8;
+  color: #1558b0; // #1a73e8 was 4.06:1 on its tint
   background: rgba(26, 115, 232, 0.08);
   transition: background 0.15s ease;
 

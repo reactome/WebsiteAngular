@@ -2,6 +2,7 @@
   [href]="`${CONTENT_DETAIL}/${icon().id}`"
   target="_blank"
   [matTooltip]="`Open origin of icon ${icon().iconName ?? icon().id}`"
+  [attr.aria-label]="`Open origin of icon ${icon().iconName ?? icon().id}`"
 >
   <div [innerHTML]="iconSVG()! | safe: 'html' : true"></div>
 </a>
