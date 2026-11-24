@@ -58,7 +58,7 @@ export class PageComponent implements OnInit {
     this.route.url.subscribe((segments) => {
       const [section] = segments;
       if (!section) {
-        this.notFound = true;
+        this.markNotFound();
         this.cdr.markForCheck();
         return;
       }
@@ -80,6 +80,12 @@ export class PageComponent implements OnInit {
   }
 
   private title = inject(Title);
+
+  /** A page we do not have: said in the tab too, which kept the site's name alone. */
+  private markNotFound(): void {
+    this.notFound = true;
+    this.title.setTitle(pageTitle('Page not found'));
+  }
 
   private async loadPage(pageType: string, slug: string) {
     this.loading = true;
@@ -122,7 +128,7 @@ export class PageComponent implements OnInit {
               this.scrollToRequestedAnchor();
             }, 0);
           } else {
-            this.notFound = true;
+            this.markNotFound();
             this.loading = false;
             this.cdr.markForCheck();
           }
@@ -133,7 +139,7 @@ export class PageComponent implements OnInit {
         // exist" arrives as a 404 on that file rather than as a null body --
         // which is why the null branch above never fires for a missing page.
         if (err instanceof HttpErrorResponse && err.status === 404) {
-          this.notFound = true;
+          this.markNotFound();
         } else {
           this.error = 'Error loading page.';
           console.error('Issue Loading Page: ', err);

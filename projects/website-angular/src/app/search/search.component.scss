@@ -153,6 +153,29 @@ $border-radius: 8px;
   padding: 8px 0;
   max-height: 300px;
   overflow-y: auto;
+
+  // A shadow at an edge while there is more to scroll that way: the list was
+  // cut through a row with nothing to say it scrolled. The covers (in the
+  // panel's colour) move with the list and hide each shadow at its own end.
+  --facet-panel: white;
+  background:
+    linear-gradient(var(--facet-panel) 30%, transparent) top / 100% 32px no-repeat local,
+    linear-gradient(transparent, var(--facet-panel) 70%) bottom / 100% 32px no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgb(0 0 0 / 35%), transparent) top / 100% 16px no-repeat
+      scroll,
+    radial-gradient(farthest-side at 50% 100%, rgb(0 0 0 / 35%), transparent) bottom / 100% 16px
+      no-repeat scroll;
+
+  :host-context(.dark) & {
+    --facet-panel: var(--surface);
+    background:
+      linear-gradient(var(--facet-panel) 30%, transparent) top / 100% 32px no-repeat local,
+      linear-gradient(transparent, var(--facet-panel) 70%) bottom / 100% 32px no-repeat local,
+      radial-gradient(farthest-side at 50% 0, rgb(255 255 255 / 35%), transparent) top / 100% 16px
+        no-repeat scroll,
+      radial-gradient(farthest-side at 50% 100%, rgb(255 255 255 / 35%), transparent) bottom / 100%
+        16px no-repeat scroll;
+  }
 }
 
 .facet-option {

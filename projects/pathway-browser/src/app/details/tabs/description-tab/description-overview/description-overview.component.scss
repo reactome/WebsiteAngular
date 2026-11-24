@@ -115,7 +115,9 @@
   font: var(--mat-sys-body-medium);
   color: var(--on-surface);
   white-space: normal;
-  text-align: justify;
+  // Not justified: in a narrow column a long list of names (a protein's
+  // synonyms) spread into gaps wider than the words.
+  text-align: start;
   justify-content: flex-start;
   flex-wrap: wrap;
   word-break: break-word;
