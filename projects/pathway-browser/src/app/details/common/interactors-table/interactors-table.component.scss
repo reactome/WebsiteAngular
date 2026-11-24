@@ -132,8 +132,14 @@ a {
 .evidence-button,
 .entity-button {
   border-radius: 50px;
-  background: var(--outline);
+  // A touch darker than the outline grey, under white words: it was 4.47:1,
+  // just under 4.5 (axe, 24 Nov 2026). Dark mode keeps the outline, which passes.
+  background: color-mix(in srgb, var(--outline) 88%, black);
   height: 20px;
+
+  :host-context(.dark) & {
+    background: var(--outline);
+  }
 }
 
 .entity-button:hover {

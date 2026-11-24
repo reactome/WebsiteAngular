@@ -125,7 +125,12 @@
       <div class="row">
         <div class="label">Review Status</div>
         <div class="value spinner-container">
-          <mat-progress-spinner color="primary" mode="determinate" [value]="star.percentage"></mat-progress-spinner>
+          <mat-progress-spinner
+            color="primary"
+            mode="determinate"
+            [value]="star.percentage"
+            [attr.aria-label]="'Review status: ' + star.score + ' of 5'"
+          ></mat-progress-spinner>
           <div class="score">{{ star.score }}/5</div>
         </div>
       </div>

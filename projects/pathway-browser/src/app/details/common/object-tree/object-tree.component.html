@@ -123,6 +123,7 @@
               target="_blank"
               (click)="$event.stopPropagation()"
               [matTooltip]="'Open origin of ' + (element.stId || element.dbId)"
+              [attr.aria-label]="'Open origin of ' + (element.stId || element.dbId)"
             >
               <mat-icon class="custom-icon" [svgIcon]="'double-arrow-right'"></mat-icon>
             </a>

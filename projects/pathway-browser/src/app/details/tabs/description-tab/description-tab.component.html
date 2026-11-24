@@ -394,7 +394,7 @@
                 </a>
 
                 @if (author.orcidId) {
-                  <a [href]="'https://orcid.org/' + author.orcidId" target="_blank">
+                  <a [href]="'https://orcid.org/' + author.orcidId" target="_blank" aria-label="ORCID record">
                     <mat-icon class="orcid-icon" [svgIcon]="'orcid'"></mat-icon>
                   </a>
                 }
