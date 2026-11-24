@@ -57,6 +57,15 @@
   .link-card-what {
     font-size: 0.85rem;
     line-height: 1.3;
-    color: var(--on-surface-variant, #44474e);
+    color: var(--shortcut-what-ink, #40484c);
+  }
+
+  // Dark mode: dark cards and light words, as the Tools shortcuts have. The
+  // tokens were set only in that section, so these cards fell back to white
+  // under pale text (24 Nov 2026).
+  :host-context(.dark) {
+    --shortcut-card: #13252b;
+    --shortcut-edge: #24404a;
+    --shortcut-what-ink: #b5c7cd;
   }
 }
