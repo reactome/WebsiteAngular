@@ -317,6 +317,23 @@
     line-height: 1.5;
   }
 
+  .more-people {
+    margin-left: 4px;
+    padding: 0 6px;
+    border: 1px solid currentcolor;
+    border-radius: 10px;
+    background: none;
+    color: #2d5a7b;
+    font: inherit;
+    font-size: 0.8em;
+    white-space: nowrap;
+    cursor: pointer;
+
+    :host-context(.dark) & {
+      color: var(--primary);
+    }
+  }
+
   .person-link {
     color: #2d5a7b;
     text-decoration: none;

@@ -5,6 +5,7 @@
 <button
   type="button"
   class="cite-button"
+  [class.tucked]="tucked()"
   aria-label="Cite Us"
   (click)="openCitationDialog()"
   (mouseenter)="showText = true"

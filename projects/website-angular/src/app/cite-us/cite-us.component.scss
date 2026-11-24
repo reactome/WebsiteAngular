@@ -23,6 +23,18 @@
   z-index: 998;
   cursor: pointer;
   box-shadow: 0 2px 8px rgb(0 0 0 / 20%);
+  transition:
+    transform 0.2s ease,
+    opacity 0.2s ease;
+
+  // Out of the way while a phone reader scrolls down (CiteUsComponent.tucked).
+  @media (max-width: 700px) {
+    &.tucked:not(:focus-visible) {
+      transform: translateY(calc(100% + 24px));
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
 
   &:hover,
   &:focus-visible {

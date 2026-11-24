@@ -1,12 +1,11 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject } from '@angular/core';
 import { MatIcon } from '@angular/material/icon';
-import { ButtonComponent } from '../../reactome-components/button/button.component';
 
 @Component({
   selector: 'app-home-api-data',
   standalone: true,
-  imports: [MatIcon, ButtonComponent],
+  imports: [MatIcon],
   templateUrl: './home-api-data.component.html',
   styleUrl: './home-api-data.component.scss',
 })

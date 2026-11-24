@@ -59,6 +59,11 @@ export class ExternalReferenceComponent {
     )
   );
 
+  /** A row's value as text: a list of names with ", " ("TP53, P53"), not the bare commas of a list printed as it is. */
+  protected asText(value: unknown): string {
+    return Array.isArray(value) ? value.map(String).join(', ') : String(value ?? '');
+  }
+
   protected readonly isString = isString;
   protected readonly isArray = isArray;
 

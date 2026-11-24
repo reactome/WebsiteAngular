@@ -10,6 +10,12 @@
   .analysis-type-label {
     display: flex;
     flex-direction: column;
+
+    // The kind of analysis in bold, not underlined: only its first word was,
+    // which read as a link with a caption rather than one choice (second UI review).
+    .kind {
+      font-weight: 700;
+    }
   }
 }
 
