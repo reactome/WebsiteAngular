@@ -345,17 +345,13 @@ export class ViewportComponent {
     inject(DestroyRef).onDestroy(() => this.loadFailureNotice?.dismiss());
     effect(() => this.detailShare.set(this.figure.expanded() ? 100 : this.detailDraggedSize()));
     // An analysis's results get room: at a fifth of a laptop's height its
-    // table showed its header and one row (mock-up, second UI review). Not
-    // when the reader has sized the panel, nor on a phone, where it is a drawer.
+    // table showed its header and one row (second UI review). Not when the
+    // reader has sized the panel. A phone too: its panel is the same split, and
+    // at a fifth of its height showed the first result's name and nothing else.
     effect(() => {
       const hasResult = this.analysis.result() !== undefined;
       untracked(() => {
-        if (
-          hasResult &&
-          !this.detailDragged &&
-          !this.narrow &&
-          this.detailDraggedSize() < ANALYSIS_DETAIL_SHARE
-        ) {
+        if (hasResult && !this.detailDragged && this.detailDraggedSize() < ANALYSIS_DETAIL_SHARE) {
           this.detailDraggedSize.set(ANALYSIS_DETAIL_SHARE);
         }
       });
