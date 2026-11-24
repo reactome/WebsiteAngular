@@ -143,7 +143,13 @@ The pull request that completes a task ticks it here, with its number.
 - [x] T023 [P] [US5] Make the `enhanced/v2/{id}` requests one spelling: the same parameter set and order in `projects/pathway-browser/src/app/services/data-state.service.ts` (~247–256) and `projects/pathway-browser/src/app/services/database-object.service.ts` (~31). Check that the answers the pages use are unchanged, with the existing specs and an e2e run. — #533
 - [x] T024 [P] [US5] Fix `' DB_ID'` (a leading space) in `projects/pathway-browser/src/app/viewport/search/search.component.ts` (~324) to `'DB_ID'`, with a test. — #533
 - [x] T025 [US5] For every other finding in the report: fix it in the site, or add it with its reason to a list in `specs/011-api-cache-headers/research.md` R8. `citation` requests are expected on the list (never cached by design). — #533
-- [ ] T026 Review, CI, merge, deploy. On beta, load a pathway page in Playwright with `beta.reactome.org` mapped to 127.0.0.1. Every `/ContentService` response it receives from node carries `x-cache-rule: standard`, apart from the listed ones. Tick T021–T026. (Waits on a rebuild of the beta site: its build is older than #532 and #533.)
+- [x] T026 Review, CI, merge, deploy. On beta, load a pathway page in Playwright with `beta.reactome.org` mapped to 127.0.0.1. Every `/ContentService` response it receives from node carries `x-cache-rule: standard`, apart from the listed ones. Tick T021–T026. (Waits on a rebuild of the beta site: its build is older than #532 and #533.)
+  - **Checked on beta, 24 Nov 2026** (this PR), with the site built from main at #1065: the
+    Pathway Browser and the detail page of R-HSA-69620 in Playwright, `beta.reactome.org`
+    mapped to 127.0.0.1. Of 13 ContentService answers, all 200, 12 carry
+    `x-cache-rule: standard` (database version, species, top pathways, `enhanced/v2`, `query`,
+    `ancestors`, `locationsInPWB`). The other, `interactors/psicquic/resources`, carries
+    `endpoint`: it is one of T005's never-cached endpoints, as intended.
 
 ---
 
