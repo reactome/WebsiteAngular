@@ -968,6 +968,34 @@ test.describe('the embeddable diagram, told what to show', () => {
     await expect.poll(filter).toBe('none');
   });
 
+  test('frames a diagram the same whether its fonts arrive late or are already in', async ({
+    page,
+  }) => {
+    // Cytoscape measures a label once, when drawn: a diagram drawn before its
+    // fonts kept the fallback font's sizes, and was framed by them (T045).
+    const framing = () =>
+      page.evaluate(() => {
+        const { cy } = (window as unknown as EmbedGlobals).__cy('diagram');
+        return { zoom: cy.zoom(), pan: cy.pan() };
+      });
+    let held = true;
+    await page.route('https://fonts.gstatic.com/**', async (route) => {
+      if (held) await new Promise((resolve) => setTimeout(resolve, 1200));
+      await route.continue();
+    });
+    await page.goto(`${HOST}/configurable.html?pathway=R-HSA-69620`);
+    await drawn(page);
+    const late = await framing();
+    held = false;
+    await page.reload();
+    await drawn(page);
+    await page.evaluate(() => document.fonts.ready);
+    const early = await framing();
+    expect(late.zoom).toBeCloseTo(early.zoom, 6);
+    expect(late.pan.x).toBeCloseTo(early.pan.x, 3);
+    expect(late.pan.y).toBeCloseTo(early.pan.y, 3);
+  });
+
   test('switches to its dark theme', async ({ page }) => {
     const shot = async (url: string) => {
       await page.goto(url);

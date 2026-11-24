@@ -254,7 +254,16 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
 - [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
 - [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
-- [ ] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
+- [x] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
+  - **Done (this PR), by drawing after the fonts rather than fitting again.** Cytoscape
+    measures a label once and keeps the size until the element's style changes, so a refit
+    once the fonts arrive would frame the same fallback-font sizes. The diagram now waits for
+    its label faces (Roboto 400 and 500, Roboto Mono 400 and 700, every subset the page
+    declares) before it draws, for at most 2 s (`diagram/diagram-fonts.ts`); a face that fails
+    or a slower font host draws as before. This applies to the Pathway Browser too. An e2e test
+    (`embed-diagram.spec.ts`) loads a diagram with the font files held 1.2 s, then again with
+    them in: on main the two zooms were 0.0906 and 0.0896; with this, the same. Unit tests
+    for the wait (`diagram-fonts.spec.ts`).
 - [x] T046 On an illustrated pathway: report `entityhovered` (the illustration's regions do not go through the diagram's event stream), and make clearing the selection remove the region's outline (`EhldComponent.selectedElement` only ever applies one). Found in the Story 2 review.
   - **Done (this PR):** `EhldComponent` emits `regionHovered` (a region's stable id on
     `mouseenter`, null on `mouseleave`), which the embed's illustration passes up and the
