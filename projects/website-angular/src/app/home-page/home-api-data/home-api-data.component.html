@@ -1,35 +1,36 @@
 <h2 class="api-data-header">API and Data Access</h2>
-<!-- Proposal: a grid, every item visible; no carousel -->
-<div class="api-data-container home-grid">
-  <a class="api-data-link" [href]="navOptions()['tools']?.dropdownLinks?.['content-service']?.link || ''"
-    ><app-button variant="dark" size="large" shape="circle" class="api-data-button">
-      <mat-icon class="api-data-icon">computer</mat-icon>
-      Content Service
-    </app-button></a
-  >
-
-  <a class="api-data-link" [href]="navOptions()['tools']?.dropdownLinks?.['analysis-service']?.link || ''"
-    ><app-button variant="dark" size="large" shape="circle" class="api-data-button">
-      <mat-icon class="api-data-icon">trending_up</mat-icon>
-      Analysis Service
-    </app-button></a
-  >
-
-  <a class="api-data-link" [href]="navOptions()['community']?.dropdownLinks?.['icon-library']?.link || ''"
-    ><app-button variant="dark" size="large" shape="circle" class="api-data-button">
-      <mat-icon class="api-data-icon">archive</mat-icon>
-      Icon Library
-    </app-button></a
-  >
-
+<div class="link-cards">
+  <a class="link-card" [href]="navOptions()['tools']?.dropdownLinks?.['content-service']?.link || ''">
+    <mat-icon class="link-card-icon" aria-hidden="true">computer</mat-icon>
+    <span class="link-card-text">
+      <span class="link-card-name">Content Service</span>
+      <span class="link-card-what">Pathways, entities and search over REST</span>
+    </span>
+  </a>
+  <a class="link-card" [href]="navOptions()['tools']?.dropdownLinks?.['analysis-service']?.link || ''">
+    <mat-icon class="link-card-icon" aria-hidden="true">trending_up</mat-icon>
+    <span class="link-card-text">
+      <span class="link-card-name">Analysis Service</span>
+      <span class="link-card-what">Run analyses from your own code</span>
+    </span>
+  </a>
+  <a class="link-card" [href]="navOptions()['community']?.dropdownLinks?.['icon-library']?.link || ''">
+    <mat-icon class="link-card-icon" aria-hidden="true">interests</mat-icon>
+    <span class="link-card-text">
+      <span class="link-card-name">Icon Library</span>
+      <span class="link-card-what">Icons for figures and slides</span>
+    </span>
+  </a>
   <a
-    class="api-data-link"
+    class="link-card"
     [href]="
       navOptions()['documentation']?.dropdownLinks?.['developers-zone']?.dropdownLinks?.['graph-database']?.link || ''
     "
-    ><app-button variant="dark" size="large" shape="circle" class="api-data-button">
-      <mat-icon class="api-data-icon">storage</mat-icon>
-      Graph Database
-    </app-button></a
   >
+    <mat-icon class="link-card-icon" aria-hidden="true">storage</mat-icon>
+    <span class="link-card-text">
+      <span class="link-card-name">Graph Database</span>
+      <span class="link-card-what">The whole knowledgebase as a Neo4j graph</span>
+    </span>
+  </a>
 </div>

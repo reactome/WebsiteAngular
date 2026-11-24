@@ -128,29 +128,56 @@
                   </td>
                   <td class="col-authors">
                     <span class="person-list">
-                      @for (author of pathway.authors; track author.dbId; let last = $last) {
+                      @for (
+                        author of shown(pathway.authors, pathway.stId, 'authors');
+                        track author.dbId;
+                        let last = $last
+                      ) {
                         <a [href]="personUrl(author)" class="person-link">{{ author.displayName }}</a>{{
                           last ? '' : ', '
                         }}
+                      }
+                      @if (hiddenCount(pathway.authors, pathway.stId, 'authors'); as more) {
+                        <button type="button" class="more-people" (click)="showAll(pathway.stId, 'authors')">
+                          + {{ more }} more
+                        </button>
                       }
                     </span>
                   </td>
                   <td class="col-date">{{ pathway.releaseDate }}</td>
                   <td class="col-reviewers">
                     <span class="person-list">
-                      @for (reviewer of pathway.reviewers; track reviewer.dbId; let last = $last) {
+                      @for (
+                        reviewer of shown(pathway.reviewers, pathway.stId, 'reviewers');
+                        track reviewer.dbId;
+                        let last = $last
+                      ) {
                         <a [href]="personUrl(reviewer)" class="person-link">{{ reviewer.displayName }}</a>{{
                           last ? '' : ', '
                         }}
+                      }
+                      @if (hiddenCount(pathway.reviewers, pathway.stId, 'reviewers'); as more) {
+                        <button type="button" class="more-people" (click)="showAll(pathway.stId, 'reviewers')">
+                          + {{ more }} more
+                        </button>
                       }
                     </span>
                   </td>
                   <td class="col-editors">
                     <span class="person-list">
-                      @for (editor of pathway.editors; track editor.dbId; let last = $last) {
+                      @for (
+                        editor of shown(pathway.editors, pathway.stId, 'editors');
+                        track editor.dbId;
+                        let last = $last
+                      ) {
                         <a [href]="personUrl(editor)" class="person-link">{{ editor.displayName }}</a>{{
                           last ? '' : ', '
                         }}
+                      }
+                      @if (hiddenCount(pathway.editors, pathway.stId, 'editors'); as more) {
+                        <button type="button" class="more-people" (click)="showAll(pathway.stId, 'editors')">
+                          + {{ more }} more
+                        </button>
                       }
                     </span>
                   </td>
