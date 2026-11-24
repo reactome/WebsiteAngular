@@ -10,6 +10,18 @@ async function home(page: Page, width = 1440, height = 900) {
   await expect(page.locator('app-home-stats .stat-item').first()).toContainText(/\d/, {
     timeout: LOAD,
   });
+  // The release's illustration loaded, so no test ends with it still in flight.
+  await expect
+    .poll(
+      () =>
+        page
+          .locator('.home-hero-picture img')
+          .evaluate(
+            (i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0
+          ),
+      { timeout: LOAD }
+    )
+    .toBe(true);
 }
 
 test('the search examples are what readers search for', async ({ page }) => {
