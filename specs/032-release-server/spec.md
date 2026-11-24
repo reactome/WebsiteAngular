@@ -21,8 +21,9 @@ Made by the project's owner, 24 Nov 2026, and not reopened by this spec:
 - **D2.** The stack's web server takes ports 80 and 443 there; the old web server is retired.
 - **D3.** Tomcat stays (the analysis service, and the content routes still answered in Java).
 - **D4.** The host's own graph database stays, because the release's pipelines use it. The
-  stack's graph container is left out on that server. It is an older version than beta's
-  (Neo4j 4.3), so the stack must work against it, or the gap is stated.
+  stack's graph container is left out on that server. It is Neo4j 4.3, the version beta's
+  graph container runs (first read as older; checked on 24 Nov 2026, research R3), so what
+  must be checked is the next release's data in it, not the version.
 - **D5.** `/download/...` sends readers to the download site, for that release, not to a
   local folder.
 - **D6.** The old site's expression widget route, the curator applications and Reacfoam's
@@ -124,8 +125,9 @@ stopped.
 
 ### Edge Cases
 
-- **The graph is older than beta's (D4).** An endpoint that works on beta might fail, or
-  answer differently, on the older database. Each difference found is fixed, or listed with
+- **The graph is the next release's, on the host's database (D4).** An endpoint that works
+  on beta might fail, or answer differently, against it (a missing index, a changed
+  model). Each difference found is fixed, or listed with
   its reason (FR-006).
 - **Not enough memory.** The server has far less free memory than the stack uses on beta.
   The stack must not start in a state where the release's own jobs run out of memory; what
@@ -163,8 +165,8 @@ stopped.
   other sites are configured there (D7).
 - **FR-005**: `/download/...` MUST send the reader to the download site's copy for the
   release (D5).
-- **FR-006**: The content service and the Java library MUST be checked against the older
-  graph database version (D4): connection, and a spot check of endpoints compared with
+- **FR-006**: The content service and the Java library MUST be checked against the host's
+  graph database (D4): connection, and a spot check of endpoints compared with
   beta's answers for the same release. Each difference is fixed or listed with its reason.
 - **FR-007**: The repository MUST give examples of the server-local configuration (the build
   service's path with the headers and limits it needs, a wiki with its scripting runtime, a
@@ -200,7 +202,7 @@ stopped.
 - **SC-002**: The server runs `main`'s images: every published image is pulled at the
   commit `main` names, and the Java library builds there with only the container runtime on
   the host. No image published holds code we may not redistribute.
-- **SC-003**: A spot check of at least 30 content endpoints, against the older graph
+- **SC-003**: A spot check of at least 30 content endpoints, against the host's graph
   database, answers as beta does for the same release, or each difference is listed with
   its reason.
 - **SC-004**: Each certificate's renewal dry run passes with the old web server stopped.
