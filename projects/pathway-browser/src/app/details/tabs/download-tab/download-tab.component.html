@@ -18,6 +18,43 @@
     </div>
   }
 
+  <!--Analysis: first, when there is one; it was third, under the diagram and its
+       formats, below the fold (mock-up, second UI review).-->
+  @if (hasResult()) {
+    <h3 class="category">Analysis Results</h3>
+    <div class="container analysis">
+      <!--GSA analysis-->
+      @if (gsaReports()) {
+        @for (report of gsaReports(); track report.name) {
+          <cr-download-button
+            [url]="report.url"
+            [download]="true"
+            [icon]="getGsaIcon(report.name)"
+            [label]="getGsaLabel(report.name)"
+          >
+          </cr-download-button>
+        }
+      }
+
+      @for (item of analysisItems; track item) {
+        @if (item.isShown()) {
+          @if (item.report) {
+            <cr-report-download [address]="item.url()" [label]="item.title" [tooltip]="item.description" />
+          } @else {
+            <cr-download-button
+              [url]="item.url()"
+              [matTooltip]="item.description"
+              [download]="true"
+              [icon]="item.icon"
+              [label]="item.title"
+            >
+            </cr-download-button>
+          }
+        }
+      }
+    </div>
+  }
+
   <!--pathway diagram-->
   @if (pathwayId()) {
     <h3 class="category">Pathway Diagram</h3>
@@ -92,42 +129,6 @@
             [icon]="item.icon"
           >
           </cr-download-button>
-        }
-      }
-    </div>
-  }
-
-  <!--Analysis-->
-  @if (hasResult()) {
-    <h3 class="category">Analysis Results</h3>
-    <div class="container analysis">
-      <!--GSA analysis-->
-      @if (gsaReports()) {
-        @for (report of gsaReports(); track report.name) {
-          <cr-download-button
-            [url]="report.url"
-            [download]="true"
-            [icon]="getGsaIcon(report.name)"
-            [label]="getGsaLabel(report.name)"
-          >
-          </cr-download-button>
-        }
-      }
-
-      @for (item of analysisItems; track item) {
-        @if (item.isShown()) {
-          @if (item.report) {
-            <cr-report-download [address]="item.url()" [label]="item.title" [tooltip]="item.description" />
-          } @else {
-            <cr-download-button
-              [url]="item.url()"
-              [matTooltip]="item.description"
-              [download]="true"
-              [icon]="item.icon"
-              [label]="item.title"
-            >
-            </cr-download-button>
-          }
         }
       }
     </div>

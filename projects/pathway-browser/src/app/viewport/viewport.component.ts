@@ -67,6 +67,8 @@ import { ALL_PANELS, type LayoutControl, togglePanels, TOUR_VIDEO_URL } from './
 import { TourDialogComponent } from './tour-dialog/tour-dialog.component';
 
 const DETAIL_MIN_HEIGHT = 0;
+/** The details panel's share of the height when an analysis's results come in. */
+const ANALYSIS_DETAIL_SHARE = 45;
 
 const DROPDOWN_DURATION = 500;
 
@@ -342,6 +344,22 @@ export class ViewportComponent {
     });
     inject(DestroyRef).onDestroy(() => this.loadFailureNotice?.dismiss());
     effect(() => this.detailShare.set(this.figure.expanded() ? 100 : this.detailDraggedSize()));
+    // An analysis's results get room: at a fifth of a laptop's height its
+    // table showed its header and one row (mock-up, second UI review). Not
+    // when the reader has sized the panel, nor on a phone, where it is a drawer.
+    effect(() => {
+      const hasResult = this.analysis.result() !== undefined;
+      untracked(() => {
+        if (
+          hasResult &&
+          !this.detailDragged &&
+          !this.narrow &&
+          this.detailDraggedSize() < ANALYSIS_DETAIL_SHARE
+        ) {
+          this.detailDraggedSize.set(ANALYSIS_DETAIL_SHARE);
+        }
+      });
+    });
     effect(() => {
       if (this.dropdown() === null) {
         this.detailShare.set(this.detailDraggedSize());
@@ -497,6 +515,10 @@ export class ViewportComponent {
   }
 
   onViewDetailDragEnd($event: SplitGutterInteractionEvent) {
+    this.detailDragged = true;
     this.detailDraggedSize.set($event.sizes[1] as number);
   }
+
+  /** Whether the reader has sized the details panel themselves, which then stands. */
+  private detailDragged = false;
 }

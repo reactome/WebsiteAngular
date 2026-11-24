@@ -23,11 +23,16 @@
   font-weight: 400;
   font-size: 14px;
   line-height: 20px;
-  max-width: 20cqw;
-  white-space: nowrap;
-  display: block;
-  overflow: clip;
-  text-overflow: ellipsis;
+  // Room for the name, two lines of it, before it is cut: at a fifth of the
+  // panel on one line, "Transcriptional Regulation by TP53" read "Transcriptional
+  // Regulation by T..." beside eight columns of numbers (mock-up, second UI review).
+  min-width: 22cqw;
+  max-width: 36cqw;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 .icon {
   width: 18px;
