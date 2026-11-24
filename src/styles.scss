@@ -282,6 +282,25 @@ details.code-block {
   color: var(--on-surface);
 }
 
+// On a phone, each label over its value: in a column the width of "Overview",
+// "External Reference" broke a word to a line and ran into its values. The
+// overview's own rows do the same (description-overview). `body` outweighs a
+// component's own `.row`, which is a row everywhere else.
+@media (max-width: 700px) {
+  body .row:has(> .label-container) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  body .label-container {
+    width: auto;
+    margin: 0;
+    position: static;
+    text-align: left;
+  }
+}
+
 // Shared with tree detail components, molecule tree and entity tree
 .details-content-container {
   border: 2px solid var(--primary);
