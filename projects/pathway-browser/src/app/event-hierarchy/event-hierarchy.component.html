@@ -5,6 +5,7 @@
       preserveFragment="true"
       queryParamsHandling="merge"
       matTooltip="Pathways overview"
+      aria-label="Pathways overview"
       [queryParams]="{ select: state.pathwayId() }"
     >
       <ng-container class="icon-container">
@@ -244,14 +245,16 @@
         </div>
         <!-- There is inline padding applied to this div using styles.
         This padding value depends on the mat-icon-button width.  -->
-        <ul>
+        <!-- A div, not a list: a tree item's children are a group of tree items, and a
+             list may hold only list items (axe, 24 Nov 2026). -->
+        <div class="children">
           <!-- Show children only when expanded -->
           @if (tree.isExpanded(node)) {
             <div role="group" class="group">
               <ng-container matTreeNodeOutlet></ng-container>
             </div>
           }
-        </ul>
+        </div>
       </mat-nested-tree-node>
     </mat-tree>
   </div>
