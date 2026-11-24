@@ -8,7 +8,7 @@
   (keydown.enter)="search(currentSuggest())"
   #inputBox
 >
-  <button type="button" mat-icon-button class="search-icon" (click)="search()">
+  <button type="button" mat-icon-button class="search-icon" aria-label="Search" (click)="search()">
     <mat-icon fontSet="symbols">search</mat-icon>
   </button>
   <div class="text-container">

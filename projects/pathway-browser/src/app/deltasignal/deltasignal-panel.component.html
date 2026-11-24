@@ -4,7 +4,13 @@
     <h2>DeltaSignal</h2>
     <p>Change one or more entities, solve the steady state, and overlay the predicted response.</p>
   </div>
-  <button type="button" mat-icon-button (click)="dismissed.emit()" matTooltip="Close DeltaSignal">
+  <button
+    type="button"
+    mat-icon-button
+    (click)="dismissed.emit()"
+    matTooltip="Close DeltaSignal"
+    aria-label="Close DeltaSignal"
+  >
     <mat-icon>close</mat-icon>
   </button>
 </header>
