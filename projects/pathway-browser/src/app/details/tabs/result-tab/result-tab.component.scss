@@ -352,3 +352,82 @@ mat-expansion-panel {
     font-weight: 700;
   }
 }
+
+// Mock-up (UI review of 24 Nov 2026): in a narrow panel, a phone's above all, each
+// result is a card, its name whole and under it what decides it (FDR, found of
+// total), not a table scrolled sideways with the name cut to "Transcr...". The
+// other columns, and the header with its sorting, are left to a wider panel.
+@container bottom-panel (width < 560px) {
+  #result-table,
+  #result-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  #result-table thead,
+  #pathway-header-row {
+    display: none;
+  }
+
+  tr.pathway-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 2px;
+    height: auto !important;
+    padding: 8px 4px;
+    border-bottom: 1px solid var(--outline-variant);
+
+    > td {
+      display: none;
+      height: auto;
+      padding: 0;
+      border: none;
+    }
+
+    > td.mat-column-name {
+      display: block;
+      flex: 1 1 calc(100% - 56px);
+      min-width: 0;
+    }
+
+    > td.mat-column-expand-entities {
+      display: block;
+      flex: 0 0 auto;
+    }
+
+    > td.mat-column-entities-fdr,
+    > td.mat-column-entities-found,
+    > td.mat-column-entities-total {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+
+    > td.mat-column-entities-fdr::before {
+      content: 'FDR';
+    }
+
+    > td.mat-column-entities-found::before {
+      content: 'Found';
+    }
+
+    > td.mat-column-entities-total::before {
+      content: 'of';
+    }
+
+    // the row's own colour, a little quieter: a selected row is dark
+    > td.mat-column-entities-fdr::before,
+    > td.mat-column-entities-found::before,
+    > td.mat-column-entities-total::before {
+      opacity: 0.8;
+    }
+  }
+
+  .pathway-name {
+    min-width: 0;
+    max-width: none;
+  }
+}
