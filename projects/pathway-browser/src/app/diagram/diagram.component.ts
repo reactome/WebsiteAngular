@@ -33,6 +33,7 @@ import {
   EMPTY,
   filter,
   forkJoin,
+  from,
   map,
   Observable,
   of,
@@ -44,6 +45,7 @@ import {
   tap,
 } from 'rxjs';
 import { UrlStateService } from '../services/url-state.service';
+import { diagramFontsReady } from './diagram-fonts';
 import { clampThreshold } from '../interactors/interactor-threshold';
 import { UntilDestroy } from '@ngneat/until-destroy';
 import { AnalysisService } from '../services/analysis.service';
@@ -937,6 +939,9 @@ export class DiagramComponent implements AfterViewInit, OnDestroy {
 
     const container = this.cytoscapeContainer().nativeElement;
     return this.diagram.getDiagram(pathwayId).pipe(
+      // Its labels are measured once, when drawn: in their own fonts, not a
+      // fallback's (diagram-fonts.ts).
+      switchMap((elements) => from(diagramFontsReady()).pipe(map(() => elements))),
       tap((elements) => {
         this.comparing.set(
           elements.nodes.some((node) => node.data['isFadeOut']) ||

@@ -267,7 +267,16 @@ description: 'Task list for the embeddable Reactome pathway diagram'
     present, so the diagram's own listeners are not registered in the partner's zone. The
     script is kept outside the repository; no test is added, as the repository has no
     zone.js to load.
-- [ ] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
+- [x] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
+  - **Done (this PR), by drawing after the fonts rather than fitting again.** Cytoscape
+    measures a label once and keeps the size until the element's style changes, so a refit
+    once the fonts arrive would frame the same fallback-font sizes. The diagram now waits for
+    its label faces (Roboto 400 and 500, Roboto Mono 400 and 700, every subset the page
+    declares) before it draws, for at most 2 s (`diagram/diagram-fonts.ts`); a face that fails
+    or a slower font host draws as before. This applies to the Pathway Browser too. An e2e test
+    (`embed-diagram.spec.ts`) loads a diagram with the font files held 1.2 s, then again with
+    them in: on main the two zooms were 0.0906 and 0.0896; with this, the same. Unit tests
+    for the wait (`diagram-fonts.spec.ts`).
 - [x] T046 On an illustrated pathway: report `entityhovered` (the illustration's regions do not go through the diagram's event stream), and make clearing the selection remove the region's outline (`EhldComponent.selectedElement` only ever applies one). Found in the Story 2 review.
   - **Done (this PR):** `EhldComponent` emits `regionHovered` (a region's stable id on
     `mouseenter`, null on `mouseleave`), which the embed's illustration passes up and the
