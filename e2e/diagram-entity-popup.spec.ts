@@ -370,7 +370,12 @@ test.describe('Popup with an analysis running', () => {
     }
 
     await page.goto(`/PathwayBrowser/R-HSA-109606?analysis=${encodeURIComponent(token)}`);
-    await openPopupOnAnyEntity(page);
+    // A molecule the list names (BAX, in the cytosol), not whatever the sweep
+    // hits first: with the results' panel taking nearly half the height, the
+    // first hit was sometimes a compartment or a sub-pathway, with no molecule
+    // rows to mark. Found by its identifier, zoomed to and clicked once still.
+    await rightClickNode(page, 'R-HSA-139916');
+    await expect(page.locator('.entity-popup')).toBeVisible({ timeout: 30_000 });
 
     // Markers only appear once the participants lookup lands, so poll rather
     // than assert immediately.
