@@ -28,7 +28,7 @@
             <!-- ORCID-->
             @if (orcidUrl(); as orcidUrl) {
               <span>
-                <a [href]="orcidUrl" target="_blank">
+                <a [href]="orcidUrl" target="_blank" aria-label="ORCID record">
                   <mat-icon class="ref-icon" [svgIcon]="'orcid'"></mat-icon>
                 </a>
               </span>
@@ -61,7 +61,7 @@
     </div>
     @if (citationUrl(); as citationUrl) {
       <div class="quote-container">
-        <a [href]="citationUrl" target="_blank">
+        <a [href]="citationUrl" target="_blank" aria-label="Open the publication">
           <mat-icon class="quote-icon" [svgIcon]="'format-quote'"></mat-icon>
         </a>
       </div>

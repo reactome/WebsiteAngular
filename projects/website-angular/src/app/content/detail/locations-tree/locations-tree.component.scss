@@ -220,7 +220,7 @@ ul.tree li {
 
 .node-species {
   font-size: 12px;
-  color: var(--outline);
+  color: var(--on-surface-variant); // the outline grey was 4.47:1, just under (axe, 24 Nov 2026)
   white-space: nowrap;
   margin-left: 2px;
 }

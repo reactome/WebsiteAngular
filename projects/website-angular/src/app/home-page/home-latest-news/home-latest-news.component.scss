@@ -5,8 +5,9 @@
   // The panel's ink (tile.component.scss): white on the dark panel, teal on a
   // light one; the shades are that ink faded, so they follow it.
   --news-ink: var(--panel-ink, #ffffff);
-  --news-ink-soft: color-mix(in srgb, var(--news-ink) 72%, transparent);
-  --news-ink-faint: color-mix(in srgb, var(--news-ink) 55%, transparent);
+  --news-ink-soft: color-mix(in srgb, var(--news-ink) 90%, transparent);
+  // Not under 88%: the brand teal faded further falls below 4.5:1 on white (axe, 24 Nov 2026).
+  --news-ink-faint: color-mix(in srgb, var(--news-ink) 88%, transparent);
   --news-spine: color-mix(in srgb, var(--news-ink) 22%, transparent);
   --news-release: var(
     --panel-release,

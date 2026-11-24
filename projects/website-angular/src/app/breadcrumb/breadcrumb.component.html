@@ -2,8 +2,8 @@
   <nav class="breadcrumb" aria-label="Breadcrumb">
     <ol class="breadcrumb-list">
       <li class="breadcrumb-item">
-        <a routerLink="/" class="breadcrumb-link home-link">
-          <mat-icon class="material-symbols-outlined">home</mat-icon>
+        <a routerLink="/" class="breadcrumb-link home-link" aria-label="Home">
+          <mat-icon class="material-symbols-outlined" aria-hidden="true">home</mat-icon>
         </a>
       </li>
       @for (crumb of breadcrumbs; track crumb.link) {
