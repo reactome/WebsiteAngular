@@ -250,7 +250,9 @@
 
   .icon-preview {
     width: 100%;
-    aspect-ratio: 1;
+    // A fixed height, not a square the card's width: the icons are wide and short,
+    // and a square left the cards mostly empty above and below them (24 Nov 2026).
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
