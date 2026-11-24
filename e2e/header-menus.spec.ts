@@ -50,8 +50,12 @@ test.describe('On a desktop', () => {
     await userguide.hover();
     const submenu = userguide.locator(':scope > .nested-dropdown-menu');
     await expect(submenu).toBeVisible();
-    const [row, sub] = await Promise.all([box(userguide), box(submenu)]);
-    expect(sub.x).toBeGreaterThanOrEqual(row.x + row.width - 2);
+    // Polled: a submenu slides 4px into place, and a slow machine caught it short.
+    const row = await box(userguide);
+    await expect
+      .poll(async () => (await box(submenu)).x)
+      .toBeGreaterThanOrEqual(row.x + row.width - 2);
+    const sub = await box(submenu);
     expect(sub.x + sub.width).toBeLessThanOrEqual(1440);
   });
 
@@ -77,9 +81,14 @@ test.describe('On a desktop', () => {
     await parent.hover();
     const submenu = parent.locator(':scope > .nested-dropdown-menu');
     await expect(submenu).toBeVisible();
-    const [row, sub] = await Promise.all([box(parent), box(submenu)]);
-    expect(sub.x + sub.width).toBeLessThanOrEqual(row.x + 2);
-    expect(sub.x).toBeGreaterThanOrEqual(0);
+    const row = await box(parent);
+    await expect
+      .poll(async () => {
+        const sub = await box(submenu);
+        return sub.x + sub.width;
+      })
+      .toBeLessThanOrEqual(row.x + 2);
+    expect((await box(submenu)).x).toBeGreaterThanOrEqual(0);
   });
 
   test('the page the reader is on is marked in its menu', async ({ page }) => {
