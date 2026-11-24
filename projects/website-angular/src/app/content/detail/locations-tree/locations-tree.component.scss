@@ -137,6 +137,27 @@
   opacity: 0.8;
 }
 
+// The name, its count and its species wrap together after the icons, each count
+// and species in one piece and lined up under the name: on a phone, "12 locations"
+// broke over two lines in a column of its own beside a squeezed name (24 Nov 2026).
+.root-text {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 8px;
+  min-width: 0;
+  text-align: start;
+}
+
+.root-text .location-count {
+  margin-left: 0;
+}
+
+.location-count,
+.node-species {
+  white-space: nowrap;
+}
+
 // ── Tree list with connector lines ──────────────────────
 ul.tree {
   list-style: none;
