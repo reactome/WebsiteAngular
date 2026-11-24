@@ -13,6 +13,15 @@ import type {
   FaqIndex,
 } from 'projects/website-angular/src/types/article';
 
+/** Folder names that sentence case alone gets wrong; any other is sentence-cased. */
+const SECTION_NAMES: Readonly<Record<string, string>> = {
+  'api-and-r': 'API and R',
+  fiviz: 'ReactomeFIViz',
+  'reactome-gsa': 'ReactomeGSA',
+  'graph-database-and-cypher-query': 'Graph database and Cypher queries',
+  'illustrations-figures': 'Illustrations and figures',
+};
+
 /**
  * The FAQ: categories, each either a list of questions or tabs of them.
  *
@@ -90,7 +99,14 @@ export class FaqComponent {
     return group && !Array.isArray(group) ? (group.articles ?? []) : [];
   }
 
-  formatName(name: string): string {
-    return name.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  /**
+   * A section's or tab's name, from its folder's. The questions are shown as
+   * written: capitalising every word of them gave "Didn'T" and "Api And R".
+   */
+  sectionName(folder: string): string {
+    const known = SECTION_NAMES[folder];
+    if (known) return known;
+    const words = folder.replace(/-/g, ' ');
+    return words.charAt(0).toUpperCase() + words.slice(1);
   }
 }

@@ -248,6 +248,9 @@
 
   .line {
     flex: 1;
+    // A heading longer than its column ("External Reference") squeezed its
+    // lines to a 4px stub, which read as a stray dash.
+    min-width: 16px;
   }
 
   .text {

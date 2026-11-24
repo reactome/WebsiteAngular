@@ -191,6 +191,17 @@ export class SidebarComponent {
     };
   });
 
+  /**
+   * Nothing to list: an address outside every section (a page we do not have).
+   * It drew an empty box beside the page, and the box took the page's room.
+   */
+  readonly hasNothing = computed(
+    () =>
+      !this.sectionsMode() &&
+      this.articleList() === null &&
+      Object.keys(this.nav().items).length === 0
+  );
+
   // Sidebar drawer breakpoint -- below this, the sidebar overlays the
   // content as a slide-in drawer and starts collapsed so it doesn't bury
   // the page. Kept in sync with the @media query in sidebar.component.scss.
