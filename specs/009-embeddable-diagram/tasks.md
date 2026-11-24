@@ -253,7 +253,20 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - **As built**: both removed (user's decision, 2 Oct 2026), with the files only they reached (knip-confirmed), the `<pathway-browser>` element and `ANGULAR_ELEMENTS_SETUP.md`, and the two analogjs packages only PathwayBrowser's `ng test` target used. The site's build is unchanged.
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
 - [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
-- [ ] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
+- [x] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
+  - **Measured, 24 Nov 2026 (this PR): not so; nothing to change.** A partner page loading
+    zone.js 0.15, with a zone of its own that counts the tasks it runs, and the element from
+    beta (built from main at #1067), created three ways: outside the partner's zone, inside
+    it, and inside it after the element's code had loaded (as an app that renders it later
+    would). 60 pointer moves over the diagram and a click: the diagram sent 53
+    `entityhovered` and one `entityselected` each time, and the partner's zone ran **0**
+    tasks in all three. The measure was seen to count: a capturing `mousemove` listener of
+    the partner's own, in its zone, counted 61 for the same moves. (A listener on
+    `document` hears none of them, as the element keeps its events from the host page.) The
+    element is zoneless, and Angular runs its rendering in the root zone when zone.js is
+    present, so the diagram's own listeners are not registered in the partner's zone. The
+    script is kept outside the repository; no test is added, as the repository has no
+    zone.js to load.
 - [x] T045 The diagram fits itself to its labels as soon as it is drawn, so one drawn before the web fonts arrive (a first visit, a slow font host) is framed differently from one drawn after -- measurably: 40,000 pixels of a 900 x 520 diagram. Cosmetic, and the site does the same. Consider fitting again once `document.fonts.ready` resolves, if the reader has not moved the view in between.
   - **Done (this PR), by drawing after the fonts rather than fitting again.** Cytoscape
     measures a label once and keeps the size until the element's style changes, so a refit
