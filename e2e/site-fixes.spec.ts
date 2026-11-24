@@ -78,3 +78,14 @@ test.describe("A pathway's diagram on its page", () => {
     await expect(frame).toContainText('The diagram could not be drawn', { timeout: LOAD });
   });
 });
+
+test("the downloads page's release badge is its own width", async ({ page }) => {
+  // Moved into the shared page header, which lays its content in a column, it
+  // stretched across the page.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/download-data');
+  const badge = page.locator('.version-badge');
+  await expect(badge).toBeVisible({ timeout: 90_000 });
+  const box = await badge.boundingBox();
+  expect(box?.width ?? 0).toBeLessThan(300);
+});

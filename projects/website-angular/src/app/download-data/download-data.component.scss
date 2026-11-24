@@ -7,6 +7,10 @@
 // The release badge, in the shared page header's content (app-page-header)
 .version-badge {
   display: inline-block;
+  // Its own width: the page header lays what it is given in a column, which
+  // stretched the badge across the page.
+  align-self: flex-start;
+  width: fit-content;
   font-size: 12px;
   font-weight: 600;
   padding: 4px 12px;
