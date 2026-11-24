@@ -92,7 +92,7 @@
       @if ((name().length || 0) > 1) {
         <div class="row">
           <div class="label">Synonyms</div>
-          <div class="value">{{ name().slice(1) }}</div>
+          <div class="value">{{ name().slice(1).join(', ') }}</div>
         </div>
       }
       @if (organ(); as organ) {

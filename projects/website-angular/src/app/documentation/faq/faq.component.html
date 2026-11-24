@@ -14,7 +14,7 @@
       @for (category of categories(); track category) {
         <div>
           <h2 class="faq-category-header" (click)="toggleCategory(category)">
-            <span class="category-name">{{ formatName(category) }}</span>
+            <span class="category-name">{{ sectionName(category) }}</span>
             <button type="button" class="expand-button">
               {{ isCategoryExpanded(category) ? '−' : '+' }}
             </button>
@@ -31,7 +31,7 @@
                       [class.active]="isActiveTab(category, sub)"
                       (click)="setActiveTab(category, sub)"
                     >
-                      {{ formatName(sub) }}
+                      {{ sectionName(sub) }}
                     </button>
                   }
                 </div>
@@ -40,7 +40,7 @@
                   @for (questionArticle of getArticles(category, activeTab(category)); track questionArticle) {
                     <li class="faq-item">
                       <a [routerLink]="['/documentation/faq', category, activeTab(category), questionArticle.slug]">
-                        {{ formatName(questionArticle.title) }}
+                        {{ questionArticle.title }}
                       </a>
                     </li>
                   }
@@ -51,7 +51,7 @@
                   @for (questionArticle of getArticles(category); track questionArticle) {
                     <li class="faq-item">
                       <a [routerLink]="['/documentation/faq', category, questionArticle.slug]">
-                        {{ formatName(questionArticle.title) }}
+                        {{ questionArticle.title }}
                       </a>
                     </li>
                   }
