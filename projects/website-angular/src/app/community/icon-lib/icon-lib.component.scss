@@ -344,7 +344,7 @@
 .page-info {
   font-size: 13px;
   color: var(--primary);
-  opacity: 0.6;
+  opacity: 0.88; // 0.6 was 2.79:1 on white (axe, 24 Nov 2026)
 }
 
 // Detail view
