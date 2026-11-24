@@ -22,7 +22,15 @@
 
   <nav class="navbar-nav">
     @if (windowWidth <= hamburgerBreakpoint) {
-      <mat-icon class="menu-icon" (click)="toggleHamburgerMenu()">menu</mat-icon>
+      <button
+        type="button"
+        class="menu-button"
+        (click)="toggleHamburgerMenu()"
+        [attr.aria-expanded]="activeHamburgerMenu"
+        [attr.aria-label]="activeHamburgerMenu ? 'Close the menu' : 'Open the menu'"
+      >
+        <mat-icon class="menu-icon">{{ activeHamburgerMenu ? 'close' : 'menu' }}</mat-icon>
+      </button>
     }
     @if (windowWidth > hamburgerBreakpoint || activeHamburgerMenu) {
       <ul class="nav-list">
@@ -104,13 +112,18 @@
         class="dropdown-item"
         [class.nested-dropdown-item]="level > 0"
         [class.has-submenu]="hasDropdownLinks(asNavLink(linkItem.value)?.dropdownLinks)"
+        (mouseenter)="placeSubmenu($event)"
+        (focusin)="placeSubmenu($event)"
       >
         @if (asNavLink(linkItem.value); as navLink) {
-          <div class="dropdown-link-wrapper" [class.opens-left]="hasDropdownLinks(navLink.dropdownLinks)">
+          <div class="dropdown-link-wrapper">
             @if (!navLink.external) {
               <a
                 [routerLink]="linkPath(navLink.link)"
                 [queryParams]="linkQueryParams(navLink.link)"
+                routerLinkActive="current"
+                [routerLinkActiveOptions]="{ exact: true }"
+                ariaCurrentWhenActive="page"
                 class="dropdown-link"
                 [class.nested-dropdown-link]="level > 0"
               >
@@ -123,7 +136,7 @@
               </a>
             }
             @if (hasDropdownLinks(navLink.dropdownLinks)) {
-              <mat-icon class="nested-arrow"> keyboard_arrow_left </mat-icon>
+              <mat-icon class="nested-arrow" aria-hidden="true">chevron_right</mat-icon>
             }
           </div>
           @if (hasDropdownLinks(navLink.dropdownLinks)) {
