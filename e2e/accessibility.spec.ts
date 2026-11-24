@@ -49,6 +49,13 @@ test('faint words are readable', async ({ page }) => {
   const heading = page.locator('.divider-name .text').first();
   await expect(heading).toBeVisible({ timeout: LOAD });
   expect(await contrast(heading), 'a section heading').toBeGreaterThanOrEqual(4.5);
+  const species = page.locator('.node-species').first();
+  await expect(species).toBeVisible({ timeout: LOAD });
+  expect(await contrast(species), "a location's species").toBeGreaterThanOrEqual(4.5);
+  await page.goto('/community/icon-lib');
+  const pages = page.locator('.page-info');
+  await expect(pages).toBeVisible({ timeout: LOAD });
+  expect(await contrast(pages), "the icon library's page count").toBeGreaterThanOrEqual(4.5);
 });
 
 test('a link in news text is underlined, not told apart by colour alone', async ({ page }) => {
