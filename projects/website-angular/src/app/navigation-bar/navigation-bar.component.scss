@@ -7,11 +7,28 @@ $shadow: rgba(0, 0, 0, 0.1);
 // hamburger menu. Keep in sync with NavigationBarComponent.hamburgerBreakpoint.
 $hamburger-breakpoint: 1100px;
 
+.menu-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--primary);
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  }
+}
+
 .menu-icon {
   font-size: 32px;
   height: 32px;
   width: 32px;
-  cursor: pointer;
 }
 
 .navbar-header {
@@ -70,14 +87,6 @@ $hamburger-breakpoint: 1100px;
   margin: 0;
   padding: 0;
   gap: 4px;
-
-  @media (max-width: $hamburger-breakpoint) {
-    position: absolute;
-    flex-direction: column;
-    top: $header-height;
-    right: 0;
-    background-color: var(--on-primary);
-  }
 }
 
 .nav-item {
@@ -128,18 +137,29 @@ $hamburger-breakpoint: 1100px;
   transform: rotate(180deg);
 }
 
+// --- The menus (redone after the review of 24 Nov 2026) -------------------
+// Desktop: submenus open to the right, as menus do, with a ">" at the end of
+// their row; labels line up whether a row has a submenu or not; a row is
+// tinted whole on hover; spacing rather than a rule under every item; the
+// page the reader is on is marked. They opened to the left over the page, a
+// "<" pushed some labels in, and the hover band left a notch.
+$menu-tint: color-mix(in srgb, var(--primary) 10%, transparent);
+
 .dropdown-menu {
   position: absolute;
-  top: $nav-item-height + 8px;
+  top: $nav-item-height + 6px;
   left: 0;
   background-color: var(--on-primary);
-  // border: 1px solid var(--outline);
-  min-width: 220px;
-  box-shadow: 0 8px 16px $shadow;
+  min-width: 240px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
   opacity: 0;
   visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.3s ease;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
   z-index: 998;
 
   &.show {
@@ -148,101 +168,97 @@ $hamburger-breakpoint: 1100px;
     transform: translateY(0);
   }
 
-  @media (max-width: $hamburger-breakpoint) {
-    // Anchor the dropdown to the viewport (not the nav-item) at hamburger
-    // widths so its starting position doesn't drift with how far down the
-    // nav-list the trigger sits. That lets the max-height calculation
-    // actually reach the bottom of the viewport and the trailing items
-    // stay scrollable inside the menu.
-    position: fixed;
-    top: $header-height + 4px;
-    left: auto;
-    right: $nav-width;
-    max-height: calc(100vh - #{$header-height} - 16px);
-    overflow-y: auto;
-    overscroll-behavior: contain;
+  // The gap between the top link and its menu still counts as the menu, so
+  // the pointer crossing it does not close it.
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -8px;
+    height: 8px;
   }
 }
 
-.dropdown-list {
+.dropdown-list,
+.nested-dropdown-list {
   list-style: none;
   margin: 0;
-  padding: 8px 0;
+  padding: 6px;
 }
 
 .dropdown-item {
   margin: 0;
-  // Solid, not dashed. A dashed rule reads as a placeholder or an editable
-  // field rather than as a divider, which is what a reviewer picked up on --
-  // and at 1px the dashes are what the eye lands on instead of the labels.
-  border-bottom: 1px solid var(--outline);
   position: relative;
-
-  // No rule under the last one: it drew a line across the bottom of the menu
-  // with only the list's padding beneath it, which reads as a divider above
-  // something that is not there.
-  &:last-child {
-    border-bottom: none;
-  }
-}
-
-.dropdown-link {
-  display: block;
-  width: 100%;
-  padding: 12px 20px;
-  color: var(--primary);
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s ease;
-
-  &:hover {
-    color: var(--on-primary);
-    background-color: var(--primary);
-    padding-left: 24px;
-  }
 }
 
 .dropdown-link-wrapper {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  border-radius: 6px;
+  transition: background-color 0.12s ease;
+
+  &:hover {
+    background-color: $menu-tint;
+  }
 }
 
-.dropdown-link-wrapper.opens-left {
-  flex-direction: row-reverse;
-  justify-content: flex-end;
+.dropdown-link {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  padding: 9px 12px;
+  color: var(--primary);
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 1.35;
+
+  &.current {
+    font-weight: 600;
+    box-shadow: inset 3px 0 0 var(--primary);
+    border-radius: 6px;
+  }
 }
 
 .nested-arrow {
+  flex: none;
   font-size: 18px;
   height: 18px;
   width: 18px;
+  margin-right: 8px;
   color: var(--primary);
-  margin-right: 12px;
-  margin-left: 0;
-  transition:
-    color 0.2s ease,
-    transform 0.2s ease;
-}
-
-.dropdown-link-wrapper.opens-left .nested-arrow {
-  margin-right: 0;
-  margin-left: 12px;
+  transition: transform 0.15s ease;
 }
 
 .nested-dropdown-menu {
   position: absolute;
-  top: 0;
-  right: 100%;
-  left: auto;
+  // Its first item level with the row that opened it (the list's padding).
+  top: -6px;
+  left: 100%;
   background-color: var(--on-primary);
-  min-width: 220px;
-  box-shadow: 0 8px 16px $shadow;
+  min-width: 240px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
   opacity: 0;
   visibility: hidden;
-  transform: translateX(-10px);
-  transition: all 0.3s ease;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease,
+    visibility 0.15s;
   z-index: 999;
+}
+
+// Where it would run off the screen, a submenu opens leftwards and its arrow
+// points that way (NavigationBarComponent.placeSubmenu).
+.dropdown-item.flip > .nested-dropdown-menu {
+  left: auto;
+  right: 100%;
+  transform: translateX(4px);
+}
+
+.dropdown-item.flip > .dropdown-link-wrapper .nested-arrow {
+  transform: rotate(180deg);
 }
 
 .dropdown-item.has-submenu:hover > .nested-dropdown-menu,
@@ -252,85 +268,173 @@ $hamburger-breakpoint: 1100px;
   transform: translateX(0);
 }
 
-.dropdown-item.has-submenu:hover > .dropdown-link-wrapper .nested-arrow,
-.dropdown-item.has-submenu:focus-within > .dropdown-link-wrapper .nested-arrow {
-  color: var(--on-primary);
-  transform: translateX(2px);
-}
-
-.nested-dropdown-list {
-  list-style: none;
-  margin: 0;
-  padding: 8px 0;
+// The row whose submenu is open stays tinted while the pointer is in it.
+.dropdown-item.has-submenu:hover > .dropdown-link-wrapper,
+.dropdown-item.has-submenu:focus-within > .dropdown-link-wrapper {
+  background-color: $menu-tint;
 }
 
 .nested-dropdown-item {
   margin: 0;
-  border-bottom: 1px solid var(--outline);
+}
 
-  &:last-child {
-    border-bottom: none;
+// A third level shows in place, under its row in the second menu: a third
+// column of menus ran off the screen or, turned back, covered the first.
+.nested-dropdown-list .nested-dropdown-menu {
+  position: static;
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  box-shadow: none;
+  border-radius: 0;
+  min-width: 0;
+  margin: 0 0 4px 14px;
+  border-left: 2px solid var(--outline-variant);
+
+  .nested-dropdown-list {
+    padding: 0 0 0 4px;
+  }
+
+  .dropdown-link {
+    padding-block: 7px;
+    font-size: 13px;
   }
 }
 
-.nested-dropdown-link {
-  display: block;
-  padding: 12px 20px;
-  color: var(--primary);
-  text-decoration: none;
-  font-size: 14px;
-  transition: all 0.2s ease;
+.nested-dropdown-list .nested-arrow {
+  display: none;
+}
+
+.nested-dropdown-list .dropdown-item.has-submenu > .dropdown-link-wrapper {
+  background-color: transparent;
 
   &:hover {
-    color: var(--on-primary);
-    background-color: var(--primary);
-    padding-left: 24px;
+    background-color: $menu-tint;
   }
 }
 
+// --- Phone and narrow screens: one panel, sections opening in place ---------
+// The menu was a narrow column at the right edge with the page beside it, and
+// a section opened as a flyout leftwards over the page, running off the
+// bottom. Now a full-width panel under the header that scrolls, each section
+// opening under its own row, and every row a full-width touch target.
 @media (max-width: $hamburger-breakpoint) {
-  // In hamburger mode the parent dropdown is already pinned to the right
-  // edge of the viewport (right: $nav-width), so a nested dropdown that
-  // opens to its left would run off the screen on narrow displays.
-  // Render nested menus inline (accordion style) instead, using an
-  // indented panel with a leading accent strip so it visually groups
-  // under its parent item.
+  .navbar-nav {
+    padding-right: 12px;
+    align-items: center;
+    height: auto;
+  }
+
+  .nav-list {
+    position: fixed;
+    top: $header-height;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    // The whole width: its own `justify-self: flex-end` (for the desktop row)
+    // also aligns a fixed box now, which shrank it to its content at the right.
+    justify-self: stretch;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 12px 24px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background-color: var(--on-primary);
+    border-top: 1px solid var(--outline-variant);
+    z-index: 998;
+  }
+
+  .nav-item {
+    flex-direction: column;
+    align-items: stretch;
+    height: auto;
+    border-bottom: 1px solid var(--outline-variant);
+  }
+
+  .nav-link {
+    height: 52px;
+    padding: 0 8px;
+    font-size: 16px;
+
+    &:hover {
+      color: var(--primary);
+      background-color: $menu-tint;
+    }
+  }
+
+  .nav-link:hover .dropdown-arrow {
+    color: var(--primary);
+  }
+
+  .dropdown-arrow {
+    margin-left: auto;
+  }
+
+  .dropdown-menu {
+    position: static;
+    display: none;
+    min-width: 0;
+    box-shadow: none;
+    border-radius: 0;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition: none;
+    padding-bottom: 8px;
+
+    &.show {
+      display: block;
+    }
+
+    &::before {
+      content: none;
+    }
+  }
+
+  .dropdown-list {
+    padding: 0 0 0 36px;
+  }
+
+  .dropdown-link {
+    padding: 12px 8px;
+    font-size: 15px;
+  }
+
+  // Submenus open in place, under their row, a step in and marked by a rule.
   .nested-dropdown-menu {
     position: static;
     opacity: 1;
     visibility: visible;
     transform: none;
     box-shadow: none;
-    background-color: rgba(0, 0, 0, 0.025);
-    border-left: 3px solid var(--primary);
-    margin-left: 20px;
+    border-radius: 0;
     min-width: 0;
+    margin: 0 0 4px 8px;
+    border-left: 2px solid var(--outline-variant);
   }
 
   .nested-dropdown-list {
-    padding: 4px 0;
+    padding: 0 0 0 8px;
   }
 
-  .nested-dropdown-item {
-    border-bottom: none;
-  }
-
-  .nested-dropdown-link {
-    padding: 8px 20px;
-    font-size: 13px;
-    color: var(--on-surface);
-  }
-
-  // The parent dropdown item now contains its children inline -- a
-  // chevron-left arrow next to its label suggests an off-canvas submenu
-  // that no longer exists, so drop it. Bold the parent label instead to
-  // mark it as a group header.
   .nested-arrow {
     display: none;
   }
 
   .dropdown-item.has-submenu > .dropdown-link-wrapper > .dropdown-link {
     font-weight: 600;
+  }
+
+  .dropdown-item.has-submenu:hover > .dropdown-link-wrapper {
+    background-color: transparent;
+  }
+
+  // In line with the rows (the general rule for it, later in this file, centred it).
+  .nav-item.dark-toggle-item {
+    padding: 16px 8px;
+    height: auto;
+    align-items: flex-start;
+    border-bottom: none;
   }
 }
 
