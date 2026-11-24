@@ -57,11 +57,13 @@
       </figure>
     }
   </section>
-  <app-tile variant="light" class="home-stats-tile" style="display: block">
-    <app-home-stats />
-  </app-tile>
+  <!-- The tools before the release's numbers: the numbers are not links, and
+       above the tools they outweighed them (outreach, 24 Nov 2026). -->
   <app-tile variant="light" class="home-shortcut-tile" id="tools" style="display: block">
     <app-home-shortcuts [dark]="false" />
+  </app-tile>
+  <app-tile variant="light" class="home-stats-tile" style="display: block">
+    <app-home-stats />
   </app-tile>
   <div class="home-news-why-wrapper">
     <app-tile variant="light" style="display: block">

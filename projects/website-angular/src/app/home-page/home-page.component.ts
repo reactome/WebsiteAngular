@@ -80,7 +80,10 @@ export class HomePageComponent {
   }
 
   /** Searches to try, each opening the results the search box would: a gene, a topic, a pathway's id. */
-  readonly examples = ['TP53', 'Apoptosis', 'R-HSA-109581'];
+  // What readers search for, by kind (outreach, 24 Nov 2026): a UniProt
+  // accession, a gene symbol, a pathway's name, a compound -- not a Reactome id,
+  // which a newcomer does not have yet.
+  readonly examples = ['P04637', 'BRCA1', 'Signaling by EGFR', 'glucose'];
 }
 
 interface FeaturedPathway {

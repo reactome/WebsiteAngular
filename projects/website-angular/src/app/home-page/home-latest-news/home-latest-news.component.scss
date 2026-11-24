@@ -87,6 +87,8 @@
 
 // Markers -----------------------------------------------------------------
 .news-marker {
+  // Both kinds the same width, borders included.
+  box-sizing: border-box;
   position: absolute;
   left: -5.4rem;
   top: 0.1rem;
@@ -110,14 +112,17 @@
   letter-spacing: 0.02em;
 }
 
-// Everything else: a quiet node on the spine.
+// Everything else: the same box, saying "News" (outreach, 24 Nov 2026): a
+// release's box beside a small dot out of line read as a mistake.
 .news-marker--note {
-  left: -1.2rem;
-  width: 7px;
-  height: 7px;
-  margin-top: 0.42rem;
-  border-radius: 50%;
-  background: var(--news-spine);
+  min-width: 2.9rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background: var(--news-chip);
+  border: 1px solid var(--news-spine);
+  color: var(--news-ink-faint);
+  font-size: 0.68rem;
+  box-sizing: border-box;
   transition: background 150ms ease;
 }
 
@@ -154,16 +159,10 @@
     color 150ms ease;
 }
 
-// The newest item leads: larger, with one line of context. This is what breaks
-// the wall of identically sized links.
+// The newest item leads with one line of context, at the same headline size
+// as the rest: one form for every entry (outreach, 24 Nov 2026).
 .is-lead {
   padding-bottom: 1.1rem;
-
-  .news-headline {
-    font-size: 1.22rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
 }
 
 .news-summary {
@@ -184,7 +183,8 @@
   }
 
   .news-marker--note {
-    background: var(--news-release);
+    background: color-mix(in srgb, var(--news-release) 14%, transparent);
+    color: var(--news-release);
   }
 }
 
@@ -205,14 +205,12 @@
     }
   }
 
-  .news-marker--release {
+  // Both kinds of marker the same here too: on their own line, above the date.
+  .news-marker--release,
+  .news-marker--note {
     position: static;
     display: inline-flex;
     margin-bottom: 0.2rem;
-  }
-
-  .news-marker--note {
-    left: -1.2rem;
   }
 }
 

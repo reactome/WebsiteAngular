@@ -42,3 +42,48 @@
   gap: 16px;
   justify-items: center;
 }
+
+// One slim band under the tools (outreach, 24 Nov 2026): the numbers are not
+// links, and as a block of 48px icons above the tools they outweighed them.
+.stat-header {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.stat-header-date {
+  font-weight: 500;
+}
+
+.stat-header-link {
+  margin-left: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.stats-grid {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 4px 16px;
+  justify-items: start;
+}
+
+.stat-item {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+
+.stat-item-icon {
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
+  line-height: 20px;
+  margin-bottom: 0;
+  opacity: 0.85;
+}
+
+.stat-count {
+  font-weight: 600;
+}

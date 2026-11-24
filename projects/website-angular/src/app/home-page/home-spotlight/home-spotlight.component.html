@@ -1,6 +1,9 @@
 <h2 class="home-spotlight-title">Reactome Research Spotlight</h2>
 @if (spotlight(); as article) {
-  <span class="home-spotlight-text">{{ '[' + formatD(article.date) + '] ' + article.title }}</span>
+  <!-- The date as the news gives its dates, the title on its own line
+       (outreach, 24 Nov 2026), not "[date] title" inside the text. -->
+  <time class="home-spotlight-date" [attr.datetime]="article.date.toISOString()">{{ formatD(article.date) }}</time>
+  <span class="home-spotlight-headline">{{ article.title }}</span>
   <p class="home-spotlight-text" [innerHTML]="renderedContent()"></p>
   <a
     [routerLink]="

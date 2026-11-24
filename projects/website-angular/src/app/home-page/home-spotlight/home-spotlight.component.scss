@@ -35,3 +35,49 @@
   color: var(--panel-link, #7fe3c4);
   font-weight: 600;
 }
+
+// The whole card opens the article (outreach, 24 Nov 2026): its "Read more"
+// link stretched over the card, which lifts on hover. Links inside the excerpt
+// stay above it, so each still goes where it says.
+:host {
+  position: relative;
+  display: block;
+}
+
+.home-spotlight-link::after {
+  content: '';
+  position: absolute;
+  inset: -16px;
+  border-radius: 8px;
+  transition:
+    box-shadow 150ms ease,
+    background-color 150ms ease;
+}
+
+.home-spotlight-link:hover::after,
+.home-spotlight-link:focus-visible::after {
+  box-shadow: 0 4px 16px rgb(0 0 0 / 14%);
+  background-color: color-mix(in srgb, currentcolor 4%, transparent);
+}
+
+.home-spotlight-text ::ng-deep a {
+  position: relative;
+  z-index: 1;
+}
+
+.home-spotlight-date {
+  display: block;
+  margin: 6px 0 2px;
+  font-family: 'Roboto Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, currentcolor 88%, transparent);
+}
+
+.home-spotlight-headline {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.35;
+}
