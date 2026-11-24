@@ -502,10 +502,15 @@ export class DescriptionTabComponent implements OnDestroy {
     return isHuman && isRLE(obj) && obj.isInferred === true;
   });
 
-  readonly overview$ = viewChild<ElementRef<HTMLElement>>('overview');
+  readonly overviewText$ = viewChild<unknown, ElementRef<HTMLElement>>('overviewText', {
+    read: ElementRef,
+  });
   /**
-   * The overview's height, for the icon beside it (--icon-height), measured
-   * as it changes. Read in the template as clientHeight, it changed after
+   * The overview text's height, for the icon beside it (--icon-height), measured
+   * as it changes. The text alone, not the whole overview: the overview holds
+   * the icon (and a caller's figure), so sizing the icon from it grew both
+   * without end once anything put the icon under the text.
+   * Read in the template as clientHeight, it changed after
    * Angular had checked it whenever the icon arrived (NG0100 in development,
    * a height a step behind in production).
    */
@@ -784,9 +789,9 @@ export class DescriptionTabComponent implements OnDestroy {
   ];
 
   constructor() {
-    // Measure the overview as it changes (overviewHeight).
+    // Measure the overview's text as it changes (overviewHeight).
     effect(() => {
-      const element = this.overview$()?.nativeElement;
+      const element = this.overviewText$()?.nativeElement;
       this.overviewResize?.disconnect();
       if (!element) return;
       this.overviewResize = new ResizeObserver(() => this.overviewHeight.set(element.clientHeight));

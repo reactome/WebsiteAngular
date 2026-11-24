@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../reactome-components/page-header/page-header.component';
 import { RouterLink } from '@angular/router';
 import { computed, Component, OnInit, inject, signal, PLATFORM_ID, OnDestroy } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -32,7 +33,7 @@ import {
 
 @Component({
   selector: 'app-download-data',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink],
   templateUrl: './download-data.component.html',
   styleUrl: './download-data.component.scss',
 })

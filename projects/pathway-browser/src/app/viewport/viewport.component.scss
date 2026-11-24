@@ -594,3 +594,22 @@ cr-interactor-threshold {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+// Proposal: on a phone the top bar's controls scroll sideways rather than run
+// off the screen, and the title gives way to them.
+@media (max-width: 700px) {
+  .right-panel .top {
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 8px;
+
+    .title {
+      display: none;
+    }
+
+    .top-left,
+    .top-right {
+      flex: 0 0 auto;
+    }
+  }
+}

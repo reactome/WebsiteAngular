@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../../page-layout/page-layout.component';
 import { TileComponent } from '../../reactome-components/tile/tile.component';
@@ -14,7 +15,14 @@ import { articleIndexItem } from '../../../utils/articleIndexItem';
 
 @Component({
   selector: 'app-article-page',
-  imports: [PageLayoutComponent, TileComponent, MatIcon, RouterLink, LoadErrorComponent],
+  imports: [
+    PageHeaderComponent,
+    PageLayoutComponent,
+    TileComponent,
+    MatIcon,
+    RouterLink,
+    LoadErrorComponent,
+  ],
   templateUrl: './article-page.component.html',
   styleUrl: './article-page.component.scss',
 })

@@ -4,51 +4,16 @@
 
 // ── Header ──────────────────────────────────────────────────────────────────
 
-.page-header {
-  margin-bottom: 24px;
-
-  .category-badge {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--primary);
-    opacity: 0.6;
-    margin-bottom: 8px;
-  }
-
-  h1 {
-    font-size: 32px;
-    line-height: 1.2;
-    margin: 0 0 12px;
-    color: var(--primary);
-  }
-
-  .description {
-    font-size: 16px;
-    line-height: 1.6;
-    color: var(--primary);
-    opacity: 0.7;
-    margin: 0 0 12px;
-    max-width: 640px;
-
-    a {
-      color: var(--primary);
-      text-decoration: underline;
-    }
-  }
-
-  .version-badge {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 12px;
-    background: var(--primary);
-    color: var(--on-primary);
-    letter-spacing: 0.03em;
-  }
+// The release badge, in the shared page header's content (app-page-header)
+.version-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: var(--on-primary);
+  letter-spacing: 0.03em;
 }
 
 // ── Layout: TOC + Main ──────────────────────────────────────────────────────
@@ -503,10 +468,6 @@ tbody {
 }
 
 @media (max-width: 768px) {
-  .page-header h1 {
-    font-size: 26px;
-  }
-
   .section-title {
     font-size: 18px;
   }

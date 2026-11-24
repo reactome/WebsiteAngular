@@ -209,6 +209,9 @@
   align-items: center;
 
   width: var(--column-width);
+  // At least its word: on a phone the column is narrower than "Overview", and
+  // the word, centred in it, lost its first letter off the left edge.
+  min-width: max-content;
   font-weight: 600;
   font-size: 12px;
   letter-spacing: 0.5px;
@@ -621,4 +624,33 @@
     width: 16px;
     height: 16px;
   }
+}
+
+// A figure the caller puts with the overview (the detail page's diagram): under
+// it, full width, before the summary. Beside it, the short overview left an
+// empty gap under itself and pushed the summary down.
+// Only when it holds one: an object with no diagram (a protein) still has the
+// empty component in the slot, and the rule forced its overview into a column,
+// its icon pushed down over the locations tree.
+:host ::ng-deep .overview:has(> .overview-figure:not(:empty)) {
+  // A wrapping row, not a column: the text and its icon or illustration stay
+  // side by side, as in the Pathway Browser, and the figure takes a row of its
+  // own under them. (A wrapping column put the figure in a second column.)
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  > cr-description-overview {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  > .overview-figure {
+    order: 1;
+    flex: 0 0 100%;
+    margin-top: 12px;
+  }
+}
+
+:host ::ng-deep .overview > .overview-figure:empty {
+  display: none;
 }

@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { DoiPathway, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
@@ -12,7 +13,7 @@ const PAGE_SIZE = 25;
 
 @Component({
   selector: 'app-doi',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './doi.component.html',
   styleUrl: './doi.component.scss',
 })

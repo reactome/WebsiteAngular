@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
@@ -21,7 +22,7 @@ const HTML_URL =
 
 @Component({
   selector: 'app-collaboration',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink],
   templateUrl: './collaboration.component.html',
   styleUrl: './collaboration.component.scss',
 })

@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../reactome-components/page-header/page-header.component';
 import { ChangeDetectorRef, Component, ElementRef, inject, OnInit } from '@angular/core';
 import { PageLayoutComponent } from '../page-layout/page-layout.component';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -18,7 +19,7 @@ import { IS_CURATOR } from '../../../../pathway-browser/src/environments/environ
 
 @Component({
   selector: 'app-page',
-  imports: [PageLayoutComponent, RouterLink],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink],
   templateUrl: './page.component.html',
   styleUrl: './page.component.scss',
 })

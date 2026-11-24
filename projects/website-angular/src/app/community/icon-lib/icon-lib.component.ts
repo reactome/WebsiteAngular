@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { IconCategory, IconEntry } from '../../../model/icon.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -50,7 +51,7 @@ interface ParsedReference {
 
 @Component({
   selector: 'app-icon-lib',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './icon-lib.component.html',
   styleUrl: './icon-lib.component.scss',
 })

@@ -77,8 +77,11 @@
 
 <ng-template #overviewTemplate>
   <!-- Overview -->
-  <div class="overview" #overview [class.update-layout]="hasIllustration()" [style.--icon-height.px]="overviewHeight()">
-    <cr-description-overview [obj]="obj()" [showSpecies]="true"></cr-description-overview>
+  <div class="overview" [class.update-layout]="hasIllustration()" [style.--icon-height.px]="overviewHeight()">
+    <cr-description-overview #overviewText [obj]="obj()" [showSpecies]="true"></cr-description-overview>
+    <!-- A caller's figure beside the overview: /content/detail puts the pathway's diagram
+         here, the first thing on its page. The Pathway Browser passes none. -->
+    <ng-content select="[overviewFigure]"></ng-content>
     @if (!icon.isLoading() && icon.value() && currentIcon()) {
       <div class="icon-container">
         <cr-icon [iconSVG]="icon.value()!" [icon]="currentIcon()!" />

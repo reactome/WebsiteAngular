@@ -173,3 +173,26 @@
 .flex-grow {
   flex: 1;
 }
+
+// On a phone, each label over its value. Beside it, in a column a sixth of the
+// width, "Stable identifier" ran into its value: in the Pathway Browser's
+// details panel and on a pathway's own page alike (the page had this rule for
+// itself alone; it is here now for both).
+@media (max-width: 700px) {
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .label {
+    width: auto;
+    text-align: left;
+    position: static;
+  }
+
+  .value {
+    border-left: 0;
+    padding: 0;
+  }
+}

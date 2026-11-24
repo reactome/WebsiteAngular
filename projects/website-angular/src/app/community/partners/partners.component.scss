@@ -2,40 +2,6 @@
   padding: 0;
 }
 
-.page-header {
-  margin-bottom: 16px;
-
-  .category-badge {
-    display: inline-block;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--primary);
-    opacity: 0.6;
-    margin-bottom: 8px;
-  }
-
-  h1 {
-    font-size: 32px;
-    line-height: 1.2;
-    margin: 0 0 12px;
-    color: var(--primary);
-  }
-
-  .description {
-    font-size: 16px;
-    line-height: 1.6;
-    opacity: 0.7;
-    margin: 0;
-    max-width: 640px;
-
-    a {
-      text-decoration: underline;
-    }
-  }
-}
-
 .intro-text {
   margin-bottom: 28px;
 

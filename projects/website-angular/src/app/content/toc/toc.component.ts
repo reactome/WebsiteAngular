@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { TocPathway, SimplePerson } from '../../../model/content.model';
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, inject } from '@angular/core';
 import { Subject } from 'rxjs';
@@ -10,7 +11,7 @@ type SortDir = 'asc' | 'desc';
 
 @Component({
   selector: 'app-toc',
-  imports: [PageLayoutComponent],
+  imports: [PageHeaderComponent, PageLayoutComponent],
   templateUrl: './toc.component.html',
   styleUrl: './toc.component.scss',
 })

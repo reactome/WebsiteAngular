@@ -1,12 +1,10 @@
 <app-page-layout>
   <article class="release-calendar">
-    <header class="page-header">
-      <span class="category-badge">About</span>
-      <h1>Release Calendar</h1>
+    <app-page-header section="About" title="Release Calendar">
       <p class="description">
         A history of all Reactome data releases, from version 1 in December 2002 to the present.
       </p>
-    </header>
+    </app-page-header>
 
     @if (loading) {
       <div class="loading-state">

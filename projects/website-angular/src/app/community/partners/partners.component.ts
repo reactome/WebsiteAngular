@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { NgOptimizedImage } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
@@ -6,7 +7,7 @@ import { REACTOME_PARTNERS } from './partners';
 
 @Component({
   selector: 'app-partners',
-  imports: [PageLayoutComponent, RouterLink, NgOptimizedImage],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink, NgOptimizedImage],
   templateUrl: './partners.component.html',
   styleUrl: './partners.component.scss',
 })

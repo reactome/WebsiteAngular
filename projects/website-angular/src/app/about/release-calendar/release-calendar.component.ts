@@ -1,3 +1,4 @@
+import { PageHeaderComponent } from '../../reactome-components/page-header/page-header.component';
 import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { NgTemplateOutlet } from '@angular/common';
@@ -66,7 +67,7 @@ const CSV_URL =
 
 @Component({
   selector: 'app-release-calendar',
-  imports: [PageLayoutComponent, RouterLink, NgTemplateOutlet],
+  imports: [PageHeaderComponent, PageLayoutComponent, RouterLink, NgTemplateOutlet],
   templateUrl: './release-calendar.component.html',
   styleUrl: './release-calendar.component.scss',
 })
