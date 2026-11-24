@@ -1,7 +1,6 @@
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { Component, inject, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { ButtonComponent } from '../../reactome-components/button/button.component';
 import { MatIcon } from '@angular/material/icon';
 import { ExternalLink } from '../../../types/link';
 import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
@@ -9,7 +8,7 @@ import { EXTERNAL_LINKS } from '../../../config/external-links'; // NEW import
 @Component({
   selector: 'app-home-help',
   standalone: true,
-  imports: [ButtonComponent, MatIcon, RouterLink],
+  imports: [MatIcon, RouterLink],
   templateUrl: './home-help.component.html',
   styleUrl: './home-help.component.scss',
 })

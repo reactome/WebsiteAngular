@@ -5,7 +5,7 @@
         <div class="analysis-type-header">
           <div class="analysis-type-icon" [innerHTML]="qualitative | async | safe: 'html' : true"></div>
           <div class="analysis-type-label">
-            <u>Qualitative</u>
+            <strong class="kind">Qualitative</strong>
             <span class="normal">Pathway Enrichment</span>
           </div>
         </div>
@@ -18,7 +18,7 @@
           <div class="analysis-type-header">
             <div class="analysis-type-icon" [innerHTML]="quantitative | async | safe: 'html' : true"></div>
             <div class="analysis-type-label">
-              <u>Quantitative</u>
+              <strong class="kind">Quantitative</strong>
               <span class="normal">Pathway Enrichment</span>
             </div>
           </div>
@@ -31,7 +31,7 @@
         <div class="analysis-type-header">
           <div class="analysis-type-icon" [innerHTML]="species | async | safe: 'html' : true"></div>
           <div class="analysis-type-label">
-            <u>Species</u>
+            <strong class="kind">Species</strong>
             <span class="normal">Pathway Enrichment</span>
           </div>
         </div>
@@ -43,7 +43,7 @@
         <div class="analysis-type-header">
           <div class="analysis-type-icon" [innerHTML]="tissue | async | safe: 'html' : true"></div>
           <div class="analysis-type-label">
-            <u>Tissue</u>
+            <strong class="kind">Tissue</strong>
             <span class="normal">Pathway Enrichment</span>
           </div>
         </div>

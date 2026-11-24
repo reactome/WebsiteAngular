@@ -1,12 +1,4 @@
-.api-data-icon {
-  font-size: 48px;
-  height: 48px;
-  width: 48px;
-}
-
-.api-data-link {
-  text-decoration: none !important;
-}
+@use '../link-cards';
 
 // A section's title: an h2 under the page's one h1 (the search title), at the
 // size it had as an h1, and a line height of its own -- the body's 20px under
@@ -18,10 +10,4 @@
   margin: 0.67em 0;
 }
 
-// Proposal: as many columns as fit, every item visible at once.
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 16px;
-  justify-items: center;
-}
+@include link-cards.link-cards;

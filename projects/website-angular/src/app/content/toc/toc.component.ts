@@ -9,6 +9,11 @@ import { ContentDataService } from '../../../services/content-data.service';
 type SortKey = 'displayName' | 'releaseDate';
 type SortDir = 'asc' | 'desc';
 
+type PeopleRole = 'authors' | 'reviewers' | 'editors';
+
+/** Names shown in a row's list before "+ n more". */
+const PEOPLE_SHOWN = 3;
+
 @Component({
   selector: 'app-toc',
   imports: [PageHeaderComponent, PageLayoutComponent],
@@ -31,6 +36,8 @@ export class TocComponent implements OnInit, OnDestroy {
   sortKey: SortKey = 'displayName';
   sortDir: SortDir = 'asc';
   expandedStIds = new Set<string>();
+  /** Rows' people lists the reader opened, by "stId role". */
+  private readonly peopleInFull = new Set<string>();
 
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
@@ -222,6 +229,30 @@ export class TocComponent implements OnInit, OnDestroy {
 
   isExpanded(stId: string): boolean {
     return this.expandedStIds.has(stId);
+  }
+
+  /**
+   * A row's people, the first few until the reader asks for the rest: Cell
+   * Cycle's authors and reviewers ran most of a screen. Shown in full while
+   * searching, so a name searched for is never the one hidden.
+   */
+  shown(people: SimplePerson[] | undefined, stId: string, role: PeopleRole): SimplePerson[] {
+    if (!people) return [];
+    return this.inFull(stId, role) ? people : people.slice(0, PEOPLE_SHOWN);
+  }
+
+  /** How many of a row's people are hidden; 0 when all are shown. */
+  hiddenCount(people: SimplePerson[] | undefined, stId: string, role: PeopleRole): number {
+    if (!people || this.inFull(stId, role)) return 0;
+    return Math.max(0, people.length - PEOPLE_SHOWN);
+  }
+
+  showAll(stId: string, role: PeopleRole): void {
+    this.peopleInFull.add(`${stId} ${role}`);
+  }
+
+  private inFull(stId: string, role: PeopleRole): boolean {
+    return this.searchQuery.trim() !== '' || this.peopleInFull.has(`${stId} ${role}`);
   }
 
   personNames(persons: SimplePerson[] | undefined): string {

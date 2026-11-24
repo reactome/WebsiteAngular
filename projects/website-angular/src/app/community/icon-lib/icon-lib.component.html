@@ -30,7 +30,6 @@
           </button>
         }
       </div>
-      <button type="button" class="search-btn" (click)="searchIcons()">Search</button>
     </div>
 
     <!-- Category filter chips -->
@@ -93,7 +92,7 @@
 
       <div class="icon-grid">
         @for (icon of icons; track icon.id) {
-          <button type="button" class="icon-card" (click)="openDetail(icon)">
+          <button type="button" class="icon-card" [title]="icon.iconName || icon.name" (click)="openDetail(icon)">
             <div class="icon-preview">
               <!-- eslint-disable @angular-eslint/template/prefer-ngsrc -- a library icon is any shape, fitted to its box by CSS -->
               <img
