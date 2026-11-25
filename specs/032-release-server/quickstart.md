@@ -72,4 +72,4 @@ webroot first): `certbot renew --dry-run` for each. Expected: every one passes.
 
 ## Cutover (the user)
 
-The switch in §2 is the cutover: Apache disabled, the renewals moved first (§6), §3 passed. Apache stays installed, disabled, as a way back while anything is fixed.
+The switch in §2 is the cutover: Apache disabled, the renewals moved first (§6), §3 passed. The new setup is used going forward; Apache stays installed, disabled, for a while as a way back, and is removed eventually.

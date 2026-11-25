@@ -184,7 +184,7 @@ exec nginx nginx -s reload` for the map).
 3. Start nginx: `docker compose up -d nginx`.
 4. Run §3's checks on the public address.
 
-From then on nginx serves. Apache stays installed but disabled; if something is badly
-wrong straight after the switch, `docker compose stop nginx` and
-`systemctl start apache2` put the old site back while it is fixed. Once the new setup
-has run through a release, Apache can be removed.
+From then on nginx serves, and the new setup is the one used going forward. Apache stays
+installed but disabled for a while: if something is badly wrong after the switch,
+`docker compose stop nginx` and `systemctl start apache2` put the old site back while it
+is fixed. It is removed eventually, once the new setup has proven itself.
