@@ -13,6 +13,7 @@ const ANSWERS: Record<string, [number, string, string]> = {
   '/ContentService/x/name': [200, 'text/plain', 'reactome'],
   '/ContentService/x/empty': [200, 'text/plain', ''],
   '/ContentService/x/missing': [404, 'application/json', '{}'],
+  '/ContentService/x/undescribed': [200, 'application/json', '{"b":2}'],
 };
 
 function host(answers: Record<string, [number, string, string]>): Promise<[Server, string]> {
@@ -79,6 +80,17 @@ describe('the release check', () => {
       '/x/broken',
       '/x/empty',
       '/x/missing',
+    ]);
+  });
+
+  it('says which answers it checked the shape of: only those the description has one for', async () => {
+    // A route the description has no schema for passes on 200 and JSON alone;
+    // counted as "as described", it overstated what was checked.
+    const outcomes = await checkRoutes(base, ['/x/good', '/x/undescribed', '/x/name'], DESCRIPTION);
+    expect(outcomes.map((o) => [o.path, o.problems.length, o.shaped])).toEqual([
+      ['/x/good', 0, true],
+      ['/x/undescribed', 0, false],
+      ['/x/name', 0, false],
     ]);
   });
 

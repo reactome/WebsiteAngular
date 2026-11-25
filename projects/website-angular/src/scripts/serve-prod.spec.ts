@@ -85,10 +85,13 @@ describe('serve-prod', () => {
     await mkdir(path.join(dist, 'uploads'), { recursive: true });
     // Looks content-named, but an upload's name is whatever the author chose.
     await writeFile(path.join(dist, 'uploads', 'figure-ABCDEFGH.png'), 'png', 'utf8');
-    embed = await mkdtemp(path.join(tmpdir(), 'serve-prod-embed-'));
+    // Under a dot directory, as a checkout under .claude/worktrees is: Express
+    // refuses an absolute path through one, and the build must still be served.
+    embed = await mkdtemp(path.join(tmpdir(), '.serve-prod-embed-'));
     await writeFile(path.join(embed, 'main.js'), 'export const diagram = 1;', 'utf8');
     await writeFile(path.join(embed, 'loader.gif'), 'GIF89a', 'utf8');
     await writeFile(path.join(embed, 'chunk-AB12CD34.js'), 'export {};', 'utf8');
+    await writeFile(path.join(embed, 'reactome-diagram.js'), '/* the loader */', 'utf8');
 
     const port = await freePort();
     base = `http://127.0.0.1:${port}`;
@@ -265,6 +268,31 @@ describe('serve-prod', () => {
       const res = await fetch(base + '/embed/diagram/v1/nothing-here.js');
       expect(res.status).toBe(404);
       expect(await res.text()).not.toContain(INDEX_MARKER);
+    });
+
+    // Pages written for the old widget still load it from its old address
+    // (AllianceGenome's gene pages). The loader is served there, as a script
+    // other origins may run; the site's page there, as before, broke them.
+    it("serves its loader at the old widget's address", async () => {
+      const res = await fetch(base + '/DiagramJs/diagram/diagram.nocache.js');
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('javascript');
+      expect(await res.text()).toBe('/* the loader */');
+      expect(res.headers.get('access-control-allow-origin')).toBe('*');
+      expect(res.headers.get('cross-origin-resource-policy')).toBe('cross-origin');
+      expect(res.headers.get('cache-control')).toBe('no-cache');
+    });
+
+    it("answers 404 for the old widget's other files, not the site", async () => {
+      for (const file of [
+        '/DiagramJs/diagram/0A1B2C.cache.js',
+        '/DiagramJs/',
+        '/DiagramJs/diagram/main.js',
+      ]) {
+        const res = await fetch(base + file);
+        expect(res.status).toBe(404);
+        expect(await res.text()).not.toContain(INDEX_MARKER);
+      }
     });
   });
 });

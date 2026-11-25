@@ -49,6 +49,9 @@ DIAGRAM_FILES_DIR=<the staged release's folder>/diagram
 RELEASE_FILES_DIR=<the staged release's folder>
 RENDER_FILES_DIR=<the folder holding the release folders>   # <it>/<release>/diagram/...
 RENDER_CONCURRENCY=2
+# RENDER_MEM_LIMIT=3g                 # raise with RENDER_CONCURRENCY, by measurement (§5)
+ANSWER_ENV_FILE=<the site's settings file, mode 0600>
+CALLER_TOKEN_KEY_FILE=<the key the site signs its calls to the chat with>
 LETSENCRYPT_DIR=/etc/letsencrypt
 CERTBOT_WEBROOT=<a folder certbot writes challenges to>
 NGINX_SITE_LOCAL=<the server's own nginx folder>
@@ -56,6 +59,13 @@ NGINX_SITE_LOCAL=<the server's own nginx folder>
 
 The credentials file holds `NEO4J_URI` (the host's database, `bolt://127.0.0.1:7687`),
 `NEO4J_DATABASE`, `NEO4J_USER` and `NEO4J_PASSWORD`, read literally, as on beta.
+
+The site's settings file (`ANSWER_ENV_FILE`) holds what beta's site service reads from
+its own: the human check's keys, the identity secret (which the analysis gateway reads
+too: without it no report is made), and the chat's addresses, set to this server's own
+chat, never to another deployment's (unset, they name beta's). The gateway does not start
+without the file. `CONTACT_TO` stays unset for now: the contact form needs a `sendmail`
+the site image does not have (spec 032 T031).
 
 **`docker-compose.override.yml`** — as in
 [`contracts/compose-override.md`](../../specs/032-release-server/contracts/compose-override.md):
@@ -73,6 +83,7 @@ Check before starting anything:
 ```sh
 docker compose config --services     # no graphdb
 docker compose config | grep -E '^\s+(image|build):'   # every published service: image at IMAGE_TAG
+docker compose config app             # the site: SITE_PROFILE, NODE_ENV=production, no dev ports
 ```
 
 ## 2. Before switching: everything behind nginx, with Apache still serving
@@ -98,13 +109,19 @@ Through `https://release.reactome.org`, as
 [`quickstart.md`](../../specs/032-release-server/quickstart.md) §3 lists them: the home page, a pathway, a search, an analysis, a download link, the
 build service, the chat, the wiki, an unknown host name, and the database version.
 
-The graph, through the content service (SC-003):
+The graph, through the content service (SC-003). The check is this repository's own
+script, which needs Node 24 and its packages; the server has neither, by design, so it is
+run from a checkout elsewhere, through a tunnel to the server's loopback port:
 
 ```sh
+ssh -N -L 4400:127.0.0.1:4400 <the server> &      # on the machine with the checkout
 node tools/release-check/endpoints.ts --base http://127.0.0.1:4400
 # and, once beta serves the same release:
 node tools/release-check/endpoints.ts --base http://127.0.0.1:4400 --compare https://beta.reactome.org
 ```
+
+Each answer is checked for its status and a body, and against its shape where the
+contract's description has one; the last line says how many were (`~` marks the rest).
 
 The indexes the content service relies on, read back from the host's database by its
 operator (read-only), before the check: `SHOW INDEXES` in `cypher-shell`; the index on
@@ -140,17 +157,24 @@ during one part of the book. For comparison, on beta: the stack without the grap
 ## 6. Certificates without the old web server
 
 `certbot renew` uses each certificate's stored authenticator. A certificate that renews
-through the old web server begins failing, silently, the day that server stops. Move each
-first:
+through the old web server begins failing, silently, the day that server stops. So each is
+moved to another, once nginx is serving the challenge path (§8):
 
 - **A name that reaches this server directly**: to `webroot`, in the folder nginx serves
-  the challenge path from:
+  the challenge path from. `reconfigure` rewrites the stored authenticator and tests a
+  renewal with it (certbot 2.3 or later):
 
   ```sh
-  certbot certonly --webroot -w <CERTBOT_WEBROOT> --cert-name <name> -d <name> --keep-until-expiring
+  certbot reconfigure --cert-name <name> --webroot -w <CERTBOT_WEBROOT>
   ```
 
+  Not `certonly ... --keep-until-expiring`: on a certificate not yet due it does nothing,
+  and leaves the old authenticator stored. With an older certbot, renew once with
+  `certbot certonly --webroot -w <CERTBOT_WEBROOT> --cert-name <name> -d <name>
+--force-renewal`, which stores the new one.
+
 - **A name behind the CDN**: to the DNS method beta uses (`deploy/nginx/README.md`).
+  That does not need nginx, and can be moved before the switch.
 
 Then, so nginx presents a renewed certificate, a deploy hook:
 `/etc/letsencrypt/renewal-hooks/deploy/nginx-reload` running
@@ -179,10 +203,14 @@ exec nginx nginx -s reload` for the map).
 
 ## 8. Switching over (the user)
 
-1. Move each certificate's renewal off Apache (§6), so none fails once it stops.
+1. Check no certificate falls due in the next few days (`certbot certificates`), and move
+   those behind the CDN to the DNS method (§6).
 2. Stop and disable Apache: `systemctl disable --now apache2`.
-3. Start nginx: `docker compose up -d nginx`.
-4. Run §3's checks on the public address.
+3. Start nginx: `docker compose up -d nginx`. It serves the challenge path from
+   `CERTBOT_WEBROOT` from now on.
+4. Move each remaining certificate to `webroot` and dry-run each (§6), and add the deploy
+   hook.
+5. Run §3's checks on the public address.
 
 From then on nginx serves, and the new setup is the one used going forward. Apache stays
 installed but disabled for a while: if something is badly wrong after the switch,
