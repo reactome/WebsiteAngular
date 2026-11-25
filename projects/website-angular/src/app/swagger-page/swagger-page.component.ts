@@ -10,6 +10,7 @@ import {
 import { ActivatedRoute } from '@angular/router';
 import { isPlatformBrowser } from '@angular/common';
 import { withReportCheck } from './analysis-description';
+import { withNamedGraphFields } from './content-description';
 
 /** The Swagger UI bundle's global, loaded as a script: the options this page gives it. */
 declare const SwaggerUIBundle: (options: {
@@ -80,7 +81,16 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     // needed a person's check: read here and given with the report amended
     // (spec 031, T026). Where it cannot be read, Swagger UI is given the
     // address, and shows its own failure.
-    const spec = this.serviceName === 'AnalysisService' ? await this.amended(url) : undefined;
+    //
+    // The content service's is given with each graph class's fields naming the
+    // graph classes they hold rather than following them, which Swagger UI could
+    // not resolve without freezing the page (content-description.ts).
+    const spec =
+      this.serviceName === 'AnalysisService'
+        ? await this.amended(url, withReportCheck)
+        : this.serviceName === 'ContentService'
+          ? await this.amended(url, withNamedGraphFields)
+          : undefined;
     SwaggerUIBundle({
       domNode: this.swaggerContainer().nativeElement,
       ...(spec === undefined ? { url } : { spec }),
@@ -90,12 +100,12 @@ export class SwaggerPageComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  /** The analysis service's description with the report's check, or undefined. */
-  private async amended(url: string): Promise<unknown> {
+  /** The service's description, amended for this page, or undefined. */
+  private async amended(url: string, amend: (description: unknown) => unknown): Promise<unknown> {
     try {
       const response = await fetch(url, { headers: { Accept: 'application/json' } });
       if (!response.ok) return undefined;
-      return withReportCheck(await response.json());
+      return amend(await response.json());
     } catch {
       return undefined;
     }
