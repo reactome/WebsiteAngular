@@ -135,6 +135,30 @@ EOT
   return $failed
 }
 
+# A renewal's challenge, answered from the folder certbot writes to (specs/032
+# T025): compose mounts CERTBOT_WEBROOT at /var/www/certbot, where every
+# configuration routes the challenge path. Without that mount the folder in the
+# container is empty and a webroot renewal through this nginx fails -- which it
+# did, unnoticed, until T002. Asked over plain HTTP, as the CA asks.
+challenge_served() {
+  local image=$1 host=$2
+  shift 2
+  local server token=probe-$$ got
+  mkdir -p "$work/webroot/.well-known/acme-challenge"
+  printf 'challenge %s' "$token" >"$work/webroot/.well-known/acme-challenge/$token"
+  server=$(docker run -d --network none "$@" "$image")
+  containers+=("$server")
+  for _ in $(seq 50); do
+    got=$(docker exec "$server" curl -s -m 2 --resolve "$host:80:127.0.0.1" \
+      "http://$host/.well-known/acme-challenge/$token" 2>/dev/null) && [ -n "$got" ] && break
+    sleep 0.2
+  done
+  if [ "$got" != "challenge $token" ]; then
+    echo "http://$host/.well-known/acme-challenge/$token answered: ${got:-nothing}"
+    return 1
+  fi
+}
+
 status=0
 for env in dev release production; do
   # Every certificate and key the configuration names, made under $work.
@@ -203,6 +227,20 @@ for env in dev release production; do
       fi
     else
       echo "FAIL $env with the site-local examples"
+      sed 's/^/     /' "$work/out"
+      status=1
+    fi
+  fi
+  if [ "$env" = release ]; then
+    # The folder this mounts is the one compose mounts on a host.
+    if ! grep -qE '^ +- \$\{CERTBOT_WEBROOT:-[^}]+\}:/var/www/certbot:ro$' docker-compose.yml; then
+      echo "FAIL $env: docker-compose.yml does not mount CERTBOT_WEBROOT at /var/www/certbot"
+      status=1
+    elif challenge_served "$image" release.reactome.org "${mounts[@]}" \
+      -v "$work/webroot:/var/www/certbot:ro" >"$work/out" 2>&1; then
+      echo "ok   $env: a renewal's challenge is served from the mounted webroot"
+    else
+      echo "FAIL $env: a renewal's challenge"
       sed 's/^/     /' "$work/out"
       status=1
     fi

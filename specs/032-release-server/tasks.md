@@ -127,7 +127,7 @@ build-service, wiki and unknown-host rows pass.
 **Independent test**: `certbot renew --dry-run` for each certificate passes with the old
 web server stopped (SC-004).
 
-- [ ] T025 [US4] Prove the webroot mount (T002): a check in `deploy/nginx/test-config.sh` (or beside it) that starts the `release` image with a temporary webroot holding `.well-known/acme-challenge/probe`, and asks `http://release.reactome.org/.well-known/acme-challenge/probe` through it (`Host` header); 200 with the file's text. Seen failing: without the mount, 404.
+- [x] T025 [US4] Prove the webroot mount (T002): a check in `deploy/nginx/test-config.sh` (or beside it) that starts the `release` image with a temporary webroot holding `.well-known/acme-challenge/probe`, and asks `http://release.reactome.org/.well-known/acme-challenge/probe` through it (`Host` header); 200 with the file's text. Seen failing: without the mount, 404. Done (#1083): run for real over plain HTTP with no network, and tied to compose (the test fails if `docker-compose.yml` stops mounting `CERTBOT_WEBROOT`). Seen failing: the run without the mount (the site's page instead of the token) and the compose line removed.
 - [ ] T026 [US4] Renewal steps in `deploy/release-server/README.md`: for each certificate, move its renewal from the old web server's authenticator to `webroot` with `CERTBOT_WEBROOT`, or to the DNS method beta uses (`deploy/nginx/README.md`) where the name is behind the CDN; reload nginx after renewal (a deploy hook running `docker compose exec nginx nginx -s reload`); the dry run to check.
 - [ ] T027 [US4] **(server session)** Move each certificate's renewal and run each dry run with the old web server stopped (SC-004). Tick with the result.
 
