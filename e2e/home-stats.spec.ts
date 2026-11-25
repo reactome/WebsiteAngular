@@ -30,7 +30,7 @@ test('the release counters show the numbers once they arrive, however late', asy
     });
   });
   await page.goto('/');
-  const pathways = page.locator('app-home-stats span').first();
+  const pathways = page.locator('app-home-stats .stat-count').first();
   await expect(pathways).toBeVisible({ timeout: 60_000 });
   await expect
     .poll(async () => Number((await pathways.textContent())?.replace(/[^0-9]/g, '') || 0), {
@@ -110,7 +110,7 @@ test("the release's date is the database's own", async ({ page }) => {
   // The database's real answers, recorded: release 98, dated 18 September 2026.
   await page.goto('/');
   await expect(page.locator('app-home-stats .stat-header')).toHaveText(
-    /^\s*Version V98\s+Released on\s+September 18, 2026\s*$/,
+    /^\s*Release 98\s+·\s+September 18, 2026\s+What's new\s+→\s*$/,
     { timeout: 60_000 }
   );
 });
@@ -125,6 +125,7 @@ test("without the database's date, the heading states no date", async ({ page })
   );
   await page.goto('/');
   const heading = page.locator('app-home-stats .stat-header');
-  await expect(heading).toContainText('Version V98', { timeout: 60_000 });
-  await expect(heading).not.toContainText('Released on');
+  await expect(heading).toContainText('Release 98', { timeout: 60_000 });
+  await expect(heading).not.toContainText('·');
+  await expect(heading).not.toContainText('2026');
 });

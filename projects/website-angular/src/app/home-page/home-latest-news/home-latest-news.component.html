@@ -17,7 +17,7 @@
           @if (releaseOf(article.title); as version) {
             <span class="news-marker news-marker--release">{{ version }}</span>
           } @else {
-            <span class="news-marker news-marker--note" aria-hidden="true"></span>
+            <span class="news-marker news-marker--note" aria-hidden="true">News</span>
           }
 
           <a class="news-link" [routerLink]="newsRoot() + '/' + article.slug">
