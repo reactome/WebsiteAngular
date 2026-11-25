@@ -35,6 +35,8 @@ interface Outcome {
   status: number;
   ms: number;
   problems: string[];
+  /** Whether the answer was checked against a shape: only routes the description has one for. */
+  shaped: boolean;
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -171,6 +173,7 @@ export async function checkRoutes(
     const problems: string[] = [];
     let status = 0;
     let ms = 0;
+    let shaped = false;
     try {
       const answer = await ask(base, path);
       ({ status, ms } = answer);
@@ -182,7 +185,7 @@ export async function checkRoutes(
         try {
           JSON.parse(answer.body);
           const [where = '', query = ''] = path.split('?');
-          const found = check(description, [
+          const { counted, found } = check(description, [
             {
               method: 'GET',
               path: where,
@@ -190,7 +193,8 @@ export async function checkRoutes(
               source: base,
               body: answer.body,
             },
-          ]).found;
+          ]);
+          shaped = [...counted.values()].some((n) => n > 0);
           problems.push(...found);
         } catch {
           problems.push('not JSON');
@@ -204,7 +208,7 @@ export async function checkRoutes(
     } catch (error) {
       problems.push(error instanceof Error ? error.message : String(error));
     }
-    outcomes.push({ path, status, ms, problems });
+    outcomes.push({ path, status, ms, problems, shaped });
   }
   return outcomes;
 }
@@ -227,11 +231,13 @@ if (import.meta.main) {
   const outcomes = await checkRoutes(base, routes(found), description, compare);
   for (const o of outcomes)
     console.log(
-      `${o.problems.length ? 'FAIL' : 'ok  '} ${o.status} ${o.ms}ms ${o.path}${o.problems.map((p) => `\n     ${p}`).join('')}`
+      `${o.problems.length ? 'FAIL' : o.shaped ? 'ok  ' : 'ok ~'} ${o.status} ${o.ms}ms ${o.path}${o.problems.map((p) => `\n     ${p}`).join('')}`
     );
   const failed = outcomes.filter((o) => o.problems.length).length;
+  const shaped = outcomes.filter((o) => o.shaped).length;
   console.log(
-    `${outcomes.length - failed} of ${outcomes.length} as described${compare ? ` and as ${compare} answers` : ''}`
+    `${outcomes.length - failed} of ${outcomes.length} answered${compare ? ` as ${compare} answers` : ''}; ` +
+      `${shaped} checked against the description's shape, the rest (~) for 200 and a body only`
   );
   process.exit(failed ? 1 : 0);
 }

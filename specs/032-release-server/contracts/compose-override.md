@@ -11,15 +11,38 @@ services:
     image: ${REGISTRY}/site:${IMAGE_TAG}
     build: !reset null
     network_mode: host
-    volumes: !reset []
-    environment:
+    # Reset or overridden, not merged: the base service's development settings (its bridge
+    # addresses for Tomcat and the render service, its ports, a terminal) do
+    # not hold on the host's network.
+    ports: !reset []
+    extra_hosts: !reset []
+    stdin_open: false
+    tty: false
+    # The site's own settings, as beta's service reads them: the human check's
+    # keys, the identity secret, the chat's addresses (ANSWER_UPSTREAM,
+    # SUMMARY_UPSTREAM, HANDOFF_UPSTREAM: this server's own, never another
+    # deployment's), TRUSTED_PROXIES. The same file the analysis gateway mounts.
+    env_file: !override ['${ANSWER_ENV_FILE}']
+    volumes: !override
+      - type: bind
+        source: ${CALLER_TOKEN_KEY_FILE}
+        target: /run/secrets/caller-token.key
+        read_only: true
+        bind:
+          create_host_path: false
+    environment: !override
       - SITE_PROFILE=${SITE_PROFILE}
       - NODE_ENV=production
+      - CALLER_TOKEN_KEY=/run/secrets/caller-token.key
     restart: unless-stopped
   java-library: {} # built here: `docker compose build java-library`
   pdf-export: {} # built here, as java-library
 ```
 
+`environment` wins over `env_file` for a key in both, so the key's path is the
+container's whatever the settings file says. The contact form needs a `sendmail`, which
+the site image does not have: until it does (T031), the settings file this container gets
+leaves `CONTACT_TO` unset, and the form says it cannot send rather than failing.
 The render service needs no entry: the base file reads `RENDER_FILES_DIR` and
 `RENDER_CONCURRENCY` from the settings file (T016). `RENDER_FILES_DIR` names the folder
 holding the release folders (`<it>/99/diagram/...`), as the download site lays them out,

@@ -85,8 +85,9 @@ services:
     # Held pages (spec 018, on by default) are closed past half of this limit,
     # read from the container's cgroup; with no limit that rule has nothing to
     # read. 3 GB is what spec 018's T010 measured the release's figures under,
-    # at twice this concurrency.
-    mem_limit: 3g
+    # at twice the default concurrency: a host drawing more at once raises it
+    # with RENDER_CONCURRENCY, by measurement.
+    mem_limit: ${RENDER_MEM_LIMIT:-3g}
 
   # The MCP server (reactome-mcp), which lets an AI assistant read Reactome
   # through its own tools rather than through a browser.
@@ -290,8 +291,16 @@ services:
     # site's own service reads, mounted rather than parsed, of which the
     # gateway reads that one line (human-pass.ts); run as the file's owner, as
     # content-node is. Without it, no report is made (FR-020).
+    # A missing file stops the gateway starting: in the short form, compose
+    # would make a directory there, and every report would be refused with
+    # nothing to say why.
     volumes:
-      - ${ANSWER_ENV_FILE:-~/.reactome/answer.env}:/run/secrets/answer.env:ro
+      - type: bind
+        source: ${ANSWER_ENV_FILE:-~/.reactome/answer.env}
+        target: /run/secrets/answer.env
+        read_only: true
+        bind:
+          create_host_path: false
     user: '${CONTENT_NODE_UID:-1020}:${CONTENT_NODE_GID:-1001}'
 
   content-node:

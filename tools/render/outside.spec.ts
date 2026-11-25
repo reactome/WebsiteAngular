@@ -10,7 +10,7 @@ const FONT = 'https://fonts.gstatic.com/s/roboto/v1/a.woff2';
 const STRUCTURE = 'https://www.ebi.ac.uk/chebi/backend/api/public/compound/15422/structure/';
 
 /** A route's stand-in: what it was answered with, and whether it went on to its host. */
-function route(url: string, fetched: () => Promise<Buffer>, method = 'GET') {
+function route(url: string, fetched: () => Promise<Buffer>, method = 'GET', status = 200) {
   const seen: { fulfilled?: Parameters<OutsideRoute['fulfill']>[0]; continued: boolean } = {
     continued: false,
   };
@@ -25,7 +25,7 @@ function route(url: string, fetched: () => Promise<Buffer>, method = 'GET') {
     fetch: async () => {
       const body = await fetched();
       return {
-        status: () => 200,
+        status: () => status,
         headers: () => ({
           'content-type': 'font/woff2',
           'access-control-allow-origin': '*',
@@ -94,6 +94,20 @@ describe('Outside (spec 018 T018)', () => {
     expect(failing.seen.continued).toBe(true);
     const next = route(FONT, () => Promise.resolve(Buffer.from('abc')));
     await outside.answer(next.stand);
+    expect(next.seen.fulfilled?.body.toString()).toBe('abc');
+    expect(outside.health()).toEqual({ answered: 0, fetched: 2 });
+  });
+
+  it('keeps no error answer: it is passed on, and the next asks again', async () => {
+    // One 503 from the font's host, kept, would have drawn every later figure
+    // of a release's run in the fallback font, with nothing said.
+    const outside = new Outside(SITE);
+    const failing = route(FONT, () => Promise.resolve(Buffer.from('busy')), 'GET', 503);
+    await outside.answer(failing.stand);
+    expect(failing.seen.fulfilled?.status).toBe(503);
+    const next = route(FONT, () => Promise.resolve(Buffer.from('abc')));
+    await outside.answer(next.stand);
+    expect(next.seen.fulfilled?.status).toBe(200);
     expect(next.seen.fulfilled?.body.toString()).toBe('abc');
     expect(outside.health()).toEqual({ answered: 0, fetched: 2 });
   });
