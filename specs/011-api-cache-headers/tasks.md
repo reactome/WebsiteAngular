@@ -169,11 +169,12 @@ The pull request that completes a task ticks it here, with its number.
 
 - [x] T028 [P] [US4] Add a row to `RELEASE-TESTING.md`'s "Post-release" table: "Content API edge cache cleared (purge by prefix `/ContentService/`), then `node tools/content-node/warm.mjs <site>` run". State only what to do, nothing about how the release itself runs. Add a matching line to the note on browser cache headers. — #534
 - [x] T029 [P] Update `tools/content-node/CACHING.md`: status "built (spec 011)", the work queue ticked, and a pointer to contracts/cache-labels.md. — #534
-- [ ] T030 **[dashboard]** **[deferred (awright, 19 Oct 2026); if set before the production launch, limited to the beta hostname]** People with Cloudflare dashboard access, issue #527:
+- [ ] T030 **[dashboard]** **[at the production release, not before (awright, 25 Nov 2026): nothing is cached on beta meanwhile]** People with Cloudflare dashboard access, issue #527:
   - URL normalization, incoming and to origin;
   - Smart Tiered Cache;
   - then the Cache Rule on `/ContentService/*`, leaving out the four roots: eligible for cache, Edge TTL "Use cache-control header if present, bypass cache if not" (not "…use default Cloudflare caching behavior if not", which would cache Java's unlabelled answers), Browser TTL "respect origin", no status-code TTL, query string sorted;
   - then the rate-limiting rule.
+  - Checked ready on beta, 25 Nov 2026: the content service labels standard URLs `public, max-age=3600, s-maxage=31536000`, an off-standard URL (`?utm_source=x`) and every error `no-store`; Java's routes and unknown paths carry no label, so the rule passes them by. On the release day it goes on, `/ContentService/` is purged and `warm.mjs` run, as at every release after.
 - [ ] T031 **[after T030]** After T030: request a standard URL twice through the public site and expect `cf-cache-status: HIT` the second time. Request one with `?utm_source=x` twice and expect it never to be a HIT. Then run a purge and the warm-up once, and check the second pass is HIT (SC-005). Tick T027–T031.
 
 ---
