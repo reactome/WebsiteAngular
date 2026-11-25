@@ -133,6 +133,11 @@ const VALUE_KINDS: Record<string, Kind> = {
   schemaPage: (text) => text === '50',
   // Paging the site never sends: answered, never stored.
   absent: () => false,
+  // The analysis service's resources, as the Pathway Browser's filter names
+  // them: the site sends one with the events hierarchy even after an analysis
+  // is cleared, without a token. Any other text is answered, never stored.
+  analysisResource: (text) =>
+    ['TOTAL', 'UNIPROT', 'ENSEMBL', 'CHEBI', 'MIRBASE', 'NCBI_NUCLEOTIDE', 'IUPHAR'].includes(text),
   depth: (text) => text === '-1' || /^([1-9]|10)$/.test(text),
   attributes: (text) =>
     ['species,compartment', 'species,compartment,referenceEntity'].includes(text),
@@ -252,6 +257,9 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/eventsHierarchy/{id}': {
     java: '/data/eventsHierarchy/{species}',
     path: { id: 'taxId' },
+    // Without a token Java ignores `resource` and answers the whole hierarchy,
+    // 4 MB, for any text: stored only for the resources the site names.
+    values: { resource: 'analysisResource' },
   },
   '/ContentService/data/pathways/top/{id}': {
     java: '/data/pathways/top/{species}',
@@ -299,6 +307,8 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'Java answers it but leaves it out of its description (@Hidden): the entities of a diagram, and the pathways among those given, an identifier names.',
     path: { id: 'stId', instance: 'identifier' },
     query: [{ name: 'pathways', in: 'query', type: 'string' }],
+    // Any text is another answer; the site never sends it.
+    values: { pathways: 'absent' },
   },
   '/ContentService/data/pathway/{id}/containedEvents': {
     java: '/data/pathway/{id}/containedEvents',

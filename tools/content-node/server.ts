@@ -29,7 +29,7 @@ import { pipeline } from 'node:stream/promises';
 import { fileURLToPath, URLSearchParams } from 'node:url';
 import { configured, close } from './graph.ts';
 import { settings } from './settings.ts';
-import { defaultLabel, label, redirectLabel, setLabel } from './cache-label.ts';
+import { defaultLabel, emptyAnswer, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solrConfigured } from './solr.ts';
 import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java-text.ts';
 import { pathId, rawSegment } from './spring.ts';
@@ -605,6 +605,7 @@ export async function answer(
         endpoint: endpoint.path,
         originalUrl: request.originalUrl,
         status: result.status,
+        empty: emptyAnswer(result),
       })
     );
     writeResult(response, result);

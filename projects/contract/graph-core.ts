@@ -941,7 +941,7 @@ export interface Depolymerisation<R extends Ref> extends JsogFields {
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
   composedOf?: Default<R>[];
   hasCompartment: HasCompartment<R>[];
-  eventOfPathways: EventOf<R>[];
+  eventOfPathways?: EventOf<R>[];
   schemaClass: 'Depolymerisation';
 }
 
@@ -1754,7 +1754,7 @@ export interface Polymerisation<R extends Ref> extends JsogFields {
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
   composedOf?: Default<R>[];
   hasCompartment: HasCompartment<R>[];
-  eventOfPathways: EventOf<R>[];
+  eventOfPathways?: EventOf<R>[];
   schemaClass: 'Polymerisation';
 }
 

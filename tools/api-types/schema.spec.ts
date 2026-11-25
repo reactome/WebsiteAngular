@@ -103,6 +103,18 @@ describe('what the description requires, measured against live answers', () => {
     for (const field of ['catalystActivity', 'composedOf', 'eventOfPathways'])
       expect(failed.required, field).not.toContain(field);
   });
+  it('lets no event type require eventOfPathways, which live answers leave out', () => {
+    // Polymerisation (R-HSA-874079) and Depolymerisation (R-HSA-8952903), asked
+    // for whole on beta (25 Nov 2026), carry none; FailedReaction was the first
+    // found, and these two were left requiring it (review of 25 Nov).
+    const requiring = Object.entries(description.components.schemas)
+      .filter(([, schema]) => {
+        const s = schema as { properties?: Record<string, unknown>; required?: string[] };
+        return s.properties?.['eventOfPathways'] && s.required?.includes('eventOfPathways');
+      })
+      .map(([name]) => name);
+    expect(requiring).toEqual([]);
+  });
 });
 
 describe('the schema check', () => {

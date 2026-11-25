@@ -143,6 +143,19 @@ limit, and search is open by nature. So (awright, 25 Nov 2026):
 Each is still answered exactly as Java answers it, so no difference from Java
 is declared: what changes is only whether the edge may keep it.
 
+The review of the same day found three more ways round it, closed the same way:
+
+- **An empty answer is never stored.** Several endpoints answer an id that
+  does not exist with an empty 200, as Java does (`/data/participants/987654321`
+  is `[]`), and any id of the right shape is in standard form, so each made-up
+  id would have been an entry. Empty means no body, an empty text, or `[]`.
+- **The events hierarchy only without `resource`, or with one of the
+  analysis service's resource names** (`TOTAL`, `UNIPROT`, ...), which the
+  Pathway Browser sends after an analysis is cleared. Without a token, Java
+  ignores it and answers the whole hierarchy, 4 MB, for any text.
+- **A diagram's entities only without `pathways`**: free text, never sent by
+  the site.
+
 ### What this does not fix
 
 Volume. Bot load is overwhelmingly requests to _valid_ URLs — crawling every
