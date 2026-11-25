@@ -18,6 +18,7 @@ type SiteVariant = 'main' | 'curator';
 export type ProfileName =
   | 'production'
   | 'beta'
+  | 'release'
   | 'development'
   | 'curator'
   | 'curator-local'
@@ -145,6 +146,15 @@ export interface SiteProfile {
 
 const S3 = 'https://download.reactome.org';
 
+/**
+ * Deployments no build names: chosen when the site is served, by
+ * serve-prod.js's SITE_PROFILE, which writes `window.__APP_ENV` into the page
+ * (read by runtimeProfileName below). Every other deployment is one build's
+ * APP_ENV, and none is both -- a name reached two ways is two deployments
+ * sharing hosts by accident.
+ */
+export const RUNTIME_PROFILES: readonly ProfileName[] = ['release'];
+
 export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
     // The published artifact: `deploy.yml` builds this and syncs it to
@@ -195,6 +205,33 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // machine and reads reactome.org's, this becomes 'production'.
     gsaServer: 'dev',
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    schemaPath: '/dataSchema',
+  },
+
+  release: {
+    // release.reactome.org: the release being staged, checked in the site
+    // production will run before it reaches production (specs/032). Beta's
+    // build, chosen at run time: serve-prod.js names this row when SITE_PROFILE
+    // says so (RUNTIME_PROFILES below), so the two hosts run one image.
+    //
+    // How it differs from beta, each on purpose:
+    // - no Google property: the host is not indexed, and its visits must land
+    //   in neither the public property nor anyone else's (like beta);
+    // - no DeltaSignal: a per-deployment research feature nobody has asked for
+    //   on this host, and its nginx routes no /api/ to a DeltaSignal service;
+    // - ReactomeGSA delivers to the release server's own Analysis Service,
+    //   which is the one this site reads there.
+    variant: 'main',
+    // As beta: each route answers 503 and its panel renders nothing where the
+    // host holds no signing key, so naming them is safe either way.
+    searchAnswerEndpoint: '/search-answer',
+    analysisSummaryEndpoint: '/analysis-summary',
+    chatHandoffEndpoint: '/chat-handoff',
+    host: 'origin',
+    originFallback: 'https://release.reactome.org',
+    s3: S3,
+    gsaServer: 'release',
+    versionFallback: 'https://release.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
 
