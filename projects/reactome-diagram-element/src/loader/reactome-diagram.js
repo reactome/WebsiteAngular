@@ -28,6 +28,12 @@
 
     var script = document.currentScript;
     var base = script && script.src ? script.src.replace(/[^/]*$/, '') : '';
+    // Served at the old widget's address as well, which pages written for it
+    // still load (AllianceGenome's gene pages): the diagram's code is not there
+    // but at this file's own address, on the same host.
+    if (/\/DiagramJs\/diagram\/diagram\.nocache\.js(\?|#|$)/.test(script ? script.src : '')) {
+      base = new URL('/embed/diagram/v1/', script.src).href;
+    }
 
     var fonts = [
       'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap',

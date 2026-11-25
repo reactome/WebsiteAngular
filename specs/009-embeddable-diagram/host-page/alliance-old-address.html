@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>A gene page, unchanged since the old widget</title>
+    <!--
+      AllianceGenome's gene page as it is written today (agr_ui: index.html and
+      pathwayWidget.jsx), in plain JS: the old widget's own address, loaded
+      async, then polled for until `Reactome` appears. Nothing on it changed for
+      the new diagram; only the host differs, so a test can serve it.
+    -->
+    <script async src="http://localhost:4340/DiagramJs/diagram/diagram.nocache.js"></script>
+  </head>
+  <body>
+    <h1>Gene X: pathways</h1>
+    <div id="reactomePathwayHolder"></div>
+    <script>
+      window.__loaded = [];
+      window.__gaveUp = false;
+      var tries = 0;
+      var timer = setInterval(function () {
+        tries++;
+        if (typeof Reactome !== 'undefined') {
+          clearInterval(timer);
+          var diagram = Reactome.Diagram.create({
+            placeHolder: 'reactomePathwayHolder',
+            width: 1130,
+            height: 600,
+          });
+          diagram.onDiagramLoaded(function (stId) {
+            window.__loaded.push(stId);
+          });
+          diagram.loadDiagram('R-HSA-69620');
+        } else if (tries >= 15) {
+          clearInterval(timer);
+          window.__gaveUp = true;
+        }
+      }, 1000);
+    </script>
+  </body>
+</html>

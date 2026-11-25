@@ -86,6 +86,19 @@ test.describe('Reactome.Diagram, the old widget interface', () => {
     expect(box && [Math.round(box.width), Math.round(box.height)]).toEqual([1130, 600]);
   });
 
+  test('draws on a page that still loads the old widget from its old address', async ({ page }) => {
+    // AllianceGenome's gene page as written (spec 009, T047): an async script
+    // at /DiagramJs/diagram/diagram.nocache.js, then the poll. Served the
+    // site's own page there, the poll gave up and the gene page had no diagram.
+    await page.goto(`http://localhost:${HOST_PAGE_PORT}/alliance-old-address.html`);
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __loaded: string[] }).__loaded), {
+        timeout: LOAD,
+      })
+      .toContain('R-HSA-69620');
+    expect(await count(page, 'node')).toBeGreaterThan(0);
+  });
+
   test('loadDiagram switches the pathway, and onDiagramLoaded says so', async ({ page }) => {
     await page.goto(PAGE);
     await loaded(page);
