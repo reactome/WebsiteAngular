@@ -99,6 +99,18 @@ describe('the labels the service writes', () => {
     expect([missing.status, ...headers(missing)]).toEqual([404, 'no-store', 'status']);
   });
 
+  it('does not store an empty answer, which an id that does not exist gets', async () => {
+    // The graph stand-in finds nothing, so participants answer [] with a 200,
+    // as Java answers any made-up id (review of 25 Nov).
+    const none = await at('/data/participants/987654321');
+    expect([none.status, await none.text(), ...headers(none)]).toEqual([
+      200,
+      '[]',
+      'no-store',
+      'empty',
+    ]);
+  });
+
   it('does not store a POST, an OPTIONS, or what never reached an endpoint', async () => {
     const post = await at('/data/query/ids', { method: 'POST', body: 'R-HSA-1' });
     expect([post.status >= 200, ...headers(post)]).toEqual([true, 'no-store', 'method']);

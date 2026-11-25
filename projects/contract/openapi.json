@@ -15908,7 +15908,6 @@
           "category",
           "className",
           "hasCompartment",
-          "eventOfPathways",
           "schemaClass"
         ],
         "additionalProperties": false,
@@ -25531,7 +25530,6 @@
           "category",
           "className",
           "hasCompartment",
-          "eventOfPathways",
           "schemaClass"
         ],
         "additionalProperties": false,

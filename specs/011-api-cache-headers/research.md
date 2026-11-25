@@ -139,20 +139,22 @@ It is checked against a snapshot of Java's published API description, taken the 
 **Decided by awright, 18 Oct 2026**:
 
 - Versioned stable ids, with up to 3 version digits, are standard. So are `REACT_` ids.
-- Page sizes (`rows`, `pageSize`, `rowCount`) have no cap: any value valid to Java is standard. Search terms are already unbounded (next point), so a cap would not keep the set finite.
-- Search answers are cacheable for any search term.
+- Page sizes (`rows`, `pageSize`, `rowCount`) have no cap: any value valid to Java is standard. Search terms are already unbounded (next point), so a cap would not keep the set finite. _Superseded 25 Nov 2026 (T034): pages are stored only as the site asks for them._
+- Search answers are cacheable for any search term. _Superseded 25 Nov 2026 (T034): search is never stored._
 - Only list parameters may repeat.
 
 ## R5. Endpoints never cached, whatever the URL
 
 **Decision**: the record marks these `cache: 'never'` (or `'private'`):
 
-| Endpoint                                     | Why                                                                                                                                                 |
-| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `interactors/psicquic/resources`             | Re-read from an outside registry every 5 minutes (2278–2285).                                                                                       |
-| `citation/static/{id}` and `citation/export` | Live Europe PMC data. On a Europe PMC failure, `citation/export` answers an empty 200 (3077), which would otherwise be cached until the next purge. |
-| `citation/pathway/{id}`                      | Its `dateAccessed` is echoed into the body, and the site sends a new date every day, so caching it costs one entry per day for little reuse.        |
-| `exporter/diagram/{id}`                      | Takes `token`, so `private`. It is not routed to node today.                                                                                        |
+| Endpoint                                                            | Why                                                                                                                                                 |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `interactors/psicquic/resources`                                    | Re-read from an outside registry every 5 minutes (2278–2285).                                                                                       |
+| `citation/static/{id}` and `citation/export`                        | Live Europe PMC data. On a Europe PMC failure, `citation/export` answers an empty 200 (3077), which would otherwise be cached until the next purge. |
+| `citation/pathway/{id}`                                             | Its `dateAccessed` is echoed into the body, and the site sends a new date every day, so caching it costs one entry per day for little reuse.        |
+| `exporter/diagram/{id}`                                             | Takes `token`, so `private`. It is not routed to node today.                                                                                        |
+| every `/search/` endpoint                                           | Free text, which no record can bound (T034, 25 Nov 2026).                                                                                           |
+| `data/referenceSequences` and `data/referenceSequences/identifiers` | Paged past the end to an empty 200, never asked for by the site (T034).                                                                             |
 
 **Rationale**:
 
