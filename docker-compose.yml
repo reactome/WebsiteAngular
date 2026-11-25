@@ -200,6 +200,12 @@ services:
       args:
         GRAPHDB_IMAGE: public.ecr.aws/reactome/graphdb:Release98
     image: reactome/graphdb_readonly:Release98
+    # Started only where COMPOSE_PROFILES names `graph` (beta's .env does). A
+    # host with its own graph database -- the release server, whose release
+    # pipelines use theirs (specs/032 D4) -- leaves it out; without the
+    # profile, a second database would take the same loopback port and fail,
+    # or worse, win it and serve the readers an older release.
+    profiles: ['graph']
     restart: unless-stopped
     # Bolt on loopback only, on the port the host database used, so everything
     # that reads it -- content-node, the Java ContentService, the analysis
