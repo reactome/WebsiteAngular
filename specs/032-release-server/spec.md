@@ -44,11 +44,10 @@ it should be checked in the site that production will run.
 
 **Independent Test**: with the stack running beside the old web server (nginx not yet
 started), the site and the content service answer on their loopback ports from that
-server's release; then, in a short swap that is undone in seconds if anything fails, the
-site, a pathway, a search, an analysis and a download link through the stack's web
-server, each answered from that server's release. (A spare-port trial was planned, but
-the release configuration's web server listens on the public ports and cannot start
-beside the old one; T014.)
+server's release; then, once the old web server is switched off and the stack's web
+server takes the public ports, the site, a pathway, a search, an analysis and a download
+link, each answered from that server's release. (A spare-port trial was planned, but the
+stack's web server needs the public ports; T014.)
 
 **Acceptance Scenarios**:
 
@@ -96,7 +95,7 @@ build service. Retiring the old web server must not break them.
 
 **Why this priority**: they are in daily use; the cutover cannot leave them dark.
 
-**Independent Test**: through the stack's web server, in the same short swap, the wiki's pages
+**Independent Test**: through the stack's web server, after the switch, the wiki's pages
 (including an upload up to its present limit), the redirect, and the build service's pages
 (including a long request) work as they do today.
 
@@ -200,8 +199,8 @@ stopped.
 
 ### Measurable Outcomes
 
-- **SC-001**: Before cutover is made permanent, through the stack's web server in a
-  reversible swap on the release server, the site, a pathway, a search, an analysis, a
+- **SC-001**: Once the old web server is switched off, through the stack's web server on
+  the release server, the site, a pathway, a search, an analysis, a
   download link, the build service's pages, the chat and the wiki all work.
 - **SC-002**: The server runs `main`'s images: every published image is pulled at the
   commit `main` names, and the Java library builds there with only the container runtime on

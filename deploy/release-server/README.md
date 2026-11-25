@@ -75,14 +75,11 @@ docker compose config --services     # no graphdb
 docker compose config | grep -E '^\s+(image|build):'   # every published service: image at IMAGE_TAG
 ```
 
-## 2. Beside the old web server, before cutover
+## 2. Before switching: everything behind nginx, with Apache still serving
 
-The image's nginx listens on 80 and 443, as the release configuration says, so it cannot
-start while the old web server holds them; a spare-port trial would need a second
-configuration that is not the one cut over to. Instead, two steps:
-
-**Everything behind nginx, with the old web server still serving.** Start the stack
-without nginx, and check each part on its loopback port:
+The plan is to turn Apache off for good and serve through this stack's nginx from then
+on. nginx takes ports 80 and 443, so it starts only once Apache stops (§8). Everything
+behind it can be checked first, with no downtime:
 
 ```sh
 docker compose pull
@@ -93,12 +90,7 @@ curl -s 127.0.0.1:4200/ | grep -c '__APP_ENV="release"'        # 1: the release 
 curl -s 127.0.0.1:4400/ContentService/data/database/version    # the staged release
 ```
 
-and the graph check (§3). Nothing here touches what the old web server serves.
-
-**Then nginx, in a short swap.** With the old web server stopped (`systemctl stop
-<it>`), `docker compose up -d nginx`, and run §3's checks on the public address. If any
-fails: `docker compose stop nginx` and start the old web server again, a matter of
-seconds. If all pass, that is the cutover (§8), done early.
+and the graph check (§3).
 
 ## 3. Checks
 
@@ -185,8 +177,14 @@ At a release: point `DIAGRAM_FILES_DIR` and `RELEASE_FILES_DIR` at the new relea
 folder, change `download-release.map`, and `docker compose up -d` (and `docker compose
 exec nginx nginx -s reload` for the map).
 
-## 8. Cutover (the user)
+## 8. Switching over (the user)
 
-§2's swap, kept: the old web server stopped and disabled (`systemctl disable --now
-<it>`), nginx serving, §3 passed on the public address, and §6's renewals moved and dry-run.
-Rolling back is the reverse, in seconds: stop nginx, start the old web server.
+1. Move each certificate's renewal off Apache (§6), so none fails once it stops.
+2. Stop and disable Apache: `systemctl disable --now apache2`.
+3. Start nginx: `docker compose up -d nginx`.
+4. Run §3's checks on the public address.
+
+From then on nginx serves. Apache stays installed but disabled; if something is badly
+wrong straight after the switch, `docker compose stop nginx` and
+`systemctl start apache2` put the old site back while it is fixed. Once the new setup
+has run through a release, Apache can be removed.
