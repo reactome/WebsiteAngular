@@ -90,6 +90,21 @@ describe('recorded answers against the API description', () => {
   }, 60_000);
 });
 
+describe('what the description requires, measured against live answers', () => {
+  it('lets a failed reaction leave out what one nested in another answer has none of', () => {
+    // A failed reaction in another's diseaseReactions or inputFor (beta,
+    // release 98, 25 Nov 2026: R-HSA-9007926, R-HSA-9007919) carries no
+    // catalystActivity, composedOf or eventOfPathways. The recordings never held
+    // such an answer, so the type required all three, as no other reaction type
+    // does, and every one of these answers failed it (specs/032 T013).
+    const failed = description.components.schemas['FailedReaction_JsogReference'] as {
+      required: string[];
+    };
+    for (const field of ['catalystActivity', 'composedOf', 'eventOfPathways'])
+      expect(failed.required, field).not.toContain(field);
+  });
+});
+
 describe('the schema check', () => {
   const tiny = (schemas: Record<string, Schema>, answer: Schema): Description => ({
     paths: {
