@@ -105,6 +105,11 @@ Spec 016; the rules in full are in [`projects/contract/README.md`](projects/cont
 
 - **Quote a location regex** that contains `;` or `{`: nginx otherwise reads the
   `;` as the end of the directive and refuses the whole configuration.
+- **A server's own nginx configuration** lives on that server, in the folder
+  `release.conf` includes from `/etc/nginx/site-local`, never in this repository;
+  examples go in `deploy/nginx/site-local-examples/`, and
+  `deploy/release-server/public.spec.ts` refuses a host, address or path that is
+  not public in what spec 032 added.
 - **`deploy/nginx/test-config.sh`** runs `nginx -t` on the image for every
   deployment. CI runs it; run it yourself after touching anything under
   `deploy/nginx`.
