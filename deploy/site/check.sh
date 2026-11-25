@@ -52,3 +52,9 @@ echo "ok   its script is served"
 type=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/embed/diagram/v1/reactome-diagram.js")
 [[ $type == "200 "*javascript* ]] || fail "the embeddable diagram answered $type"
 echo "ok   the embeddable diagram is served"
+
+# Pages written for the old diagram widget load it from its old address
+# (spec 009, T048): the loader, not the site's page.
+type=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/DiagramJs/diagram/diagram.nocache.js")
+[[ $type == "200 "*javascript* ]] || fail "the old widget's address answered $type"
+echo "ok   the old widget's address is served"

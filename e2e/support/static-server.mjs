@@ -31,7 +31,13 @@ createServer(async (req, res) => {
     /^(\.\.[/\\])+/,
     ''
   );
-  const file = join(dir, path.endsWith('/') ? path + 'index.html' : path);
+  // The embed at the addresses serve-prod gives it: its own, and the old
+  // widget's, which pages written for that widget still load.
+  const served =
+    path === '/DiagramJs/diagram/diagram.nocache.js'
+      ? '/reactome-diagram.js'
+      : path.replace(/^\/embed\/diagram\/v1\//, '/');
+  const file = join(dir, served.endsWith('/') ? served + 'index.html' : served);
   try {
     const read = await readFile(file);
     const body =
