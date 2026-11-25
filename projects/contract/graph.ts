@@ -141,14 +141,17 @@ export interface DatabaseIdentifier<R extends Ref> extends DatabaseObjectFields,
   referenceDatabase?: ReferenceDatabase<R> | R;
 }
 
-/** A database Reactome links to. Measured over 4, each with every field. */
+/**
+ * A database Reactome links to. Measured over 4, each with every field; 40 of
+ * 170 asked of /data/query/{id} have no identifiers.org prefix (T032).
+ */
 export interface ReferenceDatabase<R extends Ref> extends DatabaseObjectFields, Edited<R> {
   schemaClass: 'ReferenceDatabase';
   accessUrl: string;
   name: string[];
   url: string;
   resourceIdentifier?: string;
-  identifiersPrefix: string;
+  identifiersPrefix?: string;
 }
 
 // T025c: what the graph's events and entities are annotated with: species and
@@ -269,7 +272,10 @@ export interface EvidenceType<R extends Ref> extends ExternalOntologyFields<R> {
   name: string[];
 }
 
-/** A PSI-MOD term, as a modification names it. Recorded once, with every field. */
+/**
+ * A PSI-MOD term, as a modification names it. Recorded once, with every field;
+ * 20 of 67 asked of /data/query/{id} have no label (T032).
+ */
 export interface PsiMod<R extends Ref> extends ExternalOntologyFields<R> {
   schemaClass: 'PsiMod';
   databaseName: string;
@@ -277,7 +283,7 @@ export interface PsiMod<R extends Ref> extends ExternalOntologyFields<R> {
   identifier: string;
   name: string[];
   url: string;
-  label: string;
+  label?: string;
 }
 
 export interface SequenceOntology<R extends Ref> extends ExternalOntologyFields<R> {

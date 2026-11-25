@@ -3664,7 +3664,14 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GraphObject_number"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/GraphObject_number"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BareSpecies"
+                    }
+                  ]
                 }
               }
             }
@@ -10257,7 +10264,7 @@
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "A species written as its dbId, display name and class alone: three of release 98's 97 in /data/species/all (Arabidopsis thaliana, Dengue virus, Oryza sativa) have no names, taxon id or abbreviation in the graph. None is in any recorded answer or among the main species, so Species keeps those fields required and this route alone admits these (the release check, T032)."
+        "description": "A species written as its dbId, display name and class alone: three of release 98's 97 in /data/species/all (Arabidopsis thaliana, Dengue virus, Oryza sativa) have no names, taxon id or abbreviation in the graph. None is in any recorded answer or among the main species, so Species keeps those fields required, and the routes that can answer one admit it beside Species: /data/species/all, and /data/query/{id} asked for one (the release check, T032)."
       },
       "BlackBoxEvent_JsogReference": {
         "type": "object",
@@ -21386,13 +21393,12 @@
         "required": [
           "dbId",
           "displayName",
-          "replacementInstances",
           "deletedInstanceDbId",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded 71 times."
+        "description": "Recorded 71 times. 5 of 8 asked of /data/query/{id} (the release check, T032) have no replacement."
       },
       "Deleted_number": {
         "type": "object",
@@ -21488,13 +21494,12 @@
         "required": [
           "dbId",
           "displayName",
-          "replacementInstances",
           "deletedInstanceDbId",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded 71 times."
+        "description": "Recorded 71 times. 5 of 8 asked of /data/query/{id} (the release check, T032) have no replacement."
       },
       "Depolymerisation_JsogReference": {
         "type": "object",
@@ -23029,7 +23034,47 @@
           "creator": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DiscoverPerson"
+              "type": "object",
+              "properties": {
+                "givenName": {
+                  "type": "string"
+                },
+                "familyName": {
+                  "type": "string"
+                },
+                "affiliation": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "@type": {
+                        "type": "string",
+                        "const": "Organization"
+                      }
+                    },
+                    "required": [
+                      "@type"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "url": {
+                  "type": "string"
+                },
+                "@type": {
+                  "type": "string",
+                  "const": "Person"
+                }
+              },
+              "required": [
+                "url",
+                "@type"
+              ],
+              "additionalProperties": false,
+              "description": "An author of the event, as schema.org names a person."
             }
           },
           "includedInDataCatalog": {
@@ -23110,49 +23155,6 @@
         ],
         "additionalProperties": false,
         "description": "An event as a schema.org data set, for search engines: /data/discover/{id} (graph-core's SchemaDataSet). Empty values are left out."
-      },
-      "DiscoverPerson": {
-        "type": "object",
-        "properties": {
-          "givenName": {
-            "type": "string"
-          },
-          "familyName": {
-            "type": "string"
-          },
-          "affiliation": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "@type": {
-                  "type": "string",
-                  "const": "Organization"
-                }
-              },
-              "required": [
-                "@type"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "url": {
-            "type": "string"
-          },
-          "@type": {
-            "type": "string",
-            "const": "Person"
-          }
-        },
-        "required": [
-          "url",
-          "@type"
-        ],
-        "additionalProperties": false,
-        "description": "An author of the event, as schema.org names a person."
       },
       "DiseaseReaction_JsogReference": {
         "type": "object",
@@ -30400,14 +30402,11 @@
         "required": [
           "dbId",
           "displayName",
-          "referenceSequence",
-          "psiMod",
-          "modification",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded once."
+        "description": "Recorded once. 2 of 12 asked of /data/query/{id} (the release check, T032) have no modification, PSI-MOD term or reference sequence."
       },
       "GroupModifiedResidue_number": {
         "type": "object",
@@ -30491,14 +30490,11 @@
         "required": [
           "dbId",
           "displayName",
-          "referenceSequence",
-          "psiMod",
-          "modification",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded once."
+        "description": "Recorded once. 2 of 12 asked of /data/query/{id} (the release check, T032) have no modification, PSI-MOD term or reference sequence."
       },
       "GroupedResult_SearchEntry": {
         "type": "object",
@@ -34458,12 +34454,11 @@
         "required": [
           "dbId",
           "displayName",
-          "regulatedEntity",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 211 times."
+        "description": "Recorded 211 times. Outside the enhanced query its regulated entity is left out (all 11 asked of /data/query/{id} (the release check, T032))."
       },
       "NegativeGeneExpressionRegulation_number": {
         "type": "object",
@@ -34687,12 +34682,11 @@
         "required": [
           "dbId",
           "displayName",
-          "regulatedEntity",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 211 times."
+        "description": "Recorded 211 times. Outside the enhanced query its regulated entity is left out (all 11 asked of /data/query/{id} (the release check, T032))."
       },
       "NegativePrecedingEventReason_JsogReference": {
         "type": "object",
@@ -38691,15 +38685,12 @@
           "stIdVersion",
           "maxDepth",
           "name",
-          "speciesName",
-          "minUnitCount",
-          "species",
           "inDisease",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded once."
+        "description": "Recorded once. Outside the enhanced query its species and minimum unit count are left out, and one of no one species has no species name: 20 of 27 asked of /data/query/{id} (the release check, T032)."
       },
       "Polymer_number": {
         "type": "object",
@@ -39206,15 +39197,12 @@
           "stIdVersion",
           "maxDepth",
           "name",
-          "speciesName",
-          "minUnitCount",
-          "species",
           "inDisease",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded once."
+        "description": "Recorded once. Outside the enhanced query its species and minimum unit count are left out, and one of no one species has no species name: 20 of 27 asked of /data/query/{id} (the release check, T032)."
       },
       "Polymerisation_JsogReference": {
         "type": "object",
@@ -39834,13 +39822,12 @@
           "name",
           "releaseDate",
           "speciesName",
-          "isChimeric",
           "category",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded once. Its references, cross-references, compartments, species and chimeric flag are left out where an answer other than the enhanced query writes it (/data/pathway/{id}/containedEvents, /data/mapping/.../reactions: the release check, T032)."
+        "description": "Recorded once. Its references, cross-references, compartments, species and chimeric flag are left out where an answer other than the enhanced query writes it (/data/pathway/{id}/containedEvents, /data/mapping/.../reactions: the release check, T032); an inferred one has no chimeric flag (15 of 20 asked of /data/query/{id})."
       },
       "Polymerisation_number": {
         "type": "object",
@@ -40460,13 +40447,12 @@
           "name",
           "releaseDate",
           "speciesName",
-          "isChimeric",
           "category",
           "className",
           "schemaClass"
         ],
         "additionalProperties": false,
-        "description": "Recorded once. Its references, cross-references, compartments, species and chimeric flag are left out where an answer other than the enhanced query writes it (/data/pathway/{id}/containedEvents, /data/mapping/.../reactions: the release check, T032)."
+        "description": "Recorded once. Its references, cross-references, compartments, species and chimeric flag are left out where an answer other than the enhanced query writes it (/data/pathway/{id}/containedEvents, /data/mapping/.../reactions: the release check, T032); an inferred one has no chimeric flag (15 of 20 asked of /data/query/{id})."
       },
       "PositiveGeneExpressionRegulation_JsogReference": {
         "type": "object",
@@ -40690,12 +40676,11 @@
         "required": [
           "dbId",
           "displayName",
-          "regulatedEntity",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 919 times."
+        "description": "Recorded 919 times. Outside the enhanced query its regulated entity is left out (15 of 16 asked of /data/query/{id} (the release check, T032))."
       },
       "PositiveGeneExpressionRegulation_number": {
         "type": "object",
@@ -40919,12 +40904,11 @@
         "required": [
           "dbId",
           "displayName",
-          "regulatedEntity",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 919 times."
+        "description": "Recorded 919 times. Outside the enhanced query its regulated entity is left out (15 of 16 asked of /data/query/{id} (the release check, T032))."
       },
       "PositiveRegulation_JsogReference": {
         "type": "object",
@@ -42467,13 +42451,12 @@
           "definition",
           "displayName",
           "identifier",
-          "label",
           "name",
           "schemaClass",
           "url"
         ],
         "additionalProperties": false,
-        "description": "A PSI-MOD term, as a modification names it. Recorded once, with every field."
+        "description": "A PSI-MOD term, as a modification names it. Recorded once, with every field; 20 of 67 asked of /data/query/{id} have no label (T032)."
       },
       "PsiMod_number": {
         "type": "object",
@@ -42612,13 +42595,12 @@
           "definition",
           "displayName",
           "identifier",
-          "label",
           "name",
           "schemaClass",
           "url"
         ],
         "additionalProperties": false,
-        "description": "A PSI-MOD term, as a modification names it. Recorded once, with every field."
+        "description": "A PSI-MOD term, as a modification names it. Recorded once, with every field; 20 of 67 asked of /data/query/{id} have no label (T032)."
       },
       "PsicquicResource": {
         "type": "object",
@@ -45495,13 +45477,12 @@
           "className",
           "dbId",
           "displayName",
-          "identifiersPrefix",
           "name",
           "schemaClass",
           "url"
         ],
         "additionalProperties": false,
-        "description": "A database Reactome links to. Measured over 4, each with every field."
+        "description": "A database Reactome links to. Measured over 4, each with every field; 40 of 170 asked of /data/query/{id} have no identifiers.org prefix (T032)."
       },
       "ReferenceDatabase_number": {
         "type": "object",
@@ -45573,13 +45554,12 @@
           "className",
           "dbId",
           "displayName",
-          "identifiersPrefix",
           "name",
           "schemaClass",
           "url"
         ],
         "additionalProperties": false,
-        "description": "A database Reactome links to. Measured over 4, each with every field."
+        "description": "A database Reactome links to. Measured over 4, each with every field; 40 of 170 asked of /data/query/{id} have no identifiers.org prefix (T032)."
       },
       "ReferenceEntity_JsogReference": {
         "type": "object",
@@ -48621,13 +48601,11 @@
         "required": [
           "dbId",
           "displayName",
-          "stId",
-          "stIdVersion",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 21 times."
+        "description": "Recorded 21 times. 8 of 9 asked of /data/query/{id} (the release check, T032) have no stable id."
       },
       "Requirement_number": {
         "type": "object",
@@ -48851,13 +48829,11 @@
         "required": [
           "dbId",
           "displayName",
-          "stId",
-          "stIdVersion",
           "schemaClass",
           "className"
         ],
         "additionalProperties": false,
-        "description": "Recorded 21 times."
+        "description": "Recorded 21 times. 8 of 9 asked of /data/query/{id} (the release check, T032) have no stable id."
       },
       "ResultGroup_IconEntry": {
         "type": "object",

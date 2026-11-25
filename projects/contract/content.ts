@@ -209,7 +209,7 @@ export interface DiscoverDataset {
 }
 
 /** An author of the event, as schema.org names a person. */
-export interface DiscoverPerson {
+interface DiscoverPerson {
   givenName?: string;
   familyName?: string;
   affiliation?: { name?: string; '@type': 'Organization' }[];
@@ -222,7 +222,8 @@ export interface DiscoverPerson {
  * 98's 97 in /data/species/all (Arabidopsis thaliana, Dengue virus, Oryza
  * sativa) have no names, taxon id or abbreviation in the graph. None is in any
  * recorded answer or among the main species, so Species keeps those fields
- * required and this route alone admits these (the release check, T032).
+ * required, and the routes that can answer one admit it beside Species:
+ * /data/species/all, and /data/query/{id} asked for one (the release check, T032).
  */
 export interface BareSpecies {
   dbId: number;

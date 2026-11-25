@@ -835,7 +835,9 @@ export interface DefinedSet<R extends Ref> extends JsogFields {
   schemaClass: 'DefinedSet';
 }
 
-/** Recorded 71 times. */
+/**
+ * Recorded 71 times. 5 of 8 asked of /data/query/{id} (the release check, T032) have no replacement.
+ */
 export interface Deleted<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -846,7 +848,7 @@ export interface Deleted<R extends Ref> extends JsogFields {
   curatorComment?: string;
   deletedInstance?: (DeletedInstance<R> | R)[];
   reason?: DeletedControlledVocabulary<R> | R;
-  replacementInstances: (Deletable<R> | R)[];
+  replacementInstances?: (Deletable<R> | R)[];
   deletedInstanceDbId: number[];
   className: string;
   schemaClass: 'Deleted';
@@ -1281,7 +1283,10 @@ export interface GenomeEncodedEntity<R extends Ref> extends JsogFields {
   schemaClass: 'GenomeEncodedEntity';
 }
 
-/** Recorded once. */
+/**
+ * Recorded once. 2 of 12 asked of /data/query/{id} (the release check, T032) have no modification, PSI-MOD term or
+ * reference sequence.
+ */
 export interface GroupModifiedResidue<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1289,10 +1294,10 @@ export interface GroupModifiedResidue<R extends Ref> extends JsogFields {
   stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
-  referenceSequence: ReferenceSequence<R> | R;
+  referenceSequence?: ReferenceSequence<R> | R;
   coordinate?: number;
-  psiMod: PsiMod<R> | R;
-  modification: GraphObject<R> | R;
+  psiMod?: PsiMod<R> | R;
+  modification?: GraphObject<R> | R;
   className: string;
   schemaClass: 'GroupModifiedResidue';
 }
@@ -1427,7 +1432,10 @@ export interface ModifiedResidue<R extends Ref> extends JsogFields {
   schemaClass: 'ModifiedResidue';
 }
 
-/** Recorded 211 times. */
+/**
+ * Recorded 211 times. Outside the enhanced query its regulated entity is left
+ * out (all 11 asked of /data/query/{id} (the release check, T032)).
+ */
 export interface NegativeGeneExpressionRegulation<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1444,7 +1452,7 @@ export interface NegativeGeneExpressionRegulation<R extends Ref> extends JsogFie
   inferredTo?: (Regulation<R> | R)[];
   inferredFrom?: (Regulation<R> | R)[];
   literatureReference?: (Publication<R> | R)[];
-  regulatedEntity: (ReactionLikeEvent<R> | R)[];
+  regulatedEntity?: (ReactionLikeEvent<R> | R)[];
   regulator?: PhysicalEntity<R> | R;
   reviewed?: (InstanceEdit<R> | R)[];
   revised?: (InstanceEdit<R> | R)[];
@@ -1648,7 +1656,10 @@ export interface Pathway<R extends Ref> extends JsogFields {
   className?: string;
 }
 
-/** Recorded once. */
+/**
+ * Recorded once. Outside the enhanced query its species and minimum unit count
+ * are left out, and one of no one species has no species name: 20 of 27 asked of /data/query/{id} (the release check, T032).
+ */
 export interface Polymer<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1659,7 +1670,7 @@ export interface Polymer<R extends Ref> extends JsogFields {
   definition?: string;
   maxDepth: number;
   name: string[];
-  speciesName: string;
+  speciesName?: string;
   systematicName?: string;
   authored?: InstanceEdit<R> | R;
   catalystActivities?: (CatalystActivity<R> | R)[];
@@ -1689,9 +1700,9 @@ export interface Polymer<R extends Ref> extends JsogFields {
   deleted?: (Deleted<R> | R)[];
   updateTrackers?: (UpdateTracker<R> | R)[];
   maxUnitCount?: number;
-  minUnitCount: number;
+  minUnitCount?: number;
   repeatedUnit?: (PhysicalEntity<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   repeatedUnits?: RepeatedUnit<R>[];
   composedOf?: Default<R>[];
   hasCompartment?: HasCompartment<R>[];
@@ -1710,7 +1721,8 @@ export interface Polymer<R extends Ref> extends JsogFields {
  * Recorded once. Its references, cross-references, compartments, species and
  * chimeric flag are left out where an answer other than the enhanced query
  * writes it (/data/pathway/{id}/containedEvents,
- * /data/mapping/.../reactions: the release check, T032).
+ * /data/mapping/.../reactions: the release check, T032); an inferred one has no
+ * chimeric flag (15 of 20 asked of /data/query/{id}).
  */
 export interface Polymerisation<R extends Ref> extends JsogFields {
   dbId: number;
@@ -1753,7 +1765,7 @@ export interface Polymerisation<R extends Ref> extends JsogFields {
   structureModified?: (InstanceEdit<R> | R)[];
   deleted?: (Deleted<R> | R)[];
   updateTrackers?: (UpdateTracker<R> | R)[];
-  isChimeric: boolean;
+  isChimeric?: boolean;
   systematicName?: string;
   category: string;
   catalystActivity?: (CatalystActivity<R> | R)[];
@@ -1779,7 +1791,10 @@ export interface Polymerisation<R extends Ref> extends JsogFields {
   schemaClass: 'Polymerisation';
 }
 
-/** Recorded 919 times. */
+/**
+ * Recorded 919 times. Outside the enhanced query its regulated entity is left
+ * out (15 of 16 asked of /data/query/{id} (the release check, T032)).
+ */
 export interface PositiveGeneExpressionRegulation<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1796,7 +1811,7 @@ export interface PositiveGeneExpressionRegulation<R extends Ref> extends JsogFie
   inferredTo?: (Regulation<R> | R)[];
   inferredFrom?: (Regulation<R> | R)[];
   literatureReference?: (Publication<R> | R)[];
-  regulatedEntity: (ReactionLikeEvent<R> | R)[];
+  regulatedEntity?: (ReactionLikeEvent<R> | R)[];
   regulator?: PhysicalEntity<R> | R;
   reviewed?: (InstanceEdit<R> | R)[];
   revised?: (InstanceEdit<R> | R)[];
@@ -2263,12 +2278,14 @@ export interface ReplacedResidue<R extends Ref> extends JsogFields {
   schemaClass: 'ReplacedResidue';
 }
 
-/** Recorded 21 times. */
+/**
+ * Recorded 21 times. 8 of 9 asked of /data/query/{id} (the release check, T032) have no stable id.
+ */
 export interface Requirement<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
-  stId: string;
-  stIdVersion: string;
+  stId?: string;
+  stIdVersion?: string;
   created?: InstanceEdit<R> | R;
   modified?: InstanceEdit<R> | R;
   releaseDate?: string;

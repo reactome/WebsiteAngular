@@ -98,7 +98,7 @@ export interface Routes {
   'GET /ContentService/data/species/main': Species<number>[];
   'GET /ContentService/data/species/all': (Species<number> | BareSpecies)[];
   'GET /ContentService/data/pathways/top/{id}': TopLevelPathway<number>[];
-  'GET /ContentService/data/query/{id}': GraphObject<number>;
+  'GET /ContentService/data/query/{id}': GraphObject<number> | BareSpecies;
   'GET /ContentService/data/discover/{id}': DiscoverDataset;
   'GET /ContentService/data/event/{id}/ancestors': EventProjection[][];
   // An event already written in the list appears again as its dbId.
