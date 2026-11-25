@@ -200,6 +200,12 @@ services:
       args:
         GRAPHDB_IMAGE: public.ecr.aws/reactome/graphdb:Release98
     image: reactome/graphdb_readonly:Release98
+    # Started only where COMPOSE_PROFILES names `graph` (beta's .env does). A
+    # host with its own graph database -- the release server, whose release
+    # pipelines use theirs (specs/032 D4) -- leaves it out; without the
+    # profile, a second database would take the same loopback port and fail,
+    # or worse, win it and serve the readers an older release.
+    profiles: ['graph']
     restart: unless-stopped
     # Bolt on loopback only, on the port the host database used, so everything
     # that reads it -- content-node, the Java ContentService, the analysis
@@ -499,6 +505,16 @@ services:
       # serving plain HTTP and has no certificates at all.
       - ${LETSENCRYPT_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
       - ${CLOUDFLARE_CERT_DIR:-/etc/ssl/cloudflare}:/etc/ssl/cloudflare:ro
+      # Where certbot writes a renewal's challenge. Every configuration routes
+      # /.well-known/acme-challenge/ to /var/www/certbot, but nothing used to
+      # mount it, so the folder in the container was empty and a webroot
+      # renewal through this nginx would have answered 404 -- unnoticed on beta,
+      # which renews by DNS, and fatal on a host whose old web server is
+      # retired (specs/032 R5). Unset, an empty folder.
+      - ${CERTBOT_WEBROOT:-./deploy/nginx/no-webroot}:/var/www/certbot:ro
+      # The server's own nginx configuration (release.conf includes it). Unset,
+      # an empty folder, and the configuration is what the repository says.
+      - ${NGINX_SITE_LOCAL:-./deploy/nginx/site-local-empty}:/etc/nginx/site-local:ro
 
 networks:
   # Created by the chatbot's own stack, not by this one -- declared external so
