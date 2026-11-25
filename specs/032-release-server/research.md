@@ -126,9 +126,13 @@ version is the one in daily use.
 - **`/download/`** (D5): a `location ^~ /download/` in `release.conf` answers a 302 to the
   download site, `current` replaced by the release the server stages
   (`/download/current/x` → `<download site>/<release>/x`; any other path kept). The release
-  number comes from the server's settings (`DOWNLOAD_RELEASE`) through the nginx image's
-  own template step (`/etc/nginx/templates/*.template`, `envsubst` of defined variables
-  only); unset, `current` is kept, so the link still works, to the released files.
+  number comes from a one-line file in the server's own folder,
+  `site-local/download-release.map` (`release.reactome.org 99;`), read by a `map` on the
+  host name in `release.conf`; without the file, `current` is kept, so the link still
+  works, to the released files. (First planned as an environment variable through the
+  nginx image's template step; changed in T012: an unset variable there reaches nginx
+  literally and refuses the whole configuration, and `test-config.sh`, which runs `nginx
+-t` without the image's entry point, would never have seen the template.)
   The site's own page is `/download-data`, which this does not touch.
 - **The wiki's scripting runtime**: the server has the old web server's in-process PHP and
   no FastCGI process manager. The example for the wiki uses `fastcgi_pass` to a PHP-FPM
