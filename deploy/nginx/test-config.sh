@@ -88,6 +88,22 @@ for env in dev release production; do
     status=1
     continue
   fi
+  # The release server's own configuration is mounted at run time, never
+  # baked (specs/032 FR-004); the run above is the image with nothing mounted.
+  # Again with every documented example in place, so an example that stops
+  # loading -- or a change here that breaks one -- fails before a server
+  # copies it.
+  if [ "$env" = release ]; then
+    if docker run --rm --network host "${mounts[@]}" \
+      -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" \
+      --entrypoint nginx "$image" -t 2>"$work/out"; then
+      echo "ok   $env with the site-local examples"
+    else
+      echo "FAIL $env with the site-local examples"
+      sed 's/^/     /' "$work/out"
+      status=1
+    fi
+  fi
   if client_named "$env" "$image" "${mounts[@]}" >"$work/out" 2>&1; then
     echo "ok   $env: the analysis service is told the client's own address"
   else

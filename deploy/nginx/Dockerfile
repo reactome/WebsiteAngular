@@ -26,6 +26,14 @@ ARG NGINX_ENV=dev
 COPY deploy/nginx/common /etc/nginx/common
 COPY deploy/nginx/${NGINX_ENV}.conf /etc/nginx/conf.d/default.conf
 
+# The server's own configuration, which is never in this public repository
+# (release.conf includes it; specs/032 FR-004): other host names, and paths on
+# the release host such as the build service's. Created empty here so that a
+# host with nothing mounted loads the configuration unchanged -- an include
+# glob that matches nothing is valid; a missing directory is too, but an empty
+# one makes the contract visible in the image.
+RUN mkdir -p /etc/nginx/site-local/release
+
 # Not `RUN nginx -t`: the configuration references certificates that are mounted
 # at run time, so a build-time test would fail on every host for the wrong
 # reason. Validate the built image before deploying it, which reads the same
