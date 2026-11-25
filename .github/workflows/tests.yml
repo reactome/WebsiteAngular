@@ -154,6 +154,21 @@ jobs:
       - name: Its answers over the fixture graph
         run: deploy/java-library/check.sh java-library
 
+  site-image:
+    # The site's own image (spec 032 T007, T008): the build beta serves and
+    # serve-prod.js to serve it, for a host with no Node of its own. Built and
+    # run here as such a host would run it; the image publish (T009) pushes
+    # what this built. CI's alone: preflight builds no images.
+    name: Site image
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the image
+        run: docker build -f deploy/site/Dockerfile -t site .
+      - name: It serves the site, as the deployment it is told it is
+        run: deploy/site/check.sh site
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news
