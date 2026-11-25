@@ -62,10 +62,19 @@ services:
       # host when it is not -- which is the case on the dev box.
       - RENDER_BASE=${RENDER_BASE:-http://host.docker.internal:4200}
       - RENDER_CACHE=/cache
-      - RENDER_CONCURRENCY=2
+      - RENDER_CONCURRENCY=${RENDER_CONCURRENCY:-2}
       - RENDER_QUEUE=8
+      # The release's files from a local folder instead of the download site
+      # (local-files.ts), laid out as that site is: RENDER_FILES_DIR (in .env)
+      # names the folder that holds the release folders (`<it>/99/diagram/...`),
+      # not one release's own. A host staging a release needs it -- the staged
+      # release is not on the download site until it is published (specs/032
+      # T016). Unset, an empty folder is mounted and RENDER_FILES left empty,
+      # so the page fetches from the download site as before.
+      - RENDER_FILES=${RENDER_FILES_DIR:+/files}
     volumes:
       - render-cache:/cache
+      - ${RENDER_FILES_DIR:-./deploy/render-service/no-files}:/files:ro
     # No depends_on: the site it renders may be the app service or may be on the
     # host, and starting a second app container would fight the first for :4200.
     extra_hosts:

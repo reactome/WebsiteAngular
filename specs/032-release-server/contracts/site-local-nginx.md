@@ -12,6 +12,10 @@
 An empty folder, or none mounted, is valid: the image creates both folders, and a glob
 that matches nothing loads nothing.
 
+One file there is not configuration but a value: `download-release.map`, one line,
+`release.reactome.org <release>;`, the release `/download/current/` redirects to on this
+host. Moved with each release; without it, `current`.
+
 ## What a file there may rely on
 
 - The certificates under `/etc/letsencrypt` (mounted) and `/etc/nginx/common/tls.conf`.

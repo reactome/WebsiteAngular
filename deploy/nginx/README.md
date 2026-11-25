@@ -190,6 +190,17 @@ certbot renew --cert-name beta.reactome.org --dry-run    # must pass first
 Then: ports 80 and 443 handed over atomically, with a one-command rollback, and
 **not during a curator review cycle** — beta is the QA gate.
 
+## A server's own configuration
+
+`release.conf` includes a folder each server mounts at `/etc/nginx/site-local`
+(`NGINX_SITE_LOCAL`): its other host names, its build service's path, and the
+release `/download/current/` means there. Empty in this repository and by default;
+examples in [`site-local-examples/`](site-local-examples), loaded and run by
+`test-config.sh`; the contract in `specs/032-release-server/contracts/site-local-nginx.md`,
+and how a server uses it in [`deploy/release-server`](../release-server/README.md).
+The certbot webroot (`CERTBOT_WEBROOT`) is mounted at `/var/www/certbot`, where every
+configuration serves the challenge path.
+
 ## What is deliberately absent
 
 Nothing now. This section used to say there was no `docker-compose` service,

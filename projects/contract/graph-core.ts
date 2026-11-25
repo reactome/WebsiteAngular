@@ -1114,7 +1114,7 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   isChimeric: boolean;
   systematicName?: string;
   category: string;
-  catalystActivity: (CatalystActivity<R> | R)[];
+  catalystActivity?: (CatalystActivity<R> | R)[];
   catalystActivityReference?: CatalystActivityReference<R> | R;
   entityFunctionalStatus?: (EntityFunctionalStatus<R> | R)[];
   entityOnOtherCell?: (PhysicalEntity<R> | R)[];
@@ -1131,9 +1131,9 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   inputs?: Input<R>[];
   outputs?: Output<R>[];
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
-  composedOf: Default<R>[];
+  composedOf?: Default<R>[];
   hasCompartment: HasCompartment<R>[];
-  eventOfPathways: EventOf<R>[];
+  eventOfPathways?: EventOf<R>[];
   schemaClass: 'FailedReaction';
 }
 
