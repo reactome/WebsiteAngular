@@ -3,6 +3,7 @@ import { MatIcon } from '@angular/material/icon';
 import { StatsService } from '../../../services/stats.service';
 import { IS_CURATOR } from 'projects/pathway-browser/src/environments/environment';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
+import { EXTERNAL_LINKS } from '../../../config/external-links';
 
 interface Stats {
   human_pathways: number;
@@ -34,6 +35,10 @@ export class HomeStatsComponent implements OnInit {
    * fallback, is nothing at all.
    */
   readonly versionLabel = this.statsService.versionLabel;
+  /** The release's number alone ("98"): the heading says "Release 98", not "Version V98". */
+  readonly release = this.statsService.versionNow;
+  /** What changed in the release: the release notes the help section links to as well. */
+  readonly releaseNotes = EXTERNAL_LINKS.releaseNotes.link;
   /** The release's date, from the database; undefined until it says (and on the curator site). */
   readonly releaseDate = this.statsService.releaseDate;
   /**

@@ -2,14 +2,18 @@
   @if (isCurator) {
     Version {{ versionLabel() }}
   } @else {
-    <!-- Nothing claimed until the database says: the version and its date both
+    <!-- Nothing claimed until the database says: the release and its date both
          come from it, so neither is stated alone from a guess. -->
-    @if (versionLabel()) {
-      Version {{ versionLabel() }}
+    @if (release()) {
+      Release {{ release() }}
     }
     @if (releaseDate(); as date) {
-      Released on
-      {{ date.toLocaleDateString('en-us', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+      <span class="stat-header-date">
+        · {{ date.toLocaleDateString('en-us', { year: 'numeric', month: 'long', day: 'numeric' }) }}
+      </span>
+    }
+    @if (release() && releaseNotes) {
+      <a class="stat-header-link" [href]="releaseNotes">What's new <span aria-hidden="true">→</span></a>
     }
   }
 </h2>
@@ -20,33 +24,33 @@
   <div class="stats-container stats-grid">
     <div class="stat-item">
       <mat-icon class="stat-item-icon">accessibility</mat-icon>
-      <span>{{ formatNumber(stats()?.human_pathways) }}</span>
-      <span>Human Pathways</span>
+      <span class="stat-count">{{ formatNumber(stats()?.human_pathways) }}</span>
+      <span class="stat-label">Human Pathways</span>
     </div>
     <div class="stat-item">
       <mat-icon class="stat-item-icon">science</mat-icon>
-      <span>{{ formatNumber(stats()?.reactions) }}</span>
-      <span>Reactions</span>
+      <span class="stat-count">{{ formatNumber(stats()?.reactions) }}</span>
+      <span class="stat-label">Reactions</span>
     </div>
     <div class="stat-item">
       <mat-icon class="stat-item-icon">share</mat-icon>
-      <span>{{ formatNumber(stats()?.proteins) }}</span>
-      <span>Proteins</span>
+      <span class="stat-count">{{ formatNumber(stats()?.proteins) }}</span>
+      <span class="stat-label">Proteins</span>
     </div>
     <div class="stat-item">
       <mat-icon class="stat-item-icon">snowing</mat-icon>
-      <span>{{ formatNumber(stats()?.small_molecules) }}</span>
-      <span>Small Molecules</span>
+      <span class="stat-count">{{ formatNumber(stats()?.small_molecules) }}</span>
+      <span class="stat-label">Small Molecules</span>
     </div>
     <div class="stat-item">
       <mat-icon class="stat-item-icon">local_hospital</mat-icon>
-      <span>{{ formatNumber(stats()?.drugs) }}</span>
-      <span>Drugs</span>
+      <span class="stat-count">{{ formatNumber(stats()?.drugs) }}</span>
+      <span class="stat-label">Drugs</span>
     </div>
     <div class="stat-item">
       <mat-icon class="stat-item-icon">book</mat-icon>
-      <span>{{ formatNumber(stats()?.references) }}</span>
-      <span>Literature References</span>
+      <span class="stat-count">{{ formatNumber(stats()?.references) }}</span>
+      <span class="stat-label">Literature References</span>
     </div>
   </div>
 }
