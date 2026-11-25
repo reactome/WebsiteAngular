@@ -19,6 +19,11 @@ const SCANNED = [
   'deploy/nginx/site-local-examples',
   'deploy/nginx/release.conf',
   'deploy/site',
+  // Not spec 032's own, but changed by it.
+  'docker-compose.yml',
+  '.env.example',
+  'deploy/nginx/README.md',
+  'deploy/render-service',
 ];
 
 const HOSTS = [
@@ -26,7 +31,11 @@ const HOSTS = [
   'download.reactome.org',
   'beta.reactome.org',
   'reactome.org',
+  'www.reactome.org',
+  'dev.reactome.org',
+  '-challenge.dev.reactome.org', // _acme-challenge.dev.reactome.org, as the regex reads it
   'host.docker.internal',
+  'public.ecr.aws',
 ];
 const ADDRESSES = [/^127\.0\.0\.1$/, /^0\.0\.0\.0$/, /^203\.0\.113\.\d+$/];
 const PATHS = [
@@ -37,6 +46,20 @@ const PATHS = [
   '/run/php',
   '/run/secrets/',
   '/srv/wiki',
+  // Inside the containers.
+  '/srv/REVISION',
+  '/var/lib/neo4j/',
+  '/data/diagram',
+  '/data/expression',
+  '/etc/nginx-reactome',
+  '/etc/cron.d/certbot',
+  '/root/.cache/ms-playwright',
+  '/home/node/.cache/ms-playwright',
+  // Beta's defaults in docker-compose.yml, a user's own files, named by any checkout.
+  '~/.content-node.env',
+  '~/.reactome/',
+  '~/render-cache',
+  '~/render-service.log',
 ];
 
 function files(path: string): string[] {
@@ -50,17 +73,17 @@ function files(path: string): string[] {
 function unlisted(text: string): string[] {
   const hosts = [
     ...text.matchAll(
-      /\b(?:[a-z0-9-]+\.)+(?:org|com|net|io|ca|uk|edu|aws|internal|local|lan|example)\b/g
+      /\b(?:[a-z0-9-]+\.)+(?:org|com|net|io|ca|uk|edu|aws|internal|local|lan|example)\b/gi
     ),
   ]
-    .map(([host]) => host)
+    .map(([host]) => host.toLowerCase())
     .filter((host) => !HOSTS.includes(host) && !/(^|\.)example$/.test(host));
   const addresses = [...text.matchAll(/\b\d{1,3}(?:\.\d{1,3}){3}\b/g)]
     .map(([address]) => address)
     .filter((address) => !ADDRESSES.some((allowed) => allowed.test(address)));
   const paths = [
     ...text.matchAll(
-      /(?:^|[^\w.~-])(\/(?:usr|opt|home|srv|var|etc|run|mnt|data|tmp|root)\/[\w./-]*)/g
+      /(?:^|[^\w.~-])(\/(?:usr|opt|home|srv|var|etc|run|mnt|data|tmp|root|nfs|net|scratch|media)\/[\w./-]*|~\/[\w./-]+)/g
     ),
   ]
     .map(([, path = '']) => path)
@@ -87,13 +110,16 @@ describe('what spec 032 adds is public', () => {
     expect(
       unlisted(
         'proxy to build.internal at 10.1.2.3, files in /usr/local/somewhere/download/99, ' +
-          'logs in /home/someone/x, and wiki.example at 127.0.0.1 under /etc/nginx/site-local'
+          'logs in /home/someone/x, and wiki.example at 127.0.0.1 under /etc/nginx/site-local, ' +
+          'or Build.Internal, ~/next-step.sh and /nfs/somewhere/x'
       )
     ).toEqual([
       'build.internal',
       '10.1.2.3',
       '/usr/local/somewhere/download/99',
       '/home/someone/x',
+      '~/next-step.sh',
+      '/nfs/somewhere/x',
     ]);
   });
 });

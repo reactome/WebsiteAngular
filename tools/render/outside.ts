@@ -17,7 +17,8 @@
  *   a console error, and a page that logs one is replaced (pages.ts).
  * - **Anything else** is fetched once by the service and answered from memory
  *   after: the font, the viewer's files. One request a service, not one a page.
- *   A fetch that fails is not kept, and the request goes on to its host.
+ *   A fetch that fails is not kept, and the request goes on to its host; an
+ *   error answer (400 and up) is passed on, and not kept either.
  */
 import { isDownload } from './local-files.ts';
 
@@ -109,6 +110,9 @@ export class Outside {
         await route.continue();
         return;
       }
+      // An error answer is passed on but not kept: one busy moment at the
+      // font's host would otherwise draw every later figure without it.
+      if (answer.status >= 400 && this.kept.get(address) === kept) this.kept.delete(address);
       await route.fulfill(answer);
       if (!first) this.answered++;
     } catch {

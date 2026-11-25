@@ -37,4 +37,10 @@ describe('the render service in compose', () => {
   it('draws as many at once as a host chooses, two by default', () => {
     expect(render).toMatch(/^ {6}- RENDER_CONCURRENCY=\$\{RENDER_CONCURRENCY:-2\}$/m);
   });
+
+  it('is held to the memory a host gives it, 3 GB by default', () => {
+    // Fixed while the concurrency is not, a host drawing more at once would
+    // see the container killed instead of its pages closed (spec 018).
+    expect(render).toMatch(/^ {4}mem_limit: \$\{RENDER_MEM_LIMIT:-3g\}$/m);
+  });
 });
