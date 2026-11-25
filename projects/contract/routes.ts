@@ -5,10 +5,23 @@
 // is listed there as not yet in the contract.
 import type { PathwayCitation } from './citation.ts';
 import type { JsogReference } from './graph.ts';
-import type { GraphObject } from './graph-core.ts';
+import type { Disease, Species } from './graph.ts';
+import type {
+  AnyPathway,
+  Event,
+  GraphObject,
+  PhysicalEntity,
+  ReactionLikeEvent,
+  ReferenceEntity,
+  TopLevelPathway,
+} from './graph-core.ts';
 import type {
   Contributor,
   DoiPathway,
+  BareSpecies,
+  ComponentOfEntry,
+  DiscoverDataset,
+  EventProjection,
   InstanceReferrals,
   SchemaAttribute,
   SchemaNode,
@@ -80,4 +93,26 @@ export interface Routes {
   'GET /ContentService/search/diagram/{pathwayId}/flag': DiagramFlagResult;
   'GET /ContentService/search/fireworks/flag': SpeciesOverviewFlagResult;
   'GET /ContentService/expression/{id}': ExpressionAnswer;
+  // The routes the release check asks (spec 032, T032). Outside the enhanced
+  // query a related object already written is referred to by its dbId.
+  'GET /ContentService/data/species/main': Species<number>[];
+  'GET /ContentService/data/species/all': (Species<number> | BareSpecies)[];
+  'GET /ContentService/data/pathways/top/{id}': TopLevelPathway<number>[];
+  'GET /ContentService/data/query/{id}': GraphObject<number>;
+  'GET /ContentService/data/discover/{id}': DiscoverDataset;
+  'GET /ContentService/data/event/{id}/ancestors': EventProjection[][];
+  // An event already written in the list appears again as its dbId.
+  'GET /ContentService/data/pathway/{id}/containedEvents': (Event<number> | number)[];
+  'GET /ContentService/data/participants/{id}/participatingPhysicalEntities': PhysicalEntity<number>[];
+  'GET /ContentService/data/participants/{id}/referenceEntities': ReferenceEntity<number>[];
+  'GET /ContentService/data/complex/{id}/subunits': PhysicalEntity<number>[];
+  'GET /ContentService/data/entity/{id}/componentOf': ComponentOfEntry[];
+  'GET /ContentService/data/entity/{id}/otherForms': PhysicalEntity<number>[];
+  'GET /ContentService/data/pathways/low/entity/{id}': AnyPathway<number>[];
+  'GET /ContentService/data/pathways/low/diagram/entity/{id}': AnyPathway<number>[];
+  'GET /ContentService/data/mapping/{resource}/{identifier}/pathways': AnyPathway<number>[];
+  'GET /ContentService/data/mapping/{resource}/{identifier}/reactions': ReactionLikeEvent<number>[];
+  'GET /ContentService/data/diseases': Disease<number>[];
+  'GET /ContentService/interactors/static/molecule/{id}/summary': Interactors;
+  'GET /ContentService/references/mapping/{identifier}': ReferenceEntity<number>[];
 }

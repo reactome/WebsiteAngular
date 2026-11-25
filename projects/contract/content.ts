@@ -137,3 +137,96 @@ export interface InstanceReferrals {
   referral: string;
   objects: SimpleDatabaseObject[];
 }
+
+/**
+ * An event as graph-core's EventProjection writes it: each route of
+ * /data/event/{id}/ancestors, from the event up to a top-level pathway. Not the
+ * graph's Event: the flags are `inferred` and `inDisease` (their getters'
+ * names), there is no `className`, and the projection defaults the flags to
+ * false and the diagram's size to 0, so those are always there
+ * (pathways-events-endpoints.ts, eventProjection).
+ */
+export interface EventProjection {
+  dbId: number;
+  displayName: string;
+  stId: string;
+  name: string[];
+  stIdVersion: string;
+  oldStId?: string;
+  schemaClass: string;
+  doi?: string;
+  speciesName: string;
+  releaseDate: string;
+  releaseStatus?: string;
+  hasDiagram: boolean;
+  hasEHLD: boolean;
+  diagramWidth: number;
+  diagramHeight: number;
+  /** A reaction's. */
+  category?: string;
+  isCanonical?: boolean;
+  definition?: string;
+  inferred: boolean;
+  inDisease: boolean;
+}
+
+/**
+ * What an entity is a component of, one entry per kind of relationship
+ * (`input`, `hasComponent`, ...): /data/entity/{id}/componentOf. The four lists
+ * run in step, one place per member, '' where a member has no such value.
+ */
+export interface ComponentOfEntry {
+  type: string;
+  names: string[];
+  stIds: string[];
+  schemaClasses: string[];
+  species: string[];
+}
+
+/**
+ * An event as a schema.org data set, for search engines: /data/discover/{id}
+ * (graph-core's SchemaDataSet). Empty values are left out.
+ */
+export interface DiscoverDataset {
+  name?: string;
+  description?: string;
+  url: string;
+  /** The release number as text; "null" without one. */
+  version: string;
+  keywords: string[];
+  creator?: DiscoverPerson[];
+  includedInDataCatalog: { name: string; url: string; '@type': 'DataCatalog' };
+  distribution: {
+    contentUrl: string;
+    fileFormat: string;
+    encodingFormat: string;
+    '@type': 'DataDownload';
+  }[];
+  citation?: string[];
+  license: string;
+  '@context': string;
+  '@type': 'DataSet';
+}
+
+/** An author of the event, as schema.org names a person. */
+export interface DiscoverPerson {
+  givenName?: string;
+  familyName?: string;
+  affiliation?: { name?: string; '@type': 'Organization' }[];
+  url: string;
+  '@type': 'Person';
+}
+
+/**
+ * A species written as its dbId, display name and class alone: three of release
+ * 98's 97 in /data/species/all (Arabidopsis thaliana, Dengue virus, Oryza
+ * sativa) have no names, taxon id or abbreviation in the graph. None is in any
+ * recorded answer or among the main species, so Species keeps those fields
+ * required and this route alone admits these (the release check, T032).
+ */
+export interface BareSpecies {
+  dbId: number;
+  displayName: string;
+  className: 'Species';
+  schemaClass: 'Species';
+}

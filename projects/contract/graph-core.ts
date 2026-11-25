@@ -361,7 +361,10 @@ export interface BlackBoxEvent<R extends Ref> extends JsogFields {
   schemaClass: 'BlackBoxEvent';
 }
 
-/** Recorded 71 times. */
+/**
+ * Recorded 71 times. Outside the enhanced query its species are left out, and a
+ * set of no one species has no species name (the release check, T032).
+ */
 export interface CandidateSet<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -372,7 +375,7 @@ export interface CandidateSet<R extends Ref> extends JsogFields {
   definition?: string;
   maxDepth: number;
   name: string[];
-  speciesName: string;
+  speciesName?: string;
   systematicName?: string;
   authored?: InstanceEdit<R> | R;
   catalystActivities?: (CatalystActivity<R> | R)[];
@@ -403,7 +406,7 @@ export interface CandidateSet<R extends Ref> extends JsogFields {
   updateTrackers?: (UpdateTracker<R> | R)[];
   isOrdered?: boolean;
   hasMember?: (PhysicalEntity<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   relatedSpecies?: (Species<R> | R)[];
   hasCandidate?: (PhysicalEntity<R> | R)[];
   candidates?: HasCandidate<R>[];
@@ -771,7 +774,10 @@ export interface DBInfo<R extends Ref> extends JsogFields {
   schemaClass: 'DBInfo';
 }
 
-/** Recorded 97 times. */
+/**
+ * Recorded 97 times. Outside the enhanced query its species are left out, and a
+ * set of no one species has no species name (the release check, T032).
+ */
 export interface DefinedSet<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -782,7 +788,7 @@ export interface DefinedSet<R extends Ref> extends JsogFields {
   definition?: string;
   maxDepth: number;
   name: string[];
-  speciesName: string;
+  speciesName?: string;
   systematicName?: string;
   authored?: InstanceEdit<R> | R;
   catalystActivities?: (CatalystActivity<R> | R)[];
@@ -813,7 +819,7 @@ export interface DefinedSet<R extends Ref> extends JsogFields {
   updateTrackers?: (UpdateTracker<R> | R)[];
   isOrdered?: boolean;
   hasMember?: (PhysicalEntity<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   relatedSpecies?: (Species<R> | R)[];
   members?: HasMember<R>[];
   className: string;
@@ -877,7 +883,12 @@ export interface DeletedInstance<R extends Ref> extends JsogFields {
   schemaClass: 'DeletedInstance';
 }
 
-/** Recorded once. */
+/**
+ * Recorded once. Its references, cross-references, compartments, species and
+ * chimeric flag are left out where an answer other than the enhanced query
+ * writes it (/data/pathway/{id}/containedEvents,
+ * /data/mapping/.../reactions: the release check, T032).
+ */
 export interface Depolymerisation<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -905,12 +916,12 @@ export interface Depolymerisation<R extends Ref> extends JsogFields {
   followingEvent?: (Event<R> | R)[];
   goBiologicalProcess?: GO_BiologicalProcess<R> | R;
   inferredFrom?: (Event<R> | R)[];
-  literatureReference: (Publication<R> | R)[];
+  literatureReference?: (Publication<R> | R)[];
   orthologousEvent?: (Event<R> | R)[];
   relatedSpecies?: (Species<R> | R)[];
   reviewed?: (InstanceEdit<R> | R)[];
   revised?: (InstanceEdit<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   summation?: (Summation<R> | R)[];
   negativePrecedingEvent?: (NegativePrecedingEvent<R> | R)[];
   reviewStatus?: ReviewStatus<R> | R;
@@ -919,7 +930,7 @@ export interface Depolymerisation<R extends Ref> extends JsogFields {
   structureModified?: (InstanceEdit<R> | R)[];
   deleted?: (Deleted<R> | R)[];
   updateTrackers?: (UpdateTracker<R> | R)[];
-  isChimeric: boolean;
+  isChimeric?: boolean;
   systematicName?: string;
   category: string;
   catalystActivity?: (CatalystActivity<R> | R)[];
@@ -940,7 +951,7 @@ export interface Depolymerisation<R extends Ref> extends JsogFields {
   outputs?: Output<R>[];
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
   composedOf?: Default<R>[];
-  hasCompartment: HasCompartment<R>[];
+  hasCompartment?: HasCompartment<R>[];
   eventOfPathways?: EventOf<R>[];
   schemaClass: 'Depolymerisation';
 }
@@ -1069,7 +1080,12 @@ export interface EntityWithAccessionedSequence<R extends Ref> extends JsogFields
   schemaClass: 'EntityWithAccessionedSequence';
 }
 
-/** Recorded 19 times. */
+/**
+ * Recorded 19 times. Its references, cross-references, compartments, species and
+ * chimeric flag are left out where an answer other than the enhanced query
+ * writes it (/data/pathway/{id}/containedEvents,
+ * /data/mapping/.../reactions: the release check, T032).
+ */
 export interface FailedReaction<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1086,7 +1102,7 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   releaseStatus?: string;
   speciesName: string;
   authored?: (InstanceEdit<R> | R)[];
-  crossReference: (DatabaseIdentifier<R> | R)[];
+  crossReference?: (DatabaseIdentifier<R> | R)[];
   compartment?: (Compartment<R> | R)[];
   disease?: (Disease<R> | R)[];
   edited?: (InstanceEdit<R> | R)[];
@@ -1097,12 +1113,12 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   followingEvent?: (Event<R> | R)[];
   goBiologicalProcess?: GO_BiologicalProcess<R> | R;
   inferredFrom?: (Event<R> | R)[];
-  literatureReference: (Publication<R> | R)[];
+  literatureReference?: (Publication<R> | R)[];
   orthologousEvent?: (Event<R> | R)[];
   relatedSpecies?: (Species<R> | R)[];
   reviewed?: (InstanceEdit<R> | R)[];
   revised?: (InstanceEdit<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   summation?: (Summation<R> | R)[];
   negativePrecedingEvent?: (NegativePrecedingEvent<R> | R)[];
   reviewStatus?: ReviewStatus<R> | R;
@@ -1111,7 +1127,7 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   structureModified?: (InstanceEdit<R> | R)[];
   deleted?: (Deleted<R> | R)[];
   updateTrackers?: (UpdateTracker<R> | R)[];
-  isChimeric: boolean;
+  isChimeric?: boolean;
   systematicName?: string;
   category: string;
   catalystActivity?: (CatalystActivity<R> | R)[];
@@ -1132,7 +1148,7 @@ export interface FailedReaction<R extends Ref> extends JsogFields {
   outputs?: Output<R>[];
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
   composedOf?: Default<R>[];
-  hasCompartment: HasCompartment<R>[];
+  hasCompartment?: HasCompartment<R>[];
   eventOfPathways?: EventOf<R>[];
   schemaClass: 'FailedReaction';
 }
@@ -1690,7 +1706,12 @@ export interface Polymer<R extends Ref> extends JsogFields {
   className: string;
 }
 
-/** Recorded once. */
+/**
+ * Recorded once. Its references, cross-references, compartments, species and
+ * chimeric flag are left out where an answer other than the enhanced query
+ * writes it (/data/pathway/{id}/containedEvents,
+ * /data/mapping/.../reactions: the release check, T032).
+ */
 export interface Polymerisation<R extends Ref> extends JsogFields {
   dbId: number;
   displayName: string;
@@ -1718,12 +1739,12 @@ export interface Polymerisation<R extends Ref> extends JsogFields {
   followingEvent?: (Event<R> | R)[];
   goBiologicalProcess?: GO_BiologicalProcess<R> | R;
   inferredFrom?: (Event<R> | R)[];
-  literatureReference: (Publication<R> | R)[];
+  literatureReference?: (Publication<R> | R)[];
   orthologousEvent?: (Event<R> | R)[];
   relatedSpecies?: (Species<R> | R)[];
   reviewed?: (InstanceEdit<R> | R)[];
   revised?: (InstanceEdit<R> | R)[];
-  species: (Species<R> | R)[];
+  species?: (Species<R> | R)[];
   summation?: (Summation<R> | R)[];
   negativePrecedingEvent?: (NegativePrecedingEvent<R> | R)[];
   reviewStatus?: ReviewStatus<R> | R;
@@ -1753,7 +1774,7 @@ export interface Polymerisation<R extends Ref> extends JsogFields {
   outputs?: Output<R>[];
   diseaseReaction?: (ReactionLikeEvent<R> | R)[];
   composedOf?: Default<R>[];
-  hasCompartment: HasCompartment<R>[];
+  hasCompartment?: HasCompartment<R>[];
   eventOfPathways?: EventOf<R>[];
   schemaClass: 'Polymerisation';
 }
