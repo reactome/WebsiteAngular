@@ -22,8 +22,10 @@ that matches nothing loads nothing.
 
 ## What it must not do
 
-- Redefine a `location` the repository's routes define. nginx refuses duplicates, and
-  `nginx -t` fails before the reload, so the running server keeps serving.
+- Redefine a `location` the repository's routes define. A duplicate prefix or exact
+  location is refused by `nginx -t` before the reload, so the running server keeps
+  serving; a duplicate regular-expression location is **not** refused: it loads and is
+  never reached, because the repository's expressions come first. Use `^~` prefixes.
 - Claim `default_server`: the repository's refusal for unknown names stays (User Story 3,
   scenario 4).
 
