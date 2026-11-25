@@ -136,8 +136,8 @@ web server stopped (SC-004).
 
 ## Phase 7: Polish & cross-cutting
 
-- [ ] T028 SC-006: search the repository for server specifics (host names other than the public ones already in it, server paths, sizes, credentials, the names of the server's other sites) in every file this spec added or changed; none found. A check in `tools/` that fails on the patterns the guide's placeholders replace, seen failing with one planted.
-- [ ] T029 [P] Link the guide and this spec from `deploy/nginx/README.md` (the site-local folder, the webroot) and `.env.example` (the new keys with their reasons); `CLAUDE.md` gets one line under nginx: the site-local folder is the server's, never the repository's.
+- [x] T028 SC-006: search the repository for server specifics (host names other than the public ones already in it, server paths, sizes, credentials, the names of the server's other sites) in every file this spec added or changed; none found. A check in `tools/` that fails on the patterns the guide's placeholders replace, seen failing with one planted. Done (#1084), with T029: `deploy/release-server/public.spec.ts`, an allowlist of the public host names, addresses and container paths, so the check publishes nothing itself. Seen failing with a made-up path, host and address planted in the plan.
+- [x] T029 [P] Link the guide and this spec from `deploy/nginx/README.md` (the site-local folder, the webroot) and `.env.example` (the new keys with their reasons); `CLAUDE.md` gets one line under nginx: the site-local folder is the server's, never the repository's. Done (#1084).
 - [ ] T030 Beta onto the site image (R2's later step): after the release server has run the image a week, beta's systemd service is replaced by the `app` override with `SITE_PROFILE=beta`, so both hosts run the same thing. Separate PR, checked like any deploy.
 
 ---
