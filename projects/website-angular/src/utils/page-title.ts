@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Title } from '@angular/platform-browser';
-import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
+import { Route, RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
 /** The site's name, last in every title, and the home page's title. */
 const SITE = 'Reactome';
@@ -17,15 +17,26 @@ export function pageTitle(...parts: (string | null | undefined)[]): string {
 }
 
 /**
- * Sets a route's `title` as the page's, at each navigation; a route with none
+ * Sets a route's `title` as the page's on arriving at it; a route with none
  * gets the site's name until its page, once its data arrives, names itself
  * (an article, a pathway, a search).
+ *
+ * Only on arriving: a navigation the router answers with the same page (a new
+ * query, a selection the Pathway Browser keeps in the address) leaves the
+ * title alone. The page is the one that knows what it now shows, and the
+ * route's generic title, set after it, overwrote the name it had given itself.
  */
 @Injectable()
 export class ReactomeTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);
+  private shown?: Route | null;
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
+    let leaf = snapshot.root;
+    while (leaf.firstChild) leaf = leaf.firstChild;
+    const arrived = leaf.routeConfig !== this.shown;
+    this.shown = leaf.routeConfig;
+    if (!arrived) return;
     const own = this.buildTitle(snapshot);
     this.title.setTitle(own === HOME_TITLE ? HOME_TITLE : pageTitle(own));
   }

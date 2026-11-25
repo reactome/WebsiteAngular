@@ -26,7 +26,7 @@
       <button mat-button type="button" class="report__action" (click)="cancel()">Cancel</button>
     } @else if (phase().status === 'saved') {
       <button mat-button type="button" class="report__action" (click)="report().again()">Download again</button>
-    } @else if (failure() !== null && failure() !== 'gone' && failure() !== 'no_check') {
+    } @else if (failure() !== null && failure() !== 'gone') {
       <button mat-button type="button" class="report__action" (click)="retry()">Try again</button>
     }
   </div>

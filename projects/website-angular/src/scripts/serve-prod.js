@@ -354,8 +354,20 @@ function contentNamed(filePath) {
   const inBuildRoot = relative.length === 1 || (relative.length === 2 && relative[0] === 'media');
   return inBuildRoot && CONTENT_NAMED.test(relative[relative.length - 1]);
 }
-// Asked for by name, the page is still this deployment's, not the build's.
-if (PROFILE_LINE) app.get('/index.html', (req, res) => servePage(req, res));
+// Asked for by name, the page is still this deployment's, not the build's:
+// however the name is spelled, since the static files below decode and
+// normalise a path before they look (//index.html, /%69ndex.html, a/..%2F).
+if (PROFILE_LINE)
+  app.get(/.*/, (req, res, next) => {
+    let asked;
+    try {
+      asked = path.posix.normalize(decodeURIComponent(req.path));
+    } catch {
+      return next();
+    }
+    if (asked === '/index.html') return servePage(req, res);
+    return next();
+  });
 app.use(
   express.static(DIST, {
     index: false,

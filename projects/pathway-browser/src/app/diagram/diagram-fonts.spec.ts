@@ -53,6 +53,27 @@ describe('diagramFontsReady (spec 009 T045)', () => {
     expect(settled).toBe(true);
   });
 
+  it('reads the faces once the font stylesheets the embed added have loaded', async () => {
+    // On a partner's page the embed adds the font stylesheets as it starts, so
+    // a diagram can be ready before they have declared a face; read then, there
+    // was nothing to wait for, and the diagram was framed in a fallback font.
+    vi.useFakeTimers();
+    const faces: Face[] = [];
+    let sheetLoaded = () => {};
+    const sheets = new Promise<void>((resolve) => (sheetLoaded = resolve));
+    let settled = false;
+    void diagramFontsReady(faces, 2000, sheets).then(() => (settled = true));
+    const roboto = face('Roboto', '400');
+    faces.push(roboto);
+    sheetLoaded();
+    await vi.advanceTimersByTimeAsync(100);
+    expect(roboto.loads()).toBe(1);
+    expect(settled).toBe(false);
+    roboto.finish();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(settled).toBe(true);
+  });
+
   it('draws without them once the wait is over', async () => {
     vi.useFakeTimers();
     const never = face('Roboto', '400');

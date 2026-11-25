@@ -157,8 +157,13 @@ export class ReportDownload {
         continue;
       }
       if (response.ok) {
-        const blob = await response.blob();
+        // A report cut off as it arrives is a failure, not one still being made.
+        const blob = await response.blob().catch(() => null);
         if (stopped()) return;
+        if (!blob) {
+          this.current.set({ status: 'failed', failure: 'failed' });
+          return;
+        }
         const name = filenameFrom(response.headers.get('content-disposition'), this.fallbackName);
         this.file = { blob, name, at: this.port.now() };
         this.port.save(blob, name);
@@ -186,8 +191,9 @@ function failureOf(response: Response): ReportPhase {
     return { status: 'failed', failure: 'gone' };
   }
   if (response.status === 503) {
-    // the gateway's, where this deployment cannot check a person: the only 503 with no
-    // Retry-After (spec 031, FR-020)
+    // the gateway's, where this deployment cannot check a person: its 503 with no
+    // Retry-After (spec 031, FR-020). Another 503 can come without one too (a proxy's),
+    // so the page still offers to try again.
     if (response.headers.get('retry-after') === null)
       return { status: 'failed', failure: 'no_check' };
     const after = Number(response.headers.get('retry-after'));

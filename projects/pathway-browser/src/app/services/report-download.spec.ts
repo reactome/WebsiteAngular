@@ -170,6 +170,26 @@ describe('its failures (T012)', () => {
     expect(report.phase()).toEqual({ status: 'failed', failure: 'failed' });
   });
 
+  it('a report cut off as it arrives: failed, not left making it', async () => {
+    // The connection dropping while the PDF streamed left the line saying it was
+    // being made, the button refusing, with nothing to say why (review of 25 Nov).
+    const cut = new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('%PDF'));
+          controller.error(new Error('connection lost'));
+        },
+      }),
+      { status: 200 }
+    );
+    const page = stub([cut]);
+    const report = new ReportDownload(ADDRESS, 'r.pdf', page.port);
+    report.ask();
+    await settle();
+    expect(report.phase()).toEqual({ status: 'failed', failure: 'failed' });
+    expect(page.saved).toEqual([]);
+  });
+
   it('no answer: asked again, and unknown after two minutes', async () => {
     const page = stub(Array.from({ length: 30 }, () => new Error('offline')));
     const report = new ReportDownload(ADDRESS, 'r.pdf', page.port);
