@@ -615,6 +615,35 @@ describe('serve-prod as a deployment named when it is served', () => {
     });
   }
 
+  it('names the deployment however index.html is spelled', async () => {
+    // Sent as written (fetch would tidy them): the static files decode and
+    // normalise a path, so each of these reached index.html without the line,
+    // and a page loaded so ran as another deployment (review of 25 Nov).
+    const { request } = await import('node:http');
+    const url = new URL(base);
+    const get = (raw: string) =>
+      new Promise<[number | undefined, string]>((resolve, reject) => {
+        const call = request({ host: url.hostname, port: url.port, path: raw }, (response) => {
+          let body = '';
+          response.on('data', (chunk: Buffer) => (body += chunk.toString()));
+          response.on('end', () => resolve([response.statusCode, body]));
+        });
+        call.on('error', reject);
+        call.end();
+      });
+    for (const raw of [
+      '//index.html',
+      '/./index.html',
+      '/index%2Ehtml',
+      '/%69ndex.html',
+      '/foo/..%2Findex.html',
+    ]) {
+      const [status, html] = await get(raw);
+      expect([raw, status, html.includes(INDEX_MARKER)]).toEqual([raw, 200, true]);
+      expect(html.split(LINE), raw).toHaveLength(2);
+    }
+  });
+
   it('refuses to start with a name it cannot serve', async () => {
     // Beta is a real deployment, but a build's, not one chosen when serving: a
     // name reached both ways is two deployments sharing hosts by accident.
