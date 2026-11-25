@@ -287,6 +287,22 @@ description: 'Task list for the embeddable Reactome pathway diagram'
     (`embed-diagram.spec.ts`), each seen failing on main: no `entityhovered` for a region; the
     outline left on after `resetSelection()`.
 
+## Phase 8: The old widget's address, before the production cutover
+
+The spec left replacing the old widget at its old address to a later step (Assumptions).
+That step is due before the new stack serves reactome.org: AllianceGenome's site loads
+`https://reactome.org/DiagramJs/diagram/diagram.nocache.js` on every page (`agr_ui`,
+`index.html`, an `async` classic script), polls `typeof Reactome`, then calls
+`Reactome.Diagram.create({ placeHolder, width: 1130, height: 600 }).loadDiagram(id)`
+(`pathwayWidget.jsx`). On the new stack that address answers the site's own page with a
+200 (measured on beta, 25 Nov 2026), so the script fails, the polling gives up, and the
+gene page shows no diagram. Raised by the project's owner, 25 Nov 2026.
+
+- [ ] T047 [US3] A copy of AllianceGenome's page exactly as written, the old address included: `specs/009-embeddable-diagram/host-page/alliance-old-address.html` (an `async` script at `<host>/DiagramJs/diagram/diagram.nocache.js`, the poll, `create` with their placeholder and size, `loadDiagram`) and a test in `e2e/embed-legacy-api.spec.ts` that the diagram draws there. Seen failing first: today the address is the site's page.
+- [ ] T048 [US3] Serve the new loader at the old address: nginx `location = /DiagramJs/diagram/diagram.nocache.js` in every deployment's configuration (and whatever the loader then fetches, since it takes its base from its own address: either `/DiagramJs/diagram/` aliased to the embed's folder, or the loader told its base), with `Access-Control-Allow-Origin: *` and the loader's short cache. Record the choice against the stopgap of serving the old widget's own files there. `deploy/nginx/test-config.sh` checks the address answers JavaScript, not the site's page.
+- [ ] T049 [US4] The other addresses AllianceGenome's gene page uses, checked on the new stack in `e2e/partner-links.spec.ts`: `/PathwayBrowser/#/{stId}`, `/content/detail/{stId}`, `/documentation/inferred-events`, `/ContentService/exporter/reaction/{stId}.{ext}`, `/ContentService/data/mapping/{resource}/{id}/pathways` and `/reactions` (real identifiers looked up first).
+- [ ] T050 Before the production cutover (the project's owner): T047 run against the stack that will serve reactome.org, and AllianceGenome told of the supported address (`/embed/diagram/v1/reactome-diagram.js`, the same interface), so they can move to it in their own time; the old address stays served until they have.
+
 ## Dependencies & Execution Order
 
 - **Order**: Setup (T001–T003) → Foundational (T004 spike **gates everything**; T005–T006) → US1 (T007–T024) → US2 (T025–T031) → US3 (T032–T036) → US4 (T037–T039) → close-out (T040–T046).
