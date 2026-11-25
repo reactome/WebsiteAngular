@@ -169,16 +169,19 @@ The pull request that completes a task ticks it here, with its number.
 
 - [x] T028 [P] [US4] Add a row to `RELEASE-TESTING.md`'s "Post-release" table: "Content API edge cache cleared (purge by prefix `/ContentService/`), then `node tools/content-node/warm.mjs <site>` run". State only what to do, nothing about how the release itself runs. Add a matching line to the note on browser cache headers. — #534
 - [x] T029 [P] Update `tools/content-node/CACHING.md`: status "built (spec 011)", the work queue ticked, and a pointer to contracts/cache-labels.md. — #534
-- [ ] T030 **[dashboard]** **[deferred (awright, 19 Oct 2026); if set before the production launch, limited to the beta hostname]** People with Cloudflare dashboard access, issue #527:
+- [ ] T030 **[dashboard]** **[at the production release, not before (awright, 25 Nov 2026): nothing is cached on beta meanwhile]** People with Cloudflare dashboard access, issue #527:
   - URL normalization, incoming and to origin;
   - Smart Tiered Cache;
   - then the Cache Rule on `/ContentService/*`, leaving out the four roots: eligible for cache, Edge TTL "Use cache-control header if present, bypass cache if not" (not "…use default Cloudflare caching behavior if not", which would cache Java's unlabelled answers), Browser TTL "respect origin", no status-code TTL, query string sorted;
   - then the rate-limiting rule.
+  - Checked ready on beta, 25 Nov 2026: the content service labels standard URLs `public, max-age=3600, s-maxage=31536000`, an off-standard URL (`?utm_source=x`) and every error `no-store`; Java's routes and unknown paths carry no label, so the rule passes them by. On the release day it goes on, `/ContentService/` is purged and `warm.mjs` run, as at every release after.
 - [ ] T031 **[after T030]** After T030: request a standard URL twice through the public site and expect `cf-cache-status: HIT` the second time. Request one with `?utm_source=x` twice and expect it never to be a HIT. Then run a purge and the warm-up once, and check the second pass is HIT (SC-005). Tick T027–T031.
 
 ---
 
 ## Phase 7: Polish
+
+- [x] T034 Bound what may be stored to answers that are finite in fact (awright, 25 Nov 2026): every `/search/` route never stored; the schema lists stored at the site's 50 a page only; an interactor's details only unpaged; the reference-sequence lists never (a page past the end is an empty 200). Measured on beta first: `rows=100000`, `offset=17`, any `pageSize` and any search were labelled cacheable. Tests in `parameters.spec.ts`, each seen failing against main's record. `CACHING.md` records the decision. (#1086)
 
 - [x] T032 [P] Add every new module to the dead-code and lint ratchets as they stand, without raising either count. Every new module is under both ratchets as built: dead code unchanged at 133, lint down from 1397 to 1330 (#533). — #535
 - [x] T033 Re-read spec.md's success criteria SC-001–SC-007 and tick each with the task or check that met it. Add the notes to `specs/011-api-cache-headers/checklists/requirements.md`. Done 19 Oct 2026 (checklists/requirements.md): SC-001–004 met, SC-006 met in e2e, SC-005 and SC-007 wait on the Cache Rule (#527). — #535

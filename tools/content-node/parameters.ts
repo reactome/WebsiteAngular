@@ -127,11 +127,18 @@ PATH_KINDS['sbmlXml'] = (text) =>
  */
 const VALUE_KINDS: Record<string, Kind> = {
   species: (text) => GRAPH_NAMES().speciesTaxIds.includes(text),
+  // The schema page's lists come 50 to a page (schema.component.ts). Java
+  // answers any size up to 20000, each a different answer, and every size
+  // with every page would be an entry of its own: finite only in name.
+  schemaPage: (text) => text === '50',
+  // Paging the site never sends: answered, never stored.
+  absent: () => false,
   depth: (text) => text === '-1' || /^([1-9]|10)$/.test(text),
   attributes: (text) =>
     ['species,compartment', 'species,compartment,referenceEntity'].includes(text),
 };
 const TAX_ID = { species: 'species' };
+const SCHEMA_PAGE = { offset: 'schemaPage' };
 const IN_DEPTH = { maxDepth: 'depth', attributes: 'attributes' };
 
 const bool = (name: string, extra = {}) => ({
@@ -435,16 +442,22 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'Java answers it but leaves it out of its description: every ReferenceMolecule, a line each.',
     query: [],
   },
+  // A page past the end is an empty 200, so every page number would be an
+  // entry. The site never asks for these lists.
   '/ContentService/data/referenceSequences': {
     java: null,
+    cache: 'never',
     why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences.',
     query: [
       { name: 'page', in: 'query', type: 'integer', required: true },
       { name: 'offset', in: 'query', type: 'integer', required: true },
     ],
   },
+  // A page past the end is an empty 200, so every page number would be an
+  // entry. The site never asks for these lists.
   '/ContentService/data/referenceSequences/identifiers': {
     java: null,
+    cache: 'never',
     why: 'Java answers it but leaves it out of its description: a page of ReferenceSequences, a line each.',
     query: [
       { name: 'page', in: 'query', type: 'integer', required: true },
@@ -459,17 +472,18 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/schema/{id}/min': {
     java: '/data/schema/{className}/min',
     path: { id: 'className' },
-    values: TAX_ID,
+    values: { ...TAX_ID, ...SCHEMA_PAGE },
   },
   '/ContentService/data/schema/model': { java: '/data/schema/model' },
   '/ContentService/data/schema/{id}': {
     java: '/data/schema/{className}',
     path: { id: 'className' },
-    values: TAX_ID,
+    values: { ...TAX_ID, ...SCHEMA_PAGE },
   },
   '/ContentService/data/schema/{id}/reference': {
     java: '/data/schema/{className}/reference',
     path: { id: 'className' },
+    values: SCHEMA_PAGE,
   },
   '/ContentService/data/schema/{id}/attributes': {
     java: '/data/schema/{className}/attributes',
@@ -482,6 +496,8 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/interactors/static/molecule/{id}/details': {
     java: '/interactors/static/molecule/{acc}/details',
     path: { id: 'identifier' },
+    // Any page size is another answer; the site asks for all, unpaged.
+    values: { page: 'absent', pageSize: 'absent' },
   },
   '/ContentService/interactors/static/molecule/{id}/summary': {
     java: '/interactors/static/molecule/{acc}/summary',
@@ -577,23 +593,30 @@ export const RECORD: Record<string, RecordEntry> = {
     // includeRef=true give Java's same layout).
     ignored: ['includeRef', 'view'],
   },
-  '/ContentService/search/suggest': { java: '/search/suggest' },
-  '/ContentService/search/spellcheck': { java: '/search/spellcheck' },
-  '/ContentService/search/facet': { java: '/search/facet' },
-  '/ContentService/search/facet_query': { java: '/search/facet_query' },
+  // Search is never stored (awright, 25 Nov 2026). Its terms are free text,
+  // the one kind of value no record can bound, so stored searches would be as
+  // many as anyone cares to invent; and few searches repeat, so the edge
+  // would gain little. Solr answers in milliseconds.
+  '/ContentService/search/suggest': { java: '/search/suggest', cache: 'never' },
+  '/ContentService/search/spellcheck': { java: '/search/spellcheck', cache: 'never' },
+  '/ContentService/search/facet': { java: '/search/facet', cache: 'never' },
+  '/ContentService/search/facet_query': { java: '/search/facet_query', cache: 'never' },
   '/ContentService/search/pathways/of/{dbId}': {
+    cache: 'never',
     java: '/search/pathways/of/{dbId}',
     path: { dbId: 'long' },
   },
-  '/ContentService/search/query/paginated': { java: '/search/query/paginated' },
-  '/ContentService/search/query': { java: '/search/query' },
-  '/ContentService/search/icon/facet': { java: '/search/icon/facet' },
-  '/ContentService/search/icon/query': { java: '/search/icon/query' },
+  '/ContentService/search/query/paginated': { java: '/search/query/paginated', cache: 'never' },
+  '/ContentService/search/query': { java: '/search/query', cache: 'never' },
+  '/ContentService/search/icon/facet': { java: '/search/icon/facet', cache: 'never' },
+  '/ContentService/search/icon/query': { java: '/search/icon/query', cache: 'never' },
   '/ContentService/search/icon/{identifier}': {
+    cache: 'never',
     java: '/search/icon/{identifier}',
     path: { identifier: 'icon' },
   },
   '/ContentService/search/diagram/summary': {
+    cache: 'never',
     java: null,
     why: 'An undocumented controller (the Pathway Browser’s search counts).',
     query: [
@@ -611,21 +634,24 @@ export const RECORD: Record<string, RecordEntry> = {
     ],
   },
   '/ContentService/search/diagram/{pathwayId}/flag': {
+    cache: 'never',
     java: '/search/diagram/{pathwayId}/flag',
     path: { pathwayId: 'stId' },
   },
   '/ContentService/search/diagram/{diagram}/occurrences/{instance}': {
+    cache: 'never',
     java: '/search/diagram/{diagram}/occurrences/{instance}',
     path: { diagram: 'stId', instance: 'stIdOrDbId' },
     // Java binds it and never reads it: any value is the same answer.
     ignored: ['types'],
   },
   '/ContentService/search/diagram/{diagram}': {
+    cache: 'never',
     java: '/search/diagram/{diagram}',
     path: { diagram: 'stId' },
   },
-  '/ContentService/search/fireworks/flag': { java: '/search/fireworks/flag' },
-  '/ContentService/search/fireworks': { java: '/search/fireworks' },
+  '/ContentService/search/fireworks/flag': { java: '/search/fireworks/flag', cache: 'never' },
+  '/ContentService/search/fireworks': { java: '/search/fireworks', cache: 'never' },
   // The Europe PMC answers are live, and the site sends today's date to the
   // pathway's, so each day would be another entry for one answer.
   '/ContentService/citation/pathway/{id}': {
