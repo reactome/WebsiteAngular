@@ -59,6 +59,42 @@ client_named() {
   fi
 }
 
+# /download/ on the release host goes to the download site (specs/032 D5):
+# `current` as the release the server names in its own folder, or `current`
+# when it names none; any other release kept; the site's /download-data page
+# not touched. Run for real, with no network, asked from inside the container.
+download_redirects() {
+  local image=$1 release=$2
+  shift 2
+  local server failed=0 got path want
+  server=$(docker run -d --network none "$@" "$image")
+  containers+=("$server")
+  for _ in $(seq 50); do
+    docker exec "$server" curl -sk -m 2 -o /dev/null --resolve release.reactome.org:443:127.0.0.1 \
+      https://release.reactome.org/ 2>/dev/null && break
+    sleep 0.2
+  done
+  while read -r path want; do
+    got=$(docker exec "$server" curl -sk -m 5 -o /dev/null -w '%{http_code} %{redirect_url}' \
+      --resolve release.reactome.org:443:127.0.0.1 "https://release.reactome.org$path")
+    if [ "$got" != "$want" ]; then
+      echo "$path: $got, not $want"
+      failed=1
+    fi
+  done <<EOT
+/download/current/diagram/R-HSA-1.json 302 https://download.reactome.org/$release/diagram/R-HSA-1.json
+/download/98/x.txt?a=1 302 https://download.reactome.org/98/x.txt?a=1
+/download/current/ 302 https://download.reactome.org/$release/
+EOT
+  # The site's page: whatever the site answers, never the download site.
+  got=$(docker exec "$server" curl -sk -m 5 -o /dev/null -w '%{redirect_url}' \
+    --resolve release.reactome.org:443:127.0.0.1 https://release.reactome.org/download-data)
+  case "$got" in
+    *download.reactome.org*) echo "/download-data was sent to $got"; failed=1 ;;
+  esac
+  return $failed
+}
+
 # The release server's other sites, from the site-local examples (specs/032
 # US3), answered as their files say, and a name nobody configured still
 # refused -- an example claiming it would take every unknown name. Run for
@@ -142,6 +178,21 @@ for env in dev release production; do
       -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" \
       --entrypoint nginx "$image" -t 2>"$work/out"; then
       echo "ok   $env with the site-local examples"
+      if download_redirects "$image" 99 "${mounts[@]}" \
+        -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" >"$work/out" 2>&1; then
+        echo "ok   $env: /download/ goes to the release the server names"
+      else
+        echo "FAIL $env: /download/ with the server's release named"
+        sed 's/^/     /' "$work/out"
+        status=1
+      fi
+      if download_redirects "$image" current "${mounts[@]}" >"$work/out" 2>&1; then
+        echo "ok   $env: /download/ goes to the current release when none is named"
+      else
+        echo "FAIL $env: /download/ with no release named"
+        sed 's/^/     /' "$work/out"
+        status=1
+      fi
       if site_local_hosts "$image" "${mounts[@]}" \
         -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" >"$work/out" 2>&1; then
         echo "ok   $env: the examples' sites answer, and unknown names are still refused"

@@ -16,7 +16,6 @@ values are the server's, never in the repository (FR-011). The guide
 | `DIAGRAM_FILES_DIR`                    | yes      | content-node             | the release's diagram folder                                                                                        |
 | `RENDER_FILES_DIR`                     | yes      | render                   | the release's files folder (diagrams, illustrations)                                                                |
 | `EXPRESSION_FILES_DIR`                 | no       | content-node             | unset: the Expression tab answers 503                                                                               |
-| `DOWNLOAD_RELEASE`                     | no       | nginx                    | the release number `/download/current/` goes to                                                                     |
 | `LETSENCRYPT_DIR`                      | yes      | nginx                    | certificates                                                                                                        |
 | `CERTBOT_WEBROOT`                      | yes      | nginx                    | the folder certbot writes challenges to                                                                             |
 | `NGINX_SITE_LOCAL`                     | no       | nginx                    | the server's own configuration folder                                                                               |
