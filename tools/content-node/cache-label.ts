@@ -50,11 +50,14 @@ export function label({
   endpoint,
   originalUrl,
   status,
+  empty = false,
 }: {
   method: string;
   endpoint: string;
   originalUrl: string;
   status: number;
+  /** Whether the answer is empty (`emptyAnswer`). */
+  empty?: boolean;
 }) {
   if (carriesToken(originalUrl)) return { cacheControl: PRIVATE, rule: 'token' };
   const cache = RECORD[endpoint]?.cache;
@@ -63,9 +66,20 @@ export function label({
   if (status !== 200) return { cacheControl: NOT_STORED, rule: 'status' };
   if (cache === 'never') return { cacheControl: NOT_STORED, rule: 'endpoint' };
   const form = standardForm(endpoint, originalUrl);
-  return form.ok
-    ? { cacheControl: CACHEABLE, rule: 'standard' }
-    : { cacheControl: NOT_STORED, rule: form.rule };
+  if (!form.ok) return { cacheControl: NOT_STORED, rule: form.rule };
+  // Several endpoints answer an id that does not exist with an empty 200, as
+  // Java does, and any id of the right shape is in standard form: stored, each
+  // id asked for would be an entry until the next purge.
+  if (empty) return { cacheControl: NOT_STORED, rule: 'empty' };
+  return { cacheControl: CACHEABLE, rule: 'standard' };
+}
+
+/** Whether an answer is empty: no body, an empty text, or an empty list. */
+export function emptyAnswer({ body, serialised }: { body?: unknown; serialised?: string }) {
+  if (serialised !== undefined) return serialised.trim() === '[]' || serialised === '';
+  if (body === undefined || body === null) return true;
+  if (typeof body === 'string') return body.trim() === '' || body.trim() === '[]';
+  return Array.isArray(body) && body.length === 0;
 }
 
 /**

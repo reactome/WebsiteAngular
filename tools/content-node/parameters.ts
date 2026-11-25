@@ -252,6 +252,9 @@ export const RECORD: Record<string, RecordEntry> = {
   '/ContentService/data/eventsHierarchy/{id}': {
     java: '/data/eventsHierarchy/{species}',
     path: { id: 'taxId' },
+    // Without a token Java ignores `resource` and answers the whole hierarchy,
+    // 4 MB, for any text; the site sends one only with a token, which is private.
+    values: { resource: 'absent' },
   },
   '/ContentService/data/pathways/top/{id}': {
     java: '/data/pathways/top/{species}',
@@ -299,6 +302,8 @@ export const RECORD: Record<string, RecordEntry> = {
     why: 'Java answers it but leaves it out of its description (@Hidden): the entities of a diagram, and the pathways among those given, an identifier names.',
     path: { id: 'stId', instance: 'identifier' },
     query: [{ name: 'pathways', in: 'query', type: 'string' }],
+    // Any text is another answer; the site never sends it.
+    values: { pathways: 'absent' },
   },
   '/ContentService/data/pathway/{id}/containedEvents': {
     java: '/data/pathway/{id}/containedEvents',

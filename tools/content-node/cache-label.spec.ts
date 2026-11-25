@@ -6,7 +6,7 @@
 // Cloudflare keep it until the next release's purge, and hand it to
 // everyone who asked.
 import { describe, expect, it } from 'vitest';
-import { CACHEABLE, defaultLabel, label } from './cache-label.ts';
+import { CACHEABLE, defaultLabel, emptyAnswer, label } from './cache-label.ts';
 
 const attributes = '/ContentService/data/schema/{id}/attributes';
 const of = (overrides: Record<string, unknown> = {}) =>
@@ -61,6 +61,28 @@ describe('label', () => {
         status,
         { cacheControl: 'no-store', rule: 'status' },
       ]);
+  });
+
+  it('is not stored for an empty answer: an id that does not exist is answered so, and any id has the shape', () => {
+    // /data/participants/987654321 answers [] with a 200, as Java does: stored,
+    // every number anyone asks for would be an entry until the next purge.
+    expect(of({ empty: true })).toEqual({ cacheControl: 'no-store', rule: 'empty' });
+    expect(
+      of({ empty: true, originalUrl: '/ContentService/data/schema/Pathway/attributes?token=a' })
+    ).toEqual({ cacheControl: 'private, no-store', rule: 'token' });
+  });
+
+  it('takes as empty no body, an empty text, and an empty list, however they come', () => {
+    expect(emptyAnswer({})).toBe(true);
+    expect(emptyAnswer({ body: '' })).toBe(true);
+    expect(emptyAnswer({ body: [] })).toBe(true);
+    expect(emptyAnswer({ serialised: '[]' })).toBe(true);
+    expect(emptyAnswer({ body: '[]' })).toBe(true);
+    expect(emptyAnswer({ body: [1] })).toBe(false);
+    expect(emptyAnswer({ body: 'reactome' })).toBe(false);
+    expect(emptyAnswer({ body: {} })).toBe(false);
+    expect(emptyAnswer({ serialised: '[{"a":1}]' })).toBe(false);
+    expect(emptyAnswer({ body: Buffer.from('GIF') })).toBe(false);
   });
 
   it('is not stored, naming what failed, for a URL not in standard form', () => {

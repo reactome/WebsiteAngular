@@ -282,6 +282,22 @@ describe('standardForm: pages the site asks for, and no others', () => {
       at(details, '/ContentService/interactors/static/molecule/P04637/details?pageSize=5').ok
     ).toBe(false);
   });
+  it('stores the events hierarchy without a resource only: Java ignores one but answers it, 4 MB a spelling', () => {
+    const hierarchy = '/ContentService/data/eventsHierarchy/{id}';
+    expect(at(hierarchy, '/ContentService/data/eventsHierarchy/9606')).toEqual(ok);
+    expect(at(hierarchy, '/ContentService/data/eventsHierarchy/9606?resource=zz1').ok).toBe(false);
+    expect(at(hierarchy, '/ContentService/data/eventsHierarchy/9606?resource=TOTAL').ok).toBe(
+      false
+    );
+  });
+
+  it("stores a diagram's entities for an identifier without a list of pathways only: any text is another answer", () => {
+    const entities = '/ContentService/data/diagram/{id}/entities/{instance}';
+    expect(at(entities, '/ContentService/data/diagram/R-HSA-69620/entities/P04637')).toEqual(ok);
+    expect(
+      at(entities, '/ContentService/data/diagram/R-HSA-69620/entities/P04637?pathways=zzzq').ok
+    ).toBe(false);
+  });
 });
 
 describe('standardForm: one spelling, where Java answers many', () => {
