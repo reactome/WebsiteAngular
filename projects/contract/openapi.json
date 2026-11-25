@@ -18369,11 +18369,8 @@
           "species",
           "isChimeric",
           "category",
-          "catalystActivity",
           "className",
-          "composedOf",
           "hasCompartment",
-          "eventOfPathways",
           "schemaClass"
         ],
         "additionalProperties": false,
