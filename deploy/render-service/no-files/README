@@ -1,0 +1,1 @@
+An empty folder, mounted as the render service's files when RENDER_FILES_DIR is unset (docker-compose.yml). RENDER_FILES is then empty, and the render page fetches a diagram's files from the download site.

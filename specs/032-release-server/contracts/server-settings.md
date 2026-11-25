@@ -14,7 +14,7 @@ values are the server's, never in the repository (FR-011). The guide
 | `CONTENT_NODE_ENV_FILE`                | yes      | content-node, pdf-export | path to the credentials file; the file holds `NEO4J_URI`, `NEO4J_DATABASE`, `NEO4J_USER`, `NEO4J_PASSWORD` as today |
 | `CONTENT_NODE_UID`, `CONTENT_NODE_GID` | yes      | content-node             | the owner of that file                                                                                              |
 | `DIAGRAM_FILES_DIR`                    | yes      | content-node             | the release's diagram folder                                                                                        |
-| `RENDER_FILES_DIR`                     | yes      | render                   | the release's files folder (diagrams, illustrations)                                                                |
+| `RENDER_FILES_DIR`                     | yes      | render                   | the folder holding the release folders, as the download site lays them out (`<it>/99/diagram/...`)                  |
 | `EXPRESSION_FILES_DIR`                 | no       | content-node             | unset: the Expression tab answers 503                                                                               |
 | `DOWNLOAD_RELEASE`                     | no       | nginx                    | the release number `/download/current/` goes to                                                                     |
 | `LETSENCRYPT_DIR`                      | yes      | nginx                    | certificates                                                                                                        |
