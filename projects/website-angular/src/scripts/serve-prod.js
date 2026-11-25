@@ -56,6 +56,43 @@ const {
 } = require('./search-answer-proxy');
 const { mountContactRoute } = require('./contact-route');
 
+/**
+ * Which deployment the page is, where it is not the build's own (specs/032 R2).
+ *
+ * The release server runs beta's build and must not behave as beta: beta's row
+ * sends ReactomeGSA's results to beta's Analysis Service and turns DeltaSignal
+ * on. SITE_PROFILE names the row instead; the page gets one line,
+ * `window.__APP_ENV`, which the site reads before the build's own name
+ * (environments.ts, runtimeProfileName). Unset -- beta, every development
+ * server -- the page is sent exactly as built.
+ *
+ * Only the deployments environments.ts chooses at run time are accepted
+ * (RUNTIME_PROFILES there; serve-prod.spec.ts holds the two lists equal). Any
+ * other name stops the server before it listens: a typo here served as beta
+ * would look right and report to the wrong places, which is the failure the
+ * profile table was written to make unsayable.
+ */
+const RUNTIME_PROFILES = ['release'];
+const SITE_PROFILE = process.env.SITE_PROFILE || '';
+if (SITE_PROFILE && !RUNTIME_PROFILES.includes(SITE_PROFILE)) {
+  console.error(
+    `SITE_PROFILE "${SITE_PROFILE}" is not a deployment chosen when the site is served. ` +
+      `Known: ${RUNTIME_PROFILES.join(', ')}.`
+  );
+  process.exit(1);
+}
+const PROFILE_LINE = SITE_PROFILE
+  ? `<script>window.__APP_ENV=${JSON.stringify(SITE_PROFILE)};</script>`
+  : '';
+
+/** The page with the profile's line first in its head, before any of the app's scripts. */
+function withProfile(html) {
+  const head = /<head(\s[^>]*)?>/i.exec(html) || /<!doctype html>/i.exec(html);
+  if (!head) return PROFILE_LINE + html;
+  const at = head.index + head[0].length;
+  return html.slice(0, at) + PROFILE_LINE + html.slice(at);
+}
+
 const app = express();
 app.disable('x-powered-by');
 
@@ -295,6 +332,8 @@ function contentNamed(filePath) {
   const inBuildRoot = relative.length === 1 || (relative.length === 2 && relative[0] === 'media');
   return inBuildRoot && CONTENT_NAMED.test(relative[relative.length - 1]);
 }
+// Asked for by name, the page is still this deployment's, not the build's.
+if (PROFILE_LINE) app.get('/index.html', (req, res) => servePage(req, res));
 app.use(
   express.static(DIST, {
     index: false,
@@ -346,22 +385,35 @@ const REBUILDING = `<!doctype html><meta charset="utf-8"><title>Rebuilding…</t
  */
 const API_PAGE_ROOT = /^\/(ContentService|AnalysisService)\/?$/;
 
+/** The page could not be read: a rebuild in flight, or worse. */
+function pageMissing(error, res) {
+  if (error.code === 'ENOENT') {
+    res.setHeader('Retry-After', '5');
+    return res.status(503).type('html').send(REBUILDING);
+  }
+  res.status(500).type('text/plain').send('Could not read the build output');
+}
+
 // Client-side routing: anything not matched above is an Angular route.
-app.get(/.*/, (req, res) => {
+function servePage(req, res) {
   res.setHeader('Cache-Control', API_PAGE_ROOT.test(req.path) ? 'no-store' : 'no-cache');
+  if (PROFILE_LINE) {
+    // Read per request, as sendFile does: a rebuild replaces the file in place.
+    return fs.readFile(INDEX, 'utf8', (error, html) => {
+      if (error) return pageMissing(error, res);
+      res.type('html').send(withProfile(html));
+    });
+  }
   // Relative to its root, so only 'index.html' is checked for a leading dot:
   // given the whole path, Express 5 (send 1) refuses a build that sits under
   // any dot-directory -- ~/.something, .claude/worktrees -- and every page
   // was a 500.
   res.sendFile('index.html', { root: DIST }, (error) => {
     if (!error || res.headersSent) return;
-    if (error.code === 'ENOENT') {
-      res.setHeader('Retry-After', '5');
-      return res.status(503).type('html').send(REBUILDING);
-    }
-    res.status(500).type('text/plain').send('Could not read the build output');
+    pageMissing(error, res);
   });
-});
+}
+app.get(/.*/, servePage);
 
 // Last: anything a route did not answer is answered here in JSON, never with
 // Express's default page, which carries the stack trace (NODE_ENV is unset).

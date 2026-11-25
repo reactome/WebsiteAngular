@@ -2,9 +2,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { createServer } from 'node:net';
 import { createServer as createHttpServer, get as httpGet, type Server } from 'node:http';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { RUNTIME_PROFILES } from '../config/environments';
 
 // The express server that serves beta, which had no test at all: the e2e suite
 // starts `ng serve` instead, so nothing exercised the thing real users hit.
@@ -153,6 +154,11 @@ describe('serve-prod', () => {
     expect(response.status).toBe(200);
     expect(response.headers.get('content-type')).toMatch(/text\/html/);
     expect(await response.text()).toContain(INDEX_MARKER);
+  });
+
+  it('sends the page exactly as built when no deployment is named', async () => {
+    // Beta's systemd service sets no SITE_PROFILE; its pages must not change.
+    expect(await (await fetch(base + '/')).text()).toBe(`<!doctype html>${INDEX_MARKER}`);
   });
 
   it('serves a real asset as itself', async () => {
@@ -527,5 +533,91 @@ describe('serve-prod and requests given up', () => {
       await fetch(`http://127.0.0.1:${port}/ContentService/data/query/enhanced/R-HSA-1`)
     ).arrayBuffer();
     expect(body.byteLength).toBe(ANSWER.length);
+  });
+});
+
+// specs/032 T006: one image for beta and the release server, the deployment
+// named when the site is served.
+describe('serve-prod as a deployment named when it is served', () => {
+  let dist = '';
+  let base = '';
+  let server: ChildProcess | undefined;
+  const LINE = '<script>window.__APP_ENV="release";</script>';
+
+  beforeAll(async () => {
+    dist = await mkdtemp(path.join(tmpdir(), 'serve-prod-profile-'));
+    await writeFile(
+      path.join(dist, 'index.html'),
+      `<!doctype html><html><head><meta charset="utf-8">${INDEX_MARKER}</head><body><script src="main-AB12CD34.js" type="module"></script></body></html>`,
+      'utf8'
+    );
+    const port = await freePort();
+    base = `http://127.0.0.1:${port}`;
+    server = spawn('node', [SCRIPT], {
+      env: {
+        ...process.env,
+        DIST_DIR: dist,
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        SITE_PROFILE: 'release',
+        HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
+        HEALTH_RENDER: 'http://127.0.0.1:9/health',
+        HEALTH_MCP: 'http://127.0.0.1:9/health',
+      },
+      stdio: 'ignore',
+    });
+    expect(await waitForServer(base), 'the server came up').toBe(true);
+  }, 40_000);
+
+  afterAll(async () => {
+    server?.kill('SIGTERM');
+    if (dist) await rm(dist, { recursive: true, force: true });
+  });
+
+  for (const page of ['/', '/about/news', '/index.html']) {
+    it(`names the deployment in ${page}, before the app's scripts run`, async () => {
+      const response = await fetch(base + page);
+      expect(response.status).toBe(200);
+      expect(response.headers.get('content-type')).toMatch(/text\/html/);
+      expect(response.headers.get('cache-control')).toBe('no-cache');
+      const html = await response.text();
+      expect(html.startsWith(`<!doctype html><html><head>${LINE}<meta charset`), html).toBe(true);
+      expect(html.split(LINE)).toHaveLength(2);
+      expect(html.indexOf(LINE)).toBeLessThan(html.indexOf('main-AB12CD34.js'));
+    });
+  }
+
+  it('refuses to start with a name it cannot serve', async () => {
+    // Beta is a real deployment, but a build's, not one chosen when serving: a
+    // name reached both ways is two deployments sharing hosts by accident.
+    for (const name of ['beta', 'relase']) {
+      const child = spawn('node', [SCRIPT], {
+        env: { ...process.env, DIST_DIR: dist, PORT: String(await freePort()), SITE_PROFILE: name },
+        stdio: ['ignore', 'ignore', 'pipe'],
+      });
+      let stderr = '';
+      child.stderr.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
+      const code = await new Promise<number | null>((resolve) => {
+        const timer = setTimeout(() => {
+          child.kill('SIGTERM');
+          resolve(null);
+        }, 10_000);
+        child.on('exit', (exitCode) => {
+          clearTimeout(timer);
+          resolve(exitCode);
+        });
+      });
+      expect(code, `${name}: exits rather than serving`).toBe(1);
+      expect(stderr).toContain(`"${name}"`);
+      expect(stderr).toContain('release');
+    }
+  }, 30_000);
+
+  it('accepts exactly the deployments the site chooses when served', async () => {
+    // serve-prod.js is plain JavaScript and starts a server when loaded, so its
+    // list is read as text; environments.ts's is the one the site obeys.
+    const text = await readFile(SCRIPT, 'utf8');
+    const list = /const RUNTIME_PROFILES = (\[[^\]]*\]);/.exec(text)?.[1] ?? 'missing';
+    expect(JSON.parse(list.replace(/'/g, '"'))).toEqual([...RUNTIME_PROFILES]);
   });
 });
