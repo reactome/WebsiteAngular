@@ -320,6 +320,28 @@ app.use(
   }
 );
 
+// The old diagram widget's address, which pages written for that widget still
+// load (AllianceGenome's gene pages: spec 009, T048). The embed's loader is
+// served there; it defines the old widget's interface, and loads the diagram's
+// code from /embed/diagram/v1/. Nothing else the old widget had is here: its
+// other files are a 404, not the site's page, which a browser would run.
+app.use('/DiagramJs', (req, res) => {
+  embedHeaders(res);
+  if (
+    (req.method !== 'GET' && req.method !== 'HEAD') ||
+    req.path !== '/diagram/diagram.nocache.js'
+  ) {
+    res.status(404).type('text/plain').send('Not found');
+    return;
+  }
+  res.setHeader('Cache-Control', 'no-cache');
+  // By name under a root: Express refuses an absolute path through a dot
+  // directory (a checkout under .claude/worktrees, say) with a 404.
+  res.sendFile('reactome-diagram.js', { root: EMBED_DIST }, (error) => {
+    if (error && !res.headersSent) res.status(404).type('text/plain').send('Not found');
+  });
+});
+
 // Only build output named by its content is immutable: the bundles at the top
 // of the build (main-XXXXXXXX.js, chunk-..., styles-...) and media/. Everything
 // else keeps its name when it changes -- index.html, the content pages, uploads,

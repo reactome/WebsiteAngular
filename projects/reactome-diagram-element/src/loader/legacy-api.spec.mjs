@@ -57,7 +57,12 @@ function fakeElement(tag) {
 }
 
 /** A page with one placeholder, and a custom-element registry whose definition the test releases. */
-function page({ customElements = true, readyState = 'loading', ready } = {}) {
+function page({
+  customElements = true,
+  readyState = 'loading',
+  ready,
+  src = 'https://example.org/embed/diagram/v1/reactome-diagram.js',
+} = {}) {
   const holder = fakeElement('div');
   const head = fakeElement('head');
   let define;
@@ -67,12 +72,12 @@ function page({ customElements = true, readyState = 'loading', ready } = {}) {
     readyState,
     addEventListener: (type, fn) => type === 'DOMContentLoaded' && loadedListeners.push(fn),
     head,
-    currentScript: { src: 'https://example.org/embed/diagram/v1/reactome-diagram.js' },
+    currentScript: { src },
     getElementById: (id) => (id === 'holder' ? holder : null),
     createElement: (tag) => fakeElement(tag),
     querySelector: () => null,
   };
-  const window = { document, setTimeout };
+  const window = { document, setTimeout, URL };
   if (customElements) window.customElements = { whenDefined: () => defined };
   if (ready) window.onReactomeDiagramReady = ready;
   window.window = window;
@@ -80,10 +85,32 @@ function page({ customElements = true, readyState = 'loading', ready } = {}) {
   vm.runInContext(LOADER, context);
   const diagram = () => holder.children[0];
   const parsed = () => loadedListeners.forEach((fn) => fn());
-  return { window, holder, diagram, define: () => define(), parsed };
+  const loads = () =>
+    head.children.filter((child) => child.type === 'module').map((child) => child.src);
+  return { window, holder, diagram, define: () => define(), parsed, loads };
 }
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+// Where the diagram's code is loaded from: beside the loader, or, when the
+// loader was loaded from the old widget's address (pages written for that
+// widget, spec 009 T048), from the embed's own address on the same host.
+describe('the diagram code the loader loads', () => {
+  it('is beside the loader', () => {
+    expect(page().loads()).toEqual(['https://example.org/embed/diagram/v1/main.js']);
+  });
+
+  it("is the embed's, when loaded from the old widget's address", () => {
+    for (const src of [
+      'https://example.org/DiagramJs/diagram/diagram.nocache.js',
+      'https://example.org/DiagramJs/diagram/diagram.nocache.js?v=2',
+      'http://example.org/diagramjs/diagram/diagram.nocache.js',
+    ]) {
+      const origin = new URL(src).origin;
+      expect(page({ src }).loads(), src).toEqual([`${origin}/embed/diagram/v1/main.js`]);
+    }
+  });
+});
 
 describe('Reactome.Diagram, from the classic loader', () => {
   it('is there as soon as the script has run, for pages that poll for it', () => {
@@ -230,7 +257,7 @@ describe('Reactome.Diagram, from the classic loader', () => {
   it('leaves nothing of its own on the window but Reactome', () => {
     const { window } = page();
     const own = Object.keys(window).filter(
-      (key) => !['document', 'setTimeout', 'customElements', 'window'].includes(key)
+      (key) => !['document', 'setTimeout', 'URL', 'customElements', 'window'].includes(key)
     );
     expect(own).toEqual(['Reactome']);
   });

@@ -76,4 +76,32 @@ test.describe('addresses partners use', () => {
       { timeout: 90_000 }
     );
   });
+
+  // AllianceGenome's gene pages (spec 009, T049): beside the diagram, they ask
+  // the mapping endpoints for a gene's pathways and reactions, by the name of
+  // the gene's own database (MGI, RGD, ZFIN, Flybase...; UniProt otherwise),
+  // show the first reaction's figure, and link to its page and to the
+  // inferred-events documentation. A mouse gene, Trp53 (MGI:98834), sent as
+  // they send it: the number alone.
+  for (const kind of ['pathways', 'reactions'] as const) {
+    test(`a gene's ${kind}, asked for as AllianceGenome asks`, async ({ request }) => {
+      const response = await request.get(`/ContentService/data/mapping/MGI/98834/${kind}`);
+      expect(response.status()).toBe(200);
+      const events = (await response.json()) as { stId?: string }[];
+      expect(events.length).toBeGreaterThan(0);
+      expect(events.every((event) => /^R-MMU-\d+$/.test(event.stId ?? ''))).toBe(true);
+    });
+  }
+
+  test("a reaction's page, as AllianceGenome links it", async ({ page }) => {
+    await page.goto(`/content/detail/${REACTION}`);
+    await expect(page.locator('app-breadcrumb')).toContainText('CHEK2', { timeout: 90_000 });
+  });
+
+  test('the inferred-events documentation, as AllianceGenome links it', async ({ page }) => {
+    await page.goto('/documentation/inferred-events');
+    await expect(
+      page.getByRole('heading', { name: 'Computationally Inferred Events' }).first()
+    ).toBeVisible({ timeout: 90_000 });
+  });
 });
