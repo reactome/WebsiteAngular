@@ -98,8 +98,9 @@ beforeAll(async () => {
         '10',
         'Preference-Applied',
         prefer,
-        'Vary',
-        'Accept, Prefer',
+        // as pdf-export sends it, not a header it never sends (review of 25 Nov)
+        'Cache-Control',
+        'no-store',
       ]);
       res.end(REPORT_STATUS);
       return;
@@ -904,9 +905,9 @@ describe('the analysis report, sent to pdf-export (pdf-export spec 002, T021)', 
         answer.headers.get('content-type'),
         answer.headers.get('retry-after'),
         answer.headers.get('preference-applied'),
-        answer.headers.get('vary'),
+        answer.headers.get('cache-control'),
         await answer.text(),
-      ]).toEqual([202, 'application/json', '10', 'wait=5', 'Accept, Prefer', REPORT_STATUS]);
+      ]).toEqual([202, 'application/json', '10', 'wait=5', 'no-store', REPORT_STATUS]);
       expect(arrived).toEqual([]);
     } finally {
       await close();
