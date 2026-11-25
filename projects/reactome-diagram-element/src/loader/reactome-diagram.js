@@ -37,7 +37,7 @@
     }
 
     var fonts = [
-      'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap',
+      'https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&family=Roboto+Mono:wght@400;700&display=swap',
       'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200',
       'https://fonts.googleapis.com/icon?family=Material+Icons',
     ];
@@ -45,6 +45,8 @@
       var link = document.createElement('link');
       link.rel = 'stylesheet';
       link.href = fonts[i];
+      // The diagram reads its faces once these have loaded (diagram-fonts.ts).
+      link.setAttribute('data-reactome-diagram-font', '');
       document.head.appendChild(link);
     }
 

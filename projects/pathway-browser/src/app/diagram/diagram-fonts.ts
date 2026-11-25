@@ -30,17 +30,39 @@ const FONT_WAIT_MS = 2000;
  *
  * Faces the page has not declared are not waited for, and a face that fails to
  * load is left as it is (loadFamily). A font host slower than the wait draws
- * as before.
+ * as before. The faces are read once the font stylesheets the embed's loader
+ * added (`data-reactome-diagram-font`) have loaded, within the same wait: on a
+ * partner's page they arrive as the diagram starts, and read before them there
+ * was no face to wait for.
  */
 export function diagramFontsReady(
   faces: Iterable<Face> = document.fonts,
-  wait = FONT_WAIT_MS
+  wait = FONT_WAIT_MS,
+  sheets: Promise<unknown> = fontSheetsLoaded()
 ): Promise<void> {
-  const declared = [...faces];
-  const loaded = Promise.all(
-    DIAGRAM_FACES.map(([family, weight]) => loadFamily(declared, family, weight))
-  ).then(() => undefined);
+  const loaded = sheets.then(() => {
+    const declared = [...faces];
+    return Promise.all(
+      DIAGRAM_FACES.map(([family, weight]) => loadFamily(declared, family, weight))
+    ).then(() => undefined);
+  });
   let timer: ReturnType<typeof setTimeout> | undefined;
   const waited = new Promise<void>((resolve) => (timer = setTimeout(resolve, wait)));
   return Promise.race([loaded, waited]).finally(() => clearTimeout(timer));
+}
+
+/** The embed's font stylesheets, each loaded or failed; none on the site's own pages. */
+function fontSheetsLoaded(): Promise<unknown> {
+  const pending = [
+    ...document.querySelectorAll<HTMLLinkElement>('link[data-reactome-diagram-font]'),
+  ].filter((link) => !link.sheet);
+  return Promise.all(
+    pending.map(
+      (link) =>
+        new Promise<void>((resolve) => {
+          link.addEventListener('load', () => resolve(), { once: true });
+          link.addEventListener('error', () => resolve(), { once: true });
+        })
+    )
+  );
 }
