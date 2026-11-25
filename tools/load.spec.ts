@@ -17,6 +17,7 @@ const ROOT = path.join(import.meta.dirname, '..');
 // With the two command-line tools run under Node as they are: the library
 // workflow runs one daily, and nothing else would load it before then.
 const SERVICES = [
+  'release-check',
   'content-node',
   'render',
   'analysis-gateway',
