@@ -180,6 +180,8 @@ The pull request that completes a task ticks it here, with its number.
 
 ## Phase 7: Polish
 
+- [x] T034 Bound what may be stored to answers that are finite in fact (awright, 25 Nov 2026): every `/search/` route never stored; the schema lists stored at the site's 50 a page only; an interactor's details only unpaged; the reference-sequence lists never (a page past the end is an empty 200). Measured on beta first: `rows=100000`, `offset=17`, any `pageSize` and any search were labelled cacheable. Tests in `parameters.spec.ts`, each seen failing against main's record. `CACHING.md` records the decision. (#1087)
+
 - [x] T032 [P] Add every new module to the dead-code and lint ratchets as they stand, without raising either count. Every new module is under both ratchets as built: dead code unchanged at 133, lint down from 1397 to 1330 (#533). — #535
 - [x] T033 Re-read spec.md's success criteria SC-001–SC-007 and tick each with the task or check that met it. Add the notes to `specs/011-api-cache-headers/checklists/requirements.md`. Done 19 Oct 2026 (checklists/requirements.md): SC-001–004 met, SC-006 met in e2e, SC-005 and SC-007 wait on the Cache Rule (#527). — #535
 

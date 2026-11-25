@@ -126,6 +126,23 @@ without breaking anyone into compliance.
    TTL, or it stores the application shell under an API address and serves a
    page whose scripts no longer exist after the next deploy.
 
+### Finite in fact, not only in name (25 Nov 2026)
+
+Standard form bounds the spellings of one answer; it does not bound answers
+whose space is open. Measured on beta, three were labelled cacheable without
+limit, and search is open by nature. So (awright, 25 Nov 2026):
+
+- **Search is never stored.** Its terms are free text, which no record can
+  bound; few searches repeat, so the edge would gain little; Solr answers in
+  milliseconds; and the server keeps seeing what people search for.
+- **Pages only as the site asks for them.** The schema lists are stored at the
+  site's 50 a page only (Java answers any size to 20000); an interactor's
+  details only unpaged; the reference-sequence lists, whose page past the end
+  is an empty 200 and which the site never asks for, never.
+
+Each is still answered exactly as Java answers it, so no difference from Java
+is declared: what changes is only whether the edge may keep it.
+
 ### What this does not fix
 
 Volume. Bot load is overwhelmingly requests to _valid_ URLs — crawling every

@@ -57,10 +57,18 @@ describe('the record', () => {
     expect(declaredQuery('/ContentService/search/query').map((p) => p.name)).toContain('Start row');
   });
 
-  it('marks what is never stored: outside services, a daily date, a token, a name', () => {
+  it('never stores a search: free text has no bound, and few searches repeat', () => {
+    const search = Object.entries(RECORD).filter(([path]) =>
+      path.startsWith('/ContentService/search/')
+    );
+    expect(search.length).toBeGreaterThan(10);
+    expect(search.filter(([, entry]) => entry.cache !== 'never').map(([path]) => path)).toEqual([]);
+  });
+
+  it('marks what else is never stored: outside services, a daily date, a token, a name, endless pages', () => {
     expect(
       Object.entries(RECORD)
-        .filter(([, entry]) => entry.cache)
+        .filter(([path, entry]) => entry.cache && !path.startsWith('/ContentService/search/'))
         .map(([path, entry]) => [path, entry.cache])
         .sort()
     ).toEqual([
@@ -69,6 +77,8 @@ describe('the record', () => {
       ['/ContentService/citation/static/{id}', 'never'],
       ['/ContentService/data/people/name/{name}', 'never'],
       ['/ContentService/data/people/name/{name}/exact', 'never'],
+      ['/ContentService/data/referenceSequences', 'never'],
+      ['/ContentService/data/referenceSequences/identifiers', 'never'],
       ['/ContentService/exporter/fireworks/{id}', 'private'],
       ['/ContentService/exporter/voronoi/{id}', 'private'],
       ['/ContentService/interactors/psicquic/resources', 'never'],
@@ -242,6 +252,38 @@ describe('standardForm: query parameters', () => {
 
 // Review of #530: aliases each found accepted, and the mutations that
 // survived the tests above.
+describe('standardForm: pages the site asks for, and no others', () => {
+  // Each page size Java answers is a different answer; with every page
+  // number, the stored entries would be as many as anyone asked for.
+  it("stores the schema lists at the site's 50 a page only", () => {
+    const min = '/ContentService/data/schema/{id}/min';
+    expect(at(min, '/ContentService/data/schema/Pathway/min?page=2&offset=50')).toEqual(ok);
+    expect(at(min, '/ContentService/data/schema/Pathway/min?page=2&offset=17').ok).toBe(false);
+    expect(at(min, '/ContentService/data/schema/Pathway/min?page=1&offset=20000').ok).toBe(false);
+    const list = '/ContentService/data/schema/{id}';
+    expect(at(list, '/ContentService/data/schema/Pathway?page=1&offset=50')).toEqual(ok);
+    expect(at(list, '/ContentService/data/schema/Pathway?page=1&offset=51').ok).toBe(false);
+    const reference = '/ContentService/data/schema/{id}/reference';
+    expect(
+      at(reference, '/ContentService/data/schema/ReferenceGeneProduct/reference?page=1&offset=50')
+    ).toEqual(ok);
+    expect(
+      at(reference, '/ContentService/data/schema/ReferenceGeneProduct/reference?page=1&offset=5').ok
+    ).toBe(false);
+  });
+
+  it("stores an interactor's details unpaged only, as the site asks", () => {
+    const details = '/ContentService/interactors/static/molecule/{id}/details';
+    expect(at(details, '/ContentService/interactors/static/molecule/P04637/details')).toEqual(ok);
+    expect(
+      at(details, '/ContentService/interactors/static/molecule/P04637/details?page=1&pageSize=5').ok
+    ).toBe(false);
+    expect(
+      at(details, '/ContentService/interactors/static/molecule/P04637/details?pageSize=5').ok
+    ).toBe(false);
+  });
+});
+
 describe('standardForm: one spelling, where Java answers many', () => {
   const no = (rule: string) => ({ ok: false, rule });
   const cases: [string, string, unknown][] = [
