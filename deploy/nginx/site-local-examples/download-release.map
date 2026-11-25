@@ -1,0 +1,3 @@
+# The release /download/current/ redirects to on this host: the one being staged.
+# Moved with each release. See release.conf, `map $host $download_release`.
+release.reactome.org 99;

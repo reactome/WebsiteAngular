@@ -73,7 +73,7 @@ specs/032-release-server/
 .github/workflows/publish-images.yml     # new (R1)
 deploy/site/Dockerfile                   # new (R2)
 deploy/nginx/
-├── Dockerfile                           # creates /etc/nginx/site-local{,/release}; templates step (R4)
+├── Dockerfile                           # creates /etc/nginx/site-local{,/release} (R4)
 ├── release.conf                         # two site-local includes, /download/ redirect
 ├── test-config.sh                       # release twice: empty folder, examples mounted
 ├── site-local-empty/                    # what a host with no folder mounts
