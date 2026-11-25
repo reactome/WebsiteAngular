@@ -59,12 +59,116 @@ client_named() {
   fi
 }
 
+# /download/ on the release host goes to the download site (specs/032 D5):
+# `current` as the release the server names in its own folder, or `current`
+# when it names none; any other release kept; the site's /download-data page
+# not touched. Run for real, with no network, asked from inside the container.
+download_redirects() {
+  local image=$1 release=$2
+  shift 2
+  local server failed=0 got path want
+  server=$(docker run -d --network none "$@" "$image")
+  containers+=("$server")
+  for _ in $(seq 50); do
+    docker exec "$server" curl -sk -m 2 -o /dev/null --resolve release.reactome.org:443:127.0.0.1 \
+      https://release.reactome.org/ 2>/dev/null && break
+    sleep 0.2
+  done
+  while read -r path want; do
+    got=$(docker exec "$server" curl -sk -m 5 -o /dev/null -w '%{http_code} %{redirect_url}' \
+      --resolve release.reactome.org:443:127.0.0.1 "https://release.reactome.org$path")
+    if [ "$got" != "$want" ]; then
+      echo "$path: $got, not $want"
+      failed=1
+    fi
+  done <<EOT
+/download/current/diagram/R-HSA-1.json 302 https://download.reactome.org/$release/diagram/R-HSA-1.json
+/download/98/x.txt?a=1 302 https://download.reactome.org/98/x.txt?a=1
+/download/current/ 302 https://download.reactome.org/$release/
+EOT
+  # The site's page: whatever the site answers, never the download site.
+  got=$(docker exec "$server" curl -sk -m 5 -o /dev/null -w '%{redirect_url}' \
+    --resolve release.reactome.org:443:127.0.0.1 https://release.reactome.org/download-data)
+  case "$got" in
+    *download.reactome.org*) echo "/download-data was sent to $got"; failed=1 ;;
+  esac
+  return $failed
+}
+
+# The release server's other sites, from the site-local examples (specs/032
+# US3), answered as their files say, and a name nobody configured still
+# refused -- an example claiming it would take every unknown name. Run for
+# real, with no network: a stand-in for the build service on the example's
+# port answers 200, so its path is seen to reach it rather than the site (whose
+# upstream, absent here, would answer 502).
+site_local_hosts() {
+  local image=$1
+  shift
+  local stub server failed=0 host path want got
+  printf 'server {\n  listen 127.0.0.1:8081;\n  location / { return 200 "build service"; }\n}\n' \
+    >"$work/stub-build.conf"
+  stub=$(docker run -d --network none -v "$work/stub-build.conf:/etc/nginx/conf.d/default.conf:ro" nginx:alpine)
+  containers+=("$stub")
+  server=$(docker run -d --network "container:$stub" "$@" "$image")
+  containers+=("$server")
+  for _ in $(seq 50); do
+    docker exec "$stub" curl -sk -m 2 -o /dev/null --resolve release.reactome.org:443:127.0.0.1 \
+      https://release.reactome.org/ 2>/dev/null && break
+    sleep 0.2
+  done
+  while read -r host path want; do
+    got=$(docker exec "$stub" curl -sk -m 5 -o /dev/null -w '%{http_code} %{redirect_url}' \
+      --resolve "$host:443:127.0.0.1" --resolve "$host:80:127.0.0.1" "$path")
+    got=${got% }
+    if [ "$got" != "$want" ]; then
+      echo "$path: $got, not $want"
+      failed=1
+    fi
+  done <<EOT
+unknown.example https://unknown.example/ 503
+wiki.example http://wiki.example/x 301 https://wiki.example/x
+redirect.example https://redirect.example/a?b=1 301 https://target.example/a?b=1
+release.reactome.org https://release.reactome.org/build/job/x 200
+release.reactome.org https://release.reactome.org/builds/ 502
+release.reactome.org https://release.reactome.org/site-local-probe 200
+EOT
+  return $failed
+}
+
+# A renewal's challenge, answered from the folder certbot writes to (specs/032
+# T025): compose mounts CERTBOT_WEBROOT at /var/www/certbot, where every
+# configuration routes the challenge path. Without that mount the folder in the
+# container is empty and a webroot renewal through this nginx fails -- which it
+# did, unnoticed, until T002. Asked over plain HTTP, as the CA asks.
+challenge_served() {
+  local image=$1 host=$2
+  shift 2
+  local server token=probe-$$ got
+  mkdir -p "$work/webroot/.well-known/acme-challenge"
+  printf 'challenge %s' "$token" >"$work/webroot/.well-known/acme-challenge/$token"
+  server=$(docker run -d --network none "$@" "$image")
+  containers+=("$server")
+  for _ in $(seq 50); do
+    got=$(docker exec "$server" curl -s -m 2 --resolve "$host:80:127.0.0.1" \
+      "http://$host/.well-known/acme-challenge/$token" 2>/dev/null) && [ -n "$got" ] && break
+    sleep 0.2
+  done
+  if [ "$got" != "challenge $token" ]; then
+    echo "http://$host/.well-known/acme-challenge/$token answered: ${got:-nothing}"
+    return 1
+  fi
+}
+
 status=0
 for env in dev release production; do
   # Every certificate and key the configuration names, made under $work.
   mkdir -p "$work/$env"
   # (A configuration with no certificates is fine: nothing to stand in.)
-  { grep -hoE 'ssl_certificate(_key)?\s+\S+;' "deploy/nginx/$env.conf" || true; } |
+  # The release configuration's site-local examples name certificates of
+  # their own, stood in for the same way.
+  sources=("deploy/nginx/$env.conf")
+  [ "$env" = release ] && sources+=($(find deploy/nginx/site-local-examples -name '*.conf'))
+  { grep -hoE 'ssl_certificate(_key)?\s+\S+;' "${sources[@]}" || true; } |
     awk '{print $2}' | tr -d ';' | sort -u |
     while read -r file; do
       mkdir -p "$work/$env$(dirname "$file")"
@@ -98,8 +202,45 @@ for env in dev release production; do
       -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" \
       --entrypoint nginx "$image" -t 2>"$work/out"; then
       echo "ok   $env with the site-local examples"
+      if download_redirects "$image" 99 "${mounts[@]}" \
+        -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" >"$work/out" 2>&1; then
+        echo "ok   $env: /download/ goes to the release the server names"
+      else
+        echo "FAIL $env: /download/ with the server's release named"
+        sed 's/^/     /' "$work/out"
+        status=1
+      fi
+      if download_redirects "$image" current "${mounts[@]}" >"$work/out" 2>&1; then
+        echo "ok   $env: /download/ goes to the current release when none is named"
+      else
+        echo "FAIL $env: /download/ with no release named"
+        sed 's/^/     /' "$work/out"
+        status=1
+      fi
+      if site_local_hosts "$image" "${mounts[@]}" \
+        -v "$PWD/deploy/nginx/site-local-examples:/etc/nginx/site-local:ro" >"$work/out" 2>&1; then
+        echo "ok   $env: the examples' sites answer, and unknown names are still refused"
+      else
+        echo "FAIL $env: the site-local examples' sites"
+        sed 's/^/     /' "$work/out"
+        status=1
+      fi
     else
       echo "FAIL $env with the site-local examples"
+      sed 's/^/     /' "$work/out"
+      status=1
+    fi
+  fi
+  if [ "$env" = release ]; then
+    # The folder this mounts is the one compose mounts on a host.
+    if ! grep -qE '^ +- \$\{CERTBOT_WEBROOT:-[^}]+\}:/var/www/certbot:ro$' docker-compose.yml; then
+      echo "FAIL $env: docker-compose.yml does not mount CERTBOT_WEBROOT at /var/www/certbot"
+      status=1
+    elif challenge_served "$image" release.reactome.org "${mounts[@]}" \
+      -v "$work/webroot:/var/www/certbot:ro" >"$work/out" 2>&1; then
+      echo "ok   $env: a renewal's challenge is served from the mounted webroot"
+    else
+      echo "FAIL $env: a renewal's challenge"
       sed 's/^/     /' "$work/out"
       status=1
     fi

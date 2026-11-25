@@ -16,15 +16,14 @@ services:
       - SITE_PROFILE=${SITE_PROFILE}
       - NODE_ENV=production
     restart: unless-stopped
-  render:
-    volumes:
-      - ${RENDER_FILES_DIR}:/files:ro
-    environment:
-      - RENDER_FILES=/files
-      - RENDER_CONCURRENCY=${RENDER_CONCURRENCY:-2}
   java-library: {} # built here: `docker compose build java-library`
   pdf-export: {} # built here, as java-library
 ```
+
+The render service needs no entry: the base file reads `RENDER_FILES_DIR` and
+`RENDER_CONCURRENCY` from the settings file (T016). `RENDER_FILES_DIR` names the folder
+holding the release folders (`<it>/99/diagram/...`), as the download site lays them out,
+not one release's own folder.
 
 Rules:
 

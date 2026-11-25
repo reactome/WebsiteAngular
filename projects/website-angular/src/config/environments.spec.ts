@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getProfile, SITE_PROFILES, type ProfileName } from './environments';
+import { getProfile, RUNTIME_PROFILES, SITE_PROFILES, type ProfileName } from './environments';
 import angularJson from '../../../../angular.json';
 
 // A build reaches its backend and picks its UI through this table. When the two
@@ -44,7 +44,7 @@ describe('site profiles', () => {
     // does not -- the reaction-diagram exporter among them. Naming a host
     // instead sent beta to reactome.org, which 404s that endpoint, and reaction
     // pages stopped drawing.
-    for (const name of ['beta', 'development'] as ProfileName[]) {
+    for (const name of ['beta', 'release', 'development'] as ProfileName[]) {
       expect(SITE_PROFILES[name].host, `${name}.host`).toBe('origin');
       expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
     }
@@ -99,7 +99,9 @@ describe('site profiles', () => {
     const configurations = Object.keys(
       angularJson.projects.reactome.architect.build.configurations
     ).sort();
-    const siteProfiles = Object.keys(SITE_PROFILES).filter((name) => !name.startsWith('embed-'));
+    const siteProfiles = Object.keys(SITE_PROFILES).filter(
+      (name) => !name.startsWith('embed-') && !RUNTIME_PROFILES.includes(name as ProfileName)
+    );
     expect(configurations).toEqual(siteProfiles.sort());
   });
 
@@ -117,7 +119,22 @@ describe('site profiles', () => {
         const env = configuration.define?.APP_ENV;
         return env === undefined ? [] : [JSON.parse(env) as string];
       });
-    expect(named.sort()).toEqual(Object.keys(SITE_PROFILES).sort());
+    // The rest are chosen when the site is served, and no build may also name
+    // one of them.
+    expect([...named, ...RUNTIME_PROFILES].sort()).toEqual(Object.keys(SITE_PROFILES).sort());
+  });
+
+  it('serves the release server as a deployment of its own, not as beta', () => {
+    // Beta's row there would send the release host's visits to beta's numbers,
+    // offer DeltaSignal with no backend behind it, and have ReactomeGSA deliver
+    // results to beta's Analysis Service, which the release site does not read.
+    const release = SITE_PROFILES.release;
+    expect(RUNTIME_PROFILES).toContain('release');
+    expect(release.gtagId).toBeUndefined();
+    expect(release.deltaSignal).toBeUndefined();
+    expect(release.gsaServer).toBe('release');
+    expect(release.host).toBe('origin');
+    expect(release.originFallback).toBe('https://release.reactome.org');
   });
 
   it('offers DeltaSignal only where a DeltaSignal backend can be reached', () => {

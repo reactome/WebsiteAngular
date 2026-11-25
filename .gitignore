@@ -95,3 +95,6 @@ tools/svg-export-harness/harness.bundle.js
 
 # Notes of a recording's stubbed requests, consumed by scripts/trim-har.mjs (#404).
 e2e/har/*.stubs
+
+# A server's own compose settings (deploy/release-server/README.md): never committed.
+docker-compose.override.yml
