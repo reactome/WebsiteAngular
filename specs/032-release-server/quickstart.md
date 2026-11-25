@@ -16,24 +16,25 @@ server's; none of them go into the repository.
 5. Check: `docker compose config --services` lists no `graphdb`; `docker compose config`
    shows `image: <registry>/...:<IMAGE_TAG>` and no `build:` for every published service.
 
-## 2. Beside the old web server
+## 2. Beside the old web server, then a short swap
 
-The old web server keeps 80 and 443. For the trial, nginx listens on a spare port: an
-extra `listen <spare> ssl;` in a site-local file inside the release host's block, removed
-at cutover.
+The release configuration's nginx listens on 80 and 443, so it cannot start beside the old
+web server. First everything behind it, with the old web server still serving:
 
 ```sh
 docker compose pull
 docker compose build java-library pdf-export
-docker compose up -d
+docker compose up -d --scale nginx=0
 ```
 
-Expected: every container `Up`, the site's `/health` reports the content service, render
-and its bundle's build time.
+Expected: every other container `Up`; the site's `/health` (loopback `:4200`) reports the
+content service, render and its bundle; the content service (`:4400`) names the staged
+release. Then the old web server stopped, `docker compose up -d nginx`, and §3; any failure
+is undone in seconds (`docker compose stop nginx`, the old web server started).
 
 ## 3. Checks (SC-001)
 
-Through `https://<release host>:<spare>`:
+Through `https://<release host>`, during the swap:
 
 | Check                                                                  | Expected                                              |
 | ---------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -49,7 +50,7 @@ Through `https://<release host>:<spare>`:
 | `/ContentService/data/database/version`                                | the staged release                                    |
 
 Then the endpoint spot check (SC-003): `node tools/release-check/endpoints.ts --base
-https://<release host>:<spare>` — at least 30 endpoints, each 200 with the contract's
+http://127.0.0.1:4400` — at least 30 endpoints, each 200 with the contract's
 shape, or listed with its reason.
 
 ## 4. PDF step (SC-005)
@@ -71,5 +72,4 @@ webroot first): `certbot renew --dry-run` for each. Expected: every one passes.
 
 ## Cutover (the user)
 
-Stop the old web server, remove the spare-port line, `docker compose up -d nginx`, rerun §3
-on the public address.
+§2's swap, kept: the old web server disabled, the renewals moved (§6), §3 passed.

@@ -49,8 +49,8 @@ change to what beta runs.
 `release` deployment, with `/download/` going to the download site.
 
 **Independent test**: on this host, the stack started from published images (pulled by
-commit id) with the [compose override](contracts/compose-override.md), the site on a spare
-port answers `/`, a pathway, a search and `/download/current/...` as quickstart §3 says.
+commit id) with the [compose override](contracts/compose-override.md), the site
+answers `/`, a pathway, a search and `/download/current/...` as quickstart §3 says.
 
 ### The site as a container (R2)
 
@@ -77,8 +77,8 @@ Done (#1073).
 
 ### The guide
 
-- [ ] T014 [US1] `deploy/release-server/README.md`: running the stack on a server with its own graph database, following [quickstart.md](quickstart.md): the settings file ([contracts/server-settings.md](contracts/server-settings.md), with placeholders), the override ([contracts/compose-override.md](contracts/compose-override.md)), pulling one commit (`IMAGE_TAG`), building java-library and pdf-export there, the spare-port trial, the checks, updating, moving the release's files folder at a release, and what is never in the repository. Linked from `deploy/nginx/README.md` and the root `README.md`'s deployment section.
-- [ ] T015 [US1] **(server session)** Bring the stack up beside the old web server on a spare port (quickstart §1–2) and run quickstart §3 (SC-001's site, pathway, search, analysis, downloads, chat, version) and T013's check against the server (SC-003). Tick with pass/fail per row; differences found become tasks here.
+- [x] T014 [US1] `deploy/release-server/README.md`: running the stack on a server with its own graph database, following [quickstart.md](quickstart.md): the settings file ([contracts/server-settings.md](contracts/server-settings.md), with placeholders), the override ([contracts/compose-override.md](contracts/compose-override.md)), pulling one commit (`IMAGE_TAG`), building java-library and pdf-export there, the spare-port trial, the checks, updating, moving the release's files folder at a release, and what is never in the repository. Linked from `deploy/nginx/README.md` and the root `README.md`'s deployment section. Done (#1082), with T017 and T026: the guide. The spare-port trial is replaced: the release configuration's nginx listens on 80 and 443 and cannot start beside the old web server, so the parts behind nginx are checked on loopback first, then nginx in a short swap undone in seconds (spec US1/US3 tests, SC-001 and the quickstart changed to match). `docker-compose.override.yml` is gitignored.
+- [ ] T015 [US1] **(server session)** Bring the stack up beside the old web server, then through nginx in a short swap (quickstart §1–2) and run quickstart §3 (SC-001's site, pathway, search, analysis, downloads, chat, version) and T013's check against the server (SC-003). Tick with pass/fail per row; differences found become tasks here.
 
 **Checkpoint**: the release server can serve the new site from `main`'s images.
 
@@ -94,7 +94,7 @@ release's content service; a figures run on a handful of pathways writes their f
 no request to production (quickstart §4).
 
 - [ ] T016 [US2] The render service's files in the override: confirm `RENDER_FILES` is read by `tools/render` as spec 018 describes, and that the override in [contracts/compose-override.md](contracts/compose-override.md) and the guide mount `RENDER_FILES_DIR` read-only and set `RENDER_FILES` and `RENDER_CONCURRENCY`. If the base compose file should carry it (empty default, as `DIAGRAM_FILES_DIR`), add it to `docker-compose.yml` instead, with the same "unset → empty folder, never another release's files" rule. Seen failing: a figure whose files are missing answers an error, not a fetch from the download site.
-- [ ] T017 [P] [US2] PDF job settings in `deploy/release-server/README.md` (research R7): `RENDER_SERVICE=http://127.0.0.1:4310`, `CONTENT_SERVICE` the node content service directly on loopback (not through nginx, whose per-client limits would throttle a bulk run), `RENDER_CONCURRENCY` 2 to start with `--parallel` matching, raised only from T019's measurement; and the requirement that the job never runs while a release step has stopped Tomcat (one lock shared by those steps and the PDF job, configured where the jobs live).
+- [x] T017 [P] [US2] PDF job settings in `deploy/release-server/README.md` (research R7): `RENDER_SERVICE=http://127.0.0.1:4310`, `CONTENT_SERVICE` the node content service directly on loopback (not through nginx, whose per-client limits would throttle a bulk run), `RENDER_CONCURRENCY` 2 to start with `--parallel` matching, raised only from T019's measurement; and the requirement that the job never runs while a release step has stopped Tomcat (one lock shared by those steps and the PDF job, configured where the jobs live). Done (#1082): the guide's §4.
 - [ ] T018 [US2] **(server session)** Set the PDF job's settings and the shared lock; run the figures step on a handful of pathways (SC-005). Tick with the result.
 - [ ] T019 [US2] **(server session)** Memory (FR-010, SC-007), research R6's method: at rest, during the figures step on 100 pathways, during one book part. Recorded in the session's notes, not here; the tick says it was done and what the owner decided to cut.
 
@@ -114,7 +114,7 @@ build-service, wiki and unknown-host rows pass.
 - [ ] T021 [P] [US3] `deploy/nginx/site-local-examples/wiki.conf`: a `server` block for `wiki.example`, its certificate, PHP through `fastcgi_pass unix:/run/php/php-fpm.sock` (PHP-FPM on the host, or a container's port; the comment gives both), the wiki's upload limit as a placeholder, its configuration and data folders denied.
 - [ ] T022 [P] [US3] `deploy/nginx/site-local-examples/redirect.conf`: a `server` block for `redirect.example` answering 301 to its target, on 80 and 443.
 - [ ] T023 [US3] `test-config.sh` (T004) loads all three; the guide (T014) describes copying and filling them on the server. Seen failing: an example claiming `default_server` is refused (duplicate default), and a check that the unknown-host refusal still answers 503 with the examples loaded.
-- [ ] T024 [US3] **(server session)** Write the server's own site-local files from the examples; check the build service (pages, a login, a long request, the public addresses it writes), the wiki (pages, an upload at today's limit) and the redirect through the spare port. Tick with the result.
+- [ ] T024 [US3] **(server session)** Write the server's own site-local files from the examples; check the build service (pages, a login, a long request, the public addresses it writes), the wiki (pages, an upload at today's limit) and the redirect during the swap. Tick with the result.
 
 **Checkpoint**: nothing on the server depends on the old web server for its pages.
 
@@ -128,7 +128,7 @@ build-service, wiki and unknown-host rows pass.
 web server stopped (SC-004).
 
 - [ ] T025 [US4] Prove the webroot mount (T002): a check in `deploy/nginx/test-config.sh` (or beside it) that starts the `release` image with a temporary webroot holding `.well-known/acme-challenge/probe`, and asks `http://release.reactome.org/.well-known/acme-challenge/probe` through it (`Host` header); 200 with the file's text. Seen failing: without the mount, 404.
-- [ ] T026 [US4] Renewal steps in `deploy/release-server/README.md`: for each certificate, move its renewal from the old web server's authenticator to `webroot` with `CERTBOT_WEBROOT`, or to the DNS method beta uses (`deploy/nginx/README.md`) where the name is behind the CDN; reload nginx after renewal (a deploy hook running `docker compose exec nginx nginx -s reload`); the dry run to check.
+- [x] T026 [US4] Renewal steps in `deploy/release-server/README.md`: for each certificate, move its renewal from the old web server's authenticator to `webroot` with `CERTBOT_WEBROOT`, or to the DNS method beta uses (`deploy/nginx/README.md`) where the name is behind the CDN; reload nginx after renewal (a deploy hook running `docker compose exec nginx nginx -s reload`); the dry run to check. Done (#1082): the guide's §6, with the deploy hook that reloads nginx.
 - [ ] T027 [US4] **(server session)** Move each certificate's renewal and run each dry run with the old web server stopped (SC-004). Tick with the result.
 
 **Checkpoint**: the old web server can be stopped for good (the cutover is the user's).
