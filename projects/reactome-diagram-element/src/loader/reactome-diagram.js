@@ -30,8 +30,9 @@
     var base = script && script.src ? script.src.replace(/[^/]*$/, '') : '';
     // Served at the old widget's address as well, which pages written for it
     // still load (AllianceGenome's gene pages): the diagram's code is not there
-    // but at this file's own address, on the same host.
-    if (/\/DiagramJs\/diagram\/diagram\.nocache\.js(\?|#|$)/.test(script ? script.src : '')) {
+    // but at this file's own address, on the same host. Matched in any case, as
+    // the server matches the address.
+    if (/\/DiagramJs\/diagram\/diagram\.nocache\.js(\?|#|$)/i.test(script ? script.src : '')) {
       base = new URL('/embed/diagram/v1/', script.src).href;
     }
 

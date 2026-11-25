@@ -85,7 +85,9 @@ describe('serve-prod', () => {
     await mkdir(path.join(dist, 'uploads'), { recursive: true });
     // Looks content-named, but an upload's name is whatever the author chose.
     await writeFile(path.join(dist, 'uploads', 'figure-ABCDEFGH.png'), 'png', 'utf8');
-    embed = await mkdtemp(path.join(tmpdir(), 'serve-prod-embed-'));
+    // Under a dot directory, as a checkout under .claude/worktrees is: Express
+    // refuses an absolute path through one, and the build must still be served.
+    embed = await mkdtemp(path.join(tmpdir(), '.serve-prod-embed-'));
     await writeFile(path.join(embed, 'main.js'), 'export const diagram = 1;', 'utf8');
     await writeFile(path.join(embed, 'loader.gif'), 'GIF89a', 'utf8');
     await writeFile(path.join(embed, 'chunk-AB12CD34.js'), 'export {};', 'utf8');

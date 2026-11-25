@@ -335,7 +335,9 @@ app.use('/DiagramJs', (req, res) => {
     return;
   }
   res.setHeader('Cache-Control', 'no-cache');
-  res.sendFile(path.join(EMBED_DIST, 'reactome-diagram.js'), (error) => {
+  // By name under a root: Express refuses an absolute path through a dot
+  // directory (a checkout under .claude/worktrees, say) with a 404.
+  res.sendFile('reactome-diagram.js', { root: EMBED_DIST }, (error) => {
     if (error && !res.headersSent) res.status(404).type('text/plain').send('Not found');
   });
 });
