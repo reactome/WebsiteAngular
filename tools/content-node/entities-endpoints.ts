@@ -24,6 +24,7 @@ import { read } from './graph.ts';
 import type { Props } from './objects.ts';
 import { referenceEntityJson } from './reference-entities.ts';
 import type { Failure } from './answers.ts';
+import type { ComponentOfEntry } from '../../projects/contract/content.ts';
 import type { Participant, ParticipantReference } from '../../projects/contract/participants.ts';
 
 /**
@@ -442,13 +443,10 @@ export const entitiesEndpoints: Endpoint[] = [
       return {
         status: 200,
         // ComponentOf's fields in declaration order; none is ever empty.
-        body: rows.map(({ type, names, stIds, schemaClasses, species }) => ({
-          type,
-          names,
-          stIds,
-          schemaClasses,
-          species,
-        })),
+        body: rows.map(
+          ({ type, names, stIds, schemaClasses, species }) =>
+            ({ type, names, stIds, schemaClasses, species }) satisfies ComponentOfEntry
+        ),
         type: 'application/json',
       };
     },

@@ -63,7 +63,9 @@ describe('the API description', { timeout: 60_000 }, () => {
       'responses'
     ] as Record<string, { description: string; content?: unknown }>;
     expect(Object.keys(responses).sort()).toContain('404');
-    expect(JSON.stringify(responses)).not.toContain('$ref');
+    const { '200': answer, ...others } = responses;
+    expect(JSON.stringify(answer)).toContain('$ref');
+    expect(JSON.stringify(others)).not.toContain('$ref');
   });
 
   it('is the committed file: regenerate it with `node tools/contract/generate.ts`', () => {

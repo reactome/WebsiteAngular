@@ -16,18 +16,37 @@ const description = JSON.parse(readFileSync(DESCRIPTION, 'utf8')) as Description
 describe('recorded answers against the API description', () => {
   const { answers } = recordedAnswers();
 
+  /**
+   * Routes the release check asks (spec 032, T032) that no call of the site
+   * reads: their answers are checked against the description by that check,
+   * on the graph it is run against, not here.
+   */
+  const RELEASE_CHECK = 'no call of the site reads it: checked by tools/release-check';
+
   /** Described routes with no recorded answer, and why. */
   const UNRECORDED: Record<string, string> = {
     'GET /ContentService/citation/pathway/{id}':
       'not in the recordings, which never cite a pathway (calls.ts names the gap)',
+    'GET /ContentService/data/complex/{id}/subunits': RELEASE_CHECK,
+    'GET /ContentService/data/discover/{id}': `${RELEASE_CHECK}; never recorded, as it names the event’s authors`,
+    'GET /ContentService/data/diseases': RELEASE_CHECK,
+    'GET /ContentService/data/entity/{id}/componentOf': RELEASE_CHECK,
     'GET /ContentService/data/instance/{id}/referrers':
       'not in the recordings, which never open an instance’s referrers (calls.ts names the gap)',
+    'GET /ContentService/data/mapping/{resource}/{identifier}/pathways': RELEASE_CHECK,
+    'GET /ContentService/data/mapping/{resource}/{identifier}/reactions': RELEASE_CHECK,
+    'GET /ContentService/data/participants/{id}/participatingPhysicalEntities': RELEASE_CHECK,
+    'GET /ContentService/data/pathway/{id}/containedEvents': RELEASE_CHECK,
+    'GET /ContentService/data/pathways/low/diagram/entity/{id}': RELEASE_CHECK,
     'GET /ContentService/data/query/{id}/more':
       'no call of the site reads it: Java keeps it for old callers (spec 006 T104)',
     'GET /ContentService/data/schema/{id}/min':
       'not in the recordings, which never open a class’s instances (calls.ts names the gap)',
+    'GET /ContentService/data/species/all': RELEASE_CHECK,
     'GET /ContentService/interactors/static/molecule/{id}/details':
       'not in the recordings, which never open an interactor popup (calls.ts names the gap)',
+    'GET /ContentService/interactors/static/molecule/{id}/summary': RELEASE_CHECK,
+    'GET /ContentService/references/mapping/{identifier}': RELEASE_CHECK,
     'GET /ContentService/search/facet':
       'not in the recordings, which always search with a query (calls.ts names the gap)',
     'GET /ContentService/search/fireworks/flag':
