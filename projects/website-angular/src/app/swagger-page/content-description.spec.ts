@@ -25,7 +25,10 @@ const description = {
       },
       Compartment_number: {
         type: 'object',
-        properties: { complexes: { items: ref('Complex_number') } },
+        properties: {
+          complexes: { items: ref('Complex_number') },
+          entities: { items: ref('PhysicalEntity_number') },
+        },
       },
       SearchEntry: { type: 'object', properties: { other: ref('Complex_number') } },
     },
@@ -38,12 +41,20 @@ describe("the content service's description, on the API page", () => {
 
   it("names, not follows, the graph classes in a graph class's fields", () => {
     expect(schemas.Complex_number.properties.compartment.items.anyOf[0]).toEqual({
-      title: 'Compartment',
+      title: 'Compartment_number',
       type: 'object',
-      description: 'A Compartment: its fields are under Schemas.',
+      description: 'Its fields are under Compartment_number, in Schemas.',
     });
     expect(schemas.Compartment_number.properties.complexes.items).toMatchObject({
-      title: 'Complex',
+      title: 'Complex_number',
+    });
+  });
+
+  it('names a union of classes as one, which has no fields of its own', () => {
+    expect(schemas.Compartment_number.properties.entities.items).toEqual({
+      title: 'PhysicalEntity_number',
+      type: 'object',
+      description: 'One of the classes PhysicalEntity_number lists, under Schemas.',
     });
   });
 

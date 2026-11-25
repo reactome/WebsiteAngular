@@ -8,7 +8,7 @@
  * walk took the page minutes or never ended, and froze it meanwhile.
  *
  * So within a graph class's fields, another graph class is named, not followed:
- * `{ title: 'Compartment', description: ... }` in place of its `$ref`. An
+ * `{ title: 'Compartment_number', description: ... }` in place of its `$ref`. An
  * answer still lists its classes and each class its fields; the classes
  * themselves are each in the page's Schemas, whole. The description the
  * service publishes is unchanged.
@@ -22,24 +22,35 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-/** The graph class a `$ref` points at, by its own name, or undefined. */
-function graphClassOf(ref: unknown): string | undefined {
+/** The graph schema a `$ref` points at, by its name in Schemas, or undefined. */
+function graphSchemaOf(ref: unknown): string | undefined {
   const name = typeof ref === 'string' ? REF.exec(ref)?.[1] : undefined;
-  return name === undefined ? undefined : GRAPH_CLASS.exec(name)?.[1];
+  return name !== undefined && GRAPH_CLASS.test(name) ? name : undefined;
 }
 
-/** `schema` with each reference to a graph class replaced by its name. */
-function named(schema: unknown): unknown {
-  if (Array.isArray(schema)) return schema.map(named);
+/**
+ * `schema` with each reference to a graph schema replaced by its name, as
+ * Schemas lists it: a class, whose fields are there, or a union of classes.
+ */
+function named(schema: unknown, schemas: Record<string, unknown>): unknown {
+  if (Array.isArray(schema)) return schema.map((item) => named(item, schemas));
   if (!isRecord(schema)) return schema;
-  const graphClass = graphClassOf(schema['$ref']);
-  if (graphClass !== undefined)
+  const name = graphSchemaOf(schema['$ref']);
+  if (name !== undefined) {
+    const target = schemas[name];
+    const union =
+      isRecord(target) && (Array.isArray(target['oneOf']) || Array.isArray(target['anyOf']));
     return {
-      title: graphClass,
+      title: name,
       type: 'object',
-      description: `A ${graphClass}: its fields are under Schemas.`,
+      description: union
+        ? `One of the classes ${name} lists, under Schemas.`
+        : `Its fields are under ${name}, in Schemas.`,
     };
-  return Object.fromEntries(Object.entries(schema).map(([key, value]) => [key, named(value)]));
+  }
+  return Object.fromEntries(
+    Object.entries(schema).map(([key, value]) => [key, named(value, schemas)])
+  );
 }
 
 /**
@@ -56,7 +67,7 @@ export function withNamedGraphFields(description: unknown): unknown {
     Object.entries(schemas).map(([name, schema]) => {
       if (!GRAPH_CLASS.test(name) || !isRecord(schema) || !isRecord(schema['properties']))
         return [name, schema];
-      return [name, { ...schema, properties: named(schema['properties']) }];
+      return [name, { ...schema, properties: named(schema['properties'], schemas) }];
     })
   );
   return { ...description, components: { ...components, schemas: lighter } };
