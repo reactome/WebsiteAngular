@@ -34,4 +34,36 @@ describe('HomeLatestNewsComponent.summaryOf', () => {
     });
     expect(summary).toBe('Topics with new or revised pathways in this release include several ...');
   });
+
+  const summary = (excerpt: string) =>
+    component().summaryOf({ title: 'A title', date: new Date(0), slug: 'a', tags: [], excerpt });
+
+  it('shows an address written in angle brackets as the address', () => {
+    // As the deprecated RESTful API announcement reads
+    expect(
+      summary(
+        'It is available from our website at <https://reactome.org/ContentService/> and is designed'
+      )
+    ).toBe(
+      'It is available from our website at https://reactome.org/ContentService/ and is designed'
+    );
+  });
+
+  it('keeps prose with a less-than and a greater-than', () => {
+    expect(summary('Pathways enriched at p < 0.05 and q > 1 here')).toBe(
+      'Pathways enriched at p < 0.05 and q 1 here'
+    );
+  });
+
+  it('prints no half of a link the excerpt was cut through', () => {
+    // As V77's and V96's excerpts end
+    expect(
+      summary(
+        'Updated pathways include [Maturation of nucleoprotein](</PathwayBrowser/#R-HSA-1>...'
+      )
+    ).toBe('Updated pathways include Maturation of nucleoprotein ...');
+    expect(summary('Updated pathways include Developmental biology ([Differentiation of ...')).toBe(
+      'Updated pathways include Developmental biology (Differentiation of ...'
+    );
+  });
 });
