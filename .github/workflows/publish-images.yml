@@ -12,15 +12,21 @@ name: Publish images
 # the exception to "built from the commit": it holds reactome-mcp's main as of
 # the build, whose own commit the image records in /srv/REVISION.
 #
-# `main` only ever moves forward: to this run's commit only if that is ahead
-# of the commit `main` names now (read from the revision label), so runs may
-# finish in any order. Runs are not queued (a newer one waiting must never
-# cancel another's publish). A newer commit whose run never comes (Tests
+# Each image's `main` only ever moves forward, decided for that image alone:
+# it moves to this run's commit if it is absent, carries no revision label, or
+# names a commit this one is ahead of (GitHub's comparison); a commit equal to
+# this one, ahead of it or diverged from it leaves that image's `main` alone.
+# So runs may finish in any order, and a re-run repairs a run that stopped
+# part-way through its moves. Runs are not queued (a newer one waiting must
+# never cancel another's publish). A newer commit whose run never comes (Tests
 # failed, `[skip ci]`) leaves `main` where it is, and re-running an older run
-# then still moves it forward. Not airtight: two runs that both pass the check
-# just before their pushes race, and the later push wins, so an older commit
-# can still win that race; and each image's tag moves on its own, so the moves
-# are never atomic. That is why a server pins IMAGE_TAG to a commit id.
+# then still moves it forward. Not airtight: two runs that both pass an
+# image's check just before its move race, and the later move wins, so an
+# older commit can still win that race; and each image's tag moves on its own,
+# so the images' `main` tags never move together. That is why a server pins
+# IMAGE_TAG to a commit id, never `main`. If the commit `main` names is no
+# longer in the repository (force-pushed away), the comparison fails and so
+# does the run: a person decides where `main` goes.
 #
 # Never java-library or pdf-export: the first's graph library declares no
 # licence, and publishing the second is that repository's decision. Both are
@@ -102,6 +108,7 @@ jobs:
         env:
           REGISTRY: ${{ vars.REGISTRY }}
         run: |
+          set -euo pipefail
           aws ecr-public get-login-password --region us-east-1 |
             docker login --username AWS --password-stdin "${REGISTRY%%/*}"
 
@@ -165,21 +172,23 @@ jobs:
         env:
           REGISTRY: ${{ vars.REGISTRY }}
         run: |
+          set -euo pipefail
           aws ecr-public get-login-password --region us-east-1 |
             docker login --username AWS --password-stdin "${REGISTRY%%/*}"
 
-      # The commit's own image, re-tagged: the same manifest under `main`,
-      # nothing rebuilt. Checked by digest, so a push that wrote a different
-      # manifest fails here rather than leaving `main` naming another image.
+      # The commit's own image under `main` too, copied on the registry by
+      # digest: the same manifest or index, nothing pulled, rebuilt or pushed.
+      # (`--prefer-index=false`: by default a single manifest would be wrapped
+      # in a new index, under another digest.) Checked afterwards, so a `main`
+      # naming any other digest fails the step.
       #
-      # Only forward: the commit `main` names now is read from the revision
-      # label of the image pushed last (so a run that stopped part-way through
-      # the pushes reads as not moved, and its re-run finishes the job), and
-      # `main` moves only if there is none yet, or this commit is ahead of it.
-      # Read before anything is touched and again just before the pushes. Every
-      # image's commit tag is confirmed first, so none moves unless all can.
-      # The registry lookups answer "absent" only on the registry's own
-      # not-found, as in the publish job.
+      # Only forward, image by image: the commit an image's `main` names is
+      # read from that image's revision label, and its `main` moves only if
+      # there is none yet, or no label, or this commit is ahead of it. Decided
+      # for every image before anything is touched, and again for each image
+      # just before its move. Every image's commit tag is confirmed first, so
+      # none moves unless all can. The registry lookups answer "absent" only on
+      # the registry's own not-found, as in the publish job.
       - name: Point main at this commit's images
         env:
           REGISTRY: ${{ vars.REGISTRY }}
@@ -205,63 +214,79 @@ jobs:
             echo "$1:$2: the registry did not answer (exit $status): $err" >&2
             exit 1
           }
-          # Exits 0, leaving `main` alone, unless this commit is ahead of the
-          # one `main` names. A lookup or API failure fails the step.
-          main_moves_forward() {
-            local last="${images[-1]}" current status
-            if ! published "$last" main; then
-              echo "no main tag yet: it moves to $SHA"
+          # Sets forward to yes if image $1's `main` moves to this commit, to
+          # no if it stays. Called as a statement, never as a condition, so
+          # `set -e` holds inside it: a lookup or API failure fails the step.
+          check_forward() {
+            local name="$1" current status
+            forward=no
+            if ! published "$name" main; then
+              echo "$name: no main tag yet: it moves to $SHA"
+              forward=yes
               return
             fi
             # One platform's configuration, or a map of them for a multi-platform
             # index; attestation manifests are not among them.
-            current=$(docker buildx imagetools inspect "$REGISTRY/$last:main" \
+            current=$(docker buildx imagetools inspect "$REGISTRY/$name:main" \
               --format '{{json .Image}}' |
               jq -r '(if has("config") then [.] else [.[]] end)
                 | map(.config.Labels["org.opencontainers.image.revision"] // "")
                 | unique | if length == 1 then .[0] else error("platforms disagree") end')
             if [ -z "$current" ]; then
-              echo "main names no commit: it moves to $SHA"
+              echo "$name: main names no commit: it moves to $SHA"
+              forward=yes
               return
             fi
-            [[ "$current" =~ ^[0-9a-f]{40}$ ]] || { echo "main's label is not a commit id: $current" >&2; exit 1; }
+            [[ "$current" =~ ^[0-9a-f]{40}$ ]] || { echo "$name: main's label is not a commit id: $current" >&2; exit 1; }
             if [ "$current" = "$SHA" ]; then
-              echo "main is at $SHA already"
-              exit 0
+              echo "$name: main is at $SHA already"
+              return
             fi
             status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$current...$SHA" --jq .status)
             case "$status" in
-              ahead) echo "$SHA is ahead of main's $current: main moves to it" ;;
+              ahead)
+                echo "$name: $SHA is ahead of main's $current: main moves to it"
+                forward=yes
+                ;;
               behind | diverged | identical)
-                echo "compared with main's $current, $SHA is $status: main stays"
-                exit 0
+                echo "$name: compared with main's $current, $SHA is $status: main stays"
                 ;;
               *)
-                echo "unexpected comparison of $current...$SHA: $status" >&2
+                echo "$name: unexpected comparison of $current...$SHA: $status" >&2
                 exit 1
                 ;;
             esac
           }
-          main_moves_forward
+          # The digest a tag names: a single manifest's or an index's own.
+          digest_of() {
+            docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' | jq -r .digest
+          }
+          moving=()
+          for name in "${images[@]}"; do
+            check_forward "$name"
+            if [ "$forward" = yes ]; then moving+=("$name"); fi
+          done
+          if [ "${#moving[@]}" -eq 0 ]; then
+            echo "no main tag moves"
+            exit 0
+          fi
           for name in "${images[@]}"; do
             if ! published "$name" "$SHA"; then
               echo "$name:$SHA is not in the registry: no main tag moved" >&2
               exit 1
             fi
           done
-          declare -A digest
-          for name in "${images[@]}"; do
-            digest[$name]=$(docker pull "$REGISTRY/$name:$SHA" |
-              sed -n 's/^Digest: \(sha256:[0-9a-f]*\)$/\1/p')
-            docker tag "$REGISTRY/$name:$SHA" "$REGISTRY/$name:main"
-          done
-          main_moves_forward
-          for name in "${images[@]}"; do
-            pushed=$(docker push "$REGISTRY/$name:main" |
-              sed -n 's/^main: digest: \(sha256:[0-9a-f]*\) .*$/\1/p')
-            if [ -z "${digest[$name]}" ] || [ "${digest[$name]}" != "$pushed" ]; then
-              echo "$name: main would be ${pushed:-unknown}, not the commit's ${digest[$name]:-unknown}" >&2
+          for name in "${moving[@]}"; do
+            want=$(digest_of "$REGISTRY/$name:$SHA")
+            [[ "$want" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "$name:$SHA has no digest: $want" >&2; exit 1; }
+            check_forward "$name"
+            if [ "$forward" != yes ]; then continue; fi
+            docker buildx imagetools create --prefer-index=false \
+              --tag "$REGISTRY/$name:main" "$REGISTRY/$name:$SHA"
+            got=$(digest_of "$REGISTRY/$name:main")
+            if [ "$got" != "$want" ]; then
+              echo "$name: main names $got, not the commit's $want" >&2
               exit 1
             fi
-            echo "$name: main -> $pushed"
+            echo "$name: main -> $got"
           done

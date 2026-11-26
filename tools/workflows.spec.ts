@@ -131,7 +131,7 @@ describe('publish-images.yml', () => {
     mappingOf
   );
   const build = stepsOf(publish).find((step) => /docker build/.test(textOf(step['run']))) ?? {};
-  const move = stepsOf(mainTag).find((step) => /docker push/.test(textOf(step['run']))) ?? {};
+  const move = stepsOf(mainTag).find((step) => /imagetools create/.test(textOf(step['run']))) ?? {};
   const moveScript = code(textOf(move['run']));
 
   it('runs after Tests and on nothing else', () => {
@@ -197,45 +197,109 @@ describe('publish-images.yml', () => {
     expect(script).toMatch(/--label "org\.opencontainers\.image\.revision=\$SHA"/);
   });
 
+  // Every script stops at its first failure, a failure anywhere in a pipe
+  // included (`aws … | docker login`, `inspect | jq`), and at an unset name.
+  it('starts every script with set -euo pipefail', () => {
+    const scripts = Object.values(jobs)
+      .flatMap((job) => stepsOf(mappingOf(job)))
+      .map((step) => textOf(step['run']))
+      .filter(Boolean);
+    expect(scripts.length).toBeGreaterThanOrEqual(4);
+    for (const script of scripts) {
+      const first = script.split('\n').find((line) => line.trim() && !/^\s*#/.test(line));
+      expect(first).toBe('set -euo pipefail');
+    }
+  });
+
   // Runs can finish in any order, and a newer commit's run may never come
-  // (Tests failed, `[skip ci]`): `main` moves only to a commit ahead of the
-  // one it names, read from the label of the image pushed last.
-  it('moves main only forward, checked again before the pushes', () => {
+  // (Tests failed, `[skip ci]`): an image's `main` moves only to a commit
+  // ahead of the one it names, read from that image's own label, so one
+  // image's tag never decides for another and a re-run repairs a partial move.
+  const forward = /^\s*check_forward\(\) \{\n[\s\S]*?\n\}$/m.exec(moveScript)?.[0] ?? '';
+  const loops = [
+    ...moveScript.matchAll(/^\s*for name in "\$\{(\w+)\[@\]\}"; do\n([\s\S]*?)\n\s*done$/gm),
+  ];
+  const moveLoop = loops.find(([, , body]) => /imagetools create/.test(body ?? ''))?.[2] ?? '';
+  it('moves each image main only forward, decided for that image', () => {
     expect(Object.keys(read)).not.toContain('concurrency');
-    const forward = /^\s*main_moves_forward\(\) \{\n[\s\S]*?\n\}$/m.exec(moveScript)?.[0] ?? '';
-    expect(forward).toMatch(/local last="\$\{images\[-1\]\}"/);
-    expect(forward).toMatch(/if ! published "\$last" main; then\n[^\n]*\n\s*return\n/);
+    expect(forward).toMatch(/local name="\$1" current status\n\s*forward=no\n/);
     expect(forward).toMatch(
-      /current=\$\(docker buildx imagetools inspect "\$REGISTRY\/\$last:main" \\\n\s*--format '\{\{json \.Image\}\}' \|/
+      /if ! published "\$name" main; then\n[^\n]*\n\s*forward=yes\n\s*return\n/
+    );
+    expect(forward).toMatch(
+      /current=\$\(docker buildx imagetools inspect "\$REGISTRY\/\$name:main" \\\n\s*--format '\{\{json \.Image\}\}' \|/
     );
     expect(forward).toMatch(/\.config\.Labels\["org\.opencontainers\.image\.revision"\]/);
-    expect(forward).toMatch(/if \[ "\$current" = "\$SHA" \]; then\n[^\n]*\n\s*exit 0\n/);
+    expect(forward).toMatch(/if \[ -z "\$current" \]; then\n[^\n]*\n\s*forward=yes\n\s*return\n/);
+    expect(forward).toMatch(/if \[ "\$current" = "\$SHA" \]; then\n[^\n]*\n\s*return\n/);
     expect(forward).toMatch(
       /status=\$\(gh api "repos\/\$GITHUB_REPOSITORY\/compare\/\$current\.\.\.\$SHA" --jq \.status\)\n/
     );
-    // Only `ahead` goes on; the rest stay or fail.
+    expect(forward).not.toMatch(/images\[|\|\| true|\|\| :/);
+    // Only `ahead` moves; the rest stay or fail.
     const cases = /case "\$status" in\n([\s\S]*?)\n\s*esac/.exec(forward)?.[1] ?? '';
-    expect(cases).toMatch(/^\s*ahead\) echo [^\n;]*;;$/m);
-    expect(cases).toMatch(/^\s*behind \| diverged \| identical\)\n[^\n]*\n\s*exit 0\n\s*;;$/m);
+    expect(cases).toMatch(/^\s*ahead\)\n[^\n]*\n\s*forward=yes\n\s*;;$/m);
+    expect(cases).toMatch(/^\s*behind \| diverged \| identical\)\n[^\n]*\n\s*;;$/m);
     expect(cases).toMatch(/^\s*\*\)\n[^\n]*\n\s*exit 1\n\s*;;$/m);
     expect(cases.match(/^\s*[^\n]*\)( |$)/gm)).toHaveLength(3);
+    expect(forward.match(/forward=yes/g)).toHaveLength(3);
+  });
 
-    const checks = [...moveScript.matchAll(/^\s*main_moves_forward$/gm)].map((m) => m.index);
-    const firstPull = moveScript.indexOf('docker pull');
-    const firstPush = moveScript.indexOf('docker push');
-    expect(checks).toHaveLength(2);
-    expect(checks[0]).toBeLessThan(moveScript.indexOf('if ! published "$name" "$SHA"'));
-    expect(checks[0]).toBeLessThan(firstPull);
-    expect(checks[1]).toBeGreaterThan(moveScript.lastIndexOf('docker tag'));
-    expect(checks[1]).toBeLessThan(firstPush);
+  // Called as a statement: as an `if` or `||` condition, `set -e` would be off
+  // inside it, and a failed lookup would read as a decision.
+  it('decides for every image before anything moves, and again just before each move', () => {
+    const calls = [...moveScript.matchAll(/^(\s*)(.*)\bcheck_forward "\$name"(.*)$/gm)];
+    expect(calls).toHaveLength(2);
+    for (const [, , before, after] of calls) {
+      expect(before).toBe('');
+      expect(after).toBe('');
+    }
+    const first = loops.find(([, , body]) => /check_forward/.test(body ?? '') && body !== moveLoop);
+    expect(first?.[1]).toBe('images');
+    expect(first?.index).toBeLessThan(moveScript.indexOf('if ! published "$name" "$SHA"'));
+    expect(moveLoop).toMatch(
+      /\n\s*check_forward "\$name"\n\s*if \[ "\$forward" != yes \]; then continue; fi\n\s*docker buildx imagetools create /
+    );
+  });
+
+  // Copied on the registry from the commit's tag, by digest: no pull, no
+  // re-tag, no push. Without --prefer-index=false a single manifest is
+  // wrapped in a new index under another digest (seen on a local registry).
+  it('moves main by copying the commit tag on the registry', () => {
+    expect(moveLoop).toMatch(
+      /docker buildx imagetools create --prefer-index=false \\\n\s*--tag "\$REGISTRY\/\$name:main" "\$REGISTRY\/\$name:\$SHA"\n/
+    );
+    expect(moveScript.match(/imagetools create/g)).toHaveLength(1);
+    expect(moveScript).not.toMatch(/docker (pull|push|tag)\b/);
+  });
+
+  // A `main` that names anything but the commit's digest fails the step.
+  it('fails unless main names the commit tag digest after the move', () => {
+    expect(moveScript).toMatch(
+      /digest_of\(\) \{\n\s*docker buildx imagetools inspect "\$1" --format '\{\{json \.Manifest\}\}' \| jq -r \.digest\n\s*\}/
+    );
+    const want = moveLoop.indexOf('want=$(digest_of "$REGISTRY/$name:$SHA")');
+    const create = moveLoop.indexOf('imagetools create');
+    const got = moveLoop.indexOf('got=$(digest_of "$REGISTRY/$name:main")');
+    expect(want).toBeGreaterThan(-1);
+    expect(want).toBeLessThan(create);
+    expect(got).toBeGreaterThan(create);
+    expect(moveLoop).toMatch(
+      /\[\[ "\$want" =~ \^sha256:\[0-9a-f\]\{64\}\$ \]\] \|\| \{ echo [^\n]* >&2; exit 1; \}\n/
+    );
+    expect(moveLoop.slice(got)).toMatch(
+      /^[^\n]*\n\s*if \[ "\$got" != "\$want" \]; then\n\s*echo [^\n]*>&2\n\s*exit 1\n\s*fi\n/
+    );
   });
 
   // Each tag moves on its own; none moves unless every commit tag is there.
   it('confirms every commit tag before moving any main tag', () => {
     const confirm = moveScript.indexOf('if ! published "$name" "$SHA"; then');
     expect(confirm).toBeGreaterThan(-1);
-    expect(confirm).toBeLessThan(moveScript.indexOf('docker push'));
+    expect(confirm).toBeLessThan(moveScript.indexOf('imagetools create'));
     expect(moveScript.slice(confirm)).toMatch(/^[^\n]*\n[^\n]*\n\s*exit 1/);
+    const confirming = loops.find(([, , body]) => /published "\$name" "\$SHA"/.test(body ?? ''));
+    expect(confirming?.[1]).toBe('images');
   });
 
   // Every check above is on that one step: a second step touching `main`
