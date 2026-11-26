@@ -55,8 +55,9 @@ export class HomeLatestNewsComponent implements OnInit {
     let text = (article.excerpt ?? '')
       .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/[#>*_`]/g, '')
+      // Tags before markdown's characters: stripping '>' first leaves '</p' behind
       .replace(/<[^>]+>/g, '')
+      .replace(/[#>*_`]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
