@@ -51,8 +51,10 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
       inTag = false;
       result += char;
 
-      // Parse the tag
-      const tagMatch = currentTag.match(/^\/?\s*(\w+)/);
+      // Parse the tag. A tag's name ends at a space, a slash or the bracket; a
+      // markdown link written in angle brackets (<https://...>) is not a tag,
+      // and closing it as one would print </https> at the reader.
+      const tagMatch = currentTag.match(/^\/?\s*([A-Za-z][\w-]*)(?=[\s/]|$)/);
       if (tagMatch?.[1]) {
         const tagName = tagMatch[1].toLowerCase();
 

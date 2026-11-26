@@ -55,8 +55,15 @@ export class HomeLatestNewsComponent implements OnInit {
     let text = (article.excerpt ?? '')
       .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      // The excerpt is cut at a word count, sometimes through a link: keep its text
+      .replace(/\[([^\]]*)\]\([^)]*$/, '$1 ...')
+      .replace(/\[([^\]]*)$/, '$1')
+      // An address in angle brackets is shown as the address
+      .replace(/<((?:https?|mailto):[^>\s]*)>/g, '$1')
+      // Tags (only what is shaped like one, not "p < 0.05 ... >") go before
+      // markdown's characters: stripping '>' first leaves '</p' behind
+      .replace(/<\/?[A-Za-z][\w-]*(?:\s[^>]*)?\/?>/g, '')
       .replace(/[#>*_`]/g, '')
-      .replace(/<[^>]+>/g, '')
       .replace(/\s+/g, ' ')
       .trim();
 
