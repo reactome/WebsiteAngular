@@ -73,20 +73,59 @@ describe('the rule itself', () => {
   });
 });
 
-describe('deploy.yml', () => {
-  // Tests runs on pull requests too, forks included, and workflow_run's branch
-  // filter matches the head branch -- so a fork's branch named main or prod
-  // that passed Tests triggered a deploy holding the AWS role, of the fork's
-  // commit. Only a test run from a push to this repository may deploy.
-  const text = readFileSync(path.join(DIR, 'deploy.yml'), 'utf8');
+// Tests runs on pull requests too, forks included, and workflow_run's branch
+// filter matches the head branch -- so a fork's branch named main or prod that
+// passed Tests triggered a deploy holding the AWS role, of the fork's commit.
+// Only a test run from a push to this repository may deploy, or publish the
+// images a server runs.
+describe.each(['deploy.yml', 'publish-images.yml'])('%s', (name) => {
+  const text = readFileSync(path.join(DIR, name), 'utf8');
   const condition = /^\s*if: >-\n((?:\s{6}.*\n)+)/m.exec(text)?.[1] ?? '';
 
-  it('deploys only what was pushed to this repository and passed', () => {
+  it('runs only for what was pushed to this repository and passed', () => {
     expect(condition).toContain("github.event.workflow_run.conclusion == 'success'");
     expect(condition).toContain("github.event.workflow_run.event == 'push'");
     expect(condition).toContain(
       'github.event.workflow_run.head_repository.full_name == github.repository'
     );
+  });
+});
+
+describe('publish-images.yml', () => {
+  const text = readFileSync(path.join(DIR, 'publish-images.yml'), 'utf8');
+  const code = text
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .join('\n');
+  const condition = /^\s*if: >-\n((?:\s{6}.*\n)+)/m.exec(text)?.[1] ?? '';
+
+  it('does nothing until the registry is named', () => {
+    expect(condition).toContain("vars.REGISTRY != ''");
+  });
+
+  // java-library's graph library declares no licence, and publishing
+  // pdf-export is that repository's decision (specs/032 R1): both are built on
+  // the server, never pushed to a public registry.
+  it('never builds java-library or pdf-export', () => {
+    expect(code).not.toMatch(/java-library|pdf-export|deploy\/java\//);
+  });
+
+  it('publishes the commit that was tested', () => {
+    expect(code).toMatch(/ref: \$\{\{ github\.event\.workflow_run\.head_sha \}\}/);
+  });
+
+  // `main` moves only once every image of the commit is pushed: by a job that
+  // needs the publishing one, naming the same images it builds.
+  it('moves main for exactly the images it published, after them', () => {
+    const built = [...code.matchAll(/^\s*- name: (\S+)\n\s*dockerfile:/gm)].map(([, n]) => n);
+    const job = /^ {2}main-tag:\n((?: {4}.*\n|\n)+)/m.exec(code)?.[1] ?? '';
+    const moved = /for name in ([^;]*);/
+      .exec(job)?.[1]
+      ?.split(/[\s\\]+/)
+      .filter(Boolean);
+    expect(job).toMatch(/^ {4}needs: publish$/m);
+    expect(built).toContain('site');
+    expect(moved).toEqual(built);
   });
 });
 

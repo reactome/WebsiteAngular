@@ -1,0 +1,158 @@
+name: Publish images
+
+# The images a server runs the site's stack from (specs/032 R1): each built
+# from the commit Tests passed on main, pushed tagged with that commit's full
+# id, and only once every one of them is there is each image's `main` tag moved
+# to it. A server pins IMAGE_TAG to a commit id, so it always runs one commit's
+# images, never a mix.
+#
+# Never java-library or pdf-export: the first's graph library declares no
+# licence, and publishing the second is that repository's decision. Both are
+# built on the server (R1's table); tools/workflows.spec.ts refuses either here.
+on:
+  workflow_run:
+    workflows: ['Tests']
+    types: [completed]
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+# One publish at a time, so an older commit's tags never land after a newer's
+# while both are in flight.
+concurrency:
+  group: publish-images
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    # deploy.yml's guard, for the same reason: Tests runs on pull requests too,
+    # forks included, and the branch filter above matches the head branch, so
+    # a fork's branch named main would otherwise publish its own commit with
+    # this job's registry role. Only a push to this repository that passed
+    # publishes (tools/workflows.spec.ts). And nothing at all until the
+    # registry exists and is named in the repository's variables.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      vars.REGISTRY != ''
+    # The site's image runs the Angular build, the slow one.
+    timeout-minutes: 60
+    strategy:
+      # One image failing must not leave the others half-published: they are
+      # only tagged with the commit, and `main` moves in the next job only if
+      # every one of these passed.
+      fail-fast: false
+      matrix:
+        include:
+          - name: site
+            dockerfile: deploy/site/Dockerfile
+          - name: content-node
+            dockerfile: deploy/content-node/Dockerfile
+          - name: render
+            dockerfile: deploy/render-service/Dockerfile
+          - name: analysis-gateway
+            dockerfile: deploy/analysis-gateway/Dockerfile
+          # Built from reactome-mcp's main at the time, as docker-compose.yml's
+          # default MCP_REF is; the image records the commit in /srv/REVISION.
+          - name: mcp
+            dockerfile: deploy/mcp/Dockerfile
+          # The configuration is baked in by NGINX_ENV, so one image per
+          # deployment, and a server pulls the one for its role.
+          - name: nginx-dev
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=dev
+          - name: nginx-release
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=release
+          - name: nginx-production
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=production
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit that was tested, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: ${{ vars.REGISTRY_ROLE }}
+          # A public registry signs in through this region whichever one it
+          # serves from.
+          aws-region: us-east-1
+
+      - name: Sign in to the registry
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+        run: |
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin "${REGISTRY%%/*}"
+
+      # Through env, never pasted into the script (tools/workflows.spec.ts).
+      - name: Build and push, tagged with the commit
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          NAME: ${{ matrix.name }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          BUILD_ARGS: ${{ matrix.build-args }}
+        run: |
+          set -euo pipefail
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "not a full commit id: $SHA" >&2; exit 1; }
+          args=()
+          for arg in $BUILD_ARGS; do args+=(--build-arg "$arg"); done
+          image="$REGISTRY/$NAME:$SHA"
+          docker build -f "$DOCKERFILE" "${args[@]}" -t "$image" .
+          docker push "$image"
+
+  main-tag:
+    name: Move the main tags
+    # Only after every image of this commit is in the registry: a failed or
+    # cancelled build above skips this, and `main` stays on the last commit
+    # whose images were all published.
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: ${{ vars.REGISTRY_ROLE }}
+          aws-region: us-east-1
+
+      - name: Sign in to the registry
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+        run: |
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin "${REGISTRY%%/*}"
+
+      # The commit's own image, re-tagged: the same manifest under `main`,
+      # nothing rebuilt. Checked by digest, so a push that wrote a different
+      # manifest fails here rather than leaving `main` naming another image.
+      - name: Point main at this commit's images
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          for name in site content-node render analysis-gateway mcp \
+            nginx-dev nginx-release nginx-production; do
+            from="$REGISTRY/$name:$SHA"
+            to="$REGISTRY/$name:main"
+            pulled=$(docker pull "$from" | sed -n 's/^Digest: \(sha256:[0-9a-f]*\)$/\1/p')
+            docker tag "$from" "$to"
+            pushed=$(docker push "$to" | sed -n 's/^main: digest: \(sha256:[0-9a-f]*\) .*$/\1/p')
+            if [ -z "$pulled" ] || [ "$pulled" != "$pushed" ]; then
+              echo "$name: main would be ${pushed:-unknown}, not the commit's ${pulled:-unknown}" >&2
+              exit 1
+            fi
+            echo "$name: main -> $pulled"
+          done
