@@ -157,8 +157,9 @@ jobs:
   site-image:
     # The site's own image (spec 032 T007, T008): the build beta serves and
     # serve-prod.js to serve it, for a host with no Node of its own. Built and
-    # run here as such a host would run it; the image publish (T009) pushes
-    # what this built. CI's alone: preflight builds no images.
+    # run here as such a host would run it. The image publish (T009) does not
+    # push this one: it builds the image again from the same commit, after
+    # Tests passes. CI's alone: preflight builds no images.
     name: Site image
     runs-on: ubuntu-latest
     timeout-minutes: 40

@@ -6,6 +6,17 @@ name: Publish images
 # to it. A server pins IMAGE_TAG to a commit id, so it always runs one commit's
 # images, never a mix.
 #
+# A commit's tag is written once: a re-run finds it in the registry and builds
+# nothing, so the image a server pinned never changes under it. Each image is
+# labelled org.opencontainers.image.revision with the commit. mcp's image is
+# the exception to "built from the commit": it holds reactome-mcp's main as of
+# the build, whose own commit the image records in /srv/REVISION.
+#
+# `main` only ever moves forward, to main's tip: runs are not queued (a newer
+# one waiting must never cancel another's publish), so they can finish in any
+# order, and a run whose commit is no longer the tip leaves `main` to the
+# newer commit's run.
+#
 # Never java-library or pdf-export: the first's graph library declares no
 # licence, and publishing the second is that repository's decision. Both are
 # built on the server (R1's table); tools/workflows.spec.ts refuses either here.
@@ -19,12 +30,6 @@ on:
 permissions:
   id-token: write
   contents: read
-
-# One publish at a time, so an older commit's tags never land after a newer's
-# while both are in flight.
-concurrency:
-  group: publish-images
-  cancel-in-progress: false
 
 jobs:
   publish:
@@ -96,6 +101,9 @@ jobs:
             docker login --username AWS --password-stdin "${REGISTRY%%/*}"
 
       # Through env, never pasted into the script (tools/workflows.spec.ts).
+      # A tag already there is left alone: a re-run of the workflow, or of a
+      # failed leg, never rebuilds an image under a commit's tag a server may
+      # have pinned (a rebuild is never byte-identical).
       - name: Build and push, tagged with the commit
         env:
           REGISTRY: ${{ vars.REGISTRY }}
@@ -109,7 +117,12 @@ jobs:
           args=()
           for arg in $BUILD_ARGS; do args+=(--build-arg "$arg"); done
           image="$REGISTRY/$NAME:$SHA"
-          docker build -f "$DOCKERFILE" "${args[@]}" -t "$image" .
+          if docker manifest inspect "$image" > /dev/null 2>&1; then
+            echo "$image is already published: not rebuilt"
+            exit 0
+          fi
+          docker build -f "$DOCKERFILE" "${args[@]}" \
+            --label "org.opencontainers.image.revision=$SHA" -t "$image" .
           docker push "$image"
 
   main-tag:
@@ -137,22 +150,50 @@ jobs:
       # The commit's own image, re-tagged: the same manifest under `main`,
       # nothing rebuilt. Checked by digest, so a push that wrote a different
       # manifest fails here rather than leaving `main` naming another image.
+      #
+      # Only while this commit is main's tip, read before anything is touched
+      # and again just before the pushes: an older run finishing after a newer
+      # one must not move `main` back. Each image's tag moves on its own, so
+      # the moves cannot be atomic; every image's commit tag is confirmed
+      # first so none moves unless all can, and a server pins IMAGE_TAG to a
+      # commit id rather than following `main` for exactly this reason.
       - name: Point main at this commit's images
         env:
           REGISTRY: ${{ vars.REGISTRY }}
           SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          for name in site content-node render analysis-gateway mcp \
-            nginx-dev nginx-release nginx-production; do
-            from="$REGISTRY/$name:$SHA"
-            to="$REGISTRY/$name:main"
-            pulled=$(docker pull "$from" | sed -n 's/^Digest: \(sha256:[0-9a-f]*\)$/\1/p')
-            docker tag "$from" "$to"
-            pushed=$(docker push "$to" | sed -n 's/^main: digest: \(sha256:[0-9a-f]*\) .*$/\1/p')
-            if [ -z "$pulled" ] || [ "$pulled" != "$pushed" ]; then
-              echo "$name: main would be ${pushed:-unknown}, not the commit's ${pulled:-unknown}" >&2
+          images=(site content-node render analysis-gateway mcp
+            nginx-dev nginx-release nginx-production)
+          main_is_this_commit() {
+            local tip
+            tip=$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)
+            if [ "$tip" != "$SHA" ]; then
+              echo "main is at $tip now, not $SHA: its own run moves the main tags"
+              exit 0
+            fi
+          }
+          main_is_this_commit
+          for name in "${images[@]}"; do
+            if ! docker manifest inspect "$REGISTRY/$name:$SHA" > /dev/null; then
+              echo "$name:$SHA is not in the registry: no main tag moved" >&2
               exit 1
             fi
-            echo "$name: main -> $pulled"
+          done
+          declare -A digest
+          for name in "${images[@]}"; do
+            digest[$name]=$(docker pull "$REGISTRY/$name:$SHA" |
+              sed -n 's/^Digest: \(sha256:[0-9a-f]*\)$/\1/p')
+            docker tag "$REGISTRY/$name:$SHA" "$REGISTRY/$name:main"
+          done
+          main_is_this_commit
+          for name in "${images[@]}"; do
+            pushed=$(docker push "$REGISTRY/$name:main" |
+              sed -n 's/^main: digest: \(sha256:[0-9a-f]*\) .*$/\1/p')
+            if [ -z "${digest[$name]}" ] || [ "${digest[$name]}" != "$pushed" ]; then
+              echo "$name: main would be ${pushed:-unknown}, not the commit's ${digest[$name]:-unknown}" >&2
+              exit 1
+            fi
+            echo "$name: main -> $pushed"
           done
