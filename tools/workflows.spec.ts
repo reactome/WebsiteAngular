@@ -10,6 +10,7 @@
 import { describe, expect, it } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
+import { parse } from 'yaml';
 
 const DIR = path.resolve('.github/workflows');
 const workflows = readdirSync(DIR).filter((name) => /\.ya?ml$/.test(name));
@@ -73,115 +74,17 @@ describe('the rule itself', () => {
   });
 });
 
-/**
- * A workflow file read as YAML -- the block subset workflows are written in:
- * mappings, sequences, `|` and `>` scalars, flow lists of scalars, quoted and
- * plain scalars, comments. Not a general parser (the repository has none of
- * its own to lean on): anything outside the subset throws, so a workflow
- * written another way fails the checks loudly instead of slipping past them.
- * A `>` scalar's lines are joined by single spaces, which is what GitHub reads
- * for the one-line conditions folded this way.
- */
-type Yaml = string | Yaml[] | { [key: string]: Yaml };
-
-function parseYaml(source: string): Yaml {
-  const lines = source.split('\n');
-  let at = 0;
-  const indentOf = (line: string) => line.search(/\S/);
-  const skipBlank = () => {
-    while (at < lines.length && /^\s*(#.*)?$/.test(lines[at] ?? '')) at += 1;
-  };
-  const KEY = /^([\w.-]+|'[^']*'|"[^"]*"):(?:\s+(.*))?$/;
-  const unquote = (text: string): string => {
-    const value = text.trim();
-    if (/^'.*'$/.test(value)) return value.slice(1, -1).replaceAll("''", "'");
-    if (/^".*"$/.test(value)) {
-      const parsed: unknown = JSON.parse(value);
-      if (typeof parsed === 'string') return parsed;
-    }
-    return value.replace(/\s+#.*$/, '');
-  };
-
-  function blockScalar(style: string, parent: number): string {
-    const body: string[] = [];
-    let indent = -1;
-    while (at < lines.length) {
-      const line = lines[at] ?? '';
-      if (line.trim()) {
-        if (indentOf(line) <= parent) break;
-        if (indent < 0) indent = indentOf(line);
-      }
-      body.push(line.slice(Math.max(indent, 0)));
-      at += 1;
-    }
-    while (body.length && !body.at(-1)?.trim()) body.pop();
-    return style.startsWith('>') ? body.map((line) => line.trim()).join(' ') : body.join('\n');
-  }
-
-  function value(text: string, parent: number): Yaml {
-    if (/^[|>]/.test(text)) return blockScalar(text, parent);
-    if (text.startsWith('['))
-      return text
-        .replace(/^\[|\]$/g, '')
-        .split(',')
-        .map(unquote)
-        .filter(Boolean);
-    if (text) return unquote(text);
-    skipBlank();
-    const next = lines[at] ?? '';
-    if (at < lines.length && indentOf(next) > parent) return node(indentOf(next));
-    if (at < lines.length && indentOf(next) === parent && /^\s*- /.test(next)) return node(parent);
-    return '';
-  }
-
-  function node(indent: number): Yaml {
-    skipBlank();
-    return /^-( |$)/.test((lines[at] ?? '').trim()) ? sequence(indent) : mapping(indent);
-  }
-
-  function mapping(indent: number): { [key: string]: Yaml } {
-    const found: { [key: string]: Yaml } = {};
-    for (skipBlank(); at < lines.length; skipBlank()) {
-      const line = lines[at] ?? '';
-      if (indentOf(line) < indent || /^-( |$)/.test(line.trim())) break;
-      const pair = indentOf(line) === indent ? KEY.exec(line.trim()) : null;
-      if (!pair) throw new Error(`line ${at + 1} is not YAML this reads: ${line}`);
-      at += 1;
-      found[unquote(pair[1] ?? '')] = value(pair[2] ?? '', indent);
-    }
-    return found;
-  }
-
-  function sequence(indent: number): Yaml[] {
-    const found: Yaml[] = [];
-    for (skipBlank(); at < lines.length; skipBlank()) {
-      const line = lines[at] ?? '';
-      if (indentOf(line) !== indent || !/^-( |$)/.test(line.trim())) break;
-      const rest = line.trim().slice(1).trim();
-      if (KEY.test(rest)) {
-        // `- key: value` opens a mapping whose keys sit two columns in.
-        lines[at] = `${' '.repeat(indent + 2)}${rest}`;
-        found.push(mapping(indent + 2));
-      } else {
-        at += 1;
-        found.push(rest ? unquote(rest) : value('', indent));
-      }
-    }
-    return found;
-  }
-
-  const document = node(0);
-  skipBlank();
-  if (at < lines.length) throw new Error(`line ${at + 1} is not YAML this reads: ${lines[at]}`);
-  return document;
+/** A workflow file read as YAML, by the parser the repository depends on. */
+type Mapping = { [key: string]: unknown };
+const isMapping = (node: unknown): node is Mapping =>
+  node !== null && typeof node === 'object' && !Array.isArray(node);
+const mappingOf = (node: unknown): Mapping => (isMapping(node) ? node : {});
+const listOf = (node: unknown): unknown[] => (Array.isArray(node) ? node : []);
+const textOf = (node: unknown): string => (typeof node === 'string' ? node : '');
+function workflow(name: string): Mapping {
+  const document: unknown = parse(readFileSync(path.join(DIR, name), 'utf8'));
+  return mappingOf(document);
 }
-
-type Mapping = { [key: string]: Yaml };
-const mappingOf = (node: Yaml | undefined): Mapping =>
-  node !== undefined && typeof node === 'object' && !Array.isArray(node) ? node : {};
-const listOf = (node: Yaml | undefined): Yaml[] => (Array.isArray(node) ? node : []);
-const textOf = (node: Yaml | undefined): string => (typeof node === 'string' ? node : '');
-const workflow = (name: string) => mappingOf(parseYaml(readFileSync(path.join(DIR, name), 'utf8')));
 const stepsOf = (job: Mapping) => listOf(job['steps']).map(mappingOf);
 /** A script with its comment lines left out. */
 const code = (script: string) =>
@@ -190,39 +93,9 @@ const code = (script: string) =>
     .filter((line) => !/^\s*#/.test(line))
     .join('\n');
 
-describe('the YAML reader', () => {
-  it('reads every workflow here', () => {
-    for (const name of workflows) expect(() => workflow(name)).not.toThrow();
-  });
-
-  it('reads the forms the checks rely on', () => {
-    const read = parseYaml(
-      [
-        'on:',
-        '  workflow_run:',
-        "    workflows: ['Tests']",
-        'jobs:',
-        '  a:',
-        '    if: >-',
-        "      x == 'y' &&",
-        '      z',
-        '    steps:',
-        '      - name: one # a comment',
-        '        run: |',
-        '          echo "a: b"',
-        '          # kept',
-        '      - uses: x@y',
-      ].join('\n')
-    );
-    expect(read).toEqual({
-      on: { workflow_run: { workflows: ['Tests'] } },
-      jobs: {
-        a: {
-          if: "x == 'y' && z",
-          steps: [{ name: 'one', run: 'echo "a: b"\n# kept' }, { uses: 'x@y' }],
-        },
-      },
-    });
+describe('the workflows as YAML', () => {
+  it('parses every workflow here', () => {
+    for (const name of workflows) expect(Object.keys(workflow(name))).toContain('jobs');
   });
 });
 
@@ -295,27 +168,63 @@ describe('publish-images.yml', () => {
     expect(code(text)).not.toMatch(/github\.sha\b/);
   });
 
+  // Only the registry's own "not found" reads as absent: the AWS CLI exits 254
+  // for any error the service returns and names it in the message. Anything
+  // else (no access, no repository, no answer) must fail, never mean "build it"
+  // or "missing".
+  const lookup = (script: string) => /^\s*published\(\) \{\n[\s\S]*?\n\}$/m.exec(script)?.[0];
+  it('takes an image as absent only on the registry saying so', () => {
+    const scripts = [code(textOf(build['run'])), moveScript];
+    for (const script of scripts) {
+      const found = lookup(script) ?? '';
+      expect(found).toMatch(
+        /err=\$\(aws ecr-public describe-images --region us-east-1 \\\n\s*--repository-name "\$1" --image-ids imageTag="\$2" 2>&1 > \/dev\/null\) \|\| status=\$\?/
+      );
+      expect(found).toMatch(/if \[ "\$status" -eq 0 \]; then return 0; fi\n/);
+      expect(found).toMatch(
+        /if \[ "\$status" -eq 254 \] &&\n\s*\[\[ "\$err" == \*"\(ImageNotFoundException\) when calling the DescribeImages operation"\* \]\]; then\n\s*return 1\n\s*fi\n[^\n]*\n\s*exit 1\n\s*\}$/
+      );
+      expect(script).not.toMatch(/manifest inspect/);
+    }
+    expect(lookup(scripts[0] ?? '')).toBe(lookup(moveScript));
+  });
+
   // A server pins a commit's tag; a rebuild under it would change the image.
   it('never rebuilds an image a commit tag already names', () => {
     const script = code(textOf(build['run']));
-    const skip = /if docker manifest inspect "\$image" [^\n]*; then\n[^\n]*\n\s*exit 0\n\s*fi/.exec(
-      script
-    );
+    const skip = /if published "\$NAME" "\$SHA"; then\n[^\n]*\n\s*exit 0\n\s*fi/.exec(script);
     expect(skip?.index).toBeLessThan(script.indexOf('docker build'));
     expect(script).toMatch(/--label "org\.opencontainers\.image\.revision=\$SHA"/);
   });
 
-  // Runs can finish in any order: an older commit's must not move main back.
-  it('moves main only while the commit is main tip, checked again before the pushes', () => {
+  // Runs can finish in any order, and a newer commit's run may never come
+  // (Tests failed, `[skip ci]`): `main` moves only to a commit ahead of the
+  // one it names, read from the label of the image pushed last.
+  it('moves main only forward, checked again before the pushes', () => {
     expect(Object.keys(read)).not.toContain('concurrency');
-    expect(moveScript).toMatch(
-      /tip=\$\(gh api "repos\/\$GITHUB_REPOSITORY\/commits\/main" --jq \.sha\)\n\s*if \[ "\$tip" != "\$SHA" \]; then\n[^\n]*\n\s*exit 0/
+    const forward = /^\s*main_moves_forward\(\) \{\n[\s\S]*?\n\}$/m.exec(moveScript)?.[0] ?? '';
+    expect(forward).toMatch(/local last="\$\{images\[-1\]\}"/);
+    expect(forward).toMatch(/if ! published "\$last" main; then\n[^\n]*\n\s*return\n/);
+    expect(forward).toMatch(
+      /current=\$\(docker buildx imagetools inspect "\$REGISTRY\/\$last:main" \\\n\s*--format '\{\{json \.Image\}\}' \|/
     );
-    const checks = [...moveScript.matchAll(/^\s*main_is_this_commit$/gm)].map((m) => m.index);
+    expect(forward).toMatch(/\.config\.Labels\["org\.opencontainers\.image\.revision"\]/);
+    expect(forward).toMatch(/if \[ "\$current" = "\$SHA" \]; then\n[^\n]*\n\s*exit 0\n/);
+    expect(forward).toMatch(
+      /status=\$\(gh api "repos\/\$GITHUB_REPOSITORY\/compare\/\$current\.\.\.\$SHA" --jq \.status\)\n/
+    );
+    // Only `ahead` goes on; the rest stay or fail.
+    const cases = /case "\$status" in\n([\s\S]*?)\n\s*esac/.exec(forward)?.[1] ?? '';
+    expect(cases).toMatch(/^\s*ahead\) echo [^\n;]*;;$/m);
+    expect(cases).toMatch(/^\s*behind \| diverged \| identical\)\n[^\n]*\n\s*exit 0\n\s*;;$/m);
+    expect(cases).toMatch(/^\s*\*\)\n[^\n]*\n\s*exit 1\n\s*;;$/m);
+    expect(cases.match(/^\s*[^\n]*\)( |$)/gm)).toHaveLength(3);
+
+    const checks = [...moveScript.matchAll(/^\s*main_moves_forward$/gm)].map((m) => m.index);
     const firstPull = moveScript.indexOf('docker pull');
     const firstPush = moveScript.indexOf('docker push');
     expect(checks).toHaveLength(2);
-    expect(checks[0]).toBeLessThan(moveScript.indexOf('docker manifest inspect'));
+    expect(checks[0]).toBeLessThan(moveScript.indexOf('if ! published "$name" "$SHA"'));
     expect(checks[0]).toBeLessThan(firstPull);
     expect(checks[1]).toBeGreaterThan(moveScript.lastIndexOf('docker tag'));
     expect(checks[1]).toBeLessThan(firstPush);
@@ -323,10 +232,28 @@ describe('publish-images.yml', () => {
 
   // Each tag moves on its own; none moves unless every commit tag is there.
   it('confirms every commit tag before moving any main tag', () => {
-    const confirm = moveScript.indexOf('if ! docker manifest inspect "$REGISTRY/$name:$SHA"');
+    const confirm = moveScript.indexOf('if ! published "$name" "$SHA"; then');
     expect(confirm).toBeGreaterThan(-1);
     expect(confirm).toBeLessThan(moveScript.indexOf('docker push'));
     expect(moveScript.slice(confirm)).toMatch(/^[^\n]*\n[^\n]*\n\s*exit 1/);
+  });
+
+  // Every check above is on that one step: a second step touching `main`
+  // would move it unchecked.
+  it('touches main in one step only, the checked one', () => {
+    const steps = Object.values(jobs).flatMap((job) => stepsOf(mappingOf(job)));
+    const body = (step: Mapping) => JSON.stringify({ ...step, run: code(textOf(step['run'])) });
+    const touches = steps.filter((step) =>
+      /:main\b|imagetools create|docker push/.test(body(step))
+    );
+    expect(touches.filter((step) => step !== build)).toEqual([move]);
+    expect(body(build)).not.toMatch(/:main\b|imagetools create/);
+  });
+
+  // A failing step must fail its job: a leg that failed but carried on would
+  // let `main` move without its image, and a failed check would be ignored.
+  it('never carries on after a failure', () => {
+    expect(code(text)).not.toMatch(/continue-on-error/);
   });
 
   // `main` moves for exactly the images the matrix builds, whatever order a
