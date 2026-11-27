@@ -320,8 +320,11 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
 - **Every excerpt ends in "...", cut or not**
   (`projects/website-angular/src/utils/truncateHtml.ts`): the ellipsis is added
   unconditionally; the check meant to add it only when the text was cut did
-  nothing (`result;`). The dead check went in T001; the ellipsis is unchanged,
-  as fixing it changes what readers see, and waits for a decision.
+  nothing (`result;`). The dead check went in T001; the ellipsis waited for a
+  decision, and the decision (27 Nov) was "..." only when the text was cut.
+  Fixed for #951 (PR #TBD): news and article excerpts and the home page's
+  spotlight end in "..." only when words were left out, with specs seen
+  failing against the old ellipsis. Of 89 news items, 2 short ones lose it.
 - **The table web component drew nothing from its documented use**
   (`projects/reactome-table/src/lib/utils/web-component-utils.ts`, `safeInput`).
   Its attributes are strings, so its demo page sets `table` as JSON. `safeInput`
