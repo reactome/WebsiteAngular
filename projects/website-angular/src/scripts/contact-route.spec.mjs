@@ -16,7 +16,7 @@ process.env.TURNSTILE_SITEKEY = '1x00000000000000000000AA';
 
 const require = createRequire(import.meta.url);
 const express = require('express');
-const { mountContactRoute, sendmail, __resetLimits } = require('./contact-route.js');
+const { mountContactRoute, compose, sendmail, __resetLimits } = require('./contact-route.js');
 
 const CONFIGURED = { CONTACT_TO: 'desk@example.org', CONTACT_FROM: 'site@example.org' };
 const GOOD = {
@@ -274,6 +274,7 @@ describe('a deployment with nowhere to send', () => {
   for (const [name, env] of [
     ['no recipient', { CONTACT_FROM: 'site@example.org' }],
     ['no sender', { CONTACT_TO: 'desk@example.org' }],
+    ['a region that is no region', { ...CONFIGURED, CONTACT_SES_REGION: 'nowhere' }],
   ]) {
     it(`says it cannot send, with ${name}`, async () => {
       await start(env);
@@ -331,6 +332,116 @@ describe('handing a message to sendmail', () => {
     await expect(
       sendmail('To: desk@example.org\n\n', 'site@example.org', path.join(dir, 'missing'))
     ).rejects.toThrow();
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('handing a message to Amazon SES', () => {
+  // A stand-in for SES's client: it records each command and sends nothing.
+  let commands;
+  let regions;
+  let sesFails;
+  const fakeClient = {
+    send: async (command, options) => {
+      if (sesFails) throw new Error('MessageRejected');
+      commands.push({ command, options });
+    },
+  };
+
+  async function startSes(env, sendmailPath = '/nonexistent/sendmail') {
+    const app = express();
+    mountContactRoute(app, {
+      env,
+      sendmailPath,
+      verify: async (token) => {
+        verified.push(token);
+        return verifyAnswer;
+      },
+      sesClient: (region) => {
+        regions.push(region);
+        return fakeClient;
+      },
+    });
+    await new Promise((resolve) => {
+      server = app.listen(0, '127.0.0.1', resolve);
+    });
+    base = `http://127.0.0.1:${server.address().port}/contact`;
+  }
+
+  beforeEach(() => {
+    commands = [];
+    regions = [];
+    sesFails = false;
+  });
+
+  it('sends the message sendmail would be given, through the region named', async () => {
+    await startSes({ ...CONFIGURED, CONTACT_SES_REGION: 'us-east-1' });
+    expect((await post(GOOD)).status).toBe(200);
+    expect(verified).toEqual(['turnstile-token']);
+    expect(regions).toEqual(['us-east-1']);
+    expect(commands).toHaveLength(1);
+    const { input } = commands[0].command;
+    expect(commands[0].command.constructor.name).toBe('SendEmailCommand');
+    expect(commands[0].options.abortSignal).toBeInstanceOf(AbortSignal);
+    expect(input.FromEmailAddress).toBe('site@example.org');
+    expect(input.Destination).toEqual({ ToAddresses: ['desk@example.org'] });
+    expect(input.Content.Simple).toBeUndefined();
+    const raw = Buffer.from(input.Content.Raw.Data).toString('utf8');
+    // The same message, its lines ended as SMTP carries them.
+    expect(raw).toBe(
+      compose({
+        to: 'desk@example.org',
+        from: 'site@example.org',
+        contactName: '',
+        mailAddress: GOOD.mailAddress,
+        subject: GOOD.subject,
+        message: GOOD.message,
+      }).replace(/\n/g, '\r\n')
+    );
+    expect(raw).toContain('\r\nReply-To: reader@example.org\r\n');
+    expect(raw).not.toMatch(/[^\r]\n/);
+  });
+
+  it('sends to each address CONTACT_TO names', async () => {
+    await startSes({
+      ...CONFIGURED,
+      CONTACT_TO: 'desk@example.org, other@example.org',
+      CONTACT_SES_REGION: 'eu-west-2',
+    });
+    expect((await post(GOOD)).status).toBe(200);
+    expect(regions).toEqual(['eu-west-2']);
+    expect(commands[0].command.input.Destination).toEqual({
+      ToAddresses: ['desk@example.org', 'other@example.org'],
+    });
+  });
+
+  it('sends nothing when the token is refused', async () => {
+    await startSes({ ...CONFIGURED, CONTACT_SES_REGION: 'us-east-1' });
+    verifyAnswer = false;
+    expect((await post(GOOD)).status).toBe(403);
+    expect(commands).toEqual([]);
+  });
+
+  it('answers 502 when SES refuses the message', async () => {
+    await startSes({ ...CONFIGURED, CONTACT_SES_REGION: 'us-east-1' });
+    sesFails = true;
+    expect((await post(GOOD)).status).toBe(502);
+  });
+
+  it('goes to sendmail, not SES, when no region is named', async () => {
+    // A stand-in for the binary: the host running the specs may have a real one.
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'reactome-sendmail-'));
+    const script = path.join(dir, 'sendmail');
+    fs.writeFileSync(script, `#!/bin/sh\necho "$@" > "${dir}/args"\ncat > /dev/null\n`, {
+      mode: 0o755,
+    });
+    await startSes(CONFIGURED, script);
+    expect((await post(GOOD)).status).toBe(200);
+    expect(fs.readFileSync(path.join(dir, 'args'), 'utf8').trim()).toBe(
+      '-t -i -f site@example.org'
+    );
+    expect(regions).toEqual([]);
+    expect(commands).toEqual([]);
     fs.rmSync(dir, { recursive: true, force: true });
   });
 });

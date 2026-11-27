@@ -21,7 +21,9 @@ services:
     # The site's own settings, as beta's service reads them: the human check's
     # keys, the identity secret, the chat's addresses (ANSWER_UPSTREAM,
     # SUMMARY_UPSTREAM, HANDOFF_UPSTREAM: this server's own, never another
-    # deployment's), TRUSTED_PROXIES. The same file the analysis gateway mounts.
+    # deployment's), TRUSTED_PROXIES, and the contact form's CONTACT_TO,
+    # CONTACT_FROM and CONTACT_SES_REGION. The same file the analysis gateway
+    # mounts.
     env_file: !override ['${ANSWER_ENV_FILE}']
     volumes: !override
       - type: bind
@@ -58,9 +60,11 @@ services:
 ```
 
 `environment` wins over `env_file` for a key in both, so the key's path is the
-container's whatever the settings file says. The contact form needs a `sendmail`, which
-the site image does not have: until it does (T031), the settings file this container gets
-leaves `CONTACT_TO` unset, and the form says it cannot send rather than failing.
+container's whatever the settings file says. The site image has no `sendmail`, so the
+contact form sends through Amazon SES (T031): the settings file names `CONTACT_TO`,
+`CONTACT_FROM` and `CONTACT_SES_REGION`, and the host's role allows `ses:SendEmail` from
+`CONTACT_FROM`'s address. With `CONTACT_TO` or `CONTACT_FROM` unset the form says it cannot
+send; with `CONTACT_SES_REGION` unset it would look for a `sendmail` the image does not have.
 The render service needs no entry: the base file reads `RENDER_FILES_DIR` and
 `RENDER_CONCURRENCY` from the settings file (T016). `RENDER_FILES_DIR` names the folder
 holding the release folders (`<it>/99/diagram/...`), as the download site lays them out,
