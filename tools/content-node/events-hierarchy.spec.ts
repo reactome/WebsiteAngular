@@ -27,8 +27,10 @@ const SPECIES: Species[] = [
   // Names Java finds through Character.toTitleCase: ǆ is ǅ, ß stays ß.
   { dbId: 503, taxId: '3333', displayName: 'ǅemo', names: ['ǅemo'] },
   { dbId: 504, taxId: '4444', displayName: 'ßpecies', names: ['ßpecies'] },
+  // Whose first check for top-level pathways fails: tried again, not kept.
+  { dbId: 506, taxId: '6666', displayName: 'Flakius', names: ['Flakius'] },
 ];
-const WITH_TOP_LEVEL = new Set([500, 502, 503, 504, 505]);
+const WITH_TOP_LEVEL = new Set([500, 502, 503, 504, 505, 506]);
 const HAS_TREE = new Set(['1111', '']);
 
 /** Top-level pathways, as the query orders them (by toLower(displayName)). */
@@ -88,6 +90,9 @@ const FULL_ROWS = {
 
 /** How many times the full form's query was asked. */
 let fullQueries = 0;
+/** The checks for top-level pathways, by the Species' dbId. */
+const checks = new Map<number, number>();
+const FAIL_ONCE = new Set([506]);
 
 vi.mock('./graph.ts', () => ({
   read: async (cypher: string, params: Record<string, unknown>) => {
@@ -106,8 +111,12 @@ vi.mock('./graph.ts', () => ({
       return SPECIES.filter((s) => s.taxId === params['taxId']).map(pick);
     if (cypher.includes('MATCH (s:Species {dbId: $dbId})'))
       return SPECIES.filter((s) => s.dbId === Number(params['dbId'])).map(pick);
-    if (cypher.includes('count(t) AS n'))
-      return [{ n: WITH_TOP_LEVEL.has(Number(params['dbId'])) ? 1 : 0 }];
+    if (cypher.includes('count(t) AS n')) {
+      const dbId = Number(params['dbId']);
+      checks.set(dbId, (checks.get(dbId) ?? 0) + 1);
+      if (FAIL_ONCE.delete(dbId)) throw new Error('the graph went away');
+      return [{ n: WITH_TOP_LEVEL.has(dbId) ? 1 : 0 }];
+    }
     if (cypher.includes('RETURN n.stId AS stId'))
       return HAS_TREE.has(params['taxId'] as string) ? TOPS.map((stId) => ({ stId })) : [];
     if (cypher.includes('r.order AS order'))
@@ -278,5 +287,34 @@ describe('/data/eventsHierarchy/{species}?pathwaysOnly=true', () => {
         500,
         ['Something unexpected happened and the error has been reported.'],
       ]);
+  });
+
+  // #952: the check cost about 150ms a request on human, after the tree was ready.
+  it('asks whether a species has top-level pathways once, however the species is asked for', async () => {
+    for (const path of [
+      '1111?pathwaysOnly=true',
+      '1111?pathwaysOnly=true',
+      '500?pathwaysOnly=true',
+      'testus_specius?pathwaysOnly=true',
+      '1111',
+    ])
+      expect((await get(path)).status).toBe(200);
+    expect(checks.get(500)).toBe(1);
+    // A species without them is Java's generic 500 every time, from one check.
+    for (let ask = 0; ask < 2; ask++)
+      expect(await messages(await get('2222?pathwaysOnly=true'))).toEqual([
+        500,
+        ['Something unexpected happened and the error has been reported.'],
+      ]);
+    expect(checks.get(501)).toBe(1);
+  });
+
+  it('asks again after a failed check', async () => {
+    expect((await get('6666?pathwaysOnly=true')).status).toBe(500);
+    expect(await messages(await get('6666?pathwaysOnly=true'))).toEqual([
+      404,
+      ['No event hierarchy found for given species: 6666'],
+    ]);
+    expect(checks.get(506)).toBe(2);
   });
 });
