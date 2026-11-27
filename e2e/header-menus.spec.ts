@@ -74,6 +74,28 @@ test.describe('On a desktop', () => {
     expect(inner.x + inner.width).toBeLessThanOrEqual(outer.x + outer.width);
   });
 
+  // A closed menu is hidden, and hidden things take no pointer. The third level
+  // was `visibility: visible`, which a child keeps under a hidden parent: under
+  // Docs, a patch of the page beside its closed menu, drawn transparent, still
+  // caught the pointer and opened Docs from across the page.
+  test('a closed menu catches no pointer, so nothing beside it opens it', async ({ page }) => {
+    await page.goto('/about');
+    await expect(topItem(page, 'Docs')).toBeVisible({ timeout: LOAD });
+    await page.mouse.move(5, 880);
+    await expect(page.locator('.dropdown-menu.show')).toHaveCount(0);
+    const catching = await page.evaluate(() =>
+      [...document.querySelectorAll('.nav-list .dropdown-menu *')].flatMap((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return [];
+        const x = r.left + r.width / 2;
+        const y = r.top + r.height / 2;
+        const at = document.elementFromPoint(x, y);
+        return at && el.contains(at) ? [{ x, y }] : [];
+      })
+    );
+    expect(catching, 'points of a closed menu that catch the pointer').toEqual([]);
+  });
+
   test('a submenu near the right edge opens leftwards, on the screen', async ({ page }) => {
     await page.goto('/about');
     const community = await openMenu(page, 'Community');

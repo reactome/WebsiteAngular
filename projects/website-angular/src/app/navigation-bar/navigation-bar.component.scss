@@ -280,10 +280,13 @@ $menu-tint: color-mix(in srgb, var(--primary) 10%, transparent);
 
 // A third level shows in place, under its row in the second menu: a third
 // column of menus ran off the screen or, turned back, covered the first.
+// `inherit`, never `visible`: a child that is `visible` shows, and catches the
+// pointer, under a hidden parent, so the closed Docs menu's third level opened
+// Docs from the page beside it (e2e/header-menus.spec.ts).
 .nested-dropdown-list .nested-dropdown-menu {
   position: static;
   opacity: 1;
-  visibility: visible;
+  visibility: inherit;
   transform: none;
   box-shadow: none;
   border-radius: 0;
