@@ -2284,6 +2284,7 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/pathway/{id}/containedEvents/{attribute}',
+    produces: ['text', 'plain'],
     sample: 'R-HSA-109606',
     samplePath: { attribute: 'stId' },
     differs: [/^\/ContentService\/data\/pathway\/[^/]+\/containedEvents\/[^/]+: \.url: /],

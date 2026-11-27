@@ -349,7 +349,7 @@ describe('the citation endpoints', () => {
     const response = await fetch(`${base}/ContentService/citation/static/12345`);
     expect([response.status, response.headers.get('content-type')]).toEqual([
       200,
-      'text/plain; charset=utf-8',
+      'text/plain;charset=UTF-8',
     ]);
     expect(await response.text()).toMatch(/^Doe J\. A paper\./);
     expect(pmcAsked).toEqual([
@@ -425,9 +425,9 @@ describe('the citation endpoints', () => {
 
   it('export writes each format as its own type and extension', async () => {
     for (const [ext, type, extension] of [
-      ['bib', 'application/x-bibtex; charset=utf-8', 'bib'],
-      ['ris', 'application/x-research-info-systems; charset=utf-8', 'ris'],
-      ['txt', 'text/plain; charset=utf-8', 'txt'],
+      ['bib', 'application/x-bibtex;charset=UTF-8', 'bib'],
+      ['ris', 'application/x-research-info-systems;charset=UTF-8', 'ris'],
+      ['txt', 'text/plain;charset=UTF-8', 'txt'],
     ]) {
       const response = await fetch(
         `${base}/ContentService/citation/export?isPathway=false&id=12345&ext=${ext}&dateAccessed=d`
@@ -624,6 +624,19 @@ describe('the citation endpoints', () => {
       'text/plain;x=y;charset=utf-16',
       `feff${Buffer.from(text, 'utf16le').swap16().toString('hex')}`,
     ]);
+    // The edge keys by URL alone: only the answer the URL gives without the
+    // Accept's parameters is stored, never one written in the charset named.
+    const rule = async (accept?: string) =>
+      (
+        await fetch(`${base}/ContentService/citation/download`, {
+          headers: accept ? { Accept: accept } : {},
+        })
+      ).headers.get('x-cache-rule');
+    expect(await rule()).toBe('standard');
+    expect(await rule('text/*')).toBe('standard');
+    expect(await rule('text/plain;q=0.5')).toBe('standard');
+    expect(await rule('text/plain;charset=UTF-16')).toBe('accept');
+    expect(await rule('text/plain;x=y')).toBe('accept');
     // A HEAD says how long the answer is, as Java's does.
     const head = await fetch(`${base}/ContentService/citation/download`, { method: 'HEAD' });
     expect(head.headers.get('content-length')).toBe(String(text.length));
@@ -647,7 +660,7 @@ describe('the citation endpoints', () => {
       (JSON.parse(Buffer.from(body, 'hex').toString()) as { messages: string[] }).messages,
     ]).toEqual([
       406,
-      'application/json; charset=utf-8',
+      'application/json;charset=UTF-8',
       ['Could not find acceptable representation'],
     ]);
   });

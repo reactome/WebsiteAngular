@@ -468,6 +468,68 @@ export function springEnum(
 }
 
 /**
+ * The types an Accept header names, each read as mediaType reads it -- the
+ * header split at commas outside quotes, blank parts skipped, none at all
+ * every type -- or the message of the first part Spring cannot read.
+ */
+function acceptedTypes(header: string | undefined): MediaType[] | string {
+  const parts: string[] = [];
+  if (header !== undefined) {
+    let quoted = false;
+    let start = 0;
+    for (let at = 0; at < header.length; at += 1) {
+      const char = header.charAt(at);
+      if (char === '"') quoted = !quoted;
+      else if (char === ',' && !quoted) {
+        parts.push(header.slice(start, at));
+        start = at + 1;
+      } else if (char === '\\') at += 1;
+    }
+    parts.push(header.slice(start));
+  }
+  const accepted: MediaType[] = [];
+  for (const part of parts) {
+    if (javaTrimAll(part) === '') continue;
+    const media = mediaType(part);
+    if (typeof media === 'string') return media;
+    accepted.push(media);
+  }
+  if (accepted.length === 0) accepted.push({ type: '*', subtype: '*', parameters: [] });
+  return accepted;
+}
+
+/**
+ * What Spring Boot's BasicErrorController makes of a request's Accept when no
+ * mapping matches its path (Spring's own 404), as measured on Java (#953):
+ *
+ *  - `html`: its Whitelabel page, when the type Accept puts first takes
+ *    text/html and is not every type (`text/*`, a browser's);
+ *  - `json`: its JSON, when any type Accept names takes application/json
+ *    (none, `*\/*`, `application/*`, Angular's);
+ *  - `none`: nothing at all, when no type does (text/plain, application/xml);
+ *  - `failed`: a part Spring cannot read, which is Java's 500 naming it.
+ */
+type ErrorPage =
+  { kind: 'html' } | { kind: 'json' } | { kind: 'none' } | { kind: 'failed'; message: string };
+
+export function errorPage(header: string | undefined): ErrorPage {
+  const accepted = acceptedTypes(header);
+  if (typeof accepted === 'string') return { kind: 'failed', message: accepted };
+  let sorted: MediaType[];
+  try {
+    sorted = javaSort(accepted, bySpecificityAndQuality);
+  } catch (failure) {
+    if (failure instanceof QualityFailure) return { kind: 'failed', message: failure.message };
+    throw failure;
+  }
+  const [first] = sorted;
+  const html: MediaType = { type: 'text', subtype: 'html', parameters: [] };
+  if (first && first.type !== '*' && compatible(first, html)) return { kind: 'html' };
+  const json: MediaType = { type: 'application', subtype: 'json', parameters: [] };
+  return sorted.some((media) => compatible(media, json)) ? { kind: 'json' } : { kind: 'none' };
+}
+
+/**
  * What Spring makes of a request's Accept for a mapping that produces one
  * type, in the order it finds out:
  *
@@ -499,28 +561,8 @@ export function negotiate(
   header: string | undefined,
   produced: [type: string, subtype: string]
 ): Negotiation {
-  const parts: string[] = [];
-  if (header !== undefined) {
-    let quoted = false;
-    let start = 0;
-    for (let at = 0; at < header.length; at += 1) {
-      const char = header.charAt(at);
-      if (char === '"') quoted = !quoted;
-      else if (char === ',' && !quoted) {
-        parts.push(header.slice(start, at));
-        start = at + 1;
-      } else if (char === '\\') at += 1;
-    }
-    parts.push(header.slice(start));
-  }
-  const accepted: MediaType[] = [];
-  for (const part of parts) {
-    if (javaTrimAll(part) === '') continue;
-    const media = mediaType(part);
-    if (typeof media === 'string') return { kind: 'not-acceptable' };
-    accepted.push(media);
-  }
-  if (accepted.length === 0) accepted.push({ type: '*', subtype: '*', parameters: [] });
+  const accepted = acceptedTypes(header);
+  if (typeof accepted === 'string') return { kind: 'not-acceptable' };
   const [type, subtype] = produced;
   const produce: MediaType = { type, subtype, parameters: [] };
   try {

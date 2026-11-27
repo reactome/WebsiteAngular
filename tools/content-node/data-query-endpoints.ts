@@ -363,6 +363,7 @@ function dbInfo(): Promise<DomainEntity> {
 export const dataQueryEndpoints: Endpoint[] = [
   {
     path: '/ContentService/data/database/version',
+    produces: ['text', 'plain'],
     // The release the database holds. One row, one value: the smallest possible
     // first port, chosen to prove the plumbing rather than the mapping -- and it
     // still caught a wrong guess. The property is `releaseNumber`; `version` does
@@ -394,6 +395,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/database/name',
+    produces: ['text', 'plain'],
     handler: cached('database/name', async () => {
       const [row] = await read<{ name: string | null }>(
         'MATCH (n:DBInfo) RETURN n.name AS name LIMIT 1'
@@ -499,6 +501,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   {
     // Three segments after /query, so it shares no path with another route.
     path: '/ContentService/data/query/abridged/{id}/{attribute}',
+    produces: ['text', 'plain'],
     sample: 'R-HSA-109581',
     samplePath: { attribute: 'hasEvent' },
     differs: [/^\/ContentService\/data\/query\/abridged\/[^/]+\/[^/]+: \.url: /],
@@ -563,6 +566,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/query/{id}/stId',
+    produces: ['text', 'plain'],
     // A reaction by dbId, so the comparison covers the lookup the site makes.
     sample: '70486',
     // The 404 body names the service that answered; see /pathways/top/{id}.
@@ -659,6 +663,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   ].map(({ path, signature, answer }): Endpoint => ({
     path,
     method: 'post',
+    consumes: [['text', 'plain']],
     sampleBody: 'R-HSA-1640170, R-HSA-109581, 199420\nREACT_578;xyz',
     differs: [
       new RegExp(`^${path}: \\.url: `),
@@ -722,6 +727,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/diseases/doid',
+    produces: ['text', 'plain'],
     // DiseasesController.getDiseasesSummary: one line a disease, its dbId,
     // then database:identifier -- Java's string concatenation, so a missing
     // one is "null".
@@ -738,12 +744,14 @@ export const dataQueryEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/query/ids/map',
+    produces: ['text', 'plain'],
     // A GET here is Java's /query/{id}/{attributeName}, for an object called
     // "ids" -- which nothing is.
     handler: async (request) => notFound(request, 'Id: ids has not been found in the System'),
   },
   {
     path: '/ContentService/data/query/{id}/normalPathway',
+    produces: ['text', 'plain'],
     // A disease pathway, by stable id; the diff harness is given more forms.
     sample: 'R-HSA-6802957',
     // The 404 body names the service that answered; see /pathways/top/{id}.
@@ -797,6 +805,7 @@ export const dataQueryEndpoints: Endpoint[] = [
   {
     // After every other /data/query/... route: Express takes them in order.
     path: '/ContentService/data/query/{id}/{attribute}',
+    produces: ['text', 'plain'],
     sample: 'R-HSA-109581',
     samplePath: { attribute: 'hasEvent' },
     differs: [/^\/ContentService\/data\/query\/[^/]+\/[^/]+: \.url: /],

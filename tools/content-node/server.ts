@@ -32,12 +32,13 @@ import { settings } from './settings.ts';
 import { defaultLabel, emptyAnswer, label, redirectLabel, setLabel } from './cache-label.ts';
 import { solrConfigured } from './solr.ts';
 import { asciiDigits, javaNumeric, javaTrim, javaTrimAll, present } from './java-text.ts';
-import { pathId, rawSegment } from './spring.ts';
+import { negotiate, pathId, rawSegment } from './spring.ts';
+import { consumesProblem } from './body.ts';
 import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } from './answers.ts';
 import type { Failure } from './answers.ts';
 import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { databaseVersion } from './release.ts';
-import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
+import { endpoints, endpointsFor, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
 // Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
 declare global {
@@ -281,7 +282,7 @@ export function writeResult(response: Written, result: Answer) {
   )
     response.setHeader('Content-Disposition', 'inline;filename=f.txt');
   if (result.body === undefined && !result.serialised) response.end();
-  else if (typeof result.body === 'string') response.send(result.body);
+  else if (typeof result.body === 'string') sendText(response, result.type, result.body);
   // A figure's bytes, under the type the handler set.
   else if (Buffer.isBuffer(result.body)) response.end(result.body);
   // A body passed on as it arrives (SBML, spec 015 T065): a failure part way
@@ -291,8 +292,27 @@ export function writeResult(response: Written, result: Answer) {
   else if (result.body instanceof Readable) {
     const body = result.body;
     pipeline(body, response as express.Response).catch(() => body.destroy());
-  } else if (result.serialised) response.type('application/json').send(result.serialised);
-  else response.type('application/json').send(javaJson(result.body));
+  } else if (result.serialised) sendText(response, 'application/json', result.serialised);
+  else sendText(response, 'application/json', javaJson(result.body));
+}
+
+/**
+ * Text, under its type as Java's Content-Type spells it (#953):
+ * `application/json;charset=UTF-8`, not Express's `; charset=utf-8`. Handed
+ * to send as bytes, which send leaves the type of alone -- a string it would
+ * write its own charset into -- while still taking its length, ETag and
+ * freshness, and leaving a HEAD's body out. Text with no type is left to
+ * send, as before.
+ */
+function sendText(response: Written, type: string | undefined, text: string) {
+  if (type === undefined) return void response.send(text);
+  response.setHeader('Content-Type', javaContentType(type));
+  response.send(Buffer.from(text, 'utf8'));
+}
+
+/** A text type as Spring writes it: the charset it names, or `;charset=UTF-8` added. */
+export function javaContentType(type: string) {
+  return /;\s*charset=/i.test(type) ? type : `${type};charset=UTF-8`;
 }
 
 /**
@@ -474,10 +494,17 @@ export function app() {
     const body = endpoint.method === 'post' ? [readBody(endpoint)] : [];
     // answerWith answers every failure of the handler's; a rejection past it
     // reaches the error handler below, which Express 5 waits for.
-    server[endpoint.method ?? 'get'](route, ...body, (request, response) =>
-      answerWith(endpoint, request, response)
+    server[endpoint.method ?? 'get'](route, ...body, (request, response, next) =>
+      answerWith(endpoint, request, response, next)
     );
   }
+
+  // Every mapping of the path that takes the method refused the request's
+  // Accept: Spring's 406, before any 405 (#953).
+  server.use((request, response, next) => {
+    if (!REFUSED.has(request)) return next();
+    writeResult(response, notAcceptable(request));
+  });
 
   // Any other method on these paths is Java's 405: nginx sends every method
   // here, and Express's own answer was an HTML 404. After every route, so a
@@ -518,12 +545,14 @@ export function app() {
       // The path as routing saw it, less a trailing slash, which Express
       // ignores too.
       const path = present(String(request.url).split('?')[0]).replace(/(.)\/$/, '$1');
-      const endpoint = endpointFor(path);
-      if (!endpoint) return next(failure);
-      // HEAD is answered as GET, as Express answers it; any other method the
-      // template does not take is Java's 405, as for a decodable id.
+      const matching = endpointsFor(path);
+      if (matching.length === 0) return next(failure);
+      // HEAD is answered as GET, as Express answers it; a method no template
+      // of the path takes is Java's 405, as for a decodable id.
       const method = request.method === 'HEAD' ? 'get' : request.method.toLowerCase();
-      if ((endpoint.method ?? 'get') !== method)
+      const taking = matching.filter((each) => (each.method ?? 'get') === method);
+      const [first] = taking;
+      if (!first)
         return writeResult(
           response,
           javaError(
@@ -533,9 +562,17 @@ export function app() {
             `Request method '${request.method}' not supported`
           )
         );
+      // Each in turn, as the routes above are tried: one that refuses the
+      // Accept hands the request on, as Spring tries its next mapping, and
+      // with none left, Spring's 406 (#953). The body is read once.
+      const from = (index: number): void => {
+        const endpoint = taking[index];
+        if (!endpoint) return void writeResult(response, notAcceptable(request));
+        void answerWith(endpoint, request, response, () => from(index + 1)).catch(next);
+      };
       const body: BodyReader =
-        endpoint.method === 'post' ? readBody(endpoint) : (_request, _response, done) => done();
-      body(request, response, () => void answerWith(endpoint, request, response).catch(next));
+        first.method === 'post' ? readBody(first) : (_request, _response, done) => done();
+      body(request, response, () => from(0));
     }
   );
 
@@ -566,6 +603,63 @@ export function deepLimit(setting: unknown) {
 
 const DEEP = deepShare(deepLimit(settings.deepQueryLimit()));
 
+/** Requests a mapping has refused for their Accept, so passed to the next (#953). */
+const REFUSED = new WeakSet<object>();
+
+/** Spring's 406. */
+function notAcceptable(request: Request) {
+  return javaError(request, 406, 'NOT_ACCEPTABLE', 'Could not find acceptable representation');
+}
+
+/**
+ * What Spring makes of a request's Accept before it runs a mapping's
+ * handler (#953): as ProducesRequestCondition, against the one type the
+ * mapping produces (`produces`, application/json unless it says otherwise).
+ *
+ *  - `run`: the handler runs; `afterwards`, the 500 Spring meets when it
+ *    writes what the handler returned (negotiate's `write-failed`);
+ *    `parameters`, when the type chosen carries the Accept's parameters,
+ *    which the answer's type and bytes may follow (a charset), so it is
+ *    never stored at the edge, which keys by URL alone.
+ *  - `refused`: not this mapping -- Spring tries the next that matches the
+ *    path, and with none, answers 406. A POST whose body's type the mapping
+ *    does not consume either is run, for the handler's 415, which Spring
+ *    answers first.
+ *  - `answer`: Spring's 500 while sorting the Accept (`failed`).
+ *
+ * Measured on Java (27 Nov 2026): it is before the handler, so a 406 comes
+ * before a 404 for an unknown id, a 400 for an unreadable parameter, and
+ * whatever else the handler would find. The parameters of the type chosen
+ * are not written into the answer's type here (declared), only by the two
+ * routes that do it themselves.
+ */
+export function acceptance(
+  endpoint: Pick<Endpoint, 'produces' | 'consumes'>,
+  request: Request
+):
+  | { kind: 'run'; afterwards?: string; parameters?: true }
+  | { kind: 'refused' }
+  | { kind: 'answer'; answer: Answer } {
+  const produced = endpoint.produces === undefined ? JSON_TYPE : endpoint.produces;
+  if (produced === null) return { kind: 'run' };
+  const negotiated = negotiate(request.get?.('accept'), produced);
+  if (negotiated.kind === 'chosen')
+    return negotiated.media.parameters.length > 0
+      ? { kind: 'run', parameters: true }
+      : { kind: 'run' };
+  if (negotiated.kind === 'write-failed') return { kind: 'run', afterwards: negotiated.message };
+  if (endpoint.consumes && consumesProblem(request.get?.('content-type'), endpoint.consumes))
+    return { kind: 'run' };
+  if (negotiated.kind === 'failed')
+    return {
+      kind: 'answer',
+      answer: javaError(request, 500, 'INTERNAL_SERVER_ERROR', negotiated.message),
+    };
+  return { kind: 'refused' };
+}
+
+const JSON_TYPE: [string, string] = ['application', 'json'];
+
 /**
  * One endpoint's answer to one request: its handler's result, or what a
  * failure means in Java's terms, never a stack trace.
@@ -573,8 +667,20 @@ const DEEP = deepShare(deepLimit(settings.deepQueryLimit()));
 async function answerWith(
   endpoint: Endpoint,
   request: express.Request,
-  response: express.Response
+  response: express.Response,
+  next: () => void
 ) {
+  const accepted = acceptance(endpoint, request);
+  if (accepted.kind === 'answer') return writeResult(response, accepted.answer);
+  if (accepted.kind === 'refused') {
+    REFUSED.add(request);
+    // The next route that matches the path, as Spring tries its next mapping.
+    return next();
+  }
+  const options = {
+    afterwards: accepted.afterwards,
+    byAccept: REFUSED.has(request) || accepted.parameters === true,
+  };
   if (endpoint.deep) {
     if (!DEEP.enter())
       return writeResult(response, {
@@ -582,18 +688,30 @@ async function answerWith(
         headers: { 'Retry-After': '5' },
       });
     try {
-      return await answer(endpoint, request, response);
+      return await answer(endpoint, request, response, options);
     } finally {
       DEEP.leave();
     }
   }
-  return answer(endpoint, request, response);
+  return answer(endpoint, request, response, options);
 }
 
 export async function answer(
   endpoint: Endpoint,
   request: express.Request,
-  response: express.Response
+  response: express.Response,
+  {
+    afterwards,
+    byAccept = false,
+  }: {
+    /** acceptance's `afterwards`: the 500 that replaces anything the handler writes. */
+    afterwards?: string | undefined;
+    /**
+     * Shaped by the Accept: answered for a mapping tried after another
+     * refused it, or under a type carrying its parameters (label's `byAccept`).
+     */
+    byAccept?: boolean;
+  } = {}
 ) {
   // The answer's caching label, from the request exactly as it was sent:
   // request.url has been rewritten for routing by now (spec 011).
@@ -606,6 +724,7 @@ export async function answer(
         originalUrl: request.originalUrl,
         status: result.status,
         empty: emptyAnswer(result),
+        byAccept,
       })
     );
     writeResult(response, result);
@@ -613,6 +732,12 @@ export async function answer(
   let result: Answer | undefined;
   try {
     result = await endpoint.handler(request);
+    // Spring fails writing a controller's value, not an error's answer, nor
+    // nothing at all.
+    if (afterwards !== undefined && writesValue(result)) {
+      if (result.body instanceof Readable) result.body.destroy();
+      result = javaError(request, 500, 'INTERNAL_SERVER_ERROR', afterwards);
+    }
     write(result);
   } catch (caught) {
     // A body that will now never be written is ended, as above.
@@ -625,6 +750,15 @@ export async function answer(
     console.error(`${endpoint.path}: ${failure.message}`);
     write({ status: 500, type: 'text/plain', body: 'content service error' });
   }
+}
+
+/** Whether an answer is a controller's value that Spring writes: a success with a body. */
+function writesValue(result: Answer) {
+  return (
+    result.status >= 200 &&
+    result.status < 300 &&
+    (result.body !== undefined || Boolean(result.serialised))
+  );
 }
 
 /**

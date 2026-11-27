@@ -147,7 +147,7 @@ describe('/data/referenceMolecules', () => {
         response.status,
         response.headers.get('content-type'),
         await response.text(),
-      ]).toEqual([200, 'application/json; charset=utf-8', JAVA.molecules]);
+      ]).toEqual([200, 'application/json;charset=UTF-8', JAVA.molecules]);
       expect(last()).toEqual([
         'MATCH (n:ReferenceMolecule) RETURN n, labels(n) AS labels, id(n) AS id ORDER BY n.displayName',
         undefined,
@@ -161,7 +161,7 @@ describe('/data/referenceMolecules', () => {
     const response = await get('referenceMolecules/identifiers?page=x');
     expect([response.status, response.headers.get('content-type'), await response.text()]).toEqual([
       200,
-      'text/plain; charset=utf-8',
+      'text/plain;charset=UTF-8',
       'chebi:15399\tChEBI:15399\nchebi:73236\tChEBI:73236',
     ]);
   });
@@ -190,7 +190,7 @@ describe('/data/referenceSequences', () => {
     const response = await get('referenceSequences/identifiers?page=1&offset=2');
     expect([response.status, response.headers.get('content-type'), await response.text()]).toEqual([
       200,
-      'text/plain; charset=utf-8',
+      'text/plain;charset=UTF-8',
       'null\tBioGPS Gene:1\nnull\tBioGPS Gene:10',
     ]);
   });

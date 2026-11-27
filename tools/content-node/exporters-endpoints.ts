@@ -1084,6 +1084,7 @@ async function reactionImage(request: Request): Promise<Answer> {
 export const exportersEndpoints: Endpoint[] = [
   {
     path: '/ContentService/exporter/diagram/{id}',
+    produces: null,
     // The error path, which is all the diff harness can compare: the figure
     // itself is drawn by another renderer. Never expanded over --ids, which
     // would have Java draw a full figure for every one (a versioned id's
@@ -1135,6 +1136,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/event/{id}',
+    produces: null,
     // The error path: the body is compared by sbml-exporter's ci/compare.py
     // (spec 015 T067), not by the harness. A small object that is no event:
     // Java loads every relationship to decide it, which is slow for a large one.
@@ -1150,6 +1152,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/document/event/{id}',
+    produces: null,
     // The error path: the PDF itself is pdf-export's, compared by meaning in
     // its own repository. A small object that is no event, as SBML's.
     sample: '9626065.pdf',
@@ -1163,6 +1166,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/sbml/{id}',
+    produces: null,
     sample: '9626065.xml',
     samplesOnly: true,
     /** The same file at the URL the site's download page used (research R6). */
@@ -1170,6 +1174,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/voronoi/{id}',
+    produces: null,
     // No sample, and none from --ids: Java has no such URL, so the parity
     // harness has nothing to compare it with. overview-export.spec.ts holds it.
     samplesOnly: true,
@@ -1215,6 +1220,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/fireworks/{id}',
+    produces: null,
     // No sample, and none from --ids: Java draws here, node redirects.
     samplesOnly: true,
     /**
@@ -1238,6 +1244,7 @@ export const exportersEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/exporter/reaction/{id}',
+    produces: null,
     // The error path, a pathway's 400: the figure itself is drawn by another
     // renderer, in another look (research D24). Never expanded over --ids,
     // which would have Java draw a figure for every one.

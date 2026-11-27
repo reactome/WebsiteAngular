@@ -558,6 +558,7 @@ export const entitiesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/referenceMolecules/identifiers',
+    produces: ['text', 'plain'],
     /** The same molecules, a line each: stable id, then database:identifier. */
     handler: referenceObjects('ReferenceMolecule', false, referenceIdentifiers),
   },
@@ -576,6 +577,7 @@ export const entitiesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/referenceSequences/identifiers',
+    produces: ['text', 'plain'],
     // The page is the caller's `offset`, uncapped as Java's: 200,000 a page took
     // 25 s and 57 MB (review of 20 Nov), so it takes a share of the deep queries.
     deep: true,

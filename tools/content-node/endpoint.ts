@@ -57,4 +57,16 @@ export interface Endpoint {
   bodyLimit?: number;
   /** A deep query: it takes a share of the pool (the deep-query limit). */
   deep?: boolean;
+  /**
+   * The type Java's mapping produces, which the request's Accept is
+   * negotiated against before the handler runs (#953): absent,
+   * application/json, as most of Java's mappings say; `null` for a mapping
+   * that names none, or a route that is not Java's.
+   */
+  produces?: [type: string, subtype: string] | null;
+  /**
+   * The body types Java's mapping consumes, for a POST: a request that
+   * neither Accept nor its Content-Type fits is Spring's 415, not its 406.
+   */
+  consumes?: [type: string, subtype: string][];
 }

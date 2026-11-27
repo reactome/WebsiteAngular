@@ -25,7 +25,7 @@ const request = (path: string): Request =>
   ({
     originalUrl: `/ContentService/exporter/${path}`,
     protocol: 'http',
-    get: () => 'localhost',
+    get: (name: string) => (name.toLowerCase() === 'host' ? 'localhost' : undefined),
   }) as unknown as Request;
 
 const envelope = (answer: Answer) => {

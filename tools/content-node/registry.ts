@@ -61,6 +61,11 @@ export function endpointFor(path: string): Endpoint | undefined {
   return endpoints.find((e) => endpointPattern(e.path, '(\\?|$)').test(path));
 }
 
+/** Every endpoint whose template matches `path`, in the order requests are matched in. */
+export function endpointsFor(path: string): Endpoint[] {
+  return endpoints.filter((e) => endpointPattern(e.path, '(\\?|$)').test(path));
+}
+
 /** An endpoint's template as a pattern over a path, `tail` after it. */
 function endpointPattern(template: string, tail: string) {
   const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

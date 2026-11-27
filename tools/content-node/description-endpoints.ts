@@ -17,6 +17,7 @@ let description: string | undefined;
 export const descriptionEndpoints: Endpoint[] = [
   {
     path: '/ContentService/openapi.json',
+    produces: null,
     // No sample: Java has no such URL, so the parity harness has nothing to
     // compare it with. description-endpoints.spec.ts holds it.
     samplesOnly: true,

@@ -438,6 +438,7 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/references/mapping/xrefs',
+    consumes: [['text', 'plain']],
     method: 'post',
     sampleBody: 'P36897, Q5S007',
     differs: [/^\/ContentService\/references\/mapping\/xrefs: \.url: /],
@@ -645,6 +646,7 @@ export const mappingSpeciesEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/data/orthologies/ids/species/{speciesId}',
+    consumes: [['text', 'plain']],
     method: 'post',
     samplePath: { speciesId: '48892' },
     // Two ids for one pathway, one with none and one that is no id.

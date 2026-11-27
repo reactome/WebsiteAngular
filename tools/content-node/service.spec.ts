@@ -2091,10 +2091,14 @@ describe('fingerprintFiles, what /health hashes', () => {
 describe('writeResult, how a handler answer goes on the wire', () => {
   function recorder() {
     const calls: unknown[][] = [];
-    // The four methods writeResult calls on an Express response, recorded.
+    // The methods writeResult calls on an Express response, recorded.
     const recording = {
       status: (s: number) => (calls.push(['status', s]), recording),
       type: (t: string) => (calls.push(['type', t]), recording),
+      setHeader: (name: string, value: string) => (
+        calls.push(['setHeader', name, value]),
+        recording
+      ),
       send: (b: unknown) => (calls.push(['send', b]), recording),
       end: () => (calls.push(['end']), recording),
     };
@@ -2107,21 +2111,42 @@ describe('writeResult, how a handler answer goes on the wire', () => {
     writeResult(response, { status: 200, body: { a: '\u001f' } });
     expect(calls).toEqual([
       ['status', 200],
-      ['type', 'application/json'],
-      ['send', '{"a":"\\u001F"}'],
+      ['setHeader', 'Content-Type', 'application/json;charset=UTF-8'],
+      ['send', Buffer.from('{"a":"\\u001F"}')],
     ]);
   });
 
   it('sends a string as it is, a serialised body as given, and no body at all as nothing', () => {
     let rec = recorder();
     writeResult(rec.response, { status: 200, body: 'R-HSA-1', type: 'text/plain' });
-    expect(rec.calls.at(-1)).toEqual(['send', 'R-HSA-1']);
+    expect(rec.calls.at(-1)).toEqual(['send', Buffer.from('R-HSA-1')]);
     rec = recorder();
     writeResult(rec.response, { status: 200, body: [1], serialised: '[1]' });
-    expect(rec.calls.at(-1)).toEqual(['send', '[1]']);
+    expect(rec.calls.at(-1)).toEqual(['send', Buffer.from('[1]')]);
     rec = recorder();
     writeResult(rec.response, { status: 200, body: undefined });
     expect(rec.calls).toEqual([['status', 200], ['end']]);
+  });
+
+  // Java's spelling, not Express's `; charset=utf-8` (#953): the type is
+  // set as bytes are sent, which send does not respell.
+  it('writes the Content-Type as Spring spells it, a charset given kept', () => {
+    const typeOf = (answer: Parameters<typeof writeResult>[1]) => {
+      const rec = recorder();
+      writeResult(rec.response, answer);
+      return rec.calls.find(([call]) => call === 'setHeader')?.[2];
+    };
+    expect(typeOf({ status: 200, body: { a: 1 } })).toBe('application/json;charset=UTF-8');
+    expect(typeOf({ status: 200, body: [1], serialised: '[1]' })).toBe(
+      'application/json;charset=UTF-8'
+    );
+    expect(typeOf({ status: 200, body: 'x', type: 'text/plain' })).toBe('text/plain;charset=UTF-8');
+    expect(typeOf({ status: 200, body: 'x', type: 'text/plain;charset=UTF-8' })).toBe(
+      'text/plain;charset=UTF-8'
+    );
+    expect(typeOf({ status: 200, body: 'x', type: 'text/csv;charset=ISO-8859-1' })).toBe(
+      'text/csv;charset=ISO-8859-1'
+    );
   });
 });
 

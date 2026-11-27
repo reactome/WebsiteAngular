@@ -351,6 +351,7 @@ export const personEndpoints: Endpoint[] = [
   {
     // After /person/{id}/publications and the four lists: Express takes them in order.
     path: '/ContentService/data/person/{id}/{attribute}',
+    produces: ['text', 'plain'],
     sample: '1169272',
     samplePath: { attribute: 'publications' },
     differs: [/^\/ContentService\/data\/person\/[^/]+\/[^/]+: \.url: /],

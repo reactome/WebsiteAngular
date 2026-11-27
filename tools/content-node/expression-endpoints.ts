@@ -177,6 +177,7 @@ async function handler(request: Request) {
 export const expressionEndpoints: Endpoint[] = [
   {
     path: '/ContentService/expression/{id}',
+    produces: null,
     // Walks every event and entity under the id, a top-level pathway's too
     // (3.5 s, 1.6 MB): a share of the deep queries (review of 20 Nov).
     deep: true,

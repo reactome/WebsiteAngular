@@ -175,6 +175,7 @@ export async function contactAnswer(
 export const contactEndpoints: Endpoint[] = [
   {
     path: '/ContentService/contact',
+    produces: null,
     method: 'post',
     bodyLimit: CONTACT_BODY_LIMIT,
     // No sample body: the parity harness sends a POST as text/plain, which
