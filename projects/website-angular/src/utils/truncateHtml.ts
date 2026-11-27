@@ -2,7 +2,8 @@
  * Truncates HTML content to a maximum number of words while preserving valid HTML structure
  * @param html The HTML string to truncate
  * @param maxWords Maximum number of words to include (default: 150)
- * @returns Truncated HTML with properly closed tags
+ * @returns Truncated HTML with properly closed tags, ending in "..." only when
+ *   words were left out
  */
 export default function truncateHtml(html: string, maxWords: number = 150): string {
   if (!html) return '';
@@ -13,6 +14,8 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
   let inTag = false;
   let currentWord = '';
   let currentTag = '';
+  // Whether a word was left out: only then does the excerpt end in "..."
+  let cut = false;
 
   // Self-closing tags that don't need to be tracked
   const selfClosingTags = new Set([
@@ -39,7 +42,10 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
       // Save any pending word before processing tag
       if (currentWord.trim()) {
         wordCount++;
-        if (wordCount > maxWords) break;
+        if (wordCount > maxWords) {
+          cut = true;
+          break;
+        }
         result += currentWord;
         currentWord = '';
       }
@@ -80,7 +86,10 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
         // Whitespace - end of word
         if (currentWord.trim()) {
           wordCount++;
-          if (wordCount > maxWords) break;
+          if (wordCount > maxWords) {
+            cut = true;
+            break;
+          }
           result += currentWord;
           currentWord = '';
         }
@@ -91,12 +100,14 @@ export default function truncateHtml(html: string, maxWords: number = 150): stri
     }
   }
 
-  // Add any remaining word if we haven't exceeded limit
-  if (wordCount < maxWords && currentWord.trim()) {
-    result += currentWord;
+  // The last word, if the text ended on one: kept within the limit, and left
+  // out (a cut) past it
+  if (!cut && currentWord.trim()) {
+    if (wordCount < maxWords) result += currentWord;
+    else cut = true;
   }
 
-  result += '...';
+  if (cut) result += '...';
 
   // Close any unclosed tags in reverse order
   while (tagStack.length > 0) {

@@ -2,7 +2,7 @@ import { Injectable, DOCUMENT, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map, catchError, of, throwError } from 'rxjs';
 import { Article, ArticleIndexItem, FaqIndex } from '../types/article';
-import truncateHtml from '../utils/truncateHtml';
+import articleExcerpt from '../utils/articleExcerpt';
 
 /**
  * Whether a failed content request means "there is no such page".
@@ -147,7 +147,7 @@ export class ContentService {
           image: frontmatter['image'] as string,
           ...(tags && { tags }),
           body: body || '',
-          excerpt: truncateHtml(body || '', 50),
+          excerpt: articleExcerpt(body || ''),
           slug: slug,
           ...(isImageSizes(frontmatter['imageSizes']) && {
             imageSizes: frontmatter['imageSizes'],
