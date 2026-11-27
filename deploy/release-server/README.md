@@ -249,9 +249,29 @@ database container in place of the host's, from the next release on.
 
 **The release's tag.** On release day every published image gets a write-once tag
 `Release<NN>` (`Release99`, say), the same name as the graph image's, and the commit gets
-a git tag of the same name; the release-tag workflow (spec 032 T036, to come) makes both, and
-refuses a tag that already exists. So production's `IMAGE_TAG` names one release, never
-`main` and never a commit id, and that tag never moves.
+a git tag of the same name; the release-tag workflow makes both. So production's `IMAGE_TAG`
+names one release, never `main` and never a commit id, and that tag never moves.
+
+To make them: on GitHub, **Actions → Tag release images → Run workflow**, on `main`, with the
+commit's full 40-character id and the release's number (`99` for `Release99`). The commit is
+the one whose images production is to run; its images must have been published (its
+**Publish images** run passed). The workflow copies each image's commit tag to `Release<NN>`
+on the registry, checks each copy's digest, and only then puts the annotated git tag
+`Release<NN>` on the commit. It refuses, before writing anything:
+
+- a commit id that is not 40 lower-case hex characters, or a release number that is not a
+  positive whole number without leading zeros;
+- a run dispatched on any branch but `main`, or a commit not on `main`'s history;
+- a commit whose `docker-compose.yml` does not name release NN's graph (the production
+  checkout at the tag runs that graph);
+- any published image without the commit's tag in the registry, or a registry that cannot
+  answer;
+- `Release<NN>` already on any image at another digest, or a git tag `Release<NN>` on another
+  commit.
+
+It never moves, forces or deletes a tag. A run stopped part-way (some images tagged) is
+finished by running it again with the same commit and release: an image already tagged at
+the commit's digest, and a git tag already on the commit, count as done. One run at a time.
 
 **`.env`**: as §1, except:
 
