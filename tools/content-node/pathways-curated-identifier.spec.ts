@@ -1,12 +1,13 @@
 // @vitest-environment node
 //
-// /data/pathways/top/{species}/curated and
+// /data/pathways/top/{species}, its /curated and
 // /data/pathways/low/diagram/identifier/{identifier}/allForms through the
 // service, with a stand-in graph (spec 006 T106): graph-core's queries as
 // written, chosen as its services choose them, their records mapped as SDN
 // maps them and written in the request's view; Neo4j's refusal of the
 // identifier query without a species as Java's 500. The objects here are
-// invented; Java's answers were measured 12 Nov 2026.
+// invented; Java's answers were measured 12 Nov 2026, and /top/{species}'s
+// on 27 Nov 2026 (#953).
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -18,8 +19,27 @@ type Params = { [name: string]: unknown };
 const asked: [string, Params][] = [];
 let rows: unknown[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher: string, params: Params) => {
+  read: async (cypher: string, params: Params, options?: { graph?: boolean }) => {
     asked.push([cypher, params]);
+    // As the driver: without `graph`, a node or relationship is its properties
+    // alone, so a route that forgets `graph` reads what Neo4j would give it.
+    const plain = (value: unknown): unknown =>
+      Array.isArray(value)
+        ? value.map(plain)
+        : value &&
+            typeof value === 'object' &&
+            'props' in value &&
+            ('labels' in value || 'type' in value)
+          ? (value as { props: unknown }).props
+          : value;
+    const answer = (found: unknown[]) =>
+      options?.graph
+        ? found
+        : found.map((row) =>
+            row && typeof row === 'object'
+              ? Object.fromEntries(Object.entries(row).map(([k, v]) => [k, plain(v)]))
+              : row
+          );
     // speciesTaxId's lookups: 9606 and Homo sapiens are a species.
     if (/^MATCH \(s:Species/.test(cypher))
       return params['value'] === '9606' || params['value'] === 'Homo sapiens'
@@ -30,7 +50,7 @@ vi.mock('./graph.ts', () => ({
       throw Object.assign(new Error('Expected parameter(s): stId'), {
         code: 'Neo.ClientError.Statement.ParameterMissing',
       });
-    return rows;
+    return answer(rows);
   },
   configured: () => true,
   close: async () => {},
@@ -138,6 +158,132 @@ describe('/top/{species}/curated', () => {
     const text = await (await get('top/9606/curated?includeRef=true')).text();
     expect(text.startsWith('[{"@id":"1","dbId":10,')).toBe(true);
     expect(text).toContain('"species":[{"@ref":"2"}]');
+  });
+});
+
+describe('/top/{species}', () => {
+  const TOP = [
+    { n: pathway(1, 10, 'A', true), 'collect(r)': [species(20, 1)], 'collect(s)': [HUMAN] },
+    { n: pathway(2, 11, 'B', true), 'collect(r)': [species(21, 2)], 'collect(s)': [HUMAN] },
+  ];
+
+  it("asks graph-core's query by taxId for digits, by exact name for the rest, decoded twice", async () => {
+    await get('top/9606');
+    expect(last()[0]).toBe(
+      'MATCH (n:TopLevelPathway)-[r:species]-(s:Species{taxId:$taxId}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName) ASC'
+    );
+    expect(last()[1]).toEqual({ taxId: '9606' });
+    // The controller's URLDecoder after Spring's: '+' is a space, %2520 one too.
+    for (const [path, name] of [
+      ['top/Homo+sapiens', 'Homo sapiens'],
+      ['top/Homo%2520sapiens', 'Homo sapiens'],
+      ['top/homo_sapiens', 'homo_sapiens'],
+    ] as const) {
+      await get(path);
+      expect(last()[0]).toBe(
+        'MATCH (n:TopLevelPathway)-[r:species]-(s:Species{displayName:$speciesName}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName) ASC'
+      );
+      expect(last()[1]).toEqual({ speciesName: name });
+    }
+  });
+
+  it('answers none with the 404 naming the species before the second decoding', async () => {
+    const response = await get('top/Homo+sapien');
+    expect(response.status).toBe(404);
+    expect(await messages(response)).toEqual([
+      'No TopLevelPathways were found for species: Homo+sapien',
+    ]);
+  });
+
+  it("answers a malformed escape with URLDecoder's 500", async () => {
+    const response = await get('top/%25zz');
+    expect(response.status).toBe(500);
+    expect(asked).toEqual([]);
+  });
+
+  it("writes Java's keys in Java's order, the species whole once and by its dbId after", async () => {
+    // Java's key order, 14 Oct 2026: releaseStatus before speciesName, and
+    // doi after species.
+    const full: GraphNode = {
+      id: 1,
+      labels: ['DatabaseObject', 'Event', 'Pathway', 'TopLevelPathway'],
+      props: {
+        dbId: 10,
+        displayName: 'A',
+        stId: 'R-HSA-10',
+        stIdVersion: 'R-HSA-10.1',
+        isInDisease: false,
+        isInferred: false,
+        maxDepth: 3,
+        name: ['A'],
+        releaseDate: '2020-01-01',
+        releaseStatus: 'UPDATED',
+        speciesName: 'Homo sapiens',
+        doi: '10.3180/R-HSA-10.1',
+        hasDiagram: true,
+        hasEHLD: false,
+        lastUpdatedDate: '2024-01-01',
+        schemaClass: 'TopLevelPathway',
+      },
+    };
+    rows = [{ ...TOP[0], n: full }, TOP[1]];
+    const response = await get('top/9606');
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as Record<string, unknown>[];
+    expect(Object.keys(body[0] ?? {})).toEqual([
+      'dbId',
+      'displayName',
+      'stId',
+      'stIdVersion',
+      'isInDisease',
+      'isInferred',
+      'maxDepth',
+      'name',
+      'releaseDate',
+      'releaseStatus',
+      'speciesName',
+      'species',
+      'doi',
+      'hasDiagram',
+      'hasEHLD',
+      'lastUpdatedDate',
+      'schemaClass',
+      'className',
+    ]);
+    expect(body[0]?.['species']).toEqual([
+      {
+        dbId: 48887,
+        displayName: 'Homo sapiens',
+        name: ['Homo sapiens'],
+        taxId: '9606',
+        className: 'Species',
+        schemaClass: 'Species',
+      },
+    ]);
+    expect(body[1]?.['species']).toEqual([48887]);
+  });
+
+  it('gives JSOG ids with includeRef=true, in any case, as Java writes a domain object', async () => {
+    rows = TOP;
+    for (const value of ['true', 'TRUE']) {
+      const text = await (await get(`top/9606?includeRef=${value}`)).text();
+      expect(text.startsWith('[{"@id":"1","dbId":10,')).toBe(true);
+      expect(text).toContain('"species":[{"@id":"2","dbId":48887,');
+      expect(text).toContain('{"@id":"3","dbId":11,');
+      expect(text).toContain('"species":[{"@ref":"2"}]');
+    }
+  });
+
+  it('gives none for another value (Boolean.parseBoolean)', async () => {
+    rows = TOP;
+    for (const value of ['false', 'yes', '1', '']) {
+      const text = await (await get(`top/9606?includeRef=${value}`)).text();
+      expect([value, text.includes('"@id"'), text.includes('"species":[48887]')]).toEqual([
+        value,
+        false,
+        true,
+      ]);
+    }
   });
 });
 

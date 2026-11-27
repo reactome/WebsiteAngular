@@ -38,7 +38,6 @@ import {
   graphCoreId,
   inDepthId,
   longPastRange,
-  pathwayJson,
   resolveId,
   speciesFilter,
   speciesTaxId,
@@ -210,47 +209,6 @@ function javaHexByte(two: string) {
     throw new Error('URLDecoder: Illegal hex characters in escape (%) pattern - negative value');
   }
   return value;
-}
-
-/**
- * The species of /pathways/top/{species}, as graph-core's
- * TopLevelPathwayService reads it: StringUtils.isNumeric is a taxId, anything
- * else must equal a Species' displayName exactly -- "Homo sapiens" answers,
- * "homo sapiens" and "Homo_sapiens" are 404s. Not the looser speciesFilter
- * other endpoints use.
- */
-export function topSpeciesMatch(raw: string) {
-  return javaNumeric(raw)
-    ? { where: 's.taxId = $species', params: { species: raw } }
-    : { where: 's.displayName = $species', params: { species: raw } };
-}
-
-/**
- * A top-level pathway as Java writes it under /pathways/top/{species}: the
- * Pathway fields in Jackson's order -- releaseStatus before speciesName, then
- * the species, then doi -- with `species` the one-element array the caller
- * builds (the Species object the first time, its dbId after).
- */
-export function topPathwayJson(pathway: Props, species: unknown) {
-  return {
-    ...only(pathway, [
-      'dbId',
-      'displayName',
-      'stId',
-      'stIdVersion',
-      'isInDisease',
-      'isInferred',
-      'maxDepth',
-      'name',
-      'releaseDate',
-      'releaseStatus',
-      'speciesName',
-    ]),
-    species: [species],
-    ...only(pathway, ['doi', 'hasDiagram', 'hasEHLD', 'lastUpdatedDate']),
-    schemaClass: pathway['schemaClass'],
-    className: pathway['schemaClass'],
-  };
 }
 
 /**
@@ -857,13 +815,65 @@ function identifierAllFormsQuery(inSpecies: boolean) {
  * graph-core's TopLevelPathwayRepository.getCuratedTopLevelPathwaysByTaxId
  * and ...ByName, as written: the top-level pathways that are not inferred,
  * with their species. TopLevelPathwayService chooses by
- * StringUtils.isNumeric, as /pathways/top/{species} does (topSpeciesMatch),
- * but the name is not decoded a second time.
+ * StringUtils.isNumeric, as /pathways/top/{species} does (topQuery), but the
+ * name is not decoded a second time.
  */
 function curatedTopQuery(byTaxId: boolean) {
   return byTaxId
     ? 'MATCH (n:TopLevelPathway{isInferred:False})-[r:species]-(s:Species{taxId:$taxId}) RETURN n, collect(r), collect(s)  ORDER BY toLower(n.displayName)'
     : 'MATCH (n:TopLevelPathway{isInferred:False})-[r:species]-(s:Species{displayName:$speciesName}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName)';
+}
+
+/**
+ * graph-core's TopLevelPathwayRepository.getTopLevelPathwaysByTaxId and
+ * ...ByName, as written: a species' top-level pathways with their species.
+ * TopLevelPathwayService takes StringUtils.isNumeric as a taxId and anything
+ * else as a displayName to match exactly -- "Homo sapiens" answers, "homo
+ * sapiens" and "Homo_sapiens" are 404s; not the looser speciesFilter other
+ * endpoints use.
+ */
+function topQuery(byTaxId: boolean) {
+  return byTaxId
+    ? 'MATCH (n:TopLevelPathway)-[r:species]-(s:Species{taxId:$taxId}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName) ASC'
+    : 'MATCH (n:TopLevelPathway)-[r:species]-(s:Species{displayName:$speciesName}) RETURN n, collect(r), collect(s) ORDER BY toLower(n.displayName) ASC';
+}
+
+/**
+ * /pathways/top/{species} and its /curated: one of graph-core's top-level
+ * queries (topQuery, curatedTopQuery) for `species`, mapped as SDN maps its
+ * records and written in the request's view and identity (writerFor) -- so
+ * the species, one object across every record, is written whole once and
+ * then as its dbId, or with `includeRef=true` as JSOG's `@id` and `@ref`.
+ * None is Java's 404, naming the species as `named`.
+ */
+async function topLevelPathways(
+  request: Request,
+  species: string,
+  named: string,
+  query: (byTaxId: boolean) => string
+): Promise<Answer> {
+  const byTaxId = javaNumeric(species);
+  const rows = await read<{
+    n: GraphNode;
+    'collect(r)': GraphRelationship[];
+    'collect(s)': GraphNode[];
+  }>(query(byTaxId), byTaxId ? { taxId: species } : { speciesName: species }, {
+    graph: true,
+  });
+  if (!rows.length)
+    return notFound(request, `No TopLevelPathways were found for species: ${named}`);
+  const pathways = mapResults(
+    rows.map((row) => ({
+      root: row.n,
+      nodes: row['collect(s)'],
+      relationships: row['collect(r)'],
+    }))
+  );
+  return {
+    status: 200,
+    serialised: writeDomain(pathways, ...writerFor(request)),
+    type: 'application/json',
+  };
 }
 
 /** The entities a diagram's reactions take part through, from the reaction down. */
@@ -1044,6 +1054,10 @@ async function pathwaysForIdentifier(
  * `species` is read as graph-core's SpeciesService reads it (speciesFilter).
  * A species that is not found filters nothing, as in Java; the 404 message
  * repeats the parameter as given, and says "null" when there is none.
+ *
+ * The pathways are mapped as SDN maps a node alone and written by the domain
+ * serialiser, in the request's view and identity (writerFor): until #953
+ * they were written by hand, and `includeRef=true` lost Java's JSOG `@id`s.
  */
 async function lowerLevelPathways(request: Request, segment: number, { column, query }: LowQuery) {
   const raw = pathId(rawSegment(request, segment));
@@ -1060,15 +1074,25 @@ async function lowerLevelPathways(request: Request, segment: number, { column, q
 
   const taxId = await speciesTaxId(speciesFilter(species));
   const inSpecies = (pattern: string) => (taxId === undefined ? '' : `-[:species]->${pattern}`);
-  const rows = await read<{ [column: string]: Props }>(query(object, inSpecies), {
-    ...params,
-    ...(taxId === undefined ? {} : { taxId }),
-  });
+  const rows = await read<{ [column: string]: GraphNode }>(
+    query(object, inSpecies),
+    { ...params, ...(taxId === undefined ? {} : { taxId }) },
+    { graph: true }
+  );
   if (rows.length === 0) return missing();
   return {
     status: 200,
-    // query returns `column`, so every row has it.
-    body: rows.map((row) => pathwayJson(row[column] as Props)),
+    serialised: writeDomain(
+      mapResults(
+        rows.map((row) => {
+          // query returns `column`, so every row has it.
+          const root = row[column];
+          if (!root) throw new Error(`lowerLevelPathways: a row without ${column}`);
+          return { root, nodes: [], relationships: [] };
+        })
+      ),
+      ...writerFor(request)
+    ),
     type: 'application/json',
   };
 }
@@ -1995,70 +2019,26 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
      * The top-level pathways for a species, which is the pathway browser's first
      * request and the release checklist's "29 clicks".
      *
-     * Three details the shape depends on, each learned from the Java response
-     * rather than assumed:
-     *  - fields whose property is absent are *omitted*, not null (doi and
-     *    releaseStatus are on a minority of pathways, lastUpdatedDate on 28 of
-     *    29). Jackson drops nulls, so emitting them would differ on every item.
-     *  - `className` repeats `schemaClass`; the graph stores only the latter.
-     *  - `species` is an array of one object, and it carries a different field
-     *    set from the pathway: no stId, no dates.
+     * graph-core's query (topQuery), mapped as SDN maps its records and
+     * written by the domain serialiser, as /curated is (topLevelPathways):
+     * absent fields omitted, `className` beside `schemaClass`, and the one
+     * Species written whole in the first pathway and as its dbId after. So
+     * `view` and `includeRef` are Java's too; until #953 this answer was
+     * written by hand, and `includeRef=true` lost Java's JSOG `@id`s.
      */
     handler: async (request) => {
       // As Spring binds it: decoded from the segment as sent (pathId).
       const taxId = pathId(rawSegment(request, 5));
       // content-service decodes the species once more (URLDecoder), so
       // 'Homo+sapiens' finds human; a malformed escape is Java's 500. The 404
-      // message below names the species before that decoding, as Java's does.
+      // names the species before that decoding, as Java's does.
       let decoded: string;
       try {
         decoded = javaUrlDecode(taxId);
       } catch (failure) {
         return javaError(request, 500, 'INTERNAL_SERVER_ERROR', (failure as Error).message);
       }
-      const { where, params } = topSpeciesMatch(decoded);
-      const rows = await read<{ pathway: Props; species: Props }>(
-        `MATCH (p:TopLevelPathway)-[:species]->(s:Species)
-         WHERE ${where}
-         RETURN properties(p) AS pathway, properties(s) AS species
-         // toLower, as /content/toc already does. Neo4j orders by code point,
-         // so uppercase sorts before lowercase and "DNA Repair" landed before
-         // "Developmental Biology"; Java's collation is case-insensitive.
-         ORDER BY toLower(p.displayName)`,
-        params
-      );
-      // Java answers 404, not an empty list, when a species has no top-level
-      // pathways -- checked for both an unknown id and taxId 1, which exists.
-      if (!rows.length) {
-        return notFound(request, `No TopLevelPathways were found for species: ${taxId}`);
-      }
-
-      // Scoped to this response: the back-reference is only meaningful within
-      // the document it appears in.
-      const seenSpecies = new Set();
-      const full = (species: Props) => {
-        seenSpecies.add(species.dbId);
-        return {
-          ...only(species, ['dbId', 'displayName', 'name', 'taxId', 'abbreviation']),
-          className: species.schemaClass,
-          schemaClass: species.schemaClass,
-        };
-      };
-
-      const body = rows.map(({ pathway, species }) =>
-        // Jackson writes a repeated object once and then refers back to it by
-        // dbId -- the default of the service-wide `includeRef` parameter, which
-        // only changes the *form* of the back-reference to JSOG `{@ref}`. So
-        // all 29 human pathways share one Species and only the first carries it.
-        //
-        // Not a nicety: emitting the object 29 times is a different response
-        // shape, and a caller written against Java's would read `species[0]` as
-        // a number on all but the first item. Nothing caught this because the
-        // diff expands `{id}` only when given `--ids`, so this endpoint had
-        // never once been compared.
-        topPathwayJson(pathway, seenSpecies.has(species.dbId) ? species.dbId : full(species))
-      );
-      return { status: 200, body, type: 'application/json' };
+      return topLevelPathways(request, decoded, taxId, topQuery);
     },
   },
   {
@@ -2074,30 +2054,9 @@ export const pathwaysEventsEndpoints: Endpoint[] = [
      * /pathways/top/{species}, the controller does not decode it again. None
      * is Java's 404, naming the species.
      */
-    handler: async (request) => {
+    handler: (request) => {
       const species = pathId(rawSegment(request, 5));
-      const byTaxId = javaNumeric(species);
-      const rows = await read<{
-        n: GraphNode;
-        'collect(r)': GraphRelationship[];
-        'collect(s)': GraphNode[];
-      }>(curatedTopQuery(byTaxId), byTaxId ? { taxId: species } : { speciesName: species }, {
-        graph: true,
-      });
-      if (!rows.length)
-        return notFound(request, `No TopLevelPathways were found for species: ${species}`);
-      const pathways = mapResults(
-        rows.map((row) => ({
-          root: row.n,
-          nodes: row['collect(s)'],
-          relationships: row['collect(r)'],
-        }))
-      );
-      return {
-        status: 200,
-        serialised: writeDomain(pathways, ...writerFor(request)),
-        type: 'application/json',
-      };
+      return topLevelPathways(request, species, species, curatedTopQuery);
     },
   },
   {
