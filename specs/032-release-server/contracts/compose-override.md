@@ -8,7 +8,7 @@ placeholders.
 services:
   app:
     # The published site image in place of the development container.
-    image: ${REGISTRY}/site:${IMAGE_TAG}
+    image: ${REGISTRY:?REGISTRY must be set}/site:${IMAGE_TAG:?IMAGE_TAG must name a commit}
     build: !reset null
     network_mode: host
     # Reset or overridden, not merged: the base service's development settings (its bridge
@@ -35,6 +35,24 @@ services:
       - NODE_ENV=production
       - CALLER_TOKEN_KEY=/run/secrets/caller-token.key
     restart: unless-stopped
+  # The published images, pulled, never built: with no `build:` left, an image
+  # missing from the registry stops `up` rather than being built here under
+  # the registry's name.
+  content-node:
+    image: ${REGISTRY:?REGISTRY must be set}/content-node:${IMAGE_TAG:?IMAGE_TAG must name a commit}
+    build: !reset null
+  render:
+    image: ${REGISTRY:?REGISTRY must be set}/render:${IMAGE_TAG:?IMAGE_TAG must name a commit}
+    build: !reset null
+  analysis-gateway:
+    image: ${REGISTRY:?REGISTRY must be set}/analysis-gateway:${IMAGE_TAG:?IMAGE_TAG must name a commit}
+    build: !reset null
+  mcp:
+    image: ${REGISTRY:?REGISTRY must be set}/mcp:${IMAGE_TAG:?IMAGE_TAG must name a commit}
+    build: !reset null
+  nginx:
+    image: ${REGISTRY:?REGISTRY must be set}/nginx-${NGINX_ENV:?NGINX_ENV must name the deployment}:${IMAGE_TAG:?IMAGE_TAG must name a commit}
+    build: !reset null
   java-library: {} # built here: `docker compose build java-library`
   pdf-export: {} # built here, as java-library
 ```
@@ -51,9 +69,18 @@ not one release's own folder.
 Rules:
 
 - No `graphdb` entry: it is under the `graph` profile, which this server does not name.
-- Every published service runs `${IMAGE_TAG}`; the override never names `main` or
-  `latest`.
+- Every published service (`app`'s site image, content-node, render, analysis-gateway,
+  mcp, nginx) has its `build:` reset and names its image with `${REGISTRY:?...}` and
+  `${IMAGE_TAG:?...}` (nginx's `${NGINX_ENV:?...}` too): a server never builds a published
+  image, and a setting left out stops `docker compose` with its message rather than
+  falling back to the base file's defaults (`registry.invalid`, `main`, `dev`). `!reset`
+  needs Docker Compose 2.24 or later.
+- `IMAGE_TAG` is a full commit id; the override never names `main` or `latest`.
+- No published service sets `pull_policy` (the base file's default, `missing`, pulls;
+  `build` or `never` would not). `deploy/release-server/images.spec.ts` reads the block
+  above and checks all of this.
 - Nothing here holds a credential: the credentials file is mounted by the base compose
   file through `CONTENT_NODE_ENV_FILE`.
 - `docker compose config` with this override and the server's `.env` must list no
-  `build:` for a published service (checked in the guide's first step).
+  `build:` for a published service, and every published image's tag must be a full commit
+  id (checked, failing loudly, in the guide's first step).

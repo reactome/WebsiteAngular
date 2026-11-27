@@ -6,15 +6,22 @@ server's; none of them go into the repository.
 ## 1. Settings
 
 1. A checkout of `main` (for the compose file, nginx examples and the guide; nothing is
-   built from it except java-library and pdf-export).
+   built from it except java-library and pdf-export), and Docker Compose 2.24 or later
+   (the override's `!reset`).
 2. `.env` with the keys in [contracts/server-settings.md](contracts/server-settings.md);
    `IMAGE_TAG=<the commit main names>`, `NGINX_ENV=release`, `SITE_PROFILE=release`,
    no `graph` in `COMPOSE_PROFILES`.
-3. `docker-compose.override.yml` as in [contracts/compose-override.md](contracts/compose-override.md).
+3. `docker-compose.override.yml` as in [contracts/compose-override.md](contracts/compose-override.md):
+   every published service's `build:` reset, its image named with `${REGISTRY:?…}` and
+   `${IMAGE_TAG:?…}`. The server never builds a published image: one missing from the
+   registry fails the pull, and is published (T009, T010), not built here.
 4. The site-local folder with the server's own blocks (contracts:
    [site-local-nginx.md](contracts/site-local-nginx.md)).
-5. Check: `docker compose config --services` lists no `graphdb`; `docker compose config`
-   shows `image: <registry>/...:<IMAGE_TAG>` and no `build:` for every published service.
+5. Check, with the guide's §1 command, which exits non-zero and prints the culprit if
+   `docker compose config --services` lists `graphdb`, if any published service (`app`,
+   content-node, render, analysis-gateway, mcp, nginx) still has a `build:`, or if any of
+   their images is not at a full commit id; `docker compose config` itself refuses if
+   `REGISTRY`, `IMAGE_TAG` or `NGINX_ENV` is missing. Go on only once it passes.
 
 ## 2. Before switching, then the switch
 
@@ -22,9 +29,9 @@ Apache is turned off for good and nginx serves from then on; nginx needs 80 and 
 it starts once Apache stops. First everything behind it, with Apache still serving:
 
 ```sh
-docker compose pull
-docker compose build java-library pdf-export
-docker compose up -d --scale nginx=0
+docker compose pull &&
+  docker compose build java-library pdf-export &&
+  docker compose up -d --scale nginx=0
 ```
 
 Expected: every other container `Up`; the site's `/health` (loopback `:4200`) reports the
