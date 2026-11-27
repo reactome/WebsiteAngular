@@ -164,6 +164,20 @@ describe('acceptance, before the handler', () => {
     expect(answer).toMatchObject({ kind: 'answer', answer: { status: 500 } });
   });
 
+  // The edge keys by URL alone, so an answer whose type may carry the
+  // Accept's parameters (a charset it is written in) is never stored there.
+  it("says when the type chosen carries the Accept's parameters, its quality aside", () => {
+    expect(acceptance(json, requestWith({ accept: 'application/json;charset=UTF-16' }))).toEqual({
+      kind: 'run',
+      parameters: true,
+    });
+    expect(acceptance(json, requestWith({ accept: '*/*;x=y' }))).toEqual({ kind: 'run' });
+    expect(acceptance(json, requestWith({ accept: 'application/json;q=0.5' }))).toEqual({
+      kind: 'run',
+    });
+    expect(acceptance(json, requestWith({ accept: 'application/json' }))).toEqual({ kind: 'run' });
+  });
+
   it('runs the handler, but fails what it writes, for a quality Spring checks only then', () => {
     expect(acceptance(json, requestWith({ accept: 'application/json;Q=x' }))).toEqual({
       kind: 'run',
@@ -235,6 +249,8 @@ describe("errorPage, Spring's own 404 by Accept", () => {
       ['application/*', 'json'],
       ['application/json, text/plain, */*', 'json'],
       ['text/plain', 'none'],
+      // Any of the types, not only the first, may be JSON.
+      ['text/plain, application/json', 'json'],
       ['application/xml', 'none'],
       ['text/html', 'html'],
       ['text/*', 'html'],
@@ -319,6 +335,19 @@ describe('through the service', () => {
     });
   });
 
+  // Express sends a path it cannot decode (%FF) to the error handler, which
+  // tries the mappings of the path in turn, as the routes do.
+  it('tries the next mapping for a path Express cannot decode, too', async () => {
+    expect(await ask('/data/query/%FF/more', { accept: 'text/plain' })).toMatchObject({
+      status: 404,
+      messages: ['Id: \uFFFD has not been found in the System'],
+      rule: 'status',
+    });
+    expect(await ask('/data/query/%FF/more', { accept: 'application/xml' })).toMatchObject(
+      NOT_ACCEPTABLE
+    );
+  });
+
   it('answers a 415 before a 406, and a 405 before either', async () => {
     const xml = { accept: 'text/plain', 'content-type': 'application/xml' };
     expect(await ask('/data/query/ids', xml, 'POST', 'R-HSA-1')).toMatchObject({ status: 415 });
@@ -339,6 +368,13 @@ describe('through the service', () => {
     expect(html.text).toMatch(
       /^<html><body><h1>Whitelabel Error Page<\/h1>.*<div id='created'>\w{3} \w{3} \d{2} \d{2}:\d{2}:\d{2} UTC \d{4}<\/div><div>There was an unexpected error \(type=Not Found, status=404\)\.<\/div><\/body><\/html>$/
     );
+    // JSON when any type accepted is, not only the first.
+    const either = await ask('/data//nothing', { accept: 'text/plain, application/json' });
+    expect([either.status, either.type, either.text.startsWith('{"timestamp":')]).toEqual([
+      404,
+      'application/json;charset=UTF-8',
+      true,
+    ]);
     expect(await ask('/data//nothing', { accept: 'text/plain' })).toMatchObject({
       status: 404,
       type: null,

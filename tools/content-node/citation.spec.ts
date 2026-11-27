@@ -624,6 +624,19 @@ describe('the citation endpoints', () => {
       'text/plain;x=y;charset=utf-16',
       `feff${Buffer.from(text, 'utf16le').swap16().toString('hex')}`,
     ]);
+    // The edge keys by URL alone: only the answer the URL gives without the
+    // Accept's parameters is stored, never one written in the charset named.
+    const rule = async (accept?: string) =>
+      (
+        await fetch(`${base}/ContentService/citation/download`, {
+          headers: accept ? { Accept: accept } : {},
+        })
+      ).headers.get('x-cache-rule');
+    expect(await rule()).toBe('standard');
+    expect(await rule('text/*')).toBe('standard');
+    expect(await rule('text/plain;q=0.5')).toBe('standard');
+    expect(await rule('text/plain;charset=UTF-16')).toBe('accept');
+    expect(await rule('text/plain;x=y')).toBe('accept');
     // A HEAD says how long the answer is, as Java's does.
     const head = await fetch(`${base}/ContentService/citation/download`, { method: 'HEAD' });
     expect(head.headers.get('content-length')).toBe(String(text.length));

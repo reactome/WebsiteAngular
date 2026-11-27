@@ -51,7 +51,7 @@ export function label({
   originalUrl,
   status,
   empty = false,
-  fellThrough = false,
+  byAccept = false,
 }: {
   method: string;
   endpoint: string;
@@ -60,10 +60,12 @@ export function label({
   /** Whether the answer is empty (`emptyAnswer`). */
   empty?: boolean;
   /**
-   * Whether another mapping of the path refused the request's Accept, so
-   * this answer is not the one the URL gives without it (#953).
+   * Whether the request's Accept shaped this answer, so it is not the one
+   * the URL gives without it (#953): another mapping of the path refused the
+   * Accept, or the type negotiated carries the Accept's parameters (a
+   * charset the answer is written in, say).
    */
-  fellThrough?: boolean;
+  byAccept?: boolean;
 }) {
   if (carriesToken(originalUrl)) return { cacheControl: PRIVATE, rule: 'token' };
   const cache = RECORD[endpoint]?.cache;
@@ -72,7 +74,7 @@ export function label({
   if (status !== 200) return { cacheControl: NOT_STORED, rule: 'status' };
   // The edge keys an answer by its URL alone: stored, this would be what
   // every reader of the URL got.
-  if (fellThrough) return { cacheControl: NOT_STORED, rule: 'accept' };
+  if (byAccept) return { cacheControl: NOT_STORED, rule: 'accept' };
   if (cache === 'never') return { cacheControl: NOT_STORED, rule: 'endpoint' };
   const form = standardForm(endpoint, originalUrl);
   if (!form.ok) return { cacheControl: NOT_STORED, rule: form.rule };

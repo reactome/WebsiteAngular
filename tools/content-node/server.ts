@@ -38,7 +38,7 @@ import { deepShare, javaError, javaJson, springNotFound, timedOut, unexpected } 
 import type { Failure } from './answers.ts';
 import type { Answer, Endpoint, Request } from './endpoint.ts';
 import { databaseVersion } from './release.ts';
-import { endpointFor, endpoints, getEndpointFor, refreshPsicquicResources } from './registry.ts';
+import { endpoints, endpointsFor, getEndpointFor, refreshPsicquicResources } from './registry.ts';
 
 // Node 24 has JSON.rawJSON (ES2025); TypeScript 5.9's libraries do not yet.
 declare global {
@@ -545,12 +545,14 @@ export function app() {
       // The path as routing saw it, less a trailing slash, which Express
       // ignores too.
       const path = present(String(request.url).split('?')[0]).replace(/(.)\/$/, '$1');
-      const endpoint = endpointFor(path);
-      if (!endpoint) return next(failure);
-      // HEAD is answered as GET, as Express answers it; any other method the
-      // template does not take is Java's 405, as for a decodable id.
+      const matching = endpointsFor(path);
+      if (matching.length === 0) return next(failure);
+      // HEAD is answered as GET, as Express answers it; a method no template
+      // of the path takes is Java's 405, as for a decodable id.
       const method = request.method === 'HEAD' ? 'get' : request.method.toLowerCase();
-      if ((endpoint.method ?? 'get') !== method)
+      const taking = matching.filter((each) => (each.method ?? 'get') === method);
+      const [first] = taking;
+      if (!first)
         return writeResult(
           response,
           javaError(
@@ -560,9 +562,17 @@ export function app() {
             `Request method '${request.method}' not supported`
           )
         );
+      // Each in turn, as the routes above are tried: one that refuses the
+      // Accept hands the request on, as Spring tries its next mapping, and
+      // with none left, Spring's 406 (#953). The body is read once.
+      const from = (index: number): void => {
+        const endpoint = taking[index];
+        if (!endpoint) return void writeResult(response, notAcceptable(request));
+        void answerWith(endpoint, request, response, () => from(index + 1)).catch(next);
+      };
       const body: BodyReader =
-        endpoint.method === 'post' ? readBody(endpoint) : (_request, _response, done) => done();
-      body(request, response, () => void answerWith(endpoint, request, response).catch(next));
+        first.method === 'post' ? readBody(first) : (_request, _response, done) => done();
+      body(request, response, () => from(0));
     }
   );
 
@@ -607,7 +617,10 @@ function notAcceptable(request: Request) {
  * mapping produces (`produces`, application/json unless it says otherwise).
  *
  *  - `run`: the handler runs; `afterwards`, the 500 Spring meets when it
- *    writes what the handler returned (negotiate's `write-failed`).
+ *    writes what the handler returned (negotiate's `write-failed`);
+ *    `parameters`, when the type chosen carries the Accept's parameters,
+ *    which the answer's type and bytes may follow (a charset), so it is
+ *    never stored at the edge, which keys by URL alone.
  *  - `refused`: not this mapping -- Spring tries the next that matches the
  *    path, and with none, answers 406. A POST whose body's type the mapping
  *    does not consume either is run, for the handler's 415, which Spring
@@ -623,11 +636,17 @@ function notAcceptable(request: Request) {
 export function acceptance(
   endpoint: Pick<Endpoint, 'produces' | 'consumes'>,
   request: Request
-): { kind: 'run'; afterwards?: string } | { kind: 'refused' } | { kind: 'answer'; answer: Answer } {
+):
+  | { kind: 'run'; afterwards?: string; parameters?: true }
+  | { kind: 'refused' }
+  | { kind: 'answer'; answer: Answer } {
   const produced = endpoint.produces === undefined ? JSON_TYPE : endpoint.produces;
   if (produced === null) return { kind: 'run' };
   const negotiated = negotiate(request.get?.('accept'), produced);
-  if (negotiated.kind === 'chosen') return { kind: 'run' };
+  if (negotiated.kind === 'chosen')
+    return negotiated.media.parameters.length > 0
+      ? { kind: 'run', parameters: true }
+      : { kind: 'run' };
   if (negotiated.kind === 'write-failed') return { kind: 'run', afterwards: negotiated.message };
   if (endpoint.consumes && consumesProblem(request.get?.('content-type'), endpoint.consumes))
     return { kind: 'run' };
@@ -649,18 +668,19 @@ async function answerWith(
   endpoint: Endpoint,
   request: express.Request,
   response: express.Response,
-  next?: () => void
+  next: () => void
 ) {
   const accepted = acceptance(endpoint, request);
   if (accepted.kind === 'answer') return writeResult(response, accepted.answer);
   if (accepted.kind === 'refused') {
     REFUSED.add(request);
-    // The next route that matches the path, as Spring tries its next mapping;
-    // from the error handler, which has no next, Spring's 406 at once.
-    if (next) return next();
-    return writeResult(response, notAcceptable(request));
+    // The next route that matches the path, as Spring tries its next mapping.
+    return next();
   }
-  const options = { afterwards: accepted.afterwards, fellThrough: REFUSED.has(request) };
+  const options = {
+    afterwards: accepted.afterwards,
+    byAccept: REFUSED.has(request) || accepted.parameters === true,
+  };
   if (endpoint.deep) {
     if (!DEEP.enter())
       return writeResult(response, {
@@ -682,12 +702,15 @@ export async function answer(
   response: express.Response,
   {
     afterwards,
-    fellThrough = false,
+    byAccept = false,
   }: {
     /** acceptance's `afterwards`: the 500 that replaces anything the handler writes. */
     afterwards?: string | undefined;
-    /** Answered for a mapping tried after another refused the Accept. */
-    fellThrough?: boolean;
+    /**
+     * Shaped by the Accept: answered for a mapping tried after another
+     * refused it, or under a type carrying its parameters (label's `byAccept`).
+     */
+    byAccept?: boolean;
   } = {}
 ) {
   // The answer's caching label, from the request exactly as it was sent:
@@ -701,7 +724,7 @@ export async function answer(
         originalUrl: request.originalUrl,
         status: result.status,
         empty: emptyAnswer(result),
-        fellThrough,
+        byAccept,
       })
     );
     writeResult(response, result);
