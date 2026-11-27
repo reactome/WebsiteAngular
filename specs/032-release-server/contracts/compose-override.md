@@ -62,7 +62,8 @@ services:
 `environment` wins over `env_file` for a key in both, so the key's path is the
 container's whatever the settings file says. The site image has no `sendmail`, so the
 contact form sends through Amazon SES (T031): the settings file names `CONTACT_TO`,
-`CONTACT_FROM` and `CONTACT_SES_REGION`, and the host's role allows `ses:SendEmail` from
+`CONTACT_FROM` and `CONTACT_SES_REGION`, and the host's role allows `ses:SendEmail` and
+`ses:SendRawEmail` (a raw message is authorized as the latter) from
 `CONTACT_FROM`'s address. With `CONTACT_TO` or `CONTACT_FROM` unset the form says it cannot
 send; with `CONTACT_SES_REGION` unset it finds no `sendmail` in the image, so it also says
 it cannot send, rather than offering a form that fails after the reader's check.
