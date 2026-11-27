@@ -40,7 +40,7 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       834: one warning of slack). Dead code 104 → 100 (main measured 102):
       `Layout` is no longer an unused export, and the store's `LocatedValue` is
       now imported (#962).
-- [x] T001c [US1] Follow-ups to T001a (#954). The reader's dead
+- [x] T001c [US1] Follow-ups to T001a (#954, #1100). The reader's dead
       `if (value === undefined || value === null) param.set(value)` had already
       gone in T013: a value that is not text reads as absent, so the param goes
       back to its initial value rather than to null, which a list param such as
