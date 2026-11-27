@@ -6,6 +6,7 @@
  */
 import { javaDouble } from './domain.ts';
 import type { Answer, Handler, Request } from './endpoint.ts';
+import { errorPage } from './spring.ts';
 
 /** Java's answer to an exception its handler has no mapping for: a NullPointerException. */
 export function unexpected(request: Request) {
@@ -263,13 +264,39 @@ export function timedOut(request: Request, failure: unknown) {
   );
 }
 
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+/** Date.toString on Java's service, whose zone is UTC: `Fri Nov 27 10:20:28 UTC 2026`. */
+export function javaDate(time: Date) {
+  const two = (n: number) => String(n).padStart(2, '0');
+  return (
+    `${DAYS[time.getUTCDay()] ?? ''} ${MONTHS[time.getUTCMonth()] ?? ''} ${two(time.getUTCDate())} ` +
+    `${two(time.getUTCHours())}:${two(time.getUTCMinutes())}:${two(time.getUTCSeconds())} UTC ${time.getUTCFullYear()}`
+  );
+}
+
 /**
  * Spring's own 404, for a path no mapping matches: not Java's envelope but
- * BasicErrorController's, with the time it was answered and the path as it
- * came.
+ * BasicErrorController's, in the form the request's Accept chooses (#953,
+ * errorPage) -- its JSON, with the time it was answered and the path as it
+ * came; its Whitelabel page to a browser; nothing at all to an Accept that
+ * takes neither; and Java's 500 for an Accept Spring cannot read.
  */
-export function springNotFound(request: Request) {
+export function springNotFound(request: Request): Answer {
   const path = String(request.originalUrl ?? '').split('?')[0];
+  const page = errorPage(request.get?.('accept'));
+  if (page.kind === 'failed') return javaError(request, 500, 'INTERNAL_SERVER_ERROR', page.message);
+  if (page.kind === 'none') return { status: 404 };
+  if (page.kind === 'html')
+    return {
+      status: 404,
+      type: 'text/html;charset=UTF-8',
+      body:
+        "<html><body><h1>Whitelabel Error Page</h1><p>This application has no explicit mapping for /error, so you are seeing this as a fallback.</p><div id='created'>" +
+        javaDate(new Date()) +
+        '</div><div>There was an unexpected error (type=Not Found, status=404).</div></body></html>',
+    };
   return {
     status: 404,
     type: 'application/json',

@@ -54,7 +54,7 @@ describe('/data/diseases', () => {
   it("asks for every Disease, alone, in graph-core's order", async () => {
     asked.length = 0;
     const response = await fetch(`${base}/ContentService/data/diseases`);
-    expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+    expect(response.headers.get('content-type')).toBe('application/json;charset=UTF-8');
     expect(((await response.json()) as { dbId: number }[]).map((d) => d.dbId)).toEqual([
       11, 12, 13,
     ]);
@@ -68,7 +68,7 @@ describe('/data/diseases', () => {
     const response = await fetch(`${base}/ContentService/data/diseases/doid`);
     expect([response.status, response.headers.get('content-type')]).toEqual([
       200,
-      'text/plain; charset=utf-8',
+      'text/plain;charset=UTF-8',
     ]);
     expect(await response.text()).toBe('11\tDOID:0001\n12\tSYMP:0002\n13\tnull:null');
   });

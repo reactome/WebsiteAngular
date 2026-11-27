@@ -74,7 +74,7 @@ describe('/data/participants/{id}/participatingPhysicalEntities', () => {
     const none = await get('R-HSA-5');
     expect([none.status, none.headers.get('content-type'), await none.text()]).toEqual([
       200,
-      'application/json; charset=utf-8',
+      'application/json;charset=UTF-8',
       '[]',
     ]);
     asked.length = 0;

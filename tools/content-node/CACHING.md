@@ -156,6 +156,15 @@ The review of the same day found three more ways round it, closed the same way:
 - **A diagram's entities only without `pathways`**: free text, never sent by
   the site.
 
+**`Accept`** (#953). Node negotiates it as Spring does, but the edge keys an
+answer by its URL alone. So an answer that a route gives only for a particular
+`Accept` -- one from a mapping tried after another of the path refused it,
+`/query/{id}/more` asked for `text/plain` -- is never stored (`X-Cache-Rule:
+accept`), and a `406` is an error, never stored either. The other way round,
+a stored answer is what the edge hands a reader of its URL whatever `Accept`
+says, where node would answer `406`: nothing the site or its services send
+is refused, so only a client asking for the wrong type sees it.
+
 ### What this does not fix
 
 Volume. Bot load is overwhelmingly requests to _valid_ URLs — crawling every

@@ -405,7 +405,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       // Java's methods take no parameters: any given are not passed on.
       const response = await fetch(`${base}/ContentService/search/${route}?query=x&species=y`);
       expect(response.status).toBe(200);
-      expect(response.headers.get('content-type')).toBe('application/json; charset=utf-8');
+      expect(response.headers.get('content-type')).toBe('application/json;charset=UTF-8');
       expect(await response.text()).toBe(
         '{"totalNumFount":9,"typeFacet":{"available":[{"name":"Protein","count":9}]}}'
       );

@@ -147,6 +147,7 @@ export const citationEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/citation/static/{id}',
+    produces: ['text', 'plain'],
     // CitationController.staticCitation: a paper's citation, by PubMed id,
     // from Europe PMC; Java's 500 text when it cannot be had.
     handler: async (request) => {
@@ -168,6 +169,7 @@ export const citationEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/citation/export',
+    produces: null,
     // CitationController.export: a citation to download as BibTeX, RIS or
     // text, a pathway's or a paper's. Nothing to cite is an empty 200.
     handler: async (request) => {
@@ -231,6 +233,7 @@ export const citationEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/citation/download',
+    produces: ['text', 'plain'],
     // CitationController.downloadCitation: the citation the download page
     // offers for its files, naming the release, as StringHttpMessageConverter
     // writes it under the type negotiated from Accept -- in the charset that

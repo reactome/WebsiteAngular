@@ -2,7 +2,10 @@
 import { createServer, type Server } from 'node:http';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { Description } from '../api-types/schema.ts';
-import { checkRoutes, routes } from './endpoints.ts';
+import { ACCEPT, checkRoutes, routes } from './endpoints.ts';
+import { acceptance } from '../content-node/server.ts';
+import { endpointFor } from '../content-node/registry.ts';
+import type { Request } from '../content-node/endpoint.ts';
 
 // A host answering a handful of routes, some rightly and some not, so the
 // check is seen to tell them apart (constitution III).
@@ -110,5 +113,25 @@ describe('the release check', () => {
     expect(asked.length).toBeGreaterThanOrEqual(30);
     expect(new Set(asked).size).toBe(asked.length);
     expect(asked.filter((p) => /\/(person|people)\b/.test(p))).toEqual([]);
+  });
+
+  // The content service answers 406 to an Accept a route's Java mapping does
+  // not produce (#953): the check's must suit every route it asks, text ones too.
+  it("asks each route with an Accept the service's route takes", () => {
+    const asked = routes({
+      pathway: 'R-HSA-1',
+      subpathway: 'R-HSA-2',
+      reaction: 'R-HSA-3',
+      entity: 'R-HSA-4',
+      complex: 'R-HSA-5',
+      accession: 'P00000',
+    });
+    const request = { get: (name: string) => (name === 'accept' ? ACCEPT : undefined) };
+    const refused = asked.filter((path) => {
+      const endpoint = endpointFor(`/ContentService${path}`);
+      if (!endpoint) throw new Error(`no endpoint answers ${path}`);
+      return acceptance(endpoint, request as unknown as Request).kind !== 'run';
+    });
+    expect(refused).toEqual([]);
   });
 });

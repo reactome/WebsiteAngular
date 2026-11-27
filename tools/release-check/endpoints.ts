@@ -16,6 +16,11 @@ import { DESCRIPTION } from '../contract/generate.ts';
 import { check, type Description } from '../api-types/schema.ts';
 
 const PREFIX = '/ContentService';
+/**
+ * JSON, or text for the few routes that answer it: the service negotiates
+ * Accept as Spring does (#953), and application/json alone is their 406.
+ */
+export const ACCEPT = 'application/json, text/plain';
 const TIMEOUT_MS = 120_000;
 const SPECIES = '9606';
 
@@ -52,7 +57,7 @@ async function ask(
 ): Promise<{ status: number; body: string; json: boolean; ms: number }> {
   const started = performance.now();
   const response = await fetch(base + PREFIX + path, {
-    headers: { Accept: 'application/json' },
+    headers: { Accept: ACCEPT },
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
   const body = await response.text();

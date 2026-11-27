@@ -779,6 +779,7 @@ it is made, not three steps later.
      identical, 23 on a later attempt). The Content-Type's media type is
      Java's; its parameter is written as node writes it on every other
      ported endpoint (`charset=utf-8`, where Java writes `charset=UTF-8`).
+     Since #953 (T111) node writes Java's `;charset=UTF-8` everywhere.
    - **Stored at the edge**, as any graph answer is (spec 011): node's
      answer is one per reaction per release, laid out from glyph id 1 every
      time, so the variation that would have made Java's uncacheable is not

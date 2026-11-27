@@ -72,6 +72,17 @@ describe('label', () => {
     ).toEqual({ cacheControl: 'private, no-store', rule: 'token' });
   });
 
+  // A mapping tried because another of the path refused the Accept (#953):
+  // the edge keys by URL alone, so storing it would hand it to every reader.
+  it('never stores an answer reached by a refused Accept', () => {
+    expect(of({ fellThrough: true })).toEqual({ cacheControl: 'no-store', rule: 'accept' });
+    expect(of({ fellThrough: true, status: 404 })).toEqual({
+      cacheControl: 'no-store',
+      rule: 'status',
+    });
+    expect(of({ fellThrough: false })).toEqual({ cacheControl: CACHEABLE, rule: 'standard' });
+  });
+
   it('takes as empty no body, an empty text, and an empty list, however they come', () => {
     expect(emptyAnswer({})).toBe(true);
     expect(emptyAnswer({ body: '' })).toBe(true);

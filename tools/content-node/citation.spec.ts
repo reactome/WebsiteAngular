@@ -349,7 +349,7 @@ describe('the citation endpoints', () => {
     const response = await fetch(`${base}/ContentService/citation/static/12345`);
     expect([response.status, response.headers.get('content-type')]).toEqual([
       200,
-      'text/plain; charset=utf-8',
+      'text/plain;charset=UTF-8',
     ]);
     expect(await response.text()).toMatch(/^Doe J\. A paper\./);
     expect(pmcAsked).toEqual([
@@ -425,9 +425,9 @@ describe('the citation endpoints', () => {
 
   it('export writes each format as its own type and extension', async () => {
     for (const [ext, type, extension] of [
-      ['bib', 'application/x-bibtex; charset=utf-8', 'bib'],
-      ['ris', 'application/x-research-info-systems; charset=utf-8', 'ris'],
-      ['txt', 'text/plain; charset=utf-8', 'txt'],
+      ['bib', 'application/x-bibtex;charset=UTF-8', 'bib'],
+      ['ris', 'application/x-research-info-systems;charset=UTF-8', 'ris'],
+      ['txt', 'text/plain;charset=UTF-8', 'txt'],
     ]) {
       const response = await fetch(
         `${base}/ContentService/citation/export?isPathway=false&id=12345&ext=${ext}&dateAccessed=d`
@@ -647,7 +647,7 @@ describe('the citation endpoints', () => {
       (JSON.parse(Buffer.from(body, 'hex').toString()) as { messages: string[] }).messages,
     ]).toEqual([
       406,
-      'application/json; charset=utf-8',
+      'application/json;charset=UTF-8',
       ['Could not find acceptable representation'],
     ]);
   });

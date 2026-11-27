@@ -400,6 +400,12 @@ function extensionOf(name: string): string {
   return dot === -1 ? '' : name.slice(dot + 1);
 }
 
+/** The bodies DownloadController takes: a form (its Content-Type header condition), or text/plain. */
+const DOWNLOAD_BODIES: [type: string, subtype: string][] = [
+  ['application', 'x-www-form-urlencoded'],
+  ['text', 'plain'],
+];
+
 export const interactorsEndpoints: Endpoint[] = [
   {
     path: '/ContentService/interactors/static/molecule/{id}/details',
@@ -443,6 +449,7 @@ export const interactorsEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/interactors/static/molecules/summary',
+    consumes: [['text', 'plain']],
     method: 'post',
     sampleBody: 'P04637, Q00987;xyz',
     differs: [/: \.url: /],
@@ -523,6 +530,7 @@ export const interactorsEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/interactors/static/molecules/details',
+    consumes: [['text', 'plain']],
     method: 'post',
     sampleBody: 'P04637,Q00987, P38398\nXYZ',
     differs: [/: \.url: /],
@@ -634,6 +642,8 @@ export const interactorsEndpoints: Endpoint[] = [
   },
   {
     path: '/ContentService/download/{filename}',
+    produces: ['text', 'csv'],
+    consumes: DOWNLOAD_BODIES,
     method: 'post',
     samplePath: { filename: 'result.csv' },
     sampleBody: 'content=P04637,TP53#NL#Q00987,MDM2',
@@ -653,10 +663,7 @@ export const interactorsEndpoints: Endpoint[] = [
      * `content`.
      */
     handler: (request) => {
-      const problem = consumesProblem(request.get?.('content-type'), [
-        ['application', 'x-www-form-urlencoded'],
-        ['text', 'plain'],
-      ]);
+      const problem = consumesProblem(request.get?.('content-type'), DOWNLOAD_BODIES);
       if (problem) return javaError(request, 415, 'UNSUPPORTED_MEDIA_TYPE', problem);
       const negotiated = negotiate(request.get?.('accept'), ['text', 'csv']);
       if (negotiated.kind === 'not-acceptable')
