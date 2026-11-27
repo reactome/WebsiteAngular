@@ -213,9 +213,9 @@ The release server redirects instead (`release.conf`, spec 032 D5).
 
 - **`current`** is not a folder on the download site; only numbered ones are. It goes to
   the release the server names in `download-release.map` in its site-local folder: one
-  line, `beta.reactome.org 98;` on beta, `reactome.org 98;` on production, changed on
-  release day. Without the line, or with anything but a number, `/download/current/`
-  answers 503 saying so; the numbered paths still work.
+  line, `beta.reactome.org 98;` on beta, `reactome.org 98;` on production, moved on
+  release day by the graph's switch (below). Without the line, or with anything but a
+  number, `/download/current/` answers 503 saying so; the numbered paths still work.
 - **Any other path** goes as it is: `/download/98/x` is the download site's `/98/x`. The
   query is dropped; a path whose `..` (encoded or not) leads out of `/download/` is not
   proxied, since nginx resolves it before choosing a location; the host is fixed.
@@ -235,8 +235,22 @@ download site.
 
 **On beta** the folder is the one `NGINX_SITE_LOCAL` names in compose's `.env` (unset, the
 repository's empty folder, and `/download/current/` answers 503). `dev.conf` reads only
-`download-release.map` from it. After changing the line,
-`docker compose exec nginx nginx -s reload`.
+`download-release.map` from it.
+
+**The line follows the graph.** `deploy/graphdb/next-release.sh switch`, once the graph
+serves the new release, rewrites the line's number to that release, keeping its host name
+and any comments: a new file in the same folder, given the old one's owner and mode, renamed
+into place. With nginx running it then runs `nginx -t` and, only if that passes,
+`nginx -s reload`; if `nginx -t` fails, the old file is put back, nothing is reloaded, and
+a warning says so, at the end too. `rollback` names the release it went back to (the
+host database's as content-node answers it). `check` says which release the line names and
+whether it is `docker-compose.yml`'s. It reads `NGINX_SITE_LOCAL` from the environment,
+else from the checkout's `.env`; it creates nothing: with the key unset or no
+`download-release.map` in the folder it says `/download/current/` is not managed there,
+and a file with no line, several, or a line that is not `<host> <number>;` is left as it
+is, with a warning naming what is wrong. A problem with the line never fails a switch,
+whose graph has already moved: it is said, and the line is then changed by hand, followed
+by `docker compose exec nginx nginx -s reload`.
 
 ## What is deliberately absent
 

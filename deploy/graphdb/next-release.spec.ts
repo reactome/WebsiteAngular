@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   openSync,
+  readdirSync,
   readFileSync,
   rmSync,
   existsSync,
@@ -47,10 +48,10 @@ case "$url" in
   *AnalysisService*) printf '%s' "\${STUB_AS:-98}";;
 esac`,
   docker: `case "$1" in
-  inspect) case "$*" in *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98}";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) if [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ]; then echo false; else echo "\${STUB_GRAPH_RUNNING:-true}"; fi;; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
+  inspect) case "$*" in *nginx-1*) echo "\${STUB_NGINX_RUNNING:-true}";; *Mounts*) echo "\${STUB_MOUNTS:-websiteangular_graphdb-release98}";; *Config.Image*State.Running*) if [ -f "${scratch}/replaced" ]; then echo "reactome/graphdb_readonly:Release98 false"; else echo "\${STUB_SERVING:-local-test/graphdb:Release97-community} \${STUB_GRAPH_RUNNING:-true}"; fi;; *State.Running*) if [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ]; then echo false; else echo "\${STUB_GRAPH_RUNNING:-true}"; fi;; *Health.Status*) echo "\${STUB_HEALTH:-healthy}";; *Config.Image*graphdb-1*) echo "\${STUB_SERVING:-local-test/graphdb:Release97-community}";; *Config.Image*) echo service-image;; *) echo "image running";; esac;;
   logs) case "$*" in *--since*) [ -f "${scratch}/prevup" ] && [ "\${STUB_PREV_DIES:-0}" = 1 ] && { echo starting; exit 0; }; [ "\${STUB_HUP_ON_WAIT:-0}" = 1 ] && { kill -HUP $PPID; echo starting; exit 0; }; [ "\${STUB_GRAPH_STARTED:-1}" = 1 ] && echo "Started." || echo "starting";; *) echo "Started.";; esac;;
   run) case "$*" in *"test -f"*) [ "\${STUB_MARKER_ERROR:-0}" = 1 ] && exit 125; [ "\${STUB_FILLED:-1}" = 1 ] && echo yes || echo no;; *:/cache*) [ "\${STUB_RUN_FAIL:-0}" = 1 ] && exit 1 || true;; *) [ "\${STUB_INT_ON_FILL:-0}" = 1 ] && kill -INT $PPID; [ "\${STUB_FILL_FAIL:-0}" = 1 ] && exit 1 || true;; esac;;
-  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) touch "${scratch}/prevup"; [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
+  compose) [ "\${STUB_COMPOSE_FAIL:-0}" = 1 ] && exit 1; case "$*" in *"exec -T nginx nginx -t"*) [ "\${STUB_NGINX_T_FAIL:-0}" = 1 ] && { echo "nginx: [emerg] stand-in failure"; exit 1; }; true;; *"-f docker-compose.yml -f"*"up -d --no-build graphdb"*) touch "${scratch}/prevup"; [ "\${STUB_PREV_UP_FAIL:-0}" != 1 ];; *"stop graphdb"*) [ "\${STUB_GRAPH_STOP_FAIL:-0}" != 1 ];; *"up -d graphdb"*) if [ "\${STUB_UP_FAIL:-0}" = 1 ]; then [ "\${STUB_UP_REPLACES:-1}" = 1 ] && touch "${scratch}/replaced"; exit 1; fi; true;; *"restart content-node"*) [ "\${STUB_CN_RESTART_FAIL:-0}" != 1 ];; *) true;; esac;;
   volume) case "$2" in rm) touch "${scratch}/removed";; inspect) case "$3" in *release98) [ "\${STUB_VOLUME:-0}" = 1 ] && [ ! -f "${scratch}/removed" ];; *) [ "\${STUB_PREV_VOLUME:-1}" = 1 ];; esac;; ls) echo websiteangular_graphdb-release97-community; echo websiteangular_graphdb-release98;; *) true;; esac;;
   image) [ "\${STUB_PREV_IMAGE:-1}" = 1 ];;
   ps) case "$*" in *com.docker.compose.service=graphdb*) [ -n "\${STUB_VOLUME_USERS:-}" ] && echo "$STUB_VOLUME_USERS";; esac; true;;
@@ -90,6 +91,8 @@ function run(
       CONTENT_NODE_ENV_FILE: credentials,
       NEXT_RELEASE_STATE: join(scratch, 'state'),
       NEXT_RELEASE_OLD_STATE: join(scratch, 'old-state'),
+      // Never the checkout's own .env, which on a server names its real folder.
+      NEXT_RELEASE_COMPOSE_ENV: join(scratch, 'no.env'),
       TOMCAT_LOGS: join(scratch, 'tomcat'),
       GRAPH_WAIT: '10',
       SERVICE_WAIT: '10',
@@ -648,5 +651,177 @@ describe('the release switch', () => {
     expect(calls).toContain('docker volume rm websiteangular_graphdb-release97-community');
     expect(calls).toContain('docker rmi local-test/graphdb:Release97-community');
     expect(calls.some((call) => /release98|Release98/.test(call) && /rm/.test(call))).toBe(false);
+  });
+});
+
+/**
+ * /download/current/ (spec 032 T038): the switch moves the release nginx's
+ * site-local download-release.map names to the one now serving, and reloads nginx.
+ */
+describe('the release /download/current/ means', () => {
+  const comment = '# the release /download/current/ means here\n';
+  let folders = 0;
+  /** A fresh site-local folder, holding `map` as download-release.map when given. */
+  function siteLocal(map?: string, mode = 0o640): { folder: string; file: string } {
+    const folder = join(scratch, `site-local-${++folders}`);
+    mkdirSync(folder);
+    const file = join(folder, 'download-release.map');
+    if (map !== undefined) {
+      writeFileSync(file, map);
+      chmodSync(file, mode);
+    }
+    return { folder, file };
+  }
+  const nginxCalls = (calls: string[]) => calls.filter((call) => / exec -T nginx /.test(call));
+
+  it('names the new release, keeping the host, the comments and the mode, then tests and reloads nginx', () => {
+    const { folder, file } = siteLocal(`${comment}beta.reactome.org 97;\n`);
+    const before = statSync(file);
+    const { status, stdout, calls } = run('switch', { NGINX_SITE_LOCAL: folder });
+    expect(status, stdout).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe(`${comment}beta.reactome.org 98;\n`);
+    const after = statSync(file);
+    // Replaced whole by a rename (a new file), never written in place, and nothing
+    // of its own left beside it.
+    expect(after.ino).not.toBe(before.ino);
+    expect(after.mode & 0o777).toBe(0o640);
+    expect(readdirSync(folder)).toEqual(['download-release.map']);
+    const test = at(calls, /^docker compose exec -T nginx nginx -t$/);
+    expect(at(calls, /^docker compose exec -T nginx nginx -s reload$/)).toBeGreaterThan(test);
+    expect(test).toBeGreaterThan(at(calls, /^systemctl restart tomcat9/));
+    expect(stdout).toMatch(/nginx reloaded: \/download\/current\/ is release 98/);
+    expect(stdout).toMatch(
+      /\/download\/current\/: release 98 \(beta\.reactome\.org\), as docker-compose\.yml names/
+    );
+  });
+
+  it("reads the folder from compose's .env when the environment does not name it", () => {
+    const { folder, file } = siteLocal('reactome.org 97;\n');
+    const env = join(scratch, 'compose.env');
+    writeFileSync(
+      env,
+      `NGINX_SITE_LOCAL=/elsewhere\nNGINX_SITE_LOCAL="${folder}" # the server's\n`
+    );
+    const { status } = run('switch', { NEXT_RELEASE_COMPOSE_ENV: env });
+    expect(status).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe('reactome.org 98;\n');
+  });
+
+  it('writes the line but reloads nothing when nginx is not running', () => {
+    const { folder, file } = siteLocal('beta.reactome.org 97;\n');
+    const { status, stdout, calls } = run('switch', {
+      NGINX_SITE_LOCAL: folder,
+      STUB_NGINX_RUNNING: 'false',
+    });
+    expect(status).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe('beta.reactome.org 98;\n');
+    expect(nginxCalls(calls)).toEqual([]);
+    expect(stdout).toMatch(/nginx is not running/);
+  });
+
+  it('puts the old file back, reloads nothing and says so, without failing the switch, when nginx -t fails', () => {
+    const { folder, file } = siteLocal('beta.reactome.org 97;\n', 0o604);
+    const { status, stdout, calls } = run('switch', {
+      NGINX_SITE_LOCAL: folder,
+      STUB_NGINX_T_FAIL: '1',
+    });
+    expect(status).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe('beta.reactome.org 97;\n');
+    expect(statSync(file).mode & 0o777).toBe(0o604);
+    expect(readdirSync(folder)).toEqual(['download-release.map']);
+    expect(calls.some((call) => /nginx -s reload/.test(call))).toBe(false);
+    expect(stdout).toMatch(
+      /WARNING: nginx -t failed with the new line, so .* is back to release 97/
+    );
+    expect(stdout).toMatch(/stand-in failure/);
+    // Said again after the steps printed at the end.
+    expect(stdout.trimEnd()).toMatch(/WARNING, \/download\/current\/: nginx -t failed[^\n]*$/);
+  });
+
+  it('creates nothing, and says it is not managed here, without a folder or a map', () => {
+    const unset = run('switch');
+    expect(unset.status).toBe(0);
+    expect(unset.stdout).toMatch(/not managed here: NGINX_SITE_LOCAL is not set/);
+    expect(nginxCalls(unset.calls)).toEqual([]);
+    const { folder } = siteLocal();
+    const missing = run('switch', { NGINX_SITE_LOCAL: folder });
+    expect(missing.status).toBe(0);
+    expect(missing.stdout).toMatch(
+      /not managed here: .* holds no download-release\.map \(nothing created\)/
+    );
+    expect(readdirSync(folder)).toEqual([]);
+    expect(nginxCalls(missing.calls)).toEqual([]);
+  });
+
+  it('leaves a malformed map as it is, and says what is wrong with it', () => {
+    const cases: [string, RegExp][] = [
+      [`${comment}`, /holds 0 lines naming a release, not one/],
+      ['beta.reactome.org 97;\nreactome.org 97;\n', /holds 2 lines naming a release, not one/],
+      ['beta.reactome.org current;\n', /its line is not `<host> <release>;`/],
+      ['beta.reactome.org 97\n', /its line is not `<host> <release>;`/],
+    ];
+    for (const [map, problem] of cases) {
+      const { folder, file } = siteLocal(map);
+      const before = statSync(file);
+      const { status, stdout, calls } = run('switch', { NGINX_SITE_LOCAL: folder });
+      expect(status, map).toBe(0);
+      expect(readFileSync(file, 'utf8'), map).toBe(map);
+      expect(statSync(file).ino).toBe(before.ino);
+      expect(stdout, map).toMatch(new RegExp(`WARNING: .*left as it is: it ${problem.source}`));
+      expect(nginxCalls(calls), map).toEqual([]);
+    }
+  });
+
+  it('leaves a map that is a link alone', () => {
+    const { folder, file } = siteLocal();
+    const target = join(scratch, 'linked.map');
+    writeFileSync(target, 'beta.reactome.org 97;\n');
+    symlinkSync(target, file);
+    const { stdout } = run('switch', { NGINX_SITE_LOCAL: folder });
+    expect(readFileSync(target, 'utf8')).toBe('beta.reactome.org 97;\n');
+    expect(stdout).toMatch(/left as it is: it is not a plain file/);
+  });
+
+  it('names the previous release again on rollback', () => {
+    const { folder, file } = siteLocal('reactome.org 98;\n');
+    const { status, stdout, calls } = run(
+      'rollback',
+      {
+        NGINX_SITE_LOCAL: folder,
+        STUB_NEO4J_ACTIVE: '0',
+        STUB_SERVING: 'reactome/graphdb_readonly:Release98',
+      },
+      'host_neo4j=inactive\nprevious_release=97\n'
+    );
+    expect(status, stdout).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe('reactome.org 97;\n');
+    at(calls, /^docker compose exec -T nginx nginx -s reload$/);
+  });
+
+  it('on rollback to the host database, names the release content-node answers', () => {
+    const { folder, file } = siteLocal('beta.reactome.org 98;\n');
+    const { status } = run(
+      'rollback',
+      { NGINX_SITE_LOCAL: folder, STUB_CN: '97' },
+      'host_neo4j=active\n'
+    );
+    expect(status).toBe(0);
+    expect(readFileSync(file, 'utf8')).toBe('beta.reactome.org 97;\n');
+  });
+
+  it('check says whether the map names the release docker-compose.yml does', () => {
+    const same = siteLocal('beta.reactome.org 98;\n');
+    const matched = run('check', { NGINX_SITE_LOCAL: same.folder });
+    expect(matched.status).toBe(0);
+    expect(matched.stdout).toMatch(
+      /\/download\/current\/: release 98 \(beta\.reactome\.org\), as docker-compose\.yml names/
+    );
+    const behind = siteLocal('beta.reactome.org 97;\n');
+    const mismatched = run('check', { NGINX_SITE_LOCAL: behind.folder });
+    expect(mismatched.stdout).toMatch(
+      /\/download\/current\/: release 97 \(beta\.reactome\.org\), NOT docker-compose\.yml's 98/
+    );
+    expect(readFileSync(behind.file, 'utf8')).toBe('beta.reactome.org 97;\n');
+    expect(mismatched.calls).toEqual([]);
   });
 });

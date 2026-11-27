@@ -305,7 +305,9 @@ address (spec 032 T037), because outside scripts fetch
 download site has numbered folders only, so `current` is sent to the folder this line
 names; any other path under `/download/` is sent as it is. Without the line, or with
 anything but a number in it, `/download/current/` answers 503 saying so, and the numbered
-paths still work. It moves with `IMAGE_TAG`, below. `production.conf` includes nothing
+paths still work. It moves with the graph: `next-release.sh switch` names the release it
+switched to and reloads nginx, and `rollback` the release it went back to (deploy/nginx's
+README, `/download/`), reading the folder from `.env`. `production.conf` includes nothing
 else from the folder.
 
 **The graph.** `graphdb` is the project's published graph image for the release that
@@ -363,13 +365,15 @@ steps, with production's certificate and names).
 ```sh
 git -C <checkout> fetch --tags && git -C <checkout> checkout Release<NN>
 # in .env: IMAGE_TAG=Release<NN>; DIAGRAM_FILES_DIR and RELEASE_FILES_DIR at release NN's folder
-# in the site-local folder's download-release.map: reactome.org <NN>;
 docker compose pull --ignore-buildable && docker compose build java-library pdf-export &&
   sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh switch &&
-  docker compose up -d && docker compose exec nginx nginx -s reload
+  docker compose up -d
 ```
 
 then the two steps `switch` prints at its end (the edge cache's purge and its warming).
+`switch` also names release NN in `download-release.map` and reloads nginx; if it warns
+that it could not (it says why, and the switch still succeeds), write `reactome.org <NN>;`
+there by hand and run `docker compose exec nginx nginx -s reload`.
 Never `down` first: a failed pull or build leaves everything as it was, and a failed switch
 goes back to the graph that served before by itself.
 
@@ -380,9 +384,11 @@ served, since a release's tag never moves.
 sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh rollback
 git -C <checkout> checkout Release<NN-1>
 # in .env: IMAGE_TAG=Release<NN-1>, and the previous release's folders
-# in download-release.map: reactome.org <NN-1>;
-docker compose pull --ignore-buildable && docker compose up -d && docker compose exec nginx nginx -s reload
+docker compose pull --ignore-buildable && docker compose up -d
 ```
+
+`rollback` names release NN-1 in `download-release.map` again and reloads nginx, or warns,
+as `switch` does.
 
 The graph goes back only until `next-release.sh cleanup` has removed the previous
 release's image and volume; run `cleanup` once the new release has been checked.
