@@ -5,6 +5,8 @@ stack from `main`: the site and the newer services in containers, Tomcat and Sol
 host, the host's own graph database, and this stack's nginx on the public ports. The
 decisions, requirements and the reasons are in
 [`specs/032-release-server`](../../specs/032-release-server/spec.md); this is the how.
+reactome.org runs the same stack, at a release's tag and with the stack's own graph
+database container: §9 says how it differs.
 
 Everything below in angle brackets is the server's, and stays on the server: host names
 beyond the public release address, paths, ports of its other services, sizes and
@@ -23,7 +25,8 @@ credentials never go into this repository.
 | the server's other sites, its build service                | host                        | as today; nginx reaches them through site-local |
 
 The server never builds a published image: its override resets their `build:` and names
-each at `${REGISTRY}` and `${IMAGE_TAG}`, a commit id (§1). An image missing from the
+each at `${REGISTRY}` and `${IMAGE_TAG}`, a commit id (§1; on production a release's
+tag, §9). An image missing from the
 registry makes `docker compose pull` and `up` fail, and nothing is built in its place
 under the registry's name; the fix is to publish it (spec 032 T009, T010), not to build
 it here. The server builds only java-library and pdf-export. This needs Docker Compose
@@ -95,13 +98,14 @@ Check before starting anything:
 ! docker compose config --services | grep -x graphdb &&
   config=$(docker compose config app content-node render analysis-gateway mcp nginx) &&
   ! printf '%s\n' "$config" | grep -E '^ +build:' &&
-  ! printf '%s\n' "$config" | grep -E '^ +image:' | grep -vE ':[0-9a-f]{40}$' &&
-  echo 'published images: pulled at a commit, none built'
+  ! printf '%s\n' "$config" | grep -E '^ +image:' | grep -vE ':([0-9a-f]{40}|Release[0-9]+)$' &&
+  echo 'published images: pulled at a commit or a release, none built'
 docker compose config app             # the site: SITE_PROFILE, NODE_ENV=production, no dev ports
 ```
 
 The first command prints `graphdb` if it would start, any `build:` left on a published
-service, and any published image whose tag is not a full commit id, and then fails,
+service, and any published image whose tag is neither a full commit id nor a release's
+tag (`Release` and its number, production's: §9), and then fails,
 exiting non-zero; with `REGISTRY`, `IMAGE_TAG` or `NGINX_ENV` missing, `docker compose
 config` itself refuses, naming it. Go on only once it prints its last line.
 
@@ -235,3 +239,112 @@ From then on nginx serves, and the new setup is the one used going forward. Apac
 installed but disabled for a while: if something is badly wrong after the switch,
 `docker compose stop nginx` and `systemctl start apache2` put the old site back while it
 is fixed. It is removed eventually, once the new setup has proven itself.
+
+## 9. Production (reactome.org)
+
+reactome.org runs this same stack: the published images, the same override, this stack's
+nginx. It differs from the release server in three ways: it runs a release's images, not
+a commit's; its nginx and site are production's; and it runs the stack's own graph
+database container in place of the host's, from the next release on.
+
+**The release's tag.** On release day every published image gets a write-once tag
+`Release<NN>` (`Release99`, say), the same name as the graph image's, and the commit gets
+a git tag of the same name; the release-tag workflow (spec 032 T036, to come) makes both, and
+refuses a tag that already exists. So production's `IMAGE_TAG` names one release, never
+`main` and never a commit id, and that tag never moves.
+
+**`.env`**: as §1, except:
+
+```sh
+IMAGE_TAG=Release<NN>                 # the release production serves; never `main`
+COMPOSE_PROFILES=graph                # the stack's own graph database (below)
+NGINX_ENV=production
+SITE_PROFILE=production
+DIAGRAM_FILES_DIR=<release NN's folder>/diagram
+RELEASE_FILES_DIR=<release NN's folder>
+RENDER_FILES_DIR=<the folder holding the release folders>
+```
+
+Unchanged: `REGISTRY`, the override, the credentials file and its owner
+(`CONTENT_NODE_ENV_FILE`, `CONTENT_NODE_UID`, `CONTENT_NODE_GID`), the site's settings file
+(`ANSWER_ENV_FILE`, with the contact form's keys; the production profile offers no search
+answer, summary or chat handoff), `CALLER_TOKEN_KEY_FILE`, `LETSENCRYPT_DIR`,
+`CERTBOT_WEBROOT`, and the render settings. `production.conf` includes no site-local
+folder, so `NGINX_SITE_LOCAL` is not read there.
+
+**The graph.** `graphdb` is the project's published graph image for the release that
+`docker-compose.yml` names, made read-only and built here, like java-library: its image
+(`reactome/graphdb_readonly:Release<NN>`) is never pulled from or pushed to a registry. So
+the checkout is at the same git tag as the images, and its compose file names the same
+release. The container serves on the host's loopback port 7687, where the host's database
+served, so the credentials file is unchanged: `NEO4J_URI` stays `bolt://127.0.0.1:7687`,
+and the container takes its user and password from the same file. It is moved, from the
+host's database the first time and from one release to the next after that, by
+[`deploy/graphdb/next-release.sh`](../graphdb/next-release.sh), as on beta: `check`,
+`switch`, `rollback`, then `cleanup` once the release is checked. Run under `sudo`, it sets
+the credentials file's path itself, to `~/.content-node.env` in the home of the user who
+ran it, and that wins over `.env`'s: so give it the path, as below. It names the containers
+`websiteangular-…`, the project's name when the checkout's folder is `WebsiteAngular`.
+
+Because `graphdb` has a build and no published image, a plain `docker compose pull` fails
+on it here: pull with `--ignore-buildable`, which still pulls every published image (their
+builds are reset) and leaves graphdb, java-library and pdf-export to be built.
+
+Check before starting anything: §1's check, with the graph expected to start:
+
+```sh
+docker compose config --services | grep -x graphdb &&
+  config=$(docker compose config app content-node render analysis-gateway mcp nginx) &&
+  ! printf '%s\n' "$config" | grep -E '^ +build:' &&
+  ! printf '%s\n' "$config" | grep -E '^ +image:' | grep -vE ':([0-9a-f]{40}|Release[0-9]+)$' &&
+  echo 'published images: pulled at a commit or a release, none built; the graph starts here'
+docker compose config graphdb | grep -E '^ +image:'   # Release<NN>: the same NN as IMAGE_TAG
+```
+
+and, once the site runs (§2's checks, with production's name):
+
+```sh
+curl -s 127.0.0.1:4200/ | grep -c '__APP_ENV="production"'     # 1: the production deployment
+curl -s 127.0.0.1:4400/ContentService/data/database/version     # NN, once the graph is switched
+```
+
+**The first start**, with whatever serves reactome.org today still serving:
+
+```sh
+docker compose pull --ignore-buildable &&
+  docker compose build java-library pdf-export &&
+  docker compose up -d app content-node render analysis-gateway mcp java-library pdf-export
+sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh switch
+```
+
+The services are named so `up` neither builds nor starts the graph: `switch` builds it,
+fills its volume while the host's database still serves, then stops and disables the
+host's database and starts the container. nginx starts last, at the switch over (§8's
+steps, with production's certificate and names).
+
+**At a release**, once the release-tag workflow has tagged it:
+
+```sh
+git -C <checkout> fetch --tags && git -C <checkout> checkout Release<NN>
+# in .env: IMAGE_TAG=Release<NN>; DIAGRAM_FILES_DIR and RELEASE_FILES_DIR at release NN's folder
+docker compose pull --ignore-buildable && docker compose build java-library pdf-export &&
+  sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh switch &&
+  docker compose up -d
+```
+
+then the two steps `switch` prints at its end (the edge cache's purge and its warming).
+Never `down` first: a failed pull or build leaves everything as it was, and a failed switch
+goes back to the graph that served before by itself.
+
+**Rolling back** is the previous release's tag: the images under it are the ones that
+served, since a release's tag never moves.
+
+```sh
+sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh rollback
+git -C <checkout> checkout Release<NN-1>
+# in .env: IMAGE_TAG=Release<NN-1>, and the previous release's folders
+docker compose pull --ignore-buildable && docker compose up -d
+```
+
+The graph goes back only until `next-release.sh cleanup` has removed the previous
+release's image and volume; run `cleanup` once the new release has been checked.
