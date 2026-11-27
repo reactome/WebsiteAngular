@@ -332,6 +332,105 @@ describe('publish-images.yml', () => {
   });
 });
 
+// Tests builds every image the publish builds, before the merge, and builds it
+// the same way (specs/032 T033): a Dockerfile broken in a pull request fails
+// that pull request rather than the publish after it. The four service images
+// are legs of Tests' `images` job, the site's is the Site image job, and
+// nginx's are test-config.sh's, one per deployment.
+describe('Tests builds what publish-images.yml publishes', () => {
+  const legsOf = (job: Mapping) =>
+    listOf(mappingOf(mappingOf(job['strategy'])['matrix'])['include']).map(mappingOf);
+  /** A leg as what it builds: its name, Dockerfile and build arguments. */
+  const builds = (leg: Mapping) => ({
+    name: textOf(leg['name']),
+    dockerfile: textOf(leg['dockerfile']),
+    args: textOf(leg['build-args']).split(/\s+/).filter(Boolean),
+  });
+  /** A script's `docker build`, continuations joined, less publish's tag and label. */
+  const buildCommand = (script: string) =>
+    /^\s*(docker build\b(?:[^\n]*\\\n)*[^\n]*)$/m
+      .exec(code(script).replace(/\\\n\s*/g, '\\\n'))?.[1]
+      ?.replace(/\\\n/g, ' ')
+      .replace(/ --label "[^"]*"| -t "[^"]*"/g, '')
+      .replace(/\s+/g, ' ');
+  const buildStep = (job: Mapping) =>
+    stepsOf(job).find((step) => /docker build/.test(textOf(step['run']))) ?? {};
+
+  const tests = workflow('tests.yml');
+  const testJobs = mappingOf(tests['jobs']);
+  const images = mappingOf(testJobs['images']);
+  const publish = mappingOf(mappingOf(workflow('publish-images.yml')['jobs'])['publish']);
+  const published = legsOf(publish).map(builds);
+  const tested = legsOf(images).map(builds);
+  const site = published.find((leg) => leg.name === 'site');
+  const nginx = published.filter((leg) => leg.name.startsWith('nginx-'));
+  const nginxScript = readFileSync('deploy/nginx/test-config.sh', 'utf8');
+
+  it('builds every published image, leg for leg', () => {
+    expect(tested.map((leg) => leg.name)).toEqual([
+      'content-node',
+      'render',
+      'analysis-gateway',
+      'mcp',
+    ]);
+    const others = published.filter((leg) => leg !== site && !nginx.includes(leg));
+    expect(tested).toEqual(others);
+  });
+
+  // Publish's command, less its tag and label, and less its build arguments,
+  // which none of these legs has there (the check above holds them equal).
+  it('builds them with publish’s command, Dockerfile and arguments', () => {
+    const step = buildStep(images);
+    const publishing = buildStep(publish);
+    expect(tested.every((leg) => leg.args.length === 0)).toBe(true);
+    expect(mappingOf(step['env'])).toEqual({ DOCKERFILE: '${{ matrix.dockerfile }}' });
+    expect(mappingOf(publishing['env'])['DOCKERFILE']).toBe('${{ matrix.dockerfile }}');
+    expect(mappingOf(publishing['env'])['BUILD_ARGS']).toBe('${{ matrix.build-args }}');
+    expect(code(textOf(publishing['run']))).toContain(
+      'for arg in $BUILD_ARGS; do args+=(--build-arg "$arg"); done'
+    );
+    const command = 'docker build -f "$DOCKERFILE" "${args[@]}" .';
+    expect(buildCommand(textOf(publishing['run']))).toBe(command);
+    expect(buildCommand(textOf(step['run']))).toBe(command.replace(' "${args[@]}"', ''));
+    expect(textOf(step['run']).split('\n')[0]).toBe('set -euo pipefail');
+  });
+
+  it('builds the site’s and every nginx image as publish does', () => {
+    expect(site?.args).toEqual([]);
+    expect(buildCommand(textOf(buildStep(mappingOf(testJobs['site-image']))['run']))).toBe(
+      `docker build -f ${site?.dockerfile} -t site .`
+    );
+    expect(nginx.length).toBeGreaterThan(0);
+    const envs = /^for env in ([\w ]+); do$/m.exec(nginxScript)?.[1]?.split(' ') ?? [];
+    expect(buildCommand(nginxScript)).toBe(
+      'docker build -q -f deploy/nginx/Dockerfile --build-arg "NGINX_ENV=$env" . >/dev/null'
+    );
+    for (const leg of nginx) {
+      expect(leg.dockerfile).toBe('deploy/nginx/Dockerfile');
+      expect(leg.args).toEqual([`NGINX_ENV=${leg.name.slice('nginx-'.length)}`]);
+      expect(envs).toContain(leg.name.slice('nginx-'.length));
+    }
+  });
+
+  // A skipped required job reads as passed: the images are built on every run.
+  it('builds them on every run, never skipped', () => {
+    expect(Object.keys(images)).not.toContain('if');
+    for (const trigger of Object.values(mappingOf(tests['on']))) {
+      expect(Object.keys(mappingOf(trigger)).filter((key) => key.startsWith('paths'))).toEqual([]);
+    }
+  });
+});
+
+// mcp's image holds reactome-mcp's main as of the build. It asked GitHub's API
+// which commit that was, unauthenticated, and shared runners can exhaust the
+// API's anonymous limit; BuildKit's `ADD` of the repository asks git instead,
+// needing no token in CI or in compose, and still rebuilds when main moves.
+it('fetches reactome-mcp over git, never through GitHub’s API', () => {
+  const dockerfile = code(readFileSync('deploy/mcp/Dockerfile', 'utf8'));
+  expect(dockerfile).not.toMatch(/api\.github\.com|GITHUB_TOKEN|git clone/);
+  expect(dockerfile).toMatch(/^ADD --keep-git-dir=true \$\{MCP_REPO\}#\$\{MCP_REF\} \/build$/m);
+});
+
 describe('the Playwright image', () => {
   // The browsers come from Playwright's image, not `playwright install`. Each
   // Playwright version drives one browser build, so an image a version behind

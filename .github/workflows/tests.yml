@@ -170,6 +170,45 @@ jobs:
       - name: It serves the site, as the deployment it is told it is
         run: deploy/site/check.sh site
 
+  images:
+    # The other images publish-images.yml publishes (spec 032 T033), built here
+    # exactly as it builds them: the same Dockerfile, context and build
+    # arguments, leg for leg (tools/workflows.spec.ts holds the two lists
+    # together). A broken Dockerfile then fails its pull request, rather than
+    # failing the publish after the merge and leaving every image's `main` tag
+    # where it was. The site's image is the job above, nginx's the nginx job
+    # (deploy/nginx/test-config.sh). Built on every run, never skipped by a
+    # path filter: a skipped job would read as passed. Nothing is pushed.
+    name: Image (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    # render's, the largest, installs Chromium and its system libraries.
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: content-node
+            dockerfile: deploy/content-node/Dockerfile
+          - name: render
+            dockerfile: deploy/render-service/Dockerfile
+          - name: analysis-gateway
+            dockerfile: deploy/analysis-gateway/Dockerfile
+          # reactome-mcp's main as of the build, fetched over git: no token,
+          # and none of GitHub's API limits (deploy/mcp/Dockerfile).
+          - name: mcp
+            dockerfile: deploy/mcp/Dockerfile
+    steps:
+      - uses: actions/checkout@v7
+      # Publish's command less its tag and label. None of these four takes a
+      # build argument there; one that gains one fails the check until it is
+      # passed here too.
+      - name: Build the image
+        env:
+          DOCKERFILE: ${{ matrix.dockerfile }}
+        run: |
+          set -euo pipefail
+          docker build -f "$DOCKERFILE" .
+
   e2e:
     # The code suite only: "is the code right?". The release checks -- every
     # top-level pathway draws, every download link resolves, the version and news
