@@ -2,7 +2,7 @@
 //
 // The images a server pulls are the ones CI publishes (specs/032 R1, T011):
 // every compose service built from a Dockerfile publish-images.yml publishes
-// names that image, `${REGISTRY:-local}/<name>:${IMAGE_TAG:-main}`, so
+// names that image, `${REGISTRY:-localhost}/<name>:${IMAGE_TAG:-main}`, so
 // `docker compose pull` fetches it on a server and `docker compose build`
 // builds it on beta. A name that drifts from the workflow's pulls nothing, or
 // another image; a service the workflow never publishes (java-library,
@@ -65,7 +65,7 @@ function dockerfileOf(service: Mapping): string | undefined {
  * is the one the service's build would make.
  */
 function expected(service: Mapping, legs: Published[]): string {
-  const image = (name: string) => `\${REGISTRY:-local}/${name}:\${IMAGE_TAG:-main}`;
+  const image = (name: string) => `\${REGISTRY:-localhost}/${name}:\${IMAGE_TAG:-main}`;
   const [only] = legs;
   if (legs.length === 1 && only?.args.size === 0) return image(only.name);
   const keys = new Set(legs.flatMap((leg) => [...leg.args.keys()]));
@@ -160,17 +160,17 @@ describe('the check itself', () => {
   it('sees an image named differently from the workflow', () => {
     const renamed = withService('render', (service) => ({
       ...service,
-      image: '${REGISTRY:-local}/render-service:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-localhost}/render-service:${IMAGE_TAG:-main}',
     }));
     expect(check(renamed, workflow, override).wrong).toEqual([
-      'render: image "${REGISTRY:-local}/render-service:${IMAGE_TAG:-main}", not "${REGISTRY:-local}/render:${IMAGE_TAG:-main}"',
+      'render: image "${REGISTRY:-localhost}/render-service:${IMAGE_TAG:-main}", not "${REGISTRY:-localhost}/render:${IMAGE_TAG:-main}"',
     ]);
   });
 
   it('sees nginx’s image not following its NGINX_ENV', () => {
     const fixed = withService('nginx', (service) => ({
       ...service,
-      image: '${REGISTRY:-local}/nginx-dev:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-localhost}/nginx-dev:${IMAGE_TAG:-main}',
     }));
     expect(check(fixed, workflow, override).wrong).toHaveLength(1);
   });
@@ -178,7 +178,7 @@ describe('the check itself', () => {
   it('sees a service that is never published naming the registry', () => {
     const named = withService('pdf-export', (service) => ({
       ...service,
-      image: '${REGISTRY:-local}/pdf-export:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-localhost}/pdf-export:${IMAGE_TAG:-main}',
     }));
     expect(check(named, workflow, override).wrong).toEqual([
       'pdf-export: names the registry, never published',
@@ -190,7 +190,7 @@ describe('the check itself', () => {
       Object.fromEntries(Object.entries(service).filter(([key]) => key !== 'image'))
     );
     expect(check(unnamed, workflow, override).wrong).toEqual([
-      'mcp: image "", not "${REGISTRY:-local}/mcp:${IMAGE_TAG:-main}"',
+      'mcp: image "", not "${REGISTRY:-localhost}/mcp:${IMAGE_TAG:-main}"',
     ]);
   });
 });
