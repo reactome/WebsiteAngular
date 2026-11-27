@@ -175,16 +175,13 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     // reactome.org, the public site. It runs the published site image (beta's
     // build) behind the nginx stack, with SITE_PROFILE=production choosing this
     // row at run time (RUNTIME_PROFILES above), its image pinned to a release
-    // tag (specs/032 T034). Never the bucket's copy.
+    // tag (specs/032 T034).
     //
     // Its own origin, as beta and the release server: its nginx proxies
     // /ContentService, the render and analysis services and the rest itself
     // (deploy/nginx/production.conf), so the site talks to itself. This row
-    // named beta while it was the bucket's: a page served from
-    // download.reactome.org could not ask its own origin, and beta was the only
-    // host serving the whole set. The copy deploy.yml still publishes to the
-    // bucket now asks download.reactome.org, which answers 403 for
-    // /ContentService, so that copy no longer works.
+    // named beta while the build was served from a static file host, which
+    // could not answer the services itself; that copy is retired.
     //
     // As the build-time row was, each on purpose:
     // - the public Google property, and only here (environments.spec.ts);

@@ -61,10 +61,10 @@ describe('site profiles', () => {
 
   it('serves reactome.org from itself, naming no other deployment', () => {
     // specs/032 T034: reactome.org runs the site image behind its own nginx,
-    // which serves every service the site calls. The row named beta while it
-    // was the bucket's copy; served from reactome.org, that would send the
-    // public site's every call to beta, and naming the release server would
-    // send them to a release not yet out.
+    // which serves every service the site calls. The row named beta while the
+    // build was served from a static file host; served from reactome.org, that
+    // would send the public site's every call to beta, and naming the release
+    // server would send them to a release not yet out.
     const production = SITE_PROFILES.production;
     expect(production.host).toBe('origin');
     expect(production.originFallback).toBe('https://reactome.org');

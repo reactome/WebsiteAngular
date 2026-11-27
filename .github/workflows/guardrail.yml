@@ -69,7 +69,8 @@ jobs:
             #
             # content-dist/ is deliberately absent. It is the compiled JSON the
             # browser reads, and stage:content rebuilds it in both tests.yml and
-            # deploy.yml, so a content PR neither needs nor should carry it.
+            # the site's image (deploy/site/Dockerfile), so a content PR
+            # neither needs nor should carry it.
             ALLOWED_REGEX="^(projects/website-angular/content/.*\.(mdx|md|json|yml)|projects/website-angular/public/uploads/.*\.(png|jpg|jpeg|webp|gif|svg))$"
 
             # Find invalid files
