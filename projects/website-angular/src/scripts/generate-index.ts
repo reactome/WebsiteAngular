@@ -3,7 +3,7 @@ import * as path from 'path';
 import { ArticleIndexItem } from '../types/article';
 import { SiteSearchIndexItem } from '../types/site-search';
 import parseFrontmatter from '../utils/parseFrontmatter';
-import truncateHtml from '../utils/truncateHtml';
+import articleExcerpt from '../utils/articleExcerpt';
 import { duplicateArticles } from './article-duplicates';
 
 /**
@@ -156,7 +156,7 @@ function loadNewsArticlesFromDir(dir: string): ArticleIndexItem[] {
       return {
         title: frontmatter['title'] || filename.replace(/\.(mdx|md)$/, ''),
         author: frontmatter['author'] || undefined,
-        excerpt: truncateHtml(body || '', 50),
+        excerpt: articleExcerpt(body || ''),
         date: frontmatter['date'] || new Date().toISOString(),
         slug: filename.replace(/\.(mdx|md)$/, ''),
         tags:

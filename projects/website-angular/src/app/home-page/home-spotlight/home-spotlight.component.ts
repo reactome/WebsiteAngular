@@ -11,6 +11,17 @@ import rewriteContentUrls from '../../../utils/rewriteContentUrls';
 import { LoadErrorComponent } from '../../reactome-components/load-error/load-error.component';
 import { articleIndexItem } from '../../../utils/articleIndexItem';
 
+/** How many words of a spotlight's opening the home page shows. */
+export const SPOTLIGHT_WORDS = 35;
+
+/**
+ * A spotlight's opening, from its rendered HTML: its heading dropped, cut to
+ * SPOTLIGHT_WORDS words, and ending in "..." only when words were left out.
+ */
+export function spotlightOpening(html: string): string {
+  return truncateHtml(stripFirstH(html), SPOTLIGHT_WORDS);
+}
+
 @Component({
   selector: 'app-home-spotlight',
   standalone: true,
@@ -52,7 +63,7 @@ export class HomeSpotlightComponent implements OnInit {
           // that ignores it, so any rejection in here would vanish.
           void (async () => {
             const html = rewriteContentUrls(await marked(markdown));
-            this.renderedContent.set(truncateHtml(stripFirstH(html), 35));
+            this.renderedContent.set(spotlightOpening(html));
           })().catch((error) => console.error('Could not render spotlight', error));
         this.contentService.getArticle('content/reactome-research-spotlight', item.slug).subscribe({
           next: (article) => show(article?.body || item.excerpt || ''),

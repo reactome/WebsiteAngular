@@ -84,6 +84,22 @@ describe('ContentService.getArticle', () => {
     });
   });
 
+  // #951: the excerpt ends in "..." only when the body was cut
+  it('gives a short article its whole body as its excerpt, with no "..."', async () => {
+    const { article, req } = request();
+    req.flush({ title: 'Version 63 Released', date: '2017-12-18', body: 'Out now.' });
+    await expect(article).resolves.toMatchObject({ excerpt: 'Out now.' });
+  });
+
+  it('cuts a long article for its excerpt, ending it in "..."', async () => {
+    const words = Array.from({ length: 60 }, (_, i) => `w${i + 1}`);
+    const { article, req } = request();
+    req.flush({ title: 'Version 63 Released', date: '2017-12-18', body: words.join(' ') });
+    await expect(article).resolves.toMatchObject({
+      excerpt: `${words.slice(0, 50).join(' ')} ...`,
+    });
+  });
+
   it('reports a missing article as null when the server answers 404', async () => {
     const { article, req } = request();
     req.flush('nope', { status: 404, statusText: 'Not Found' });

@@ -9,6 +9,7 @@ import {
 import { HomeLatestNewsComponent } from './home-latest-news.component';
 import { NavOptionsService } from '../../../services/nav-options.service';
 import { ContentService } from '../../../services/content.service';
+import articleExcerpt, { EXCERPT_WORDS } from '../../../utils/articleExcerpt';
 
 function component(): HomeLatestNewsComponent {
   const injector = createEnvironmentInjector(
@@ -65,5 +66,28 @@ describe('HomeLatestNewsComponent.summaryOf', () => {
     expect(summary('Updated pathways include Developmental biology ([Differentiation of ...')).toBe(
       'Updated pathways include Developmental biology (Differentiation of ...'
     );
+  });
+
+  // #951: the lead item's line is the index's excerpt, which ends in "..." only
+  // when it was cut; this keeps that "..." and adds none of its own.
+  describe('from the excerpt the news index writes', () => {
+    const words = (n: number) => Array.from({ length: n }, (_, i) => `w${i + 1}`).join(' ');
+    const ofBody = (body: string) => summary(articleExcerpt(body));
+
+    it('ends in no "..." under the word limit', () => {
+      expect(ofBody(`## A title\n\n${words(10)}`)).toBe(words(10));
+    });
+
+    it('ends in "..." over the word limit', () => {
+      expect(ofBody(words(EXCERPT_WORDS + 5))).toBe(`${words(EXCERPT_WORDS)} ...`);
+    });
+
+    it('ends in no "..." at exactly the word limit', () => {
+      expect(ofBody(words(EXCERPT_WORDS))).toBe(words(EXCERPT_WORDS));
+    });
+
+    it('ends in no "..." under the word limit, however long the tags are', () => {
+      expect(ofBody(`<p title="${words(EXCERPT_WORDS)}">${words(10)}</p>`)).toBe(words(10));
+    });
   });
 });
