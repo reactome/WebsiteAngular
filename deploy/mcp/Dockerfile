@@ -22,31 +22,37 @@
 FROM node:22-slim AS build
 ARG MCP_REF=main
 ARG MCP_REPO=https://github.com/reactome/reactome-mcp.git
-# Only used to resolve MCP_REF to a commit, so the clone below cannot be served
-# from a stale layer. Unauthenticated, and this is a public repository.
-ARG MCP_API=https://api.github.com/repos/reactome/reactome-mcp
 RUN apt-get update \
  && apt-get install -y --no-install-recommends git ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 WORKDIR /build
-# Resolve the ref to a commit *before* cloning, and keep the answer in a layer.
+# Fetch the ref with BuildKit's own `ADD` of a git repository, which resolves
+# MCP_REF to a commit on every build and keys the layer on that commit.
 #
-# Without this the build is stale by default and silent about it. `RUN git
+# Without that the build is stale by default and silent about it. `RUN git
 # clone --branch main` is one fixed command string, so Docker caches its layer
 # and reuses it for ever: once main moves, `docker compose build` rebuilds the
 # revision from the first build and reports success. Verified rather than
 # assumed -- a second `docker compose build mcp` with no changes reported CACHED
 # for every step including the clone.
 #
-# `ADD` from a URL re-fetches on every build and its layer digest follows the
-# content, so when main points somewhere new this file changes, this layer and
-# everything after it are invalidated, and the clone runs again. When main has
-# not moved the response is byte-identical and the build stays cached.
+# Here, when the ref points somewhere new the layer and everything after it are
+# invalidated; when it has not moved the build stays cached. It asks git
+# itself (over HTTPS, as `git ls-remote` does), not GitHub's REST API: an
+# earlier version `ADD`ed `api.github.com/.../commits/<ref>` to the same end,
+# unauthenticated, and shared CI runners can exhaust the API's anonymous limit
+# (specs/032 T033). No token is needed, here, in CI or in compose.
+#
+# `--keep-git-dir` keeps .git, for the REVISION below; it never reaches the
+# final stage.
+#
+# Build with BuildKit (compose, buildx, or CI's `docker build`): the legacy
+# builder ignores the flag and fetches the repository's web page as a file, and
+# the build then fails at `npm ci` for want of package.json.
 #
 # It is the same defect as the bind-mount this replaced, one level up: a
 # deployment whose revision is decided by something nobody looked at.
-ADD ${MCP_API}/commits/${MCP_REF} /tmp/mcp-ref.json
-RUN git clone --depth 1 --branch "${MCP_REF}" "${MCP_REPO}" .
+ADD --keep-git-dir=true ${MCP_REPO}#${MCP_REF} /build
 # `npm ci` rather than `install`: the lockfile is the point of pinning a ref.
 RUN npm ci
 RUN npm run build
