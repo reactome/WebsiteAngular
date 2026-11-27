@@ -59,9 +59,10 @@ const { mountContactRoute } = require('./contact-route');
 /**
  * Which deployment the page is, where it is not the build's own (specs/032 R2).
  *
- * The release server runs beta's build and must not behave as beta: beta's row
- * sends ReactomeGSA's results to beta's Analysis Service and turns DeltaSignal
- * on. SITE_PROFILE names the row instead; the page gets one line,
+ * The release server and reactome.org run beta's build and must not behave as
+ * beta: beta's row sends ReactomeGSA's results to beta's Analysis Service and
+ * turns DeltaSignal on. SITE_PROFILE names the row instead (`release`, or
+ * `production` for reactome.org, T034); the page gets one line,
  * `window.__APP_ENV`, which the site reads before the build's own name
  * (environments.ts, runtimeProfileName). Unset -- beta, every development
  * server -- the page is sent exactly as built.
@@ -72,7 +73,7 @@ const { mountContactRoute } = require('./contact-route');
  * would look right and report to the wrong places, which is the failure the
  * profile table was written to make unsayable.
  */
-const RUNTIME_PROFILES = ['release'];
+const RUNTIME_PROFILES = ['release', 'production'];
 const SITE_PROFILE = process.env.SITE_PROFILE || '';
 if (SITE_PROFILE && !RUNTIME_PROFILES.includes(SITE_PROFILE)) {
   console.error(

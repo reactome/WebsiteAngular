@@ -53,21 +53,26 @@ describe('site profiles', () => {
     // does not -- the reaction-diagram exporter among them. Naming a host
     // instead sent beta to reactome.org, which 404s that endpoint, and reaction
     // pages stopped drawing.
-    for (const name of ['beta', 'release', 'development'] as ProfileName[]) {
+    for (const name of ['production', 'beta', 'release', 'development'] as ProfileName[]) {
       expect(SITE_PROFILES[name].host, `${name}.host`).toBe('origin');
       expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
     }
   });
 
-  it('names a backend for the artifact that is served from a bucket', () => {
-    // `production` is built by deploy.yml and synced to S3. Its origin is
-    // download.reactome.org, which answers 403 for /ContentService -- so it is
-    // the one deployment that cannot ask its own origin and must name a host
-    // that actually serves the app's services.
-    const host = SITE_PROFILES.production.host;
-    expect(host, 'the published artifact names a host').not.toBe('origin');
-    expect(host).toMatch(/^https:\/\//);
-    expect(host, 'and not the bucket it is served from').not.toContain('download.reactome.org');
+  it('serves reactome.org from itself, naming no other deployment', () => {
+    // specs/032 T034: reactome.org runs the site image behind its own nginx,
+    // which serves every service the site calls. The row named beta while the
+    // build was served from a static file host; served from reactome.org, that
+    // would send the public site's every call to beta, and naming the release
+    // server would send them to a release not yet out.
+    const production = SITE_PROFILES.production;
+    expect(production.host).toBe('origin');
+    expect(production.originFallback).toBe('https://reactome.org');
+    expect(new URL(production.versionFallback).origin).toBe('https://reactome.org');
+    const text = JSON.stringify(production);
+    for (const other of ['beta.', 'release.', 'dev.', 'newcurator.', 'localhost'])
+      expect(text, `production names ${other}`).not.toContain(other);
+    expect(production.gsaServer).toBe('production');
   });
 
   it('keeps the public deployments off the curator backend', () => {
@@ -111,8 +116,11 @@ describe('site profiles', () => {
     const configurations = Object.keys(
       angularJson.projects.reactome.architect.build.configurations
     ).sort();
+    // `production` is a build's as well as a runtime name (RUNTIME_PROFILES).
     const siteProfiles = Object.keys(SITE_PROFILES).filter(
-      (name) => !name.startsWith('embed-') && !RUNTIME_PROFILES.includes(name as ProfileName)
+      (name) =>
+        !name.startsWith('embed-') &&
+        (name === 'production' || !RUNTIME_PROFILES.includes(name as ProfileName))
     );
     expect(configurations).toEqual(siteProfiles.sort());
   });
@@ -132,8 +140,16 @@ describe('site profiles', () => {
         return env === undefined ? [] : [JSON.parse(env) as string];
       });
     // The rest are chosen when the site is served, and no build may also name
-    // one of them.
-    expect([...named, ...RUNTIME_PROFILES].sort()).toEqual(Object.keys(SITE_PROFILES).sort());
+    // one of them -- but `production`, the bare build's and reactome.org's
+    // image's, which is one deployment reached both ways (RUNTIME_PROFILES).
+    const both = named.filter((name) => RUNTIME_PROFILES.includes(name as ProfileName));
+    expect(both).toEqual(['production']);
+    expect([...new Set([...named, ...RUNTIME_PROFILES])].sort()).toEqual(
+      Object.keys(SITE_PROFILES).sort()
+    );
+    expect(named.length + RUNTIME_PROFILES.length - both.length).toBe(
+      Object.keys(SITE_PROFILES).length
+    );
   });
 
   it('serves the embed from whichever host serves its code', () => {
@@ -161,9 +177,7 @@ describe('site profiles', () => {
       resolveHost(SITE_PROFILES.release, { page: partner, script: 'https://x.example/m.js' })
     ).toBe(partner);
     expect(resolveHost(SITE_PROFILES.release, {})).toBe('https://release.reactome.org');
-    expect(resolveHost(SITE_PROFILES.production, { page: partner })).toBe(
-      SITE_PROFILES.production.host
-    );
+    expect(resolveHost(SITE_PROFILES.production, {})).toBe('https://reactome.org');
   });
 
   it("writes no host into the embed's served builds", () => {
@@ -196,6 +210,19 @@ describe('site profiles', () => {
     expect(release.gsaServer).toBe('release');
     expect(release.host).toBe('origin');
     expect(release.originFallback).toBe('https://release.reactome.org');
+  });
+
+  it('serves reactome.org as the deployment the bare build is for', () => {
+    // The image's page names production at run time; a build with no name gets
+    // the same row. Both are the public site, chosen the two ways.
+    expect(RUNTIME_PROFILES).toContain('production');
+    expect(getProfile(undefined)).toBe(SITE_PROFILES.production);
+    const production = SITE_PROFILES.production;
+    expect(production.variant).toBe('main');
+    expect(production.deltaSignal).toBeUndefined();
+    expect(production.searchAnswerEndpoint).toBeUndefined();
+    expect(production.analysisSummaryEndpoint).toBeUndefined();
+    expect(production.chatHandoffEndpoint).toBeUndefined();
   });
 
   it('offers DeltaSignal only where a DeltaSignal backend can be reached', () => {

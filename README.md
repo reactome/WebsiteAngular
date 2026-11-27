@@ -202,27 +202,9 @@ profile doing its job, not a misconfiguration.
 
 #### Where each build is published
 
-`deploy.yml` runs after a green Tests run and publishes to S3 under a release
-number it computes at build time — not under a fixed path:
-
-| branch | published to                     | what it is                     |
-| ------ | -------------------------------- | ------------------------------ |
-| `main` | `<current release + 1>/website/` | the next release's artifact    |
-| `prod` | `<current release>/website/`     | the current release's artifact |
-
-The current release comes from `reactome.org/ContentService/data/database/version`
-at build time. So a push to `main` today lands in `/98/website/` while `/97/website/`
-holds whatever `prod` last published — which may be months old, and correctly so.
-
-`npm run deployed` prints both URLs with their timestamps. Use it before checking
-a published artifact: reading the `aws s3 sync` line in the workflow suggests one
-path and the version step above it decides another, and a day of verification was
-once aimed at the stale one as a result.
-
-A published artifact is served from the bucket, which has no backend of its own,
-so it reaches the host named in `SITE_PROFILES.production` rather than its own
-origin. That is why `production` is the one deployment that names a host instead
-of resolving `'origin'`.
+`publish-images.yml` publishes the site and its services as container images,
+after a green Tests run on `main`, each tagged with its commit; a server runs the
+image tagged with the release it serves (specs/032).
 
 #### Deploying
 

@@ -4,6 +4,11 @@ What the plan rests on, read from the repository as it stands (24 Nov 2026) and 
 handoff of the session with access to the release server. Server details stay out of
 this file (FR-011): "the release server" is all it is called.
 
+> **Since retired (27 Nov 2026, T034, #1105):** `deploy.yml`, the workflow that copied
+> the site's build to a static file bucket, is gone; the site is published only as the
+> image R1 and R2 describe. Where this file cites `deploy.yml`, it records what stood
+> when the plan was made.
+
 ## R1. Getting the images there: published by CI, pulled by the server
 
 **Decision**: a new workflow, `publish-images.yml`, runs after Tests passes on `main`

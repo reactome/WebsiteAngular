@@ -46,12 +46,12 @@ jobs:
   publish:
     name: Publish ${{ matrix.name }}
     runs-on: ubuntu-latest
-    # deploy.yml's guard, for the same reason: Tests runs on pull requests too,
-    # forks included, and the branch filter above matches the head branch, so
-    # a fork's branch named main would otherwise publish its own commit with
-    # this job's registry role. Only a push to this repository that passed
-    # publishes (tools/workflows.spec.ts). And nothing at all until the
-    # registry exists and is named in the repository's variables.
+    # Tests runs on pull requests too, forks included, and the branch filter
+    # above matches the head branch, so a fork's branch named main would
+    # otherwise publish its own commit with this job's registry role. Only a
+    # push to this repository that passed publishes (tools/workflows.spec.ts).
+    # And nothing at all until the registry exists and is named in the
+    # repository's variables.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'push' &&

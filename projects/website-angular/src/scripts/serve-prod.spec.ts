@@ -644,10 +644,40 @@ describe('serve-prod as a deployment named when it is served', () => {
     }
   });
 
+  it('names reactome.org as production (T034)', async () => {
+    // The same image runs reactome.org, pinned to a release tag; production is
+    // a name it serves, and its page says so before the app's scripts run.
+    const port = await freePort();
+    const child = spawn('node', [SCRIPT], {
+      env: {
+        ...process.env,
+        DIST_DIR: dist,
+        PORT: String(port),
+        HOST: '127.0.0.1',
+        SITE_PROFILE: 'production',
+        HEALTH_CONTENT_NODE: 'http://127.0.0.1:9/health',
+        HEALTH_RENDER: 'http://127.0.0.1:9/health',
+        HEALTH_MCP: 'http://127.0.0.1:9/health',
+      },
+      stdio: 'ignore',
+    });
+    try {
+      expect(await waitForServer(`http://127.0.0.1:${port}`), 'it serves').toBe(true);
+      const html = await (await fetch(`http://127.0.0.1:${port}/`)).text();
+      const line = '<script>window.__APP_ENV="production";</script>';
+      expect(html.startsWith(`<!doctype html><html><head>${line}<meta charset`), html).toBe(true);
+      expect(html).not.toContain('"release"');
+    } finally {
+      child.kill('SIGTERM');
+    }
+  }, 40_000);
+
   it('refuses to start with a name it cannot serve', async () => {
     // Beta is a real deployment, but a build's, not one chosen when serving: a
     // name reached both ways is two deployments sharing hosts by accident.
-    for (const name of ['beta', 'relase']) {
+    // Production is the one that is both (environments.ts, RUNTIME_PROFILES);
+    // a near miss of it is no deployment.
+    for (const name of ['beta', 'relase', 'prod', 'Production']) {
       const child = spawn('node', [SCRIPT], {
         env: { ...process.env, DIST_DIR: dist, PORT: String(await freePort()), SITE_PROFILE: name },
         stdio: ['ignore', 'ignore', 'pipe'],
@@ -666,9 +696,9 @@ describe('serve-prod as a deployment named when it is served', () => {
       });
       expect(code, `${name}: exits rather than serving`).toBe(1);
       expect(stderr).toContain(`"${name}"`);
-      expect(stderr).toContain('release');
+      expect(stderr).toContain('release, production');
     }
-  }, 30_000);
+  }, 60_000);
 
   it('accepts exactly the deployments the site chooses when served', async () => {
     // serve-prod.js is plain JavaScript and starts a server when loaded, so its

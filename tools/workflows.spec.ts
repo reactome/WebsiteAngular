@@ -115,26 +115,15 @@ describe('the workflows as YAML', () => {
 });
 
 // Tests runs on pull requests too, forks included, and workflow_run's branch
-// filter matches the head branch -- so a fork's branch named main or prod that
-// passed Tests triggered a deploy holding the AWS role, of the fork's commit.
-// Only a test run from a push to this repository may deploy, or publish the
-// images a server runs. The whole condition, exactly: one `||` added anywhere
-// would let another event through.
+// filter matches the head branch -- so a fork's branch named main that passed
+// Tests would publish images with the registry role, of the fork's commit.
+// Only a test run from a push to this repository may publish the images a
+// server runs. The whole condition, exactly: one `||` added anywhere would let
+// another event through.
 const PUSHED_AND_PASSED =
   "github.event.workflow_run.conclusion == 'success' && " +
   "github.event.workflow_run.event == 'push' && " +
   'github.event.workflow_run.head_repository.full_name == github.repository';
-
-describe('deploy.yml', () => {
-  const jobs = mappingOf(workflow('deploy.yml')['jobs']);
-
-  it('deploys only what was pushed to this repository and passed, or a dispatch', () => {
-    expect(Object.keys(jobs)).toEqual(['deploy']);
-    expect(textOf(mappingOf(jobs['deploy'])['if'])).toBe(
-      `github.event_name == 'workflow_dispatch' || (${PUSHED_AND_PASSED})`
-    );
-  });
-});
 
 describe('publish-images.yml', () => {
   const text = readFileSync(path.join(DIR, 'publish-images.yml'), 'utf8');

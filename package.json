@@ -50,7 +50,6 @@
     "import:news": "npx tsx projects/website-angular/src/scripts/import-news.ts",
     "e2e:release": "playwright test --project=release",
     "preflight": "bash scripts/preflight.sh",
-    "deployed": "bash scripts/deployed.sh",
     "check:types": "node scripts/check-types.mjs",
     "check:totals": "node scripts/check-baseline-totals.mjs",
     "content:node": "node tools/content-node/server.ts",
