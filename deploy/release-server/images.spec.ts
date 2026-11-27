@@ -2,15 +2,19 @@
 //
 // The images a server pulls are the ones CI publishes (specs/032 R1, T011):
 // every compose service built from a Dockerfile publish-images.yml publishes
-// names that image, `${REGISTRY:-localhost}/<name>:${IMAGE_TAG:-main}`, so
+// names that image, `${REGISTRY:-registry.invalid}/<name>:${IMAGE_TAG:-main}`, so
 // `docker compose pull` fetches it on a server and `docker compose build`
 // builds it on beta. A name that drifts from the workflow's pulls nothing, or
 // another image; a service the workflow never publishes (java-library,
-// pdf-export) must not name the registry at all.
-import { readFileSync } from 'node:fs';
+// pdf-export) must not name the registry at all. On a server, the override
+// in contracts/compose-override.md resets each published service's `build:`
+// and requires REGISTRY and IMAGE_TAG (`:?`), so it never builds one and never
+// falls back to this file's defaults; and every deployment's nginx is
+// published.
+import { readdirSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parse } from 'yaml';
+import { type Document, isMap, isScalar, parse, parseDocument } from 'yaml';
 
 const ROOT = join(__dirname, '../..');
 
@@ -65,7 +69,7 @@ function dockerfileOf(service: Mapping): string | undefined {
  * is the one the service's build would make.
  */
 function expected(service: Mapping, legs: Published[]): string {
-  const image = (name: string) => `\${REGISTRY:-localhost}/${name}:\${IMAGE_TAG:-main}`;
+  const image = (name: string) => `\${REGISTRY:-registry.invalid}/${name}:\${IMAGE_TAG:-main}`;
   const [only] = legs;
   if (legs.length === 1 && only?.args.size === 0) return image(only.name);
   const keys = new Set(legs.flatMap((leg) => [...leg.args.keys()]));
@@ -92,11 +96,13 @@ function expected(service: Mapping, legs: Published[]): string {
 }
 
 /** Every service's image, or what is wrong with it, and the published names it covers. */
-function check(compose: Mapping, workflow: Mapping, override: string) {
+function check(compose: Mapping, workflow: Mapping) {
   const legs = published(workflow);
   const services = mappingOf(compose['services']);
   const wrong: string[] = [];
   const covered = new Set<string>();
+  /** Each published service here, and the image it must name. */
+  const images = new Map<string, string>();
   for (const [name, node] of Object.entries(services)) {
     const service = mappingOf(node);
     const image = textOf(service['image']);
@@ -107,39 +113,100 @@ function check(compose: Mapping, workflow: Mapping, override: string) {
       continue;
     }
     const want = expected(service, mine);
+    images.set(name, want);
     if (image !== want) wrong.push(`${name}: image "${image}", not "${want}"`);
     for (const leg of mine) covered.add(leg.name);
   }
-  // The site's image runs in the development container's place, through a
-  // server's override (contracts/compose-override.md), not as a service here.
-  for (const leg of legs) {
-    if (override.includes(`image: \${REGISTRY}/${leg.name}:\${IMAGE_TAG}`)) covered.add(leg.name);
-  }
   const missing = legs.map((leg) => leg.name).filter((name) => !covered.has(name));
-  return { wrong, missing, legs };
+  return { wrong, missing, legs, images };
+}
+
+/**
+ * The override a server keeps (contracts/compose-override.md), from the
+ * contract's one fenced YAML block, with its nodes, so compose's `!reset`
+ * tags can be read: the `yaml` package leaves them unresolved, as strings.
+ */
+function overrideOf(markdown: string): Document {
+  const blocks = [...markdown.matchAll(/^```yaml\n([\s\S]*?)^```$/gm)];
+  if (blocks.length !== 1) throw new Error(`${blocks.length} YAML blocks in the contract, not one`);
+  const document = parseDocument(blocks[0]?.[1] ?? '');
+  const unexpected = [...document.errors, ...document.warnings]
+    .map((problem) => problem.message)
+    .filter((message) => !/^Unresolved tag: !(reset|override) /.test(message));
+  if (unexpected.length > 0) throw new Error(unexpected.join('\n'));
+  return document;
+}
+
+/** `${VAR:-default}` (operator `-`) or `${VAR:?message}` (`?`) as `${VAR}`. */
+const bare = (image: string, operator: '-' | '?') =>
+  image.replace(new RegExp(`\\$\\{(\\w+):\\${operator}[^}]*\\}`, 'g'), '${$1}');
+
+/**
+ * What is wrong with a server's override: every published service, and `app`
+ * in the development container's place running what no service here builds
+ * (the site), must reset its `build:`, so the server never builds it, and name
+ * the image the base file names with every variable required (`:?`), so a
+ * setting left out stops compose instead of falling back to
+ * `registry.invalid` or `main`. And none may pull by building, or not at all.
+ */
+function checkServer(compose: Mapping, workflow: Mapping, override: Document): string[] {
+  const { images, missing } = check(compose, workflow);
+  const wrong: string[] = [];
+  const wanted = new Map(images);
+  if (missing.length === 1 && missing[0] !== undefined) {
+    wanted.set('app', `\${REGISTRY:-registry.invalid}/${missing[0]}:\${IMAGE_TAG:-main}`);
+  } else {
+    wrong.push(`app: runs one image no service builds, not ${missing.join(', ') || 'none'}`);
+  }
+  const base = mappingOf(compose['services']);
+  for (const [name, want] of wanted) {
+    if (!isMap(override.getIn(['services', name], true))) {
+      wrong.push(`${name}: not in the override`);
+      continue;
+    }
+    const image = textOf(override.getIn(['services', name, 'image']));
+    if (image === '' || /\$\{(?!\w+:\?[^}]*\})/.test(image)) {
+      wrong.push(`${name}: image "${image}" takes a variable without \`:?\``);
+    } else if (bare(image, '?') !== bare(want, '-')) {
+      wrong.push(`${name}: image "${image}", not "${want}" with \`:?\``);
+    }
+    const build = override.getIn(['services', name, 'build'], true);
+    if (!isScalar(build) || build.tag !== '!reset' || String(build.value) !== 'null') {
+      wrong.push(`${name}: build not \`!reset null\``);
+    }
+    const policy =
+      override.getIn(['services', name, 'pull_policy']) ?? mappingOf(base[name])['pull_policy'];
+    if (policy === 'build' || policy === 'never') wrong.push(`${name}: pull_policy ${policy}`);
+  }
+  return wrong;
+}
+
+/** The deployments CI tests nginx's configuration for: test-config.sh's loop. */
+function deployments(script: string): string[] {
+  return /^for env in ([\w ]+); do$/m.exec(script)?.[1]?.split(' ') ?? [];
 }
 
 const compose = read('docker-compose.yml');
 const workflow = read('.github/workflows/publish-images.yml');
-const override = readFileSync(
-  join(ROOT, 'specs/032-release-server/contracts/compose-override.md'),
-  'utf8'
+const override = overrideOf(
+  readFileSync(join(ROOT, 'specs/032-release-server/contracts/compose-override.md'), 'utf8')
 );
+const nginxEnvs = deployments(readFileSync(join(ROOT, 'deploy/nginx/test-config.sh'), 'utf8'));
 
 describe('the images compose names', () => {
-  it('reads the workflow and the compose file', () => {
+  it('reads the workflow, the compose file and the override', () => {
     expect(published(workflow).length).toBeGreaterThan(0);
     expect(Object.keys(mappingOf(compose['services']))).toContain('content-node');
+    expect(textOf(override.getIn(['services', 'app', 'image']))).toContain('/site:');
   });
 
   it('names, for every published Dockerfile, the image the workflow publishes, and the registry nowhere else', () => {
-    const { wrong, missing } = check(compose, workflow, override);
+    const { wrong } = check(compose, workflow);
     expect(wrong).toEqual([]);
-    expect(missing, 'published, but pulled by nothing').toEqual([]);
   });
 
   it('names the site only in the server’s override', () => {
-    expect(check(compose, workflow, '').missing).toEqual(['site']);
+    expect(check(compose, workflow).missing).toEqual(['site']);
   });
 
   it('builds java-library and pdf-export here, naming no image', () => {
@@ -147,6 +214,23 @@ describe('the images compose names', () => {
     for (const name of ['java-library', 'pdf-export']) {
       expect(mappingOf(services[name])['image'], name).toBeUndefined();
     }
+  });
+
+  it('publishes nginx for every deployment, and only those', () => {
+    // local.conf is a developer's machine, never deployed.
+    const confs = readdirSync(join(ROOT, 'deploy/nginx'))
+      .filter((file) => file.endsWith('.conf') && file !== 'local.conf')
+      .map((file) => file.slice(0, -'.conf'.length));
+    expect(nginxEnvs).toEqual(expect.arrayContaining(['dev', 'release', 'production']));
+    expect([...nginxEnvs].sort()).toEqual(confs.sort());
+    const legs = published(workflow).filter((leg) => leg.dockerfile === 'deploy/nginx/Dockerfile');
+    expect(legs.map((leg) => leg.args.get('NGINX_ENV')).sort()).toEqual([...nginxEnvs].sort());
+  });
+});
+
+describe('a server’s override', () => {
+  it('pulls every published image at required settings, and builds none', () => {
+    expect(checkServer(compose, workflow, override)).toEqual([]);
   });
 });
 
@@ -156,31 +240,36 @@ describe('the check itself', () => {
     ...compose,
     services: { ...services, [name]: change(mappingOf(services[name])) },
   });
+  const changed = (change: (document: Document) => void): Document => {
+    const copy = override.clone();
+    change(copy);
+    return copy;
+  };
 
   it('sees an image named differently from the workflow', () => {
     const renamed = withService('render', (service) => ({
       ...service,
-      image: '${REGISTRY:-localhost}/render-service:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-registry.invalid}/render-service:${IMAGE_TAG:-main}',
     }));
-    expect(check(renamed, workflow, override).wrong).toEqual([
-      'render: image "${REGISTRY:-localhost}/render-service:${IMAGE_TAG:-main}", not "${REGISTRY:-localhost}/render:${IMAGE_TAG:-main}"',
+    expect(check(renamed, workflow).wrong).toEqual([
+      'render: image "${REGISTRY:-registry.invalid}/render-service:${IMAGE_TAG:-main}", not "${REGISTRY:-registry.invalid}/render:${IMAGE_TAG:-main}"',
     ]);
   });
 
   it('sees nginx’s image not following its NGINX_ENV', () => {
     const fixed = withService('nginx', (service) => ({
       ...service,
-      image: '${REGISTRY:-localhost}/nginx-dev:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-registry.invalid}/nginx-dev:${IMAGE_TAG:-main}',
     }));
-    expect(check(fixed, workflow, override).wrong).toHaveLength(1);
+    expect(check(fixed, workflow).wrong).toHaveLength(1);
   });
 
   it('sees a service that is never published naming the registry', () => {
     const named = withService('pdf-export', (service) => ({
       ...service,
-      image: '${REGISTRY:-localhost}/pdf-export:${IMAGE_TAG:-main}',
+      image: '${REGISTRY:-registry.invalid}/pdf-export:${IMAGE_TAG:-main}',
     }));
-    expect(check(named, workflow, override).wrong).toEqual([
+    expect(check(named, workflow).wrong).toEqual([
       'pdf-export: names the registry, never published',
     ]);
   });
@@ -189,8 +278,51 @@ describe('the check itself', () => {
     const unnamed = withService('mcp', (service) =>
       Object.fromEntries(Object.entries(service).filter(([key]) => key !== 'image'))
     );
-    expect(check(unnamed, workflow, override).wrong).toEqual([
-      'mcp: image "", not "${REGISTRY:-localhost}/mcp:${IMAGE_TAG:-main}"',
+    expect(check(unnamed, workflow).wrong).toEqual([
+      'mcp: image "", not "${REGISTRY:-registry.invalid}/mcp:${IMAGE_TAG:-main}"',
     ]);
+  });
+
+  it('sees a published service pulled by building, or never', () => {
+    const built = withService('render', (service) => ({ ...service, pull_policy: 'build' }));
+    expect(checkServer(built, workflow, override)).toEqual(['render: pull_policy build']);
+    const never = changed((document) =>
+      document.setIn(['services', 'app', 'pull_policy'], 'never')
+    );
+    expect(checkServer(compose, workflow, never)).toEqual(['app: pull_policy never']);
+  });
+
+  it('sees a published service the override leaves out, or leaves buildable', () => {
+    const left = changed((document) => document.deleteIn(['services', 'content-node']));
+    expect(checkServer(compose, workflow, left)).toEqual(['content-node: not in the override']);
+    const built = changed((document) => document.deleteIn(['services', 'mcp', 'build']));
+    expect(checkServer(compose, workflow, built)).toEqual(['mcp: build not `!reset null`']);
+  });
+
+  it('sees a setting the override lets fall back to a default, or leaves out', () => {
+    const fallback = changed((document) =>
+      document.setIn(
+        ['services', 'nginx', 'image'],
+        '${REGISTRY:?REGISTRY must be set}/nginx-${NGINX_ENV:-dev}:${IMAGE_TAG:?x}'
+      )
+    );
+    expect(checkServer(compose, workflow, fallback)).toEqual([
+      'nginx: image "${REGISTRY:?REGISTRY must be set}/nginx-${NGINX_ENV:-dev}:${IMAGE_TAG:?x}" takes a variable without `:?`',
+    ]);
+    const fixed = changed((document) =>
+      document.setIn(['services', 'app', 'image'], '${REGISTRY:?r}/site:main')
+    );
+    expect(checkServer(compose, workflow, fixed)).toEqual([
+      'app: image "${REGISTRY:?r}/site:main", not "${REGISTRY:-registry.invalid}/site:${IMAGE_TAG:-main}" with `:?`',
+    ]);
+  });
+
+  it('reads the deployments from test-config.sh’s loop', () => {
+    expect(deployments('x\nfor env in dev release production; do\n')).toEqual([
+      'dev',
+      'release',
+      'production',
+    ]);
+    expect(deployments('for env in dev; do')).toEqual(['dev']);
   });
 });

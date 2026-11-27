@@ -319,7 +319,7 @@ published. In a container, mount the folder read-only and point the variable at
 it:
 
 ```sh
-docker run ... -v /path/to/release-files:/files:ro -e RENDER_FILES=/files websiteangular-render
+docker run ... -v /path/to/release-files:/files:ro -e RENDER_FILES=/files registry.invalid/render:main
 ```
 
 A file missing from the folder is not reported as such by the page: the render

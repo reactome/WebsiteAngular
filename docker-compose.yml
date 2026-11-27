@@ -1,16 +1,18 @@
 # The images: every service publish-images.yml publishes names its image
-# `${REGISTRY:-localhost}/<name>:${IMAGE_TAG:-main}` beside its `build:` (specs/032
-# R1), so `docker compose pull` fetches it on a server that names REGISTRY,
-# and `docker compose build` still builds it here, under `localhost/`. The
-# default names this host on purpose: Docker reads any other bare first part
-# (`local/...`) as a Docker Hub account, so a pull there could fetch an image
-# someone else published under that name. A server
-# pins IMAGE_TAG to a commit id, never `main`: each image's `main` tag moves on
-# its own, so pulling `main` can mix two commits' images, which were never
-# tested together. java-library and pdf-export are never published, so they
-# name no registry: a server builds them. The site's published image is not
-# `app` here, which is the development container; a server's override runs it
-# in `app`'s place (specs/032 contracts/compose-override.md).
+# `${REGISTRY:-registry.invalid}/<name>:${IMAGE_TAG:-main}` beside its
+# `build:` (specs/032 R1), so `docker compose build` builds it here under a
+# name no registry answers: `.invalid` is reserved (RFC 6761) and never
+# resolves, so a pull of it fails at once and can never reach Docker Hub
+# (which a bare first part such as `local/...` would name, as an account
+# anyone could register). A server never builds these: its override
+# (specs/032 contracts/compose-override.md) resets their `build:` and names
+# REGISTRY and IMAGE_TAG with `:?`, so a missing one stops compose rather than
+# falling back to these defaults. IMAGE_TAG there is a commit id, never `main`:
+# each image's `main` tag moves on its own, so pulling `main` can mix two
+# commits' images, which were never tested together. java-library and
+# pdf-export are never published, so they name no registry: a server builds
+# them. The site's published image is not `app` here, which is the
+# development container; the override runs it in `app`'s place.
 services:
   app:
     build:
@@ -56,7 +58,7 @@ services:
     build:
       context: .
       dockerfile: deploy/render-service/Dockerfile
-    image: ${REGISTRY:-localhost}/render:${IMAGE_TAG:-main}
+    image: ${REGISTRY:-registry.invalid}/render:${IMAGE_TAG:-main}
     # A render is a browser holding a large canvas, and this box also runs the
     # site, Tomcat and Neo4j. If it wedges or runs out of memory, restarting is
     # the right response -- there is no state to lose but the cache, which is on
@@ -122,7 +124,7 @@ services:
       dockerfile: deploy/mcp/Dockerfile
       args:
         MCP_REF: ${MCP_REF:-main}
-    image: ${REGISTRY:-localhost}/mcp:${IMAGE_TAG:-main}
+    image: ${REGISTRY:-registry.invalid}/mcp:${IMAGE_TAG:-main}
     restart: unless-stopped
     # Loopback only, and emphatically not 0.0.0.0. Same reason as `render`
     # above, and worse per request: a tool call here can submit a real job to
@@ -290,7 +292,7 @@ services:
     build:
       context: .
       dockerfile: deploy/analysis-gateway/Dockerfile
-    image: ${REGISTRY:-localhost}/analysis-gateway:${IMAGE_TAG:-main}
+    image: ${REGISTRY:-registry.invalid}/analysis-gateway:${IMAGE_TAG:-main}
     restart: unless-stopped
     network_mode: host
     environment:
@@ -323,7 +325,7 @@ services:
     build:
       context: .
       dockerfile: deploy/content-node/Dockerfile
-    image: ${REGISTRY:-localhost}/content-node:${IMAGE_TAG:-main}
+    image: ${REGISTRY:-registry.invalid}/content-node:${IMAGE_TAG:-main}
     # It holds two lists in memory and nothing else, so a restart costs one
     # rebuild of the caches -- about four seconds -- and never any data. Left
     # unsupervised it runs only because somebody started it by hand, and the
@@ -527,7 +529,7 @@ services:
         # this wrong on the indexed host would deindex reactome.org.
         NGINX_ENV: ${NGINX_ENV:-dev}
     # The image for this deployment, as the build argument above names it.
-    image: ${REGISTRY:-localhost}/nginx-${NGINX_ENV:-dev}:${IMAGE_TAG:-main}
+    image: ${REGISTRY:-registry.invalid}/nginx-${NGINX_ENV:-dev}:${IMAGE_TAG:-main}
     restart: unless-stopped
     # Host networking, as the container it replaces used: the services it
     # proxies -- the site on 4200, content-node on 4400, render on 4310, the

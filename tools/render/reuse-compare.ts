@@ -4,7 +4,7 @@
  * draws.
  *
  *   node tools/render/reuse-compare.ts --sample sample.txt --files <release files>
- *        [--base http://172.17.0.1:4200] [--image websiteangular-render:latest]
+ *        [--base http://172.17.0.1:4200] [--image registry.invalid/render:main]
  *        [--code tools/render] [--mode reuse|fresh|outside] [--out report.json] [--port 4390]
  *
  * Each run is its own service, started here as a container from `--image`
@@ -571,7 +571,7 @@ async function main() {
     process.exit(2);
   }
   const options = {
-    image: flag('image', 'websiteangular-render:latest') as string,
+    image: flag('image', 'registry.invalid/render:main') as string,
     base: flag('base', 'http://172.17.0.1:4200') as string,
     files,
     code: flag('code'),

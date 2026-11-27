@@ -22,10 +22,12 @@ credentials never go into this repository.
 | Solr, the graph database                                   | host                        | as today; the stack's `graphdb` is not started  |
 | the server's other sites, its build service                | host                        | as today; nginx reaches them through site-local |
 
-Until images are published (spec 032 T009–T011), the server builds the small ones itself
-(`docker compose build content-node render analysis-gateway mcp nginx`); the site's image
-needs more memory than the server has free, so it is built elsewhere from the same commit
-and loaded (`docker save` there, `docker load` here).
+The server never builds a published image: its override resets their `build:` and names
+each at `${REGISTRY}` and `${IMAGE_TAG}`, a commit id (§1). An image missing from the
+registry makes `docker compose pull` and `up` fail, and nothing is built in its place
+under the registry's name; the fix is to publish it (spec 032 T009, T010), not to build
+it here. The server builds only java-library and pdf-export. This needs Docker Compose
+2.24 or later (`docker compose version`), for the override's `!reset`.
 
 ## 1. Settings, kept on the server
 
@@ -69,7 +71,11 @@ the site image does not have (spec 032 T031).
 
 **`docker-compose.override.yml`** — as in
 [`contracts/compose-override.md`](../../specs/032-release-server/contracts/compose-override.md):
-the `app` service becomes the published site image.
+the `app` service becomes the published site image, and every published service (`app`,
+content-node, render, analysis-gateway, mcp, nginx) loses its `build:` and names its image
+with `${REGISTRY:?…}` and `${IMAGE_TAG:?…}`, so a setting missing from `.env` stops
+`docker compose` with its name rather than falling back to the base file's
+`registry.invalid` and `main`.
 
 **The site-local folder** (`NGINX_SITE_LOCAL`): the server's own nginx configuration,
 copied from [`deploy/nginx/site-local-examples`](../nginx/site-local-examples) and filled
@@ -81,10 +87,18 @@ contract is
 Check before starting anything:
 
 ```sh
-docker compose config --services     # no graphdb
-docker compose config | grep -E '^\s+(image|build):'   # every published service: image at IMAGE_TAG
+! docker compose config --services | grep -x graphdb &&
+  config=$(docker compose config app content-node render analysis-gateway mcp nginx) &&
+  ! printf '%s\n' "$config" | grep -E '^ +build:' &&
+  ! printf '%s\n' "$config" | grep -E '^ +image:' | grep -vE ':[0-9a-f]{40}$' &&
+  echo 'published images: pulled at a commit, none built'
 docker compose config app             # the site: SITE_PROFILE, NODE_ENV=production, no dev ports
 ```
+
+The first command prints `graphdb` if it would start, any `build:` left on a published
+service, and any published image whose tag is not a full commit id, and then fails,
+exiting non-zero; with `REGISTRY`, `IMAGE_TAG` or `NGINX_ENV` missing, `docker compose
+config` itself refuses, naming it. Go on only once it prints its last line.
 
 ## 2. Before switching: everything behind nginx, with Apache still serving
 
@@ -93,9 +107,9 @@ on. nginx takes ports 80 and 443, so it starts only once Apache stops (§8). Eve
 behind it can be checked first, with no downtime:
 
 ```sh
-docker compose pull
-docker compose build java-library pdf-export
-docker compose up -d --scale nginx=0
+docker compose pull &&
+  docker compose build java-library pdf-export &&
+  docker compose up -d --scale nginx=0
 curl -s 127.0.0.1:4200/health                                  # the site: its bundle, its services
 curl -s 127.0.0.1:4200/ | grep -c '__APP_ENV="release"'        # 1: the release deployment
 curl -s 127.0.0.1:4400/ContentService/data/database/version    # the staged release
