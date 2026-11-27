@@ -155,36 +155,52 @@ export interface SiteProfile {
 const S3 = 'https://download.reactome.org';
 
 /**
- * Deployments no build names: chosen when the site is served, by
- * serve-prod.js's SITE_PROFILE, which writes `window.__APP_ENV` into the page
- * (read by runtimeProfileName below). Every other deployment is one build's
- * APP_ENV, and none is both -- a name reached two ways is two deployments
- * sharing hosts by accident.
+ * Deployments chosen when the site is served, by serve-prod.js's SITE_PROFILE,
+ * which writes `window.__APP_ENV` into the page (read by runtimeProfileName
+ * below). Every other deployment is one build's APP_ENV.
+ *
+ * One name is both, and only one: `production`. It is what a build with no
+ * name is for (getProfile below) and the configuration every production-shaped
+ * build extends, so a build names it whatever this list says; and reactome.org
+ * runs the published site image with SITE_PROFILE=production (specs/032 T034),
+ * as the release server runs it with `release`. Both ways it is the same
+ * deployment, served from its own origin. Any other name reached two ways would
+ * be two deployments sharing hosts by accident, and environments.spec.ts
+ * refuses one.
  */
-export const RUNTIME_PROFILES: readonly ProfileName[] = ['release'];
+export const RUNTIME_PROFILES: readonly ProfileName[] = ['release', 'production'];
 
 export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   production: {
-    // The published artifact: `deploy.yml` builds this and syncs it to
-    // s3://<bucket>/<version>/website/. It is served from the bucket, not from a
-    // host that proxies the services -- so unlike the deployments below it
-    // cannot use its own origin. download.reactome.org answers 403 for
-    // /ContentService, and every call would fail.
+    // reactome.org, the public site. It runs the published site image (beta's
+    // build) behind the nginx stack, with SITE_PROFILE=production choosing this
+    // row at run time (RUNTIME_PROFILES above), its image pinned to a release
+    // tag (specs/032 T034). Never the bucket's copy.
     //
-    // It names beta because beta is the only host serving the whole set the app
-    // needs. reactome.org has no /RenderService and no /overlays, so figure
-    // rendering and overlays would be dead there today. When those move to
-    // reactome.org this becomes one line.
+    // Its own origin, as beta and the release server: its nginx proxies
+    // /ContentService, the render and analysis services and the rest itself
+    // (deploy/nginx/production.conf), so the site talks to itself. This row
+    // named beta while it was the bucket's: a page served from
+    // download.reactome.org could not ask its own origin, and beta was the only
+    // host serving the whole set. The copy deploy.yml still publishes to the
+    // bucket now asks download.reactome.org, which answers 403 for
+    // /ContentService, so that copy no longer works.
     //
-    // Cross-origin from the bucket works: ContentService and AnalysisService
-    // send Access-Control-Allow-Origin: *, and RenderService is only ever an
-    // <img src> or a download href, where CORS does not apply.
+    // As the build-time row was, each on purpose:
+    // - the public Google property, and only here (environments.spec.ts);
+    // - no React-to-Me answer, analysis summary or chat handoff: those are
+    //   reviewed on beta first, and absent means off;
+    // - no DeltaSignal: a per-deployment research feature, off unless a
+    //   deployment asks for it;
+    // - ReactomeGSA delivers to production's Analysis Service, the one this
+    //   site reads.
     variant: 'main',
-    host: 'https://beta.reactome.org',
+    host: 'origin',
+    originFallback: 'https://reactome.org',
     s3: S3,
     gsaServer: 'production',
     gtagId: 'G-EDHZ92GXZP',
-    versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
+    versionFallback: 'https://reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
   beta: {

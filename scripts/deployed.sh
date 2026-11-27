@@ -43,8 +43,9 @@ echo
 echo "  beta.reactome.org serves dist/reactome/browser from this checkout,"
 echo "  not the bucket -- ~/rebuild-beta.sh --check compares those two."
 echo
-echo "  A published artifact is served from the bucket, which has no backend, so"
-echo "  it reaches the host named in SITE_PROFILES.production -- not its own"
-echo "  origin. Check what it actually calls before concluding anything:"
+echo "  A published artifact is served from the bucket, which has no backend."
+echo "  SITE_PROFILES.production is reactome.org's own origin now (specs/032"
+echo "  T034), so a copy built since asks the bucket's host for its services, and"
+echo "  they fail. Check what it actually calls before concluding anything:"
 echo "    the network panel, or a request log, on the URL above."
 echo
