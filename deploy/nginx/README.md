@@ -20,15 +20,16 @@ production.conf  reactome.org          the public site
 
 ## What differs, and why
 
-|                                         | local         | dev     | release | production |
-| --------------------------------------- | ------------- | ------- | ------- | ---------- |
-| TLS                                     | no            | yes     | yes     | yes        |
-| Real client IPs via Cloudflare          | no            | yes     | yes     | yes        |
-| Named AI/SEO crawlers blocked           | no            | yes     | yes     | **yes**    |
-| _Anything_ calling itself a bot blocked | no            | yes     | yes     | **NO**     |
-| Tina admin                              | **reachable** | denied  | denied  | denied     |
-| Rate limit                              | none          | 100 r/s | 100 r/s | 600 r/s    |
-| Unknown hostnames                       | —             | 503     | 503     | 503        |
+|                                         | local         | dev     | release    | production |
+| --------------------------------------- | ------------- | ------- | ---------- | ---------- |
+| TLS                                     | no            | yes     | yes        | yes        |
+| Real client IPs via Cloudflare          | no            | yes     | yes        | yes        |
+| Named AI/SEO crawlers blocked           | no            | yes     | yes        | **yes**    |
+| _Anything_ calling itself a bot blocked | no            | yes     | yes        | **NO**     |
+| Tina admin                              | **reachable** | denied  | denied     | denied     |
+| Rate limit                              | none          | 100 r/s | 100 r/s    | 600 r/s    |
+| Unknown hostnames                       | —             | 503     | 503        | 503        |
+| `/download/` (the download site)        | —             | proxied | redirected | proxied    |
 
 Two rows carry the whole risk of this arrangement.
 
@@ -194,12 +195,48 @@ Then: ports 80 and 443 handed over atomically, with a one-command rollback, and
 
 `release.conf` includes a folder each server mounts at `/etc/nginx/site-local`
 (`NGINX_SITE_LOCAL`): its other host names, its build service's path, and the
-release `/download/current/` means there. Empty in this repository and by default;
+release `/download/current/` means there. `dev.conf` and `production.conf` read only
+that last one, `download-release.map`, from it (below). Empty in this repository and by default;
 examples in [`site-local-examples/`](site-local-examples), loaded and run by
 `test-config.sh`; the contract in `specs/032-release-server/contracts/site-local-nginx.md`,
 and how a server uses it in [`deploy/release-server`](../release-server/README.md).
 The certbot webroot (`CERTBOT_WEBROOT`) is mounted at `/var/www/certbot`, where every
 configuration serves the challenge path.
+
+## /download/: the download site at the site's own address
+
+`/download/...` is the download site's (download.reactome.org), on beta and production
+proxied at the site's own address (`common/download-proxy.conf` and
+`common/download-site.conf`; spec 032 T037). A proxy, not a redirect, because outside
+scripts fetch `reactome.org/download/current/...` with a plain `curl`, which follows none.
+The release server redirects instead (`release.conf`, spec 032 D5).
+
+- **`current`** is not a folder on the download site; only numbered ones are. It goes to
+  the release the server names in `download-release.map` in its site-local folder: one
+  line, `beta.reactome.org 98;` on beta, `reactome.org 98;` on production, changed on
+  release day. Without the line, or with anything but a number, `/download/current/`
+  answers 503 saying so; the numbered paths still work.
+- **Any other path** goes as it is: `/download/98/x` is the download site's `/98/x`. The
+  query is dropped; a path whose `..` (encoded or not) leads out of `/download/` is not
+  proxied, since nginx resolves it before choosing a location; the host is fixed.
+- **To the download site** goes the file's path, its host as the name and in the
+  handshake, its certificate checked against the image's CA bundle, and only the range and
+  revalidation headers: never a reader's cookies, `Authorization` or address. Its name is
+  resolved again as its answer expires, through the same public resolvers `/GSAServer/`
+  uses.
+- **Back** come the file, its type, length, `ETag` and `Last-Modified`, without the
+  bucket's and CDN's own headers. A missing file is a plain 404 (the bucket answers 403
+  for one). `Cache-Control` is the download site's when it sends one (it sends none
+  today), otherwise an hour, since `current` moves at a release. GET and HEAD only.
+- **Budget**: 10 requests a second per address, a burst of 40, and 16 downloads in flight.
+
+`test-config.sh` runs it for real for both deployments, against a stand-in for the
+download site.
+
+**On beta** the folder is the one `NGINX_SITE_LOCAL` names in compose's `.env` (unset, the
+repository's empty folder, and `/download/current/` answers 503). `dev.conf` reads only
+`download-release.map` from it. After changing the line,
+`docker compose exec nginx nginx -s reload`.
 
 ## What is deliberately absent
 

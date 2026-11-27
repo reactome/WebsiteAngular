@@ -1,3 +1,6 @@
-# The release /download/current/ redirects to on this host: the one being staged.
-# Moved with each release. See release.conf, `map $host $download_release`.
+# The release /download/current/ means on this host, moved with each release:
+# on the release server the one being staged, which it redirects to (see
+# release.conf, `map $host $download_release`); on reactome.org and beta the one
+# they serve, which they proxy (common/download-site.conf), as
+# `reactome.org 98;` or `beta.reactome.org 98;`. One line, for this host's name.
 release.reactome.org 99;

@@ -13,8 +13,11 @@ An empty folder, or none mounted, is valid: the image creates both folders, and 
 that matches nothing loads nothing.
 
 One file there is not configuration but a value: `download-release.map`, one line,
-`release.reactome.org <release>;`, the release `/download/current/` redirects to on this
-host. Moved with each release; without it, `current`.
+`<host> <release>;`, the release `/download/current/` means on this host. Moved with each
+release. Read by `release.conf` (`release.reactome.org <release>;`, which redirects there;
+without it, `current`), and by `production.conf` and `dev.conf` (`reactome.org <release>;`
+and `beta.reactome.org <release>;`, which proxy there; without it, or with anything but a
+number, 503), which read nothing else from the folder (T037).
 
 ## What a file there may rely on
 
