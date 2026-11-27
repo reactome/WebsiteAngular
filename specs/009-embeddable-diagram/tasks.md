@@ -262,12 +262,18 @@ description: 'Task list for the embeddable Reactome pathway diagram'
     `import.meta.url`), no configuration has a `deployUrl`, and the loading picture comes from
     beside the code (a custom property `main.ts` sets). One build serves beta, the release server
     and reactome.org, each from itself. `npm run build` builds the embed as well (`build:site` is
-    the site alone, which preflight uses so the hook never builds into `dist/`). Checked:
-    `environments.spec.ts` and `deploy/site/embed.spec.ts`; the image's `check.sh` (no served
+    the site alone), through `scripts/build-site-and-embed.sh`, which takes one output root for
+    both builds (`<root>/reactome`, `<root>/reactome-diagram`, as `dist/` is laid out) and
+    refuses any other argument: npm appends `npm run build -- …` to the last command alone, so
+    `--output-path` once moved the site and left the embed building into `dist/`. Preflight
+    builds both that way, into its own directory. Checked: `environments.spec.ts` and
+    `deploy/site/embed.spec.ts` (which runs the script dry); the image's `check.sh` (no served
     chunk names a host's `/embed/diagram/v1/`); and e2e, now that the e2e build has no
-    `deployUrl` either, the loading picture is the embed's, not the partner page's. Each seen
-    failing on a mutant. Whether production runs the site image or another build is the
-    project's owner's (T050).
+    `deployUrl` and resolves its host from its script as the served builds do (its data served
+    beside it): the loading picture is the embed's, not the partner page's, and its
+    ContentService requests go to its code's origin, not the page's nor the build's fallback.
+    Each seen failing on a mutant. Whether production runs the site image or another build is
+    the project's owner's (T050).
 - [x] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
   - **Measured, 24 Nov 2026 (this PR): not so; nothing to change.** A partner page loading
     zone.js 0.15, with a zone of its own that counts the tasks it runs, and the element from
@@ -317,6 +323,14 @@ gene page shows no diagram. Raised by the project's owner, 25 Nov 2026.
 - [x] T048 [US3] Serve the new loader at the old address: nginx `location = /DiagramJs/diagram/diagram.nocache.js` in every deployment's configuration (and whatever the loader then fetches, since it takes its base from its own address: either `/DiagramJs/diagram/` aliased to the embed's folder, or the loader told its base), with `Access-Control-Allow-Origin: *` and the loader's short cache. Record the choice against the stopgap of serving the old widget's own files there. `deploy/nginx/test-config.sh` checks the address answers JavaScript, not the site's page. Done in serve-prod, where the embed is already served, so every deployment has it with no nginx change: the address answers the embed's loader (`no-cache`, cross-origin headers), and the loader, seeing it was loaded from there, loads the diagram's code from `/embed/diagram/v1/`. Anything else under `/DiagramJs/` is a 404, not the site's page. The old widget's own files were not used: they are the retired GWT build, and would show a different diagram from the site's. Checked by serve-prod's unit tests and the site image's `check.sh` (PR #1087).
 - [x] T049 [US4] The other addresses AllianceGenome's gene page uses, checked on the new stack in `e2e/partner-links.spec.ts`: `/PathwayBrowser/#/{stId}`, `/content/detail/{stId}`, `/documentation/inferred-events`, `/ContentService/exporter/reaction/{stId}.{ext}`, `/ContentService/data/mapping/{resource}/{id}/pathways` and `/reactions` (real identifiers looked up first). The exporter images and the old Pathway Browser link were covered already; added: both mapping endpoints for a mouse gene as AllianceGenome asks (`MGI`, the bare number), a reaction's page and the inferred-events page (PR #1087).
 - [ ] T050 Before the production cutover (the project's owner): T047 run against the stack that will serve reactome.org, and AllianceGenome told of the supported address (`/embed/diagram/v1/reactome-diagram.js`, the same interface), so they can move to it in their own time; the old address stays served until they have. Also then: a page that loads the old address through a redirecting host (`www.`, or `http://`) gets the loader, but the diagram's code is then asked for on that host and the redirect carries no cross-origin header, so it is refused; the partner loads it from `https://reactome.org`, but check any other old-widget users, or answer those redirects with `Access-Control-Allow-Origin`. The loader now loads the diagram and its fonts on every page that includes it, as the old widget loaded itself; worth saying when the partner is told. Purge any cached copy of the old `diagram.nocache.js` at the cutover.
+  - **Note (T043):** the embed's data host is now whatever host serves its code, not a host
+    written into the build. So a mirror or proxy of the code (a partner copying it to its own
+    server, a CDN in front of another host) asks itself for data, and gets none unless it serves
+    `/ContentService/` too. And a host that serves the code but redirects the rest (a `www.`
+    that answers `/embed/` itself and redirects `/ContentService/`) has the data requests
+    redirected, which are refused unless the redirect carries `Access-Control-Allow-Origin`,
+    as for the code's request above. (Where the code's own request is redirected, its address
+    is the one redirected to, and its data comes from there.)
 
 ## Dependencies & Execution Order
 
