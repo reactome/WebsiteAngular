@@ -1,6 +1,6 @@
 import { type Page } from '@playwright/test';
 import { test, expect } from './support/backend';
-import { HOST_PAGE_PORT } from './support/embed-ports';
+import { EMBED_PORT, HOST_PAGE_PORT } from './support/embed-ports';
 
 /**
  * The old widget's interface, window.Reactome.Diagram, on a page written for
@@ -90,6 +90,8 @@ test.describe('Reactome.Diagram, the old widget interface', () => {
     // AllianceGenome's gene page as written (spec 009, T047): an async script
     // at /DiagramJs/diagram/diagram.nocache.js, then the poll. Served the
     // site's own page there, the poll gave up and the gene page had no diagram.
+    const data: string[] = [];
+    page.on('request', (r) => r.url().includes('/ContentService/') && data.push(r.url()));
     await page.goto(`http://localhost:${HOST_PAGE_PORT}/alliance-old-address.html`);
     await expect
       .poll(() => page.evaluate(() => (window as unknown as { __loaded: string[] }).__loaded), {
@@ -97,6 +99,11 @@ test.describe('Reactome.Diagram, the old widget interface', () => {
       })
       .toContain('R-HSA-69620');
     expect(await count(page, 'node')).toBeGreaterThan(0);
+    // Its data from the host that served the old address (spec 009, T043).
+    expect(data.length, 'it asked for data').toBeGreaterThan(0);
+    expect([...new Set(data.map((u) => new URL(u).origin))]).toEqual([
+      `http://localhost:${EMBED_PORT}`,
+    ]);
   });
 
   test('loadDiagram switches the pathway, and onDiagramLoaded says so', async ({ page }) => {

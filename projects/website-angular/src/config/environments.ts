@@ -82,9 +82,17 @@ export interface SiteProfile {
    * reaction-diagram exporter among them. Pointing beta at reactome.org by name
    * therefore breaks reaction pages, which is precisely what happened while this
    * field was a fixed string. A site should talk to itself.
+   *
+   * `'script'` is the same idea for code that runs on someone else's page (the
+   * embeddable diagram): wherever this code was loaded from, not the page's
+   * origin, which is the partner's. One build then serves beta, the release
+   * server and reactome.org, each from itself (spec 009, T043).
    */
-  host: 'origin' | string;
-  /** Used when `host` is `'origin'` and there is no window: SSR, unit tests. */
+  host: 'origin' | 'script' | string;
+  /**
+   * Used when `host` is `'origin'` and there is no window (SSR, unit tests), or
+   * `'script'` and the code was not loaded over HTTP.
+   */
   originFallback?: string;
   /**
    * Path appended to the host for the graph API. The curator site serves it
@@ -256,11 +264,15 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   },
   // The embeddable diagram (projects/reactome-diagram-element) runs on other
   // sites' pages, so its host is never 'origin': that would be the partner's
-  // own site, and every request would go there. No gtagId, on purpose -- a
-  // partner's visitors are not this site's to count.
+  // own site, and every request would go there. It is 'script', the host its
+  // code was loaded from, so the same build answers from beta, the release
+  // server or reactome.org, whichever serves it (spec 009, T043): the release
+  // server's image is beta's build, and named hosts sent its diagrams to beta.
+  // No gtagId, on purpose -- a partner's visitors are not this site's to count.
   'embed-production': {
     variant: 'main',
-    host: 'https://reactome.org',
+    host: 'script',
+    originFallback: 'https://reactome.org',
     s3: S3,
     gsaServer: 'production',
     versionFallback: 'https://reactome.org/ContentService/data/database/version',
@@ -268,16 +280,23 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
   },
   'embed-beta': {
     variant: 'main',
-    host: 'https://beta.reactome.org',
+    host: 'script',
+    originFallback: 'https://beta.reactome.org',
     s3: S3,
     gsaServer: 'dev',
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
-  // The e2e dev server: requests there are answered from recordings.
+  // The e2e build, served by e2e/support/static-server.mjs with the data beside
+  // it, as the served builds' are: 'script' like them, so the e2e suite runs
+  // the way they resolve their host (e2e/embed-diagram.spec.ts checks the data
+  // comes from the code's origin). The fallback is the e2e dev server's, a host
+  // that a build resolving none would fall back to unnoticed: the recordings
+  // answer any origin.
   'embed-development': {
     variant: 'main',
-    host: 'http://localhost:4330',
+    host: 'script',
+    originFallback: 'http://localhost:4330',
     s3: S3,
     gsaServer: 'dev',
     versionFallback: 'http://localhost:4330/ContentService/data/database/version',
@@ -341,6 +360,31 @@ function runtimeProfileName(): string | undefined {
 
 export const SELECTED_PROFILE_NAME: string | undefined =
   runtimeProfileName() ?? buildTimeProfileName();
+
+/**
+ * Where a profile's services are, from where the page and this code came from.
+ *
+ * `page` is the page's origin and `script` the address this code was loaded
+ * from, each absent where there is none (SSR, unit tests). Only an HTTP(S)
+ * address names a host: a file the tests loaded does not.
+ */
+export function resolveHost(
+  profile: Pick<SiteProfile, 'host' | 'originFallback'>,
+  where: { page?: string; script?: string }
+): string {
+  if (profile.host === 'origin') return where.page ?? profile.originFallback ?? '';
+  if (profile.host === 'script') {
+    let origin: string | undefined;
+    try {
+      const url = new URL(where.script ?? '');
+      if (url.protocol === 'https:' || url.protocol === 'http:') origin = url.origin;
+    } catch {
+      // No address, or not one: the fallback below.
+    }
+    return origin ?? profile.originFallback ?? '';
+  }
+  return profile.host;
+}
 
 /**
  * The deployment a build is for.

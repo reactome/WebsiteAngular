@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getProfile, RUNTIME_PROFILES, SITE_PROFILES, type ProfileName } from './environments';
+import {
+  getProfile,
+  resolveHost,
+  RUNTIME_PROFILES,
+  SITE_PROFILES,
+  type ProfileName,
+} from './environments';
 import angularJson from '../../../../angular.json';
 
 // A build reaches its backend and picks its UI through this table. When the two
@@ -33,7 +39,10 @@ describe('site profiles', () => {
   it('gives each deployment both halves: a backend and a UI', () => {
     for (const [name, profile] of Object.entries(SITE_PROFILES)) {
       const host = profile.host;
-      expect(host === 'origin' || /^https?:\/\//.test(host), `${name}.host`).toBe(true);
+      expect(
+        host === 'origin' || host === 'script' || /^https?:\/\//.test(host),
+        `${name}.host`
+      ).toBe(true);
       expect(['main', 'curator'], `${name}.variant`).toContain(profile.variant);
     }
   });
@@ -85,7 +94,10 @@ describe('site profiles', () => {
         expect(fallback, `${name} may only ask the public site`).toBe('https://reactome.org');
         continue;
       }
-      const canonical = profile.host === 'origin' ? profile.originFallback : profile.host;
+      const canonical =
+        profile.host === 'origin' || profile.host === 'script'
+          ? profile.originFallback
+          : profile.host;
       expect(canonical, `${name} needs a canonical host`).toBeDefined();
       expect(fallback, `${name}.versionFallback`).toBe(new URL(canonical as string).origin);
     }
@@ -122,6 +134,55 @@ describe('site profiles', () => {
     // The rest are chosen when the site is served, and no build may also name
     // one of them.
     expect([...named, ...RUNTIME_PROFILES].sort()).toEqual(Object.keys(SITE_PROFILES).sort());
+  });
+
+  it('serves the embed from whichever host serves its code', () => {
+    // The site's image is beta's build, and it runs the release server too; the
+    // embed's profiles once named their hosts, so the release server's copy drew
+    // beta's diagrams (spec 009, T043). A partner's page is not the host either.
+    // The e2e build too, so the e2e suite runs the way the served ones resolve.
+    for (const name of ['embed-production', 'embed-beta'] as ProfileName[]) {
+      expect(SITE_PROFILES[name].host, `${name}.host`).toBe('script');
+      expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
+    }
+    expect(SITE_PROFILES['embed-development'].host).toBe('script');
+    const embed = SITE_PROFILES['embed-beta'];
+    const partner = 'https://partner.example';
+    for (const host of ['https://beta.reactome.org', 'https://release.reactome.org']) {
+      expect(
+        resolveHost(embed, { page: partner, script: `${host}/embed/diagram/v1/main.js` })
+      ).toBe(host);
+    }
+    // Off the browser, or loaded from a file (the unit tests): its canonical host.
+    expect(resolveHost(embed, {})).toBe('https://beta.reactome.org');
+    expect(resolveHost(embed, { script: 'file:///x/main.js' })).toBe('https://beta.reactome.org');
+    // The other kinds are as they were.
+    expect(
+      resolveHost(SITE_PROFILES.release, { page: partner, script: 'https://x.example/m.js' })
+    ).toBe(partner);
+    expect(resolveHost(SITE_PROFILES.release, {})).toBe('https://release.reactome.org');
+    expect(resolveHost(SITE_PROFILES.production, { page: partner })).toBe(
+      SITE_PROFILES.production.host
+    );
+  });
+
+  it("writes no host into the embed's served builds", () => {
+    // A deployUrl is written into the build: the embed's picture addresses named
+    // it, so every host serving that build had them fetched from the one named
+    // (spec 009, T043). Its code takes them from its own address instead.
+    const build = angularJson.projects['reactome-diagram-element'].architect.build;
+    const configurations: Record<string, { deployUrl?: string }> = build.configurations;
+    expect(Object.keys(configurations)).toEqual(
+      expect.arrayContaining(['production', 'beta', 'development'])
+    );
+    for (const [name, configuration] of Object.entries({
+      options: build.options,
+      ...configurations,
+    }))
+      expect(
+        (configuration as { deployUrl?: string }).deployUrl,
+        `${name}.deployUrl`
+      ).toBeUndefined();
   });
 
   it('serves the release server as a deployment of its own, not as beta', () => {

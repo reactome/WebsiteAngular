@@ -5,14 +5,15 @@ import { EMBED_PORT, HOST_PAGE_PORT } from './support/embed-ports';
 /**
  * The embeddable diagram, `<reactome-diagram>`, on a page as a partner would
  * put it there: the page on one origin, the diagram's code on another, and its
- * data on a third (spec 009). Everything the element promises in
+ * data from wherever its code came from (spec 009, T043). Everything the element promises in
  * specs/009-embeddable-diagram/contracts/reactome-diagram-element.md is checked
  * by what happens on the page, not by what the element reports about itself.
  */
 
 const HOST = `http://localhost:${HOST_PAGE_PORT}`;
 const EMBED = `http://localhost:${EMBED_PORT}/`;
-const DATA = 'http://localhost:4330';
+// What the e2e build falls back to if it cannot tell where its code came from.
+const FALLBACK = 'http://localhost:4330';
 const LOAD = 90_000;
 
 type Cy = {
@@ -240,19 +241,51 @@ test.describe('the embeddable diagram', () => {
   });
 
   // Constitution I: a check that passes on the wrong setup proves nothing. The
-  // page, the embed and the data must be three different origins, or none of
-  // what follows is about a partner's page.
+  // page and the embed must be different origins, or none of what follows is
+  // about a partner's page; and the fallback a third, or asking it would pass
+  // for asking the code's.
   test('runs on a page of another origin than its code and its data', async ({ page }) => {
     const scripts: string[] = [];
-    page.on('request', (r) => r.resourceType() === 'script' && scripts.push(r.url()));
+    const data: string[] = [];
+    page.on('request', (r) => {
+      if (r.resourceType() === 'script') scripts.push(r.url());
+      if (r.url().includes('/ContentService/')) data.push(r.url());
+    });
     await page.goto(`${HOST}/`);
     await drawn(page);
-    const origins = new Set([new URL(page.url()).origin, new URL(EMBED).origin, DATA]);
+    const origins = new Set([new URL(page.url()).origin, new URL(EMBED).origin, FALLBACK]);
     expect(origins.size, 'three distinct origins').toBe(3);
     expect(
       scripts.some((u) => u.startsWith(EMBED)),
       'its code came from the embed origin'
     ).toBe(true);
+    // Its data from the same host as its code (spec 009, T043): one build is
+    // served by beta, the release server and reactome.org, each answering for
+    // itself. Not the partner's page, and not the build's fallback, which the
+    // recordings would answer just as well: only the address tells them apart.
+    expect(data.length, 'it asked for data').toBeGreaterThan(0);
+    expect(
+      [...new Set(data.map((u) => new URL(u).origin))],
+      "its data came from its code's origin"
+    ).toEqual([new URL(EMBED).origin]);
+    // And its pictures. Its code is served by beta, the release server and
+    // reactome.org, one build for all three: what it loads comes from where it
+    // was loaded, not from a host written into the build, nor from the
+    // partner's page, which a relative address in its styles would name (spec
+    // 009, T043).
+    const picture = await page.evaluate(() => {
+      const view = document
+        .getElementById('diagram')
+        ?.shadowRoot?.querySelector('reactome-diagram-view')?.shadowRoot;
+      if (!view) throw new Error('no view');
+      const probe = document.createElement('div');
+      probe.className = 'loading';
+      view.appendChild(probe);
+      const image = getComputedStyle(probe).backgroundImage;
+      probe.remove();
+      return image;
+    });
+    expect(picture, 'its loading picture is beside its code').toBe(`url("${EMBED}loader.gif")`);
   });
 
   test('draws, and responds to zoom, pan and select', async ({ page }) => {

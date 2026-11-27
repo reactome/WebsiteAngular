@@ -29,6 +29,8 @@ const PROPERTIES = {
   theme: 'theme',
 } as const;
 const ATTRIBUTES: string[] = Object.values(PROPERTIES);
+/** The loading picture, beside this code wherever it was loaded from (the view's styles). */
+const LOADER = `url("${new URL('loader.gif', import.meta.url).href}")`;
 
 /**
  * `<reactome-diagram>`: what a partner puts on their page.
@@ -82,6 +84,7 @@ class ReactomeDiagram extends HTMLElement {
     }
     const view = document.createElement(VIEW);
     view.style.cssText = 'display:block;width:100%;height:100%';
+    view.style.setProperty('--reactome-diagram-loader', LOADER);
     for (const name of ATTRIBUTES) {
       const value = this.getAttribute(name);
       if (value !== null) view.setAttribute(name, value);

@@ -13,6 +13,7 @@
  */
 import {
   getProfile,
+  resolveHost,
   SELECTED_PROFILE_NAME,
 } from '../../../website-angular/src/config/environments';
 
@@ -49,15 +50,14 @@ export const SHOW_DELTASIGNAL = profile.deltaSignal === true;
  * public deployments want: beta.reactome.org proxies its own /ContentService to
  * the Tomcat on its box, and that Tomcat serves endpoints the public one does
  * not -- the reaction-diagram exporter among them. Naming a host instead broke
- * reaction pages on beta for exactly that reason. The fallback applies only off
- * the browser, in SSR and unit tests.
+ * reaction pages on beta for exactly that reason. `'script'` means wherever this
+ * code was loaded from: the embeddable diagram's, on a partner's page. The
+ * fallback applies only off the browser, in SSR and unit tests.
  */
-const resolvedHost =
-  profile.host === 'origin'
-    ? typeof window !== 'undefined'
-      ? window.location.origin
-      : (profile.originFallback ?? '')
-    : profile.host;
+const resolvedHost = resolveHost(
+  profile,
+  typeof window !== 'undefined' ? { page: window.location.origin, script: import.meta.url } : {}
+);
 
 // Normalised so building URLs cannot produce a double slash.
 const host = resolvedHost.replace(/\/+$/, '');
@@ -96,7 +96,14 @@ export const CONTENT_SERVICE = (
 // deployment's content service for "when the primary is slow or unavailable".
 // Nothing read it, and nothing should: answering from another deployment renders
 // someone else's data without saying so.
-export const VERSION_FALLBACK = profile.versionFallback;
+//
+// A profile whose host is the script's names its canonical host's here, and asks
+// the host it was loaded from instead: the release server's copy must not report
+// beta's release.
+export const VERSION_FALLBACK =
+  profile.host === 'script'
+    ? `${host}${new URL(profile.versionFallback).pathname}`
+    : profile.versionFallback;
 
 export const ANALYSIS_SERVICE = `${host}/AnalysisService`;
 

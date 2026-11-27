@@ -124,9 +124,10 @@ step "e2e recordings" npm run check:har
 if [ "$mode" != "fast" ]; then
   if app_build=$(mktemp -d) && [ -n "$app_build" ]; then
     scratch+=("$app_build")
-    step "app build" npm run build -- --output-path "$app_build"
-    # The embeddable diagram is built by nothing else (spec 009), with its budget.
-    step "embed build" npm run build:embed -- --output-path "$app_build/embed"
+    # The site and the embeddable diagram, with its budget (spec 009): the
+    # output path is a root for both, the site in reactome/ and the diagram in
+    # reactome-diagram/ (scripts/build-site-and-embed.sh, T043).
+    step "app and embed build" npm run build -- --output-path "$app_build"
   else
     printf '  %-34s FAILED\n' "app build"
     echo "      could not make a directory to build into"

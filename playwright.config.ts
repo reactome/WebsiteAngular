@@ -122,8 +122,9 @@ export default defineConfig({
           // The embeddable diagram and a partner's page, each on an origin of its
           // own (e2e/embed-diagram.spec.ts): the point is to test it where it
           // runs, which is never the site's own origin. The development build
-          // asks http://localhost:4330 for data, which the harness answers from
-          // recordings on whatever port the site is on.
+          // asks the host its code came from for data, as the served builds do
+          // (spec 009, T043); the harness answers from recordings, and a
+          // recording run's requests are passed on to the site's server.
           //
           // Built into a directory of its own: dist/reactome-diagram is what
           // serve-prod publishes at /embed/diagram/v1/, so building the
@@ -131,12 +132,11 @@ export default defineConfig({
           // loads its code from localhost:4340 -- on every e2e run and every
           // pre-push preflight on this machine.
           {
-            // Its chunks load from the address it is served at (the development
-            // configuration's deployUrl names the default one).
+            // Its code and pictures load from the address it is served at, as
+            // the served builds' do: no build names its host (spec 009, T043).
             command:
-              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram ' +
-              `--deploy-url http://localhost:${EMBED_PORT}/ && ` +
-              `node e2e/support/static-server.mjs dist/e2e/reactome-diagram/browser ${EMBED_PORT}`,
+              'npx ng build reactome-diagram-element --configuration development --output-path dist/e2e/reactome-diagram && ' +
+              `node e2e/support/static-server.mjs dist/e2e/reactome-diagram/browser ${EMBED_PORT} --backend=${baseURL}`,
             url: `http://localhost:${EMBED_PORT}/reactome-diagram.js`,
             reuseExistingServer: false,
             timeout: 300_000,

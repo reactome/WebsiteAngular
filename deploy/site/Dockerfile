@@ -19,7 +19,9 @@ COPY . .
 # What `npm run build:beta` does, as beta's deploy builds it: the two libraries
 # the site imports from dist/, the site-page search index and the compiled CMS
 # content (both generated and gitignored -- without them the site has no page
-# search and no content), the site, and the embeddable diagram.
+# search and no content), the site, and the embeddable diagram. The diagram's
+# code takes its chunks, pictures and data from whichever host serves it (spec
+# 009, T043), so beta's build of it serves the release server too.
 RUN npm run build:libs \
     && npm run generate:indices \
     && npm run stage:content \
