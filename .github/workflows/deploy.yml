@@ -36,6 +36,24 @@ jobs:
       github.event.workflow_run.event == 'push' &&
       github.event.workflow_run.head_repository.full_name == github.repository)
 
+    # Far above its longest real run, so that only a hang is ever cut off. The
+    # 89 deploys that ran in its last 100 runs all succeeded, the longest job in
+    # 4 minutes 24 seconds (a slow npm ci); the S3 sync never took more than 26
+    # seconds.
+    #
+    # Cutting a deploy off partway is safe enough to allow:
+    # - Everything up to the S3 sync only reads and builds on the runner; cut
+    #   there, nothing has been written anywhere.
+    # - `aws s3 sync --delete` is idempotent: it brings the prefix to match the
+    #   build, whatever state it was left in, so a re-run (or a dispatch) of the
+    #   same commit finishes the job. A sync cut off partway leaves the prefix
+    #   half new, but so does a sync that hangs -- and without a limit that state
+    #   lasts six hours, GitHub's default, behind a run that has not yet failed.
+    #   With one it lasts half an hour and ends in a failure someone sees.
+    # - The CloudFront invalidation is a fresh request each time; repeating it is
+    #   harmless.
+    timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v7
         with:

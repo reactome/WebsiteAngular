@@ -97,6 +97,21 @@ describe('the workflows as YAML', () => {
   it('parses every workflow here', () => {
     for (const name of workflows) expect(Object.keys(workflow(name))).toContain('jobs');
   });
+
+  // Without one a job that hangs runs for GitHub's default of six hours, holding
+  // a required check or a deploy half done all that time (#954). Each limit is
+  // sized from the job's real run times, with the reasoning beside it.
+  it('gives every job a time limit', () => {
+    const unlimited = workflows.flatMap((name) =>
+      Object.entries(mappingOf(workflow(name)['jobs']))
+        .filter(([, job]) => {
+          const limit = mappingOf(job)['timeout-minutes'];
+          return !(typeof limit === 'number' && limit > 0);
+        })
+        .map(([id]) => `${name}: ${id}`)
+    );
+    expect(unlimited).toEqual([]);
+  });
 });
 
 // Tests runs on pull requests too, forks included, and workflow_run's branch

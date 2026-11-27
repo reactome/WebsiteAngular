@@ -40,6 +40,16 @@ here and adds its number. Counts are as measured on 13 Nov 2026.
       834: one warning of slack). Dead code 104 → 100 (main measured 102):
       `Layout` is no longer an unused export, and the store's `LocatedValue` is
       now imported (#962).
+- [x] T001c [US1] Follow-ups to T001a (#954, #1100). The reader's dead
+      `if (value === undefined || value === null) param.set(value)` had already
+      gone in T013: a value that is not text reads as absent, so the param goes
+      back to its initial value rather than to null, which a list param such as
+      `flag` cannot hold. A test now feeds the reader a null and an undefined
+      value (`router-url-state.service.spec.ts`, failing with
+      `Cannot read properties of null (reading 'split')` on the old reader).
+      With it, every workflow job has a `timeout-minutes` sized from its real run
+      times, deploy's with why cutting one off is safe, and
+      `tools/workflows.spec.ts` holds that.
 
 ## Phase 2: Values typed "anything" (User Story 2, P2)
 
