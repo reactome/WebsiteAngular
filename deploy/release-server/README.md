@@ -289,8 +289,24 @@ Unchanged: `REGISTRY`, the override, the credentials file and its owner
 (`CONTENT_NODE_ENV_FILE`, `CONTENT_NODE_UID`, `CONTENT_NODE_GID`), the site's settings file
 (`ANSWER_ENV_FILE`, with the contact form's keys; the production profile offers no search
 answer, summary or chat handoff), `CALLER_TOKEN_KEY_FILE`, `LETSENCRYPT_DIR`,
-`CERTBOT_WEBROOT`, and the render settings. `production.conf` includes no site-local
-folder, so `NGINX_SITE_LOCAL` is not read there.
+`CERTBOT_WEBROOT`, and the render settings.
+
+**The site-local folder** (`NGINX_SITE_LOCAL`) holds one file on production, and no
+configuration: `download-release.map`, the one line naming the release
+`/download/current/` is:
+
+```
+reactome.org <NN>;
+```
+
+`production.conf` proxies `/download/` to the download site at reactome.org's own
+address (spec 032 T037), because outside scripts fetch
+`reactome.org/download/current/...` with a plain `curl`, which follows no redirect. The
+download site has numbered folders only, so `current` is sent to the folder this line
+names; any other path under `/download/` is sent as it is. Without the line, or with
+anything but a number in it, `/download/current/` answers 503 saying so, and the numbered
+paths still work. It moves with `IMAGE_TAG`, below. `production.conf` includes nothing
+else from the folder.
 
 **The graph.** `graphdb` is the project's published graph image for the release that
 `docker-compose.yml` names, made read-only and built here, like java-library: its image
@@ -347,9 +363,10 @@ steps, with production's certificate and names).
 ```sh
 git -C <checkout> fetch --tags && git -C <checkout> checkout Release<NN>
 # in .env: IMAGE_TAG=Release<NN>; DIAGRAM_FILES_DIR and RELEASE_FILES_DIR at release NN's folder
+# in the site-local folder's download-release.map: reactome.org <NN>;
 docker compose pull --ignore-buildable && docker compose build java-library pdf-export &&
   sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh switch &&
-  docker compose up -d
+  docker compose up -d && docker compose exec nginx nginx -s reload
 ```
 
 then the two steps `switch` prints at its end (the edge cache's purge and its warming).
@@ -363,7 +380,8 @@ served, since a release's tag never moves.
 sudo env CONTENT_NODE_ENV_FILE=<the credentials file> bash deploy/graphdb/next-release.sh rollback
 git -C <checkout> checkout Release<NN-1>
 # in .env: IMAGE_TAG=Release<NN-1>, and the previous release's folders
-docker compose pull --ignore-buildable && docker compose up -d
+# in download-release.map: reactome.org <NN-1>;
+docker compose pull --ignore-buildable && docker compose up -d && docker compose exec nginx nginx -s reload
 ```
 
 The graph goes back only until `next-release.sh cleanup` has removed the previous

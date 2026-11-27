@@ -23,6 +23,9 @@ const SCANNED = [
   'docker-compose.yml',
   '.env.example',
   'deploy/nginx/README.md',
+  // The download proxy on beta and production (T037).
+  'deploy/nginx/common/download-site.conf',
+  'deploy/nginx/common/download-proxy.conf',
   'deploy/render-service',
 ];
 
@@ -37,11 +40,20 @@ const HOSTS = [
   'host.docker.internal',
   'public.ecr.aws',
 ];
-const ADDRESSES = [/^127\.0\.0\.1$/, /^0\.0\.0\.0$/, /^203\.0\.113\.\d+$/];
+const ADDRESSES = [
+  /^127\.0\.0\.1$/,
+  /^0\.0\.0\.0$/,
+  /^203\.0\.113\.\d+$/,
+  // The public resolvers nginx asks for the download site's addresses.
+  /^1\.1\.1\.1$/,
+  /^8\.8\.8\.8$/,
+];
 const PATHS = [
   '/etc/nginx/',
   '/etc/letsencrypt',
   '/etc/ssl/cloudflare',
+  // The image's CA bundle.
+  '/etc/ssl/certs/ca-certificates.crt',
   '/var/www/certbot',
   '/run/php',
   '/run/secrets/',
