@@ -253,7 +253,7 @@ description: 'Task list for the embeddable Reactome pathway diagram'
   - **As built**: both removed (user's decision, 2 Oct 2026), with the files only they reached (knip-confirmed), the `<pathway-browser>` element and `ANGULAR_ELEMENTS_SETUP.md`, and the two analogjs packages only PathwayBrowser's `ng test` target used. The site's build is unchanged.
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
 - [x] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
-  - **Done (PR #PRNUM), by choosing the host at run time.** Measured first: the site's image
+  - **Done (PR #1098), by choosing the host at run time.** Measured first: the site's image
     (spec 032) already built and served the embed, but beta's build of it, so the release
     server's copy drew beta's data and fetched its loading picture from beta. Its chunks were
     already relative (an ES module's imports resolve against its own address); `deployUrl` only
