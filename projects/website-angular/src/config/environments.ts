@@ -287,10 +287,16 @@ export const SITE_PROFILES: Record<ProfileName, SiteProfile> = {
     versionFallback: 'https://beta.reactome.org/ContentService/data/database/version',
     schemaPath: '/dataSchema',
   },
-  // The e2e dev server: requests there are answered from recordings.
+  // The e2e build, served by e2e/support/static-server.mjs with the data beside
+  // it, as the served builds' are: 'script' like them, so the e2e suite runs
+  // the way they resolve their host (e2e/embed-diagram.spec.ts checks the data
+  // comes from the code's origin). The fallback is the e2e dev server's, a host
+  // that a build resolving none would fall back to unnoticed: the recordings
+  // answer any origin.
   'embed-development': {
     variant: 'main',
-    host: 'http://localhost:4330',
+    host: 'script',
+    originFallback: 'http://localhost:4330',
     s3: S3,
     gsaServer: 'dev',
     versionFallback: 'http://localhost:4330/ContentService/data/database/version',

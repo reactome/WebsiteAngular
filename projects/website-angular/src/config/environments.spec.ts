@@ -140,10 +140,12 @@ describe('site profiles', () => {
     // The site's image is beta's build, and it runs the release server too; the
     // embed's profiles once named their hosts, so the release server's copy drew
     // beta's diagrams (spec 009, T043). A partner's page is not the host either.
+    // The e2e build too, so the e2e suite runs the way the served ones resolve.
     for (const name of ['embed-production', 'embed-beta'] as ProfileName[]) {
       expect(SITE_PROFILES[name].host, `${name}.host`).toBe('script');
       expect(SITE_PROFILES[name].originFallback, `${name}.originFallback`).toMatch(/^https:\/\//);
     }
+    expect(SITE_PROFILES['embed-development'].host).toBe('script');
     const embed = SITE_PROFILES['embed-beta'];
     const partner = 'https://partner.example';
     for (const host of ['https://beta.reactome.org', 'https://release.reactome.org']) {

@@ -2,17 +2,26 @@
  * Static files with the cross-origin header Reactome serves the embed with, for
  * tests that must put a page and the embedded diagram on different origins.
  *
- *   node e2e/support/static-server.mjs <dir> <port> [embed]
+ *   node e2e/support/static-server.mjs <dir> <port> [embed] [--backend=<origin>]
  *
  * With `embed`, an HTML page's default address for the embed (the partner-style
  * pages name http://localhost:4340/, e2e's default) is served as that address
  * instead, so a run serving the embed on a port of its own finds it.
+ *
+ * With `--backend`, the backend's paths (/ContentService/ and the like) are
+ * passed to that origin, as a deployment serves its data beside the embed's
+ * code: the embed asks the host its code came from (spec 009, T043). Replay
+ * answers those requests in the browser before they get here; recording sends
+ * them on, to the site's dev server and its proxy.
  */
-import { createServer } from 'node:http';
+import { createServer, request as forward } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
+import { BACKEND } from './har-entry.mjs';
 
-const [dir, port, embed] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const backend = args.find((a) => a.startsWith('--backend='))?.slice('--backend='.length);
+const [dir, port, embed] = args.filter((a) => !a.startsWith('--backend='));
 const DEFAULT_EMBED = 'http://localhost:4340/';
 const TYPES = {
   '.js': 'text/javascript',
@@ -27,6 +36,25 @@ const TYPES = {
 };
 
 createServer(async (req, res) => {
+  if (backend && BACKEND.test(req.url ?? '')) {
+    const upstream = forward(
+      new URL(req.url ?? '/', backend),
+      { method: req.method, headers: { ...req.headers, host: new URL(backend).host } },
+      (answer) => {
+        res.writeHead(answer.statusCode ?? 502, {
+          ...answer.headers,
+          'access-control-allow-origin': '*',
+        });
+        answer.pipe(res);
+      }
+    );
+    upstream.on('error', () => {
+      res.writeHead(502, { 'access-control-allow-origin': '*' });
+      res.end();
+    });
+    req.pipe(upstream);
+    return;
+  }
   const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname)).replace(
     /^(\.\.[/\\])+/,
     ''
