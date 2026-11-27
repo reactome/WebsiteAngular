@@ -509,7 +509,7 @@ function acceptedTypes(header: string | undefined): MediaType[] | string {
  *  - `none`: nothing at all, when no type does (text/plain, application/xml);
  *  - `failed`: a part Spring cannot read, which is Java's 500 naming it.
  */
-export type ErrorPage =
+type ErrorPage =
   { kind: 'html' } | { kind: 'json' } | { kind: 'none' } | { kind: 'failed'; message: string };
 
 export function errorPage(header: string | undefined): ErrorPage {

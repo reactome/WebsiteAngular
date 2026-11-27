@@ -268,7 +268,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 /** Date.toString on Java's service, whose zone is UTC: `Fri Nov 27 10:20:28 UTC 2026`. */
-export function javaDate(time: Date) {
+function javaDate(time: Date) {
   const two = (n: number) => String(n).padStart(2, '0');
   return (
     `${DAYS[time.getUTCDay()] ?? ''} ${MONTHS[time.getUTCMonth()] ?? ''} ${two(time.getUTCDate())} ` +
