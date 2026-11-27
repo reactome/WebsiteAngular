@@ -69,7 +69,8 @@ chat, never to another deployment's (unset, they name beta's). The gateway does 
 without the file. The contact form's settings are there too: `CONTACT_TO`, `CONTACT_FROM`
 and `CONTACT_SES_REGION`. The site image has no `sendmail`, so the form sends through
 Amazon SES's API in that region, signed by the instance's role (spec 032 T031): the role
-needs `ses:SendEmail`, allowed for `CONTACT_FROM`'s address, and that address's domain must
+needs both `ses:SendEmail` and `ses:SendRawEmail` (the form sends a raw message, which SES
+authorizes as the latter), allowed for `CONTACT_FROM`'s address, and that address's domain must
 be a verified SES identity in the region. Leave `CONTACT_TO` unset and the form says it
 cannot send.
 
