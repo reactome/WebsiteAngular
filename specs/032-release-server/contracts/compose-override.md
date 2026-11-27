@@ -74,14 +74,18 @@ not one release's own folder.
 
 Rules:
 
-- No `graphdb` entry: it is under the `graph` profile, which this server does not name.
+- No `graphdb` entry: it is under the `graph` profile, which the release server does not
+  name. Production names it (`COMPOSE_PROFILES=graph`) and builds the graph image there,
+  from the base file, unchanged (the guide's §9).
 - Every published service (`app`'s site image, content-node, render, analysis-gateway,
   mcp, nginx) has its `build:` reset and names its image with `${REGISTRY:?...}` and
   `${IMAGE_TAG:?...}` (nginx's `${NGINX_ENV:?...}` too): a server never builds a published
   image, and a setting left out stops `docker compose` with its message rather than
   falling back to the base file's defaults (`registry.invalid`, `main`, `dev`). `!reset`
   needs Docker Compose 2.24 or later.
-- `IMAGE_TAG` is a full commit id; the override never names `main` or `latest`.
+- `IMAGE_TAG` is a full commit id (the release server's) or a release's write-once tag,
+  `Release<NN>` (production's, made by the release-tag workflow, T036); never `main` or
+  `latest`, and the override names neither.
 - No published service sets `pull_policy` (the base file's default, `missing`, pulls;
   `build` or `never` would not). `deploy/release-server/images.spec.ts` reads the block
   above and checks all of this.
@@ -89,4 +93,5 @@ Rules:
   file through `CONTENT_NODE_ENV_FILE`.
 - `docker compose config` with this override and the server's `.env` must list no
   `build:` for a published service, and every published image's tag must be a full commit
-  id (checked, failing loudly, in the guide's first step).
+  id or `Release<NN>` (checked, failing loudly, in the guide's first step, and in its §9 for
+  production; `images.spec.ts` runs the check's pattern).

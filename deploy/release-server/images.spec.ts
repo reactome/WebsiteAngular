@@ -11,6 +11,7 @@
 // and requires REGISTRY and IMAGE_TAG (`:?`), so it never builds one and never
 // falls back to this file's defaults; and every deployment's nginx is
 // published.
+import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, posix } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -324,5 +325,55 @@ describe('the check itself', () => {
       'production',
     ]);
     expect(deployments('for env in dev; do')).toEqual(['dev']);
+  });
+});
+
+/**
+ * The guide's check (its §1, and production's in §9) refuses a published
+ * image whose tag is neither a full commit id (the release server's) nor a
+ * release's write-once tag (`Release99`, production's). Its patterns, read
+ * from the guide and run through grep itself, as the server runs them.
+ */
+function tagPatterns(guide: string): string[] {
+  return [...guide.matchAll(/grep -E '\^ \+image:' \| grep -vE '([^']+)'/g)].map(
+    ([, pattern = '']) => pattern
+  );
+}
+
+/** Whether `pattern` (grep -vE) refuses an image at `tag`, as the guide's check runs it. */
+function refuses(pattern: string, tag: string): boolean {
+  const line = `    image: registry.invalid/content-node:${tag}\n`;
+  const grep = spawnSync('grep', ['-vE', pattern], { input: line, encoding: 'utf8' });
+  if (grep.status === 2 || grep.error) throw new Error(`grep -vE '${pattern}': ${grep.stderr}`);
+  // grep -v exits 0 when it prints a line: the image is refused.
+  return grep.status === 0;
+}
+
+describe('the guide’s check of the published images’ tags', () => {
+  const patterns = tagPatterns(readFileSync(join(ROOT, 'deploy/release-server/README.md'), 'utf8'));
+  const commit = '0123456789abcdef0123456789abcdef01234567';
+
+  it('is in the guide twice, the release server’s and production’s, the same', () => {
+    expect(patterns).toHaveLength(2);
+    expect(new Set(patterns).size).toBe(1);
+  });
+
+  it.each([commit, 'Release99', 'Release100'])('lets %s through', (tag) => {
+    for (const pattern of patterns) expect(refuses(pattern, tag)).toBe(false);
+  });
+
+  it.each([
+    'main',
+    'latest',
+    'Release',
+    'release99',
+    'RELEASE99',
+    'Release99a',
+    'Release-99',
+    commit.slice(0, 7),
+    `${commit}0`,
+    commit.toUpperCase(),
+  ])('refuses %s', (tag) => {
+    for (const pattern of patterns) expect(refuses(pattern, tag)).toBe(true);
   });
 });
