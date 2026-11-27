@@ -15,6 +15,12 @@ permissions:
 jobs:
   restrict-cms-branches:
     runs-on: ubuntu-latest
+    # Its longest run of the last 100 took 39 seconds from start to finish, and
+    # the job itself well under that. Five minutes is several times that, so only
+    # a hang (a checkout that stalls, say) is ever cut off -- and it fails rather
+    # than holding the pull request's required check for GitHub's default of six
+    # hours.
+    timeout-minutes: 5
 
     steps:
       - name: Checkout repo
@@ -45,7 +51,7 @@ jobs:
             # and the deletion of package.json is invisible to the check below.
             # Without detection, the same change prints both paths and the source
             # is judged on its own.
-            CHANGED_FILES=$(git diff --no-renames --name-only origin/$BASE_REF...HEAD)
+            CHANGED_FILES=$(git diff --no-renames --name-only "origin/$BASE_REF...HEAD")
 
             echo "Changed files:"
             echo "$CHANGED_FILES"

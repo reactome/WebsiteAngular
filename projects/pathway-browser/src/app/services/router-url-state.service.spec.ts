@@ -2,8 +2,9 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Params, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
+import { BehaviorSubject, of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 import { UrlStateService } from './url-state.service';
 import { RouterUrlStateService } from './router-url-state.service';
@@ -112,6 +113,50 @@ describe('RouterUrlStateService, reading the address', () => {
     );
     expect(state.flag()).toEqual(['R-HSA-2']);
     expect(state.overlay()).toBe('a');
+    expect(state.significance()).toBe(0.01);
+  });
+});
+
+/**
+ * A query parameter that arrives as null or undefined (#954).
+ *
+ * The router never hands one over, so this goes round it: the service reads
+ * these from a stand-in route. The reader once set such a value and then went
+ * on to parse it, so `null.split` threw part-way through and every param after
+ * it kept its old value. Absent and empty are the same here: the param goes
+ * back to its initial value, as one the address does not name does -- not to
+ * null, which a list param (`flag`, initially []) cannot hold.
+ */
+describe('RouterUrlStateService, a null or undefined query parameter', () => {
+  it('reads as absent, and the params after it are still read', async () => {
+    const queryParams = new BehaviorSubject<Params>({});
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            fragment: of(null),
+            queryParams,
+            snapshot: { fragment: null, queryParams: {} },
+          },
+        },
+        { provide: UrlStateService, useClass: RouterUrlStateService },
+      ],
+    });
+    const state = TestBed.inject(UrlStateService);
+    state.flag.set(['R-HSA-9']);
+    state.overlay.set('old');
+
+    // flag (a list) and overlay (text) come before significance in the params.
+    queryParams.next({ flag: null, overlay: undefined, significance: '0.01' });
+    // The reader is asynchronous: let it finish.
+    await new Promise((resolve) => setTimeout(resolve));
+
+    expect(state.flag()).toEqual([]);
+    expect(state.overlay()).toBeNull();
     expect(state.significance()).toBe(0.01);
   });
 });

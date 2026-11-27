@@ -36,6 +36,12 @@ env:
 jobs:
   update:
     runs-on: ubuntu-latest
+    # Its longest run of the last 51 took 44 seconds from start to finish. Ten
+    # minutes is well over ten times that, so only a hang is cut off. Cutting it
+    # off anywhere is safe: the branch is this job's alone and rebuilt from main
+    # on every run, and the concurrency group keeps the next run waiting rather
+    # than racing it.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,7 +53,10 @@ jobs:
 
       # Resolve only: nothing is installed, and no install script runs.
       - name: Update the pins
-        run: npm update $LIBRARIES --package-lock-only --ignore-scripts --no-audit --no-fund
+        # $LIBRARIES unquoted on purpose: it is two package names.
+        run: |
+          # shellcheck disable=SC2086
+          npm update $LIBRARIES --package-lock-only --ignore-scripts --no-audit --no-fund
 
       # Only these two may move. Anything else in the lockfile changing would be
       # npm re-resolving the tree, which is never what this job is for.
