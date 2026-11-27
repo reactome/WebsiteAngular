@@ -8,7 +8,7 @@
 import type { Endpoint, Request } from './endpoint.ts';
 import type { GraphNode } from './graph.ts';
 import { JavaHashMap } from './java-hashmap.ts';
-import { inDepthId, longPastRange, pathwayJson, speciesFilter, speciesTaxId } from './objects.ts';
+import { inDepthId, longPastRange, speciesFilter, speciesTaxId } from './objects.ts';
 import { read } from './graph.ts';
 import neo4j from 'neo4j-driver';
 import {
@@ -90,48 +90,28 @@ async function orthologyOf(raw: string, species: bigint) {
   return rows[0]?.o;
 }
 
-/**
- * A ReactionLikeEvent, of any class, as graph-core serialises the bare node:
- * Event's fields, then ReactionLikeEvent's, absent values omitted. Its
- * getClassName says "Reaction" whatever the class -- a BlackBoxEvent too --
- * and, overridden, Jackson writes it before schemaClass. Measured from Java's
- * /mapping answers over Reaction, BlackBoxEvent and FailedReaction.
- */
-export function reactionLikeEventJson(node: Props) {
-  return {
-    ...only(node, [
-      'dbId',
-      'displayName',
-      'stId',
-      'stIdVersion',
-      'definition',
-      'isInDisease',
-      'isInferred',
-      'maxDepth',
-      'name',
-      'releaseDate',
-      'releaseStatus',
-      'speciesName',
-      'isChimeric',
-      'systematicName',
-      'category',
-    ]),
-    className: 'Reaction',
-    ...only(node, ['schemaClass']),
-  };
-}
-
 /** graph-core's MappingRepository: from an identifier in a resource to the entities made from it. */
-const MAPPED_ENTITIES = `MATCH (n)-[:referenceDatabase]->(rd:ReferenceDatabase)
-  WHERE toLower(rd.displayName) = toLower($databaseName)
-    AND (n.identifier = $identifier OR n.variantIdentifier = $identifier OR $identifier IN n.geneName OR $identifier IN n.name)
-  WITH DISTINCT n
-  MATCH (pe:PhysicalEntity)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n)
-  WITH DISTINCT pe`;
+const MAPPED_ENTITIES =
+  'MATCH (n)-[:referenceDatabase]->(rd:ReferenceDatabase) WHERE toLower(rd.displayName) = toLower($databaseName) AND (n.identifier = $identifier OR n.variantIdentifier = $identifier OR $identifier IN n.geneName OR $identifier IN n.name) WITH DISTINCT n MATCH (pe:PhysicalEntity)-[:referenceEntity|referenceSequence|crossReference|referenceGene*]->(n) WITH DISTINCT pe';
 
 /** ...and up to every reaction any of them takes part in. */
 const MAPPED_REACTION_ROLES =
   '[:input|output|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|regulatedBy|regulator|hasComponent|hasMember|hasCandidate|repeatedUnit|proteinMarker|RNAMarker*]->(pe)';
+
+/**
+ * graph-core's MappingRepository queries (graph-core 3.0.0-SNAPSHOT), each
+ * as written, character for character: the reactions or the pathways, in a
+ * species (`$taxId`) or in any; and GO's own pathway queries.
+ */
+const MAPPING_QUERIES = {
+  reactions: `${MAPPED_ENTITIES} MATCH (rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES} RETURN DISTINCT rle ORDER BY rle.stId`,
+  reactionsInSpecies: `${MAPPED_ENTITIES} MATCH (:Species{taxId:$taxId})<-[:species]-(rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES} RETURN DISTINCT rle ORDER BY rle.stId`,
+  pathways: `${MAPPED_ENTITIES} MATCH (rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES} WITH DISTINCT rle MATCH (p:Pathway)-[:hasEvent]->(rle) RETURN DISTINCT p ORDER BY p.stId`,
+  pathwaysInSpecies: `${MAPPED_ENTITIES} MATCH (rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES} WITH DISTINCT rle MATCH (:Species{taxId:$taxId})<-[:species]-(p:Pathway)-[:hasEvent]->(rle) RETURN DISTINCT p ORDER BY p.stId`,
+  go: 'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier RETURN DISTINCT p ORDER BY p.stId',
+  goInSpecies:
+    'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier WITH DISTINCT p MATCH (p)-[:species]->(:Species{taxId: $taxId}) RETURN p ORDER BY p.stId',
+};
 
 /**
  * /mapping/{resource}/{identifier}/{reactions|pathways}, as MappingController
@@ -174,38 +154,34 @@ async function mappingAnswer(request: Request, kind: string) {
   }
   if (asked === '') return missing();
 
-  let cypher: string;
-  let params: Record<string, string>;
-  if (go) {
-    cypher =
-      taxId === undefined
-        ? 'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier RETURN DISTINCT p ORDER BY p.stId'
-        : 'MATCH (p:Pathway)-[:goBiologicalProcess*]->(go:GO_BiologicalProcess) WHERE go.accession = $identifier WITH DISTINCT p MATCH (p)-[:species]->(:Species{taxId: $taxId}) RETURN p ORDER BY p.stId';
-    params = { identifier: asked };
-  } else {
-    const inSpecies = taxId === undefined ? '' : '(:Species{taxId:$taxId})<-[:species]-';
-    cypher =
-      kind === 'reactions'
-        ? `${MAPPED_ENTITIES}
-           MATCH ${inSpecies}(rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES}
-           RETURN DISTINCT rle ORDER BY rle.stId`
-        : `${MAPPED_ENTITIES}
-           MATCH (rle:ReactionLikeEvent)-${MAPPED_REACTION_ROLES}
-           WITH DISTINCT rle
-           MATCH ${inSpecies}(p:Pathway)-[:hasEvent]->(rle)
-           RETURN DISTINCT p ORDER BY p.stId`;
-    params = { databaseName: resource, identifier: asked };
-  }
-  const rows = await read<{ rle?: Props; p?: Props }>(cypher, {
-    ...params,
-    ...(taxId === undefined ? {} : { taxId }),
-  });
+  const inSpecies = taxId !== undefined;
+  const cypher = go
+    ? MAPPING_QUERIES[inSpecies ? 'goInSpecies' : 'go']
+    : kind === 'reactions'
+      ? MAPPING_QUERIES[inSpecies ? 'reactionsInSpecies' : 'reactions']
+      : MAPPING_QUERIES[inSpecies ? 'pathwaysInSpecies' : 'pathways'];
+  const params = go ? { identifier: asked } : { databaseName: resource, identifier: asked };
+  // The pathways queries return p, the reactions query rle; each row has one.
+  const rows = await read<{ rle?: GraphNode; p?: GraphNode }>(
+    cypher,
+    { ...params, ...(taxId === undefined ? {} : { taxId }) },
+    { graph: true }
+  );
   if (rows.length === 0) return missing();
   return {
     status: 200,
-    body: rows.map((row) =>
-      // The pathways query returns p, the reactions query rle.
-      kind === 'reactions' ? reactionLikeEventJson(row.rle as Props) : pathwayJson(row.p as Props)
+    // Mapped as SDN maps a node alone, written by the domain serialiser in
+    // the request's view and identity (writerFor): until #953 these were
+    // written by hand, and `includeRef=true` lost Java's JSOG `@id`s.
+    serialised: writeDomain(
+      mapNodes(
+        rows.map((row) => {
+          const node = row.rle ?? row.p;
+          if (!node) throw new Error('mappingAnswer: a row with neither rle nor p');
+          return node;
+        })
+      ),
+      ...writerFor(request)
     ),
     type: 'application/json',
   };

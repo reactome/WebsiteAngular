@@ -18,6 +18,7 @@ import {
   servletRequestParameters,
   springBoolean,
   springIntegerWithDefault,
+  writerFor,
 } from './spring.ts';
 import {
   RawJson,
@@ -50,8 +51,19 @@ import {
   plainTextProblem,
   unreadableCharset,
 } from './body.ts';
-import type { Props } from './objects.ts';
-import { pathwayJson } from './objects.ts';
+import type { GraphNode } from './graph.ts';
+import { mapNodes, writeDomain } from './domain.ts';
+
+/**
+ * graph-core's PathwayRepository.getLowerLevelPathways and
+ * getDiagrammedLowerLevelPathways, as written (graph-core 3.0.0-SNAPSHOT):
+ * the pathways, one level up, of the entities made from an accession's
+ * interactors.
+ */
+const LOWER_LEVEL_PATHWAYS =
+  'MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity) WHERE a.identifier = $acc OR a.variantIdentifier = $acc MATCH path=(p:Pathway)-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b) WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway)) RETURN DISTINCT p';
+const DIAGRAMMED_LOWER_LEVEL_PATHWAYS =
+  'MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity) WHERE a.identifier = $acc OR a.variantIdentifier = $acc MATCH path=(p:Pathway{hasDiagram:True})-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b) WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway) AND e.hasDiagram) RETURN DISTINCT p';
 
 /** An interaction and its partners (interactionsOf). */
 type InteractionRow = {
@@ -470,9 +482,14 @@ export const interactorsEndpoints: Endpoint[] = [
      * The lower-level pathways an accession's interactors take part in, in
      * one species: graph-core's PathwayRepository.getLowerLevelPathways, or
      * getDiagrammedLowerLevelPathways with onlyDiagrammed (a Boolean, false
-     * by default), kept as written. The species is compared with the
+     * by default), sent as written. The species is compared with the
      * pathways' speciesName as given -- "Homo sapiens", not a taxId -- and
      * none at all is null, which matches nothing: Java's 404.
+     *
+     * The pathways are mapped as SDN maps a node alone and written by the
+     * domain serialiser, in the request's view and identity (writerFor):
+     * until #953 they were written by hand, and `includeRef=true` lost
+     * Java's JSOG `@id`s.
      */
     handler: async (request) => {
       const acc = pathId(rawSegment(request, 5));
@@ -481,22 +498,17 @@ export const interactorsEndpoints: Endpoint[] = [
       const diagrammed = springBoolean(queryValues(request, 'onlyDiagrammed'));
       if (diagrammed.error !== undefined)
         return javaError(request, 400, 'BAD_REQUEST', diagrammed.error);
-      const rows = await read<{ p: Props }>(
-        diagrammed.value
-          ? `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
-             WHERE a.identifier = $acc OR a.variantIdentifier = $acc
-             MATCH path=(p:Pathway{hasDiagram:True})-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b)
-             WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway) AND e.hasDiagram)
-             RETURN DISTINCT p`
-          : `MATCH (a:ReferenceEntity)<-[:interactor]-()-[:interactor]->(b:ReferenceEntity)
-             WHERE a.identifier = $acc OR a.variantIdentifier = $acc
-             MATCH path=(p:Pathway)-[:hasEvent|input|output|catalystActivity|physicalEntity|regulatedBy|regulator*]->(pe:PhysicalEntity)-[:referenceEntity]->(b)
-             WHERE p.speciesName = $speciesName AND SINGLE(e IN NODES(path) WHERE (e:Pathway))
-             RETURN DISTINCT p`,
-        { acc, speciesName }
+      const rows = await read<{ p: GraphNode }>(
+        diagrammed.value ? DIAGRAMMED_LOWER_LEVEL_PATHWAYS : LOWER_LEVEL_PATHWAYS,
+        { acc, speciesName },
+        { graph: true }
       );
       if (rows.length === 0) return notFound(request, `No pathways found for molecule: ${acc}`);
-      return { status: 200, body: rows.map((row) => pathwayJson(row.p)), type: 'application/json' };
+      return {
+        status: 200,
+        serialised: writeDomain(mapNodes(rows.map((row) => row.p)), ...writerFor(request)),
+        type: 'application/json',
+      };
     },
   },
   {

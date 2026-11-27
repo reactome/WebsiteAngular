@@ -39,7 +39,7 @@ import {
 } from './schema-endpoints.ts';
 import { personWhere } from './person-endpoints.ts';
 import { referenceEntityJson } from './reference-entities.ts';
-import { inDepthId, pathwayJson, resolveId, speciesFilter } from './objects.ts';
+import { inDepthId, resolveId, speciesFilter } from './objects.ts';
 import { javaError, javaJson, neo4jFailureMessage, notFound, timedOut } from './answers.ts';
 import {
   pathId,
@@ -800,61 +800,6 @@ describe("eventProjection, graph-core's EventProjection as Java writes it", () =
       inferred: false,
       inDisease: false,
     });
-  });
-});
-
-describe('pathwayJson, a Pathway as graph-core serialises it', () => {
-  // Java's answer for R-HSA-162582 under /data/pathways/low/entity, 14 Oct 2026.
-  const node = {
-    dbId: 162582,
-    oldStId: 'REACT_111102',
-    displayName: 'Signal Transduction',
-    stId: 'R-HSA-162582',
-    stIdVersion: 'R-HSA-162582.13',
-    isInDisease: false,
-    isInferred: false,
-    maxDepth: 13,
-    name: ['Signal Transduction', 'Signaling Pathways'],
-    releaseDate: '2011-09-20',
-    releaseStatus: 'UPDATED',
-    speciesName: 'Homo sapiens',
-    hasDiagram: true,
-    hasEHLD: true,
-    diagramWidth: 631,
-    diagramHeight: 589,
-    lastUpdatedDate: '2023-06-07',
-    schemaClass: 'TopLevelPathway',
-  };
-
-  it("writes Java's keys in Java's order, and not the ones it leaves out", () => {
-    expect(JSON.stringify(pathwayJson(node))).toBe(
-      '{"dbId":162582,"displayName":"Signal Transduction","stId":"R-HSA-162582",' +
-        '"stIdVersion":"R-HSA-162582.13","isInDisease":false,"isInferred":false,"maxDepth":13,' +
-        '"name":["Signal Transduction","Signaling Pathways"],"releaseDate":"2011-09-20",' +
-        '"releaseStatus":"UPDATED","speciesName":"Homo sapiens","hasDiagram":true,"hasEHLD":true,' +
-        '"lastUpdatedDate":"2023-06-07","schemaClass":"TopLevelPathway","className":"TopLevelPathway"}'
-    );
-  });
-
-  it('writes isCanonical where Java declares it, and defaults hasEHLD to false', () => {
-    const { hasEHLD: _withoutEhld, ...withoutEhld } = node;
-    const keys = Object.keys(pathwayJson({ ...withoutEhld, isCanonical: 'true' }));
-    expect(keys.slice(keys.indexOf('hasDiagram'), keys.indexOf('hasDiagram') + 4)).toEqual([
-      'hasDiagram',
-      'hasEHLD',
-      'isCanonical',
-      'lastUpdatedDate',
-    ]);
-    expect(pathwayJson(withoutEhld)['hasEHLD']).toBe(false);
-  });
-
-  it('puts a definition after stIdVersion, and a doi after speciesName', () => {
-    const keys = Object.keys(pathwayJson({ ...node, definition: 'd', doi: '10.3180/x' }));
-    expect(keys.slice(3, 5)).toEqual(['stIdVersion', 'definition']);
-    expect(keys.slice(keys.indexOf('speciesName'), keys.indexOf('speciesName') + 2)).toEqual([
-      'speciesName',
-      'doi',
-    ]);
   });
 });
 

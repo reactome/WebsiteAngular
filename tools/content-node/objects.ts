@@ -14,7 +14,7 @@ import {
   javaTrim,
   present,
 } from './java-text.ts';
-import { notFound, only, unexpected } from './answers.ts';
+import { notFound, unexpected } from './answers.ts';
 import { read } from './graph.ts';
 import type { DomainEntity } from './domain.ts';
 import {
@@ -92,39 +92,6 @@ export function resolveId(raw: string) {
     return { where: 'n.dbId = toInteger($id)', params: { id: asciiDigits(id) } };
   }
   return { where: 'false', params: {} };
-}
-
-/**
- * A Pathway as graph-core's domain class serialises it when only the node is
- * loaded: these keys, in this order, absent values omitted. Measured from
- * Java's answers, which agree across 150 pathways: `oldStId` and the diagram
- * size are on the node but not written, and `className` repeats the class.
- */
-export function pathwayJson(node: Props) {
-  // hasEHLD has a field default of false in Java, should a node lack it (none
-  // does today); isCanonical is declared but on no node yet.
-  const out = only({ ...node, hasEHLD: node['hasEHLD'] ?? false }, [
-    'dbId',
-    'displayName',
-    'stId',
-    'stIdVersion',
-    'definition',
-    'isInDisease',
-    'isInferred',
-    'maxDepth',
-    'name',
-    'releaseDate',
-    'releaseStatus',
-    'speciesName',
-    'doi',
-    'hasDiagram',
-    'hasEHLD',
-    'isCanonical',
-    'lastUpdatedDate',
-    'schemaClass',
-  ]);
-  if (node.schemaClass) out['className'] = node.schemaClass;
-  return out;
 }
 
 /**
