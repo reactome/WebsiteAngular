@@ -19,8 +19,27 @@ type Params = { [name: string]: unknown };
 const asked: [string, Params][] = [];
 let rows: unknown[] = [];
 vi.mock('./graph.ts', () => ({
-  read: async (cypher: string, params: Params) => {
+  read: async (cypher: string, params: Params, options?: { graph?: boolean }) => {
     asked.push([cypher, params]);
+    // As the driver: without `graph`, a node or relationship is its properties
+    // alone, so a route that forgets `graph` reads what Neo4j would give it.
+    const plain = (value: unknown): unknown =>
+      Array.isArray(value)
+        ? value.map(plain)
+        : value &&
+            typeof value === 'object' &&
+            'props' in value &&
+            ('labels' in value || 'type' in value)
+          ? (value as { props: unknown }).props
+          : value;
+    const answer = (found: unknown[]) =>
+      options?.graph
+        ? found
+        : found.map((row) =>
+            row && typeof row === 'object'
+              ? Object.fromEntries(Object.entries(row).map(([k, v]) => [k, plain(v)]))
+              : row
+          );
     // speciesTaxId's lookups: 9606 and Homo sapiens are a species.
     if (/^MATCH \(s:Species/.test(cypher))
       return params['value'] === '9606' || params['value'] === 'Homo sapiens'
@@ -31,7 +50,7 @@ vi.mock('./graph.ts', () => ({
       throw Object.assign(new Error('Expected parameter(s): stId'), {
         code: 'Neo.ClientError.Statement.ParameterMissing',
       });
-    return rows;
+    return answer(rows);
   },
   configured: () => true,
   close: async () => {},
