@@ -21,16 +21,25 @@ import { settings } from './settings.ts';
 const SOLR_TIMEOUT_MS = 30_000;
 
 /**
- * How many requests Solr is sent at once; the rest wait their turn, as they
- * do behind Java's client, HttpClient's default of two connections to one
- * host. The search box asks on every keystroke, and each ask is one request
- * plus one per collation. SOLR_CONCURRENCY, 1-16, read once, at first use.
+ * How many requests Solr is sent at once; the rest wait their turn. Solr is
+ * shared, and the search box asks on every keystroke, each ask one request
+ * plus one per collation: unbounded, a burst of typing (or of clients) would
+ * all land on Solr together. So a few at a time, a queue behind them, and
+ * past MOST_WAITING a 503 to retry.
+ *
+ * The limit was two, Java's client's (HttpClient's default of two
+ * connections to one host). Under 8 clients that queue was the wait: the
+ * search suggestions' median went from about 20 ms alone to about 180 ms.
+ * Eight halved it and served about a quarter more of a mix of the site's
+ * requests; sixteen did no better (speed.md, #952). SOLR_CONCURRENCY, 1-16,
+ * read once, at first use; anything else is the default.
  */
+const DEFAULT_LIMIT = 8;
 let limit: number | undefined;
 function solrConcurrency() {
   if (limit === undefined) {
     const given = Number(settings.solrConcurrency());
-    limit = Number.isInteger(given) && given >= 1 && given <= 16 ? given : 2;
+    limit = Number.isInteger(given) && given >= 1 && given <= 16 ? given : DEFAULT_LIMIT;
   }
   return limit;
 }

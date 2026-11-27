@@ -131,6 +131,7 @@ Found 19 Oct 2026 by comparing every mapping in the Java source with the publish
 ## Phase 11: Speed ([speed.md](speed.md), #952)
 
 - [x] T112 `GET /data/eventsHierarchy/{species}` (the Reacfoam tree) at Java's speed or better: its written answer was already kept per species (T103b, T103d), but every request still asked the graph whether the species has a top-level pathway, about 150 ms for human. That answer is now kept per Species for the life of the process, as the trees are (the release switch restarts the service). 155 ms → 7 ms alone; 25 → 270 requests/s under 8 clients. Every answer the same, status, headers and bytes, over 375 requests (every species by taxId, dbId and name, both forms, errors, 14 with analysis tokens) — #1112
+- [x] T113 Search under load: `SOLR_CONCURRENCY`'s default from 2 to 8, measured at 2, 4, 8 and 16 under 8 clients. On a mix of 10 typical requests, 154 → 196 requests/s, and the suggestions in it 178 → 76 ms (median); 16 no better. The queue and its 64-waiting cap stay — PRNUM
 
 ## Notes
 

@@ -50,8 +50,8 @@ export const settings = {
   solrUrl: (): string => envSetting('SOLR_URL'),
   solrUser: (): string => envSetting('SOLR_USER'),
   solrPassword: (): string => envSetting('SOLR_PASSWORD'),
-  /** SOLR_CONCURRENCY as given, or 2; solr.ts bounds it to 1-16. */
-  solrConcurrency: (): string => envSetting('SOLR_CONCURRENCY', '2'),
+  /** SOLR_CONCURRENCY as given, or 8 (speed.md, #952); solr.ts bounds it to 1-16. */
+  solrConcurrency: (): string => envSetting('SOLR_CONCURRENCY', '8'),
 
   /** The report app; none set, no report is sent. */
   reportUrl: (): string => envSetting('REPORT_URL'),
