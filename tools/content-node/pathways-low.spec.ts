@@ -10,6 +10,7 @@
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import type { GraphNode } from './graph.ts';
 
 /** A query's parameters, as the service passes them. */
 type Params = { id?: unknown; taxId?: unknown; [name: string]: unknown };
@@ -45,11 +46,10 @@ const messages = async (response: Response) =>
   ((await response.json()) as { messages: string[] }).messages;
 
 const get = (path: string) => fetch(`${base}/ContentService/data/pathways/low/${path}`);
-const node = (dbId: number, name: string) => ({
-  dbId,
-  stId: `R-HSA-${dbId}`,
-  displayName: name,
-  schemaClass: 'Pathway',
+const node = (dbId: number, name: string): GraphNode => ({
+  id: dbId,
+  labels: ['DatabaseObject', 'Event', 'Pathway'],
+  props: { dbId, stId: `R-HSA-${dbId}`, displayName: name, schemaClass: 'Pathway' },
 });
 /** The last query asked; none at all is the test's failure, not undefined. */
 const last = () => {
@@ -119,6 +119,40 @@ describe('/entity/{id}/allForms and /diagram/entity/{id}/allForms', () => {
       'MATCH (:PhysicalEntity{stId: $id})-[:regulator|hasComponent|repeatedUnit|hasMember|hasCandidate|referenceEntity|proteinMarker|RNAMarker*]->(re:ReferenceEntity) WITH re MATCH (re)<-[:referenceEntity]-(:PhysicalEntity)<-[:regulatedBy|regulator|catalystActivity|physicalEntity|entityFunctionalStatus|diseaseEntity|hasMember|hasCandidate|hasComponent|repeatedUnit|input|output|proteinMarker|RNAMarker*]-(r:ReactionLikeEvent)<-[:hasEvent*]-(p:Pathway{hasDiagram:True})-[:species]->(Species{taxId:$taxId}) WITH r, HEAD(COLLECT(p)) AS m RETURN DISTINCT m'
     );
   });
+});
+
+describe('the view and identity Java writes domain objects in (#953)', () => {
+  // Java's CustomMessageConverter writes these pathways as it writes every
+  // domain object: with `includeRef=true` each starts with JSOG's "@id", and
+  // without it there is none. Measured against Java on 27 Nov 2026.
+  for (const [path, column] of [
+    ['entity/R-HSA-1', 'p'],
+    ['entity/R-HSA-1/allForms', 'p'],
+    ['diagram/entity/R-HSA-1', 'm'],
+    ['diagram/entity/R-HSA-1/allForms', 'm'],
+  ] as const) {
+    it(`${path} gives JSOG ids with includeRef=true`, async () => {
+      rows = [{ [column]: node(2, 'B') }, { [column]: node(1, 'A') }];
+      const text = await (await get(`${path}?includeRef=true`)).text();
+      expect(text).toBe(
+        '[{"@id":"1","dbId":2,"displayName":"B","stId":"R-HSA-2","hasEHLD":false,"schemaClass":"Pathway","className":"Pathway"},' +
+          '{"@id":"2","dbId":1,"displayName":"A","stId":"R-HSA-1","hasEHLD":false,"schemaClass":"Pathway","className":"Pathway"}]'
+      );
+    });
+
+    it(`${path} gives none without it, nor for another value (Boolean.parseBoolean)`, async () => {
+      rows = [{ [column]: node(2, 'B') }];
+      for (const query of ['', '?includeRef=false', '?includeRef=yes']) {
+        const text = await (await get(`${path}${query}`)).text();
+        expect([query, text]).toEqual([
+          query,
+          '[{"dbId":2,"displayName":"B","stId":"R-HSA-2","hasEHLD":false,"schemaClass":"Pathway","className":"Pathway"}]',
+        ]);
+      }
+      const text = await (await get(`${path}?includeRef=TRUE`)).text();
+      expect(text.startsWith('[{"@id":"1","dbId":2,')).toBe(true);
+    });
+  }
 });
 
 describe("Java's 404", () => {
