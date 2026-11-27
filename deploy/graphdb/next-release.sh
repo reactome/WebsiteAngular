@@ -22,6 +22,10 @@
 # otherwise end it there. (It goes back if interrupted before the graph has started,
 # and says where it stopped after.)
 #
+# Then, where compose's NGINX_SITE_LOCAL names nginx's site-local folder, it moves the
+# release /download/current/ means (that folder's download-release.map) to the release
+# now serving, and reloads nginx; `rollback` moves it back.
+#
 # Last, by hand: purge the edge cache and warm it (printed at the end).
 set -euo pipefail
 # Run as `... | tee log` and the session lost, a write into the dead pipe killed the
@@ -41,6 +45,8 @@ TOMCAT_LOGS="${TOMCAT_LOGS:-/var/log/tomcat9}"
 # directory only root can write to, outside the checkout.
 STATE="${NEXT_RELEASE_STATE:-/var/lib/reactome-next-release/state}"
 OLD_STATE="${NEXT_RELEASE_OLD_STATE:-/var/tmp/reactome-next-release.state}"
+# compose's settings, read for NGINX_SITE_LOCAL alone, never sourced.
+COMPOSE_ENV="${NEXT_RELEASE_COMPOSE_ENV:-$repo/.env}"
 
 # Writing never stops the script: after a dropped connection every write fails, and
 # under set -e the first one ended it wherever it was, a rollback included.
@@ -115,6 +121,160 @@ restart_with_cleared_cache() {
   dc up -d "$service" >/dev/null || return 1
 }
 
+# nginx's site-local folder, as compose takes it: the environment's NGINX_SITE_LOCAL,
+# else the .env's (its last line for the key, quotes and a trailing comment taken off),
+# a relative path from the checkout. Nothing when neither sets it.
+site_local() {
+  local value=''
+  if [ -n "${NGINX_SITE_LOCAL+set}" ]; then
+    value="$NGINX_SITE_LOCAL"
+  elif [ -f "$COMPOSE_ENV" ]; then
+    value="$(sed -nE 's/^[[:space:]]*(export[[:space:]]+)?NGINX_SITE_LOCAL=(.*)$/\2/p' "$COMPOSE_ENV" 2>/dev/null | tail -1 || true)"
+    case "$value" in
+      \"*) value="$(printf '%s' "$value" | sed -E 's/^"([^"]*)".*$/\1/')" ;;
+      \'*) value="$(printf '%s' "$value" | sed -E "s/^'([^']*)'.*\$/\\1/")" ;;
+      *) value="$(printf '%s' "$value" | sed -E 's/(^|[[:space:]]+)#.*$//; s/[[:space:]]+$//')" ;;
+    esac
+  fi
+  [ -n "$value" ] || return 0
+  case "$value" in /*) ;; *) value="$repo/$value" ;; esac
+  printf '%s\n' "$value"
+}
+
+# The one line of download-release.map that names a release: `<host> <NN>;`, alone on
+# its line. Comments and blank lines around it are kept.
+map_line='^[[:space:]]*([^[:space:];#]+)[[:space:]]+([0-9]+);[[:space:]]*$'
+
+# Reads the site-local folder's download-release.map into map_folder (empty: no folder
+# set), map_file (empty: none there), and then map_host and map_release, or map_problem.
+read_download_map() {
+  local lines count
+  map_folder='' map_file='' map_host='' map_release='' map_problem=''
+  map_folder="$(site_local)"
+  [ -n "$map_folder" ] || return 0
+  [ -e "$map_folder/download-release.map" ] || [ -L "$map_folder/download-release.map" ] || return 0
+  map_file="$map_folder/download-release.map"
+  if [ -L "$map_file" ] || [ ! -f "$map_file" ]; then
+    map_problem="is not a plain file"
+    return 0
+  fi
+  if ! lines="$(grep -vE '^[[:space:]]*(#.*)?$' "$map_file" 2>/dev/null)"; then
+    [ -r "$map_file" ] || { map_problem="cannot be read"; return 0; }
+  fi
+  count="$(printf '%s' "$lines" | grep -c '' || true)"
+  if [ "$count" != 1 ]; then
+    map_problem="holds $count lines naming a release, not one"
+  elif [[ $lines =~ $map_line ]]; then
+    map_host="${BASH_REMATCH[1]}"
+    map_release="${BASH_REMATCH[2]}"
+  else
+    map_problem="its line is not \`<host> <release>;\` with the release a number: $lines"
+  fi
+}
+
+nginx_running() { [ "$(docker inspect -f '{{.State.Running}}' websiteangular-nginx-1 2>/dev/null)" = true ]; }
+
+# Set when /download/current/ could not be moved, so the end of a switch says it again.
+download_warning=''
+download_warn() {
+  download_warning="$*"
+  note "WARNING: $*"
+}
+
+# Moves /download/current/ to release $1: the map's line rewritten in a file of its own
+# in the same folder, given the old one's owner and mode, and moved into its place, so
+# nginx never reads half a file; the old one kept beside it until nginx has taken the new
+# one. Never fails the caller: the graph has already moved, and this says what to do.
+# Its temporary files are named so nginx's includes (download-release.map*, *.conf) never
+# read them.
+set_download_release() {
+  local to="$1" dir tmp backup checked
+  say "/download/current/"
+  read_download_map
+  local by_hand="name the release in its site-local folder's download-release.map by hand (deploy/nginx/README.md, /download/; deploy/release-server/README.md, 9)"
+  if [ -z "$map_folder" ]; then
+    note "not managed here: NGINX_SITE_LOCAL is not set. Where this host's nginx serves /download/,"
+    note "$by_hand"
+    return 0
+  fi
+  if [ -z "$map_file" ]; then
+    note "not managed here: $map_folder holds no download-release.map (nothing created)."
+    note "Where this host's nginx serves /download/, $by_hand"
+    return 0
+  fi
+  if [ -n "$map_problem" ]; then
+    download_warn "$map_file left as it is: it $map_problem; $by_hand"
+    return 0
+  fi
+  if ! [[ $to =~ ^[0-9]+$ ]]; then
+    download_warn "the release now serving is not known (content-node answers ${to:-nothing}): $map_file still names $map_release; $by_hand"
+    return 0
+  fi
+  if [ "$map_release" = "$to" ]; then
+    note "download-release.map already names release $to ($map_host)"
+    return 0
+  fi
+  dir="$(dirname "$map_file")"
+  tmp="$(mktemp "$dir/.next-release.XXXXXX" 2>/dev/null)" || {
+    download_warn "could not write in $dir: $map_file still names $map_release, not $to; $by_hand"
+    return 1
+  }
+  backup="$(mktemp "$dir/.next-release.XXXXXX" 2>/dev/null)" || {
+    rm -f "$tmp"
+    download_warn "could not write in $dir: $map_file still names $map_release, not $to; $by_hand"
+    return 1
+  }
+  checked="$(sed -E "s/$map_line/\\1 $to;/" "$map_file" 2>/dev/null > "$tmp" &&
+    grep -vE '^[[:space:]]*(#.*)?$' "$tmp")"
+  if [ "$checked" != "$map_host $to;" ] ||
+    ! cp -p "$map_file" "$backup" ||
+    ! chown --reference="$map_file" "$tmp" ||
+    ! chmod --reference="$map_file" "$tmp" ||
+    ! mv -f "$tmp" "$map_file"; then
+    rm -f "$tmp" "$backup"
+    download_warn "could not rewrite $map_file: it still names $map_release, not $to; $by_hand"
+    return 1
+  fi
+  note "download-release.map names release $to ($map_host), was $map_release"
+  if ! nginx_running; then
+    rm -f "$backup"
+    note "nginx is not running: it reads the line when it starts"
+    return 0
+  fi
+  local tested
+  if ! tested="$(dc exec -T nginx nginx -t 2>&1)"; then
+    if mv -f "$backup" "$map_file"; then
+      download_warn "nginx -t failed with the new line, so $map_file is back to release $map_release and nginx was not reloaded: /download/current/ is release $map_release, not $to"
+    else
+      download_warn "nginx -t failed with the new line, and the old file could not be put back (it is $backup): nginx was not reloaded; fix $map_file before anything reloads nginx"
+    fi
+    printf '%s\n' "$tested" | sed 's/^/    /' || true
+    return 1
+  fi
+  rm -f "$backup"
+  if ! dc exec -T nginx nginx -s reload >/dev/null 2>&1; then
+    download_warn "$map_file names release $to, but nginx could not be reloaded: docker compose exec nginx nginx -s reload"
+    return 1
+  fi
+  note "nginx reloaded: /download/current/ is release $to"
+}
+
+# What /download/current/ is, for status.
+download_status() {
+  read_download_map
+  if [ -z "$map_folder" ]; then
+    note "/download/current/: not managed here (NGINX_SITE_LOCAL is not set)"
+  elif [ -z "$map_file" ]; then
+    note "/download/current/: not managed here ($map_folder holds no download-release.map)"
+  elif [ -n "$map_problem" ]; then
+    note "/download/current/: WARNING: $map_file $map_problem"
+  elif [ "$map_release" = "$release" ]; then
+    note "/download/current/: release $map_release ($map_host), as docker-compose.yml names"
+  else
+    note "/download/current/: release $map_release ($map_host), NOT docker-compose.yml's $release"
+  fi
+}
+
 status() {
   say "Release $release named by docker-compose.yml"
   if host_neo4j_active; then note "host Neo4j: active"; else note "host Neo4j: not active"; fi
@@ -129,6 +289,7 @@ status() {
   elif [ -d "$(dirname "$STATE")" ] && [ ! -r "$(dirname "$STATE")" ]; then
     note "the record of what served before is root's: run check with sudo to see it"
   fi
+  download_status || true
   return 0
 }
 
@@ -166,6 +327,9 @@ restart_services() {
 }
 
 rolled_back=''
+# The graph release a rollback went back to, when it knows it (the host database's
+# it does not: content-node is asked).
+restored_release=''
 do_rollback() {
   # Not to be cut short, and first, before anything else can be interrupted: a second
   # Ctrl-C here stopped the graph and never started what served before.
@@ -214,7 +378,11 @@ rollback_to_host() {
     note "nothing listening on 7687 after 300s: starting the graph container again (release $release,"
     note "the one being switched to), since the host database would not start"
     systemctl disable neo4j >/dev/null 2>&1 || true
-    dc start graphdb >/dev/null 2>&1 || note "it could not be started either: nothing serves 7687"
+    if dc start graphdb >/dev/null 2>&1; then
+      restored_release="$release"
+    else
+      note "it could not be started either: nothing serves 7687"
+    fi
   fi
 }
 
@@ -244,6 +412,7 @@ rollback_to_previous_release() {
   }
   if [ "$(docker inspect -f '{{.Config.Image}} {{.State.Running}}' websiteangular-graphdb-1 2>/dev/null)" = "reactome/graphdb_readonly:Release$previous true" ]; then
     note "release $previous already serves"
+    restored_release="$previous"
     return 0
   fi
   local since waited=0
@@ -260,6 +429,7 @@ rollback_to_previous_release() {
     sleep 5
     waited=$((waited + 5))
   done
+  restored_release="$previous"
   note "release $previous serves again; docker-compose.yml still names $release:"
   note "revert that change before anything runs docker compose up (override kept: $override)"
 }
@@ -318,8 +488,10 @@ do_switch() {
       note "run switch again, or rollback"
       exit 1
     }
+    set_download_release "$release" || true
     say "Done: release $release"
     status
+    [ -z "$download_warning" ] || note "WARNING: $download_warning"
     return 0
   fi
 
@@ -430,6 +602,9 @@ do_switch() {
   fi
 
   trap - INT TERM HUP
+  # The graph serves the release: from here nothing fails the switch. A /download/current/
+  # that could not be moved is said loudly, here and again at the end.
+  set_download_release "$release" || true
   say "Done: release $release"
   status
   local listeners
@@ -442,6 +617,7 @@ Last, by hand, once the site looks right:
   2. As yourself, not root:  node tools/content-node/warm.ts https://<site> $release
   3. When happy:             sudo bash deploy/graphdb/next-release.sh cleanup
 EOF
+  [ -z "$download_warning" ] || printf '\nWARNING, /download/current/: %s\n' "$download_warning" || true
 }
 
 do_cleanup() {
@@ -467,7 +643,13 @@ do_cleanup() {
 case "${1:-}" in
   check) status ;;
   switch) do_switch ;;
-  rollback) [ "$(id -u)" = 0 ] || die "run with sudo"; state_dir; do_rollback ;;
+  rollback)
+    [ "$(id -u)" = 0 ] || die "run with sudo"
+    state_dir
+    do_rollback || exit 1
+    set_download_release "${restored_release:-$(content_node)}" || true
+    [ -z "$download_warning" ] || printf '\nWARNING, /download/current/: %s\n' "$download_warning" || true
+    ;;
   cleanup) do_cleanup ;;
   *) echo "usage: sudo bash $0 check|switch|rollback|cleanup" >&2; exit 2 ;;
 esac
