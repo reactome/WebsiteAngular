@@ -128,6 +128,10 @@ Found 19 Oct 2026 by comparing every mapping in the Java source with the publish
 
 - [ ] T110 The ORCID endpoints, `/ContentService/orcid/**` ("Claim your work", #114): about eleven (OAuth login, callback, token, sign-out, authenticated; five claims; `{orcid}/works`; `let-us-know-your-orcid`). Not in the deployed service at all: their source is `org.reactome.server.orcid` in reactome/data-content. They need ORCID OAuth credentials and the report application. Ported last (awright, 15 and 19 Oct 2026), after reviewing ORCID's requirements with awright.
 
+## Phase 11: Speed ([speed.md](speed.md), #952)
+
+- [x] T112 `GET /data/eventsHierarchy/{species}` (the Reacfoam tree) at Java's speed or better: its written answer was already kept per species (T103b, T103d), but every request still asked the graph whether the species has a top-level pathway, about 150 ms for human. That answer is now kept per Species for the life of the process, as the trees are (the release switch restarts the service). 155 ms → 7 ms alone; 25 → 270 requests/s under 8 clients. Every answer the same, status, headers and bytes, over 375 requests (every species by taxId, dbId and name, both forms, errors, 14 with analysis tokens) — #1112
+
 ## Notes
 
 - The published description lists 98 operations. When this note was written, before Phase 7's ports, node answered 52 of them in full (Phases 2–6); the ticked tasks are the current count. It answered one more in part: `/data/query/{id}/{attributeName}` for `stId` and `normalPathway` (T020, T029); T070 completes it. Operations outside the description are T026 and T060, which the site calls, and the summary in T054. Everything else is in Phases 7–9.

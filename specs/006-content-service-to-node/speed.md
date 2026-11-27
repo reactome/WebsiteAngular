@@ -135,10 +135,57 @@ No errors and no "busy" answers on either side.
   fix; it was not tested here.
 - **The Reacfoam tree.** Node keeps each species' tree in memory, but appears to
   write the 561 KB answer afresh on each request. Java serves a cached answer.
-  Keeping the written answer would likely close the gap.
+  Keeping the written answer would likely close the gap. (It was not the
+  cause: see [the Reacfoam tree, since](#the-reacfoam-tree-since-952).)
 - **The light endpoints under load.** Node's light endpoints rise evenly to a
   median of about 38–60 ms under 8 clients, a sign of queueing in its single
   process. Running more than one process would spread that.
+
+## Since then
+
+### The Reacfoam tree, since (#952)
+
+Node already kept the written answer, per species, from the first request
+(T103b, T103d). The time went on a question asked before it: whether the
+species has a top-level pathway at all. The graph answers that by walking every
+`species` edge into the species, about 150 ms for human. That answer is now
+kept per species too, for as long as the trees are (until the service
+restarts, which the release switch does), at most one boolean per species: 97
+in release 98.
+
+Measured on 27 November 2026, as above (requests straight to a node started on
+its own port, each on a fresh connection without compression), before and after
+the change. Load average about 1.5–2.2 on 8 cores.
+
+| `/data/eventsHierarchy/…`, one at a time (20 each) | Before median | p95    | After median | p95    |
+| -------------------------------------------------- | ------------- | ------ | ------------ | ------ |
+| `9606?pathwaysOnly=true` (561 KB)                  | 155 ms        | 176 ms | **7.3 ms**   | 9.2 ms |
+| `10090?pathwaysOnly=true`                          | 155 ms        | 172 ms | 5.7 ms       | 6.9 ms |
+| `9606?pathwaysOnly=true&token=…` (an analysis)     | 208 ms        | 222 ms | 60 ms        | 65 ms  |
+| `9606`, the full tree (3.9 MB)                     | 175 ms        | 191 ms | 27 ms        | 34 ms  |
+
+Java took about 12 ms for the first and 55 ms with a token (above).
+
+| 8 clients, 20 seconds                    | Requests/s    | Median      | p95          | Worst        |
+| ---------------------------------------- | ------------- | ----------- | ------------ | ------------ |
+| The tree alone (three species)           | 25 → **270**  | 316 → 28 ms | 404 → 41 ms  | 633 → 69 ms  |
+| 10 typical requests, the tree among them | 100 → **150** | 15 → 14 ms  | 313 → 270 ms | 421 → 381 ms |
+
+In the mix, the tree itself went from a median of 306 ms to 17 ms; what is left
+of the mix's p95 is search (below). No errors in any run.
+
+**The same answers.** 375 requests — every species by taxId, by dbId and by
+name, both forms of the tree for each species that has one, the errors (no
+species, a number past a long, a bad Boolean, no top-level pathway) and 14
+with analysis tokens — gave the same status, `Content-Type`,
+`Content-Disposition`, `Cache-Control`, `X-Cache-Rule`, `ETag`,
+`Content-Length` and body (by SHA-256) before and after, both on the first
+request and from the cache.
+
+**What is left.** Writing the kept answer costs about 1.3 ms a request for the
+561 KB tree: encoding it to UTF-8 bytes and Express's ETag over them. Keeping
+the bytes as well would change the path every answer is written by, for about
+a millisecond, so it was left.
 
 ## Caveats
 

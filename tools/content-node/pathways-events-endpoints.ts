@@ -1368,6 +1368,29 @@ async function hasHierarchy(dbId: number) {
   return Number(rows[0]?.n ?? 0) > 0;
 }
 
+const withHierarchy = new Map<number, Promise<boolean>>();
+
+/**
+ * hasHierarchy, kept per Species while the process lives, as the trees are:
+ * the query walks every `species` edge into the Species, about 150ms for
+ * human (#952), which every request for a tree paid even when the tree itself
+ * was ready. Only a Species hierarchySpecies found is asked about, so there
+ * are at most as many entries as the release has species (97 in release 98),
+ * a boolean each. Held for the life of the process, as the trees and every
+ * other release-bound cache here are (answers.ts, `cached`): the release
+ * switch (deploy/graphdb/next-release.sh) restarts this service, which empties
+ * it with them. A failed query is tried again next time.
+ */
+function cachedHasHierarchy(dbId: number) {
+  let known = withHierarchy.get(dbId);
+  if (!known) {
+    known = hasHierarchy(dbId);
+    known.catch(() => withHierarchy.delete(dbId));
+    withHierarchy.set(dbId, known);
+  }
+  return known;
+}
+
 /**
  * analysis-core's Tokenizer.getName: the token URL-decoded until it no longer
  * changes, then Base64-decoded -- each step's failure Java's own message,
@@ -1920,7 +1943,7 @@ async function eventsHierarchy(request: Request) {
   const found = await hierarchySpecies(raw);
   if (found.failure !== undefined)
     return javaError(request, 500, 'INTERNAL_SERVER_ERROR', found.failure);
-  if (found.ambiguous || !found.species || !(await hasHierarchy(found.species.dbId)))
+  if (found.ambiguous || !found.species || !(await cachedHasHierarchy(found.species.dbId)))
     return unexpectedFailure(request);
   const { taxId, displayName } = found.species;
   // HierarchyBuilder leaves the hierarchy of a species without a taxId empty,
