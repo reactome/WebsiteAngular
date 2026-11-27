@@ -61,10 +61,10 @@ describe('the embeddable diagram is in every build of the site', () => {
     const site = basename(outputPath('reactome'));
     const diagram = basename(outputPath('reactome-diagram-element'));
     expect([site, diagram]).toEqual(['reactome', 'reactome-diagram']);
-    for (const args of [['--output-path', '/scratch/out'], ['--output-path=/scratch/out/']])
+    for (const args of [['--output-path', 'build-root'], ['--output-path=build-root/']])
       expect(builds('production', 'production', ...args)).toEqual([
-        `npx ng build reactome --configuration production --output-path /scratch/out/${site}`,
-        `npx ng build reactome-diagram-element --configuration production --output-path /scratch/out/${diagram}`,
+        `npx ng build reactome --configuration production --output-path build-root/${site}`,
+        `npx ng build reactome-diagram-element --configuration production --output-path build-root/${diagram}`,
       ]);
   });
 
