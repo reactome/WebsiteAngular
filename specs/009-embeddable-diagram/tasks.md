@@ -251,7 +251,24 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 
 - [x] T041 Decide #339 with this in place. `PathwayBrowser` is superseded by `reactome-diagram-element` plus the `reactome` app. Remove it, or make it build and add it to CI; record which, and why, on #339. Decide `WebsiteAngular` the same way.
   - **As built**: both removed (user's decision, 2 Oct 2026), with the files only they reached (knip-confirmed), the `<pathway-browser>` element and `ANGULAR_ELEMENTS_SETUP.md`, and the two analogjs packages only PathwayBrowser's `ng test` target used. The site's build is unchanged.
-- [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
+- [x] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
+  - **Done (PR #1099).** `RELEASE-TESTING.md` has a section, "The embeddable diagram": what
+    the embed is, that partners rely on the old address so it must keep working at the
+    cutover, and a row each for the code suite's two checks, the release check below, and
+    the one check that needs a person (a partner's own page after the cutover). The release
+    check is new: `e2e/release/embed.spec.ts` puts a partner's page on a made-up origin of
+    its own, answered in the browser, and loads the embed from the site under test both
+    ways: the supported address with `<reactome-diagram>`, and AllianceGenome's page as
+    written (`alliance-old-address.html`, its host changed to the site's), which loads the
+    old address. Each must draw, ask the site and no other Reactome host for its data (the
+    diagram files come from the download host, as for every deployment), and take its
+    loading picture from beside its code on the site, which must answer it with an image.
+    Run against beta: both pass. Seen failing there: the supported page loading the embed
+    from `/embed/diagram/v0/` (the diagram never draws), and, one at a time, the data, the
+    host list and the loading picture asserted against another origin. #322 is not the
+    place for this (it tracked Angular migrations, and is closed), so no issue was updated:
+    this spec and `RELEASE-TESTING.md` are the record. Where the embed is served, and how it
+    is tested, are in that section.
 - [x] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
   - **Done (PR #1098), by choosing the host at run time.** Measured first: the site's image
     (spec 032) already built and served the embed, but beta's build of it, so the release
@@ -331,6 +348,11 @@ gene page shows no diagram. Raised by the project's owner, 25 Nov 2026.
     redirected, which are refused unless the redirect carries `Access-Control-Allow-Origin`,
     as for the code's request above. (Where the code's own request is redirected, its address
     is the one redirected to, and its data comes from there.)
+  - **Note (T042):** the first part now has a check to run: `e2e/release/embed.spec.ts`,
+    `E2E_BASE_URL=https://<that stack> npx playwright test --project=release e2e/release/embed.spec.ts`.
+    It loads both addresses from a page on another origin and checks the diagram draws, with
+    its data and loading picture from that stack. Run by the owner against the production
+    stack before the cutover; it has been run against beta only.
 
 ## Dependencies & Execution Order
 
