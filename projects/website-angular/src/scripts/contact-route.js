@@ -27,6 +27,7 @@
  * says it cannot send rather than sending unchecked or nowhere.
  */
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const net = require('node:net');
 const express = require('express');
 const gate = require('./human-gate.js');
@@ -188,6 +189,21 @@ function sendmail(raw, from, sendmailPath = '/usr/sbin/sendmail', timeoutMs = 30
   });
 }
 
+/** A message to SES gets this long in all before the route gives up on it. */
+const SES_SEND_TIMEOUT_MS = 15_000;
+
+/**
+ * One attempt, never retried: an answer that comes late may still have been
+ * sent, and a retry would send the message twice. Exported so a spec holds it.
+ */
+function sesClientConfig(region) {
+  return {
+    region,
+    maxAttempts: 1,
+    requestHandler: { connectionTimeout: 5_000, requestTimeout: 10_000 },
+  };
+}
+
 /** One SES client per region, kept: its credentials are cached between messages. */
 const sesClients = new Map();
 function sesClientFor(region) {
@@ -200,11 +216,7 @@ function sesClientFor(region) {
     // been sent, and a retry would send the message twice. Credentials are
     // the SDK's default chain's: the instance's role, on the host or in a
     // container on its network.
-    client = new SESv2Client({
-      region,
-      maxAttempts: 1,
-      requestHandler: { connectionTimeout: 5_000, requestTimeout: 10_000 },
-    });
+    client = new SESv2Client(sesClientConfig(region));
     sesClients.set(region, client);
   }
   return client;
@@ -217,7 +229,7 @@ function sesClientFor(region) {
  * are CONTACT_TO's addresses, those of the message's To header, as
  * sendmail's `-t` reads them.
  */
-async function sesSend(raw, from, to, client, timeoutMs = 15_000) {
+async function sesSend(raw, from, to, client, timeoutMs = SES_SEND_TIMEOUT_MS) {
   const { SendEmailCommand } = require('@aws-sdk/client-sesv2');
   const recipients = to
     .split(',')
@@ -283,8 +295,22 @@ function mountContactRoute(
       : sendmail(raw, from, sendmailPath);
   };
 
+  // Ready only if the message has somewhere to go: SES, a stand-in, or a
+  // sendmail that is there. Without it (the site's image has none) the form is
+  // not offered, rather than each reader solving the check to be told 502.
+  const ready = () => {
+    if (!canSend(env)) return false;
+    if (send || settings(env).sesRegion) return true;
+    try {
+      fs.accessSync(sendmailPath, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   app.get(route, (_req, res) => {
-    if (!canSend(env)) {
+    if (!ready()) {
       res.status(503).json({ detail: 'Messages cannot be sent from this deployment' });
       return;
     }
@@ -295,7 +321,7 @@ function mountContactRoute(
   // UTF-8 each, and the other fields. 16kb refused a long CJK message before
   // its length was ever checked.
   app.post(route, express.json({ limit: '64kb' }), async (req, res) => {
-    if (!canSend(env)) {
+    if (!ready()) {
       res.status(503).json({ detail: 'Messages cannot be sent from this deployment' });
       return;
     }
@@ -347,6 +373,9 @@ module.exports = {
   compose,
   readMessage,
   sendmail,
+  sesClientConfig,
+  sesSend,
+  SES_SEND_TIMEOUT_MS,
   // Test-only: the counters are process-wide, so a spec needs to start clean.
   __resetLimits: () => contactLimiter.reset(),
 };

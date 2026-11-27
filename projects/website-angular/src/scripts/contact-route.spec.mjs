@@ -16,7 +16,15 @@ process.env.TURNSTILE_SITEKEY = '1x00000000000000000000AA';
 
 const require = createRequire(import.meta.url);
 const express = require('express');
-const { mountContactRoute, compose, sendmail, __resetLimits } = require('./contact-route.js');
+const {
+  mountContactRoute,
+  compose,
+  sendmail,
+  sesClientConfig,
+  sesSend,
+  SES_SEND_TIMEOUT_MS,
+  __resetLimits,
+} = require('./contact-route.js');
 
 const CONFIGURED = { CONTACT_TO: 'desk@example.org', CONTACT_FROM: 'site@example.org' };
 const GOOD = {
@@ -38,6 +46,8 @@ async function start(env = CONFIGURED) {
   const app = express();
   mountContactRoute(app, {
     env,
+    // Never the host's own: a route that ignored `send` fails here, sending nothing.
+    sendmailPath: '/nonexistent/sendmail',
     verify: async (token, remoteip) => {
       verified.push(token);
       remoteips.push(remoteip);
@@ -443,5 +453,48 @@ describe('handing a message to Amazon SES', () => {
     expect(regions).toEqual([]);
     expect(commands).toEqual([]);
     fs.rmSync(dir, { recursive: true, force: true });
+  });
+});
+
+describe('the SES client and its limits', () => {
+  it('makes one attempt, never retried, with timeouts', () => {
+    expect(sesClientConfig('us-east-1')).toEqual({
+      region: 'us-east-1',
+      maxAttempts: 1,
+      requestHandler: { connectionTimeout: 5_000, requestTimeout: 10_000 },
+    });
+    expect(SES_SEND_TIMEOUT_MS).toBe(15_000);
+  });
+
+  it('gives up on an answer that does not come in time', async () => {
+    // A client that answers only when the request is abandoned.
+    const silent = {
+      send: (_command, { abortSignal }) =>
+        new Promise((_resolve, reject) => {
+          abortSignal.addEventListener('abort', () => reject(abortSignal.reason));
+        }),
+    };
+    const started = Date.now();
+    await expect(
+      sesSend('To: desk@example.org\n\n', 'site@example.org', 'desk@example.org', silent, 50)
+    ).rejects.toThrow();
+    expect(Date.now() - started).toBeLessThan(2_000);
+  });
+});
+
+describe('a deployment with no way to send', () => {
+  it('does not offer the form when there is no region and no sendmail', async () => {
+    const app = express();
+    mountContactRoute(app, {
+      env: CONFIGURED,
+      sendmailPath: '/nonexistent/sendmail',
+      verify: async () => true,
+    });
+    await new Promise((resolve) => {
+      server = app.listen(0, '127.0.0.1', resolve);
+    });
+    base = `http://127.0.0.1:${server.address().port}/contact`;
+    expect((await fetch(base)).status).toBe(503);
+    expect((await post(GOOD)).status).toBe(503);
   });
 });

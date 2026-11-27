@@ -64,7 +64,8 @@ container's whatever the settings file says. The site image has no `sendmail`, s
 contact form sends through Amazon SES (T031): the settings file names `CONTACT_TO`,
 `CONTACT_FROM` and `CONTACT_SES_REGION`, and the host's role allows `ses:SendEmail` from
 `CONTACT_FROM`'s address. With `CONTACT_TO` or `CONTACT_FROM` unset the form says it cannot
-send; with `CONTACT_SES_REGION` unset it would look for a `sendmail` the image does not have.
+send; with `CONTACT_SES_REGION` unset it finds no `sendmail` in the image, so it also says
+it cannot send, rather than offering a form that fails after the reader's check.
 The render service needs no entry: the base file reads `RENDER_FILES_DIR` and
 `RENDER_CONCURRENCY` from the settings file (T016). `RENDER_FILES_DIR` names the folder
 holding the release folders (`<it>/99/diagram/...`), as the download site lays them out,
