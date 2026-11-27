@@ -1,0 +1,292 @@
+name: Publish images
+
+# The images a server runs the site's stack from (specs/032 R1): each built
+# from the commit Tests passed on main, pushed tagged with that commit's full
+# id, and only once every one of them is there is each image's `main` tag moved
+# to it. A server pins IMAGE_TAG to a commit id, so it always runs one commit's
+# images, never a mix.
+#
+# A commit's tag is written once: a re-run finds it in the registry and builds
+# nothing, so the image a server pinned never changes under it. Each image is
+# labelled org.opencontainers.image.revision with the commit. mcp's image is
+# the exception to "built from the commit": it holds reactome-mcp's main as of
+# the build, whose own commit the image records in /srv/REVISION.
+#
+# Each image's `main` only ever moves forward, decided for that image alone:
+# it moves to this run's commit if it is absent, carries no revision label, or
+# names a commit this one is ahead of (GitHub's comparison); a commit equal to
+# this one, ahead of it or diverged from it leaves that image's `main` alone.
+# So runs may finish in any order, and a re-run repairs a run that stopped
+# part-way through its moves. Runs are not queued (a newer one waiting must
+# never cancel another's publish). A newer commit whose run never comes (Tests
+# failed, `[skip ci]`) leaves `main` where it is, and re-running an older run
+# then still moves it forward. Not airtight: two runs that both pass an
+# image's check just before its move race, and the later move wins, so an
+# older commit can still win that race; and each image's tag moves on its own,
+# so the images' `main` tags never move together. That is why a server pins
+# IMAGE_TAG to a commit id, never `main`. If the commit `main` names is no
+# longer in the repository (force-pushed away), the comparison fails and so
+# does the run: a person decides where `main` goes.
+#
+# Never java-library or pdf-export: the first's graph library declares no
+# licence, and publishing the second is that repository's decision. Both are
+# built on the server (R1's table); tools/workflows.spec.ts refuses either here.
+on:
+  workflow_run:
+    workflows: ['Tests']
+    types: [completed]
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    name: Publish ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    # deploy.yml's guard, for the same reason: Tests runs on pull requests too,
+    # forks included, and the branch filter above matches the head branch, so
+    # a fork's branch named main would otherwise publish its own commit with
+    # this job's registry role. Only a push to this repository that passed
+    # publishes (tools/workflows.spec.ts). And nothing at all until the
+    # registry exists and is named in the repository's variables.
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      vars.REGISTRY != ''
+    # The site's image runs the Angular build, the slow one.
+    timeout-minutes: 60
+    strategy:
+      # One image failing must not leave the others half-published: they are
+      # only tagged with the commit, and `main` moves in the next job only if
+      # every one of these passed.
+      fail-fast: false
+      matrix:
+        include:
+          - name: site
+            dockerfile: deploy/site/Dockerfile
+          - name: content-node
+            dockerfile: deploy/content-node/Dockerfile
+          - name: render
+            dockerfile: deploy/render-service/Dockerfile
+          - name: analysis-gateway
+            dockerfile: deploy/analysis-gateway/Dockerfile
+          # Built from reactome-mcp's main at the time, as docker-compose.yml's
+          # default MCP_REF is; the image records the commit in /srv/REVISION.
+          - name: mcp
+            dockerfile: deploy/mcp/Dockerfile
+          # The configuration is baked in by NGINX_ENV, so one image per
+          # deployment, and a server pulls the one for its role.
+          - name: nginx-dev
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=dev
+          - name: nginx-release
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=release
+          - name: nginx-production
+            dockerfile: deploy/nginx/Dockerfile
+            build-args: NGINX_ENV=production
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit that was tested, not whatever main points at now.
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: ${{ vars.REGISTRY_ROLE }}
+          # A public registry signs in through this region whichever one it
+          # serves from.
+          aws-region: us-east-1
+
+      - name: Sign in to the registry
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin "${REGISTRY%%/*}"
+
+      # Through env, never pasted into the script (tools/workflows.spec.ts).
+      # A tag already there is left alone: a re-run of the workflow, or of a
+      # failed leg, never rebuilds an image under a commit's tag a server may
+      # have pinned (a rebuild is never byte-identical).
+      - name: Build and push, tagged with the commit
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          NAME: ${{ matrix.name }}
+          DOCKERFILE: ${{ matrix.dockerfile }}
+          BUILD_ARGS: ${{ matrix.build-args }}
+        run: |
+          set -euo pipefail
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "not a full commit id: $SHA" >&2; exit 1; }
+          args=()
+          for arg in $BUILD_ARGS; do args+=(--build-arg "$arg"); done
+          image="$REGISTRY/$NAME:$SHA"
+          # 0: the tag is there; 1: the registry says it is not. Only that
+          # answer means absent: the CLI exits 254 for any error the service
+          # returns and names it in its message. Any other failure stops here,
+          # so a registry that cannot answer never reads as "build it".
+          published() {
+            local err status=0
+            err=$(aws ecr-public describe-images --region us-east-1 \
+              --repository-name "$1" --image-ids imageTag="$2" 2>&1 > /dev/null) || status=$?
+            if [ "$status" -eq 0 ]; then return 0; fi
+            if [ "$status" -eq 254 ] &&
+              [[ "$err" == *"(ImageNotFoundException) when calling the DescribeImages operation"* ]]; then
+              return 1
+            fi
+            echo "$1:$2: the registry did not answer (exit $status): $err" >&2
+            exit 1
+          }
+          if published "$NAME" "$SHA"; then
+            echo "$image is already published: not rebuilt"
+            exit 0
+          fi
+          docker build -f "$DOCKERFILE" "${args[@]}" \
+            --label "org.opencontainers.image.revision=$SHA" -t "$image" .
+          docker push "$image"
+
+  main-tag:
+    name: Move the main tags
+    # Only after every image of this commit is in the registry: a failed or
+    # cancelled build above skips this, and `main` stays on the last commit
+    # whose images were all published.
+    needs: publish
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: ${{ vars.REGISTRY_ROLE }}
+          aws-region: us-east-1
+
+      - name: Sign in to the registry
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin "${REGISTRY%%/*}"
+
+      # The commit's own image under `main` too, copied on the registry by
+      # digest: the same manifest or index, nothing pulled, rebuilt or pushed.
+      # (`--prefer-index=false`: by default a single manifest would be wrapped
+      # in a new index, under another digest.) Checked afterwards, so a `main`
+      # naming any other digest fails the step.
+      #
+      # Only forward, image by image: the commit an image's `main` names is
+      # read from that image's revision label, and its `main` moves only if
+      # there is none yet, or no label, or this commit is ahead of it. Decided
+      # for every image before anything is touched, and again for each image
+      # just before its move. Every image's commit tag is confirmed first, so
+      # none moves unless all can. The registry lookups answer "absent" only on
+      # the registry's own not-found, as in the publish job.
+      - name: Point main at this commit's images
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          images=(site content-node render analysis-gateway mcp
+            nginx-dev nginx-release nginx-production)
+          # 0: the tag is there; 1: the registry says it is not. Only that
+          # answer means absent: the CLI exits 254 for any error the service
+          # returns and names it in its message. Any other failure stops here,
+          # so a registry that cannot answer never reads as "build it".
+          published() {
+            local err status=0
+            err=$(aws ecr-public describe-images --region us-east-1 \
+              --repository-name "$1" --image-ids imageTag="$2" 2>&1 > /dev/null) || status=$?
+            if [ "$status" -eq 0 ]; then return 0; fi
+            if [ "$status" -eq 254 ] &&
+              [[ "$err" == *"(ImageNotFoundException) when calling the DescribeImages operation"* ]]; then
+              return 1
+            fi
+            echo "$1:$2: the registry did not answer (exit $status): $err" >&2
+            exit 1
+          }
+          # Sets forward to yes if image $1's `main` moves to this commit, to
+          # no if it stays. Called as a statement, never as a condition, so
+          # `set -e` holds inside it: a lookup or API failure fails the step.
+          check_forward() {
+            local name="$1" current status
+            forward=no
+            if ! published "$name" main; then
+              echo "$name: no main tag yet: it moves to $SHA"
+              forward=yes
+              return
+            fi
+            # One platform's configuration, or a map of them for a multi-platform
+            # index; attestation manifests are not among them.
+            current=$(docker buildx imagetools inspect "$REGISTRY/$name:main" \
+              --format '{{json .Image}}' |
+              jq -r '(if has("config") then [.] else [.[]] end)
+                | map(.config.Labels["org.opencontainers.image.revision"] // "")
+                | unique | if length == 1 then .[0] else error("platforms disagree") end')
+            if [ -z "$current" ]; then
+              echo "$name: main names no commit: it moves to $SHA"
+              forward=yes
+              return
+            fi
+            [[ "$current" =~ ^[0-9a-f]{40}$ ]] || { echo "$name: main's label is not a commit id: $current" >&2; exit 1; }
+            if [ "$current" = "$SHA" ]; then
+              echo "$name: main is at $SHA already"
+              return
+            fi
+            status=$(gh api "repos/$GITHUB_REPOSITORY/compare/$current...$SHA" --jq .status)
+            case "$status" in
+              ahead)
+                echo "$name: $SHA is ahead of main's $current: main moves to it"
+                forward=yes
+                ;;
+              behind | diverged | identical)
+                echo "$name: compared with main's $current, $SHA is $status: main stays"
+                ;;
+              *)
+                echo "$name: unexpected comparison of $current...$SHA: $status" >&2
+                exit 1
+                ;;
+            esac
+          }
+          # The digest a tag names: a single manifest's or an index's own.
+          digest_of() {
+            docker buildx imagetools inspect "$1" --format '{{json .Manifest}}' | jq -r .digest
+          }
+          moving=()
+          for name in "${images[@]}"; do
+            check_forward "$name"
+            if [ "$forward" = yes ]; then moving+=("$name"); fi
+          done
+          if [ "${#moving[@]}" -eq 0 ]; then
+            echo "no main tag moves"
+            exit 0
+          fi
+          for name in "${images[@]}"; do
+            if ! published "$name" "$SHA"; then
+              echo "$name:$SHA is not in the registry: no main tag moved" >&2
+              exit 1
+            fi
+          done
+          for name in "${moving[@]}"; do
+            want=$(digest_of "$REGISTRY/$name:$SHA")
+            [[ "$want" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "$name:$SHA has no digest: $want" >&2; exit 1; }
+            check_forward "$name"
+            if [ "$forward" != yes ]; then continue; fi
+            docker buildx imagetools create --prefer-index=false \
+              --tag "$REGISTRY/$name:main" "$REGISTRY/$name:$SHA"
+            got=$(digest_of "$REGISTRY/$name:main")
+            if [ "$got" != "$want" ]; then
+              echo "$name: main names $got, not the commit's $want" >&2
+              exit 1
+            fi
+            echo "$name: main -> $got"
+          done
