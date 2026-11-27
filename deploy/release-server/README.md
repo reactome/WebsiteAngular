@@ -66,8 +66,12 @@ The site's settings file (`ANSWER_ENV_FILE`) holds what beta's site service read
 its own: the human check's keys, the identity secret (which the analysis gateway reads
 too: without it no report is made), and the chat's addresses, set to this server's own
 chat, never to another deployment's (unset, they name beta's). The gateway does not start
-without the file. `CONTACT_TO` stays unset for now: the contact form needs a `sendmail`
-the site image does not have (spec 032 T031).
+without the file. The contact form's settings are there too: `CONTACT_TO`, `CONTACT_FROM`
+and `CONTACT_SES_REGION`. The site image has no `sendmail`, so the form sends through
+Amazon SES's API in that region, signed by the instance's role (spec 032 T031): the role
+needs `ses:SendEmail`, allowed for `CONTACT_FROM`'s address, and that address's domain must
+be a verified SES identity in the region. Leave `CONTACT_TO` unset and the form says it
+cannot send.
 
 **`docker-compose.override.yml`** — as in
 [`contracts/compose-override.md`](../../specs/032-release-server/contracts/compose-override.md):

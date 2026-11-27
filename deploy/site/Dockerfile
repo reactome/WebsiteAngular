@@ -28,14 +28,15 @@ RUN npm run build:libs \
 
 FROM node:24-slim
 WORKDIR /site
-# serve-prod.js and the modules it loads need two packages at run time, at the
-# versions the repository's own package.json names (as the render image does).
-# Not the whole dependency tree: that is Angular and its build, none of which
-# runs here.
+# serve-prod.js and the modules it loads need three packages at run time, at
+# the versions the repository's own package.json names (as the render image
+# does): the contact form sends through Amazon SES's SDK, as the image has no
+# sendmail (specs/032 T031). Not the whole dependency tree: that is Angular and
+# its build, none of which runs here.
 COPY package.json ./root-package.json
 RUN node -e " \
       const root = require('./root-package.json'); \
-      const needed = ['express', 'http-proxy-middleware']; \
+      const needed = ['express', 'http-proxy-middleware', '@aws-sdk/client-sesv2']; \
       const dependencies = {}; \
       for (const name of needed) { \
         const version = (root.dependencies ?? {})[name] ?? (root.devDependencies ?? {})[name]; \

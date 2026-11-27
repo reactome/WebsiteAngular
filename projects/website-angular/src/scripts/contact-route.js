@@ -4,7 +4,10 @@
  * Our own route rather than ContentService's /contact, which only accepts an
  * hCaptcha token checked with a secret held there. Here the reader proves they
  * are a person with Cloudflare Turnstile, as for the site's other checks, and
- * the message is handed to the local mail transfer agent.
+ * the message is handed on: to Amazon SES, signed by the host's or container's
+ * role, when CONTACT_SES_REGION names a region; otherwise to the local mail
+ * transfer agent, sendmail. The site's image has no sendmail, so a deployment
+ * served by the image sends through SES (spec 032 T031).
  *
  *   GET  /contact  -> 200 { sitekey }, or 503 when this deployment cannot send.
  *   POST /contact  { contactName?, mailAddress, subject, message, token }
@@ -19,10 +22,12 @@
  * it off, since an unchecked form that sends mail is a relay for spam.
  *
  * Where mail goes and whom it is from are settings, not code: CONTACT_TO and
- * CONTACT_FROM. Without them, or without Turnstile's keys, the route says it
- * cannot send rather than sending unchecked or nowhere.
+ * CONTACT_FROM, and CONTACT_SES_REGION for the way it goes. Without the first
+ * two, with a region that is no region, or without Turnstile's keys, the route
+ * says it cannot send rather than sending unchecked or nowhere.
  */
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const net = require('node:net');
 const express = require('express');
 const gate = require('./human-gate.js');
@@ -41,15 +46,20 @@ const contactLimiter = makeLimiter(
   { windowMs: 3_600_000, max: 200 }
 );
 
+/** An AWS region's name: us-east-1, eu-west-2 and the like (as content-node's). */
+const REGION = /^[a-z]{2}(-[a-z]+)+-\d+$/;
+
 function settings(env = process.env) {
   return {
     to: (env.CONTACT_TO || '').trim(),
     from: (env.CONTACT_FROM || '').trim(),
+    sesRegion: (env.CONTACT_SES_REGION || '').trim(),
   };
 }
 
 function canSend(env = process.env) {
-  const { to, from } = settings(env);
+  const { to, from, sesRegion } = settings(env);
+  if (sesRegion && !REGION.test(sesRegion)) return false;
   return Boolean(to && from && gate.TURNSTILE_SITEKEY && gate.TURNSTILE_CONFIGURED);
 }
 
@@ -179,6 +189,62 @@ function sendmail(raw, from, sendmailPath = '/usr/sbin/sendmail', timeoutMs = 30
   });
 }
 
+/** A message to SES gets this long in all before the route gives up on it. */
+const SES_SEND_TIMEOUT_MS = 15_000;
+
+/**
+ * One attempt, never retried: an answer that comes late may still have been
+ * sent, and a retry would send the message twice. Exported so a spec holds it.
+ */
+function sesClientConfig(region) {
+  return {
+    region,
+    maxAttempts: 1,
+    requestHandler: { connectionTimeout: 5_000, requestTimeout: 10_000 },
+  };
+}
+
+/** One SES client per region, kept: its credentials are cached between messages. */
+const sesClients = new Map();
+function sesClientFor(region) {
+  let client = sesClients.get(region);
+  if (!client) {
+    // Loaded only when wanted: a deployment that sends through sendmail never
+    // needs the SDK.
+    const { SESv2Client } = require('@aws-sdk/client-sesv2');
+    // One attempt, never retried: an answer that comes late may still have
+    // been sent, and a retry would send the message twice. Credentials are
+    // the SDK's default chain's: the instance's role, on the host or in a
+    // container on its network.
+    client = new SESv2Client(sesClientConfig(region));
+    sesClients.set(region, client);
+  }
+  return client;
+}
+
+/**
+ * Hands a composed message to Amazon SES (SendEmail, v2) as it is: the same
+ * headers and body sendmail is given, its lines ended CRLF as SMTP carries
+ * them. `from` is the sending identity, as sendmail's `-f`; the recipients
+ * are CONTACT_TO's addresses, those of the message's To header, as
+ * sendmail's `-t` reads them.
+ */
+async function sesSend(raw, from, to, client, timeoutMs = SES_SEND_TIMEOUT_MS) {
+  const { SendEmailCommand } = require('@aws-sdk/client-sesv2');
+  const recipients = to
+    .split(',')
+    .map((address) => address.trim())
+    .filter(Boolean);
+  await client.send(
+    new SendEmailCommand({
+      FromEmailAddress: from,
+      Destination: { ToAddresses: recipients },
+      Content: { Raw: { Data: Buffer.from(raw.replace(/\r?\n/g, '\r\n'), 'utf8') } },
+    }),
+    { abortSignal: AbortSignal.timeout(timeoutMs) }
+  );
+}
+
 /** What was sent, checked and trimmed; or the reason it cannot be sent. */
 function readMessage(body) {
   const field = (name) => (typeof body?.[name] === 'string' ? body[name] : '');
@@ -214,12 +280,37 @@ function mountContactRoute(
   {
     route = '/contact',
     verify = (token, remoteip) => gate.verifyCaptcha(token, fetch, remoteip),
-    send = sendmail,
+    // How a message is handed on; by default as the settings say (deliver).
+    send,
+    sesClient = sesClientFor,
+    sendmailPath = '/usr/sbin/sendmail',
     env = process.env,
   } = {}
 ) {
+  const deliver = (raw, from, to) => {
+    if (send) return send(raw, from, to);
+    const { sesRegion } = settings(env);
+    return sesRegion
+      ? sesSend(raw, from, to, sesClient(sesRegion))
+      : sendmail(raw, from, sendmailPath);
+  };
+
+  // Ready only if the message has somewhere to go: SES, a stand-in, or a
+  // sendmail that is there. Without it (the site's image has none) the form is
+  // not offered, rather than each reader solving the check to be told 502.
+  const ready = () => {
+    if (!canSend(env)) return false;
+    if (send || settings(env).sesRegion) return true;
+    try {
+      fs.accessSync(sendmailPath, fs.constants.X_OK);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   app.get(route, (_req, res) => {
-    if (!canSend(env)) {
+    if (!ready()) {
       res.status(503).json({ detail: 'Messages cannot be sent from this deployment' });
       return;
     }
@@ -230,7 +321,7 @@ function mountContactRoute(
   // UTF-8 each, and the other fields. 16kb refused a long CJK message before
   // its length was ever checked.
   app.post(route, express.json({ limit: '64kb' }), async (req, res) => {
-    if (!canSend(env)) {
+    if (!ready()) {
       res.status(503).json({ detail: 'Messages cannot be sent from this deployment' });
       return;
     }
@@ -256,9 +347,9 @@ function mountContactRoute(
     }
     const { to, from } = settings(env);
     try {
-      await send(compose({ ...read, to, from }), from);
+      await deliver(compose({ ...read, to, from }), from, to);
     } catch (error) {
-      console.error('Contact message could not be handed to the MTA', error);
+      console.error('Contact message could not be handed on', error);
       res.status(502).json({ detail: 'The message could not be sent' });
       return;
     }
@@ -282,6 +373,9 @@ module.exports = {
   compose,
   readMessage,
   sendmail,
+  sesClientConfig,
+  sesSend,
+  SES_SEND_TIMEOUT_MS,
   // Test-only: the counters are process-wide, so a spec needs to start clean.
   __resetLimits: () => contactLimiter.reset(),
 };
