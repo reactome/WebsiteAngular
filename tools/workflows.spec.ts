@@ -7,8 +7,19 @@
 //    branch named `x$(curl …|sh)` ran in guardrail.yml (review, 16 Oct 2026).
 //    Such values go through `env:` and are read as "$VARIABLE".
 // 2. A `permissions:` block, so no job runs with the default token's scope.
-import { describe, expect, it } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { parse } from 'yaml';
 
@@ -481,5 +492,423 @@ describe('the Playwright image', () => {
         .map(([at]) => `${name}:${at}`)
     );
     expect(installs).toEqual([]);
+  });
+});
+
+const TAG_SCRIPT = path.resolve('.github/scripts/tag-release.sh');
+
+// A release's tag, made by hand on release day (specs/032 T036): every
+// published image's commit tag copied to `Release<NN>`, then the git tag. The
+// tag is written once and production pins it, so the workflow is checked as
+// YAML here and its script is run below against a stand-in registry.
+describe('tag-release.yml', () => {
+  const text = readFileSync(path.join(DIR, 'tag-release.yml'), 'utf8');
+  const read = workflow('tag-release.yml');
+  const jobs = mappingOf(read['jobs']);
+  const tag = mappingOf(jobs['tag']);
+  const steps = stepsOf(tag);
+  const script = readFileSync(TAG_SCRIPT, 'utf8');
+  const publishLegs = listOf(
+    mappingOf(
+      mappingOf(
+        mappingOf(mappingOf(workflow('publish-images.yml')['jobs'])['publish'])['strategy']
+      )['matrix']
+    )['include']
+  ).map((leg) => textOf(mappingOf(leg)['name']));
+  const tagging = steps.find((step) => /tag-release\.sh/.test(textOf(step['run']))) ?? {};
+
+  it('runs only when dispatched by hand, with a commit and a release', () => {
+    expect(Object.keys(mappingOf(read['on']))).toEqual(['workflow_dispatch']);
+    const inputs = mappingOf(mappingOf(mappingOf(read['on'])['workflow_dispatch'])['inputs']);
+    expect(Object.keys(inputs)).toEqual(['commit', 'release']);
+    for (const input of Object.values(inputs)) expect(mappingOf(input)['required']).toBe(true);
+  });
+
+  // Dispatched on another branch it would be that branch's workflow and
+  // script, with the registry's role and a token that writes tags.
+  it('runs only from main, as one job with no other condition', () => {
+    expect(Object.keys(jobs)).toEqual(['tag']);
+    expect(tag['if']).toBe("github.ref == 'refs/heads/main'");
+    for (const step of steps) expect(Object.keys(step)).not.toContain('if');
+  });
+
+  it('asks for the registry role and the git tag, and nothing else', () => {
+    expect(read['permissions']).toEqual({ 'id-token': 'write', contents: 'write' });
+    expect(Object.keys(tag)).not.toContain('permissions');
+  });
+
+  it('runs one at a time and never cancels a run', () => {
+    expect(read['concurrency']).toEqual({ group: 'tag-release', 'cancel-in-progress': false });
+  });
+
+  // The first step, before any checkout or credential.
+  it('checks its inputs first', () => {
+    const first = steps[0] ?? {};
+    expect(Object.keys(first)).not.toContain('uses');
+    expect(mappingOf(first['env'])).toEqual({
+      COMMIT: '${{ inputs.commit }}',
+      RELEASE: '${{ inputs.release }}',
+    });
+    const run = textOf(first['run']);
+    expect(run).toContain('[[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || {');
+    expect(run).toContain('[[ "$RELEASE" =~ ^[1-9][0-9]{0,3}$ ]] || {');
+    // The script checks them again, by the same patterns.
+    expect(script).toContain('[[ "${COMMIT:-}" =~ ^[0-9a-f]{40}$ ]] || refuse');
+    expect(script).toContain('[[ "${RELEASE:-}" =~ ^[1-9][0-9]{0,3}$ ]] || refuse');
+  });
+
+  it('checks out main whole, and pins every action by commit', () => {
+    const uses = steps.map((step) => textOf(step['uses'])).filter(Boolean);
+    expect(uses).toHaveLength(2);
+    for (const action of uses) expect(action).toMatch(/^[\w-]+\/[\w-]+@[0-9a-f]{40}$/);
+    const checkout = steps.find((step) => textOf(step['uses']).startsWith('actions/checkout@'));
+    expect(mappingOf(checkout?.['with'])).toEqual({ 'fetch-depth': 0 });
+    expect(steps.indexOf(checkout ?? {})).toBeGreaterThan(0);
+  });
+
+  // publish-images.yml's list, so a release is every image a server pulls.
+  it('tags exactly the images publish-images.yml publishes', () => {
+    expect(publishLegs).toContain('site');
+    expect(textOf(mappingOf(tagging['env'])['IMAGES']).split(' ')).toEqual(publishLegs);
+    expect(mappingOf(tagging['env'])['COMMIT']).toBe('${{ inputs.commit }}');
+    expect(mappingOf(tagging['env'])['RELEASE']).toBe('${{ inputs.release }}');
+    expect(textOf(tagging['run'])).toBe('set -euo pipefail\nbash .github/scripts/tag-release.sh\n');
+  });
+
+  it('starts every script with set -euo pipefail, and never carries on after a failure', () => {
+    const scripts = steps.map((step) => textOf(step['run'])).filter(Boolean);
+    expect(scripts).toHaveLength(3);
+    for (const run of scripts) expect(run.split('\n')[0]).toBe('set -euo pipefail');
+    expect(code(script).split('\n').filter(Boolean).slice(0, 2)).toEqual([
+      'set -euo pipefail',
+      'shopt -s inherit_errexit',
+    ]);
+    expect(code(text)).not.toMatch(/continue-on-error/);
+    expect(code(script)).not.toMatch(/\|\| true|\|\| :/);
+  });
+
+  // The registry's own not-found only, as publish-images.yml reads it.
+  it('reads the registry as publish-images.yml does', () => {
+    const lookup = (source: string) => /^published\(\) \{\n[\s\S]*?\n\}$/m.exec(code(source))?.[0];
+    const publishing = Object.values(mappingOf(workflow('publish-images.yml')['jobs']))
+      .flatMap((job) => stepsOf(mappingOf(job)))
+      .map((step) => lookup(textOf(step['run'])))
+      .filter(Boolean);
+    expect(publishing).toHaveLength(2);
+    expect(lookup(script)).toMatch(/^published\(\) \{\n/);
+    for (const theirs of publishing) expect(lookup(script)).toBe(theirs);
+  });
+
+  // Copied on the registry by digest, once per image; never forced, moved or
+  // deleted, in git or on the registry.
+  it('copies by digest and never forces, moves or deletes a tag', () => {
+    const body = code(script);
+    expect(body.match(/imagetools create/g)).toEqual(['imagetools create']);
+    expect(body).toMatch(
+      /docker buildx imagetools create --prefer-index=false \\\n\s*--tag "\$REGISTRY\/\$name:\$TAG" "\$REGISTRY\/\$name:\$COMMIT"\n/
+    );
+    expect(body).not.toMatch(/docker (pull|push|tag)\b|batch-delete-image|put-image/);
+    expect(body).not.toMatch(/--force|\s-f\b|--delete|\s-d\b|\+refs|:refs\/tags|--mirror/);
+    expect(body.match(/git push/g)).toEqual(['git push']);
+    expect(body).toMatch(/\ngit push origin "refs\/tags\/\$TAG"\n/);
+  });
+});
+
+// The script itself, run against a stand-in registry (`aws` and `docker` on
+// PATH, keeping each tag's digest as a file) and a throwaway repository with
+// a bare `origin`: what it refuses, what it writes, and a run stopped
+// part-way and run again.
+describe('tag-release.sh', () => {
+  const REGISTRY = 'registry.test/reactome';
+  const IMAGES = ['site', 'content-node', 'render'];
+  const digest = (seed: string) => `sha256:${createHash('sha256').update(seed).digest('hex')}`;
+  // describe-images as the AWS CLI answers it: 254 for any error the service
+  // returns, named in the message.
+  const AWS = `#!/usr/bin/env bash
+echo "aws $*" >> "$STUB_LOG"
+if [ -n "\${STUB_AWS_DENIED:-}" ]; then
+  echo "An error occurred (AccessDeniedException) when calling the DescribeImages operation: denied" >&2
+  exit 254
+fi
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --repository-name) name=$2; shift ;;
+    --image-ids) tag=\${2#imageTag=}; shift ;;
+  esac
+  shift
+done
+[ -f "$STUB_REGISTRY/$name/$tag" ] && exit 0
+echo "An error occurred (ImageNotFoundException) when calling the DescribeImages operation: none" >&2
+exit 254
+`;
+  // imagetools inspect and create, on the files. Without --prefer-index=false
+  // a single manifest is wrapped in a new index, under another digest.
+  const DOCKER = `#!/usr/bin/env bash
+echo "docker $*" >> "$STUB_LOG"
+file() { local ref="\${1#"$REGISTRY"/}"; echo "$STUB_REGISTRY/\${ref%%:*}/\${ref#*:}"; }
+case "$3" in
+  inspect)
+    printf '{"digest":"%s"}\\n' "$(cat "$(file "$4")")"
+    ;;
+  create)
+    dest=$(file "$6")
+    [ "$6" != "$REGISTRY/\${STUB_FAIL_ON:-}:\${6##*:}" ] || { echo "registry error" >&2; exit 1; }
+    if [ "$4" = --prefer-index=false ]; then cp "$(file "$7")" "$dest"
+    else echo "sha256:$(echo index | sha256sum | cut -c1-64)" > "$dest"; fi
+    # Another writer, between this copy and the next.
+    [ -z "\${STUB_HOOK:-}" ] || bash "$STUB_HOOK" "$6"
+    ;;
+  *) exit 2 ;;
+esac
+`;
+  const COMPOSE = (release: number) =>
+    `services:\n  graphdb:\n    image: reactome/graphdb_readonly:Release${release}\n`;
+
+  let root = '';
+  let commits: Record<'released' | 'later' | 'branch', string>;
+  const env = (extra: Record<string, string> = {}) => ({
+    PATH: `${path.join(root, 'bin')}:${process.env['PATH'] ?? ''}`,
+    HOME: root,
+    GIT_CONFIG_NOSYSTEM: '1',
+    GIT_CONFIG_GLOBAL: '/dev/null',
+    STUB_LOG: path.join(root, 'log'),
+    STUB_REGISTRY: path.join(root, 'registry'),
+    ...extra,
+  });
+  const git = (cwd: string, ...args: string[]) =>
+    execFileSync(
+      'git',
+      ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'core.hooksPath=/dev/null', ...args],
+      { cwd, env: env(), encoding: 'utf8', stdio: 'pipe' }
+    ).trim();
+  const put = (image: string, tag: string, value: string) => {
+    mkdirSync(path.join(root, 'registry', image), { recursive: true });
+    writeFileSync(path.join(root, 'registry', image, tag), `${value}\n`);
+  };
+  const held = (image: string, tag: string) => {
+    const file = path.join(root, 'registry', image, tag);
+    return existsSync(file) ? readFileSync(file, 'utf8').trim() : undefined;
+  };
+  const remoteTag = () =>
+    git(path.join(root, 'clone'), 'ls-remote', 'origin', 'refs/tags/Release99*');
+  const copies = () =>
+    existsSync(path.join(root, 'log'))
+      ? readFileSync(path.join(root, 'log'), 'utf8')
+          .split('\n')
+          .filter((line) => / create /.test(line))
+      : [];
+  const run = (inputs: Record<string, string> = {}) => {
+    const done = spawnSync('bash', [TAG_SCRIPT], {
+      cwd: path.join(root, 'clone'),
+      encoding: 'utf8',
+      env: env({
+        REGISTRY,
+        IMAGES: IMAGES.join(' '),
+        GITHUB_REF: 'refs/heads/main',
+        COMMIT: commits.released,
+        RELEASE: '99',
+        ...inputs,
+      }),
+    });
+    return { status: done.status, output: done.stdout + done.stderr };
+  };
+
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), 'tag-release-'));
+    mkdirSync(path.join(root, 'bin'));
+    writeFileSync(path.join(root, 'bin', 'aws'), AWS, { mode: 0o755 });
+    writeFileSync(path.join(root, 'bin', 'docker'), DOCKER, { mode: 0o755 });
+    const work = path.join(root, 'work');
+    mkdirSync(work);
+    git(root, 'init', '-q', '--bare', '-b', 'main', 'origin.git');
+    git(work, 'init', '-q', '-b', 'main');
+    writeFileSync(path.join(work, 'docker-compose.yml'), COMPOSE(99));
+    git(work, 'add', '.');
+    git(work, 'commit', '-q', '-m', 'release 99');
+    const released = git(work, 'rev-parse', 'HEAD');
+    git(work, 'commit', '-q', '--allow-empty', '-m', 'later');
+    const later = git(work, 'rev-parse', 'HEAD');
+    git(work, 'checkout', '-q', '-b', 'branch', released);
+    git(work, 'commit', '-q', '--allow-empty', '-m', 'not on main');
+    const branch = git(work, 'rev-parse', 'HEAD');
+    git(work, 'push', '-q', path.join(root, 'origin.git'), 'main', 'branch');
+    git(root, 'clone', '-q', path.join(root, 'origin.git'), 'clone');
+    commits = { released, later, branch };
+    for (const image of IMAGES) {
+      put(image, released, digest(`${image}@${released}`));
+      put(image, later, digest(`${image}@${later}`));
+    }
+  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  it('tags every image at the commit tag digest, then the commit', () => {
+    const { status, output } = run();
+    expect(output).not.toMatch(/refused/);
+    expect(status).toBe(0);
+    for (const image of IMAGES)
+      expect(held(image, 'Release99')).toBe(digest(`${image}@${commits.released}`));
+    expect(copies()).toHaveLength(IMAGES.length);
+    // Annotated, on the commit.
+    const refs = remoteTag();
+    expect(refs).toContain(`${commits.released}\trefs/tags/Release99^{}`);
+    expect(git(path.join(root, 'origin.git'), 'cat-file', '-t', 'Release99')).toBe('tag');
+  });
+
+  it('refuses inputs that are not a full commit id and a release number, touching nothing', () => {
+    const bad = [
+      { COMMIT: commits.released.slice(0, 12) },
+      { COMMIT: commits.released.toUpperCase() },
+      { COMMIT: `${commits.released}\n` },
+      { COMMIT: `${commits.released} ` },
+      { COMMIT: 'main' },
+      { RELEASE: '0' },
+      { RELEASE: '099' },
+      { RELEASE: '-99' },
+      { RELEASE: '99a' },
+      { RELEASE: 'Release99' },
+      { RELEASE: '' },
+      { RELEASE: '99999' },
+      { GITHUB_REF: 'refs/heads/branch' },
+      { GITHUB_REF: 'refs/tags/main' },
+      { REGISTRY: '' },
+    ];
+    for (const inputs of bad) expect(run(inputs).status, JSON.stringify(inputs)).toBe(1);
+    expect(existsSync(path.join(root, 'log'))).toBe(false);
+  });
+
+  it('checks the inputs in the workflow’s first step by the same rules', () => {
+    const first = textOf(
+      stepsOf(mappingOf(mappingOf(workflow('tag-release.yml')['jobs'])['tag']))[0]?.['run']
+    );
+    const check = (COMMIT: string, RELEASE: string) =>
+      spawnSync('bash', ['-c', first], {
+        env: { PATH: process.env['PATH'] ?? '', COMMIT, RELEASE },
+      }).status;
+    expect(check(commits.released, '99')).toBe(0);
+    expect(check(commits.released, '1')).toBe(0);
+    expect(check(commits.released.slice(1), '99')).toBe(1);
+    expect(check(`${commits.released}\nx`, '99')).toBe(1);
+    expect(check(commits.released, '099')).toBe(1);
+    expect(check(commits.released, '0')).toBe(1);
+    expect(check(commits.released, '9 9')).toBe(1);
+  });
+
+  it('refuses a commit that is not on main, or not here', () => {
+    expect(run({ COMMIT: commits.branch }).output).toMatch(/refused: \w+ is not on main/);
+    expect(run({ COMMIT: 'f'.repeat(40) }).output).toMatch(/refused: f+ is not a commit here/);
+    expect(copies()).toEqual([]);
+    expect(remoteTag()).toBe('');
+  });
+
+  // The production checkout at the git tag runs the graph its compose names.
+  it('refuses a release the commit’s compose file does not name', () => {
+    const { status, output } = run({ RELEASE: '100' });
+    expect(status).toBe(1);
+    expect(output).toMatch(/does not name release 100's graph/);
+    expect(run({ RELEASE: '9' }).status).toBe(1);
+    expect(copies()).toEqual([]);
+  });
+
+  it('refuses unless every image has the commit tag, tagging none', () => {
+    rmSync(path.join(root, 'registry', 'render', commits.released));
+    const { status, output } = run();
+    expect(status).toBe(1);
+    expect(output).toMatch(/render:\w+ is not in the registry/);
+    expect(copies()).toEqual([]);
+    expect(remoteTag()).toBe('');
+  });
+
+  it('fails on a registry that cannot answer, never reading it as absent', () => {
+    const { status, output } = run({ STUB_AWS_DENIED: '1' });
+    expect(status).toBe(1);
+    expect(output).toMatch(/the registry did not answer \(exit 254\)/);
+    expect(copies()).toEqual([]);
+  });
+
+  // Written once: checked for every image before anything is written.
+  it('refuses, before writing anything, a Release tag on any image at another digest', () => {
+    put('render', 'Release99', digest(`render@${commits.later}`));
+    const { status, output } = run();
+    expect(status).toBe(1);
+    expect(output).toMatch(/render:Release99 already names sha256:\w+, not/);
+    expect(copies()).toEqual([]);
+    expect(held('site', 'Release99')).toBeUndefined();
+    expect(held('render', 'Release99')).toBe(digest(`render@${commits.later}`));
+    expect(remoteTag()).toBe('');
+  });
+
+  it('refuses, before writing anything, a git tag on another commit', () => {
+    git(path.join(root, 'clone'), 'tag', 'Release99', commits.later);
+    git(path.join(root, 'clone'), 'push', '-q', 'origin', 'refs/tags/Release99');
+    const { status, output } = run();
+    expect(status).toBe(1);
+    expect(output).toMatch(/the git tag Release99 already names \w+, not/);
+    expect(copies()).toEqual([]);
+    expect(remoteTag()).toBe(`${commits.later}\trefs/tags/Release99`);
+  });
+
+  it('fails, with no git tag, when a copy names another digest', () => {
+    const docker = path.join(root, 'bin', 'docker');
+    writeFileSync(docker, DOCKER.replace('= --prefer-index=false ]', '= --never ]'));
+    const { status, output } = run();
+    expect(status).toBe(1);
+    expect(output).toMatch(/site: Release99 names sha256:\w+, not/);
+    expect(remoteTag()).toBe('');
+  });
+
+  // Another writer between the first checks and a copy: each image is checked
+  // again just before its own copy, and every image once more before the git tag.
+  const hook = (script: string) => {
+    const file = path.join(root, 'hook');
+    writeFileSync(file, `${script}exit 0\n`);
+    return { STUB_HOOK: file };
+  };
+  it('refuses a Release tag that appears before its image is copied, leaving it alone', () => {
+    const other = digest(`render@${commits.later}`);
+    const { status, output } = run(
+      hook(`[[ "$1" == */site:Release99 ]] && echo ${other} > "$STUB_REGISTRY/render/Release99"\n`)
+    );
+    expect(status).toBe(1);
+    expect(output).toMatch(/render:Release99 already names sha256:\w+, not/);
+    expect(held('render', 'Release99')).toBe(other);
+    expect(remoteTag()).toBe('');
+  });
+
+  it('pushes no git tag unless every image still has its Release tag', () => {
+    const { status, output } = run(
+      hook(`[[ "$1" == */render:Release99 ]] && rm "$STUB_REGISTRY/site/Release99"\n`)
+    );
+    expect(status).toBe(1);
+    expect(output).toMatch(/site:Release99 is not there after tagging/);
+    expect(remoteTag()).toBe('');
+  });
+
+  // Stopped part-way, it is finished by the same run again; and once finished,
+  // run again it writes nothing.
+  it('finishes a run stopped part-way, and then writes nothing', () => {
+    const stopped = run({ STUB_FAIL_ON: 'render' });
+    expect(stopped.status).toBe(1);
+    expect(held('site', 'Release99')).toBe(digest(`site@${commits.released}`));
+    expect(held('render', 'Release99')).toBeUndefined();
+    expect(remoteTag()).toBe('');
+
+    rmSync(path.join(root, 'log'));
+    const again = run();
+    expect(again.output).not.toMatch(/refused/);
+    expect(again.status).toBe(0);
+    expect(copies().map((line) => line.split(' ').at(-1))).toEqual([
+      `${REGISTRY}/render:${commits.released}`,
+    ]);
+    expect(remoteTag()).toContain(`${commits.released}\trefs/tags/Release99^{}`);
+
+    rmSync(path.join(root, 'log'));
+    const done = run();
+    expect(done.status).toBe(0);
+    expect(done.output).toMatch(/the git tag Release99 names \w+ already/);
+    expect(copies()).toEqual([]);
+    // But never for another commit.
+    for (const image of IMAGES) put(image, commits.later, digest(`${image}@${commits.later}`));
+    expect(run({ COMMIT: commits.later }).status).toBe(1);
+    expect(copies()).toEqual([]);
   });
 });

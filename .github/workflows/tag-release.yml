@@ -1,0 +1,94 @@
+name: Tag release images
+
+# A release's write-once tag (specs/032 T036): run by hand on release day, with
+# the commit whose images production is to run and the release's number. Every
+# image publish-images.yml publishes gets `Release<NN>`, copied on the registry
+# from the commit's tag by digest, and then the commit gets the git tag
+# `Release<NN>`. Production pins IMAGE_TAG to that tag, and its checkout to the
+# git tag (deploy/release-server/README.md §9); neither ever moves.
+#
+# .github/scripts/tag-release.sh does the work and says what it refuses: a
+# commit not on main, or whose compose file names another release's graph; an
+# image without the commit's tag; a `Release<NN>` already naming anything but
+# the commit, on any image or as the git tag. A run stopped part-way is
+# finished by running it again with the same inputs. tools/workflows.spec.ts
+# runs the script against a stand-in registry and repository.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'The commit to release: its full 40-character id, on main'
+        required: true
+        type: string
+      release:
+        description: 'The release number: 99 tags Release99'
+        required: true
+        type: string
+
+# The registry role by OIDC, and the git tag. Nothing else.
+permissions:
+  id-token: write
+  contents: write
+
+# One tag run at a time, and a run in progress is never cancelled by another:
+# a second waits for the first to finish. (GitHub keeps one waiting run per
+# group: a third dispatched meanwhile replaces the waiting one, before it has
+# started.)
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    name: Tag the release
+    runs-on: ubuntu-latest
+    # The workflow as main has it, run from main: dispatched on any other branch
+    # it would be that branch's workflow and script (and the registry role
+    # trusts main only).
+    if: github.ref == 'refs/heads/main'
+    # Eight copies on the registry and a git push: minutes at most.
+    timeout-minutes: 20
+    steps:
+      # Before anything is checked out or any credential taken. Through env,
+      # never pasted into the script; never echoed back.
+      - name: Check the inputs
+        env:
+          COMMIT: ${{ inputs.commit }}
+          RELEASE: ${{ inputs.release }}
+        run: |
+          set -euo pipefail
+          [[ "$COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo "the commit is not a full 40-character commit id" >&2; exit 1; }
+          [[ "$RELEASE" =~ ^[1-9][0-9]{0,3}$ ]] || { echo "the release is not a release number (99, say)" >&2; exit 1; }
+
+      # main as dispatched, with its whole history and tags, so the script can
+      # tell whether the commit is on main.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@45666896f5d8e0f10ae255413f3a4cdd03bdc8f5 # v6.3.1
+        with:
+          role-to-assume: ${{ vars.REGISTRY_ROLE }}
+          # A public registry signs in through this region whichever one it
+          # serves from.
+          aws-region: us-east-1
+
+      - name: Sign in to the registry
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region us-east-1 |
+            docker login --username AWS --password-stdin "${REGISTRY%%/*}"
+
+      - name: Tag the images, then the commit
+        env:
+          REGISTRY: ${{ vars.REGISTRY }}
+          COMMIT: ${{ inputs.commit }}
+          RELEASE: ${{ inputs.release }}
+          # publish-images.yml's images, in its order (tools/workflows.spec.ts).
+          IMAGES: site content-node render analysis-gateway mcp nginx-dev nginx-release nginx-production
+        run: |
+          set -euo pipefail
+          bash .github/scripts/tag-release.sh
