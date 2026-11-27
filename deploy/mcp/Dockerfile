@@ -46,6 +46,10 @@ WORKDIR /build
 # `--keep-git-dir` keeps .git, for the REVISION below; it never reaches the
 # final stage.
 #
+# Build with BuildKit (compose, buildx, or CI's `docker build`): the legacy
+# builder ignores the flag and fetches the repository's web page as a file, and
+# the build then fails at `npm ci` for want of package.json.
+#
 # It is the same defect as the bind-mount this replaced, one level up: a
 # deployment whose revision is decided by something nobody looked at.
 ADD --keep-git-dir=true ${MCP_REPO}#${MCP_REF} /build

@@ -181,8 +181,9 @@ jobs:
     # path filter: a skipped job would read as passed. Nothing is pushed.
     name: Image (${{ matrix.name }})
     runs-on: ubuntu-latest
-    # render's, the largest, installs Chromium and its system libraries.
-    timeout-minutes: 30
+    # render's, the largest, installs Chromium and its system libraries; it
+    # takes under two minutes, so a hang shows well before this.
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:

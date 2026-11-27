@@ -412,9 +412,19 @@ describe('Tests builds what publish-images.yml publishes', () => {
     }
   });
 
-  // A skipped required job reads as passed: the images are built on every run.
+  // A skipped required job reads as passed: the images are built on every run,
+  // every leg, and a failed build fails the job.
   it('builds them on every run, never skipped', () => {
     expect(Object.keys(images)).not.toContain('if');
+    expect(Object.keys(images)).not.toContain('continue-on-error');
+    expect(Object.keys(mappingOf(mappingOf(images['strategy'])['matrix']))).toEqual(['include']);
+    for (const step of stepsOf(images)) {
+      expect(Object.keys(step)).not.toContain('if');
+      expect(Object.keys(step)).not.toContain('continue-on-error');
+    }
+    expect(textOf(buildStep(images)['run'])).toBe(
+      'set -euo pipefail\ndocker build -f "$DOCKERFILE" .\n'
+    );
     for (const trigger of Object.values(mappingOf(tests['on']))) {
       expect(Object.keys(mappingOf(trigger)).filter((key) => key.startsWith('paths'))).toEqual([]);
     }
