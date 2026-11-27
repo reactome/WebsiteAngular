@@ -53,6 +53,33 @@ type=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/embed/diagr
 [[ $type == "200 "*javascript* ]] || fail "the embeddable diagram answered $type"
 echo "ok   the embeddable diagram is served"
 
+# The image serves beta, the release server and reactome.org, so the diagram's
+# code must load its chunks and pictures from the host that served it, not from
+# an address written into the build (spec 009, T043): main.js and every chunk
+# it reaches name no host's /embed/diagram/v1/.
+named=$(node -e '
+  const base = process.argv[1] + "/embed/diagram/v1/";
+  const seen = new Set(), named = [];
+  (async () => {
+    const queue = ["main.js"];
+    while (queue.length) {
+      const file = queue.shift();
+      if (seen.has(file)) continue;
+      seen.add(file);
+      const res = await fetch(base + file);
+      if (!res.ok) throw new Error(file + " answered " + res.status);
+      const text = await res.text();
+      for (const m of text.matchAll(/https?:\/\/[^"\x27`)\s]*\/embed\/diagram\/v1\//g))
+        named.push(file + ": " + m[0]);
+      for (const m of text.matchAll(/\.\/(chunk-[A-Z0-9]+\.js)/g)) queue.push(m[1]);
+    }
+    if (seen.size < 2) throw new Error("main.js reaches no chunk");
+    console.log(named.join("\n"));
+  })().catch((e) => { console.error(e.message); process.exit(1); });
+' "$base") || fail "could not read the diagram's code"
+[ -z "$named" ] || fail "the diagram's code names a host: $named"
+echo "ok   the diagram's code loads from the host that serves it"
+
 # Pages written for the old diagram widget load it from its old address
 # (spec 009, T048): the loader, not the site's page.
 type=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "$base/DiagramJs/diagram/diagram.nocache.js")

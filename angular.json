@@ -352,7 +352,6 @@
               "define": {
                 "APP_ENV": "\"embed-production\""
               },
-              "deployUrl": "https://reactome.org/embed/diagram/v1/",
               "budgets": [
                 {
                   "type": "initial",
@@ -365,7 +364,6 @@
               "define": {
                 "APP_ENV": "\"embed-beta\""
               },
-              "deployUrl": "https://beta.reactome.org/embed/diagram/v1/",
               "budgets": [
                 {
                   "type": "initial",
@@ -378,7 +376,6 @@
               "define": {
                 "APP_ENV": "\"embed-development\""
               },
-              "deployUrl": "http://localhost:4340/",
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true

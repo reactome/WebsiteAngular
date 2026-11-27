@@ -160,7 +160,8 @@ window (SSR, unit tests).
 npm start                                  # public site, dev backend
 npm run start:curator                      # curator site
 npm run start:curator-local                # curator site, local graph service
-npm run build                              # bundle for beta/reactome.org
+npm run build                              # the site and the embeddable diagram
+npm run build:site                         # the site alone
 npm run build:curator                      # bundle for the curator host
 ```
 

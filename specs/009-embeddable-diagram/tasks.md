@@ -252,7 +252,22 @@ description: 'Task list for the embeddable Reactome pathway diagram'
 - [x] T041 Decide #339 with this in place. `PathwayBrowser` is superseded by `reactome-diagram-element` plus the `reactome` app. Remove it, or make it build and add it to CI; record which, and why, on #339. Decide `WebsiteAngular` the same way.
   - **As built**: both removed (user's decision, 2 Oct 2026), with the files only they reached (knip-confirmed), the `<pathway-browser>` element and `ANGULAR_ELEMENTS_SETUP.md`, and the two analogjs packages only PathwayBrowser's `ng test` target used. The site's build is unchanged.
 - [ ] T042 Update #322's or a new tracking issue, `RELEASE-TESTING.md` (a section on testing the embed on DEV before a release), and memory: where the embed is served, and the per-element-injector design.
-- [ ] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
+- [x] T043 Production: `npm run build` does not build the embed (only `build:beta` does), so a production deployment serves no `/embed/diagram/v1/` until its build runs `npm run build:embed`. And the production build's `deployUrl` and `embed-production` profile name reactome.org outright, so a production build tested on DEV before a release would load its chunks and data from PROD. Settle both with the release process before the first production release that carries the embed.
+  - **Done (PR #PRNUM), by choosing the host at run time.** Measured first: the site's image
+    (spec 032) already built and served the embed, but beta's build of it, so the release
+    server's copy drew beta's data and fetched its loading picture from beta. Its chunks were
+    already relative (an ES module's imports resolve against its own address); `deployUrl` only
+    reached the one inline `url()`. Now: the embed's served profiles take their host from where
+    the code was loaded (`host: 'script'`, `resolveHost` in `environments.ts`, from
+    `import.meta.url`), no configuration has a `deployUrl`, and the loading picture comes from
+    beside the code (a custom property `main.ts` sets). One build serves beta, the release server
+    and reactome.org, each from itself. `npm run build` builds the embed as well (`build:site` is
+    the site alone, which preflight uses so the hook never builds into `dist/`). Checked:
+    `environments.spec.ts` and `deploy/site/embed.spec.ts`; the image's `check.sh` (no served
+    chunk names a host's `/embed/diagram/v1/`); and e2e, now that the e2e build has no
+    `deployUrl` either, the loading picture is the embed's, not the partner page's. Each seen
+    failing on a mutant. Whether production runs the site image or another build is the
+    project's owner's (T050).
 - [x] T044 A partner page running zone.js (an Angular app of its own, or anything that loads zone.js) patches the element's listeners too, so our events would trigger the partner's change detection. Suspected in review, not verified: check with a host page that loads zone.js, and if so, run the element's listeners outside the partner's zone.
   - **Measured, 24 Nov 2026 (this PR): not so; nothing to change.** A partner page loading
     zone.js 0.15, with a zone of its own that counts the tasks it runs, and the element from

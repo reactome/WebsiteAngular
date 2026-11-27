@@ -10,6 +10,15 @@
 
 // The diagram's own global rules (loader, structures), scoped to this root.
 @include reactome-cytoscape-style.configure-diagrams();
+
+// The loading picture, from beside the diagram's code. The library's rule names
+// it by a relative address, which in a <style> resolves against the partner's
+// page; the build once wrote one host's address into it instead, so every copy
+// of the code fetched it from that host (spec 009, T043). main.ts sets the
+// property from where the code was loaded.
+.loading {
+  background-image: var(--reactome-diagram-loader, none);
+}
 @include diagram-controls.diagram-controls();
 
 :host {

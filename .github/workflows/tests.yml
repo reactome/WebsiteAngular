@@ -68,14 +68,12 @@ jobs:
       - name: Compile CMS content
         run: npm run stage:content
 
-      - name: Build the app
+      # The site and the embeddable diagram (spec 009), which is served to
+      # other sites' pages: a deployment of the site serves both, so `npm run
+      # build` builds both (T043), the diagram with its size budget. Two
+      # angular.json projects rotted unbuilt before (#339).
+      - name: Build the app and the embeddable diagram
         run: npm run build
-
-      # The embeddable diagram (spec 009) is served to other sites' pages and is
-      # built by nothing else, so it is built here on every change, with its
-      # size budget. Two angular.json projects rotted unbuilt before (#339).
-      - name: Build the embeddable diagram
-        run: npm run build:embed
 
       # Lint errors must be zero -- eslint.config.js only marks a rule "error"
       # once the codebase is clean of it, so an error is always a new violation.

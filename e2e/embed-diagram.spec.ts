@@ -253,6 +253,24 @@ test.describe('the embeddable diagram', () => {
       scripts.some((u) => u.startsWith(EMBED)),
       'its code came from the embed origin'
     ).toBe(true);
+    // And its pictures. Its code is served by beta, the release server and
+    // reactome.org, one build for all three: what it loads comes from where it
+    // was loaded, not from a host written into the build, nor from the
+    // partner's page, which a relative address in its styles would name (spec
+    // 009, T043).
+    const picture = await page.evaluate(() => {
+      const view = document
+        .getElementById('diagram')
+        ?.shadowRoot?.querySelector('reactome-diagram-view')?.shadowRoot;
+      if (!view) throw new Error('no view');
+      const probe = document.createElement('div');
+      probe.className = 'loading';
+      view.appendChild(probe);
+      const image = getComputedStyle(probe).backgroundImage;
+      probe.remove();
+      return image;
+    });
+    expect(picture, 'its loading picture is beside its code').toBe(`url("${EMBED}loader.gif")`);
   });
 
   test('draws, and responds to zoom, pan and select', async ({ page }) => {
