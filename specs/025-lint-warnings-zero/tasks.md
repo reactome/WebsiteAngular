@@ -322,7 +322,7 @@ The five `no-unsafe-*` rules and `no-explicit-any`, area by area.
   unconditionally; the check meant to add it only when the text was cut did
   nothing (`result;`). The dead check went in T001; the ellipsis waited for a
   decision, and the decision (27 Nov) was "..." only when the text was cut.
-  Fixed for #951 (PR #TBD): news and article excerpts and the home page's
+  Fixed for #951 (#1104): news and article excerpts and the home page's
   spotlight end in "..." only when words were left out, with specs seen
   failing against the old ellipsis. Of 89 news items, 2 short ones lose it.
 - **The table web component drew nothing from its documented use**
