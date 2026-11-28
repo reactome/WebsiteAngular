@@ -24,9 +24,24 @@ The Reactome Java this deployment builds (spec 010), each pinned to the commit t
 - **interactor-core 1.1.5 and Kryo 5.3.0, with content-service's `TupleManager`:**
   - **Why:** overlay tokens are stored as Kryo files that name their classes. A change to any of the three stops existing tokens reading.
   - **To change them:** a migration of the store, decided on its own.
+  - **What the token conversion needs** (spec 033 T017): only the model classes the stored files name, compiled from interactor-core `7513f42` (`TupleResult`, `Summary`, `CustomResource`, `TreeInteraction`, `CustomInteraction`, `CustomPsicquicResource`), with concurrent-trees 2.6.1 (the radix tree and its `AtomicReferenceArrayListAdapter`), Objenesis 3.2 and Kryo 5.3.0 (with its minlog 1.3.1 and reflectasm 1.11.9). Each is the version the deployed ContentService ships, read from its jars' names, and all but interactor-core's classes come from Maven Central.
 - **Aspose.Slides, excluded:**
   - **What uses it:** only diagram-exporter's PPTX path, which no Java-homed operation uses, and it runs unlicensed today (research R8).
   - **To use it again:** a licence, and an operation that needs it.
+
+## The interactor operations' libraries (spec 033)
+
+The third-party libraries the deployed ContentService answers the PSICQUIC queries and the custom-interactor uploads with (spec 033 research R1). **Reference only:** no image builds them. Node reimplements their behaviour (research R2), and these rows say which versions it must match. The versions were read from the deployed service's jars' names, and each source from its repository's tag. These are not the versions interactors-core's `main` names (micluster 1.9.0-SNAPSHOT, psimitab 1.10.1), which were never deployed.
+
+| Artifact                       | Repository                          | Tag, commit                                          |
+| ------------------------------ | ----------------------------------- | ---------------------------------------------------- |
+| micluster 1.7.14               | `MICommunity/micluster`             | `micluster-1.7.14`, `556205f`                        |
+| miscore 1.3.14                 | `MICommunity/miscore`               | `miscore-1.3.14`, `ae99268`                          |
+| psimitab 1.8.6                 | `MICommunity/psimi`                 | `psimi-master-1.8.6`, `9baca51` (`psimitab-parser/`) |
+| psicquic-registry-client 1.4.0 | `PSICQUIC/psicquic-registry-client` | `psicquic-registry-client-1.4.0`, `8255185`          |
+| psicquic-simple-client 1.4.0   | `PSICQUIC/psicquic-simple-client`   | `psicquic-simple-client-1.4.0`, `93d5dcb`            |
+
+interactor-core 1.1.5 is pinned in the first table, and Kryo 5.3.0 is frozen below.
 
 ## The library service (spec 015 T063, T069)
 
