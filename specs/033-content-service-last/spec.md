@@ -31,7 +31,7 @@ A researcher opens a pathway in the Pathway Browser and opens the interactors pa
 **Acceptance Scenarios**:
 
 1. **Given** a pathway whose resources were asked in the last day, **When** a second visitor opens its interactors panel, **Then** every resource's count is shown within one second, with no request reaching the third-party servers.
-2. **Given** a third-party server that fails or does not answer, **When** the panel asks it, **Then** the request ends within the stated timeout with an error the panel already handles ("could not ask", not "none"), and the failure is not remembered: the next visitor asks again.
+2. **Given** a third-party server that fails or does not answer, **When** the panel asks it, **Then** each fetch ends within the stated timeout and is handled as the Java service handles a failed fetch, and the incomplete answer is not remembered: the next visitor asks again.
 3. **Given** any of the four operations and any input the Java service accepts or refuses, **When** node answers it, **Then** the answer is the Java service's (status, headers and body, scores to Java's three decimal places), except for the timeout and the cache (FR-005).
 
 ---
@@ -90,8 +90,8 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 - **FR-001**: Node MUST answer the four PSICQUIC operations (an accession's details and summary; many accessions' details and summary), at the paths, methods and body formats the Java service accepts, slashed forms included.
 - **FR-002**: An answer from a third-party resource MUST be kept and given to every later request for the same resource and the same accessions, for **one day**, so that a pathway asked about once is answered at once for everyone that day.
 - **FR-003**: A failure (an error, a timeout, a partial answer, an unknown resource) MUST NOT be kept: the next request asks again.
-- **FR-004**: Every request to a third-party server MUST end within a stated timeout (default **30 seconds** for a whole request), with an error in the service's usual error format. The Java service's unbounded wait is a declared difference.
-- **FR-005**: The answers MUST be the Java service's: the same interactions, the same scores to the three decimal places the Java service writes (it rounds every score to 0.001), and the same order, so that each answer is byte-identical. Only the timeout (FR-004) and the cache (FR-002) are declared differences. The clustering and the MI-score are ported, with the score's ontology terms kept as a snapshot in this repository rather than fetched on every request. If any part cannot reach parity, node MUST call the Java logic for that part alone through this repository's library service (`deploy/java-library`), and still own the endpoint. No part MAY be left on the old ContentService. (Decided by the project's owner, 28 Nov 2026.)
+- **FR-004**: Every fetch from a third-party server MUST end within a stated timeout (default **30 seconds** a fetch). A fetch that times out MUST be treated as the Java service treats a fetch that fails: in a request for many accessions that accession is left out, and a request for one is the Java service's "not responding" error. The Java service's unbounded wait is a declared difference.
+- **FR-005**: The answers MUST be the Java service's: the same interactions, the same scores to the three decimal places the Java service writes (it rounds every score to 0.001), and the same order, so that each answer is byte-identical. Only the timeout (FR-004), the cache (FR-002) and the ontology (the score's ontology terms are a snapshot, where the Java service asks a live service on every request and scores every term as unknown when that service fails) are declared differences. The clustering and the MI-score are ported, with the score's ontology terms kept as a snapshot in this repository rather than fetched on every request. If any part cannot reach parity, node MUST call the Java logic for that part alone through this repository's library service (`deploy/java-library`), and still own the endpoint. No part MAY be left on the old ContentService. (Decided by the project's owner, 28 Nov 2026.)
 - **FR-006**: Requests for the same resource and accessions that arrive while the first is still waiting MUST share its answer rather than each asking the third-party server.
 - **FR-007**: The number of requests node makes to any one third-party server at once MUST be limited, so that a burst of visitors never floods another organisation's service.
 
@@ -124,7 +124,7 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 ### Measurable Outcomes
 
 - **SC-001**: For a pathway whose resources were asked in the last day, every resource's count in the interactors panel appears within **1 second** (today 6 to 21 seconds per resource).
-- **SC-002**: No request to a third-party resource takes longer than the stated timeout (today up to about 135 seconds on an unreachable server).
+- **SC-002**: No fetch from a third-party resource takes longer than the stated timeout (today a fetch waits without limit: about 135 seconds measured on an unreachable server).
 - **SC-003**: Over a sample of pathways and every live resource, asked of both services at the same moment, node's answers are the Java service's: the same interactions, scores and order, with no difference but the timeout and the cache.
 - **SC-004**: **Every** token in the existing store (several hundred) opens the same overlay through node as through the Java service: zero lost.
 - **SC-005**: Uploading the same files to both services gives the same tokens' contents, warnings and refusals.
@@ -134,7 +134,7 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 ## Assumptions
 
 - **One day** is a fair lifetime for a cached PSICQUIC answer: third-party interaction data changes on the scale of releases, not hours. It is a setting, and can be shortened.
-- **A 30-second timeout** is enough for every resource that answers at all (the slowest measured took 21 s for a small pathway); it is a setting, and large diagrams are measured during planning.
+- **A 30-second timeout per fetch** is enough for every resource that answers at all; it is a setting. It bounds each fetch, not the whole request: a large diagram is many fetches, and the Java service took 102 s for two accessions from one resource (most of it, the research suggests, its 16 ontology requests and repeated registry lookups, which node does not make).
 - **The cache lives in the node service** (in memory and, if planning finds it worthwhile, on disk), not in the browser and not in the web server, so it serves every visitor and survives the move away from Java.
 - **The existing token store is converted once**, by a step that reads the Java service's files with the Java library that wrote them, and writes a format node reads; the Java format is never read by node directly.
 - **The IntAct libraries are not kept**: one of them is a snapshot build from a repository that no longer serves reliably, so keeping the Java logic would mean rescuing those libraries too. The library service is the fallback for a part that cannot be matched, not the plan.
