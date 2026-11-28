@@ -376,15 +376,21 @@ export interface ToolDownload {
 /**
  * The functional-interaction networks.
  *
- * Not release artefacts: they are published under reactome.org/download/tools
- * rather than in the versioned download bucket, and their file names carry the
- * build date rather than the year in the label. Every one of these used to be
+ * Not release artefacts: they are published under tools/ on the download site,
+ * outside any release folder, and their file names carry the build date rather
+ * than the year in the label. Every one of these used to be
  * built as `<bucket>/current/FIsInGene_...`, a path that does not exist -- so
  * the whole section 403'd. Names taken from the published set and checked.
  */
-const FI_BASE = 'https://reactome.org/download/tools/ReactomeFIs';
+const TOOLS_BASE = 'https://download.reactome.org/tools';
+const FI_BASE = `${TOOLS_BASE}/ReactomeFIs`;
 
 export const FUNCTIONAL_INTERACTIONS: ToolDownload[] = [
+  {
+    label: 'FI Network 2026',
+    url: `${FI_BASE}/FIsInGene_09092026_with_annotations.txt.zip`,
+    description: 'Functional interaction network (2026 version) with annotations.',
+  },
   {
     label: 'FI Network 2025',
     url: `${FI_BASE}/FIsInGene_04142025_with_annotations.txt.zip`,
@@ -423,11 +429,11 @@ export const CURATOR_TOOL = {
   installers: [
     {
       label: 'Windows / Linux',
-      url: 'https://reactome.org/download/tools/curatorTool/InstData/win_linux/install.zip',
+      url: `${TOOLS_BASE}/curatorTool/InstData/win_linux/install.zip`,
     },
     {
       label: 'macOS',
-      url: 'https://reactome.org/download/tools/curatorTool/InstData/mac/install.zip',
+      url: `${TOOLS_BASE}/curatorTool/InstData/mac/install.zip`,
     },
   ],
 };
