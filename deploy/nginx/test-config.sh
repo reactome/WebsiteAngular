@@ -209,6 +209,14 @@ EOT
   dl_expect missing '^HTTP/[0-9.]+ 404'
   dl_expect missing '^Not found\.$'
   dl_expect missing 'Error|<html' '!'
+  # A folder asked for as a page: the download site lists none, so the site's
+  # own Download Data page, and nothing asked of the download site.
+  for path in /download /download/ /download/current /download/current/ /download/97 /download/97/; do
+    dl_ask "$path"
+    dl_expect "folder $path" '^HTTP/[0-9.]+ 302'
+    dl_expect "folder $path" '^location: (https://[^/]+)?/download-data'
+    dl_expect "folder $path" '^x-seen' '!'
+  done
   dl_ask /download/current/ReactomePathways.txt -X POST
   dl_expect post '^HTTP/[0-9.]+ 405'
   dl_expect post '^x-seen' '!'
