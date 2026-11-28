@@ -14,18 +14,23 @@ describe('Download tab description', () => {
   const html = readFileSync(join(dir, 'download-tab.component.html'), 'utf8');
   const ts = readFileSync(join(dir, 'download-tab.component.ts'), 'utf8');
 
-  const empty = html.slice(
-    html.indexOf('@if (!hasDownload())'),
-    html.indexOf('@if (finalPathwayName())')
-  );
+  // Both markers found, or nothing: a missing one must not widen the slice.
+  const start = html.indexOf('@if (!hasDownload())');
+  const end = html.indexOf('@if (finalPathwayName())');
+  const empty = start >= 0 && end > start ? html.slice(start, end) : '';
   const named = [...empty.matchAll(/<b>([^<]+)<\/b>/g)].map((m) => m[1].trim());
 
-  const pathwayFormats = [...ts.matchAll(/^\s*name: '([^']+)',$/gm)].map((m) => m[1]);
+  // Only the pathway list's own names: from `pathwayItems` to the next list.
+  const list = ts.slice(
+    ts.indexOf('pathwayItems: PathwayItem[]'),
+    ts.indexOf('analysisItems: AnaLysisItem[]')
+  );
+  const pathwayFormats = [...list.matchAll(/^\s*name: '([^']+)',$/gm)].map((m) => m[1]);
   const pictures = Object.values(DownloadFormat).map((f) => f.toUpperCase());
   const offered = [...pictures, ...pathwayFormats];
 
   it('reads the formats from both files', () => {
-    expect(pathwayFormats).toContain('SBML');
+    expect(pathwayFormats).toEqual(['SBML', 'SBGN', 'BioPAX', 'PDF', 'Newt']);
     expect(named.length).toBeGreaterThan(3);
   });
 
