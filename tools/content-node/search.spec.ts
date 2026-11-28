@@ -270,6 +270,9 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     expect(logged.join('\n')).toContain('SOLR_URL');
   });
 
+  /** SOLR_CONCURRENCY's default (solr.ts): the specs leave the setting blank. */
+  const SLOTS = 8;
+
   it('asks Solr at most SOLR_CONCURRENCY at a time', async () => {
     useSolr();
     let open = 0;
@@ -289,11 +292,12 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
         );
       }, 20);
     };
+    // More asks than the default allows at once (8, #952): the rest wait.
     const answers = await Promise.all(
-      Array.from({ length: 8 }, () => fetch(`${base}/ContentService/search/suggest?query=x`))
+      Array.from({ length: 20 }, () => fetch(`${base}/ContentService/search/suggest?query=x`))
     );
-    expect(answers.map((response) => response.status)).toEqual(Array(8).fill(200));
-    expect(most).toBe(2);
+    expect(answers.map((response) => response.status)).toEqual(Array(20).fill(200));
+    expect(most).toBe(SLOTS);
   });
 
   it('refuses past 64 waiting with a 503 to retry, and serves the rest', async () => {
@@ -301,7 +305,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     const held: ServerResponse[] = [];
     answer = (_request, _params, response) => held.push(response);
     const settled: unknown[][] = [];
-    const pending = Array.from({ length: 70 }, () =>
+    const pending = Array.from({ length: SLOTS + 64 + 4 }, () =>
       fetch(`${base}/ContentService/search/suggest?query=x`).then(async (response) => {
         const answered = [
           response.status,
@@ -312,8 +316,8 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
         return answered;
       })
     );
-    // Two at Solr, sixty-four waiting; the other four are refused at once.
-    await until(() => settled.length === 4 && held.length === 2);
+    // SLOTS at Solr, sixty-four waiting; the other four are refused at once.
+    await until(() => settled.length === 4 && held.length === SLOTS);
     expect(settled).toEqual(Array(4).fill([503, '5', 'SERVICE_UNAVAILABLE']));
 
     const release = (response: ServerResponse) => {
@@ -323,7 +327,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     answer = (_request, _params, response) => release(response);
     held.splice(0).forEach(release);
     const answers = await Promise.all(pending);
-    expect(answers.filter(([status]) => status === 200)).toHaveLength(66);
+    expect(answers.filter(([status]) => status === 200)).toHaveLength(SLOTS + 64);
   });
 
   it('a waiter whose caller gives up leaves the queue and never reaches Solr', async () => {
@@ -334,18 +338,18 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       arrived += 1;
       held.push(response);
     };
-    const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
-    await until(() => held.length === 2);
+    const busy = Array.from({ length: SLOTS }, (_, i) => solr('/exists', [['q', `busy${i}`]]));
+    await until(() => held.length === SLOTS);
     const caller = new AbortController();
     const waiter = solr('/exists', [['q', 'c']], { signal: caller.signal });
     caller.abort();
     await expect(waiter).rejects.toThrow();
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await Promise.all(busy);
-    expect(arrived).toBe(2);
-    // Both slots are free again: the one given up was not handed a slot.
-    const again = [solr('/exists', [['q', 'd']]), solr('/exists', [['q', 'e']])];
-    await until(() => held.length === 2);
+    expect(arrived).toBe(SLOTS);
+    // Every slot is free again: the one given up was not handed a slot.
+    const again = Array.from({ length: SLOTS }, (_, i) => solr('/exists', [['q', `again${i}`]]));
+    await until(() => held.length === SLOTS);
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await Promise.all(again);
   });
@@ -358,8 +362,8 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
       arrived += 1;
       held.push(response);
     };
-    const busy = [solr('/exists', [['q', 'a']]), solr('/exists', [['q', 'b']])];
-    await until(() => held.length === 2);
+    const busy = Array.from({ length: SLOTS }, (_, i) => solr('/exists', [['q', `busy${i}`]]));
+    await until(() => held.length === SLOTS);
     const client = new AbortController();
     const asked = fetch(`${base}/ContentService/search/suggest?query=x`, {
       signal: client.signal,
@@ -375,7 +379,7 @@ describe('the suggest endpoint, against a stand-in Solr', () => {
     await until(() => held.length === 1);
     held.splice(0).forEach((response) => response.end('{"response":{"numFound":0}}'));
     await after;
-    expect(arrived).toBe(3);
+    expect(arrived).toBe(SLOTS + 1);
   });
 
   for (const [route, handler, params] of [

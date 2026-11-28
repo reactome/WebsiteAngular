@@ -2,8 +2,8 @@ import { serves } from '../fixtures/serves';
 import { test, expect } from '@playwright/test';
 
 // The download page is a catalogue of files that live somewhere else: the
-// versioned CloudFront bucket for release artefacts, reactome.org/download/tools
-// for the tools. Nothing in the build can tell you whether those files are
+// download site's release folders for release artefacts, its tools/ folder for
+// the tools. Nothing in the build can tell you whether those files are
 // actually there, and a wrong name is invisible until someone clicks it.
 //
 // Before this ran, 33 of 74 links were broken: the Guide to Pharmacology set was

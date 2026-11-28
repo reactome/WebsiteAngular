@@ -132,7 +132,8 @@ No errors and no "busy" answers on either side.
   (`SOLR_CONCURRENCY`, default 2, in `tools/content-node/solr.ts`) and queues
   the rest. Under load, its search suggestions went from 23 ms to a median of
   about 400 ms, where Java's stayed near 18 ms. Raising that limit is the likely
-  fix; it was not tested here.
+  fix; it was not tested here. (It helped: see
+  [search under load, since](#search-under-load-since-952).)
 - **The Reacfoam tree.** Node keeps each species' tree in memory, but appears to
   write the 561 KB answer afresh on each request. Java serves a cached answer.
   Keeping the written answer would likely close the gap. (It was not the
@@ -186,6 +187,48 @@ request and from the cache.
 561 KB tree: encoding it to UTF-8 bytes and Express's ETag over them. Keeping
 the bytes as well would change the path every answer is written by, for about
 a millisecond, so it was left.
+
+### Search under load, since (#952)
+
+Node asks Solr at most `SOLR_CONCURRENCY` requests at once and queues the rest
+(at most 64; past that, a 503 to retry). The limit keeps a burst of typing, or
+of clients, from landing on the shared Solr all together: the search box asks
+on every keystroke, and each suggestion is one request to Solr plus one per
+collation. It was two, as Java's client holds. It is now **eight**.
+
+Measured on 27 November 2026, after the change above, against a node started on
+its own port with each limit in turn, runs a minute or more apart: one request
+at a time (20 each), then 8 clients for 15 seconds asking for suggestions
+alone (15 different prefixes), then 8 clients for 20 seconds on a mix of 10
+typical requests, two of them search. The first run at 2 had the machine at a
+load of about 7 (other work); it was run again at about 2, as the others were,
+and those are the figures below. No errors, no 503s and no timeouts in the
+service's log at any limit. One request in the first run at 8 came back other
+than 200, unnamed by that version of the script; the run repeated with each
+failure named had none, and the figures for 8 are the repeat's.
+
+| `SOLR_CONCURRENCY` | Suggest alone (median) | Suggest, 8 clients: req/s, median, p95 | Mix: req/s | Suggest in the mix: median, p95 | `/search/query` in the mix: median, p95 |
+| ------------------ | ---------------------- | -------------------------------------- | ---------- | ------------------------------- | --------------------------------------- |
+| 2 (before)         | 24 ms                  | 142, 57 ms, 79 ms                      | 154        | 178 ms, 307 ms                  | 206 ms, 335 ms                          |
+| 4                  | 24 ms                  | 168, 47 ms, 70 ms                      | 193        | 91 ms, 154 ms                   | 139 ms, 209 ms                          |
+| **8**              | 20 ms                  | 176, 45 ms, 67 ms                      | **196**    | **76 ms**, 125 ms               | 134 ms, 179 ms                          |
+| 16                 | 22 ms                  | 185, 43 ms, 62 ms                      | 196        | 78 ms, 121 ms                   | 131 ms, 172 ms                          |
+
+- **Eight is where it levels off.** From two to eight, the mix served about a
+  quarter more requests a second, and the suggestions in it waited less than
+  half as long. Sixteen did no better on the mix, so the smaller of the two
+  keeps more of the queue's protection.
+- **Alone, a search is no faster or slower** at any limit (20–24 ms for a
+  suggestion, about 67 ms for `/search/query`): Solr itself was not slowed by
+  more at once, as far as node's own times show. Solr's own metrics need
+  credentials this measurement did not use.
+- **The gap to Java is smaller, not closed.** Java's suggestions stayed near
+  18 ms under its mix; node's are now about 76 ms in this one. The rest of
+  node's mix rises too (a median of about 20 ms), the queueing of its single
+  process noted above.
+- **Set where the other settings are:** the default is in
+  `tools/content-node/settings.ts`; `SOLR_CONCURRENCY` in the environment or
+  the credentials file still overrides it, 1–16.
 
 ## Caveats
 
