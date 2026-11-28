@@ -72,13 +72,14 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 ### Edge Cases
 
 - **A resource name the PSICQUIC registry does not list**, or lists as inactive: the Java service's answer (today a 500 in its error format, naming the resource), not a cached one.
-- **The registry itself unreachable**: the list of resources is already node's, re-read every five minutes; the queries use the last list that was read, and say so in a clear error when there has never been one.
+- **The registry itself unreachable**: the Java service asks the registry on every request, and answers its 500 "Couldn't query PSICQUIC Resources" when it fails. Node answers from its own reading, re-read every five minutes, and gives that 500 only when it has never read the list. This is a declared difference (FR-005).
 - **The same diagram asked by many visitors at once**, before any answer is cached: the third-party server is asked once, and every visitor gets that answer.
 - **A third-party answer that is partial** (some accessions answered, some failed): treated as a failure for caching, so only complete answers are kept.
 - **A very large diagram** (thousands of identifiers): its answer is cached like any other, or, past a stated size, served without caching rather than refused.
-- **A token that does not exist, or is malformed**: the Java service's answer for it.
+- **A token that does not exist, or is malformed**: the Java service's answer for it. Tokens have two forms: an upload's is an MD5 in hexadecimal, and a custom PSICQUIC service's is `PSI-` followed by a signed integer (the product of the name's and the address's Java string hashes).
 - **A token file that cannot be converted** in the one-time conversion: listed, reported, and the conversion stops before any route moves; no token is silently lost.
-- **An upload by address** that points at something unreachable, too large, or not a tuple file: the Java service's refusal, within a timeout.
+- **An upload by address** that points at something unreachable, too large, or not a tuple file: the Java service's refusal (422 unreadable, 431 too large, 415 an unaccepted type), within a timeout.
+- **A custom PSICQUIC service registered under a name and address whose token already exists for a different service** (the token is a product of two hashes, so collisions are easy; an empty name always gives `PSI-0`): the Java service overwrites the other person's overlay. Node refuses, as a declared difference (FR-013).
 - **The order of interactors, and of accessions**, where the Java service's order comes from its internal hash maps: matched as the Java service writes it (FR-005).
 
 ## Requirements _(mandatory)_
@@ -90,8 +91,8 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 - **FR-001**: Node MUST answer the four PSICQUIC operations (an accession's details and summary; many accessions' details and summary), at the paths, methods and body formats the Java service accepts, slashed forms included.
 - **FR-002**: An answer from a third-party resource MUST be kept and given to every later request for the same resource and the same accessions, for **one day**, so that a pathway asked about once is answered at once for everyone that day.
 - **FR-003**: A failure (an error, a timeout, a partial answer, an unknown resource) MUST NOT be kept: the next request asks again.
-- **FR-004**: Every fetch from a third-party server MUST end within a stated timeout (default **30 seconds** a fetch). A fetch that times out MUST be treated as the Java service treats a fetch that fails: in a request for many accessions that accession is left out, and a request for one is the Java service's "not responding" error. The Java service's unbounded wait is a declared difference.
-- **FR-005**: The answers MUST be the Java service's: the same interactions, the same scores to the three decimal places the Java service writes (it rounds every score to 0.001), and the same order, so that each answer is byte-identical. Only the timeout (FR-004), the cache (FR-002) and the ontology (the score's ontology terms are a snapshot, where the Java service asks a live service on every request and scores every term as unknown when that service fails) are declared differences. The clustering and the MI-score are ported, with the score's ontology terms kept as a snapshot in this repository rather than fetched on every request. If any part cannot reach parity, node MUST call the Java logic for that part alone through this repository's library service (`deploy/java-library`), and still own the endpoint. No part MAY be left on the old ContentService. (Decided by the project's owner, 28 Nov 2026.)
+- **FR-004**: Every fetch from a third-party server MUST end within a stated timeout (default **30 seconds** a fetch). A fetch that times out MUST be treated as the Java service treats a fetch that fails: in a request for many accessions' **details**, that accession is left out and the answer is still a 200; in a request for many accessions' **summary** (the panel's counts), and in a request for one accession, the answer is the Java service's 500 "PSICQUIC resource is not responding". The Java service's unbounded wait is a declared difference.
+- **FR-005**: The answers MUST be the Java service's: the same interactions, the same scores to the three decimal places the Java service writes (it rounds every score to 0.001), and the same order, so that each answer is byte-identical. Only these are declared differences: the timeout (FR-004); the cache (FR-002); the ontology (the score's terms are a snapshot, where the Java service asks a live service on every request and scores every term as unknown when that service fails); and the registry (node answers from its reading of the last five minutes, where the Java service asks on every request). FR-013 adds the custom interactors' security differences. The clustering and the MI-score are ported, with the score's ontology terms kept as a snapshot in this repository rather than fetched on every request. If any part cannot reach parity, node MUST call the Java logic for that part alone through this repository's library service (`deploy/java-library`), and still own the endpoint. No part MAY be left on the old ContentService. (Decided by the project's owner, 28 Nov 2026.)
 - **FR-006**: Requests for the same resource and accessions that arrive while the first is still waiting MUST share its answer rather than each asking the third-party server.
 - **FR-007**: The number of requests node makes to any one third-party server at once MUST be limited, so that a burst of visitors never floods another organisation's service.
 
@@ -99,10 +100,10 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 
 - **FR-008**: Node MUST answer the five custom-interactor operations: upload as text, as a form and from an address; register a custom PSICQUIC service; and read by token.
 - **FR-009**: Every token in the existing store MUST keep working: the store MUST be converted once into a format node reads, and every converted token MUST be checked against the Java service's answer before any of these routes moves.
-- **FR-010**: New uploads MUST follow the tuple format's rules as the Java service applies them: the header line, two identifier columns, a confidence of 1.0 for every pair, and the same warnings and refusals, word for word.
-- **FR-011**: A new token MUST be as hard to guess as the Java service's, MUST never expire (as today), and MUST be stored where it survives a restart, a redeploy and a move to another server.
-- **FR-012**: Reading by a token that names a custom PSICQUIC service MUST follow FR-002 to FR-007 for that service.
-- **FR-013**: Uploads MUST be limited in size and in rate per client, and an upload by address MUST be bounded by a timeout and a size limit, so that the service cannot be used to fetch large or slow resources on someone else's behalf.
+- **FR-010**: New uploads MUST follow each format's rules as the Java service applies them: the two-column tuple (a confidence of 1.0 for every pair), the extended format (its own confidence column, and the warning for pairs below 0.45 that are left out), and PSI-MITAB (clustered and scored as the PSICQUIC queries are), with the same warnings and refusals, word for word.
+- **FR-011**: A new token MUST be made as the Java service makes it (the MD5 of the name and the content for an upload; `PSI-` and the hash product for a custom PSICQUIC service), so the same upload gives the same token on both. The store MUST survive a restart, a redeploy and a move to another server. It MUST be bounded as the Java service bounds it, so uploads cannot fill the disk: once the folder passes 2 GB (its 2.5 GB cap less a 500 MB margin), files not read for a week are removed, least recently read first, until it is back under (`LruFolderContentChecker`, configured in content-service's `WebConfig`). At several hundred small files that has never happened, so in practice tokens do not expire.
+- **FR-012**: Reading by a token that names a custom PSICQUIC service MUST ask that service as the Java service does (its address followed by the encoded accession, with no `interactor/`; its failures the 500 "Error querying your PSICQUIC Resource: …"), and MUST follow FR-002 to FR-007 for that service.
+- **FR-013**: Uploads MUST be limited in size (the Java service's 50 MB) and in rate per client (the client being the address nginx saw, never a header the request sets). **Every fetch of an address a user gave** (an upload by address, and every read of a custom PSICQUIC token, old or new) MUST be bounded by a timeout and a size limit, MUST check certificates, MUST use only `http` and `https`, and MUST refuse a loopback, private or link-local address, checked at every redirect and on the address actually connected to. A custom PSICQUIC token MUST NOT be overwritten by a different service. Each of these is a declared security difference.
 
 **Retiring the old service (Story 3)**
 
@@ -115,8 +116,8 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 
 - **PSICQUIC resource**: a third-party interaction service listed by the PSICQUIC registry, with a name, an address and whether it is active. Node already keeps this list.
 - **Cached answer**: one resource's answer for one set of accessions, kept for one day; never a failure.
-- **Custom interactor set**: the pairs of identifiers one upload contained (each with a confidence of 1.0), or the address of a custom PSICQUIC service; addressed by a token.
-- **Token**: an unguessable name for a custom interactor set; handed out since 2019, put in overlay links, never expiring.
+- **Custom interactor set**: the pairs of identifiers one upload contained, each with its confidence (1.0 for a two-column tuple), or the address of a custom PSICQUIC service; addressed by a token.
+- **Token**: the name of a custom interactor set, in one of two forms (an MD5 for an upload; `PSI-` and a hash product for a custom PSICQUIC service); handed out since 2019 and put in overlay links. Neither form is hard to guess, as today.
 - **Token store**: every custom interactor set, today one file per token in the Java service's own serialised format, to be converted once into one node reads.
 
 ## Success Criteria _(mandatory)_
@@ -125,8 +126,8 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 
 - **SC-001**: For a pathway whose resources were asked in the last day, every resource's count in the interactors panel appears within **1 second** (today 6 to 21 seconds per resource).
 - **SC-002**: No fetch from a third-party resource takes longer than the stated timeout (today a fetch waits without limit: about 135 seconds measured on an unreachable server).
-- **SC-003**: Over a sample of pathways and every live resource, asked of both services at the same moment, node's answers are the Java service's: the same interactions, scores and order, with no difference but the timeout and the cache.
-- **SC-004**: **Every** token in the existing store (several hundred) opens the same overlay through node as through the Java service: zero lost.
+- **SC-003**: Over a sample of pathways and every live resource, asked of both services at the same moment, node's answers are the Java service's: the same interactions, scores and order, with no difference but the declared ones.
+- **SC-004**: **Every** token in every server's existing store (several hundred) opens the same overlay through node as through the Java service, compared on that server before its route moves: zero lost.
 - **SC-005**: Uploading the same files to both services gives the same tokens' contents, warnings and refusals.
 - **SC-006**: With the old ContentService stopped, every published ContentService operation answers through the site and the end-to-end suite passes.
 - **SC-007**: After one release with nothing routed to it, the old ContentService is switched off and its repository archived.
@@ -135,9 +136,9 @@ The team retires the old Java ContentService: nothing reaches it, it is removed 
 
 - **One day** is a fair lifetime for a cached PSICQUIC answer: third-party interaction data changes on the scale of releases, not hours. It is a setting, and can be shortened.
 - **A 30-second timeout per fetch** is enough for every resource that answers at all; it is a setting. It bounds each fetch, not the whole request: a large diagram is many fetches, and the Java service took 102 s for two accessions from one resource (most of it, the research suggests, its 16 ontology requests and repeated registry lookups, which node does not make).
-- **The cache lives in the node service** (in memory and, if planning finds it worthwhile, on disk), not in the browser and not in the web server, so it serves every visitor and survives the move away from Java.
+- **The cache lives in the node service**, on disk (research R3), not in the browser and not in the web server, so it serves every visitor and survives the move away from Java.
 - **The existing token store is converted once**, by a step that reads the Java service's files with the Java library that wrote them, and writes a format node reads; the Java format is never read by node directly.
-- **The IntAct libraries are not kept**: one of them is a snapshot build from a repository that no longer serves reliably, so keeping the Java logic would mean rescuing those libraries too. The library service is the fallback for a part that cannot be matched, not the plan.
+- **The IntAct libraries are not kept**: they are old, unlicensed third-party Java, and keeping the Java logic would mean keeping them building and current. The library service is the fallback for a part that cannot be matched, not the plan.
 - **The tuple format and its messages are unchanged**: the Pathway Browser's dialog already parses files in the browser (since Sept 2026), and uploads only to get a token.
 - **ORCID** ("Claim your work") is out of scope: it has its own spec.
 - **Release work comes first**: this spec is planned now and built in step with the December release's own work, not ahead of it.

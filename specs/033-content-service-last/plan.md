@@ -22,7 +22,7 @@ Node takes over the nine operations the old Java ContentService still answers, s
 **Project Type**: web service (the node content service), plus routing and one Java program.
 **Performance Goals**: a cached answer in under a second (SC-001); a third-party request ends within 30 s (SC-002).
 **Constraints**: byte-identical to Java apart from the declared differences (FR-005); small, spaced requests to third-party servers; no Java ContentService on any request path when done; nothing server-specific in the repository.
-**Scale/Scope**: 9 operations; about 14 PSICQUIC resources; about 320 tokens on production since 2019. The PSICQUIC port is about 1,800–2,000 lines of TypeScript, plus 1,000–1,500 of tests and fixtures (a prototype from the reading was about 650 lines of Python). The upload parsers add about 1,700 lines of Java behaviour to match.
+**Scale/Scope**: 9 operations; about 14 PSICQUIC resources; several hundred tokens on each server that holds a store, since 2019. The PSICQUIC port is about 1,800–2,000 lines of TypeScript, plus 1,000–1,500 of tests and fixtures (a prototype from the reading was about 650 lines of Python). The upload parsers add about 1,700 lines of Java behaviour to match.
 
 ## Constitution Check
 
@@ -64,18 +64,23 @@ specs/033-content-service-last/
 
 ```text
 tools/content-node/
-├── psicquic.ts                      # the registry (exists); gains the per-resource lookup
-├── psicquic-mitab.ts                # MITAB parsing (R1)
-├── psicquic-cluster.ts              # clustering (R1)
-├── psicquic-score.ts                # the MI-score, with the ontology snapshot (R1)
-├── psicquic-clients.ts              # the per-resource clients: score column, alias, URLs (R1)
-├── psicquic-cache.ts                # the disk cache, in-flight sharing, limits (R3)
-├── java-collections.ts              # Java's HashMap/HashSet iteration order, String.hashCode, number formats (R1, R5)
+├── psicquic.ts                        # the registry (exists); gains the lookup by name as the path gives it
+├── java-float.ts                      # JDK 11's Float.toString and single-precision steps (new)
+├── java-hashmap.ts                    # exists; gains ConcurrentHashMap's iteration order
+├── psicquic-mitab.ts                  # MITAB 2.5 parsing (R1)
+├── psicquic-cluster.ts                # clustering (R1)
+├── psicquic-score.ts                  # the MI-score, with the ontology snapshot (R1)
+├── psicquic-clients.ts                # the per-resource clients: score column, alias, URLs (R1)
+├── psicquic-answer.ts                 # filter, rounding, de-duplication, order, JSON (R1)
+├── psicquic-fetch.ts                  # registry fetches, per-fetch timeout, per-server limits (R3)
+├── user-address-fetch.ts              # fetching an address a user gave: the R6 checks, for uploads and custom services
+├── psicquic-cache.ts                  # the disk cache, in-flight sharing, limits (R3)
 ├── interactors-psicquic-endpoints.ts  # the four PSICQUIC operations
-├── custom-interactors-parse.ts      # the three upload parsers and their messages (R6)
-├── custom-interactors-store.ts      # the token store (R5)
-├── interactors-custom-endpoints.ts  # the five upload and token operations
-└── fixtures/psicquic-ontology.json  # the MI ontology terms the score uses: OLS4's first page, as Java gets it (R1)
+├── custom-interactors-parse.ts        # the three upload parsers and their messages (R6)
+├── custom-interactors-store.ts        # the token store, both token forms, its bound (R5)
+├── interactors-custom-endpoints.ts    # the five upload and token operations
+├── snapshot-psicquic-ontology.ts      # retakes the ontology snapshot (run by hand; in RUN_ON_LOAD)
+└── fixtures/psicquic-ontology.json    # OLS4's first page per branch, as Java gets it (R1)
 projects/contract/interactors.ts     # Interactors.resource widened; TupleResult, CustomPsicquicResource
 deploy/java-library/                 # the conversion program; any fallback part (R4)
 deploy/nginx/common/routes-core.conf, proxy.conf.js, deploy/nginx/routes.spec.ts
@@ -88,7 +93,7 @@ docker-compose.yml                   # the two folders mounted into content-node
 
 1. **Contract and recordings:** record beta's answers for each of the nine (small and spaced), widen `Interactors.resource`, and add the upload types.
 2. **Story 1, in parts, each a PR:** Java's collections and number formats; MITAB parsing; clustering; scoring with the ontology snapshot; the per-resource clients; the endpoints behind the cache, not yet routed; parity over the sample (R4), with any fallback decided per part; then routing on every deployment.
-3. **Story 2:** the conversion program and its run on a copy (by the server's session for production's store); the parsers; the store and the endpoints, not yet routed; parity for every token and the upload corpus; then routing.
+3. **Story 2:** the conversion program and its run on a copy of each server's store, by whoever runs that server; the parsers; the store and the endpoints, not yet routed; parity for every token on each server, and the upload corpus; then routing.
 4. **Story 3:** once spec 015 T068 and spec 006 T100 are done, the catch-all; one release; the webapp removed; the repository archived.
 
 ## Complexity Tracking

@@ -5,8 +5,8 @@ answer from beta's Java service. Anything I could not check is marked **UNVERIFI
 
 ## 0. Headline findings
 
-1. **The deployed versions are not the ones on interactors-core's `main`.** Beta's
-   Tomcat `ContentService/WEB-INF/lib` holds `interactor-core-1.1.5`,
+1. **The deployed versions are not the ones on interactors-core's `main`.** The
+   deployed ContentService ships `interactor-core-1.1.5`,
    **`micluster-1.7.14`**, **`miscore-1.3.14`**, **`psimitab-1.8.6`**,
    `psicquic-registry-client-1.4.0`, `psicquic-simple-client-1.4.0` and
    `jackson-databind-2.13.3` (read from the deployed jars' names). The 1.9.0-SNAPSHOT and
@@ -61,7 +61,7 @@ answer from beta's Java service. Anything I could not check is marked **UNVERIFI
    **`Float.toString` (JDK 11) is missing and is needed** (§R1.8).
 5. **Speed, measured:**
    - MINT POST for 2 accessions took **102 s** on beta, yet MINT itself answered
-     each accession in under 1 s from this host.
+     each accession in under 1 s when asked directly.
    - BioGrid GET took 9.4 s; Reactome GET took 21 s.
    - The time goes somewhere in Java: probably the 16 OLS calls and the registry
      lookups, done again per request (and per accession in the summary path).
@@ -119,12 +119,11 @@ registry")`.
   **UNVERIFIED**; node sends the same URL, so it gets the same answer.
 - Read by PT `PsimiTabReader.java:193-194`: `url.openStream()` and
   `InputStreamReader(is)` in the **platform default charset**.
-  - The process's locale is **UNVERIFIED**: `/proc/<pid>/environ` is not readable
-    and the command line sets no `file.encoding`. If the locale is POSIX, non-ASCII
-    bytes become U+FFFD. Every answer measured was ASCII.
-- **Timeouts: none.** `openStream` has none, and the Tomcat command line sets no
-  `sun.net.client.default{Connect,Read}Timeout` (checked for those settings by name
-  only). The POST path also waits `awaitTermination(Long.MAX_VALUE)` (:276).
+  - The deployed service's default charset is **UNVERIFIED**: no `file.encoding`
+    is set for it. If its locale is POSIX, non-ASCII bytes become U+FFFD. Every
+    answer measured was ASCII. T024 tests a non-ASCII case.
+- **Timeouts: none.** `openStream` has none, and the deployed service sets no
+  `sun.net.client.default{Connect,Read}Timeout`. The POST path also waits `awaitTermination(Long.MAX_VALUE)` (:276).
 
 ### 4. Parsing (psimitab 1.8.6)
 
