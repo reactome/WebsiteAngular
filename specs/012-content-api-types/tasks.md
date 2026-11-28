@@ -99,7 +99,7 @@
 
 ## Phase 9: Polish
 
-- [ ] T032 Run the full e2e suite (`E2E_PORT=4330`) and both applications' builds; record the lint and dead-code counts against the start. _Superseded: spec 016's pull requests each ran these gates and recorded the counts, and spec 025 took lint to zero._
+- [x] T032 Run the full e2e suite (`E2E_PORT=4330`) and both applications' builds; record the lint and dead-code counts against the start. _Superseded: spec 016's pull requests each ran these gates and recorded the counts, and spec 025 took lint to zero._
 - [x] T033 Update `CLAUDE.md`'s guidance only if a rule for future work emerges (e.g. "a new content API call needs an entry in `tools/api-types/calls.ts`"), and the quickstart if a command changed. (#894: `CLAUDE.md`'s API contract section, spec 016 T030.)
 
 ---
