@@ -1,0 +1,2977 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0010",
+      "lang" : "en",
+      "description" : [ "Beta-galactosidase activity can be used to monitor the interaction of chimeric proteins. Pairs of inactive beta gal deletion mutants are capable of complementing to restore activity when fused to interacting protein partners. Critical to the success of this system is the choice of two poorly complementing mutant moieties, since strongly complementing mutants spontaneously assemble and produce functional beta-gal activity detectable in absence of any fused protein fragment." ],
+      "synonyms" : [ "beta galactosidase" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0010" ]
+      },
+      "label" : "beta galactosidase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0010",
+      "obo_id" : "MI:0010",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Beta-galactosidase activity can be used to monitor the interaction of chimeric proteins. Pairs of inactive beta gal deletion mutants are capable of complementing to restore activity when fused to interacting protein partners. Critical to the success of this system is the choice of two poorly complementing mutant moieties, since strongly complementing mutants spontaneously assemble and produce functional beta-gal activity detectable in absence of any fused protein fragment.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12042868",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12042868"
+        }, {
+          "database" : "PMID",
+          "id" : "9237989",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/9237989"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "beta galactosidase",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0010/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0011",
+      "lang" : "en",
+      "description" : [ "This strategy is based on a protein fragment complementation assay (PCA) of the enzyme TEM-1 beta-lactamase. The approach includes a simple colorimetric in vitro assays using the cephalosporin nitrocefin and assays in intact cells using the fluorescent substrate CCF2/AM. The combination of in vitro colorimetric and in vivo fluorescence assays of beta-lactamase in mammalian cells permits a variety of sensitive and high-throughput large-scale applications." ],
+      "synonyms" : [ "beta lactamase" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0011" ]
+      },
+      "label" : "beta lactamase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0011",
+      "obo_id" : "MI:0011",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "This strategy is based on a protein fragment complementation assay (PCA) of the enzyme TEM-1 beta-lactamase. The approach includes a simple colorimetric in vitro assays using the cephalosporin nitrocefin and assays in intact cells using the fluorescent substrate CCF2/AM. The combination of in vitro colorimetric and in vivo fluorescence assays of beta-lactamase in mammalian cells permits a variety of sensitive and high-throughput large-scale applications.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12042868",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12042868"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "beta lactamase",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0011/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0014",
+      "lang" : "en",
+      "description" : [ "Adenylate cyclase is encoded by the cyaA gene and contains a catalytic domain which can be proteolytically cleaved into two complementary fragments, T25 and T18, which remain associated in the presence of calmodulin in a fully active ternary complex. In the absence of calmodulin, the mixture of the two fragments does not exhibit detectable activity, suggesting that the two fragments do not associate. When expressed in an adenylate cyclase-deficient E. coli strain (E. coli lacks calmodulin or calmodulin-related proteins), the T25 and T18 fragments fused to putative interacting proteins are brought into close association which result in cAMP synthesis. The level of reconstructed adenylate cyclase can be estimated by monitoring the expression of a cAMP dependent reporter gene. The T25 tagged protein is generally regarded as the bait, the T18 as the prey." ],
+      "synonyms" : [ "adenylate cyclase", "bacterial two-hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0014" ]
+      },
+      "label" : "adenylate cyclase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0014",
+      "obo_id" : "MI:0014",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Adenylate cyclase is encoded by the cyaA gene and contains a catalytic domain which can be proteolytically cleaved into two complementary fragments, T25 and T18, which remain associated in the presence of calmodulin in a fully active ternary complex. In the absence of calmodulin, the mixture of the two fragments does not exhibit detectable activity, suggesting that the two fragments do not associate. When expressed in an adenylate cyclase-deficient E. coli strain (E. coli lacks calmodulin or calmodulin-related proteins), the T25 and T18 fragments fused to putative interacting proteins are brought into close association which result in cAMP synthesis. The level of reconstructed adenylate cyclase can be estimated by monitoring the expression of a cAMP dependent reporter gene. The T25 tagged protein is generally regarded as the bait, the T18 as the prey.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "9576956",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/9576956"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "adenylate cyclase",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "bacterial two-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0014/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0018",
+      "lang" : "en",
+      "description" : [ "The classical two-hybrid system is a method that uses transcriptional activity as a measure of protein-protein interaction. It relies on the modular nature of many site-specific transcriptional activators (GAL 4) , which consist of a DNA-binding domain and a transcriptional activation domain. The DNA-binding domain serves to target the activator to the specific genes that will be expressed, and the activation domain contacts other proteins of the transcriptional machinery to enable transcription to occur. The two-hybrid system is based on the observation that the two domains of the activator need to be non-covalently brought together by the interaction of any two proteins. The application of this system requires the expression of two hybrid. Generally this assay is performed in yeast cell, but it can also be carried out in other organism. The bait protein is fused to the DNA binding molecule, the prey to the transcriptional activator." ],
+      "synonyms" : [ "Y-2H", "Y2H", "2 hybrid", "2-hybrid", "2H", "2h", "Gal4 transcription regeneration", "classical two hybrid", "two-hybrid", "yeast two hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0018" ]
+      },
+      "label" : "two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0018",
+      "obo_id" : "MI:0018",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The classical two-hybrid system is a method that uses transcriptional activity as a measure of protein-protein interaction. It relies on the modular nature of many site-specific transcriptional activators (GAL 4) , which consist of a DNA-binding domain and a transcriptional activation domain. The DNA-binding domain serves to target the activator to the specific genes that will be expressed, and the activation domain contacts other proteins of the transcriptional machinery to enable transcription to occur. The two-hybrid system is based on the observation that the two domains of the activator need to be non-covalently brought together by the interaction of any two proteins. The application of this system requires the expression of two hybrid. Generally this assay is performed in yeast cell, but it can also be carried out in other organism. The bait protein is fused to the DNA binding molecule, the prey to the transcriptional activator.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "10967325",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/10967325"
+        }, {
+          "database" : "PMID",
+          "id" : "12634794",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12634794"
+        }, {
+          "database" : "PMID",
+          "id" : "1946372",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/1946372"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "2 hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "2-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "2H",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "2h",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "Gal4 transcription regeneration",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "classical two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "two-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "yeast two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0018/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0097",
+      "lang" : "en",
+      "description" : [ "In this complementation approach the bait can be any membrane protein (for example a receptor or a channel protein), the prey is cloned as a fusion protein of any cDNA from a library and the coding sequence of cytoplasmic RAS (cdc25 in yeast). If the bait and the prey interact, RAS is recruited close to the membrane and can activate cell growth. This procedure must take place in cells having a mutated RAS (Cdc25-2 yeast strain having a temperature sensitive mutation of RAS) to avoid constitutive growth activation." ],
+      "synonyms" : [ "reverse RRS", "reverse rrs" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0097" ]
+      },
+      "label" : "reverse ras recruitment system",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0097",
+      "obo_id" : "MI:0097",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "In this complementation approach the bait can be any membrane protein (for example a receptor or a channel protein), the prey is cloned as a fusion protein of any cDNA from a library and the coding sequence of cytoplasmic RAS (cdc25 in yeast). If the bait and the prey interact, RAS is recruited close to the membrane and can activate cell growth. This procedure must take place in cells having a mutated RAS (Cdc25-2 yeast strain having a temperature sensitive mutation of RAS) to avoid constitutive growth activation.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "11160938",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11160938"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "reverse RRS",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "reverse rrs",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0097/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0111",
+      "lang" : "en",
+      "description" : [ "The gene for DHFR is rationally dissected into two fragments called F[1,2] and F[3]. Two proteins or protein domains that are thought to bind to each other can then be fused to either of the two DHFR fragments. Reconstitution of enzyme activity can be monitored in vivo by cell survival in DHFR-negative cells grown in the absence of nucleotides. A fluorescence assay can also be carried out taking advantage of fMTX binding to reconstituted DHFR. The basis of this assay is that complementary fragments of DHFR, when expressed and reassembled in cells, will bind with high affinity (Kd 5 540 pM) to fMTX in a 1:1 complex. fMTX is retained in cells by this complex, whereas the unbound fMTX is actively and rapidly transported out of the cells. Survival depends only on the number of molecules of DHFR reassembled." ],
+      "synonyms" : [ "dhfr reconstruction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0111" ]
+      },
+      "label" : "dihydrofolate reductase reconstruction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0111",
+      "obo_id" : "MI:0111",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The gene for DHFR is rationally dissected into two fragments called F[1,2] and F[3]. Two proteins or protein domains that are thought to bind to each other can then be fused to either of the two DHFR fragments. Reconstitution of enzyme activity can be monitored in vivo by cell survival in DHFR-negative cells grown in the absence of nucleotides. A fluorescence assay can also be carried out taking advantage of fMTX binding to reconstituted DHFR. The basis of this assay is that complementary fragments of DHFR, when expressed and reassembled in cells, will bind with high affinity (Kd 5 540 pM) to fMTX in a 1:1 complex. fMTX is retained in cells by this complex, whereas the unbound fMTX is actively and rapidly transported out of the cells. Survival depends only on the number of molecules of DHFR reassembled.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "10318894",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/10318894"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "dhfr reconstruction",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0111/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0112",
+      "lang" : "en",
+      "description" : [ "The split-ubiquitin system provides a method for examining the interactions of membrane proteins.  In the split-ubiquitin system, two integral membrane proteins to be studied are fused to two different ubiquitin moieties: a C-terminal ubiquitin moiety (\"Cub\", residues 35-76) and an N-terminal ubiquitin moiety (\"Nub\", residues 1-34). These fused proteins are called the bait and prey, respectively. In addition to being fused to an integral membrane protein, the Cub moiety is also fused to a transcription factor  that can be cleaved off by ubiquitin specific proteases. Upon bait-prey interaction, Nub and Cub-moieties assemble, reconstituting the split-ubiquitin. The reconstituted split-ubiquitin molecule is recognized by ubiquitin specific proteases, which cleave off the reporter protein, allowing it to induce the transcription of reporter genes." ],
+      "synonyms" : [ "membrane yeast two-hybrid", "myth", "split-ubiquitin", "ub reconstruction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0112" ]
+      },
+      "label" : "ubiquitin reconstruction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0112",
+      "obo_id" : "MI:0112",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The split-ubiquitin system provides a method for examining the interactions of membrane proteins.  In the split-ubiquitin system, two integral membrane proteins to be studied are fused to two different ubiquitin moieties: a C-terminal ubiquitin moiety (\"Cub\", residues 35-76) and an N-terminal ubiquitin moiety (\"Nub\", residues 1-34). These fused proteins are called the bait and prey, respectively. In addition to being fused to an integral membrane protein, the Cub moiety is also fused to a transcription factor  that can be cleaved off by ubiquitin specific proteases. Upon bait-prey interaction, Nub and Cub-moieties assemble, reconstituting the split-ubiquitin. The reconstituted split-ubiquitin molecule is recognized by ubiquitin specific proteases, which cleave off the reporter protein, allowing it to induce the transcription of reporter genes.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "9560251",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/9560251"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "ub reconstruction",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0112/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0231",
+      "lang" : "en",
+      "description" : [ "The MAPPIT(mammalian protein-protein interaction Trap) is a screening method for protein-protein interaction in mammalian cells, based on the reconstitution of a membrane STAT (signal transducers and activators of transcription) receptor. The bait protein is fused to a STAT recruitment-deficient receptor and the prey protein to a functional STAT recruitment sites. In such a configuration, a given baitprey interaction restores a STAT-dependent responses leading to the expression of a reporter gene. This system, enable to demonstrate not only protein interaction but also modification-independent and tyrosine phosphorylation- dependent interactions." ],
+      "synonyms" : [ "mappit" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0231" ]
+      },
+      "label" : "mammalian protein protein interaction trap",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0231",
+      "obo_id" : "MI:0231",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The MAPPIT(mammalian protein-protein interaction Trap) is a screening method for protein-protein interaction in mammalian cells, based on the reconstitution of a membrane STAT (signal transducers and activators of transcription) receptor. The bait protein is fused to a STAT recruitment-deficient receptor and the prey protein to a functional STAT recruitment sites. In such a configuration, a given baitprey interaction restores a STAT-dependent responses leading to the expression of a reporter gene. This system, enable to demonstrate not only protein interaction but also modification-independent and tyrosine phosphorylation- dependent interactions.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12853652",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12853652"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "mappit",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0231/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0232",
+      "lang" : "en",
+      "description" : [ "Protein complementation assay performed by dissecting a transcription factor activity (DNA binding domain and transcription activation domain) its restoration through the two hybrid proteins interaction that lead to a reporter gene expression." ],
+      "synonyms" : [ "transcription compl" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0232" ]
+      },
+      "label" : "transcriptional complementation assay",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0232",
+      "obo_id" : "MI:0232",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Protein complementation assay performed by dissecting a transcription factor activity (DNA binding domain and transcription activation domain) its restoration through the two hybrid proteins interaction that lead to a reporter gene expression.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "transcription compl",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0232/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0369",
+      "lang" : "en",
+      "description" : [ "The method is based on the repression of a reporter gene activity by two LexA DNA binding domains with different binding specificities. LexA is a transcription factor with an N-terminal DNA binding/activation domain (DBAct) and a C-terminal dimerization domain. LexA dimerization is required to repress transcription efficiently. The discovery of LexA DNA binding domains that bind to different DNA sequence enabled the development of this system." ],
+      "synonyms" : [ "gallex" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0369" ]
+      },
+      "label" : "lex-a dimerization assay",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0369",
+      "obo_id" : "MI:0369",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The method is based on the repression of a reporter gene activity by two LexA DNA binding domains with different binding specificities. LexA is a transcription factor with an N-terminal DNA binding/activation domain (DBAct) and a C-terminal dimerization domain. LexA dimerization is required to repress transcription efficiently. The discovery of LexA DNA binding domains that bind to different DNA sequence enabled the development of this system.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12446730",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12446730"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "gallex",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "gallex",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0369/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0370",
+      "lang" : "en",
+      "description" : [ "This assay allow identification of interactions in the inner membrane of E. coli. by using a chimeric construct ToxR-TM-MBP composed of the N-terminal DNA binding/transcriptional activation domain of ToxR (a dimerization dependant transcription factor) fused to a transmembrane domain of interest (TM) and a monomeric periplasmic anchor (the maltose binding protein). Association of the two TM results in the ToxR-mediated activation of a reporter gene such as CAT (chloroamphenicol acetyltransferase activity). The level of CAT expression indicates the strength of TM association. CAT expression can then be tested and quantify by measuring CAM resistance with disk diffusion assay or CAT activity assays on cell-free extracts." ],
+      "synonyms" : [ "toxcat" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0370" ]
+      },
+      "label" : "tox-r dimerization assay",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0370",
+      "obo_id" : "MI:0370",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "This assay allow identification of interactions in the inner membrane of E. coli. by using a chimeric construct ToxR-TM-MBP composed of the N-terminal DNA binding/transcriptional activation domain of ToxR (a dimerization dependant transcription factor) fused to a transmembrane domain of interest (TM) and a monomeric periplasmic anchor (the maltose binding protein). Association of the two TM results in the ToxR-mediated activation of a reporter gene such as CAT (chloroamphenicol acetyltransferase activity). The level of CAT expression indicates the strength of TM association. CAT expression can then be tested and quantify by measuring CAM resistance with disk diffusion assay or CAT activity assays on cell-free extracts.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "9927659",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/9927659"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "toxcat",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "toxcat",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0370/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0397",
+      "lang" : "en",
+      "description" : [ "Two-hybrid screening can be done in a colony array format, in which each colony expresses a defined pair of proteins. Because the particular protein pair expressed in each colony is defined by its position in the array, positive signals identify interacting proteins without further characterization, thus obviating the need for DNA purification and sequencing. The interrogation of a two-hybrid colony array usually involves a mating strategy in which every DNA binding domain hybrid (the bait) is tested against all activation domain hybrids (the preys) in a grid pattern. Arrays usually use full-length open reading frames." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0397" ]
+      },
+      "label" : "two hybrid array",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0397",
+      "obo_id" : "MI:0397",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Two-hybrid screening can be done in a colony array format, in which each colony expresses a defined pair of proteins. Because the particular protein pair expressed in each colony is defined by its position in the array, positive signals identify interacting proteins without further characterization, thus obviating the need for DNA purification and sequencing. The interrogation of a two-hybrid colony array usually involves a mating strategy in which every DNA binding domain hybrid (the bait) is tested against all activation domain hybrids (the preys) in a grid pattern. Arrays usually use full-length open reading frames.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "10688190",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/10688190"
+        }, {
+          "database" : "PMID",
+          "id" : "11827624",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11827624"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0397/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0398",
+      "lang" : "en",
+      "description" : [ "In the pooling strategy sets of either both bait and prey hybrid vectors are mated or, more commonly, individual baits are mated against pools of preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners. The pooling of both baits and prey molecules is now a rarely used technique as the pooling of baits often leads to misleading results." ],
+      "synonyms" : [ "two hybrid pooling" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0398" ]
+      },
+      "label" : "two hybrid pooling approach",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0398",
+      "obo_id" : "MI:0398",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "In the pooling strategy sets of either both bait and prey hybrid vectors are mated or, more commonly, individual baits are mated against pools of preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners. The pooling of both baits and prey molecules is now a rarely used technique as the pooling of baits often leads to misleading results.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "11283351",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11283351"
+        }, {
+          "database" : "PMID",
+          "id" : "20946815",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/20946815"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "two hybrid pooling",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0398/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0399",
+      "lang" : "en",
+      "description" : [ "Individual baits are mated against pools of random fragmented preys. The usage of degenerated fragment allows identification of the minimal protein region required for the interaction. Since multiple clones that encode overlapping regions of protein are often identified, the minimal domain for interaction may be readily apparent from the initial screen." ],
+      "synonyms" : [ "2h fragment pooling" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0399" ]
+      },
+      "label" : "two hybrid fragment pooling approach",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0399",
+      "obo_id" : "MI:0399",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Individual baits are mated against pools of random fragmented preys. The usage of degenerated fragment allows identification of the minimal protein region required for the interaction. Since multiple clones that encode overlapping regions of protein are often identified, the minimal domain for interaction may be readily apparent from the initial screen.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12634794",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12634794"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "2h fragment pooling",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0399/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0432",
+      "lang" : "en",
+      "description" : [ "Protein-DNA complementation assay where a single promoter act as bait and is screened against a library of prey transcription factors." ],
+      "synonyms" : [ "1 hybrid", "one-hybrid", "yeast one hybrid", "yeast one-hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0432" ]
+      },
+      "label" : "one hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0432",
+      "obo_id" : "MI:0432",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Protein-DNA complementation assay where a single promoter act as bait and is screened against a library of prey transcription factors.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "10589421",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/10589421"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "1 hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "yeast one hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "yeast one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0432/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0437",
+      "lang" : "en",
+      "description" : [ "Two hybrid assay performed with a third protein component co-transfected into a recombinant yeast strain together with a bait and a prey construct. Negative control shows that the interaction between the bait and the prey do not occur when the third protein is not co-transfected." ],
+      "synonyms" : [ "bridge assay", "protein 3-hybrid", "protein tri hybrid", "trihybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0437" ]
+      },
+      "label" : "protein three hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0437",
+      "obo_id" : "MI:0437",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Two hybrid assay performed with a third protein component co-transfected into a recombinant yeast strain together with a bait and a prey construct. Negative control shows that the interaction between the bait and the prey do not occur when the third protein is not co-transfected.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12052864",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12052864"
+        }, {
+          "database" : "PMID",
+          "id" : "12761205",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12761205"
+        }, {
+          "database" : "PMID",
+          "id" : "12935900",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12935900"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "bridge assay",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "protein 3-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "protein tri hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "trihybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0437/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0438",
+      "lang" : "en",
+      "description" : [ "In vivo reconstruction of specific RNA-proteins interactions. The DNA binding and transcription activator domains of GAL4 are brought together via the interaction of recombinant RNA. The first hybrid protein contains the DNA binding domain of GAL4 fused to RevM10 (a mutated RNA binding protein of HIV-1 that binds specifically to the Rev responsive element RRE of the env gene). A recombinant RNA contains the RRE sequence and a target RNA sequence X. The second hybrid protein contains the activation domain of GAL4 fused to protein Y tested for its ability to bind the target RNA X. If this interaction occurs the three hybrid reconstructs GAL4 and the transcription of a reporter gene is activated." ],
+      "synonyms" : [ "Three hybrid system", "rna 3-hybrid", "rna tri hybrid", "rna-three hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0438" ]
+      },
+      "label" : "rna three hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0438",
+      "obo_id" : "MI:0438",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "In vivo reconstruction of specific RNA-proteins interactions. The DNA binding and transcription activator domains of GAL4 are brought together via the interaction of recombinant RNA. The first hybrid protein contains the DNA binding domain of GAL4 fused to RevM10 (a mutated RNA binding protein of HIV-1 that binds specifically to the Rev responsive element RRE of the env gene). A recombinant RNA contains the RRE sequence and a target RNA sequence X. The second hybrid protein contains the activation domain of GAL4 fused to protein Y tested for its ability to bind the target RNA X. If this interaction occurs the three hybrid reconstructs GAL4 and the transcription of a reporter gene is activated.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12162957",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12162957"
+        }, {
+          "database" : "PMID",
+          "id" : "8972875",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/8972875"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "Three hybrid system",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "rna 3-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "rna tri hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "rna-three hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0438/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0588",
+      "lang" : "en",
+      "description" : [ "Group of methods based on complementation assay where a third participant is shown to be necessary for the binding of a given bait prey pair. The molecule fused to the DNA binding domain is the bait, that fused to the transcriptional activator is the prey." ],
+      "synonyms" : [ "3 hybrid", "3-hybrid", "tri hybrid", "tri-hybrid assay" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0588" ]
+      },
+      "label" : "three hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0588",
+      "obo_id" : "MI:0588",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Group of methods based on complementation assay where a third participant is shown to be necessary for the binding of a given bait prey pair. The molecule fused to the DNA binding domain is the bait, that fused to the transcriptional activator is the prey.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "3 hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "3-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "tri hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "tri-hybrid assay",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0588/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0655",
+      "lang" : "en",
+      "description" : [ "A protein of interest (the bait) is fused to the full-length bacteriophage lambda repressor protein (lambdacI, 237 amino acids), containing the amino terminal DNA-binding domain and the carboxylterminal dimerization domain. The corresponding target (prey) protein is fused to the N-terminal domain of the alfa-subunit of RNA polymerase (248 amino acids). The bait is tethered to the lambda operator sequence upstream of the reporter promoter through the DNA-binding domain of lambdacI. When the bait and prey interact, they recruit and stabilize the binding of RNA polymerase at the promoter and activate the transcription of the HIS3 reporter gene. Due to the tendency of both the lambda repressor protein and the N-terminal domain of the alfa-subunit of RNA polymerase to dimerize, this system might not be optimal for the analysis of proteins that self-associate unless their interaction with other protein partners depends on the oligomerization." ],
+      "synonyms" : [ "BacterioMatch", "lambda two hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0655" ]
+      },
+      "label" : "lambda repressor two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0655",
+      "obo_id" : "MI:0655",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "A protein of interest (the bait) is fused to the full-length bacteriophage lambda repressor protein (lambdacI, 237 amino acids), containing the amino terminal DNA-binding domain and the carboxylterminal dimerization domain. The corresponding target (prey) protein is fused to the N-terminal domain of the alfa-subunit of RNA polymerase (248 amino acids). The bait is tethered to the lambda operator sequence upstream of the reporter promoter through the DNA-binding domain of lambdacI. When the bait and prey interact, they recruit and stabilize the binding of RNA polymerase at the promoter and activate the transcription of the HIS3 reporter gene. Due to the tendency of both the lambda repressor protein and the N-terminal domain of the alfa-subunit of RNA polymerase to dimerize, this system might not be optimal for the analysis of proteins that self-associate unless their interaction with other protein partners depends on the oligomerization.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15792953",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15792953"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "BacterioMatch",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "lambda two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0655/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0726",
+      "lang" : "en",
+      "description" : [ "Yeast strains are generated in which expression of DB-X/AD-Y or DBPX hybrid proteins is toxic under particular conditions (negative selection). Under these conditions, dissociation of an interaction should provide a selective advantage thereby facilitating detection: a few growing yeast colonies in which DB-X/AD-Y (or DBPX/binding site) fail to interact should be identified among many nongrowing colonies containing interacting DB-X/AD-Y or DBPX/binding site." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0726" ]
+      },
+      "label" : "reverse two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0726",
+      "obo_id" : "MI:0726",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Yeast strains are generated in which expression of DB-X/AD-Y or DBPX hybrid proteins is toxic under particular conditions (negative selection). Under these conditions, dissociation of an interaction should provide a selective advantage thereby facilitating detection: a few growing yeast colonies in which DB-X/AD-Y (or DBPX/binding site) fail to interact should be identified among many nongrowing colonies containing interacting DB-X/AD-Y or DBPX/binding site.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "8816797",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/8816797"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0726/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0727",
+      "lang" : "en",
+      "description" : [ "Yeast two-hybrid system using Escherichia coli LexA amino acids 1-202 as the DNA-binding domain (BD), E. coli B42 acidic sequence as the activation domain (AD), and two reporters, lacZ and LEU2, each containing upstream LexA binding elements." ],
+      "synonyms" : [ "LexA B52 transcription complementation", "lexa b52 complement" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0727" ]
+      },
+      "label" : "lexa b52 complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0727",
+      "obo_id" : "MI:0727",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Yeast two-hybrid system using Escherichia coli LexA amino acids 1-202 as the DNA-binding domain (BD), E. coli B42 acidic sequence as the activation domain (AD), and two reporters, lacZ and LEU2, each containing upstream LexA binding elements.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14613974",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14613974"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "LexA B52 transcription complementation",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "lexa b52 complement",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0727/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0728",
+      "lang" : "en",
+      "description" : [ "A chimeric protein consisting of the GAL4 DNA-binding domain (aa 1-147 of GAL4) and a transcriptional activation domain from the herpes simplex virus protein VP16 (either aa 411-490 or aa 411-455) can specifically activate transcription of a reporter gene located downstream ofGAL4 DNA binding sites and the E1B minimal promoter. Similarly, two chimeric proteins, one encoding a chimeric GAL4 protein and the other encoding a chimeric VP16 protein, can activate the reporter gene, if the domains fused to the GAL4 and VP16 sequences can complex with appropriate conformation. However, if the domains fused to the GAL4 and VP16 sequences do not interact specifically to form a + complex that reconstitutes GAL4 function, the reporter gene cannot be activated." ],
+      "synonyms" : [ "KISS", "gal4 vp16 complement", "karyoplasmic interaction ion strategy", "mammalian two hybrid" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0728" ]
+      },
+      "label" : "gal4 vp16 complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0728",
+      "obo_id" : "MI:0728",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "A chimeric protein consisting of the GAL4 DNA-binding domain (aa 1-147 of GAL4) and a transcriptional activation domain from the herpes simplex virus protein VP16 (either aa 411-490 or aa 411-455) can specifically activate transcription of a reporter gene located downstream ofGAL4 DNA binding sites and the E1B minimal promoter. Similarly, two chimeric proteins, one encoding a chimeric GAL4 protein and the other encoding a chimeric VP16 protein, can activate the reporter gene, if the domains fused to the GAL4 and VP16 sequences can complex with appropriate conformation. However, if the domains fused to the GAL4 and VP16 sequences do not interact specifically to form a + complex that reconstitutes GAL4 function, the reporter gene cannot be activated.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "1387709",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/1387709"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "KISS",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "gal4 vp16 complement",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "karyoplasmic interaction ion strategy",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "mammalian two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0728/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0809",
+      "lang" : "en",
+      "description" : [ "The bimolecular fluorescence complementation (BiFC) is an assay for determination of protein interactions and/or their location in living cells. This approach is based on complementation between two non- fluorescent fragments of a protein fluorophore such as green fluorescent protein (GFP) or its derivatives. Interactions between proteins fused to each fragment bring the fragments together resulting in the reconstitution of a fully functional flourophore that can be identified through fluorescence spectroscopy or microscopy." ],
+      "synonyms" : [ "gfp complementation", "green fluorescence protein complementation assay", "bifc" ],
+      "annotation" : {
+        "has_alternative_id" : [ "MI:0229" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0809" ]
+      },
+      "label" : "bimolecular fluorescence complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0809",
+      "obo_id" : "MI:0809",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The bimolecular fluorescence complementation (BiFC) is an assay for determination of protein interactions and/or their location in living cells. This approach is based on complementation between two non- fluorescent fragments of a protein fluorophore such as green fluorescent protein (GFP) or its derivatives. Interactions between proteins fused to each fragment bring the fragments together resulting in the reconstitution of a fully functional flourophore that can be identified through fluorescence spectroscopy or microscopy.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "11983170",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11983170"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "bifc",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0809/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0895",
+      "lang" : "en",
+      "description" : [ "This method uses Renilla luciferase (Rluc)-based protein fragment complementation assay (PCA) that is designed specifically to investigate dynamic protein complexes (association and dissociation). It is chose to generate a PCA based on the Rluc, which is, because of its simplicity and sensitivity, a widely used bioluminescence reporter. The general scheme for construction and detection of the Rluc-PCA PKA sensor consists of fusing complementary fragments of Rluc to the regulatory (Reg) and catalytic (Cat) PKA subunits of PKA." ],
+      "synonyms" : [ "pka complementation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0895" ]
+      },
+      "label" : "protein kinase A complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0895",
+      "obo_id" : "MI:0895",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "This method uses Renilla luciferase (Rluc)-based protein fragment complementation assay (PCA) that is designed specifically to investigate dynamic protein complexes (association and dissociation). It is chose to generate a PCA based on the Rluc, which is, because of its simplicity and sensitivity, a widely used bioluminescence reporter. The general scheme for construction and detection of the Rluc-PCA PKA sensor consists of fusing complementary fragments of Rluc to the regulatory (Reg) and catalytic (Cat) PKA subunits of PKA.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "17942691",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/17942691"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "pka complementation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0895/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0916",
+      "lang" : "en",
+      "description" : [ "Yeast two-hybrid system using Escherichia coli LexA amino acids 1-202 as the DNA-binding domain (BD), and a transcriptional activation domain from the herpes simplex virus protein VP16 (either aa 411-490 or aa 411-455) that can specifically activate transcription of a reporter gene located downstream." ],
+      "synonyms" : [ "LexA VP16 transcription complementation", "lexa vp16 complement" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0916" ]
+      },
+      "label" : "lexa vp16 complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0916",
+      "obo_id" : "MI:0916",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Yeast two-hybrid system using Escherichia coli LexA amino acids 1-202 as the DNA-binding domain (BD), and a transcriptional activation domain from the herpes simplex virus protein VP16 (either aa 411-490 or aa 411-455) that can specifically activate transcription of a reporter gene located downstream.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "9371806",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/9371806"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "LexA VP16 transcription complementation",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "lexa vp16 complement",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0916/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1037",
+      "lang" : "en",
+      "description" : [ "The N-terminal portion of synthetic renilla luciferase (hrluc) is attached to one protein through the linker peptide (GGGS)2 and C-terminal portion of synthetic renilla luciferase is connected to the second protein through the linker (GGGGS)2. Interaction of the 2 proteins recovers hrluc activity and produces light." ],
+      "synonyms" : [ "renilla luciferase" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2010-11-11T02:54:08Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1037" ]
+      },
+      "label" : "Split renilla luciferase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1037",
+      "obo_id" : "MI:1037",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The N-terminal portion of synthetic renilla luciferase (hrluc) is attached to one protein through the linker peptide (GGGS)2 and C-terminal portion of synthetic renilla luciferase is connected to the second protein through the linker (GGGGS)2. Interaction of the 2 proteins recovers hrluc activity and produces light.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12705589",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12705589"
+        }, {
+          "database" : "PMID",
+          "id" : "22070901",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/22070901"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "renilla luciferase",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1037/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1111",
+      "lang" : "en",
+      "description" : [ "Individual baits are mated against pools of preys, or pools of baits are mated against individual preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2011-09-29T03:19:21Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1111" ]
+      },
+      "label" : "two hybrid bait or prey pooling approach",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1111",
+      "obo_id" : "MI:1111",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Individual baits are mated against pools of preys, or pools of baits are mated against individual preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "11283351",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11283351"
+        }, {
+          "database" : "PMID",
+          "id" : "20946815",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/20946815"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1111/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1112",
+      "lang" : "en",
+      "description" : [ "Individual baits are mated against pools of preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2011-09-29T03:21:01Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1112" ]
+      },
+      "label" : "two hybrid prey pooling approach",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1112",
+      "obo_id" : "MI:1112",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Individual baits are mated against pools of preys. This approach required cloning baits and preys into both two-hybrid vectors, followed by pooling sets of transformants. The positive double hybrid clones are the interacting partners.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "20946815",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/20946815"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1112/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1113",
+      "lang" : "en",
+      "description" : [ "def" ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2011-09-29T03:23:17Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1113" ]
+      },
+      "label" : "two hybrid bait and prey pooling approach",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1113",
+      "obo_id" : "MI:1113",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "def",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "10655498",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/10655498"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1113/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1203",
+      "lang" : "en",
+      "description" : [ "Two proteins of interest, a bait and prey, which are genetically fused to amino- and carboxy-terminal fragments of luciferase, are transiently expressed. Physical interactions of these bait and prey proteins reconstitute some of the luciferase activity and result in light emission in the presence of the luciferase substrate." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2012-06-07T04:56:59Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1203" ]
+      },
+      "label" : "split luciferase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1203",
+      "obo_id" : "MI:1203",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Two proteins of interest, a bait and prey, which are genetically fused to amino- and carboxy-terminal fragments of luciferase, are transiently expressed. Physical interactions of these bait and prey proteins reconstitute some of the luciferase activity and result in light emission in the presence of the luciferase substrate.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "20734273",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/20734273"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1203/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1204",
+      "lang" : "en",
+      "description" : [ "Two proteins of interest, a bait and prey, which are genetically fused to amino- and carboxy-terminal fragments of firefly (Photinus pyralis) luciferase, are transiently expressed. Physical interactions of these bait and prey proteins reconstitute some of the luciferase activity and result in light emission in the presence of the luciferase substrate." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2012-06-07T05:05:36Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1204" ]
+      },
+      "label" : "split firefly luciferase complementation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1204",
+      "obo_id" : "MI:1204",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Two proteins of interest, a bait and prey, which are genetically fused to amino- and carboxy-terminal fragments of firefly (Photinus pyralis) luciferase, are transiently expressed. Physical interactions of these bait and prey proteins reconstitute some of the luciferase activity and result in light emission in the presence of the luciferase substrate.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "20734273",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/20734273"
+        }, {
+          "database" : "PMID",
+          "id" : "22070901",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/22070901"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1204/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1320",
+      "lang" : "en",
+      "description" : [ "Traditional yeast two hybrid assays are not suitable for the analysis of membrane proteins, as they require the interactions to occur in the nucleus. Methods have been specifically developed to assay for interactions of membrane proteins with both cytosolic or membrane-bound partners." ],
+      "synonyms" : [ "MYTH" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2014-01-08T10:14:46Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1320" ]
+      },
+      "label" : "membrane yeast two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1320",
+      "obo_id" : "MI:1320",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Traditional yeast two hybrid assays are not suitable for the analysis of membrane proteins, as they require the interactions to occur in the nucleus. Methods have been specifically developed to assay for interactions of membrane proteins with both cytosolic or membrane-bound partners.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "2261051",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/2261051"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1320/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1321",
+      "lang" : "en",
+      "description" : [ "Upon interaction of N-terminal generated Ire1p-fusions, the Ire1p kinase domains oligomerize, transphosphorylate and activate their C-terminal RNAseL domains, which specifically splice the mRNA of a transcriptional activator, Hac1.  The expression of the mature form of Hac1p leads to the interaction-specific expression of a reporter. Specifically designed to identify interactors of proteins found in the endoplasmic reticulum." ],
+      "synonyms" : [ "ER-MYTH", "endoplasmic reticulum membrane yeast-two hybrid" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2014-01-08T10:17:38Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1321" ]
+      },
+      "label" : "ire1 reconstruction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1321",
+      "obo_id" : "MI:1321",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Upon interaction of N-terminal generated Ire1p-fusions, the Ire1p kinase domains oligomerize, transphosphorylate and activate their C-terminal RNAseL domains, which specifically splice the mRNA of a transcriptional activator, Hac1.  The expression of the mature form of Hac1p leads to the interaction-specific expression of a reporter. Specifically designed to identify interactors of proteins found in the endoplasmic reticulum.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "22665516",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/22665516"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1321/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1356",
+      "lang" : "en",
+      "description" : [ "The protein pairs, often initially identified by a separate 2-hybrid screening methodology, are subjected to a rigorous re-analysis which may include independent re-screening of the entire search space, retesting the  assay in different strain backgrounds, and multiple retesting of identified protein pairs reversing bait-prey orientations. Orthogonal data from other experimental and bioinformatic approaches may also be used to support the identification of the final high-confidence protein pairs but the primary means of selection must be experimentally based. This method would be expected to identify protein pairs with a higher degree of confidence than any single protein complementation technique." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2015-02-03T13:36:20Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1356" ]
+      },
+      "label" : "validated two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1356",
+      "obo_id" : "MI:1356",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The protein pairs, often initially identified by a separate 2-hybrid screening methodology, are subjected to a rigorous re-analysis which may include independent re-screening of the entire search space, retesting the  assay in different strain backgrounds, and multiple retesting of identified protein pairs reversing bait-prey orientations. Orthogonal data from other experimental and bioinformatic approaches may also be used to support the identification of the final high-confidence protein pairs but the primary means of selection must be experimentally based. This method would be expected to identify protein pairs with a higher degree of confidence than any single protein complementation technique.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "25416956",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/25416956"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1356/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2215",
+      "lang" : "en",
+      "description" : [ "This method allows screening of a full matrix of protein pairs in a single multiplexed strain pool. A doubly engineered clone pool is prepared so that each clone bears two distinct DNA barcodes flanked by site specific recombination sequences. Positive bait-prey combinations allow activation of reporter genes and their respective barcodes undergo recombination, creating unique barcode combinations. Recombined barcode tags are then fused, extracted and sequenced for identification of interacting pairs." ],
+      "synonyms" : [ "BGF-2h", "barcode fusion genetics two hybrid", "bfg two hybrid", "bfg-2h" ],
+      "annotation" : {
+        "created by" : [ "ppm" ],
+        "creation date" : [ "2016-05-05T14:33:32Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2215" ]
+      },
+      "label" : "barcode fusion genetics two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2215",
+      "obo_id" : "MI:2215",
+      "in_subset" : null,
+      "obo_definition_citation" : [ {
+        "definition" : "This method allows screening of a full matrix of protein pairs in a single multiplexed strain pool. A doubly engineered clone pool is prepared so that each clone bears two distinct DNA barcodes flanked by site specific recombination sequences. Positive bait-prey combinations allow activation of reporter genes and their respective barcodes undergo recombination, creating unique barcode combinations. Recombined barcode tags are then fused, extracted and sequenced for identification of interacting pairs.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "27107012",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/27107012"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "BGF-2h",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "barcode fusion genetics two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "bfg two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "bfg-2h",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2215/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2277",
+      "lang" : "en",
+      "description" : [ "This method uses Cre recombinase as a two-hybrid protein-protein interaction reporter that functions intracellularly to covalently and unidirectionally link interacting bait and prey plasmids via specialized loxP sites that flank the protein-coding sequences. The linked protein-coding sequences serve as interaction-identifying DNA molecules that enable massively multiplexed screening coupled with next-generation DNA sequencing to detect protein-protein interactions." ],
+      "synonyms" : [ "Cre recombinase two hybrid", "cr-2h", "cr-two hybrid" ],
+      "annotation" : {
+        "created by" : [ "ppm" ],
+        "creation date" : [ "2017-06-20T15:57:41Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2277" ]
+      },
+      "label" : "Cr-two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2277",
+      "obo_id" : "MI:2277",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "Cre recombinase two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "cr-2h",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "cr-two hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2277/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2323",
+      "lang" : "en",
+      "description" : [ "KISS (KInase Substrate Sensor) is a protein complementation technology that allows in situ analysis of protein-protein interactions in intact mammalian cells. In this method, which is derived from MAPPIT (mammalian protein-protein interaction trap), the bait protein is coupled to the kinase domain of TYK2, while the prey protein is fused to a fragment of the gp130 cytokine receptor chain. Bait and prey interaction leads to phosphorylation of the gp130 anchor by TYK2, followed by recruitment and activation of STAT3, resulting in transcription of a STAT3-dependent reporter system. This approach enables the identification of interactions between proteins, including transmembrane and cytosolic proteins, and their modulation in response to physiological or pharmacological challenges." ],
+      "synonyms" : [ "KISS", "kinase substrate sensor", "kiss" ],
+      "annotation" : {
+        "created by" : [ "pporras" ],
+        "creation date" : [ "2019-04-02T09:58:26Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2323" ]
+      },
+      "label" : "kiss",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2323",
+      "obo_id" : "MI:2323",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "KISS (KInase Substrate Sensor) is a protein complementation technology that allows in situ analysis of protein-protein interactions in intact mammalian cells. In this method, which is derived from MAPPIT (mammalian protein-protein interaction trap), the bait protein is coupled to the kinase domain of TYK2, while the prey protein is fused to a fragment of the gp130 cytokine receptor chain. Bait and prey interaction leads to phosphorylation of the gp130 anchor by TYK2, followed by recruitment and activation of STAT3, resulting in transcription of a STAT3-dependent reporter system. This approach enables the identification of interactions between proteins, including transmembrane and cytosolic proteins, and their modulation in response to physiological or pharmacological challenges.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "25154561",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/25154561"
+        }, {
+          "database" : "PMID",
+          "id" : "29855964",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/29855964"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "KISS",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "kinase substrate sensor",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "kiss",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2323/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2361",
+      "lang" : "en",
+      "description" : [ "Bait protein is fused to a standard protein fusion tag and an intein fragment, prey a with a different protein fusion tag and the complementary intein fragment. The bait and prey are co-expressed in a cell line where the association of bait and prey brings the intein fragments into close proximity, allowing them to reconstitute a fully functional intein, which then catalyzes its own excision and the concurrent ligation of the bait and the prey peptides (as well as the standard protein fusion tags). The resulting spliced protein can be resolved by regular western blot analysis due to its altered mobility, while the presence of the standard protein fusion tags allows visualization or purification of protein using regular biochemical techniques." ],
+      "synonyms" : [ "SIMPL", "simpl" ],
+      "annotation" : {
+        "created by" : [ "pporras" ],
+        "creation date" : [ "2020-12-02T11:31:51Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2361" ]
+      },
+      "label" : "Split Intein-Mediated Protein Ligation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2361",
+      "obo_id" : "MI:2361",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Bait protein is fused to a standard protein fusion tag and an intein fragment, prey a with a different protein fusion tag and the complementary intein fragment. The bait and prey are co-expressed in a cell line where the association of bait and prey brings the intein fragments into close proximity, allowing them to reconstitute a fully functional intein, which then catalyzes its own excision and the concurrent ligation of the bait and the prey peptides (as well as the standard protein fusion tags). The resulting spliced protein can be resolved by regular western blot analysis due to its altered mobility, while the presence of the standard protein fusion tags allows visualization or purification of protein using regular biochemical techniques.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "32415080",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/32415080"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "SIMPL",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "simpl",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2361/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2412",
+      "lang" : "en",
+      "description" : [ "Protein complementation methods specifically developed to assay for interactions of membrane proteins with both cytosolic or membrane-bound partners." ],
+      "synonyms" : [ "MTH" ],
+      "annotation" : {
+        "created by" : [ "Licata" ],
+        "creation date" : [ "2022-02-03T16:27:45Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2412" ]
+      },
+      "label" : "membrane two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_2412",
+      "obo_id" : "MI:2412",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Protein complementation methods specifically developed to assay for interactions of membrane proteins with both cytosolic or membrane-bound partners.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "24658140",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/24658140"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "MTH",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2412/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2413",
+      "lang" : "en",
+      "description" : [ "A membrane bait protein is tagged with the C-terminal half of ubiquitin (Cub) and a chimeric transcription factor, and a cytosolic or membrane-bound prey is tagged with the N-terminal half of ubiquitin (Nub). Upon interaction of bait and prey, the split halves form pseudoubiquitin, which is recognized by cytosolic deubiquitinating enzymes, resulting in cleavage of the transcription factor and expression of a reporter gene." ],
+      "synonyms" : [ "MAMTH" ],
+      "annotation" : {
+        "created by" : [ "Licata" ],
+        "creation date" : [ "2023-02-03T10:18:35Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2413" ]
+      },
+      "label" : "mammalian membrane two hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2413",
+      "obo_id" : "MI:2413",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "A membrane bait protein is tagged with the C-terminal half of ubiquitin (Cub) and a chimeric transcription factor, and a cytosolic or membrane-bound prey is tagged with the N-terminal half of ubiquitin (Nub). Upon interaction of bait and prey, the split halves form pseudoubiquitin, which is recognized by cytosolic deubiquitinating enzymes, resulting in cleavage of the transcription factor and expression of a reporter gene.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "24658140",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/24658140"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "MAMTH",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2413/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2446",
+      "lang" : "en",
+      "description" : [ "Upgraded, high-throughput version of the yeast one hybrid assay. It uses a robotic mating platform to cross DNA-bait yeast strains with an arrayed collection of TF-prey strains." ],
+      "synonyms" : [ "eY1H", "enhanced 1 hybrid", "enhanced one-hybrid", "enhanced yeast one hybrid", "enhanced yeast one-hybrid" ],
+      "annotation" : {
+        "created by" : [ "antonazzo" ],
+        "creation date" : [ "2026-10-12T15:41:57Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2446" ]
+      },
+      "label" : "enhanced one hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2446",
+      "obo_id" : "MI:2446",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Upgraded, high-throughput version of the yeast one hybrid assay. It uses a robotic mating platform to cross DNA-bait yeast strains with an arrayed collection of TF-prey strains.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "22037705",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/22037705"
+        }, {
+          "database" : "PMID",
+          "id" : "36427139",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/36427139"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "eY1H",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "enhanced 1 hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "enhanced one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "enhanced yeast one hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "enhanced yeast one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2446/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2447",
+      "lang" : "en",
+      "description" : [ "A variation of the yeast one hybrid assay that evaluates pairs of proteins for synergistic or antagonistic binding to DNA. The assay detects how two coexpressed proteins jointly influence association with a DNA sequence integrated upstream of reporter genes. One or both proteins carry a transcriptional activation domain, and reporter activity measured for the pair is compared with that measured for each protein separately to identify cooperative or antagonistic effects on DNA association." ],
+      "synonyms" : [ "pY1H", "paired 1 hybrid", "paired one-hybrid", "paired yeast one hybrid", "paired yeast one-hybrid" ],
+      "annotation" : {
+        "created by" : [ "antonazzo" ],
+        "creation date" : [ "2026-10-12T15:42:13Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2447" ]
+      },
+      "label" : "paired one hybrid",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2447",
+      "obo_id" : "MI:2447",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "A variation of the yeast one hybrid assay that evaluates pairs of proteins for synergistic or antagonistic binding to DNA. The assay detects how two coexpressed proteins jointly influence association with a DNA sequence integrated upstream of reporter genes. One or both proteins carry a transcriptional activation domain, and reporter activity measured for the pair is compared with that measured for each protein separately to identify cooperative or antagonistic effects on DNA association.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "37853017",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/37853017"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "pY1H",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "paired 1 hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "paired one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "paired yeast one hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      }, {
+        "name" : "paired yeast one-hybrid",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2447/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0090/descendants?page=0&size=50"
+    }
+  },
+  "page" : {
+    "size" : 50,
+    "totalElements" : 42,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

@@ -1,0 +1,3858 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0192",
+      "lang" : "en",
+      "description" : [ "Reaction, that can affect K,C,A,D,E,Q,G,I,K,M,P,S,T,Y,V residues." ],
+      "synonyms" : [ "acetylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0192" ]
+      },
+      "label" : "acetylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0192",
+      "obo_id" : "MI:0192",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reaction, that can affect K,C,A,D,E,Q,G,I,K,M,P,S,T,Y,V residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006473",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006473"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0041",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0041"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0042",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0042"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0043",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0043"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0044",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0044"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0045",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0045"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0046",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0046"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0047",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0047"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0048",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0048"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0049",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0049"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0050",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0050"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0051",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0051"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0052",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0052"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0053",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0053"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0054",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0054"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0055",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0055"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0056",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0056"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "acetylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0192/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0193",
+      "lang" : "en",
+      "description" : [ "Irreversible reaction that can affect A,R,N,D,C,Q,E,G,H,I,L,K,M,F,P,S,T,W,Y or V residues. It involves the addition of an amide group from a glycine to the target residue." ],
+      "synonyms" : [ "amidation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0193" ]
+      },
+      "label" : "amidation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0193",
+      "obo_id" : "MI:0193",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Irreversible reaction that can affect A,R,N,D,C,Q,E,G,H,I,L,K,M,F,P,S,T,W,Y or V residues. It involves the addition of an amide group from a glycine to the target residue.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0001519",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0001519"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0081",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0081"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0082",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0082"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0083",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0083"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0084",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0084"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0085",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0085"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0086",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0086"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0087",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0087"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0088",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0088"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0089",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0089"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0090",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0090"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0091",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0091"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0092",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0092"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0093",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0093"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0094",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0094"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0095",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0095"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0096",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0096"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0097",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0097"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0098",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0098"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0099",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0099"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0100",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0100"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "amidation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0193/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0194",
+      "lang" : "en",
+      "description" : [ "Covalent bond breakage in a molecule leading to the formation of smaller molecules." ],
+      "synonyms" : [ "cleavage" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0194" ]
+      },
+      "label" : "cleavage reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0194",
+      "obo_id" : "MI:0194",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent bond breakage in a molecule leading to the formation of smaller molecules.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "cleavage",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0194/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0195",
+      "lang" : "en",
+      "description" : [ "Interaction leading to the formation of covalent bond within an autocatalytic molecule or between partners." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0195" ]
+      },
+      "label" : "covalent binding",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0195",
+      "obo_id" : "MI:0195",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Interaction leading to the formation of covalent bond within an autocatalytic molecule or between partners.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0195/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0197",
+      "lang" : "en",
+      "description" : [ "N6-acetyl-L-lysine or S-acetyl-L-cysteine are cleaved and return K or C residues." ],
+      "synonyms" : [ "deacetylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0197" ]
+      },
+      "label" : "deacetylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0197",
+      "obo_id" : "MI:0197",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "N6-acetyl-L-lysine or S-acetyl-L-cysteine are cleaved and return K or C residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006476",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006476"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0055",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0055"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0056",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0056"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deacetylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0197/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0198",
+      "lang" : "en",
+      "description" : [ "S-farnesyl-L-cysteined is cleaved and returns a C residue." ],
+      "synonyms" : [ "defarnesylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0198" ]
+      },
+      "label" : "defarnesylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0198",
+      "obo_id" : "MI:0198",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "S-farnesyl-L-cysteined is cleaved and returns a C residue.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0102",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0102"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "defarnesylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0198/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0199",
+      "lang" : "en",
+      "description" : [ "N6-formyl-L-lysine is cleaved and returns a K residue." ],
+      "synonyms" : [ "deformylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0199" ]
+      },
+      "label" : "deformylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0199",
+      "obo_id" : "MI:0199",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "N6-formyl-L-lysine is cleaved and returns a K residue.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0211",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0211"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deformylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0199/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0200",
+      "lang" : "en",
+      "description" : [ "S-geranylgeranyl-L-cysteine is cleaved and returns a C residue." ],
+      "synonyms" : [ "degeranylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0200" ]
+      },
+      "label" : "degeranylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0200",
+      "obo_id" : "MI:0200",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "S-geranylgeranyl-L-cysteine is cleaved and returns a C residue.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0104",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0104"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "degeranylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0200/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0201",
+      "lang" : "en",
+      "description" : [ "N6-myristoyl-L-lysine is cleaved and returns a K residue." ],
+      "synonyms" : [ "demyristoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0201" ]
+      },
+      "label" : "demyristoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0201",
+      "obo_id" : "MI:0201",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "N6-myristoyl-L-lysine is cleaved and returns a K residue.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0078",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0078"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "demyristoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0201/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0202",
+      "lang" : "en",
+      "description" : [ "S-palmitoyl-L-cysteine, N6-palmitoyl-L-lysine, O-palmitoyl-L-threonine or O-palmitoyl-L-serine are cleaved and return C,K,T or S residues." ],
+      "synonyms" : [ "depalmitoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0202" ]
+      },
+      "label" : "depalmitoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0202",
+      "obo_id" : "MI:0202",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "S-palmitoyl-L-cysteine, N6-palmitoyl-L-lysine, O-palmitoyl-L-threonine or O-palmitoyl-L-serine are cleaved and return C,K,T or S residues.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0060",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0060"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0077",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0077"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0106",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0106"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "depalmitoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0202/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0203",
+      "lang" : "en",
+      "description" : [ "Phosphoresidues are cleaved and return D,C,H,S,T,Y or R residues." ],
+      "synonyms" : [ "dephosphorylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0203" ]
+      },
+      "label" : "dephosphorylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0203",
+      "obo_id" : "MI:0203",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Phosphoresidues are cleaved and return D,C,H,S,T,Y or R residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016311",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016311"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0033",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0033"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0034",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0034"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0035",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0035"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0036",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0036"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0037",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0037"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0038",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0038"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0039",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0039"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0222",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0222"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "dephosphorylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0203/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0204",
+      "lang" : "en",
+      "description" : [ "Cleavage of the G-K bond and release of ubiquitin or ubiquitin like proteins." ],
+      "synonyms" : [ "deubiquitination" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0204" ]
+      },
+      "label" : "deubiquitination reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0204",
+      "obo_id" : "MI:0204",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Cleavage of the G-K bond and release of ubiquitin or ubiquitin like proteins.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016579",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016579"
+        }, {
+          "database" : "PMID",
+          "id" : "11583613",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11583613"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0125",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deubiquitination",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0204/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0206",
+      "lang" : "en",
+      "description" : [ "Reversible reaction that can affect C residue." ],
+      "synonyms" : [ "farnesylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0206" ]
+      },
+      "label" : "farnesylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0206",
+      "obo_id" : "MI:0206",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reversible reaction that can affect C residue.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018347",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018347"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0102",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0102"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "farnesylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0206/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0207",
+      "lang" : "en",
+      "description" : [ "Reaction that can affect K or G residues. Reside is functionalised with a formyl group." ],
+      "synonyms" : [ "formylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0207" ]
+      },
+      "label" : "formylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0207",
+      "obo_id" : "MI:0207",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reaction that can affect K or G residues. Reside is functionalised with a formyl group.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018256",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018256"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0057",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0057"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0211",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0211"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "formylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0207/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0209",
+      "lang" : "en",
+      "description" : [ "Attachment of one or two 20-carbon lipophilic geranylgeranyl isoprene units from geranylgeranyl diphosphate to one or more cysteine residue(s).Reversible reaction that can affect C residue." ],
+      "synonyms" : [ "geranylgeranylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0209" ]
+      },
+      "label" : "geranylgeranylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0209",
+      "obo_id" : "MI:0209",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Attachment of one or two 20-carbon lipophilic geranylgeranyl isoprene units from geranylgeranyl diphosphate to one or more cysteine residue(s).Reversible reaction that can affect C residue.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018348",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018348"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0104",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0104"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "geranylgeranylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0209/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0210",
+      "lang" : "en",
+      "description" : [ "Irreversible introduction of a hydroxyl group that can affect K,P,Y or R residues. Hydroxylation is the first step in the oxidative degeneration of organic compounds." ],
+      "synonyms" : [ "hydroxylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0210" ]
+      },
+      "label" : "hydroxylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0210",
+      "obo_id" : "MI:0210",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Irreversible introduction of a hydroxyl group that can affect K,P,Y or R residues. Hydroxylation is the first step in the oxidative degeneration of organic compounds.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018126",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018126"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0028",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0028"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0029",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0029"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0030",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0030"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0146",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0146"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0215",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0215"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "hydroxylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0210/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0211",
+      "lang" : "en",
+      "description" : [ "Covalent or non covalent binding of lipid group on a protein residue." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0211" ]
+      },
+      "label" : "lipid addition",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0211",
+      "obo_id" : "MI:0211",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent or non covalent binding of lipid group on a protein residue.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006497",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006497"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0211/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0212",
+      "lang" : "en",
+      "description" : [ "Cleavage of a lipid group covalently bound to a protein residue." ],
+      "synonyms" : [ "lipid cleavage" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0212" ]
+      },
+      "label" : "lipoprotein cleavage reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0212",
+      "obo_id" : "MI:0212",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Cleavage of a lipid group covalently bound to a protein residue.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "lipid cleavage",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0212/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0213",
+      "lang" : "en",
+      "description" : [ "The covalent attachment of a methyl residue to one or more monomeric units in a polypeptide, polynucleotide, polysaccharide, or other biological polymer. Irreversible reaction that can affect A,G,M,F,P,C,R,N,Q,E,H,or K residues." ],
+      "synonyms" : [ "methylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0213" ]
+      },
+      "label" : "methylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0213",
+      "obo_id" : "MI:0213",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The covalent attachment of a methyl residue to one or more monomeric units in a polypeptide, polynucleotide, polysaccharide, or other biological polymer. Irreversible reaction that can affect A,G,M,F,P,C,R,N,Q,E,H,or K residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0043414",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0043414"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0061",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0061"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0062",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0062"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0063",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0063"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0064",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0064"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0065",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0065"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0066",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0066"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0067",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0067"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0068",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0068"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0069",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0069"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0070",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0070"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0071",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0071"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0072",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0072"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0073",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0073"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0074",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0074"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0075",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0075"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0076",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0076"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0234",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0234"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0272",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0272"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "methylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0213/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0214",
+      "lang" : "en",
+      "description" : [ "Irreversible covalent addition of a myristoyl group via an amide bond to the alpha-amino group of an amino acid. Reaction that can affect K or G residues." ],
+      "synonyms" : [ "myristoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0214" ]
+      },
+      "label" : "myristoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0214",
+      "obo_id" : "MI:0214",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Irreversible covalent addition of a myristoyl group via an amide bond to the alpha-amino group of an amino acid. Reaction that can affect K or G residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018319",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018319"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0059",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0059"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0078",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0078"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "myristoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0214/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0216",
+      "lang" : "en",
+      "description" : [ "Covalent attachment of palmitic acid to the cysteine residues of membrane proteins. Reversible reaction that can affect C,K,T or S residues." ],
+      "synonyms" : [ "palmitoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0216" ]
+      },
+      "label" : "palmitoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0216",
+      "obo_id" : "MI:0216",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent attachment of palmitic acid to the cysteine residues of membrane proteins. Reversible reaction that can affect C,K,T or S residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0018318",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0018318"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0060",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0060"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0077",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0077"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0079",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0079"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0080",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0080"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0106",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0106"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "palmitoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0216/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0217",
+      "lang" : "en",
+      "description" : [ "Reversible reaction that can affect D,C,H,S,T,Y,R residues." ],
+      "synonyms" : [ "phosphorylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0217" ]
+      },
+      "label" : "phosphorylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0217",
+      "obo_id" : "MI:0217",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reversible reaction that can affect D,C,H,S,T,Y,R residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016310",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016310"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0033",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0033"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0034",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0034"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0035",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0035"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0036",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0036"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0037",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0037"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0038",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0038"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0039",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0039"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0222",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0222"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "phosphorylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0217/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0220",
+      "lang" : "en",
+      "description" : [ "Reversible reaction that create a covalent bond between a C-terminus G of ubiquitin and a K residue of the target." ],
+      "synonyms" : [ "ubiquitination" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0220" ]
+      },
+      "label" : "ubiquitination reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0220",
+      "obo_id" : "MI:0220",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reversible reaction that create a covalent bond between a C-terminus G of ubiquitin and a K residue of the target.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016567",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016567"
+        }, {
+          "database" : "PMID",
+          "id" : "11583613",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/11583613"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0125",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "ubiquitination",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0220/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0408",
+      "lang" : "en",
+      "description" : [ "Covalent bond mediated by 2 sulfur atoms." ],
+      "synonyms" : [ "SS-bond", "disulfide bridge" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0408" ]
+      },
+      "label" : "disulfide bond",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0408",
+      "obo_id" : "MI:0408",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent bond mediated by 2 sulfur atoms.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "SS-bond",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "disulfide bridge",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0408/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0414",
+      "lang" : "en",
+      "description" : [ "terms aiming to represent biochemical reactions referring to their resulting product modifications." ],
+      "synonyms" : [ "Biochemical reaction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0414" ]
+      },
+      "label" : "enzymatic reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0414",
+      "obo_id" : "MI:0414",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "terms aiming to represent biochemical reactions referring to their resulting product modifications.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "Biochemical reaction",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0414/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0556",
+      "lang" : "en",
+      "description" : [ "Gln-Lys cross-link catalyzed by a transglutaminase." ],
+      "synonyms" : [ "transglutamination" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0556" ]
+      },
+      "label" : "transglutamination reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0556",
+      "obo_id" : "MI:0556",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Gln-Lys cross-link catalyzed by a transglutaminase.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0124",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0124"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "transglutamination",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0556/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0557",
+      "lang" : "en",
+      "description" : [ "Involves the addition of one or more ADP-ribose moieties to proteins. Reaction that can affect Arg, Cys, Glu, Arg and Asn residues." ],
+      "synonyms" : [ "adp ribosylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0557" ]
+      },
+      "label" : "adp ribosylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0557",
+      "obo_id" : "MI:0557",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Involves the addition of one or more ADP-ribose moieties to proteins. Reaction that can affect Arg, Cys, Glu, Arg and Asn residues.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006471",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006471"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0168",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0168"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0169",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0169"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0231",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0231"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0237",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0237"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0295",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0295"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "adp ribosylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0557/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0558",
+      "lang" : "en",
+      "description" : [ "Reaction catalyzed by PNGase, a deglycosylating enzyme that promotes the hydrolysis of the beta-aspartylglycosylamine bond of aspargine-linked glycopeptides and glycoproteins." ],
+      "synonyms" : [ "deglycosylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0558" ]
+      },
+      "label" : "deglycosylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0558",
+      "obo_id" : "MI:0558",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reaction catalyzed by PNGase, a deglycosylating enzyme that promotes the hydrolysis of the beta-aspartylglycosylamine bond of aspargine-linked glycopeptides and glycoproteins.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006517",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006517"
+        }, {
+          "database" : "PMID",
+          "id" : "15670854",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15670854"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deglycosylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0558/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0559",
+      "lang" : "en",
+      "description" : [ "The covalent attachment of a glycosyl residue to one or more monomeric units in a polypeptide, polynucleotide, polysaccharide, or other biological polymer. Reaction that can affect Ser, Thr, Cys, Arg, and Asn residues. This reaction is known to be reversible in the case of Asn substrate." ],
+      "synonyms" : [ "glycosylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0559" ]
+      },
+      "label" : "glycosylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0559",
+      "obo_id" : "MI:0559",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The covalent attachment of a glycosyl residue to one or more monomeric units in a polypeptide, polynucleotide, polysaccharide, or other biological polymer. Reaction that can affect Ser, Thr, Cys, Arg, and Asn residues. This reaction is known to be reversible in the case of Asn substrate.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0043413",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0043413"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0122",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0122"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0151",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0151"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0154",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0154"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0155",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0155"
+        }, {
+          "database" : "RESID",
+          "id" : "AA0327",
+          "description" : null,
+          "url" : "https://proteininformationresource.org/cgi-bin/resid?id=AA0327"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "glycosylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0559/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0566",
+      "lang" : "en",
+      "description" : [ "Reversible reaction that create a covalent bond between a C-terminus G of an ubiquitine like sumo protein and a K residue of the target." ],
+      "synonyms" : [ "sumoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0566" ]
+      },
+      "label" : "sumoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0566",
+      "obo_id" : "MI:0566",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reversible reaction that create a covalent bond between a C-terminus G of an ubiquitine like sumo protein and a K residue of the target.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016925",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016925"
+        }, {
+          "database" : "PMID",
+          "id" : "15985640",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15985640"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "sumoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0566/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0567",
+      "lang" : "en",
+      "description" : [ "Reversible reaction that create a covalent bond between a Glycine residue of an ubiquitine like NEDD8 protein and a lysine residue of the target." ],
+      "synonyms" : [ "neddylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0567" ]
+      },
+      "label" : "neddylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0567",
+      "obo_id" : "MI:0567",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reversible reaction that create a covalent bond between a Glycine residue of an ubiquitine like NEDD8 protein and a lysine residue of the target.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0045116",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0045116"
+        }, {
+          "database" : "PMID",
+          "id" : "16127432",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/16127432"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "neddylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0567/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0568",
+      "lang" : "en",
+      "description" : [ "Cleavage of the G-K bond and release of the SUMO ubiquitin like proteins." ],
+      "synonyms" : [ "desumoylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0568" ]
+      },
+      "label" : "desumoylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0568",
+      "obo_id" : "MI:0568",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Cleavage of the G-K bond and release of the SUMO ubiquitin like proteins.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016926",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016926"
+        }, {
+          "database" : "PMID",
+          "id" : "15985640",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15985640"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "desumoylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0568/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0569",
+      "lang" : "en",
+      "description" : [ "Cleavage of the G-K bond and release of the NEDD8 ubiquitin like proteins. Deneddylation, which removes the NEDD8 moiety, requires the isopeptidase activity of the COP9 signalosome." ],
+      "synonyms" : [ "deneddylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0569" ]
+      },
+      "label" : "deneddylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0569",
+      "obo_id" : "MI:0569",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Cleavage of the G-K bond and release of the NEDD8 ubiquitin like proteins. Deneddylation, which removes the NEDD8 moiety, requires the isopeptidase activity of the COP9 signalosome.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0000338",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0000338"
+        }, {
+          "database" : "PMID",
+          "id" : "16127432",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/16127432"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deneddylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0569/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0570",
+      "lang" : "en",
+      "description" : [ "Covalent modification of a polypeptide occuring during its maturation or its proteolytic degradation." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0570" ]
+      },
+      "label" : "protein cleavage",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0570",
+      "obo_id" : "MI:0570",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent modification of a polypeptide occuring during its maturation or its proteolytic degradation.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14744292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14744292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0570/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0571",
+      "lang" : "en",
+      "description" : [ "Any process by which a pre-mRNA or mRNA molecule is cleaved at specific sites or in a regulated manner." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0571" ]
+      },
+      "label" : "mrna cleavage",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0571",
+      "obo_id" : "MI:0571",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Any process by which a pre-mRNA or mRNA molecule is cleaved at specific sites or in a regulated manner.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006379",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006379"
+        }, {
+          "database" : "PMID",
+          "id" : "14681407",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14681407"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0571/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0572",
+      "lang" : "en",
+      "description" : [ "Covalent bond breakage of a DNA molecule leading to the formation of smaller fragments." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0572" ]
+      },
+      "label" : "dna cleavage",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0572",
+      "obo_id" : "MI:0572",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent bond breakage of a DNA molecule leading to the formation of smaller fragments.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0572/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0701",
+      "lang" : "en",
+      "description" : [ "The process by which a DNA strand is synthesized from template DNA by the action of polymerases, which add nucleotides to the 3' end of the nascent DNA strand." ],
+      "synonyms" : [ "DNA replication elongation ", "dna elongation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0701" ]
+      },
+      "label" : "dna strand elongation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0701",
+      "obo_id" : "MI:0701",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The process by which a DNA strand is synthesized from template DNA by the action of polymerases, which add nucleotides to the 3' end of the nascent DNA strand.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006271",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006271"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "DNA replication elongation ",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "dna elongation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0701/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0844",
+      "lang" : "en",
+      "description" : [ "Reaction where a phosphate is transferred between two proteins of a phosphorelay system." ],
+      "synonyms" : [ "phosphotransfer" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0844" ]
+      },
+      "label" : "phosphotransfer reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0844",
+      "obo_id" : "MI:0844",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Reaction where a phosphate is transferred between two proteins of a phosphorelay system.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        }, {
+          "database" : "PMID",
+          "id" : "16712436",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/16712436"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "phosphotransfer",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0844/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0871",
+      "lang" : "en",
+      "description" : [ "The cleavage of a methyl group from a polypeptide. Methylation is generally an irreversible reaction except in mamalian." ],
+      "synonyms" : [ "demethylation" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0871" ]
+      },
+      "label" : "demethylation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0871",
+      "obo_id" : "MI:0871",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The cleavage of a methyl group from a polypeptide. Methylation is generally an irreversible reaction except in mamalian.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006482",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006482"
+        }, {
+          "database" : "PMID",
+          "id" : "17277772",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/17277772"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "demethylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0871/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0881",
+      "lang" : "en",
+      "description" : [ "Catalysis of the hydrolysis of a  nucleoside triphosphate into a nucleoside diphosphate plus phosphate." ],
+      "synonyms" : [ "triphosphatase react" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0881" ]
+      },
+      "label" : "nucleoside triphosphatase reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0881",
+      "obo_id" : "MI:0881",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Catalysis of the hydrolysis of a  nucleoside triphosphate into a nucleoside diphosphate plus phosphate.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0017111",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0017111"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "triphosphatase react",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0881/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0882",
+      "lang" : "en",
+      "description" : [ "Catalysis of the hydrolisis of ATP+ H2O = ADP + phosphate." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0882" ]
+      },
+      "label" : "atpase reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0882",
+      "obo_id" : "MI:0882",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Catalysis of the hydrolisis of ATP+ H2O = ADP + phosphate.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0016887",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0016887"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0882/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0883",
+      "lang" : "en",
+      "description" : [ "Catalysis of the hydrolisis of GTP+ H2O = GDP + phosphate." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0883" ]
+      },
+      "label" : "gtpase reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0883",
+      "obo_id" : "MI:0883",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Catalysis of the hydrolisis of GTP+ H2O = GDP + phosphate.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0003924",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0003924"
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0883/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0902",
+      "lang" : "en",
+      "description" : [ "Any process by which an RNA molecule is cleaved at specific sites or in a regulated manner." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0902" ]
+      },
+      "label" : "rna cleavage",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0902",
+      "obo_id" : "MI:0902",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Any process by which an RNA molecule is cleaved at specific sites or in a regulated manner.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "0006396",
+          "description" : null,
+          "url" : "http://amigo.geneontology.org/amigo/term/GO:0006396"
+        }, {
+          "database" : "PMID",
+          "id" : "14681407",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14681407"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0902/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0910",
+      "lang" : "en",
+      "description" : [ "Covalent bond breakage of a nucleic acid molecule leading to the formation of smaller fragments." ],
+      "synonyms" : [ "ncl acid cleavage" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0910" ]
+      },
+      "label" : "nucleic acid cleavage",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0910",
+      "obo_id" : "MI:0910",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Covalent bond breakage of a nucleic acid molecule leading to the formation of smaller fragments.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "ncl acid cleavage",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0910/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0945",
+      "lang" : "en",
+      "description" : [ "An oxidation-reduction (redox) reaction, a reversible chemical reaction in which the oxidation state of an atom or atoms within a molecule is altered. One substrate acts as a hydrogen or electron donor and becomes oxidized, while the other acts as hydrogen or electron acceptor and becomes reduced." ],
+      "synonyms" : [ "redox reaction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0945" ]
+      },
+      "label" : "oxidoreductase activity electron transfer reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0945",
+      "obo_id" : "MI:0945",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An oxidation-reduction (redox) reaction, a reversible chemical reaction in which the oxidation state of an atom or atoms within a molecule is altered. One substrate acts as a hydrogen or electron donor and becomes oxidized, while the other acts as hydrogen or electron acceptor and becomes reduced.",
+        "oboXrefs" : [ {
+          "database" : "GO",
+          "id" : "GO",
+          "description" : null,
+          "url" : null
+        }, {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "redox reaction",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0945/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0971",
+      "lang" : "en",
+      "description" : [ "The posttranslational phosphopantetheinylation of peptidyl-serine to form peptidyl-O-phosphopantetheine-L-serine." ],
+      "synonyms" : [ "p_patetheinylation" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2009-10-28T01:20:40Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0971" ]
+      },
+      "label" : "phosphopantetheinylation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0971",
+      "obo_id" : "MI:0971",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The posttranslational phosphopantetheinylation of peptidyl-serine to form peptidyl-O-phosphopantetheine-L-serine.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "19679086",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/19679086"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "p_patetheinylation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0971/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0985",
+      "lang" : "en",
+      "description" : [ "The removal of an amine group from a molecule." ],
+      "synonyms" : [ "deamination" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2010-04-26T10:49:06Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0985" ]
+      },
+      "label" : "deamination reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0985",
+      "obo_id" : "MI:0985",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The removal of an amine group from a molecule.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14760721",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14760721"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "deamination",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0985/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0986",
+      "lang" : "en",
+      "description" : [ "The lengthening of a strand of a nucleic acid by the systematic addition of bases by a polymerase." ],
+      "synonyms" : [ "strand elongation" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2010-04-26T10:52:22Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0986" ]
+      },
+      "label" : "nucleic acid strand elongation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0986",
+      "obo_id" : "MI:0986",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The lengthening of a strand of a nucleic acid by the systematic addition of bases by a polymerase.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "159156",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/159156"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "strand elongation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0986/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0987",
+      "lang" : "en",
+      "description" : [ "The process by which an RNA strand is synthesized from template DNA by the action of polymerases, which add nucleotides to the 3' end of the nascent RNA strand." ],
+      "synonyms" : [ "rna elongation" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2010-04-26T11:00:08Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0987" ]
+      },
+      "label" : "rna strand elongation",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0987",
+      "obo_id" : "MI:0987",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The process by which an RNA strand is synthesized from template DNA by the action of polymerases, which add nucleotides to the 3' end of the nascent RNA strand.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "rna elongation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0987/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1027",
+      "lang" : "en",
+      "description" : [ "A modification that converts an L-histidine residue to diphthamide." ],
+      "synonyms" : [ "diphthamidation" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2010-11-11T12:36:51Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1027" ]
+      },
+      "label" : "diphtamidation reaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1027",
+      "obo_id" : "MI:1027",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "A modification that converts an L-histidine residue to diphthamide.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14760721",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14760721"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "diphthamidation",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1027/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "first" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/descendants?page=0&size=50"
+    },
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/descendants?page=0&size=50"
+    },
+    "next" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/descendants?page=1&size=50"
+    },
+    "last" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/descendants?page=1&size=50"
+    }
+  },
+  "page" : {
+    "size" : 50,
+    "totalElements" : 70,
+    "totalPages" : 2,
+    "number" : 0
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/token/00000000000000000000000000000000",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 404,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"code\":404,\"reason\":\"NOT_FOUND\",\"url\":\"http://127.0.0.1:8080/ContentService/interactors/token/00000000000000000000000000000000\",\"messages\":[\"Token [00000000000000000000000000000000] not found\"],\"targets\":null}",
+  "recordedAt": "2026-11-28T19:54:20.941Z",
+  "milliseconds": 4
+}

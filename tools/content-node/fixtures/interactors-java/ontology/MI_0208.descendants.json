@@ -1,0 +1,2105 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0794",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a mutant phenotype that is not observed (or minimally observed) as a result of any of the individual perturbations.\nwt = a = b = E (not=) ab" ],
+      "synonyms" : [ "aphenotypic diverging genetic interaction", "synthetic genetic interaction (sensu inequality)", "synthetic genetic interaction defined by inequality" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0794" ]
+      },
+      "label" : "synthetic genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0794",
+      "obo_id" : "MI:0794",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which two genetic perturbations, when combined, result in a mutant phenotype that is not observed (or minimally observed) as a result of any of the individual perturbations.\nwt = a = b = E (not=) ab",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0794/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0795",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes and their combination result in the same mutant phenotype, to the same degree of severity/penetrance. With respect to any single quantifiable phenotype, this may be expressed as an inequality as: \na = b = ab != wt\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "isophenotypic masking genetic interaction", "asynthetic genetic interaction (sensu inequality)", "asynthetic", "coequal genetic interaction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0795" ],
+        "isDefinedBy" : [ "A, B, and the AB combination all have the same effect on the WT background (2 inequalities).", "Another subtype of alleviating interaction, 'coequal' interaction, is defined by single- and double-mutant strains that exhibit fitness values that are indistinguishable from one another (19).", "Lastly, we observed ten gene pairs for which the MMS sensitivity of the single- and double-deletion strains was statistically indistinguishable (Sxy = Sx = Sy). These interactions, which we call ‘coequal’, are related to‘complementary gene action’, ‘complementary epistasis’ or ‘asynthetic’ relationship types that have been previously described18,30,31." ]
+      },
+      "label" : "asynthetic genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0795",
+      "obo_id" : "MI:0795",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes and their combination result in the same mutant phenotype, to the same degree of severity/penetrance. With respect to any single quantifiable phenotype, this may be expressed as an inequality as: \na = b = ab != wt\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "asynthetic genetic interaction (sensu inequality)",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "asynthetic",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "coequal genetic interaction",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : "PMID",
+          "id" : "18305163",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/18305163"
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0795/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0796",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a phenotype that is less severe/penetrant than the most severe phenotype of the original perturbations, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab <= wt [E = a*]\nOR\nwt <= ab < a* [E = a*]\nwhere 'a*' is the most severe observed phenotype value of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "Alleviating interaction", "suppression", "suppressive genetic interaction (sensu inequality)" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0796" ]
+      },
+      "label" : "genetic suppression (sensu unexpected)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0796",
+      "obo_id" : "MI:0796",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which two genetic perturbations, when combined, result in a phenotype that is less severe/penetrant than the most severe phenotype of the original perturbations, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab <= wt [E = a*]\nOR\nwt <= ab < a* [E = a*]\nwhere 'a*' is the most severe observed phenotype value of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "suppression",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "suppressive genetic interaction (sensu inequality)",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0796/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0797",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in different mutant phenotypes, and the resulting phenotype of their combination (the double mutant) is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'wt' is the wild type phenotype value and 'a != b' indicates qualitatively or quantitatively different phenotypes." ],
+      "synonyms" : [ "masking genetic interaction", "Bateson genetic epistasis", "epistatic genetic interaction (sensu inequality)", "epistatic" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0797" ]
+      },
+      "label" : "genetic epistasis (sensu Bateson)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0797",
+      "obo_id" : "MI:0797",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in different mutant phenotypes, and the resulting phenotype of their combination (the double mutant) is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'wt' is the wild type phenotype value and 'a != b' indicates qualitatively or quantitatively different phenotypes.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "Bateson genetic epistasis",
+        "scope" : "hasExactSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : "PMID",
+          "id" : "17510664",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/17510664"
+        }, {
+          "database" : null,
+          "id" : "https://archive.org/details/mendelsprinciple00bate/page/n8",
+          "description" : null,
+          "url" : "https://archive.org/details/mendelsprinciple00bate/page/n8"
+        } ]
+      }, {
+        "name" : "epistatic genetic interaction (sensu inequality)",
+        "scope" : "hasExactSynonym",
+        "type" : "Alternate label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "epistatic",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0797/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0933",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a phenotype that is more severe/penetrant than expected given the phenotypes of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < E <= wt\nOR\nwt <= E < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0933" ]
+      },
+      "label" : "diverging genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0933",
+      "obo_id" : "MI:0933",
+      "in_subset" : null,
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which two genetic perturbations, when combined, result in a phenotype that is more severe/penetrant than expected given the phenotypes of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < E <= wt\nOR\nwt <= E < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0933/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0935",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a phenotype that is less severe/penetrant than would be expected from the original phenotypes, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as: \nE < ab <= wt\nOR\nwt <= ab < E\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0935" ]
+      },
+      "label" : "converging genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0935",
+      "obo_id" : "MI:0935",
+      "in_subset" : null,
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which two genetic perturbations, when combined, result in a phenotype that is less severe/penetrant than would be expected from the original phenotypes, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as: \nE < ab <= wt\nOR\nwt <= ab < E\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0935/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1271",
+      "lang" : "en",
+      "description" : [ "An effect in which the phenotype of one genetic perturbation is enhanced by a second perturbation to a severity/penetrance beyond (further from wild type) that expected by the superimposition or addition of effects of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < E < wt\nOR\nwt < E < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "aggravating interaction", "enhancing diverging genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T19:12:17Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1271" ]
+      },
+      "label" : "genetic enhancement (sensu unexpected)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1271",
+      "obo_id" : "MI:1271",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the phenotype of one genetic perturbation is enhanced by a second perturbation to a severity/penetrance beyond (further from wild type) that expected by the superimposition or addition of effects of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < E < wt\nOR\nwt < E < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1271/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1272",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits measured on the same quantitative scale but each significantly deviating, in the same direction, from wild type), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n((a* < b < wt) OR (wt < b < a*)) AND (ab = a OR ab = b)\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:05:15Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1272" ]
+      },
+      "label" : "converging genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1272",
+      "obo_id" : "MI:1272",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits measured on the same quantitative scale but each significantly deviating, in the same direction, from wild type), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n((a* < b < wt) OR (wt < b < a*)) AND (ab = a OR ab = b)\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1272/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1273",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination is equal in severity/penetrance to the most severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab = a* < b < wt\nOR\nwt < b < a* = ab\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic masking genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:11:27Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1273" ]
+      },
+      "label" : "maximal genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1273",
+      "obo_id" : "MI:1273",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination is equal in severity/penetrance to the most severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab = a* < b < wt\nOR\nwt < b < a* = ab\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1273/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1274",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination is equal in severity/penetrance to the least severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab = b < wt\nOR\nwt < b = ab < a*\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic semi-suppressing converging genetic interaction", "cisphenotypic semi-suppressing genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:13:14Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1274" ]
+      },
+      "label" : "minimal genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1274",
+      "obo_id" : "MI:1274",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination is equal in severity/penetrance to the least severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab = b < wt\nOR\nwt < b = ab < a*\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1274/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1276",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in opposite mutant phenotypes (traits measured on the same scale but each on opposing sides relative to the wild type phenotype), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a < wt < b) AND (ab = a OR ab = b) \nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "transphenotypic masking genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:25:26Z" ],
+        "has_alternative_id" : [ "MI:1285" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1276" ]
+      },
+      "label" : "opposing genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1276",
+      "obo_id" : "MI:1276",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in opposite mutant phenotypes (traits measured on the same scale but each on opposing sides relative to the wild type phenotype), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a < wt < b) AND (ab = a OR ab = b) \nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1276/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1277",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits that cannot be measured on the same scale and, hence, qualitatively different), and the resulting phenotype of their combination is equal to that of only one of the perturbations. This may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)    \nwhere 'a' and 'b' are the observed phenotypes of the individual perturbations, 'ab' is the observed phenotype of the double perturbation, 'wt' is the wild type phenotype and 'a != b' indicates qualitatively different phenotypes." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:26:38Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1277" ]
+      },
+      "label" : "qualitative genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1277",
+      "obo_id" : "MI:1277",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits that cannot be measured on the same scale and, hence, qualitatively different), and the resulting phenotype of their combination is equal to that of only one of the perturbations. This may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)    \nwhere 'a' and 'b' are the observed phenotypes of the individual perturbations, 'ab' is the observed phenotype of the double perturbation, 'wt' is the wild type phenotype and 'a != b' indicates qualitatively different phenotypes.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1277/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1278",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is more severe/penetrant (further from wild type) than expected by the superimposition or addition of effects of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < a* <= b < wt [E = a*]\nOR\nwt < b <= a* < ab [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic enhancing diverging genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:31:30Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1278" ]
+      },
+      "label" : "mutual genetic enhancement (sensu unexpected)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1278",
+      "obo_id" : "MI:1278",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is more severe/penetrant (further from wild type) than expected by the superimposition or addition of effects of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < a* <= b < wt [E = a*]\nOR\nwt < b <= a* < ab [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1278/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1279",
+      "lang" : "en",
+      "description" : [ "An effect in which the phenotype of one genetic perturbation is enhanced by a second perturbation (which, on its own, has no effect on the phenotype in question) to a severity/penetrance beyond (further from wild type) that of the original phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < a < b = wt [E = a]\nOR\nwt = b < a < ab [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "monophenotypic enhancing diverging genetic interaction", "monophenotypic enhancing genetic interaction", "unilateral genetic enhancement" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:33:13Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1279" ]
+      },
+      "label" : "monophenotypic genetic enhancement",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1279",
+      "obo_id" : "MI:1279",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the phenotype of one genetic perturbation is enhanced by a second perturbation (which, on its own, has no effect on the phenotype in question) to a severity/penetrance beyond (further from wild type) that of the original phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < a < b = wt [E = a]\nOR\nwt = b < a < ab [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1279/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1280",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is less severe/penetrant than expected from the original phenotypes. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a* <= b < wt) AND (a* < ab <= wt) [E = a*]\nOR\n(wt < b <= a*) AND (wt <= ab < a*) [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic suppressing converging genetic interaction", "cisphenotypic suppressing genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:35:53Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1280" ]
+      },
+      "label" : "cisphenotypic genetic suppression",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1280",
+      "obo_id" : "MI:1280",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is less severe/penetrant than expected from the original phenotypes. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a* <= b < wt) AND (a* < ab <= wt) [E = a*]\nOR\n(wt < b <= a*) AND (wt <= ab < a*) [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1280/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1282",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is less severe/penetrant than expected, but not wild type. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a* <= b < wt) AND (a* < ab < wt) [E = a*]\nOR\n(wt < b <= a*) AND (wt < ab < a*) [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic sub-suppressing converging genetic interaction", "cisphenotypic sub-suppressing genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:39:12Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1282" ]
+      },
+      "label" : "cisphenotypic genetic suppression (partial)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1282",
+      "obo_id" : "MI:1282",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is less severe/penetrant than expected, but not wild type. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a* <= b < wt) AND (a* < ab < wt) [E = a*]\nOR\n(wt < b <= a*) AND (wt < ab < a*) [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1282/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1283",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination has a phenotype more severe/penetrant than the least severe/penetrant and less severe/penetrant than the most severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab < b < wt [E = a*]\nOR\nwt < b < ab < a* [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic inter-suppressing converging genetic interaction", "genetic suppression-enhancement" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:43:52Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1283" ]
+      },
+      "label" : "cisphenotypic inter-suppressing genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1283",
+      "obo_id" : "MI:1283",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes result in the same mutant phenotype to varying degrees of severity/penetrance and the resulting phenotype of their combination has a phenotype more severe/penetrant than the least severe/penetrant and less severe/penetrant than the most severe/penetrant of the individual perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < ab < b < wt [E = a*]\nOR\nwt < b < ab < a* [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1283/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1284",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits measured on the same quantitative scale but each significantly deviating, in any direction, from wild type), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)   \nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'wt' is the wild type phenotype value and 'a != b' indicates quantitatively different phenotypes." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T20:47:35Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1284" ]
+      },
+      "label" : "quantitative genetic epistasis",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1284",
+      "obo_id" : "MI:1284",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of two different genes result in different mutant phenotypes (which are traits measured on the same quantitative scale but each significantly deviating, in any direction, from wild type), and the resulting phenotype of their combination is equal to that of only one of the perturbations. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a != wt AND b != wt AND a != b) AND (ab = a OR ab = b)   \nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'wt' is the wild type phenotype value and 'a != b' indicates quantitatively different phenotypes.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1284/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1286",
+      "lang" : "en",
+      "description" : [ "An effect in which the observed phenotype of a double perturbation is opposite (relative to the wild type phenotype) to that which is expected upon the double perturbation. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < wt < E\nOR\nE < wt < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:04:18Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1286" ]
+      },
+      "label" : "surpassing genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1286",
+      "obo_id" : "MI:1286",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the observed phenotype of a double perturbation is opposite (relative to the wild type phenotype) to that which is expected upon the double perturbation. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nab < wt < E\nOR\nE < wt < ab\nwhere 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1286/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1287",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is opposite (relative to wild type) to that expected from the original phenotypes. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* <= b < wt < ab [E = a*]\nOR\nab < wt < b <= a* [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic super-suppressing genetic interaction" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:06:09Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1287" ]
+      },
+      "label" : "mutual genetic over-suppression",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1287",
+      "obo_id" : "MI:1287",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is opposite (relative to wild type) to that expected from the original phenotypes. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* <= b < wt < ab [E = a*]\nOR\nab < wt < b <= a* [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1287/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1288",
+      "lang" : "en",
+      "description" : [ "An effect in which two individual perturbations result in opposite mutant phenotypes (relative to wild type) and their combination results in a phenotype that is more severe than the phenotype observed with the same directionality. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < wt < b < ab\nOR\nab < a < wt < b\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "genetic over-suppression-enhancement" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:11:03Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1288" ]
+      },
+      "label" : "transphenotypic enhancing genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1288",
+      "obo_id" : "MI:1288",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which two individual perturbations result in opposite mutant phenotypes (relative to wild type) and their combination results in a phenotype that is more severe than the phenotype observed with the same directionality. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < wt < b < ab\nOR\nab < a < wt < b\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1288/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1292",
+      "lang" : "en",
+      "description" : [ "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the amelioration or lessening of the severity/penetrance of the mutant phenotype, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab <= b = wt [E = a]\nOR\nwt = b <= ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "monophenotypic suppressing converging genetic interaction", "monophenotypic suppressing genetic interaction", "unilateral genetic suppression" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:37:28Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1292" ]
+      },
+      "label" : "monophenotypic genetic suppression",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_1292",
+      "obo_id" : "MI:1292",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the amelioration or lessening of the severity/penetrance of the mutant phenotype, in effect making the organism more \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab <= b = wt [E = a]\nOR\nwt = b <= ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1292/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1293",
+      "lang" : "en",
+      "description" : [ "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the complete suppression (to wild type) of the mutant phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab = b = wt [E = a]\nOR\nwt = b = ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "monophenotypic all-suppressing converging genetic interaction", "monophenotypic all-suppressing genetic interaction", "unilateral genetic suppression (complete)" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:38:36Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1293" ]
+      },
+      "label" : "monophenotypic genetic suppression (complete)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1293",
+      "obo_id" : "MI:1293",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the complete suppression (to wild type) of the mutant phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab = b = wt [E = a]\nOR\nwt = b = ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1293/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1294",
+      "lang" : "en",
+      "description" : [ "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the amelioration or lessening of the severity/penetrance of the mutant phenotype, in effect making the organism more, but not completely, \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab < b = wt [E = a]\nOR\nwt = b < ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "monophenotypic sub-suppressing converging genetic interaction", "monophenotypic sub-suppressing genetic interaction", "unilateral genetic suppression (partial)" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:39:32Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1294" ]
+      },
+      "label" : "monophenotypic genetic suppression (partial)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1294",
+      "obo_id" : "MI:1294",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the perturbation of one gene, which has no effect on the phenotype in question, is combined with the perturbation of another gene, which causes the mutant phenotype in question, and results in the amelioration or lessening of the severity/penetrance of the mutant phenotype, in effect making the organism more, but not completely, \"wild type\" in character with regards to the phenotype in question. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na < ab < b = wt [E = a]\nOR\nwt = b < ab < a [E = a]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1294/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1295",
+      "lang" : "en",
+      "description" : [ "An effect in which the perturbation of one gene (which has no individual effect on the phenotype in question), when combined with a perturbation of another gene (which causes the phenotype in question), results in a mutant phenotype opposite (relative to wild type) to that of the original phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nE = a < b = wt < ab\nOR\nab < wt = b < a = E\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "monophenotypic super-suppressing genetic interaction", "unilateral genetic over-suppression" ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2013-06-05T21:54:08Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1295" ]
+      },
+      "label" : "monophenotypic genetic over-suppression",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1295",
+      "obo_id" : "MI:1295",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "An effect in which the perturbation of one gene (which has no individual effect on the phenotype in question), when combined with a perturbation of another gene (which causes the phenotype in question), results in a mutant phenotype opposite (relative to wild type) to that of the original phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\nE = a < b = wt < ab\nOR\nab < wt = b < a = E\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations, 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "15833125",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/15833125"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1295/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2370",
+      "lang" : "en",
+      "description" : [ "Mutation of multiple genes in combination that results in lethality when individual single mutations are viable." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2370" ]
+      },
+      "label" : "synthetic lethality (sensu BioGRID)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2370",
+      "obo_id" : "MI:2370",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2370/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2375",
+      "lang" : "en",
+      "description" : [ "Mutation of one gene rescues lethality or a growth defect associated with perturbation of another gene." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2375" ]
+      },
+      "label" : "synthetic rescue (sensu BioGRID)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2375",
+      "obo_id" : "MI:2375",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2375/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2376",
+      "lang" : "en",
+      "description" : [ "Increased dosage of one gene rescues lethality or a growth defect associated with perturbation of another gene." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2376" ]
+      },
+      "label" : "dosage rescue (sensu BioGRID)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2376",
+      "obo_id" : "MI:2376",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2376/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2377",
+      "lang" : "en",
+      "description" : [ "Increased dosage of one gene causes lethality in combination with another viable genetic perturbation." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2377" ]
+      },
+      "label" : "dosage lethality (sensu BioGRID)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2377",
+      "obo_id" : "MI:2377",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2377/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2394",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a fitness that is less than expected given the fitness resulting from the individual perturbations." ],
+      "synonyms" : [ "aggravating interaction", "negative gen int", "synergistic interaction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2394" ],
+        "isDefinedBy" : [ "Negative genetic interactions describe double mutants whose phenotype is stronger than expected (66, 77) (Figure 1b).", "Negative interactions (also called aggravating or synergistic interactions) describe double mutants exhibiting a more severe phenotype than expected, such as synthetic sickness or synthetic lethality (35, 49) (Figure 2a)." ]
+      },
+      "label" : "negative genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_2394",
+      "obo_id" : "MI:2394",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "negative gen int",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "aggravating interaction",
+        "scope" : "hasBroadSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : "PMID",
+          "id" : "19712041",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/19712041"
+        } ]
+      }, {
+        "name" : "synergistic interaction",
+        "scope" : "hasBroadSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : "PMID",
+          "id" : "19712041",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/19712041"
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2394/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2395",
+      "lang" : "en",
+      "description" : [ "An effect in which two genetic perturbations, when combined, result in a fitness that is greater than expected given the fitness resulting from the individual perturbations." ],
+      "synonyms" : [ "alleviating interaction", "positive gent int" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2395" ],
+        "isDefinedBy" : [ "Positive genetic interactions define double mutants whose phenotype is less severe than expected based on single-mutant phenotypes (30, 66, 87) (Figure 1c,d).", "Positive interactions describe double mutants exhibiting a less severe phenotype than expected from the multiplicative model. Positive interactions have also been referred to as alleviating or epistatic interactions." ]
+      },
+      "label" : "positive genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_2395",
+      "obo_id" : "MI:2395",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "positive gent int",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      }, {
+        "name" : "alleviating interaction",
+        "scope" : "hasBroadSynonym",
+        "type" : null,
+        "xrefs" : [ {
+          "database" : "PMID",
+          "id" : "19712041",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/19712041"
+        } ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2395/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2396",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype (but, perhaps, to varying degrees of severity/penetrance) and the resulting phenotype of their combination is equivalent to the wild type phenotype. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\n(a* <= b < wt) AND (ab = wt) [E = a*]\nOR\n(wt < b <= a*) AND (ab = wt) [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ "cisphenotypic all-suppressing converging genetic interaction", "cisphenotypic all-suppressing genetic interaction" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2396" ]
+      },
+      "label" : "cisphenotypic genetic suppression (complete)",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2396",
+      "obo_id" : "MI:2396",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2396/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2397",
+      "lang" : "en",
+      "description" : [ "An effect in which individual perturbations of different genes result in the same mutant phenotype but to varying degrees of severity/penetrance and the resulting phenotype of their combination is less severe/penetrant than both of the phenotypes resulting from the individual perturabtions. With respect to any single quantifiable phenotype, this may be expressed as an inequality as:\na* < b < ab < wt [E = a*]\nOR\nwt < ab < b < a* [E = a*]\nwhere 'a' and 'b' are the observed phenotype values of the individual perturbations ('a*' being the most severe of the two), 'ab' is the observed phenotype value of the double perturbation, 'E' is the expected phenotype value of the double perturbation, and 'wt' is the wild type phenotype value." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2397" ]
+      },
+      "label" : "cisphenotypic co-suppressing genetic interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2397",
+      "obo_id" : "MI:2397",
+      "in_subset" : null,
+      "obo_definition_citation" : null,
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2397/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0208/descendants?page=0&size=50"
+    }
+  },
+  "page" : {
+    "size" : 50,
+    "totalElements" : 33,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

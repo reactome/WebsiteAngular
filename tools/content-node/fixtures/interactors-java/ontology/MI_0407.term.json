@@ -1,0 +1,84 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0407",
+      "lang" : "en",
+      "description" : [ "Interaction between molecules that are in direct contact with each other." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0407" ]
+      },
+      "label" : "direct interaction",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : true,
+      "is_root" : false,
+      "short_form" : "MI_0407",
+      "obo_id" : "MI:0407",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "Interaction between molecules that are in direct contact with each other.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/jstree"
+        },
+        "children" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/children"
+        },
+        "descendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/descendants"
+        },
+        "hierarchicalChildren" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/hierarchicalChildren"
+        },
+        "hierarchicalDescendants" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/hierarchicalDescendants"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0407/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms?obo_id=MI:0407"
+    }
+  },
+  "page" : {
+    "size" : 1,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

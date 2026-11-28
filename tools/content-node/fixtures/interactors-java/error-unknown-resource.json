@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/interactors/psicquic/molecule/no-such-resource/P04637/details"
+  },
+  "status": 500,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"code\":500,\"reason\":\"INTERNAL_SERVER_ERROR\",\"url\":\"http://127.0.0.1:8080/ContentService/interactors/psicquic/molecule/no-such-resource/P04637/details\",\"messages\":[\"no-such-resource not found\"],\"targets\":null}",
+  "recordedAt": "2026-11-28T19:52:46.362Z",
+  "milliseconds": 177
+}

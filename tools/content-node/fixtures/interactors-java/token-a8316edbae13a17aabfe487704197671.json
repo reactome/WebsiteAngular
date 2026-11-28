@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/token/a8316edbae13a17aabfe487704197671",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"a8316edbae13a17aabfe487704197671\",\"entities\":[{\"acc\":\"Q14204\",\"count\":1,\"interactors\":[{\"acc\":\"P04637\",\"alias\":\"TP53\",\"id\":1,\"evidences\":1,\"score\":0.8,\"accURL\":\"http://www.uniprot.org/uniprot/P04637\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=10000001\"}]},{\"acc\":\"P04637\",\"count\":1,\"interactors\":[{\"acc\":\"Q14204\",\"alias\":\"DYNC1H1\",\"id\":2,\"evidences\":1,\"score\":0.8,\"accURL\":\"http://www.uniprot.org/uniprot/Q14204\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=10000001\"}]}]}",
+  "recordedAt": "2026-11-28T19:53:42.175Z",
+  "milliseconds": 57
+}

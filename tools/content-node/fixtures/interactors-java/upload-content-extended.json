@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/tuple/content?name=placeholder-extended",
+    "contentType": "text/plain",
+    "body": "#ID A\tID B\tALIAS A\tALIAS B\tEVIDENCE\tSCORE\nP04637\tQ14204\tTP53\tDYNC1H1\t10000001\t0.8\nP04637\tQ13409\tTP53\tDYNC1I2\t10000002\t0.3\n"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"a8316edbae13a17aabfe487704197671\",\"interactors\":2,\"interactions\":1,\"name\":\"placeholder-extended\"},\"warningMessages\":[\"1 entries have been omitted. Their score is less than 0.45\"]}",
+  "recordedAt": "2026-11-28T19:53:11.949Z",
+  "milliseconds": 65
+}

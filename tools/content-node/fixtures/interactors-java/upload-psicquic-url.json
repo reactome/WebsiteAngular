@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/psicquic/url?name=placeholder-psicquic",
+    "contentType": "text/plain",
+    "body": "http://127.0.0.1:41861/psicquic"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"PSI--2033818852\",\"name\":\"placeholder-psicquic\"}}",
+  "recordedAt": "2026-11-28T19:53:32.112Z",
+  "milliseconds": 53
+}

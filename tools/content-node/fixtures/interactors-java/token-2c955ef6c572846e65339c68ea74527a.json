@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/token/2c955ef6c572846e65339c68ea74527a",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"2c955ef6c572846e65339c68ea74527a\"}",
+  "recordedAt": "2026-11-28T19:53:47.237Z",
+  "milliseconds": 6
+}

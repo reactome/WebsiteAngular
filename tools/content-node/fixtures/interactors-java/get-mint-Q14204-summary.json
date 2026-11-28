@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/interactors/psicquic/molecule/MINT/Q14204/summary"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"MINT\",\"entities\":[{\"acc\":\"Q14204\",\"count\":5}]}",
+  "recordedAt": "2026-11-28T19:51:41.973Z",
+  "milliseconds": 6125
+}

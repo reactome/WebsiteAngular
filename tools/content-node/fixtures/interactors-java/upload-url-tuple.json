@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/tuple/url?name=placeholder-url",
+    "contentType": "text/plain",
+    "body": "http://127.0.0.1:41861/tuple.txt"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"5ba370c00326314c46ab29db5d1fe39c\",\"interactors\":3,\"interactions\":3,\"fileName\":\"tuple.txt\",\"name\":\"placeholder-url\"}}",
+  "recordedAt": "2026-11-28T19:53:27.093Z",
+  "milliseconds": 17
+}

@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/interactors/psicquic/molecule/MINT/Q14204/details"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"MINT\",\"entities\":[{\"acc\":\"Q14204\",\"count\":5,\"interactors\":[{\"acc\":\"Q13409\",\"alias\":\"DC1I2\",\"id\":1,\"evidences\":2,\"score\":0.75,\"accURL\":\"http://www.uniprot.org/uniprot/Q13409\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=EBI-10098563%20OR%20EBI-10099247\"},{\"acc\":\"Q01484\",\"alias\":\"ANK2\",\"id\":2,\"evidences\":3,\"score\":0.62,\"accURL\":\"http://www.uniprot.org/uniprot/Q01484\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=EBI-46447608%20OR%20EBI-50435270%20OR%20EBI-50435434\"},{\"acc\":\"P63104\",\"alias\":\"1433Z\",\"id\":3,\"evidences\":1,\"score\":0.56,\"accURL\":\"http://www.uniprot.org/uniprot/P63104\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=EBI-7193712\"},{\"acc\":\"O96013\",\"alias\":\"PAK4\",\"id\":4,\"evidences\":1,\"score\":0.53,\"accURL\":\"http://www.uniprot.org/uniprot/O96013\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=EBI-26962273\"},{\"acc\":\"O75420\",\"alias\":\"GGYF1\",\"id\":5,\"evidences\":2,\"score\":0.5,\"accURL\":\"http://www.uniprot.org/uniprot/O75420\",\"evidencesURL\":\"http://www.ebi.ac.uk/intact/pages/interactions/interactions.xhtml?query=EBI-46447827%20OR%20EBI-50435266\"}]}]}",
+  "recordedAt": "2026-11-28T19:51:30.903Z",
+  "milliseconds": 6069
+}

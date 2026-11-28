@@ -12,6 +12,11 @@ test-results
 # for how it is taken.
 tools/render/fixtures
 
+# Recorded from the Java ContentService and the services it asks (spec 033
+# T002): the bodies are compared byte for byte, so they stay as recorded.
+tools/content-node/fixtures/interactors-java/*.json
+tools/content-node/fixtures/interactors-java/ontology
+
 # Generated, not authored
 # Written by tools/content-node/snapshot-jsoup/JsoupTables.java from Jsoup's jar.
 tools/content-node/jsoup-tables.json

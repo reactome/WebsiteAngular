@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/token/24f1b76d30f02fb8a20cfef93cf2cded",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"24f1b76d30f02fb8a20cfef93cf2cded\",\"entities\":[{\"acc\":\"Q14204\",\"count\":2,\"interactors\":[{\"acc\":\"P04637\",\"id\":1,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/P04637\"},{\"acc\":\"Q13409\",\"id\":2,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/Q13409\"}]},{\"acc\":\"P04637\",\"count\":2,\"interactors\":[{\"acc\":\"Q14204\",\"id\":3,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/Q14204\"},{\"acc\":\"Q13409\",\"id\":4,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/Q13409\"}]},{\"acc\":\"Q13409\",\"count\":2,\"interactors\":[{\"acc\":\"P04637\",\"id\":5,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/P04637\"},{\"acc\":\"Q14204\",\"id\":6,\"score\":1.0,\"accURL\":\"http://www.uniprot.org/uniprot/Q14204\"}]}]}",
+  "recordedAt": "2026-11-28T19:53:37.165Z",
+  "milliseconds": 9
+}

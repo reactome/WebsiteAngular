@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/interactors/psicquic/molecule/BioGrid/Q14204/summary"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"BioGrid\",\"entities\":[{\"acc\":\"Q14204\",\"count\":70}]}",
+  "recordedAt": "2026-11-28T19:52:35.666Z",
+  "milliseconds": 5693
+}

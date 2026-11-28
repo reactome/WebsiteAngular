@@ -1,0 +1,264 @@
+{
+  "_embedded" : {
+    "terms" : [ {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0256",
+      "lang" : "en",
+      "description" : [ "RNA interference (RNAi) is a post-transcriptional gene silencing method reproducing a naturally occurring phenomena. RNAi is the process whereby double-stranded RNA (dsRNA) induces the sequence-specific degradation of homologous mRNA. RNAi or dsRNA-induced silencing phenomena are present in evolutionarily diverse organisms, e.g., nematodes, plants, fungi, and trypanosomes. The mechanisms by which RNAi works is initiated by a progressive cleavage of dsRNA into 21 to 23 nucleotide (nt) short interfering RNAs (siRNAs). These native siRNA duplexes are then incorporated into a protein complex called RNA-induced silencing complex (RISC). ATP-dependent unwinding of the siRNA duplex generates an active RISC complex. Guided by the antisense strand of siRNA, the active RISC complex recognizes and cleaves the corresponding mRNA." ],
+      "synonyms" : [ "rnai" ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0256" ]
+      },
+      "label" : "rna interference",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0256",
+      "obo_id" : "MI:0256",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "RNA interference (RNAi) is a post-transcriptional gene silencing method reproducing a naturally occurring phenomena. RNAi is the process whereby double-stranded RNA (dsRNA) induces the sequence-specific degradation of homologous mRNA. RNAi or dsRNA-induced silencing phenomena are present in evolutionarily diverse organisms, e.g., nematodes, plants, fungi, and trypanosomes. The mechanisms by which RNAi works is initiated by a progressive cleavage of dsRNA into 21 to 23 nucleotide (nt) short interfering RNAs (siRNAs). These native siRNA duplexes are then incorporated into a protein complex called RNA-induced silencing complex (RISC). ATP-dependent unwinding of the siRNA duplex generates an active RISC complex. Guided by the antisense strand of siRNA, the active RISC complex recognizes and cleaves the corresponding mRNA.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "12110901",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12110901"
+        }, {
+          "database" : "PMID",
+          "id" : "12408823",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/12408823"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "rnai",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0256/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_0257",
+      "lang" : "en",
+      "description" : [ "This approach is based on the observation that expression of RNA that is complementary to a specific mRNA can decrease the synthesis of its gene product either by increasing the degradation of the targeted mRNA or by interfering with its translation." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:0257" ]
+      },
+      "label" : "antisense rna",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_0257",
+      "obo_id" : "MI:0257",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "This approach is based on the observation that expression of RNA that is complementary to a specific mRNA can decrease the synthesis of its gene product either by increasing the degradation of the targeted mRNA or by interfering with its translation.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "1340158",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/1340158"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0257/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_1192",
+      "lang" : "en",
+      "description" : [ "This approach is based on the observation that  a synthesized nucleic acid that is complementary to a specific mRNA can decrease the synthesis of its gene product either by increasing the degradation of the targeted mRNA or by interfering with its translation." ],
+      "synonyms" : [ ],
+      "annotation" : {
+        "created by" : [ "orchard" ],
+        "creation date" : [ "2012-06-07T03:19:22Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:1192" ]
+      },
+      "label" : "antisense oligonucleotides",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_1192",
+      "obo_id" : "MI:1192",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "This approach is based on the observation that  a synthesized nucleic acid that is complementary to a specific mRNA can decrease the synthesis of its gene product either by increasing the degradation of the targeted mRNA or by interfering with its translation.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14755292",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14755292"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : null,
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_1192/graph"
+        }
+      }
+    }, {
+      "iri" : "http://purl.obolibrary.org/obo/MI_2285",
+      "lang" : "en",
+      "description" : [ "The method is based on the functional effect of the binding of the microRNA on the target (mRNA or LncRNA), which is the repression of the expression of the target. To validate a sequence as a direct target of a microRNA, a luciferase reporter gene carrying the wt candidate sequence or its mutated form is used, and the expression of the target is evaluated with a luciferase assay. If the wt is significantly less expressed than the mutant, the binding occurs." ],
+      "synonyms" : [ "miRNA interference luciferase assay" ],
+      "annotation" : {
+        "created by" : [ "pporras" ],
+        "creation date" : [ "2018-05-02T15:22:12Z" ],
+        "has_obo_namespace" : [ "PSI-MI" ],
+        "id" : [ "MI:2285" ]
+      },
+      "label" : "miRNA interference luciferase reporter assay",
+      "ontology_name" : "mi",
+      "ontology_prefix" : "MI",
+      "ontology_iri" : "http://purl.obolibrary.org/obo/mi.owl",
+      "is_obsolete" : false,
+      "term_replaced_by" : null,
+      "is_defining_ontology" : true,
+      "has_children" : false,
+      "is_root" : false,
+      "short_form" : "MI_2285",
+      "obo_id" : "MI:2285",
+      "in_subset" : [ "PSI-MI_slim" ],
+      "obo_definition_citation" : [ {
+        "definition" : "The method is based on the functional effect of the binding of the microRNA on the target (mRNA or LncRNA), which is the repression of the expression of the target. To validate a sequence as a direct target of a microRNA, a luciferase reporter gene carrying the wt candidate sequence or its mutated form is used, and the expression of the target is evaluated with a luciferase assay. If the wt is significantly less expressed than the mutant, the binding occurs.",
+        "oboXrefs" : [ {
+          "database" : "PMID",
+          "id" : "14697198",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/14697198"
+        }, {
+          "database" : "PMID",
+          "id" : "21431711",
+          "description" : null,
+          "url" : "https://pubmed.ncbi.nlm.nih.gov/21431711"
+        } ]
+      } ],
+      "obo_xref" : null,
+      "obo_synonym" : [ {
+        "name" : "miRNA interference luciferase assay",
+        "scope" : "hasExactSynonym",
+        "type" : "Unique short label curated by PSI-MI",
+        "xrefs" : [ ]
+      } ],
+      "is_preferred_root" : false,
+      "_links" : {
+        "self" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285?lang=en"
+        },
+        "parents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/parents"
+        },
+        "ancestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/ancestors"
+        },
+        "hierarchicalParents" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/hierarchicalParents"
+        },
+        "hierarchicalAncestors" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/hierarchicalAncestors"
+        },
+        "jstree" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/jstree"
+        },
+        "graph" : {
+          "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_2285/graph"
+        }
+      }
+    } ]
+  },
+  "_links" : {
+    "self" : {
+      "href" : "http://www.ebi.ac.uk/ols4/api/ontologies/mi/terms/http%253A%252F%252Fpurl.obolibrary.org%252Fobo%252FMI_0255/descendants?page=0&size=50"
+    }
+  },
+  "page" : {
+    "size" : 50,
+    "totalElements" : 4,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}

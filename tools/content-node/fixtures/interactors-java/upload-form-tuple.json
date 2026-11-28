@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/tuple/form?name=placeholder-form"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"da78c4ca315d5ef2ab757d094e96e752\",\"interactors\":3,\"interactions\":3,\"fileName\":\"placeholder.txt\",\"name\":\"placeholder-form\"}}",
+  "recordedAt": "2026-11-28T19:53:22.027Z",
+  "milliseconds": 62
+}

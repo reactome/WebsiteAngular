@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/tuple/content?name=placeholder-psimitab",
+    "contentType": "text/plain",
+    "body": "uniprotkb:P04637\tuniprotkb:Q14204\t-\t-\tuniprotkb:P04637_alias(gene name)\tuniprotkb:Q14204_alias(gene name)\tpsi-mi:\"MI:0018\"(two hybrid)\tPlaceholder et al. (2000)\tpubmed:10000001\ttaxid:9606(human)\ttaxid:9606(human)\tpsi-mi:\"MI:0915\"(physical association)\tpsi-mi:\"MI:0469\"(IntAct)\tintact:EBI-0000001\t-\nuniprotkb:P04637\tuniprotkb:Q13409\t-\t-\tuniprotkb:P04637_alias(gene name)\tuniprotkb:Q13409_alias(gene name)\tpsi-mi:\"MI:0018\"(two hybrid)\tPlaceholder et al. (2000)\tpubmed:10000002\ttaxid:9606(human)\ttaxid:9606(human)\tpsi-mi:\"MI:0915\"(physical association)\tpsi-mi:\"MI:0469\"(IntAct)\tintact:EBI-0000002\t-\n"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"2c955ef6c572846e65339c68ea74527a\",\"interactors\":0,\"interactions\":0,\"name\":\"placeholder-psimitab\"},\"warningMessages\":[\"2 entries have been omitted. Their score is less than 0.45\"]}",
+  "recordedAt": "2026-11-28T19:53:17.016Z",
+  "milliseconds": 6
+}

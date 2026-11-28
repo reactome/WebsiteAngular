@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/token/PSI--2033818852",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"PSI--2033818852\"}",
+  "recordedAt": "2026-11-28T19:54:02.318Z",
+  "milliseconds": 13623
+}

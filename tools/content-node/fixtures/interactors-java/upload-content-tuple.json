@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/upload/tuple/content?name=placeholder-tuple",
+    "contentType": "text/plain",
+    "body": "#ID_A\tID_B\nP04637\tQ14204\nP04637\tQ13409\nQ14204\tQ13409\n"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"summary\":{\"token\":\"24f1b76d30f02fb8a20cfef93cf2cded\",\"interactors\":3,\"interactions\":3,\"name\":\"placeholder-tuple\"}}",
+  "recordedAt": "2026-11-28T19:53:06.885Z",
+  "milliseconds": 57
+}

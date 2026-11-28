@@ -1,0 +1,13 @@
+{
+  "request": {
+    "method": "GET",
+    "path": "/interactors/psicquic/molecule/MINT/NOT_AN_ACCESSION/details"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"MINT\"}",
+  "recordedAt": "2026-11-28T19:52:56.549Z",
+  "milliseconds": 5327
+}

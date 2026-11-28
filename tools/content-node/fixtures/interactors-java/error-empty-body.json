@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/psicquic/molecules/MINT/details",
+    "contentType": "text/plain",
+    "body": ""
+  },
+  "status": 422,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"code\":422,\"reason\":\"UNPROCESSABLE_ENTITY\",\"url\":\"http://127.0.0.1:8080/ContentService/interactors/psicquic/molecules/MINT/details\",\"messages\":[\"Required request body is missing: public org.reactome.server.service.model.interactors.Interactors org.reactome.server.service.controller.interactors.PsicquicInteractionsController.getProteinsDetailsByResource(java.lang.String,java.lang.String) throws org.reactome.server.interactors.exception.PsicquicQueryException,psidev.psi.mi.tab.PsimiTabException,org.hupo.psi.mi.psicquic.registry.client.PsicquicRegistryClientException,org.reactome.server.interactors.exception.PsicquicResourceNotFoundException\"],\"targets\":null}",
+  "recordedAt": "2026-11-28T19:52:51.539Z",
+  "milliseconds": 5
+}

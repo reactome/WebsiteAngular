@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/psicquic/molecules/BioGrid/summary",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"BioGrid\",\"entities\":[{\"acc\":\"Q14204\",\"count\":70},{\"acc\":\"P04637\",\"count\":739},{\"acc\":\"Q13409\",\"count\":48}]}",
+  "recordedAt": "2026-11-28T19:52:04.680Z",
+  "milliseconds": 15474
+}

@@ -1,0 +1,15 @@
+{
+  "request": {
+    "method": "POST",
+    "path": "/interactors/psicquic/molecules/MINT/summary",
+    "contentType": "text/plain",
+    "body": "P04637,Q14204,Q13409"
+  },
+  "status": 200,
+  "headers": {
+    "content-type": "application/json;charset=UTF-8"
+  },
+  "body": "{\"resource\":\"MINT\",\"entities\":[{\"acc\":\"Q14204\",\"count\":5},{\"acc\":\"P04637\",\"count\":122},{\"acc\":\"Q13409\",\"count\":5}]}",
+  "recordedAt": "2026-11-28T19:51:11.255Z",
+  "milliseconds": 14646
+}
