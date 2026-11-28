@@ -210,13 +210,24 @@ EOT
   dl_expect missing '^Not found\.$'
   dl_expect missing 'Error|<html' '!'
   # A folder asked for as a page: the download site lists none, so the site's
-  # own Download Data page, and nothing asked of the download site.
-  for path in /download /download/ /download/current /download/current/ /download/97 /download/97/; do
+  # own Download Data page, the query dropped, nothing cached, and nothing
+  # asked of the download site. Still only GET and HEAD; a file whose name
+  # merely starts like a folder is still a file.
+  for path in /download /download/ /download/current /download/current/ /download/97 /download/97/ \
+    '/download/97/?a=1' '/download/current/?a=1'; do
     dl_ask "$path"
     dl_expect "folder $path" '^HTTP/[0-9.]+ 302'
-    dl_expect "folder $path" '^location: (https://[^/]+)?/download-data'
+    dl_expect "folder $path" '^location: (https://[^/]+)?/download-data$'
+    dl_expect "folder $path" '^cache-control' '!'
     dl_expect "folder $path" '^x-seen' '!'
   done
+  for path in /download /download/ /download/current/ /download/97/; do
+    dl_ask "$path" -X POST
+    dl_expect "folder $path, POST" '^HTTP/[0-9.]+ 405'
+  done
+  dl_ask /download/97.txt
+  dl_expect 'a file, not a folder' '^HTTP/[0-9.]+ 404'
+  dl_expect 'a file, not a folder' '^Not found\.$'
   dl_ask /download/current/ReactomePathways.txt -X POST
   dl_expect post '^HTTP/[0-9.]+ 405'
   dl_expect post '^x-seen' '!'

@@ -215,7 +215,11 @@ The release server redirects instead (`release.conf`, spec 032 D5).
   the release the server names in `download-release.map` in its site-local folder: one
   line, `beta.reactome.org 98;` on beta, `reactome.org 98;` on production, moved on
   release day by the graph's switch (below). Without the line, or with anything but a
-  number, `/download/current/` answers 503 saying so; the numbered paths still work.
+  number, a file under `/download/current/` answers 503 saying so; the numbered paths still work.
+- **A folder** asked for as a page (`/download`, `/download/`, `/download/current`,
+  `/download/98`, with or without the slash) answers a 302 to the site's own
+  `/download-data` page, the query dropped: the download site lists no folders, and old
+  links point at the old server's listings. Only GET and HEAD, as for files.
 - **Any other path** goes as it is: `/download/98/x` is the download site's `/98/x`. The
   query is dropped; a path whose `..` (encoded or not) leads out of `/download/` is not
   proxied, since nginx resolves it before choosing a location; the host is fixed.

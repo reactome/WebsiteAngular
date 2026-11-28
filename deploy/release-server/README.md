@@ -303,8 +303,10 @@ reactome.org <NN>;
 address (spec 032 T037), because outside scripts fetch
 `reactome.org/download/current/...` with a plain `curl`, which follows no redirect. The
 download site has numbered folders only, so `current` is sent to the folder this line
-names; any other path under `/download/` is sent as it is. Without the line, or with
-anything but a number in it, `/download/current/` answers 503 saying so, and the numbered
+names; a folder asked for as a page (`/download/current/`, `/download/98`) goes to the
+site's Download Data page; any other path under `/download/` is sent as it is. Without the
+line, or with anything but a number in it, a file under `/download/current/` answers 503
+saying so, and the numbered
 paths still work. It moves with the graph: `next-release.sh switch` names the release it
 switched to and reloads nginx, and `rollback` the release it went back to (deploy/nginx's
 README, `/download/`), reading the folder from `.env`. `production.conf` includes nothing
